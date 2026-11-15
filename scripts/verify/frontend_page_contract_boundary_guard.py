@@ -104,8 +104,8 @@ def main() -> int:
         _check_required(
             _read(CONTRACT_FORM_ROUTE),
             [
-                "import ContractFormPage from './ContractFormPage.vue'",
-                "<ContractFormPage />",
+                "import('./ContractFormPage.vue')",
+                '<component :is="page" v-else />',
             ],
             "pages/ContractFormRoute.vue",
             errors,

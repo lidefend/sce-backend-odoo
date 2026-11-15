@@ -52,6 +52,7 @@ if (import.meta.hot) {
   });
 }
 
-bootstrapApp();
+const initialRoute = router.resolve(window.location.href);
+bootstrapApp({ initialRouteName: initialRoute.name });
 
 app.mount('#app');

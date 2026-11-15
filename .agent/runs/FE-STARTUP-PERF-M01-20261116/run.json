@@ -1,0 +1,332 @@
+{
+  "schema_version": 1,
+  "id": "FE-STARTUP-PERF-M01-20261116",
+  "branch": "fix/frontend-performance-m01-20261116",
+  "baseline_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+  "status": "active",
+  "goal": ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
+  "record": "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
+    ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json",
+    "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
+    "frontend/apps/web/index.html",
+    "frontend/apps/web/src/app/performance/startupTiming.ts",
+    "frontend/apps/web/src/app/init.ts",
+    "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+    "frontend/apps/web/src/main.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/pages/ContractFormRoute.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/app/activityPageTitle.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/startup_performance_test.ts",
+    "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+    "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "scripts/verify/frontend_contract_route_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/line_budgets.py",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "excluded": [
+    "backend contract and permission changes",
+    "customer-specific title dictionaries",
+    "deployment or external runtime mutation",
+    "unrelated route and business data performance"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline frontend tests first; governed runtime observation only after L1/L2"
+  },
+  "checks": {
+    "focused_remediation": {
+      "target": "verify.frontend.dev_acceptance_remediation.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/activityPageTitle.ts",
+        "frontend/apps/web/src/app/pageIdentityAdapters.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "startup_performance": {
+      "target": "verify.frontend.startup_performance.unit",
+      "inputs": [
+        "frontend/apps/web/index.html",
+        "frontend/apps/web/src/app/performance/startupTiming.ts",
+        "frontend/apps/web/src/app/init.ts",
+        "frontend/apps/web/src/main.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/pages/ContractFormRoute.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+        "frontend/apps/web/scripts/startup_performance_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
+        ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json"
+      ],
+      "kind": "offline"
+    },
+    "action_view_page_actions": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_page_size_runtime": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_surface_gate_runtime": {
+      "target": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/scripts/",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/packages/ui/src/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "overlay_lifecycle": {
+      "target": "verify.frontend.overlay_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_boundary": {
+      "target": "verify.frontend.page_contract_boundary.guard",
+      "inputs": [
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/pages/ContractFormRoute.vue",
+        "frontend/apps/web/src/app/",
+        "scripts/verify/frontend_page_contract_boundary_guard.py",
+        "scripts/verify/frontend_contract_route_guard.py",
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/views/",
+        "frontend/apps/web/scripts/",
+        "docs/frontend_productization/rendering-detail/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "primitive_adapter": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "frontend/packages/ui/",
+        "scripts/verify/frontend_primitive_adapter_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_header": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/scripts/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_page_pattern": {
+      "target": "verify.frontend.product_page_pattern.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/",
+        "frontend/apps/web/src/components/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_identity": {
+      "target": "verify.frontend.runtime_identity.unit",
+      "inputs": [
+        "frontend/apps/web/src/main.ts",
+        "frontend/apps/web/src/app/",
+        "frontend/apps/web/scripts/build_identity_test.ts",
+        "config/frontend/",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_failure": {
+      "target": "verify.frontend.session_persistence.failure.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/scripts/session_persistence_failure_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_recovery": {
+      "target": "verify.frontend.session_persistence.recovery.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/scripts/session_persistence_recovery_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_scheduler": {
+      "target": "verify.frontend.session_persistence.scheduler.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/scripts/session_persistence_scheduler_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "session_snapshot": {
+      "target": "verify.frontend.session_persistence.snapshot.unit",
+      "inputs": [
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/scripts/session_persistence_snapshot_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/scripts/",
+        "scripts/verify/frontend_standard_preview.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/packages/ui/src/",
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/line_budgets.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "strict_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/scripts/",
+        "frontend/packages/ui/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_performance": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "inputs": [
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_performance_browser.mjs",
+        "scripts/verify/local_dev_runtime_performance_browser.sh",
+        "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run strict types, build the split record route, and observe the canonical timing phases on a governed runtime."
+}

@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  resolveBusinessActivityTitle,
   resolveSceneActivityTitle,
   shouldRenderScenePageHeading,
 } from '../src/app/activityPageTitle';
@@ -71,6 +72,22 @@ check(
   }),
   '项目台账',
   'a distinct route-carried business label is consumed',
+);
+check(
+  resolveBusinessActivityTitle({
+    authorityName: 'enterprise.department',
+    actionTitle: '部门管理',
+  }),
+  '部门管理',
+  'technical action authority does not override the declared business title',
+);
+check(
+  resolveSceneActivityTitle({
+    sceneKey: 'enterprise.department',
+    queryLabel: 'enterprise.department',
+  }),
+  '业务场景',
+  'a technical scene key is not exposed as a business title',
 );
 
 // N-03: scene pages always expose one semantic heading. Handling surfaces that

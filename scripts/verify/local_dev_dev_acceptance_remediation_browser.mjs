@@ -18,6 +18,7 @@ const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
 const technicalTitles = new Set(['enterprise.department', 'portal.notifications']);
 const affectedHeadings = ['消息通知', '材料出库', '施工日志', '项目台账', '安全检查', '部门管理'];
 const RECORD_READY_SELECTOR = '[data-product-page-mode="form"][data-form-model="payment.request"][data-state="ok"]';
+const STARTUP_PHASES = ['boot_start', 'skeleton_shown', 'session_ready', 'contract_loaded', 'record_ready'];
 const runtimeState = {
   navigation: [],
   scenarioSurface: null,
@@ -438,6 +439,28 @@ async function readRecordDiagnostics(page) {
   });
 }
 
+async function readStartupTiming(page) {
+  return page.evaluate(phases => {
+    const marks = {};
+    for (const phase of phases) {
+      const entry = performance.getEntriesByName(phase, 'mark')[0];
+      if (entry) marks[phase] = Math.round(entry.startTime * 1000) / 1000;
+    }
+    const boot = marks.boot_start;
+    const elapsed = {};
+    if (typeof boot === 'number') {
+      for (const [phase, value] of Object.entries(marks)) {
+        elapsed[phase] = Math.round((value - boot) * 1000) / 1000;
+      }
+    }
+    return {
+      marks,
+      elapsed_from_boot_ms: elapsed,
+      missing: phases.filter(phase => marks[phase] === undefined),
+    };
+  }, STARTUP_PHASES);
+}
+
 async function locatePaymentRecordHref(page) {
   await openMenu(page, '付款申请');
   const queryInput = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
@@ -544,10 +567,13 @@ async function main() {
       await recordPage.goto(href, { waitUntil: 'domcontentloaded', timeout: 45000 });
       const observation = await observeRecordPage(recordPage, started);
       const diagnostics = await readRecordDiagnostics(recordPage);
+      const startupTiming = await readStartupTiming(recordPage);
       detachRecordNetwork();
+      const canonicalElapsed = startupTiming.elapsed_from_boot_ms.record_ready;
       report.record_deep_link = {
         href,
-        elapsed_ms: observation.elapsedMs,
+        elapsed_ms: typeof canonicalElapsed === 'number' ? canonicalElapsed : observation.elapsedMs,
+        wall_elapsed_ms: observation.elapsedMs,
         ready: observation.ready,
         headings: await activeHeadingTexts(recordPage),
         errors: recordNetwork.filter(row => row.status >= 400),
@@ -558,11 +584,13 @@ async function main() {
         console_errors: consoleErrors,
         source_revision: runtimeState.sourceRevision,
         diagnostics,
+        startup_timing: startupTiming,
       };
       report.findings = [];
       if (report.record_deep_link.errors.length) report.findings.push('record_deep_link_http_error');
       if (!observation.ready) report.findings.push('record_deep_link_not_ready');
       if (pageErrors.length) report.findings.push('record_deep_link_page_error');
+      for (const phase of startupTiming.missing) report.findings.push(`startup_mark_missing:${phase}`);
       report.status = report.findings.length ? 'failed' : 'passed';
       if (report.findings.length) process.exitCode = 1;
       return;

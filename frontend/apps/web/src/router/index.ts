@@ -209,7 +209,10 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
     const sceneKey = routeQueryText(to.params.sceneKey || to.query.scene_key || to.query.scene);
     const registeredScene = sceneKey ? getSceneByKey(sceneKey) : null;
     const runtimeScene = sceneKey
-      ? session.scenes.find((item) => String(item.key || '').trim() === sceneKey)
+      ? session.scenes.find((item) => (
+        String(item.key || '').trim() === sceneKey
+        || String(item.code || '').trim() === sceneKey
+      ))
       : null;
     return resolveSceneActivityTitle({
       sceneKey,
@@ -224,8 +227,16 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
     const meta = resolveRouteActivityActionMeta(to, session);
     const menuNode = menuId > 0 ? findMenuNode(session.menuTree, menuId) : null;
     const authority = resolveRouteAuthorityEntry(to, session);
+    const sceneKey = routeQueryText(meta?.scene_key || meta?.sceneKey || to.query.scene_key || to.query.scene);
+    const runtimeScene = sceneKey
+      ? session.scenes.find((item) => (
+        String(item.key || '').trim() === sceneKey
+        || String(item.code || '').trim() === sceneKey
+      ))
+      : null;
     return resolveBusinessActivityTitle({
       authorityName: authority?.action_name || authority?.name,
+      sceneLabel: runtimeScene?.label,
       actionTitle: meta?.ui_title || meta?.scene_title || meta?.name,
       menuTitle: meta?.menu_title || menuNode?.label,
       fallback: `动作 ${actionId}`,

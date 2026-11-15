@@ -52,6 +52,7 @@
 <script setup lang="ts">
 import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import { formatLoadingProgress } from '../../app/presentation/loadingProgress';
+import { markStartupPhase } from '../../app/performance/startupTiming';
 
 withDefaults(defineProps<{
   loadingLabel?: string;
@@ -68,6 +69,7 @@ const elapsedLabel = computed(() => progress.value.elapsedLabel);
 const progressHint = computed(() => progress.value.hint);
 
 onMounted(() => {
+  markStartupPhase('skeleton_shown', 'ProductFormLoadingSkeleton');
   startedAt.value = Date.now();
   now.value = startedAt.value;
   timer = window.setInterval(() => {

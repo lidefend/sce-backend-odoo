@@ -515,6 +515,8 @@ RULES = (
     )),
     Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",
+        "scripts/verify/frontend_contract_route_guard.py",
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
     )),
@@ -742,6 +744,7 @@ RULES = (
         "/pages/ContractFormPage.vue",
         "/pages/ContractFormRoute.vue",
         "/views/ActionView.vue",
+        "scripts/verify/line_budgets.py",
     ), (
         "verify.frontend.style_system.guard",
     )),

@@ -1,6 +1,9 @@
+import { productIdentityText } from './pageIdentity';
+
 export interface BusinessActivityTitleInput {
   authorityName?: unknown;
   businessLabel?: unknown;
+  sceneLabel?: unknown;
   actionTitle?: unknown;
   modelLabel?: unknown;
   menuTitle?: unknown;
@@ -28,14 +31,16 @@ function titleText(value: unknown): string {
  * and edit belong to the page itself and must not be prefixed into this title.
  */
 export function resolveBusinessActivityTitle(input: BusinessActivityTitleInput): string {
-  return titleText(
-    input.authorityName
-    || input.businessLabel
-    || input.actionTitle
-    || input.modelLabel
-    || input.menuTitle
-    || input.fallback,
-  );
+  const candidates = [
+    input.authorityName,
+    input.businessLabel,
+    input.sceneLabel,
+    input.actionTitle,
+    input.modelLabel,
+    input.menuTitle,
+    input.fallback,
+  ];
+  return candidates.map(productIdentityText).find(Boolean) || '';
 }
 
 export function shouldDeferActivityPageTitle(
@@ -49,15 +54,14 @@ export function shouldDeferActivityPageTitle(
 /**
  * Resolve a scene tab/page title from declared scene labels. Runtime scene
  * projection wins over the static registry and the route-carried label; the
- * technical scene key is only the final identity, never a business-title
- * substitute when a declared label exists.
+ * technical scene key is never rendered as a business title.
  */
 export function resolveSceneActivityTitle(input: SceneActivityTitleInput): string {
   const sceneKey = titleText(input.sceneKey);
-  const runtimeLabel = titleText(input.runtimeLabel);
-  const registeredLabel = titleText(input.registeredLabel);
-  const queryLabel = titleText(input.queryLabel);
-  return runtimeLabel || registeredLabel || (queryLabel !== sceneKey ? queryLabel : '') || sceneKey || '业务场景';
+  const runtimeLabel = productIdentityText(input.runtimeLabel);
+  const registeredLabel = productIdentityText(input.registeredLabel);
+  const queryLabel = productIdentityText(input.queryLabel);
+  return runtimeLabel || registeredLabel || (queryLabel !== sceneKey ? queryLabel : '') || '业务场景';
 }
 
 /**

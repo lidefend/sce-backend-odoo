@@ -58,7 +58,9 @@ BASELINES: dict[str, int] = {
     "frontend/apps/web/src/layouts/AppShell.vue": 1597,
     "frontend/apps/web/src/pages/ListPage.vue": 2155,
     "frontend/apps/web/src/pages/ContractFormPage.vue": 1894,
-    "frontend/apps/web/src/pages/ContractFormRoute.vue": 7,
+    # The route shell now renders a generic loading/error surface while the
+    # heavy contract form chunk is loaded behind it.
+    "frontend/apps/web/src/pages/ContractFormRoute.vue": 73,
     "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue": 554,
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts": 599,
     "frontend/apps/web/src/pages/contractForm/useRecordFormDesignerPersistence.ts": 686,

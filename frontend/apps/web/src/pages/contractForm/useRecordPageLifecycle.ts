@@ -6,6 +6,7 @@ import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
+import { markStartupPhase } from '../../app/performance/startupTiming';
 import {
   loadAuthoritativeCreateDefaults,
   resolveCreateRouteRelationLabels,
@@ -279,6 +280,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       const message = policy.message || 'contract access policy blocked this page';
       throw new ContractAccessPolicyError(message, policy.reasonCode || 'CONTRACT_ACCESS_BLOCKED');
     }
+    markStartupPhase('contract_loaded', 'record.loadContract');
     const hasCore = coreFieldNames.value.length > 0;
     advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;
   }
@@ -460,6 +462,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         await loadRecord();
         if (!reloadIsCurrent()) return;
         applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });
+        markStartupPhase('record_ready', 'record.formReload');
         retainedRouteIdentity.value = formRouteIdentity();
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
