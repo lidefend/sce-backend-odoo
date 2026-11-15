@@ -1,0 +1,455 @@
+[local.dev.ready] PASS project=sc-local-dev db=sc_dev_demo
+[local.dev.credentials] reuse canonical demo credential
+[mod.upgrade] module=smart_construction_core db=sc_dev_demo
+ Container sc-local-dev-db-1  Running
+ Container sc-local-dev-redis-1  Running
+ERROR: couldn't create the logfile directory. Logging to the standard output.
+2026-11-15 13:07:27,643 1 INFO ? odoo: Odoo version 17.0-20260630 
+2026-11-15 13:07:27,644 1 INFO ? odoo: Using configuration file at /var/lib/odoo/odoo.conf 
+2026-11-15 13:07:27,644 1 INFO ? odoo: addons paths: ['/usr/lib/python3/dist-packages/odoo/addons', '/opt/sce-runtime/addons/17.0', '/mnt/source-addons', '/mnt/demo-addons', '/mnt/addons_external/oca_server_ux'] 
+2026-11-15 13:07:27,644 1 INFO ? odoo: database: odoo@db:5432 
+2026-11-15 13:07:27,723 1 INFO ? odoo.addons.base.models.ir_actions_report: Will use the Wkhtmltopdf binary at /usr/local/bin/wkhtmltopdf 
+2026-11-15 13:07:28,126 1 INFO ? odoo.addons.smart_core.app_config_engine.controllers: smart_core app_config_engine controllers loaded 
+2026-11-15 13:07:28,126 1 INFO ? odoo.addons.smart_core.app_config_engine: smart_core app_config_engine loaded 
+2026-11-15 13:07:28,512 1 INFO ? odoo.addons.smart_core: ✅ Smart Core Engine 模块已加载 
+2026-11-15 13:07:28,554 1 INFO sc_dev_demo odoo.modules.loading: loading 1 modules... 
+2026-11-15 13:07:28,559 1 INFO sc_dev_demo odoo.modules.loading: 1 modules loaded in 0.00s, 0 queries (+0 extra) 
+2026-11-15 13:07:28,571 1 INFO sc_dev_demo odoo.modules.loading: updating modules list 
+2026-11-15 13:07:28,574 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: ALLOW access to module.update_list on [] to user __system__ #1 via n/a 
+2026-11-15 13:07:29,340 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: ALLOW access to module.button_upgrade on ['Smart Construction Core'] to user __system__ #1 via n/a 
+2026-11-15 13:07:29,340 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: ALLOW access to module.update_list on ['Smart Construction Core'] to user __system__ #1 via n/a 
+2026-11-15 13:07:29,912 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: ALLOW access to module.button_install on [] to user __system__ #1 via n/a 
+2026-11-15 13:07:30,250 1 INFO sc_dev_demo odoo.modules.loading: loading 77 modules... 
+2026-11-15 13:07:30,765 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_core (71/77) 
+2026-11-15 13:07:31,793 1 INFO sc_dev_demo odoo.modules.registry: module smart_construction_core: creating or updating database tables 
+2026-11-15 13:07:32,891 1 WARNING sc_dev_demo odoo.addons.base.models.ir_model: Two fields (payment_execution_payment_amount_display, company_finance_amount_display) of sc.payment.execution() have the same label: 付款金额. [Modules: smart_construction_core and smart_construction_core] 
+2026-11-15 13:07:32,891 1 WARNING sc_dev_demo odoo.addons.base.models.ir_model: Two fields (payment_execution_document_status_display, company_finance_status_display) of sc.payment.execution() have the same label: 单据状态. [Modules: smart_construction_core and smart_construction_core] 
+2026-11-15 13:07:33,607 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/sequence.xml 
+2026-11-15 13:07:33,678 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/currency_defaults.xml 
+2026-11-15 13:07:34,265 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_stage_data.xml 
+2026-11-15 13:07:34,276 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_next_action_rules.xml 
+2026-11-15 13:07:34,290 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_stage_requirement_items.xml 
+2026-11-15 13:07:34,294 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/cron_signup_throttle_gc.xml 
+2026-11-15 13:07:34,305 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/sc_extension_params.xml 
+2026-11-15 13:07:34,306 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/boq_dangerous_import_params.xml 
+2026-11-15 13:07:34,307 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/rich_text_editor_params.xml 
+2026-11-15 13:07:34,308 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/menu_config_runtime_params.xml 
+2026-11-15 13:07:34,314 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/supplier_type_data.xml 
+2026-11-15 13:07:34,337 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_dictionary_data.xml 
+2026-11-15 13:07:34,346 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/expense_contract_category_data.xml 
+2026-11-15 13:07:34,375 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/sc_capability_group_seed.xml 
+2026-11-15 13:07:34,384 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_capability_roadmap_data.xml 
+2026-11-15 13:07:34,393 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_groups.xml 
+2026-11-15 13:07:34,398 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_capability_groups.xml 
+2026-11-15 13:07:54,527 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_entry_groups.xml 
+2026-11-15 13:07:58,677 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/contract_settlement_capability_bridge.xml 
+2026-11-15 13:08:00,804 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_role_groups.xml 
+2026-11-15 13:08:12,023 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/runtime_user_permission_groups.xml 
+2026-11-15 13:08:27,871 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_role_entry_groups.xml 
+2026-11-15 13:08:35,682 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_discover_entry_groups.xml 
+2026-11-15 13:08:37,730 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_model_records.xml 
+2026-11-15 13:08:37,731 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/ir.model.access.csv 
+2026-11-15 13:08:38,397 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_record_rules.xml 
+2026-11-15 13:08:39,860 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_data_scope_ceiling_generated.xml 
+2026-11-15 13:08:40,620 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/sc_scene_rules.xml 
+2026-11-15 13:08:40,622 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/sc_scene_seed.xml 
+2026-11-15 13:08:40,640 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/view_orchestration_contract_data.xml 
+2026-11-15 13:08:40,643 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/formal_list_contract_sync.xml 
+2026-11-15 13:08:40,644 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/res_groups_menu_views.xml 
+2026-11-15 13:08:40,928 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/material_plan_tier_actions.xml 
+2026-11-15 13:08:40,933 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/material_outbound_tier_actions.xml 
+2026-11-15 13:08:41,081 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/payment_request_tier_actions.xml 
+2026-11-15 13:08:41,086 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/settlement_order_tier_actions.xml 
+2026-11-15 13:08:41,091 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/expense_claim_tier_actions.xml 
+2026-11-15 13:08:41,096 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/purchase_order_tier_actions.xml 
+2026-11-15 13:08:41,102 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/contract_tier_actions.xml 
+2026-11-15 13:08:41,112 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/finance_document_tier_actions.xml 
+2026-11-15 13:08:41,179 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/approval_policy_seed.xml 
+2026-11-15 13:08:41,291 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/approval_scope_seed.xml 
+2026-11-15 13:08:41,302 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/approval_policy_tier_sync.xml 
+2026-11-15 13:08:42,304 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/business_category_seed.xml 
+2026-11-15 13:08:42,340 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/business_category_template_binding_sync.xml 
+2026-11-15 13:08:42,509 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/expense_claim_category_migration.xml 
+2026-11-15 13:08:42,512 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/general_contract_tax_sync.xml 
+2026-11-15 13:08:42,539 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/project_list_actions.xml 
+2026-11-15 13:08:42,702 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_root.xml 
+2026-11-15 13:08:42,706 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_centers.xml 
+2026-11-15 13:08:42,718 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_business_taxonomy_groups.xml 
+2026-11-15 13:08:42,727 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/cost_domain_views.xml 
+2026-11-15 13:08:48,886 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_boq_import_views.xml 
+2026-11-15 13:08:49,392 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_task_from_boq_views.xml 
+2026-11-15 13:08:49,884 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/execution_structure_actions_base.xml 
+2026-11-15 13:08:50,347 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/execution_structure_views.xml 
+2026-11-15 13:08:50,543 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/execution_structure_actions.xml 
+2026-11-15 13:08:50,885 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/boq_views.xml 
+2026-11-15 13:08:52,341 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/boq_analysis_views.xml 
+2026-11-15 13:08:53,163 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/cost_plan_views.xml 
+2026-11-15 13:08:55,029 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_lifecycle_kanban_views.xml 
+2026-11-15 13:08:55,412 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/wizard/material_plan_to_rfq_views.xml 
+2026-11-15 13:08:55,628 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/material_plan_views.xml 
+2026-11-15 13:08:56,734 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/material_acceptance_views.xml 
+2026-11-15 13:09:00,527 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/material_supplier_return_views.xml 
+2026-11-15 13:09:00,855 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/material_rental_views.xml 
+2026-11-15 13:09:02,612 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/labor_management_views.xml 
+2026-11-15 13:09:05,430 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/equipment_management_views.xml 
+2026-11-15 13:09:07,335 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/subcontract_management_views.xml 
+2026-11-15 13:09:10,988 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/finance_actions.xml 
+2026-11-15 13:09:11,167 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/payment_request_tier_review_views.xml 
+2026-11-15 13:09:11,346 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_finance_center.xml 
+2026-11-15 13:09:11,351 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/project_actions.xml 
+2026-11-15 13:09:11,856 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_list_views.xml 
+2026-11-15 13:09:12,049 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_search_views.xml 
+2026-11-15 13:09:12,300 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_quick_create_wizard_views.xml 
+2026-11-15 13:09:12,526 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_views.xml 
+2026-11-15 13:09:14,025 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/task_boq_views.xml 
+2026-11-15 13:09:14,235 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/task_sc_state_views.xml 
+2026-11-15 13:09:14,379 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/wbs_plan_views.xml 
+2026-11-15 13:09:14,774 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/work_breakdown_views.xml 
+2026-11-15 13:09:15,582 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/execution_breakdown_views.xml 
+2026-11-15 13:09:18,036 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/tender_views.xml 
+2026-11-15 13:09:19,676 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/tender_product_views.xml 
+2026-11-15 13:09:20,241 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/quality_acceptance_views.xml 
+2026-11-15 13:09:20,403 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/labor_product_views.xml 
+2026-11-15 13:09:20,838 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/document_views.xml 
+2026-11-15 13:09:22,518 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/operating_metrics_views.xml 
+2026-11-15 13:09:23,484 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/project_dashboard_kanban.xml 
+2026-11-15 13:09:23,857 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/contract_views.xml 
+2026-11-15 13:09:25,174 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [280, 281] 
+2026-11-15 13:09:25,520 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [282, 283] 
+2026-11-15 13:09:25,794 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/contract_execution_position_views.xml 
+2026-11-15 13:09:26,484 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/income_contract_ledger_views.xml 
+2026-11-15 13:09:27,416 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/expense_contract_ledger_views.xml 
+2026-11-15 13:09:28,223 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/contract_line_search.xml 
+2026-11-15 13:09:28,633 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/purchase_extend_views.xml 
+2026-11-15 13:09:29,255 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/account_extend_views.xml 
+2026-11-15 13:09:29,799 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/partner_business_fact_line_views.xml 
+2026-11-15 13:09:30,139 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/product_extend_views.xml 
+2026-11-15 13:09:31,814 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_project_financial_views.xml 
+2026-11-15 13:09:31,898 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_budget_views.xml 
+2026-11-15 13:09:33,339 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/tier_review_views.xml 
+2026-11-15 13:09:33,852 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_extend_boq_views.xml 
+2026-11-15 13:09:34,074 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_profile_layout_views.xml 
+2026-11-15 13:09:34,285 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/payment_ledger_views.xml 
+2026-11-15 13:09:35,590 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/wizard/funding_authority_wizard_views.xml 
+2026-11-15 13:09:35,840 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/payment_request_line_views.xml 
+2026-11-15 13:09:36,300 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/receipt_invoice_line_views.xml 
+2026-11-15 13:09:36,912 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/output_invoice_adjustment_views.xml 
+2026-11-15 13:09:37,516 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/output_invoice_ledger_views.xml 
+2026-11-15 13:09:37,961 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/expense_claim_views.xml 
+2026-11-15 13:09:38,962 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/treasury_reconciliation_views.xml 
+2026-11-15 13:09:39,581 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/receipt_income_views.xml 
+2026-11-15 13:09:40,466 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/payment_execution_views.xml 
+2026-11-15 13:09:41,077 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/invoice_registration_views.xml 
+2026-11-15 13:09:41,739 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/tax_deduction_registration_views.xml 
+2026-11-15 13:09:42,352 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/tax_certificate_registration_views.xml 
+2026-11-15 13:09:42,825 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/tax_filing_views.xml 
+2026-11-15 13:09:43,396 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/financing_loan_views.xml 
+2026-11-15 13:09:43,726 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/self_funding_registration_views.xml 
+2026-11-15 13:09:44,359 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [284, 285] 
+2026-11-15 13:09:44,642 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [286, 287] 
+2026-11-15 13:09:44,934 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [288, 289] 
+2026-11-15 13:09:45,213 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/funding_baseline_views.xml 
+2026-11-15 13:09:46,166 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/funding_actual_event_allocation_views.xml 
+2026-11-15 13:09:46,653 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/fund_account_views.xml 
+2026-11-15 13:09:47,390 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/fund_account_operation_views.xml 
+2026-11-15 13:09:47,899 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [290, 291] 
+2026-11-15 13:09:48,182 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [292, 293] 
+2026-11-15 13:09:48,464 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [294, 295] 
+2026-11-15 13:09:48,876 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/business_menu_fact_views.xml 
+2026-11-15 13:09:50,294 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/office_admin_document_views.xml 
+2026-11-15 13:09:50,968 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/fund_legacy_readonly_archive_views.xml 
+2026-11-15 13:09:51,579 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [296, 297] 
+2026-11-15 13:09:51,867 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [298, 299] 
+2026-11-15 13:09:52,271 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/hr_payroll_document_views.xml 
+2026-11-15 13:09:54,100 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/document_admin_document_views.xml 
+2026-11-15 13:09:55,520 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [300, 301] 
+2026-11-15 13:09:56,285 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/plan_management_views.xml 
+2026-11-15 13:09:57,370 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/quality_management_views.xml 
+2026-11-15 13:09:59,759 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/safety_management_views.xml 
+2026-11-15 13:10:02,836 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/contract_event_views.xml 
+2026-11-15 13:10:03,589 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/general_contract_views.xml 
+2026-11-15 13:10:03,920 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/payment_request_views.xml 
+2026-11-15 13:10:04,780 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [302, 303] 
+2026-11-15 13:10:05,270 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_overview_views.xml 
+2026-11-15 13:10:05,615 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/project_actions_views.xml 
+2026-11-15 13:10:05,963 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/settlement_views.xml 
+2026-11-15 13:10:06,752 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [304, 305] 
+2026-11-15 13:10:07,194 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/variation_change_views.xml 
+2026-11-15 13:10:08,780 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/ar_ap_project_summary_views.xml 
+2026-11-15 13:10:09,472 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/ar_ap_company_summary_views.xml 
+2026-11-15 13:10:10,364 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/ar_ap_report_summary_views.xml 
+2026-11-15 13:10:10,963 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/fund_daily_views.xml 
+2026-11-15 13:10:11,671 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/company_operation_summary_views.xml 
+2026-11-15 13:10:12,628 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/invoice_category_summary_views.xml 
+2026-11-15 13:10:13,499 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/expense_salary_summary_views.xml 
+2026-11-15 13:10:14,662 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/material_stock_summary_views.xml 
+2026-11-15 13:10:15,460 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/comprehensive_cost_summary_views.xml 
+2026-11-15 13:10:16,106 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/treasury_ledger_views.xml 
+2026-11-15 13:10:17,086 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/interfund_movement_fact_views.xml 
+2026-11-15 13:10:17,742 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_business_fact_views.xml 
+2026-11-15 13:10:18,507 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_business_project_summary_views.xml 
+2026-11-15 13:10:19,147 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/interfund_movement_project_summary_views.xml 
+2026-11-15 13:10:19,835 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_project_capital_position_views.xml 
+2026-11-15 13:10:20,471 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_project_counterparty_position_views.xml 
+2026-11-15 13:10:21,378 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_counterparty_position_summary_views.xml 
+2026-11-15 13:10:22,018 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/company_contractor_responsibility_fact_views.xml 
+2026-11-15 13:10:22,674 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/company_contractor_responsibility_summary_views.xml 
+2026-11-15 13:10:23,504 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/p1_relationship_suggestion_views.xml 
+2026-11-15 13:10:24,406 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/p1_relationship_review_queue_views.xml 
+2026-11-15 13:10:25,050 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/product_tax_labor_report_views.xml 
+2026-11-15 13:10:25,766 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/projection/finance_interfund_position_menu.xml 
+2026-11-15 13:10:25,777 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/workflow_views.xml 
+2026-11-15 13:10:27,229 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu.xml 
+2026-11-15 13:10:28,463 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/view_orchestration_contract_generated_data.xml 
+2026-11-15 13:10:28,467 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/view_orchestration_form_section_contract_data.xml 
+2026-11-15 13:10:28,628 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/business_category_views.xml 
+2026-11-15 13:10:29,393 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/approval_policy_views.xml 
+2026-11-15 13:10:30,008 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/approval_scope_views.xml 
+2026-11-15 13:10:30,537 1 WARNING sc_dev_demo odoo.addons.base.models.ir_ui_view: An alert (class alert-*) must have an alert, alertdialog or status role or an alert-link class. Please use alert and alertdialog only for what expects to stop any activity to be read immediately.
+View error context:
+{'file': '/mnt/source-addons/smart_construction_core/views/support/approval_scope_views.xml',
+ 'line': 3,
+ 'name': 'sc.approval.scope.user.wizard.form',
+ 'view': ir.ui.view(1905,),
+ 'view.model': 'sc.approval.scope.user.wizard',
+ 'view.parent': ir.ui.view(),
+ 'xmlid': 'view_sc_approval_scope_user_wizard_form'} 
+2026-11-15 13:10:30,789 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/construction_diary_views.xml 
+2026-11-15 13:10:32,025 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/organization_department_views.xml 
+2026-11-15 13:10:32,469 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [306, 307] 
+2026-11-15 13:10:32,856 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/business_entity_views.xml 
+2026-11-15 13:10:33,619 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/runtime_user_management_views.xml 
+2026-11-15 13:10:33,917 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [308, 309] 
+2026-11-15 13:10:34,616 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/office_asset_views.xml 
+2026-11-15 13:10:34,772 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/mail_notification_product_views.xml 
+2026-11-15 13:10:34,926 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/business_config_workbench_views.xml 
+2026-11-15 13:10:35,093 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/menu_config_policy_views.xml 
+2026-11-15 13:10:35,103 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/product_scenario_views.xml 
+2026-11-15 13:10:35,700 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/project_workbench_action.xml 
+2026-11-15 13:10:35,702 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/sc_dictionary_views.xml 
+2026-11-15 13:10:36,523 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/dictionary_views.xml 
+2026-11-15 13:10:38,450 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/quota_import_views.xml 
+2026-11-15 13:10:39,059 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/form_field_policy_views.xml 
+2026-11-15 13:10:40,154 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/project_stage_requirements_views.xml 
+2026-11-15 13:10:40,477 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/project_stage_requirement_item_views.xml 
+2026-11-15 13:10:40,785 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/project_capability_roadmap_views.xml 
+2026-11-15 13:10:44,273 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/team_loan_deduction_workspace_views.xml 
+2026-11-15 13:10:44,470 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/current_account_workspace_views.xml 
+2026-11-15 13:10:44,532 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/company_project_refund_workspace_views.xml 
+2026-11-15 13:10:44,587 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/scene_orchestration_views.xml 
+2026-11-15 13:10:47,683 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/web_login_views.xml 
+2026-11-15 13:10:48,272 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/login_templates.xml 
+2026-11-15 13:10:48,329 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/portal_language_selector_fix.xml 
+2026-11-15 13:10:48,383 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/signup_templates.xml 
+2026-11-15 13:10:48,553 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/menu_tech_hide_patch.xml 
+2026-11-15 13:10:48,565 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/actions/project_native_action_overrides.xml 
+2026-11-15 13:10:49,019 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [310, 311, 312] 
+2026-11-15 13:10:49,907 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_business_taxonomy.xml 
+2026-11-15 13:10:50,574 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [313, 314] 
+2026-11-15 13:10:50,896 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [402, 403] 
+2026-11-15 13:10:52,113 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [317, 318] 
+2026-11-15 13:10:52,390 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [388, 389] 
+2026-11-15 13:10:52,669 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [321, 322] 
+2026-11-15 13:10:52,946 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [386, 387] 
+2026-11-15 13:10:53,384 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [325, 326] 
+2026-11-15 13:10:53,652 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [327, 328] 
+2026-11-15 13:10:54,370 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [329, 330] 
+2026-11-15 13:10:54,658 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [331, 332] 
+2026-11-15 13:10:54,942 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [333, 334] 
+2026-11-15 13:10:55,210 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [335, 336] 
+2026-11-15 13:10:55,482 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [337, 338] 
+2026-11-15 13:10:55,749 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [339, 340] 
+2026-11-15 13:10:56,060 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [341, 342] 
+2026-11-15 13:10:57,759 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [369, 370] 
+2026-11-15 13:10:58,410 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [345, 346] 
+2026-11-15 13:10:58,863 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [347, 348] 
+2026-11-15 13:10:59,293 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [349, 350] 
+2026-11-15 13:10:59,576 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [351, 352] 
+2026-11-15 13:10:59,848 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [353, 354] 
+2026-11-15 13:11:00,115 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [355, 356] 
+2026-11-15 13:11:03,153 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/expense_business_fact_taxonomy_views.xml 
+2026-11-15 13:11:05,954 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [357, 358] 
+2026-11-15 13:11:06,505 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/historical_payment_fact_views.xml 
+2026-11-15 13:11:06,955 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_user_acceptance_cleanup.xml 
+2026-11-15 13:11:06,993 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_contract_product_release.xml 
+2026-11-15 13:11:07,001 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/audit_list_fields_views.xml 
+2026-11-15 13:11:12,825 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/user_confirmed_formal_list_views.xml 
+2026-11-15 13:11:13,882 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [359, 360] 
+2026-11-15 13:11:14,144 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [361, 362] 
+2026-11-15 13:11:14,412 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [363, 364] 
+2026-11-15 13:11:14,963 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [365, 366] 
+2026-11-15 13:11:15,221 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [367, 368] 
+2026-11-15 13:11:15,517 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [492, 493] 
+2026-11-15 13:11:15,785 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [371, 372] 
+2026-11-15 13:11:16,051 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [464, 465] 
+2026-11-15 13:11:16,319 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [375, 376] 
+2026-11-15 13:11:16,599 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [377] 
+2026-11-15 13:11:16,857 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [378, 379] 
+2026-11-15 13:11:17,122 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [380, 381] 
+2026-11-15 13:11:17,425 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [382, 383] 
+2026-11-15 13:11:17,805 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [384, 385] 
+2026-11-15 13:11:18,075 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [472, 473] 
+2026-11-15 13:11:18,392 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [468, 469] 
+2026-11-15 13:11:18,651 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [390, 391] 
+2026-11-15 13:11:18,927 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [392, 393] 
+2026-11-15 13:11:19,202 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/user_confirmed_formal_list_alignment_views.xml 
+2026-11-15 13:11:19,933 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [394] 
+2026-11-15 13:11:20,322 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [395] 
+2026-11-15 13:11:20,586 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [396] 
+2026-11-15 13:11:20,858 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [397] 
+2026-11-15 13:11:21,123 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [398, 399] 
+2026-11-15 13:11:21,397 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [400, 401] 
+2026-11-15 13:11:21,875 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [522, 523] 
+2026-11-15 13:11:22,134 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/contract_execution_component_profile_data.xml 
+2026-11-15 13:11:22,451 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/payment_settlement_component_profile_data.xml 
+2026-11-15 13:11:22,461 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [404, 405] 
+2026-11-15 13:11:23,042 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_navigation_v2.xml 
+2026-11-15 13:11:23,132 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_contract_wave1.xml 
+2026-11-15 13:11:23,145 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_cost_wave1.xml 
+2026-11-15 13:11:23,155 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_finance_wave1.xml 
+2026-11-15 13:11:23,182 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_accounting_foundation.xml 
+2026-11-15 13:11:23,780 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_tax_wave1.xml 
+2026-11-15 13:11:23,787 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_reporting_wave1.xml 
+2026-11-15 13:11:23,795 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_administration_wave1.xml 
+2026-11-15 13:11:23,818 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [406, 407] 
+2026-11-15 13:11:24,075 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_configuration_wave1.xml 
+2026-11-15 13:11:24,090 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_project_wave1.xml 
+2026-11-15 13:11:24,120 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_workbench_wave1.xml 
+2026-11-15 13:11:24,291 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_contract_completion_v1.xml 
+2026-11-15 13:11:24,300 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [408, 409] 
+2026-11-15 13:11:27,709 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [410, 411] 
+2026-11-15 13:11:27,996 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [412, 413, 414] 
+2026-11-15 13:11:28,342 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [415, 416, 417, 418] 
+2026-11-15 13:11:29,197 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [419, 420] 
+2026-11-15 13:11:29,642 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [421, 422] 
+2026-11-15 13:11:29,923 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [423, 424] 
+2026-11-15 13:11:31,214 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [425, 426] 
+2026-11-15 13:11:32,522 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/enterprise_initialization_views.xml 
+2026-11-15 13:11:32,901 1 INFO sc_dev_demo odoo.models.unlink: User #1 deleted ir.actions.act_window.view records with IDs: [427, 428] 
+2026-11-15 13:11:33,642 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/support/my_work_views.xml 
+2026-11-15 13:11:33,802 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/core/project_information_edit_views.xml 
+2026-11-15 13:11:33,997 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/views/menu_product_primary_center_candidate_v1.xml 
+2026-11-15 13:11:34,678 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/quality_safety_form_productization_contract.xml 
+2026-11-15 13:11:34,683 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/hr_payroll_form_productization_contract.xml 
+2026-11-15 13:11:34,745 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/team_loan_deduction_workspace_contract.xml 
+2026-11-15 13:11:34,747 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/daily_contract_settlement_contract.xml 
+2026-11-15 13:11:34,748 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/current_account_workspace_contract.xml 
+2026-11-15 13:11:34,749 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/company_project_refund_workspace_contract.xml 
+2026-11-15 13:11:34,751 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/project_special_tax_deduction_contract.xml 
+2026-11-15 13:11:34,752 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/policy_document_contract.xml 
+2026-11-15 13:11:34,754 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/social_fund_contract.xml 
+2026-11-15 13:11:34,756 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_system_settings_contract.xml 
+2026-11-15 13:11:34,757 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/default_payment_terms.xml 
+2026-11-15 13:11:34,759 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/data_permission_contract.xml 
+2026-11-15 13:11:34,761 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_numbering_rule_contract.xml 
+2026-11-15 13:11:34,763 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_job_contract.xml 
+2026-11-15 13:11:34,765 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/office_asset_contract.xml 
+2026-11-15 13:11:34,767 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/mail_notification_product_contract.xml 
+2026-11-15 13:11:34,769 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/tax_filing_contract.xml 
+2026-11-15 13:11:34,771 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_report_contracts.xml 
+2026-11-15 13:11:34,773 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/construction_diary_list_contract.xml 
+2026-11-15 13:11:34,787 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/office_admin_form_productization_contract.xml 
+2026-11-15 13:11:34,806 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/document_admin_form_productization_contract.xml 
+2026-11-15 13:11:34,828 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/subcontract_request_form_productization_contract.xml 
+2026-11-15 13:11:34,850 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/settlement_order_form_productization_contract.xml 
+2026-11-15 13:11:34,879 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/receipt_income_form_productization_contract.xml 
+2026-11-15 13:11:34,901 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/financing_loan_form_productization_contract.xml 
+2026-11-15 13:11:34,942 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/invoice_input_form_productization_contract.xml 
+2026-11-15 13:11:34,950 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/invoice_output_tax_form_productization_contract.xml 
+2026-11-15 13:11:34,970 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/tax_deduction_certificate_form_productization_contract.xml 
+2026-11-15 13:11:34,979 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/tax_certificate_form_productization_contract.xml 
+2026-11-15 13:11:34,987 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/payment_request_form_productization_contract.xml 
+2026-11-15 13:11:35,011 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/purchase_order_form_productization_contract.xml 
+2026-11-15 13:11:35,030 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/expense_claim_form_productization_contract.xml 
+2026-11-15 13:11:35,199 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/labor_usage_form_productization_contract.xml 
+2026-11-15 13:11:35,229 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/equipment_usage_form_productization_contract.xml 
+2026-11-15 13:11:35,244 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/tender_bid_form_productization_contract.xml 
+2026-11-15 13:11:35,255 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/subcontract_register_settlement_form_productization_contract.xml 
+2026-11-15 13:11:35,275 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/equipment_request_settlement_form_productization_contract.xml 
+2026-11-15 13:11:35,295 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/labor_request_settlement_form_productization_contract.xml 
+2026-11-15 13:11:35,320 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/labor_equipment_plan_attendance_form_productization_contract.xml 
+2026-11-15 13:11:35,348 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/payment_execution_actual_outflow_form_productization_contract.xml 
+2026-11-15 13:11:35,377 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/construction_plan_form_productization_contract.xml 
+2026-11-15 13:11:35,381 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/engineering_process_form_productization_contract.xml 
+2026-11-15 13:11:35,383 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/light_forms_configuration_form_productization_contract.xml 
+2026-11-15 13:11:35,384 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/daily_contract_form_productization_contract.xml 
+2026-11-15 13:11:35,385 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/ledger_summary_guarantee_native_contract.xml 
+2026-11-15 13:11:35,387 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/remaining_p2_form_productization_contract.xml 
+2026-11-15 13:11:35,391 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/settlement_adjustment_form_productization_contract.xml 
+2026-11-15 13:11:35,901 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/remaining_p3_form_productization_contract.xml 
+2026-11-15 13:11:35,906 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_policy_menu_sync.xml 
+2026-11-15 13:11:35,914 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/product_scenario_seed.xml 
+2026-11-15 13:11:35,919 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/data/menu_entry_group_rebinding.xml 
+2026-11-15 13:11:35,945 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_core/security/action_groups_patch.xml 
+2026-11-15 13:11:58,055 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_core: loading translation file /mnt/source-addons/smart_construction_core/i18n/zh_CN.po for language zh_CN 
+2026-11-15 13:11:58,056 1 INFO sc_dev_demo odoo.tools.translate: loading base translation file /mnt/source-addons/smart_construction_core/i18n/zh_CN.po for language zh_CN 
+2026-11-15 13:11:58,184 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_core loaded in 267.42s, 303201 queries (+303201 other) 
+2026-11-15 13:11:58,187 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_portal (73/77) 
+2026-11-15 13:11:58,753 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_portal/data/portal_params.xml 
+2026-11-15 13:11:58,758 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_portal/views/portal_templates.xml 
+2026-11-15 13:11:59,481 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_portal: no translation for language zh_CN 
+2026-11-15 13:11:59,493 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_portal loaded in 1.31s, 679 queries (+679 other) 
+2026-11-15 13:11:59,493 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_scene (74/77) 
+2026-11-15 13:11:59,854 1 INFO sc_dev_demo odoo.modules.registry: module smart_construction_scene: creating or updating database tables 
+2026-11-15 13:12:00,074 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/security/ir.model.access.csv 
+2026-11-15 13:12:00,092 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/security/sc_scene_company_enablement_rules.xml 
+2026-11-15 13:12:00,101 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/views/scene_governance_views.xml 
+2026-11-15 13:12:01,887 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/scene_delivery_params.xml 
+2026-11-15 13:12:01,890 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/sc_scene_orchestration.xml 
+2026-11-15 13:12:01,960 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/sc_scene_layout.xml 
+2026-11-15 13:12:01,998 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/sc_scene_tiles.xml 
+2026-11-15 13:12:02,003 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/sc_scene_list_profile.xml 
+2026-11-15 13:12:02,019 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_scene/data/project_management_scene.xml 
+2026-11-15 13:12:02,025 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_scene: no translation for language zh_CN 
+2026-11-15 13:12:02,051 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_scene loaded in 2.56s, 2717 queries (+2717 other) 
+2026-11-15 13:12:02,051 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_seed (75/77) 
+2026-11-15 13:12:02,595 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_seed/data/sc_seed_dictionary_contract.xml 
+2026-11-15 13:12:02,604 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_seed: no translation for language zh_CN 
+2026-11-15 13:12:02,615 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_seed loaded in 0.56s, 27 queries (+27 other) 
+2026-11-15 13:12:02,616 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_bundle (76/77) 
+2026-11-15 13:12:03,208 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_bundle/data/construction_bundle_product_profile.xml 
+2026-11-15 13:12:03,213 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_bundle/data/product_delivery_extension_modules.xml 
+2026-11-15 13:12:03,220 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_bundle: no translation for language zh_CN 
+2026-11-15 13:12:03,231 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_bundle loaded in 0.62s, 29 queries (+29 other) 
+2026-11-15 13:12:03,231 1 INFO sc_dev_demo odoo.modules.loading: Loading module smart_construction_demo (77/77) 
+2026-11-15 13:12:03,771 1 INFO sc_dev_demo odoo.modules.registry: module smart_construction_demo: creating or updating database tables 
+2026-11-15 13:12:03,885 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/00_dictionary.xml 
+2026-11-15 13:12:03,890 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/05_partner_categories.xml 
+2026-11-15 13:12:03,895 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/dictionary_demo.xml 
+2026-11-15 13:12:03,911 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/cost_demo.xml 
+2026-11-15 13:12:04,203 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/10_partners.xml 
+2026-11-15 13:12:04,206 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/12_departments.xml 
+2026-11-15 13:12:04,207 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/13_departments_tree.xml 
+2026-11-15 13:12:04,280 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/14_jobs.xml 
+2026-11-15 13:12:04,305 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/15_seed_partners.xml 
+2026-11-15 13:12:04,309 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/16_bank_accounts.xml 
+2026-11-15 13:12:04,314 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/20_projects.xml 
+2026-11-15 13:12:04,462 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/25_project_tasks.xml 
+2026-11-15 13:12:04,500 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/sc_demo_users.xml 
+2026-11-15 13:12:11,040 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/wutao_full_product_user.xml 
+2026-11-15 13:12:13,864 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/role_matrix_demo_users.xml 
+2026-11-15 13:12:13,870 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/sc_demo_employees.xml 
+2026-11-15 13:12:14,082 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/sc_demo_organization_bindings.xml 
+2026-11-15 13:12:14,139 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/demo/sc_demo_showcase_actions.xml 
+2026-11-15 13:12:14,748 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s00_min_path/10_project_boq.xml 
+2026-11-15 13:12:15,733 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s00_min_path/20_project_links.xml 
+2026-11-15 13:12:15,736 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s00_min_path/30_project_revenue.xml 
+2026-11-15 13:12:15,743 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s10_contract_payment/10_contracts.xml 
+2026-11-15 13:12:15,747 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s10_contract_payment/20_payment_requests.xml 
+2026-11-15 13:12:15,764 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s10_contract_payment/25_workbench_actions.xml 
+2026-11-15 13:12:15,856 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/scenario/s60_project_cockpit/10_cockpit_business_facts.xml 
+2026-11-15 13:12:16,688 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/data/base/99_locale_normalize.xml 
+2026-11-15 13:12:16,737 1 INFO sc_dev_demo odoo.modules.loading: loading smart_construction_demo/views/ux/project_demo_banner_views.xml 
+2026-11-15 13:12:17,222 1 INFO sc_dev_demo odoo.addons.base.models.ir_module: module smart_construction_demo: no translation for language zh_CN 
+2026-11-15 13:12:17,262 1 INFO sc_dev_demo odoo.modules.loading: Module smart_construction_demo loaded in 14.03s, 18089 queries (+18089 other) 
+2026-11-15 13:12:17,262 1 INFO sc_dev_demo odoo.modules.loading: 77 modules loaded in 287.01s, 324742 queries (+324742 extra) 
+2026-11-15 13:12:19,206 1 INFO sc_dev_demo odoo.modules.loading: Modules loaded. 
+2026-11-15 13:12:19,216 1 INFO sc_dev_demo odoo.modules.registry: Registry loaded in 290.703s 
+2026-11-15 13:12:19,216 1 INFO sc_dev_demo odoo.service.server: Initiating shutdown 
+2026-11-15 13:12:19,217 1 INFO sc_dev_demo odoo.service.server: Hit CTRL-C again or send a second signal to force the shutdown. 
+2026-11-15 13:12:19,217 1 INFO sc_dev_demo odoo.sql_db: ConnectionPool(used=0/count=0/max=64): Closed 1 connections  
+[local.dev.ready] PASS project=sc-local-dev db=sc_dev_demo
+LOCAL_DEV_ENTRY_IDENTITY={"action": "noop", "alias": "demo", "database_name": "sc_dev_demo", "lifecycle_state": "active", "namespace_id": "ns_000000000002"}
+[local.dev.ready] PASS project=sc-local-dev db=sc_dev_demo
+[local.dev.demo.authority] verify db=sc_dev_demo
+[local.dev.demo.authority] PASS db=sc_dev_demo module=installed finance_xmlid=present finance_membership=authoritative company_currency=CNY sale_tax_9=present

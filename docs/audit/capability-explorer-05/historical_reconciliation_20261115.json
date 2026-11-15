@@ -1,0 +1,360 @@
+{
+  "action_identity_reuse": [
+    {
+      "action_xmlid": "smart_construction_core.action_construction_contract_income",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_p1_income_contract",
+        "smart_construction_core.menu_sc_project_income_contract"
+      ],
+      "models": [
+        "construction.contract.income"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_budget",
+      "entry_count": 3,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_p1_project_budget",
+        "smart_construction_core.menu_sc_project_budget",
+        "smart_construction_core.menu_sc_project_budget_center"
+      ],
+      "models": [
+        "project.cost.plan"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_cost_ledger",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_p1_cost_ledger",
+        "smart_construction_core.menu_sc_project_cost_ledger"
+      ],
+      "models": [
+        "project.cost.ledger"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_dashboard",
+      "entry_count": 3,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_project_dashboard",
+        "smart_construction_core.menu_sc_project_kanban",
+        "smart_construction_core.menu_sc_project_management_scene"
+      ],
+      "models": [
+        "project.project"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_profit_compare",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_p1_profit_analysis",
+        "smart_construction_core.menu_sc_profit_reports"
+      ],
+      "models": [
+        "project.profit.compare"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_progress_entry",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_construction_progress",
+        "smart_construction_core.menu_sc_project_progress"
+      ],
+      "models": [
+        "project.progress.entry"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_quota_tree",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_project_quota_center",
+        "smart_construction_core.menu_project_quota_tree"
+      ],
+      "models": [
+        "project.dictionary"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_equipment_usage",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_equipment_usage",
+        "smart_construction_core.menu_sc_product_equipment_shift_v1"
+      ],
+      "models": [
+        "sc.equipment.usage"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_expense_claim_expense",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_company_deduction",
+        "smart_construction_core.menu_sc_expense_claim"
+      ],
+      "models": [
+        "sc.expense.claim"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_general_contract",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_general_contract",
+        "smart_construction_core.menu_sc_p1_daily_contract"
+      ],
+      "models": [
+        "sc.general.contract"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_operating_metrics_project",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_analysis_project_operation",
+        "smart_construction_core.menu_sc_operating_metrics_project"
+      ],
+      "models": [
+        "sc.operating.metrics.project"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_project_document",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_project_documents",
+        "smart_construction_core.menu_sc_site_documents"
+      ],
+      "models": [
+        "sc.project.document"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_receipt_income",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_company_income",
+        "smart_construction_core.menu_sc_receipt_income"
+      ],
+      "models": [
+        "sc.receipt.income"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_settlement_order_expense",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_expense_contract_settlement",
+        "smart_construction_core.menu_sc_p1_expense_settlement"
+      ],
+      "models": [
+        "sc.settlement.order"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_settlement_order_income",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_income_contract_settlement",
+        "smart_construction_core.menu_sc_p1_income_settlement"
+      ],
+      "models": [
+        "sc.settlement.order"
+      ]
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_subcontract_register",
+      "entry_count": 2,
+      "menu_xmlids": [
+        "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+        "smart_construction_core.menu_sc_subcontract_register"
+      ],
+      "models": [
+        "sc.subcontract.register"
+      ]
+    }
+  ],
+  "authority": {
+    "current_native_facts": "authorized read-only sc_demo probe bound to main@f35d981b2a37d6268e31592edeef460c9580240c",
+    "historical_facts": "authorized read-only sc_demo snapshot generated before PR #889 merge",
+    "historical_snapshot_is_not_current_runtime": true,
+    "not_a_catalog": true,
+    "stable_identity": [
+      "menu_xmlid",
+      "action_xmlid"
+    ]
+  },
+  "classification": {
+    "action_xmlid_reuse_warning": 16,
+    "exact_composite_duplicate": 0,
+    "identity_added": 0,
+    "identity_missing": 0,
+    "invalid_native_identity": 0,
+    "mapping_inconsistent": 0,
+    "release_state_unknown_warning": 8,
+    "scene_reference_outside_catalog_warning": 3
+  },
+  "differences": {
+    "current_only": [],
+    "historical_missing_in_current": [],
+    "required_fields": {}
+  },
+  "generated_at": "2026-11-15T13:19:00.412383+00:00",
+  "limitations": [
+    "Reconciliation proves equality for the authorized sc_demo snapshot on current main; it does not prove other tenants.",
+    "Action XMLID reuse is valid only with the declared composite menu_xmlid + action_xmlid identity.",
+    "The 207 center-only entries have no authoritative business-domain binding and remain unclassified.",
+    "No historical entry was auto-published, auto-scened, or promoted to Preview/Standard qualification."
+  ],
+  "mode": "read_only_offline_reconciliation",
+  "module_model_reuse": {
+    "group_count": 41,
+    "groups": []
+  },
+  "scene_reference_scope": {
+    "classification": "These active scenario references target native Odoo accounting menus outside smart_construction_core.menu_sc_root; they are not missing members of the 282-entry catalog and were not silently added to it.",
+    "database": "sc_demo",
+    "evidence_path": "docs/audit/capability-explorer-05/evidence/daily-scene-scope.log",
+    "evidence_sha256": "bc3ed7a1f1dd80846d03de616fd1ff9d298100e1aa1a56bd8d54cfd6c5d7bf8e",
+    "native_catalog_scene_entry_rows": 75,
+    "scenario_entry_count": 78,
+    "source_revision": "f35d981b2a37d6268e31592edeef460c9580240c",
+    "out_of_catalog_rows": [
+      {
+        "active": true,
+        "center_key": "smart_construction_core.menu_sc_accounting_center",
+        "intent": "handle",
+        "menu_id": 175,
+        "menu_name": "日记账分录",
+        "menu_xmlid": "account.menu_action_move_journal_line_form",
+        "scenario_key": "accounting.management"
+      },
+      {
+        "active": true,
+        "center_key": "smart_construction_core.menu_sc_accounting_center",
+        "intent": "view",
+        "menu_id": 176,
+        "menu_name": "日记账项目",
+        "menu_xmlid": "account.menu_action_account_moves_all",
+        "scenario_key": "accounting.management"
+      },
+      {
+        "active": true,
+        "center_key": "smart_construction_core.menu_sc_accounting_center",
+        "intent": "master_data",
+        "menu_id": 195,
+        "menu_name": "会计科目表",
+        "menu_xmlid": "account.menu_action_account_form",
+        "scenario_key": "accounting.management"
+      }
+    ]
+  },
+  "schema": "capability_explorer.historical_asset_reconciliation.v1",
+  "sources": {
+    "current_native": {
+      "database": "sc_demo",
+      "extracted_json_sha256": "9a5be0fa61b522cb74aba54dfd73b9f9beceb388aa63055ce86cb4701097e4af",
+      "path": "docs/audit/capability-explorer-05/evidence/current-native.log",
+      "raw_log_sha256": "8115a40110cc43049522e47779ea81aec3104879054fc22d7e65b074362bed52",
+      "source_revision": "f35d981b2a37d6268e31592edeef460c9580240c"
+    },
+    "historical_classification": {
+      "candidate_head": "3639f35b1cf80b11c2c62766ba53839be3440952",
+      "database": "sc_demo",
+      "documented_runtime_baseline": "2571346afc8c69cea20e32fcba36082c949cf825",
+      "extracted_json_sha256": "ade506d602acb1bb605abc2e7502c429c253ef5ad5d53a6a4d19d290c284af46",
+      "path": "docs/audit/capability-explorer-05/evidence/historical-classification.log",
+      "raw_log_sha256": "646a98626a2f8ba423396d591cf12d8d179ddafc740a65a20517078af715efcd",
+      "run": "ODOO-NATIVE-CAPABILITY-EXPLORER-02"
+    }
+  },
+  "status": "PASS",
+  "summary": {
+    "authoritative_business_domain": 75,
+    "center_only": 207,
+    "composite_duplicate_current": 0,
+    "composite_duplicate_historical": 0,
+    "current_native_entries": 282,
+    "current_only": 0,
+    "entries_sharing_actions": 34,
+    "historical_assets": 282,
+    "historical_missing_current": 0,
+    "matched": 282,
+    "missing_models": 0,
+    "module_not_installed": 0,
+    "release_unknown": 8,
+    "released": 274,
+    "required_field_difference_fields": 0,
+    "required_field_difference_rows": 0,
+    "reused_action_xmlids": 16,
+    "reused_module_model_groups": 41,
+    "scene_bound": 75,
+    "scene_entry_rows_matched": 75,
+    "scene_entry_rows_outside_catalog": 3,
+    "scene_unbound": 207,
+    "technical_blocked": 0,
+    "unique_current_action_xmlids": 264,
+    "unique_current_menu_xmlids": 282,
+    "unique_historical_action_xmlids": 264,
+    "unique_historical_menu_xmlids": 282
+  },
+  "unknown_release_state": [
+    {
+      "action_xmlid": "smart_construction_scene.action_sc_scene_governance_wizard",
+      "menu_xmlid": "smart_construction_scene.menu_sc_scene_governance_action",
+      "owner_module": "smart_construction_scene",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_demo.action_sc_project_list_showcase",
+      "menu_xmlid": "smart_construction_demo.menu_sc_project_list_showcase",
+      "owner_module": "smart_construction_demo",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_demo.action_project_dashboard_showcase",
+      "menu_xmlid": "smart_construction_demo.menu_sc_project_dashboard_showcase",
+      "owner_module": "smart_construction_demo",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_scene.action_sc_scene_company_channel",
+      "menu_xmlid": "smart_construction_scene.menu_sc_scene_governance_company",
+      "owner_module": "smart_construction_scene",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_project_dashboard",
+      "menu_xmlid": "smart_construction_core.menu_sc_project_management_scene",
+      "owner_module": "smart_construction_core",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_scene.action_sc_scene_governance_log",
+      "menu_xmlid": "smart_construction_scene.menu_sc_scene_governance_logs",
+      "owner_module": "smart_construction_scene",
+      "scene_status": "unbound"
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_receipt_income_user_income",
+      "menu_xmlid": "smart_construction_core.menu_sc_user_income",
+      "owner_module": "smart_construction_core",
+      "scene_status": "bound"
+    },
+    {
+      "action_xmlid": "smart_construction_core.action_sc_payment_execution_company_finance_expense",
+      "menu_xmlid": "smart_construction_core.menu_sc_company_finance_expense",
+      "owner_module": "smart_construction_core",
+      "scene_status": "bound"
+    }
+  ],
+  "identity_mapping": {
+    "path": "docs/audit/capability-explorer-05/identity_mapping_20261115.csv",
+    "sha256": "05c4d1b016fc9a09cbaa5bc0ae39a31d3b739f886f8a986b9ad9e57f2385f255"
+  }
+}
