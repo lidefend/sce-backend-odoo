@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "c6d8e7afd78f00c9937e56edbe84aca778aaa324",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PLATFORM-CAPABILITY-STUDIO-NAV-ORDER-20261115.yaml",
+    ".agent/runs/PLATFORM-CAPABILITY-STUDIO-NAV-ORDER-20261115/run.json",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/platform_capability_studio_nav_order_20261115.md",
+    "scripts/verify/scenario_center_projection_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository pure tests and navigation guards; no database or service writes"
+  },
+  "checks": {
+    "center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation": {
+      "target": "verify.nav01.native_authority.unit",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/fact_layer_authority_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Independent exact-HEAD review of the combined capability audit and navigation-order release candidate.",
+  "id": "PLATFORM-CAPABILITY-STUDIO-NAV-ORDER-20261115",
+  "branch": "audit/platform-capability-studio-01-20261115",
+  "status": "completed",
+  "goal": ".agent/goals/PLATFORM-CAPABILITY-STUDIO-NAV-ORDER-20261115.yaml",
+  "record": "docs/ops/iterations/platform_capability_studio_nav_order_20261115.md"
+}

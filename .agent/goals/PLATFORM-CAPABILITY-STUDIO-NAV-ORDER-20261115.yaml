@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: PLATFORM-CAPABILITY-STUDIO-NAV-ORDER-20261115
+  title: integrate_product_configuration_center_order
+  status: completed
+  formal_product_layer: P1 construction product standard
+  layer_target: scenario navigation center projection
+  module:
+    - addons/smart_construction_core/services/scenario_surface_projection.py
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: c6d8e7afd78f00c9937e56edbe84aca778aaa324
+  objective: >-
+    Integrate the verified primary-center ordering fix into the capability
+    studio release branch as an independent product commit, keeping the
+    capability governance audit separate from navigation implementation.
+  product_boundary:
+    standard_vs_user_specific: construction_industry_standard_navigation
+    why_here: >-
+      The P1 navigation projection owns primary-center ordering when a policy
+      fallback center does not carry a scenario binding.
+    why_not_elsewhere:
+      - no_frontend_sorting
+      - no_menu_identity_or_permission_change
+      - no_capability_catalog_implementation
+      - no_release_or_tenant_mutation
+  source_candidate:
+    branch: fix/product-configuration-center-order-20261115
+    head: 3ff05f82759f181323a8e0d6e7ccd43e7956a45e
+    integration_method: reimplement_same_reviewed_patch_on_current_governed_branch
+  acceptance:
+    - policy fallback centers use native primary-center sequence
+    - 行政中心 sequence 90 sorts before 产品配置 sequence 100
+    - navigation projection and native-authority tests pass
+    - capability audit documents remain separate from product implementation
+  exclusions:
+    - capability catalog product implementation
+    - scene editor implementation
+    - deployment or merge
+  rollback: revert the navigation-order commit only; the capability audit commit remains independent.

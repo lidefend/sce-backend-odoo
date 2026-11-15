@@ -157,8 +157,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
+| 1086 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
-| 1051 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1049 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
