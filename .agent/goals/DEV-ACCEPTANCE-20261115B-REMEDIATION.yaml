@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: DEV-ACCEPTANCE-20261115B-REMEDIATION
+  title: remediation_for_dev_acceptance_20261115b
+  status: verification_pending
+  formal_product_layer: P0 platform contract consumption and generic presentation; P4 bounded runtime diagnosis
+  layer_target: generic Vue action/record runtime and scene page semantics
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+    - scripts/verify
+    - make/frontend.mk
+  baseline:
+    deployment_sha: f35d981b2a37d6268e31592edeef460c9580240c
+    implementation_branch_base: f35d981b2a37d6268e31592edeef460c9580240c
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Close the actionable defects in DEV-ACCEPTANCE-20261115B: eliminate the
+    rapid-list-switch model/action preference mismatch, keep scene tabs on
+    declared business titles, restore a single page h1 on affected business
+    pages, and reduce or truthfully communicate record deep-link load latency.
+  why_here: >-
+    The failures are generic contract-consumption and presentation defects in
+    the shared frontend runtime. The backend preference policy already fails
+    closed on a mismatched (model, action) identity and must not be relaxed.
+  why_not_elsewhere:
+    - no backend permission relaxation for a stale frontend request
+    - no model/menu/route-specific frontend business dictionary
+    - no P1/P2/P3 contract mutation to compensate for a generic consumer race
+    - no timeout inflation or silent retry to mask record deep-link latency
+  acceptance:
+    - switching the three declared list entries produces zero 400 responses
+    - stale model identity is not sent when an action id is available
+    - enterprise.department and portal.notifications activity tabs use declared business labels
+    - affected scene pages expose exactly one h1
+    - record deep link either meets the selected latency target or exposes declared progress and an evidence-backed remaining bottleneck
+    - focused tests execute non-zero and the affected pages are rechecked in the governed runtime
+  exclusions:
+    - W-03, closed by the owner after screenshot verification
+    - W-04, not reproduced
+    - the two intentional no-op navigation leaves
+    - audit/capability-explorer-05 product scope and its retained sc_dev_demo decision
+    - deployment, comment, PR, merge or external state mutation without explicit request
+  rollback: >-
+    Revert this branch's frontend/remediation commits. No schema, fixture,
+    permission or persisted business-data migration is introduced.
+  next_exact_step: >-
+    Run make agent.run.resume on the latest-main branch, add the focused
+    regression tests and implement the P0 consumer/title/heading repairs, then
+    profile the governed record deep link before selecting any performance
+    change.

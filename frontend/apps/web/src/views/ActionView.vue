@@ -803,6 +803,7 @@ import DashboardPattern from '../components/product-page-patterns/DashboardPatte
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
 import { getUserViewPreference, setUserViewPreference, type ListColumnPreference } from '../api/preferences';
 import { readStoredListPreference, projectStoredListPreference } from '../app/runtime/listPreferenceProjection';
+import { resolveListColumnPreferenceScope } from '../app/runtime/listPreferenceScope';
 import { createScopedPreferenceRuntime, enqueuePreferenceWrite } from '../app/runtime/scopedPreferenceRuntime';
 import { currentContextEpoch } from '../app/contextEpoch';
 import { executeButton } from '../api/executeButton';
@@ -1385,14 +1386,10 @@ const listColumnOrder = ref<string[]>([]);
 const listColumnWidths = ref<Record<string, number>>({});
 const listColumnSaveStatus = ref<'idle' | 'saving' | 'saved' | 'error'>('idle');
 const listColumnPreferenceScope = computed(() => {
-  const aid = Number(actionId.value || 0);
-  const targetModel = String(resolvedModelRef.value || model.value || '').trim();
-  return {
-    action_id: aid || undefined,
-    model: targetModel,
-    view_type: 'list',
-    preference_key: 'list_columns',
-  };
+  return resolveListColumnPreferenceScope({
+    actionId: actionId.value,
+    model: resolvedModelRef.value || model.value,
+  });
 });
 const sceneReadyEntry = computed<Record<string, unknown> | null>(() => {
   if (!sceneContextEnabled.value || !sceneKey.value) return null;

@@ -12,6 +12,13 @@ export interface ActivityPageTitlePublicationInput {
   recordId?: unknown;
 }
 
+export interface SceneActivityTitleInput {
+  sceneKey?: unknown;
+  runtimeLabel?: unknown;
+  registeredLabel?: unknown;
+  queryLabel?: unknown;
+}
+
 function titleText(value: unknown): string {
   return String(value || '').replace(/\s+/g, ' ').trim();
 }
@@ -37,4 +44,29 @@ export function shouldDeferActivityPageTitle(
   const routeName = titleText(input.routeName);
   return (routeName === 'record' || routeName === 'model-form')
     && titleText(input.recordId) === 'new';
+}
+
+/**
+ * Resolve a scene tab/page title from declared scene labels. Runtime scene
+ * projection wins over the static registry and the route-carried label; the
+ * technical scene key is only the final identity, never a business-title
+ * substitute when a declared label exists.
+ */
+export function resolveSceneActivityTitle(input: SceneActivityTitleInput): string {
+  const sceneKey = titleText(input.sceneKey);
+  const runtimeLabel = titleText(input.runtimeLabel);
+  const registeredLabel = titleText(input.registeredLabel);
+  const queryLabel = titleText(input.queryLabel);
+  return runtimeLabel || registeredLabel || (queryLabel !== sceneKey ? queryLabel : '') || sceneKey || '业务场景';
+}
+
+/**
+ * SceneView owns one semantic heading. A visible handling-surface heading is
+ * already the page h1, so the generic shell heading is omitted in that case.
+ */
+export function shouldRenderScenePageHeading(input: {
+  hasSceneIdentity?: unknown;
+  hasExplicitHeading?: unknown;
+}): boolean {
+  return Boolean(titleText(input.hasSceneIdentity)) && !input.hasExplicitHeading;
 }

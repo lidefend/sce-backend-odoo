@@ -324,6 +324,7 @@ function idempotentIntentKey(path: string, options: RequestInit): string {
     const intent = String(payload.intent || '').trim();
     const op = String(payload.params?.op || '').trim();
     const idempotent = intent === 'ui.contract.v2'
+      || intent === 'user.view.preference.get'
       || intent === 'chatter.timeline'
       || (intent === 'api.data' && ['read', 'list', 'search'].includes(op));
     if (!idempotent) return '';

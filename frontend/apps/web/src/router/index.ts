@@ -15,7 +15,11 @@ import type { NavMeta } from '@sc/schema';
 import { findRouteAuthority, validateRouteAuthorityContext } from '../app/routeAuthority';
 import { consumeButtonNavigationAuthority } from '../app/buttonNavigationAuthority';
 import { resolveAuthorizedConfigurationRoute } from '../services/actionRoutePolicy';
-import { resolveBusinessActivityTitle, shouldDeferActivityPageTitle } from '../app/activityPageTitle';
+import {
+  resolveBusinessActivityTitle,
+  resolveSceneActivityTitle,
+  shouldDeferActivityPageTitle,
+} from '../app/activityPageTitle';
 import { intentRequest } from '../api/intents';
 import { validateRelationReadRoute } from '../app/relationReadRouteAuthority';
 import { currentContextEpoch } from '../app/contextEpoch';
@@ -203,8 +207,16 @@ function resolveActivityTitle(to: RouteLocationNormalized, session: ReturnType<t
   if (to.name === 'my-work' || to.name === 'scene-my-work') return '我的工作';
   if (to.name === 'scene') {
     const sceneKey = routeQueryText(to.params.sceneKey || to.query.scene_key || to.query.scene);
-    const scene = sceneKey ? getSceneByKey(sceneKey) : null;
-    return String(scene?.label || sceneKey || '业务场景').trim();
+    const registeredScene = sceneKey ? getSceneByKey(sceneKey) : null;
+    const runtimeScene = sceneKey
+      ? session.scenes.find((item) => String(item.key || '').trim() === sceneKey)
+      : null;
+    return resolveSceneActivityTitle({
+      sceneKey,
+      runtimeLabel: runtimeScene?.label,
+      registeredLabel: registeredScene?.label,
+      queryLabel: to.query.scene_label,
+    });
   }
   if (to.name === 'action') {
     const actionId = positiveInteger(to.params.actionId || to.query.action_id);

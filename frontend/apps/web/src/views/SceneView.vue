@@ -1,5 +1,12 @@
 <template>
   <section class="scene" :class="{ 'scene--compact-controls': compactSceneControls }" data-semantic-component="SceneView" :data-state="isLoading ? 'loading' : status === 'error' ? 'error' : 'ready'" :aria-busy="isLoading || undefined">
+    <h1
+      v-if="renderScenePageHeading"
+      class="sc-visually-hidden"
+      data-scene-page-heading
+    >
+      {{ scenePageHeading }}
+    </h1>
     <section
       v-if="headerActions.length || sceneViewSwitchOptions.length > 1"
       class="scene-top-controls"
@@ -99,7 +106,7 @@
       <header class="handling-surface__header">
         <div>
           <p class="handling-surface__eyebrow">{{ pageText('handling_surface_eyebrow', '办理入口') }}</p>
-          <h1 class="handling-surface__title">{{ scene?.label }}</h1>
+          <h1 class="handling-surface__title" data-scene-page-heading>{{ scenePageHeading }}</h1>
         </div>
         <span class="handling-surface__badge">{{ handlingEntryCatalog.item_count || handlingEntryItemCount }} 项</span>
       </header>
@@ -206,6 +213,7 @@ import {
   resolveSceneHandlingEntryTarget,
   type ResolvedSceneActionTarget,
 } from '../app/sceneActionTarget';
+import { resolveSceneActivityTitle, shouldRenderScenePageHeading } from '../app/activityPageTitle';
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
 import type { NavNode } from '@sc/schema';
@@ -358,6 +366,20 @@ const handlingEntryGroups = computed<HandlingEntryGroup[]>(() => {
 });
 
 const handlingEntryItemCount = computed(() => handlingEntryGroups.value.reduce((total, group) => total + group.items.length, 0));
+const scenePageHeading = computed(() => resolveSceneActivityTitle({
+  sceneKey: currentSceneKey.value,
+  runtimeLabel: scene.value?.label,
+  registeredLabel: getSceneByKey(currentSceneKey.value)?.label,
+  queryLabel: route.query.scene_label,
+}));
+const renderScenePageHeading = computed(() => shouldRenderScenePageHeading({
+  hasSceneIdentity: currentSceneKey.value,
+  hasExplicitHeading: handlingEntryGroups.value.length > 0,
+}));
+watch(scenePageHeading, (title) => {
+  if (status.value === 'error' || !currentSceneKey.value || !title) return;
+  session.updateActiveActivityTitle(title, route.fullPath);
+}, { immediate: true });
 
 function hasHandlingEntryCatalog(currentScene: Scene | null) {
   const catalog = currentScene?.scene_ready?.handling_entry_catalog;

@@ -4,7 +4,7 @@ Generated from `test_inventory.csv` E2E-classified assets.
 
 ## Summary
 
-- E2E-classified assets: `56`
+- E2E-classified assets: `57`
 - Strong or near-strong coverage: `11`
 - Partial coverage: `1`
 - Gaps: `0`

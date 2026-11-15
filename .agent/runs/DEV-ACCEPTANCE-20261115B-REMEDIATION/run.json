@@ -1,0 +1,128 @@
+{
+  "schema_version": 1,
+  "id": "DEV-ACCEPTANCE-20261115B-REMEDIATION",
+  "branch": "fix/dev-acceptance-20261115b-remediation-main",
+  "baseline_sha": "96c42ab35550d4807d3bc070e75a06555c57de6f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/DEV-ACCEPTANCE-20261115B-REMEDIATION.yaml",
+  "record": "docs/ops/iterations/dev_acceptance_remediation_20261115b.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEV-ACCEPTANCE-20261115B-REMEDIATION.yaml",
+    ".agent/runs/DEV-ACCEPTANCE-20261115B-REMEDIATION/run.json",
+    "docs/ops/iterations/dev_acceptance_remediation_20261115b.md",
+    "frontend/apps/web/src/api/client.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/app/activityPageTitle.ts",
+    "frontend/apps/web/src/app/presentation/loadingProgress.ts",
+    "frontend/apps/web/src/app/runtime/listPreferenceScope.ts",
+    "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+    "frontend/apps/web/index.html",
+    "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+    "frontend/apps/web/scripts/intent_request_coalescing_test.ts",
+    "make/frontend.mk",
+    "scripts/verify/local_dev_runtime_performance_browser.sh",
+    "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "excluded": [
+    "docs/audit/capability-explorer-05/",
+    ".agent/decisions/CAPABILITY-EXPLORER-05-SC-DEV-DEMO.yaml",
+    ".agent/goals/CAPABILITY-EXPLORER-05.yaml",
+    ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
+    "addons/smart_construction_core/data/",
+    "addons/smart_construction_scene/data/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline frontend tests first; governed sc-local-dev/sc_dev_demo runtime readback only after L1/L2"
+  },
+  "checks": {
+    "targeted_remediation": {
+      "target": "verify.frontend.dev_acceptance_remediation.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+        "frontend/apps/web/src/app/activityPageTitle.ts",
+        "frontend/apps/web/src/app/presentation/loadingProgress.ts",
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/app/runtime/listPreferenceScope.ts",
+        "frontend/apps/web/index.html",
+        "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+        "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "preference_coalescing": {
+      "target": "verify.frontend.intent_request_coalescing.unit",
+      "inputs": [
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/api/preferences.ts",
+        "frontend/apps/web/scripts/intent_request_coalescing_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_probe_unit": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "inputs": [
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_performance_browser.mjs",
+        "scripts/verify/local_dev_runtime_performance_browser.sh",
+        "scripts/verify/local_dev_dev_acceptance_remediation_browser.mjs",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_surface_behavior": {
+      "target": "verify.action_view_runtime_smoke.behavior",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/standard_list_lowcode_loop.mjs",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/DEV-ACCEPTANCE-20261115B-REMEDIATION.yaml",
+        ".agent/runs/DEV-ACCEPTANCE-20261115B-REMEDIATION/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    {
+      "id": "DEV-ACC-B-CANDIDATE-RUNTIME",
+      "classification": "environment_defect",
+      "status": "resolved",
+      "summary": "The owner deployed the candidate to the daily development server. The served source revision was read back as 7291d8389a0e904ae07bd3746e02b9ff3dd122b2 and the direct payment record route rendered PRQ2600050.",
+      "evidence": ".runtime/dev-acceptance-20261115b-remediation/record-run-5.json"
+    },
+    {
+      "id": "DEV-ACC-B-N01-PERF",
+      "classification": "product_defect",
+      "status": "open",
+      "summary": "Two independent five-run sets reproduced 5.2-10.9 second record readiness with no HTTP, console or page errors. The dominant cost is the pre-FCP startup and dynamic route/asset load; a static document-level boot shell now prevents the initial blank interval until the next candidate deployment is measured.",
+      "evidence": ".runtime/dev-acceptance-20261115b-remediation/record-run-5.json"
+    }
+  ],
+  "next_exact_step": "Rebuild and redeploy the candidate containing the static document boot shell, then run five new independent direct-record sessions and compare first-contentful-paint and record-ready distributions against the 7291d8389 baseline."
+}

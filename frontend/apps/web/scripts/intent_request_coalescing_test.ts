@@ -5,10 +5,19 @@ import { createPinia, setActivePinia } from 'pinia';
 setActivePinia(createPinia());
 const { useSessionStore } = await import('../src/stores/session.ts');
 const { listRecords } = await import('../src/api/data.ts');
+const { getUserViewPreference } = await import('../src/api/preferences.ts');
 const session = useSessionStore();
 Object.assign(session, { token: 'coalescing-test-token', sessionDb: 'sc_dev_demo', initStatus: 'ready' });
 
-type Pending = { body: { params: { search_term?: string; offset?: number; order?: string } }; settle: (rows: Array<{ id: number; name: string }>) => void; fail: (error: Error) => void };
+type Pending = {
+  body: {
+    intent?: string;
+    params: { search_term?: string; offset?: number; order?: string; action_id?: number; model?: string };
+  };
+  settle: (rows: Array<{ id: number; name: string }>) => void;
+  settleEnvelope: (data: unknown) => void;
+  fail: (error: Error) => void;
+};
 const pending: Pending[] = [];
 (globalThis as { fetch: unknown }).fetch = (url: string, init: { body?: string }) => new Promise((resolve, reject) => {
   const parsed = JSON.parse(String(init?.body ?? '{}'));
@@ -16,6 +25,10 @@ const pending: Pending[] = [];
     body: parsed,
     settle: (records) => resolve(new Response(
       JSON.stringify({ ok: true, data: { records }, meta: {} }),
+      { status: 200, headers: { 'content-type': 'application/json' } },
+    )),
+    settleEnvelope: (data) => resolve(new Response(
+      JSON.stringify({ ok: true, data, meta: {} }),
       { status: 200, headers: { 'content-type': 'application/json' } },
     )),
     fail: (error) => reject(error),
@@ -76,5 +89,31 @@ await Promise.resolve();
 assert.equal(pending.length, 2, 'a failed read must not be cached for the next caller');
 settleAt(1, 'boom');
 assert.deepEqual((await retry).records, rowsFor('boom'));
+pending.length = 0;
 
-console.log('[intent_request_coalescing_test] PASS coalesced=1 distinct_keys=3 paging=2 ordering=1 retry_after_failure=1');
+// 5. Two component instances can request the same action-scoped list preference
+//    while a list surface is mounting. One transport request must serve both.
+const preferenceScope = {
+  action_id: 940,
+  model: '',
+  view_type: 'list',
+  preference_key: 'list_columns',
+} as const;
+const preferenceA = getUserViewPreference(preferenceScope, 'stored');
+const preferenceB = getUserViewPreference(preferenceScope, 'stored');
+await Promise.resolve();
+assert.equal(pending.length, 1, 'identical concurrent preference reads must coalesce');
+assert.equal(pending[0].body.intent, 'user.view.preference.get');
+assert.equal(pending[0].body.params.action_id, 940);
+assert.equal(pending[0].body.params.model, '');
+const preferenceData = {
+  projection: 'stored',
+  policy_source: 'current_page_contract',
+  preference: { hidden_columns: [] },
+};
+pending[0].settleEnvelope(preferenceData);
+const [preferenceResultA, preferenceResultB] = await Promise.all([preferenceA, preferenceB]);
+assert.deepEqual(preferenceResultA, preferenceData);
+assert.deepEqual(preferenceResultB, preferenceData);
+
+console.log('[intent_request_coalescing_test] PASS coalesced=1 preference_coalesced=1 distinct_keys=3 paging=2 ordering=1 retry_after_failure=1');
