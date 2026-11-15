@@ -163,6 +163,12 @@
       "reason": "Read-only Odoo-native capability discovery probe. It is intentionally invoked on demand against the governed daily demo duty before any explorer API or UI work; it does not run from a recurring gate anchor and persists no capability rows.",
       "review_by": "2026-12-31"
     },
+    "audit.platform_capability_explorer.demo": {
+      "disposition": "diagnostic_cli",
+      "owner": "platform-team",
+      "reason": "Read-only capability explorer runtime probe over the registered local development database. It verifies counts, token freshness, permissions, query counts and identity isolation without writes; it is intentionally on-demand rather than a recurring product gate.",
+      "review_by": "2026-12-31"
+    },
     "audit.scene.config": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

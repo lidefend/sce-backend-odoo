@@ -439,6 +439,21 @@ verify.odoo_native_capability_explorer.unit: guard.prod.forbid
 	  scripts/verify/test_odoo_native_capability_explorer_probe.py
 	@python3 -m unittest scripts.verify.test_odoo_native_capability_explorer_probe
 
+.PHONY: verify.platform.capability_explorer.unit
+verify.platform.capability_explorer.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/delivery/platform_capability_explorer.py \
+	  addons/smart_core/handlers/platform_capability_explorer.py \
+	  addons/smart_core/tests/test_platform_capability_explorer.py \
+	  addons/smart_construction_core/services/platform_capability_explorer_contributions.py \
+	  addons/smart_construction_core/services/product_menu_source.py \
+	  addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py \
+	  scripts/verify/platform_capability_explorer_runtime_probe.py \
+	  scripts/verify/test_platform_capability_explorer_runtime_probe.py
+	@python3 addons/smart_core/tests/test_platform_capability_explorer.py
+	@python3 addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py
+	@python3 -m unittest scripts.verify.test_platform_capability_explorer_runtime_probe
+
 # Native workspace fact migration (PR #800): preserve source -> projections,
 # not the retired critical-route override map.
 .PHONY: verify.construction.policy_maps.unit

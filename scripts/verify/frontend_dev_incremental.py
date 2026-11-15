@@ -472,6 +472,19 @@ RULES = (
         "verify.runtime_capability_catalog.unit",
     )),
     Rule((
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "scripts/ops/odoo_shell_exec.sh",
+    ), (
+        "verify.platform.capability_explorer.unit",
+    )),
+    Rule((
         "addons/smart_core/delivery/scene_shell_compiler.py",
         "addons/smart_core/tests/test_scene_shell_compiler.py",
     ), (

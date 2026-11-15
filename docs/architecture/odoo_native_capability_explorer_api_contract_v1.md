@@ -1,8 +1,8 @@
 # Odoo-Native Capability Explorer 只读 API 契约 v1
 
-状态：设计验证完成，未实现产品运行时
+状态：后端只读 API 已实现，前端与写操作未实现
 
-候选基线：`3639f35b1` 加本阶段 P4 验证变更
+实现基线：`d176e2fd67fec87257114b207cec655ec8fa6e9d`
 
 运行观测：`sc_demo@2571346af`
 
@@ -60,7 +60,7 @@
 正式产品菜单策略中虽然存在更细的静态 `product_domain_label`，但当前 active
 release snapshot 没有携带该字段，因此本版 API 不把它作为运行时分类事实。
 
-## 3. Intent 审查
+## 3. Intent 审查与实现
 
 现有 Intent 不复用：
 
@@ -68,7 +68,7 @@ release snapshot 没有携带该字段，因此本版 API 不把它作为运行�
 - `capability.visibility.report`：同样基于旧 `sc.capability`。
 - `product.configuration.capability.catalog`：描述配置工作台功能，不是平台能力浏览器。
 
-建议新增三个只读 Intent：
+已实现三个只读 Intent：
 
 - `platform.capability.explorer.list`
 - `platform.capability.explorer.detail`
@@ -101,6 +101,8 @@ release snapshot 没有携带该字段，因此本版 API 不把它作为运行�
 
 - `limit` 范围 `1..100`，默认 50。
 - MVP 使用稳定 `offset` 分页，排序必须包含 `menu_xmlid` 作为最终 tie-breaker。
+- List 与 Detail 都接受可选 `expected_catalog_token`；提供且与当前 token 不一致时
+  返回 `409 CATALOG_STALE`，不得混用新旧目录。
 - `query` 只搜索服务端声明字段：label、menu XMLID、action XMLID、模型、中心、场景。
 - 不接受任意 ORM domain、模型名或 SQL 排序。
 - 分类候选超过一个时不能自动选择。
@@ -115,6 +117,9 @@ release snapshot 没有携带该字段，因此本版 API 不把它作为运行�
     "runtime_database": "sc_demo",
     "source_revision": "2571346afc8c69cea20e32fcba36082c949cf825",
     "catalog_token": "sha256:...",
+    "language": {
+      "code": "zh_CN"
+    },
     "total": 282,
     "filtered_total": 207,
     "offset": 0,
@@ -170,6 +175,10 @@ release snapshot 没有携带该字段，因此本版 API 不把它作为运行�
     "selectable": true,
     "blockers": []
   },
+  "scene_assignment": {
+    "assignable": true,
+    "blockers": []
+  },
   "product_qualification": {
     "preview": "not_verified",
     "standard": "not_verified"
@@ -192,7 +201,7 @@ release snapshot 没有携带该字段，因此本版 API 不把它作为运行�
 ```
 
 `expected_catalog_token` 可选。若提供且当前 token 不同，返回 `409 CATALOG_STALE`，
-避免前端把旧列表与新发展开结果混用。
+避免前端把旧列表与新发展开结果混用。List 与 Detail 共用同一规则。
 
 详情在列表字段基础上返回：
 
@@ -243,7 +252,7 @@ ACL 组和 Rule 只返回已授权摘要，不返回 Rule domain、用户列表�
 - `ENTRY_NOT_RELEASED`
 - `MATURITY_EVIDENCE_MISSING`
 
-诊断结果必须分栏：
+诊断结果必须分栏。顶层兼容字段可保留，但不得把不同栏位互相推导：
 
 ```json
 {
@@ -257,7 +266,11 @@ ACL 组和 Rule 只返回已授权摘要，不返回 Rule domain、用户列表�
 }
 ```
 
-`scene_assignable` 只表示可以创建场景引用，不表示场景或产品已经合格。
+- `draft_selectable` 只表示原生 Menu/Action/模型事实允许进入场景草稿。
+- `scene_assignable` 只表示场景事实提供者可接受引用，不表示场景或产品已经合格。
+- `preview_qualified` 与 `standard_qualified` 必须来自各自资格事实；默认是
+  `not_verified`，不能由入口发布状态或技术可选状态推导。
+- 入口发布状态单独返回，Release 状态不能代表成熟度。
 
 ## 7. 权限模型
 
@@ -280,15 +293,28 @@ MVP 不持久化发现结果：
 
 - 每次查询从当前 Odoo registry 和数据库实时投影。
 - `generated_at` 表示本次投影时间。
-- `catalog_token` 由模块版本、当前 Menu/Action 身份集合、场景绑定和活动发布快照身份生成。
+- `catalog_token` 覆盖当前数据库、语言环境、安装模块及依赖、Menu/Action 身份和
+  Action 目标、Menu 层级与顺序、模型和字段、View 关联、ACL、Record Rule、
+  场景绑定、发布状态、发布中心、资格事实和活动发布快照身份。
+- List、Detail 与 Diagnose 必须在同一请求内绑定同一 token；不能只让 Detail 校验 token。
 - 不建立跨请求能力缓存；如需请求内 memo，只能按当前 cursor/instance 隔离。
 - 模块升级、菜单/动作修改、场景绑定和发布快照变化必须自然反映到下一次查询。
 
-## 9. B 阶段不做
+## 9. 性能边界
+
+- 原生入口继续复用 `RuntimeCapabilityCatalogService`。
+- Menu、Action、Group 的 XMLID 使用批量预取，禁止逐入口调用 `get_external_id()`。
+- 模块、模型、字段、View、ACL、Record Rule 按本次目录涉及的身份批量读取。
+- List 只返回轻量行；Detail 才构造 View/ACL/Rule/组等技术摘要。
+- Diagnose 复用同一次完整投影，不另起一套发现逻辑。
+- 每次响应记录 SQL 数、原生投影、元数据、贡献、总投影和序列化耗时。
+- 请求结束即释放，不建立跨请求持久化缓存。
+
+## 10. 本轮不做
 
 - 不新增 ORM 表。
-- 不实现 API handler。
 - 不实现前端页面。
 - 不实现“加入场景草稿”写操作。
 - 不计算或补发 Preview/Standard 资格。
-- 不修改 PR #888 或产品运行时代码。
+- 不修改现有业务模型、ACL、Record Rule、场景数据或发布状态。
+- 不修改、推送或合并 PR #888 及本分支之外的发布对象。

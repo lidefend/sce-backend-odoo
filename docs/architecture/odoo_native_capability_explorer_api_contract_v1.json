@@ -1,6 +1,7 @@
 {
   "schema": "platform.capability.explorer.contract.v1",
-  "status": "proposed_read_only_contract",
+  "status": "implemented_read_only_contract",
+  "implementation_baseline": "d176e2fd67fec87257114b207cec655ec8fa6e9d",
   "source_revision": "2571346afc8c69cea20e32fcba36082c949cf825",
   "observed_native_entry_count": 282,
   "classification": {
@@ -33,7 +34,8 @@
       },
       "limit": "integer 1..100",
       "offset": "integer >= 0",
-      "sort": "allowlisted stable sort"
+      "sort": "allowlisted stable sort",
+      "expected_catalog_token": "optional sha256 token; mismatch returns CATALOG_STALE"
     },
     "response": {
       "meta": [
@@ -65,6 +67,7 @@
         "scene_usage",
         "release_state",
         "draft_eligibility",
+        "scene_assignment",
         "product_qualification"
       ]
     }
@@ -104,7 +107,14 @@
       "AMBIGUOUS_SCENE_BINDING",
       "ENTRY_NOT_RELEASED",
       "MATURITY_EVIDENCE_MISSING"
-    ]
+    ],
+    "separation": {
+      "draft_selectable": "native technical eligibility only",
+      "scene_assignable": "scene fact provider accepts a reference; no product maturity",
+      "entry_published": "entry publication state only",
+      "preview_qualified": "Preview qualification fact; default not_verified",
+      "standard_qualified": "Standard qualification fact; default not_verified"
+    }
   },
   "authorization": {
     "current_instance": [
@@ -129,10 +139,36 @@
     "mode": "request_time_projection",
     "persistence": "none",
     "token_inputs": [
-      "module versions",
-      "menu and action identity set",
+      "current database",
+      "language environment and translated labels",
+      "installed modules, versions and dependencies",
+      "menu and action identities, action type and target model",
+      "native center hierarchy and order",
+      "models and fields",
+      "view associations",
+      "ACL rows and group associations",
+      "record rules and group associations",
       "scenario bindings",
+      "release state and release centers",
+      "product qualification facts",
       "active release snapshot identity"
+    ],
+    "stale_scope": "list and detail",
+    "cross_request_cache": false
+  },
+  "performance": {
+    "native_discovery_reuses": "RuntimeCapabilityCatalogService",
+    "xmlid_strategy": "batch prefetch; no per-entry get_external_id",
+    "list": "lightweight rows only",
+    "detail": "full native technical summary",
+    "diagnose": "reuses the same request projection",
+    "measurements": [
+      "sql_query_count",
+      "native_projection_ms",
+      "metadata_load_ms",
+      "contribution_load_ms",
+      "projection_ms",
+      "serialization_ms"
     ]
   },
   "excluded_from_b_stage": [

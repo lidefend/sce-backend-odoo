@@ -36,6 +36,43 @@ def load_menu_release_states():
         for leaf in (item.get("children") or [item])
     }
 
+def load_published_menu_release_projection(env):
+    """Return active publication states and the snapshot identities they used."""
+    if env is None:
+        raise ValueError("Published menu qualification requires an Odoo environment")
+    from odoo.addons.smart_core.handlers.system_init import _load_platform_release_gate
+
+    standard = _load_platform_release_gate(env, product_key="construction.standard")
+    preview = _load_platform_release_gate(env, product_key="construction.preview")
+    states = dict(standard.get("menu_release_states") or {}) if standard.get("applied") else {}
+    if preview.get("applied"):
+        for key in (preview.get("menu_release_states") or {}):
+            states.setdefault(key, "preview")
+    snapshots = []
+    for product_key, gate in (
+        ("construction.standard", standard),
+        ("construction.preview", preview),
+    ):
+        snapshots.append(
+            {
+                "product_key": product_key,
+                "applied": bool(gate.get("applied")),
+                "fail_closed": bool(gate.get("fail_closed")),
+                "snapshot_id": int(gate.get("snapshot_id") or 0),
+                "version": str(gate.get("version") or "").strip(),
+                "fingerprint": str(gate.get("fingerprint") or "").strip(),
+                "platform_db": str(gate.get("platform_db") or "").strip(),
+                "reason": str(gate.get("reason") or "").strip(),
+            }
+        )
+    return {
+        "menu_release_states": states,
+        "snapshots": snapshots,
+        "standard_applied": bool(standard.get("applied")),
+        "preview_applied": bool(preview.get("applied")),
+    }
+
+
 def load_published_menu_release_states(env):
     """Use the same active platform snapshots as navigation, never draft/seed.
 
@@ -43,16 +80,7 @@ def load_published_menu_release_states(env):
     Preview-only entries stay preview even when a preview snapshot labels them
     released. Missing publication denies enablement; it never falls back to JSON.
     """
-    if env is None:
-        raise ValueError("Published menu qualification requires an Odoo environment")
-    from odoo.addons.smart_core.handlers.system_init import _load_platform_release_gate
-    standard = _load_platform_release_gate(env, product_key="construction.standard")
-    preview = _load_platform_release_gate(env, product_key="construction.preview")
-    states = dict(standard.get("menu_release_states") or {}) if standard.get("applied") else {}
-    if preview.get("applied"):
-        for key in (preview.get("menu_release_states") or {}):
-            states.setdefault(key, "preview")
-    return states
+    return load_published_menu_release_projection(env)["menu_release_states"]
 
 
 def native_facts(module_root=None, _visiting=None, _loaded=None, _facts=None):

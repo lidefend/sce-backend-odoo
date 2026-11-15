@@ -211,6 +211,45 @@ class RuntimeCapabilityCatalogTests(unittest.TestCase):
             row["source_authority"]["no_tenant_authority"]
         )
 
+    def test_batch_xmlid_prefetch_avoids_per_record_external_id_queries(self):
+        menu_xmlid = self.leaf.get_external_id
+        action_xmlid = self.action.get_external_id
+        group_xmlid = self.leaf.groups_id[0].get_external_id
+        self.leaf.get_external_id = lambda: self.fail("per-menu XMLID query")
+        self.action.get_external_id = lambda: self.fail("per-action XMLID query")
+        self.leaf.groups_id[0].get_external_id = lambda: self.fail(
+            "per-group XMLID query"
+        )
+        try:
+            projection = self.collect(
+                xmlid_maps={
+                    "ir.ui.menu": {
+                        self.leaf.id: self.leaf._xmlid,
+                    },
+                    "ir.actions.act_window": {
+                        self.action.id: self.action._xmlid,
+                    },
+                    "res.groups": {
+                        self.leaf.groups_id[0].id: self.leaf.groups_id[0].xmlid,
+                        self.action.groups_id[0].id: self.action.groups_id[0].xmlid,
+                    },
+                }
+            )
+        finally:
+            self.leaf.get_external_id = menu_xmlid
+            self.action.get_external_id = action_xmlid
+            self.leaf.groups_id[0].get_external_id = group_xmlid
+        self.assertTrue(projection.rows)
+        self.assertTrue(projection.diagnostics["batch_xmlid_prefetch"])
+        self.assertEqual(
+            projection.rows[0]["menu_xmlid"],
+            "smart_construction_core.menu_sc_project_project",
+        )
+        self.assertEqual(
+            projection.rows[0]["action_xmlid"],
+            "smart_construction_core.action_project_dashboard",
+        )
+
     def test_same_label_and_model_keep_distinct_native_entries(self):
         other = FakeMenu(5, self.leaf.name, parent=self.group,
                          action=FakeAction(21))

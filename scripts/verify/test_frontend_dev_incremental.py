@@ -400,6 +400,32 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_platform_capability_explorer_selects_its_readonly_unit(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/platform_capability_explorer.py",
+            "addons/smart_core/handlers/platform_capability_explorer.py",
+            "addons/smart_core/tests/test_platform_capability_explorer.py",
+            "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+            "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+            "scripts/verify/platform_capability_explorer_runtime_probe.py",
+            "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+            "scripts/ops/odoo_shell_exec.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.platform.capability_explorer.unit"],
+                )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/services/product_menu_source.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.platform.capability_explorer.unit",
+            ],
+        )
+
     def test_scene_shell_compiler_selects_its_navigation_unit(self) -> None:
         for path in (
             "addons/smart_core/delivery/scene_shell_compiler.py",
@@ -792,7 +818,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_capability_identity_paths_select_their_owning_check(self) -> None:
         for path in (
             "scripts/verify/test_capability_identity_boundary.py",
-            "addons/smart_construction_core/services/product_menu_source.py",
             "addons/smart_core/delivery/capability_service.py",
         ):
             with self.subTest(path=path):
@@ -800,6 +825,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.capability.identity_boundary.unit"],
                 )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/services/product_menu_source.py"
+            ]),
+            [
+                "verify.capability.identity_boundary.unit",
+                "verify.platform.capability_explorer.unit",
+            ],
+        )
         self.assertEqual(
             select_targets(["addons/smart_construction_core/services/capability_registry.py"]),
             [

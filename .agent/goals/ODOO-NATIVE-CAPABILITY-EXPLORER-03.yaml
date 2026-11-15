@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: ODOO-NATIVE-CAPABILITY-EXPLORER-03
+  title: implement_platform_capability_explorer_readonly_api
+  status: verification_pending
+  formal_product_layer: P0 platform kernel product with P1 contribution and P4 verification
+  layer_target: Odoo-native capability entry exploration read contract
+  module:
+    - smart_core
+    - smart_construction_core
+  baseline:
+    branch: audit/platform-capability-studio-01-20261115
+    full_sha: d176e2fd67fec87257114b207cec655ec8fa6e9d
+  objective: >-
+    Implement list, detail and diagnose read-only intents over the current Odoo
+    runtime and existing construction scene/publication facts. The service must
+    not create a parallel capability registry or persist discovered rows.
+  product_boundary:
+    standard_vs_user_specific: >-
+      P0 owns the generic discovery, token, pagination and authorization mechanism;
+      P1 contributes construction scene bindings and product publication facts.
+    why_here:
+      - Odoo native runtime facts and generic read contracts belong to smart_core.
+      - Construction scenario and release authorities already belong to smart_construction_core.
+    why_not_elsewhere:
+      - no_parallel_capability_registry
+      - no_industry_semantics_in_smart_core
+      - no_frontend_inference
+      - no_business_record_read
+      - no_scene_or_publication_write
+    blast_radius: >-
+      Three new read intents, one P0 projection service, one P1 extension hook,
+      focused tests and read-only runtime evidence. Existing product business logic,
+      R10-R12 evidence, scene data and release state are not changed.
+  acceptance:
+    - 282 stable native Menu plus Action entry identities are reconciled in the governed runtime.
+    - 75 authoritative scene bindings and 207 center-only entries remain distinct from product qualification.
+    - List and detail reject expected_catalog_token mismatch with CATALOG_STALE.
+    - catalog_token covers language, modules, menus, actions, views, ACL, record rules, scenes and release snapshots.
+    - draft_selectable, scene_assignable, preview_qualified and standard_qualified remain independent fields.
+    - ordinary business users are denied before sudo metadata discovery.
+    - no ORM table, persisted discovery row, scene write, frontend page, deployment or merge is added.
+  exclusions:
+    - capability browser frontend
+    - scene editor and scene draft mutation
+    - persistent capability registry
+    - product business logic changes
+    - R10-R12 evidence changes
+    - deployment, merge or remote publication
+  rollback: >-
+    Remove the three read intents, the P0 projection service, the P1 contribution
+    hook and related tests/docs. No runtime data rollback is required.
