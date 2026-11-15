@@ -11,7 +11,7 @@ The historical `sc.entitlement` row is a materialized cache derived from a
 subscription plan. It is not itself the ultimate entitlement source and it has
 no seed XMLID.
 
-The current absence does not block the present Demo capability catalog:
+The absence was not shown to block the read-only startup feature-flag path:
 
 - both current plans exist;
 - there are zero subscription rows, so `_resolve_plan()` selects the active

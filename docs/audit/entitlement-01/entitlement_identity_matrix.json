@@ -64,7 +64,9 @@
     "current_capability_denial": "NONE_IDENTIFIED_IN_READ_ONLY_STARTUP_PATH",
     "runtime_write_on_read": "RISK_DEFERRED_WRITE",
     "permission_check_missing_row_non_admin": "NOT_VERIFIED_POTENTIAL_ACCESS_FAILURE",
-    "entitlement_is_authorization_source": false,
+    "authoritative_plan_source": false,
+    "runtime_feature_flag_carrier": true,
+    "final_record_authority": "odoo_acl_and_record_rules",
     "native_odoo_acl_and_record_rules_remain_final_authority": true
   },
   "not_verified": [

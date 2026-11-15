@@ -27,10 +27,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run ledger and local iteration, independently review the exact candidate, publish the read-only audit PR, and wait for required CI.",
+  "next_exact_step": "Publish the read-only audit PR, wait for required CI, then stop for the owner's merge decision.",
   "id": "ENTITLEMENT-01",
   "branch": "audit/entitlement-01-20261116",
-  "status": "verification_pending",
+  "status": "pending_merge_decision",
   "goal": ".agent/goals/ENTITLEMENT-01.yaml",
   "record": "docs/audit/entitlement-01/sc_entitlement_readonly_investigation_20261116.md"
 }

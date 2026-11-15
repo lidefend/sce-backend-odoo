@@ -49,8 +49,8 @@ goal:
     Revert the ENTITLEMENT-01 audit commits. No database rollback is required
     because the investigation is read-only.
   completion:
-    batch: pending
-    mainline_integration: pending
+    batch: investigation_complete
+    mainline_integration: pending_merge_decision
     deployment: not_performed
     user_acceptance: not_performed
   run: .agent/runs/ENTITLEMENT-01/run.json
