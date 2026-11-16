@@ -150,9 +150,9 @@ Another independent exact-head review and browser observation remain pending.
 ### Extended-main sync P4 unblocker
 
 The reviewed candidate's first full Quick reached 7/8 passing shards, then
-failed only because current `origin/main` contains public GitLab pipeline run and
-job identifiers in an audit document that match the mobile-phone pattern. The
-identifiers are execution metadata, not personal data.
+failed only because current `origin/main` contains public CI artifact identifiers
+in an audit document that match the mobile-phone pattern. The identifiers are
+execution metadata, not personal data.
 
 Three exact immutable blobs are now registered in
 `scripts/ci/personal_data_false_positives.json`; no directory, path wildcard or
