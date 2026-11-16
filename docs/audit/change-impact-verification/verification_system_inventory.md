@@ -2,8 +2,8 @@
 
 ## 1. 身份与口径
 
-- 源码 HEAD：`911e40b4104ec7513caa11344dda24e16d262c01`
-- 源码 tree：`ea76d8b92f9d1afb348492e63df593834d1b9bad`
+- 源码 HEAD：`803f5f7ab1b07a13344112abe3330ab160a50740`
+- 源码 tree：`dc1079a626ef5babd5fe179edac2219cfd75fa64`
 - 类型：P4 只读审计，不执行产品门禁、不写数据库、不改变断言。
 - 验证项：workflow job、四个 gate anchor 可达的 Make target、其实际执行的脚本、
   acceptance suite，以及 guard registry 中的完整脚本生命周期。
@@ -42,17 +42,17 @@
 
 | 指标 | 数量 |
 | --- | ---: |
-| 原 Make 解析器定义计数 | 2459 |
-| 归一化后的真实 Make target | 2459 |
+| 原 Make 解析器定义计数 | 2460 |
+| 归一化后的真实 Make target | 2460 |
 | 原解析器非 target 变量形状节点 | 0 |
-| `.PHONY` target | 2331 |
+| `.PHONY` target | 2332 |
 | gate anchor | 4 |
 | 原仪器 anchor 可达节点并集 | 246 |
 | 归一化后的真实 target | 240 |
 | 原仪器非 target 变量形状节点 | 6 |
-| 非 anchor 可达 target | 2219 |
+| 非 anchor 可达 target | 2220 |
 | 零引用 target | 670 |
-| `scripts/**` 在盘脚本 | 2489 |
+| `scripts/**` 在盘脚本 | 2494 |
 | guard registry 脚本 | 1605 |
 | anchor 可达实际脚本项 | 543 |
 | 全仓零引用脚本 | 104 |

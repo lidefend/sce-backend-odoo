@@ -74,11 +74,10 @@ make verify.change_impact.plan.unit
 
 ## 当前未实现
 
-- Producer → Decoder → Consumer 的完整编译器引用图。
-- Renderer Registry → Component → Page 的全图反向追踪。
-- ORM Model → Business Method → Workflow 的全图追踪。
-- obligation-to-assertion-to-evidence 的持久图。
-- 历史 PR 的自动批量 replay 与 False Negative/FER 统计。
-- 稳定基线 proof record 的生成与推进。
+P4-02 已补齐 compiler/AST 依赖图、严格 assertion consumer 边、局部失效指纹、
+历史批量 replay、稳定 baseline proof 和错误复用负例。当前实现与边界见
+`verification_governance_v2.md`。
 
-这些缺口使 v1 仍不能 cutover。
+仍未实现的是运行时动态依赖展开、全部 Make/Workflow assertion adapter 的自动
+反向登记、required-gate old/new dual-run 和 P4-07 强制接入。因此 planner
+仍不能 cutover。

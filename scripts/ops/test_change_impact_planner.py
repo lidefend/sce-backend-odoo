@@ -13,6 +13,7 @@ def ts_facts(
     before_fields: list[str] | None = None,
     after_fields: list[str] | None = None,
     dynamic: bool = False,
+    assertions: list[str] | None = None,
 ) -> dict:
     def side(rows: list[tuple[str, str, int, int]] | None, fields: list[str] | None) -> dict:
         return {
@@ -23,6 +24,11 @@ def ts_facts(
             ],
             "fields": fields or [],
             "imports": [],
+            "import_bindings": [],
+            "assertion_calls": [
+                {"call": name, "line": index + 1}
+                for index, name in enumerate(assertions or [])
+            ],
             "dynamic_dependency_possible": dynamic,
         }
 
@@ -64,6 +70,12 @@ class ChangeImpactPlannerTests(unittest.TestCase):
             {check["id"] for check in plan["checks"]},
         )
         self.assertTrue(plan["coverage"]["assertion_closure"])
+        disposition = {
+            row["layer"]: row for row in plan["layer_disposition"]
+        }
+        self.assertEqual(disposition["L2"]["state"], "not_applicable")
+        self.assertEqual(disposition["L3"]["state"], "not_applicable")
+        self.assertTrue(disposition["L2"]["reverse_condition"])
 
     def test_renderer_registry_requires_l1_and_real_l2(self) -> None:
         facts = ts_facts(after=[("professionalComponentRegistry", "variable", 2, 12)])
@@ -174,6 +186,31 @@ class ChangeImpactPlannerTests(unittest.TestCase):
         self.assertIn("decode", {value["name"] for value in row["after"]["symbols"]})
         self.assertIn("extra", row["after"]["fields"])
 
+    def test_vue_extractor_reads_all_script_blocks(self) -> None:
+        facts = planner._typescript_facts(
+            [
+                item(
+                    "frontend/apps/web/src/components/template/Example.vue",
+                    "",
+                    "<script>\n"
+                    "export const classicSymbol = 1\n"
+                    "</script>\n"
+                    "<template><div /></template>\n"
+                    "<script setup lang=\"ts\">\n"
+                    "const setupSymbol = 2\n"
+                    "</script>\n",
+                )
+            ]
+        )
+        names = {
+            value["name"]
+            for value in facts[
+                "frontend/apps/web/src/components/template/Example.vue"
+            ]["after"]["symbols"]
+        }
+        self.assertIn("classicSymbol", names)
+        self.assertIn("setupSymbol", names)
+
     def test_rename_and_delete_keep_old_and_new_symbol_context(self) -> None:
         deleted = self.plan(
             [
@@ -206,6 +243,10 @@ class ChangeImpactPlannerTests(unittest.TestCase):
         )
         self.assertEqual(plan["change_facts"][0]["layers"], ["L4"])
         self.assertEqual({check["id"] for check in plan["checks"]}, {"delivery.docs_links"})
+        self.assertEqual(
+            {row["state"] for row in plan["layer_disposition"]},
+            {"not_applicable"},
+        )
 
     def test_matching_evidence_can_be_reused_only_with_assertion_closure(self) -> None:
         base_plan = self.plan(
@@ -218,6 +259,11 @@ class ChangeImpactPlannerTests(unittest.TestCase):
                     "status": "passed",
                     "input_fingerprint": decision["input_fingerprint"],
                     "assertion_closure": True,
+                    "environment_identity": {
+                        "profile": "offline",
+                        "database": "none",
+                        "artifact": "none",
+                    },
                 }
             }
         }
@@ -233,6 +279,115 @@ class ChangeImpactPlannerTests(unittest.TestCase):
             evidence=bad,
         )
         self.assertEqual(rerun["decisions"][0]["decision"], "RUN")
+        wrong_environment = copy.deepcopy(evidence)
+        wrong_environment["checks"][decision["check_id"]]["environment_identity"] = {
+            "profile": "acceptance",
+            "database": "other",
+            "artifact": "other",
+        }
+        rerun = self.plan(
+            [item("docs/architecture/example.md", "old\n", "new\n")],
+            evidence=wrong_environment,
+        )
+        self.assertEqual(rerun["decisions"][0]["decision"], "RUN")
+
+    def test_changed_test_assertion_is_an_l4_obligation_not_unknown(self) -> None:
+        plan = self.plan(
+            [
+                item(
+                    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+                    "equal(ownsSceneRoute('scene'), true)\n",
+                    "equal(ownsSceneRoute('scene'), true)\n"
+                    "equal(shouldHydrateSceneContent('native_delegate', false), false)\n",
+                    ts_facts(assertions=["equal"]),
+                )
+            ]
+        )
+        self.assertEqual(plan["status"], "planned")
+        self.assertEqual(plan["change_facts"][0]["layers"], ["L4"])
+        self.assertEqual(plan["change_facts"][0]["semantic_kinds"], ["verification_assertion"])
+        self.assertIn(
+            "delivery.changed_assertion",
+            {check["id"] for check in plan["checks"]},
+        )
+        self.assertEqual(plan["unknowns"], [])
+
+    def test_plan_exposes_forward_and_reverse_trace(self) -> None:
+        component = "frontend/apps/web/src/components/template/FormSection.vue"
+        page = "frontend/apps/web/src/views/ActionView.vue"
+        graph = {
+            "digest": "g" * 64,
+            "summary": {"nodes": 2, "edges": 1, "edge_kinds": {"component_to_page": 1}},
+            "impact": [
+                {
+                    "source": f"file:{component}",
+                    "forward_consumers": [f"file:{page}"],
+                    "reverse_consumers": [],
+                }
+            ],
+        }
+        plan = planner.analyze_change_set(
+            [
+                item(
+                    component,
+                    "<template><FormSection /></template>\n",
+                    "<template><FormSection /></template>\n<!-- changed -->\n",
+                    ts_facts(after=[("FormSection", "class", 1, 2)]),
+                )
+            ],
+            base="a" * 40,
+            head="b" * 40,
+            graph=graph,
+        )
+        self.assertEqual(plan["schema"], "change_impact_plan.v2")
+        self.assertEqual(
+            plan["trace"]["forward"][0]["consumer_nodes"]["forward"],
+            [f"file:{page}"],
+        )
+        self.assertTrue(plan["trace"]["reverse"])
+
+    def test_unrelated_graph_change_does_not_invalidate_local_evidence(self) -> None:
+        facts = ts_facts(after=[("decode", "function", 1, 3)])
+        change = item(
+            "frontend/apps/web/src/app/contracts/v2/schema.ts",
+            "export function decode(value: unknown) { return value }\n",
+            "export function decode(value: unknown) { return value ?? {} }\n",
+            facts,
+        )
+        base_graph = {
+            "digest": "1" * 64,
+            "edges": [],
+            "summary": {"nodes": 1, "edges": 0},
+            "impact": [],
+        }
+        unrelated_graph = {
+            "digest": "2" * 64,
+            "edges": [
+                {
+                    "source": "file:unrelated",
+                    "target": "file:other",
+                    "kind": "imports",
+                }
+            ],
+            "summary": {"nodes": 2, "edges": 1},
+            "impact": [],
+        }
+        first = planner.analyze_change_set(
+            [change],
+            base="a" * 40,
+            head="b" * 40,
+            graph=base_graph,
+        )
+        second = planner.analyze_change_set(
+            [change],
+            base="a" * 40,
+            head="b" * 40,
+            graph=unrelated_graph,
+        )
+        self.assertEqual(
+            [row["input_fingerprint"] for row in first["decisions"]],
+            [row["input_fingerprint"] for row in second["decisions"]],
+        )
 
     def test_acceptance_matrix_cases_have_expected_layers(self) -> None:
         matrix = json_matrix = {

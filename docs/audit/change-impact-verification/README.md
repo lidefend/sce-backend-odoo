@@ -13,6 +13,8 @@
 - `change_impact_verification_design_v1.md`
 - `review_remediation_v1.md`
 - `p4-01-shadow-planner-v1.md`
+- `verification_governance_v2.md`
+- `impact_analysis_acceptance_results.json`
 
 `verification_mapping_matrix.json` is the bounded index. Its four companion part files retain the
 complete workflow, target, gate-script and script-lifecycle inventories below the repository history

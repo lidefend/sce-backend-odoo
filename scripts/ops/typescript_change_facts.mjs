@@ -12,12 +12,19 @@ const TS_PATH =
 const loaded = await import(pathToFileURL(TS_PATH).href)
 const ts = loaded.default || loaded
 
-function scriptView(filename, text) {
-  if (!filename.endsWith('.vue')) return { text, lineOffset: 0 }
-  const match = /<script\b[^>]*>([\s\S]*?)<\/script>/i.exec(text)
-  if (!match) return { text: '', lineOffset: 0 }
-  const prefix = text.slice(0, match.index + match[0].indexOf('>') + 1)
-  return { text: match[1], lineOffset: (prefix.match(/\n/g) || []).length }
+function scriptViews(filename, text) {
+  if (!filename.endsWith('.vue')) return [{ text, lineOffset: 0 }]
+  const views = []
+  const pattern = /<script\b[^>]*>([\s\S]*?)<\/script>/gi
+  let match
+  while ((match = pattern.exec(text))) {
+    const prefix = text.slice(0, match.index + match[0].indexOf('>') + 1)
+    views.push({
+      text: match[1],
+      lineOffset: (prefix.match(/\n/g) || []).length,
+    })
+  }
+  return views
 }
 
 function scriptKind(filename) {
@@ -33,7 +40,38 @@ function nodeName(node) {
   return ''
 }
 
-function visit(node, symbols, fields, imports, state) {
+function importBinding(node) {
+  const specifier = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : ''
+  const bindings = []
+  const clause = node.importClause
+  if (clause?.name) bindings.push({ imported: 'default', local: clause.name.text })
+  const named = clause?.namedBindings
+  if (named && ts.isNamespaceImport(named)) {
+    bindings.push({ imported: '*', local: named.name.text })
+  } else if (named && ts.isNamedImports(named)) {
+    for (const element of named.elements) {
+      bindings.push({
+        imported: element.propertyName?.text || element.name.text,
+        local: element.name.text,
+      })
+    }
+  }
+  return {
+    specifier,
+    type_only: Boolean(clause?.isTypeOnly),
+    bindings,
+  }
+}
+
+function callName(node) {
+  if (!ts.isCallExpression(node)) return ''
+  const expression = node.expression
+  if (ts.isIdentifier(expression)) return expression.text
+  if (ts.isPropertyAccessExpression(expression)) return expression.name.text
+  return ''
+}
+
+function visit(node, symbols, fields, imports, importBindings, assertions, state) {
   let kind = ''
   if (ts.isFunctionDeclaration(node)) kind = 'function'
   else if (ts.isClassDeclaration(node)) kind = 'class'
@@ -46,10 +84,35 @@ function visit(node, symbols, fields, imports, state) {
   else if (ts.isImportDeclaration(node)) {
     const moduleName = ts.isStringLiteral(node.moduleSpecifier) ? node.moduleSpecifier.text : ''
     imports.add(moduleName)
+    importBindings.push(importBinding(node))
   } else if (ts.isCallExpression(node) && node.expression.kind === ts.SyntaxKind.ImportKeyword) {
     if (!node.arguments.length || !ts.isStringLiteral(node.arguments[0])) {
       state.dynamic_dependency_possible = true
     }
+  }
+
+  const assertedCall = callName(node)
+  if (
+    assertedCall
+    && [
+      'assert',
+      'equal',
+      'notEqual',
+      'deepEqual',
+      'strictEqual',
+      'deepStrictEqual',
+      'throws',
+      'match',
+      'ok',
+      'expect',
+      'test',
+      'it',
+    ].includes(assertedCall)
+  ) {
+    assertions.push({
+      call: assertedCall,
+      line: state.source.getLineAndCharacterOfPosition(node.getStart()).line + 1 + state.lineOffset,
+    })
   }
 
   if (kind === 'variable' && ts.isVariableStatement(node)) {
@@ -82,27 +145,34 @@ function visit(node, symbols, fields, imports, state) {
     const name = nodeName(node)
     if (name) fields.add(name)
   }
-  ts.forEachChild(node, child => visit(child, symbols, fields, imports, state))
+  ts.forEachChild(node, child =>
+    visit(child, symbols, fields, imports, importBindings, assertions, state)
+  )
 }
 
 function facts(filename, text) {
-  const view = scriptView(filename, text)
-  const source = ts.createSourceFile(
-    filename,
-    view.text,
-    ts.ScriptTarget.Latest,
-    true,
-    scriptKind(filename),
-  )
   const symbols = []
   const fields = new Set()
   const imports = new Set()
-  const state = {
-    source,
-    lineOffset: view.lineOffset,
-    dynamic_dependency_possible: false,
+  const importBindings = []
+  const assertions = []
+  let dynamicDependencyPossible = false
+  for (const view of scriptViews(filename, text)) {
+    const source = ts.createSourceFile(
+      filename,
+      view.text,
+      ts.ScriptTarget.Latest,
+      true,
+      scriptKind(filename),
+    )
+    const state = {
+      source,
+      lineOffset: view.lineOffset,
+      dynamic_dependency_possible: false,
+    }
+    visit(source, symbols, fields, imports, importBindings, assertions, state)
+    dynamicDependencyPossible ||= state.dynamic_dependency_possible
   }
-  visit(source, symbols, fields, imports, state)
   const unique = new Map()
   for (const symbol of symbols) {
     const key = `${symbol.kind}:${symbol.name}:${symbol.start_line}:${symbol.end_line}`
@@ -115,7 +185,9 @@ function facts(filename, text) {
     ),
     fields: [...fields].sort(),
     imports: [...imports].filter(Boolean).sort(),
-    dynamic_dependency_possible: state.dynamic_dependency_possible,
+    import_bindings: importBindings,
+    assertion_calls: assertions,
+    dynamic_dependency_possible: dynamicDependencyPossible,
   }
 }
 

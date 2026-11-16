@@ -776,15 +776,21 @@ audit.change_impact.verification: guard.prod.forbid verify.change_impact.verific
 
 CHANGE_IMPACT_BASE ?= origin/main
 CHANGE_IMPACT_OUTPUT ?= .runtime/change-impact/plan.json
+CHANGE_IMPACT_GRAPH_OUTPUT ?=
 
-.PHONY: verification.change-impact.plan verify.change_impact.plan.unit
+.PHONY: verification.change-impact.plan verify.change_impact.plan.unit verify.change_impact.acceptance
 verify.change_impact.plan.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/change_impact_planner.py scripts/ops/test_change_impact_planner.py
+	@python3 -m py_compile scripts/ops/change_impact_planner.py scripts/ops/change_impact_graph.py scripts/ops/change_impact_evidence.py scripts/ops/change_impact_acceptance.py scripts/ops/test_change_impact_planner.py scripts/ops/test_change_impact_graph.py scripts/ops/test_change_impact_evidence.py
 	@node --check scripts/ops/typescript_change_facts.mjs
-	@python3 -m unittest scripts.ops.test_change_impact_planner
+	@python3 -m unittest scripts.ops.test_change_impact_planner scripts.ops.test_change_impact_graph scripts.ops.test_change_impact_evidence
 
 verification.change-impact.plan: guard.prod.forbid verify.change_impact.plan.unit
-	@python3 scripts/ops/change_impact_planner.py --worktree --base "$(CHANGE_IMPACT_BASE)" --output "$(CHANGE_IMPACT_OUTPUT)"
+	@python3 scripts/ops/change_impact_planner.py --worktree --base "$(CHANGE_IMPACT_BASE)" --output "$(CHANGE_IMPACT_OUTPUT)" $(if $(CHANGE_IMPACT_GRAPH_OUTPUT),--graph-output "$(CHANGE_IMPACT_GRAPH_OUTPUT)")
+
+CHANGE_IMPACT_ACCEPTANCE_OUTPUT ?= .runtime/change-impact/acceptance.json
+CHANGE_IMPACT_ACCEPTANCE_TRACKED ?= docs/audit/change-impact-verification/impact_analysis_acceptance_results.json
+verify.change_impact.acceptance: guard.prod.forbid verify.change_impact.plan.unit
+	@python3 scripts/ops/change_impact_acceptance.py --output "$(CHANGE_IMPACT_ACCEPTANCE_OUTPUT)" --check "$(CHANGE_IMPACT_ACCEPTANCE_TRACKED)"
 
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated

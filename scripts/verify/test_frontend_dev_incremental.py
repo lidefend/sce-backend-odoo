@@ -1205,19 +1205,30 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.change_impact.verification.unit"],
+                    [
+                        "verify.change_impact.acceptance",
+                        "verify.change_impact.verification.unit",
+                    ],
                 )
 
     def test_change_impact_planner_inputs_route_to_the_planner_unit(self) -> None:
         for path in (
             "scripts/ops/change_impact_planner.py",
+            "scripts/ops/change_impact_graph.py",
+            "scripts/ops/change_impact_evidence.py",
+            "scripts/ops/change_impact_acceptance.py",
             "scripts/ops/test_change_impact_planner.py",
+            "scripts/ops/test_change_impact_graph.py",
+            "scripts/ops/test_change_impact_evidence.py",
             "scripts/ops/typescript_change_facts.mjs",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.change_impact.plan.unit"],
+                    [
+                        "verify.change_impact.acceptance",
+                        "verify.change_impact.plan.unit",
+                    ],
                 )
 
     def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:

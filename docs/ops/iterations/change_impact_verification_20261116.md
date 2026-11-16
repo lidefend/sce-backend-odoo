@@ -6,7 +6,7 @@
 - 主线基线：`730b82cf60f60399a70901a7fcd65476dc718f93`
 - 工作树：
   `/home/lidefend/workspace/sce-backend-odoo-change-impact-verification-20261116-aligned`
-- 当前阶段：`active`，P4-00 已完成本地落地前修订；P4-01 shadow planner 已实现
+- 当前阶段：`verification_pending`，P4-00/P4-01 已提交；P4-02 至 P4-06 shadow 能力已完成离线矩阵与本地受影响验证，cutover 待独立双跑与复审
 
 早先误开并已关闭 Draft PR #907。该 PR 只用于审查讨论，未合入主线。其后 `origin/main`
 更新到 `730b82cf60f60399a70901a7fcd65476dc718f93`，本候选已从该精确主线重新建立对齐
@@ -102,7 +102,7 @@ gate script 和 script lifecycle 分片，全部低于仓库历史扫描的 5 Mi
 
 ## 明确排除
 
-- 不实施 P4-02 或后续批次；P4-01 只生成 shadow plan，不接管门禁。
+- 不实施 required-gate dual-run approval 或 P4-07 cutover。
 - 不修改产品代码、契约 Schema、Decoder、Renderer、组件或业务逻辑。
 - 不修改验证断言、豁免、必需门禁或当前路径映射。
 - 不执行数据库升级、fixture、浏览器矩阵或运行态验收。
@@ -145,9 +145,9 @@ gate script 和 script lifecycle 分片，全部低于仓库历史扫描的 5 Mi
 
 ## 下一精确动作
 
-P4-01 v1 已通过 12 项单元测试，并完成 PR #905/#886 的真实历史回放。下一批是 P4-02：
-建立 Producer → Decoder → Consumer、Renderer Registry → Component → Page、
-ORM Model → Business Method → Workflow 的可验证依赖图和双向追踪。仍不接管现有门禁。
+完成完整受影响验证、生成物一致性检查和独立复核；随后将当前完整 shadow governance
+作为一个最终候选提交，只开一个集成 PR。评审通过且远端 exact-head 检查全绿后才可合入；
+P4-07 cutover 另行取得真实双跑证据和独立批准。
 
 ## P4-01 Shadow Planner v1
 
@@ -178,3 +178,80 @@ ORM Model → Business Method → Workflow 的可验证依赖图和双向追踪�
   尚未映射，按设计 BLOCK，未猜测为不受影响。
 
 `cutover_eligible` 固定为 false。该 planner 不是现有验证裁决，也不是新体系接管证明。
+
+## P4-02 至 P4-06 Shadow Governance
+
+新增：
+
+- `scripts/ops/change_impact_graph.py`
+- `scripts/ops/change_impact_evidence.py`
+- `scripts/ops/change_impact_acceptance.py`
+- `scripts/ops/test_change_impact_graph.py`
+- `scripts/ops/test_change_impact_evidence.py`
+- `docs/audit/change-impact-verification/verification_governance_v2.md`
+- `docs/audit/change-impact-verification/impact_analysis_acceptance_results.json`
+- `make verify.change_impact.acceptance`
+
+语义图：
+
+- TypeScript compiler local import 与 Python AST import 为高置信边。
+- 测试 assertion 通过真实 import 连接被验证 consumer。
+- Renderer Registry 的声明名称与 FormSection component import 取交集，形成 registry → component 边。
+- component reverse-import closure 定位真实 page consumer。
+- Python 方法直接 `write/create/unlink/copy` 调用连接 ORM operation。
+- Producer → Decoder 契约族关系标记 medium confidence，明确为 static inference。
+- 图边携带 source、target、kind、confidence、basis 和 reason；动态依赖继续 UNKNOWN。
+
+双向追踪与证据：
+
+- plan schema 升级为 `change_impact_plan.v2`。
+- 正向记录 ChangeFact → consumer → obligation → assertion → check。
+- 反向记录 check → assertion → obligation → capability → invalidation inputs。
+- 每个 check 使用相关 input/assertion/相邻图边生成局部失效指纹，不用全局图摘要扩大失效。
+- evidence fingerprint 同时绑定 planned inputs、assertion set、工具入口和环境身份。
+- 测试 assertion 变化进入 L4 assertion obligation，不再因顶层 assertion 不在 TypeScript symbol 内而误报 UNKNOWN。
+
+Stable baseline：
+
+- schema：`change_impact_verification.baseline.v1`。
+- proof 绑定 obligation、check、input、assertion、toolchain、environment、evidence authority 和 digest。
+- promotion 要求 exact source/tree、完整 obligation coverage、独立审查、远端检查和 main tree equivalence。
+- 零产品 delta 只复用完整 baseline proof，产品 check 执行数为 0。
+- 任何 changed/inherited obligation 都不能仅凭 baseline 放行。
+- baseline/tampered digest、环境不匹配和 assertion closure 缺失均 BLOCK。
+
+验收矩阵：
+
+- 13 cases：Decoder-only、Renderer/Component/Page、CSS、ORM、ACL、混合前后端、混合业务、
+  dynamic UNKNOWN、rename/delete、migration fixture、docs、错误 evidence reuse、CI tooling。
+- 历史 replay：PR #905、#877、#870、#886、#893、#904、#883。
+- 合成 replay：CSS、ACL、L1/L2/L3 mixed、dynamic dependency、rename/delete、错误 evidence reuse。
+- 结果：13/13 PASS；False Negative=0；Evidence Reuse Error=0；
+  Obligation Coverage=1.0；非预期 Unknown=0；非预期产品层 False Positive=0。
+- `matrix_conformance_complete=true`，但 `cutover_eligible` 固定为 false。
+
+定向验证：
+
+- `make verify.change_impact.plan.unit`：25 tests PASS。
+- `make verify.change_impact.acceptance`：13/13 matrix PASS；离线 shadow replay。
+- `make verify.change_impact.verification.unit`：12 tests PASS。
+- `make verify.frontend.dev.incremental.unit`：158 tests PASS。
+- `ENV=dev make verify.docs.links`：PASS。
+- `make verify.agent.ledger.unit`：18 tests PASS。
+- `make audit.change_impact.verification`：PASS；当前审计规模为 23 workflow jobs、
+  240 gate Make targets、543 gate scripts、1,605 lifecycle records。
+- `make ci.delivery.freeze.prepare`：PASS，生成报告、语义 registry、契约基础、
+  组件 driver inventory 和 generated evidence preflight 均 current。
+- `make ci.local.iteration`：PASS，最终执行 8 个必要本地 target；原始 receipt 位于
+  `.runtime/frontend-dev-validation/executions/20261116T122406Z-3465148-394796237/receipt.json`。
+
+`ci.delivery.freeze.prepare` 的 validation delivery plan 同时报告
+`daily_runtime_entry` 和 `path_namespace_identity` 的未提交输入阻断；它们属于交付计划级
+观察，不是本次 shadow governance 的产品运行通过，也不会被记作候选证据。
+
+边界：
+
+- 本批不修改路径 ownership、acceptance binding 或任何必需 CI 裁决。
+- 不执行数据库升级、fixture、浏览器或运行态产品验收。
+- 不把离线矩阵、历史 Git replay 或静态图作为产品行为已通过的证据。
+- required-gate old/new dual-run、独立审查与受保护合并完成前不进入 P4-07 cutover。

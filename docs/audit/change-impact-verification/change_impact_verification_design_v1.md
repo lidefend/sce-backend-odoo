@@ -4,6 +4,12 @@
 
 本文件是 P4-00 的审查输入，不是已经落地的门禁方案。
 
+2026-11-16 更新：P4-01 至 P4-06 的 shadow 治理能力已经由
+`verification_governance_v2.md`、`scripts/ops/change_impact_*` 和
+`impact_analysis_acceptance_results.json` 形成可执行证据。矩阵 13/13 通过，
+但 `cutover_eligible=false`；现有路径 ownership、acceptance binding 和必需门禁
+未被替换，P4-07 接管仍未获授权。
+
 当前 PR 只允许：
 
 - 建立验证体系全量盘点、执行图和成本基线。

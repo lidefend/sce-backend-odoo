@@ -45,15 +45,22 @@ goal:
       decoder changes while allowing real renderer or interaction changes to be
       hidden by broad suites that do not bind changed behavior to evidence.
   current_batch:
-    id: P4-01
-    title: semantic change-impact shadow planner
+    id: P4-02_P4-06_shadow
+    title: semantic dependency graph, stable-baseline evidence and dual-run readiness
     mode: shadow_only
-    status: in_progress
+    status: verification_pending
     required_outputs:
       - scripts/ops/change_impact_planner.py
+      - scripts/ops/change_impact_graph.py
+      - scripts/ops/change_impact_evidence.py
+      - scripts/ops/change_impact_acceptance.py
       - scripts/ops/typescript_change_facts.mjs
       - scripts/ops/test_change_impact_planner.py
+      - scripts/ops/test_change_impact_graph.py
+      - scripts/ops/test_change_impact_evidence.py
       - docs/audit/change-impact-verification/p4-01-shadow-planner-v1.md
+      - docs/audit/change-impact-verification/verification_governance_v2.md
+      - docs/audit/change-impact-verification/impact_analysis_acceptance_results.json
     required_answers:
       - what_the_check_verifies
       - what_change_triggers_it
@@ -88,10 +95,16 @@ goal:
     - shadow_planner_emits_change_facts_obligations_checks_unknowns_and_assertion_closure
     - shadow_planner_blocks_dynamic_or_unresolved_impact
     - shadow_planner_does_not_change_existing_gate_decisions
+    - semantic_graph_marks_compiler_ast_edges_high_confidence_and_contract_family_edges_as_static_inference
+    - changed_test_assertions_resolve_to_l4_without_unknown
+    - acceptance_matrix_has_zero_false_negative_evidence_reuse_error_and_unknown
+    - stable_baseline_reuse_requires_matching_input_assertion_tool_and_environment
+    - zero_delta_reuses_obligation_proofs_without_product_execution
+    - required_gate_cutover_remains_disabled_pending_dual_run_and_independent_review
     - no_product_code_gate_assertion_or_database_state_is_changed_in_p4_00
   exclusions:
     - required_gate_cutover_or_path_ownership_replacement
-    - implementation_of_p4_02_through_later_batches
+    - required_gate_dual_run_approval_or_p4_07_cutover
     - product_code_contract_schema_decoder_renderer_or_business_logic
     - database_upgrade_restore_fixture_reset_or_persistent_write
     - browser_matrix_or_runtime_acceptance
@@ -100,7 +113,7 @@ goal:
     Revert the P4-00 metadata and documentation commit. No product source,
     verification assertion, database or runtime state is changed.
   completion:
-    batch: design_review_pending
+    batch: shadow_governance_local_verification_passed_cutover_pending
     mainline_integration: not_performed
     deployment: not_performed
     user_acceptance: not_performed

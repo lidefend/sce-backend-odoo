@@ -12,24 +12,36 @@ import argparse
 import ast
 import difflib
 import hashlib
+import io
 import json
 import re
 import subprocess
 import sys
+import tarfile
 import xml.etree.ElementTree as ET
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any, Iterable
 
-
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from scripts.ops import change_impact_graph as semantic_graph
+
+
 TS_FACTS = ROOT / "scripts/ops/typescript_change_facts.mjs"
 FULL_SHA = re.compile(r"^[0-9a-f]{40}$")
 LAYER_ORDER = ("L1", "L2", "L3", "L4")
 CHANGE_IMPACT_TOOL_PATHS = frozenset(
     {
         "scripts/ops/change_impact_planner.py",
+        "scripts/ops/change_impact_graph.py",
+        "scripts/ops/change_impact_evidence.py",
+        "scripts/ops/change_impact_acceptance.py",
+        "scripts/ops/test_change_impact_graph.py",
         "scripts/ops/test_change_impact_planner.py",
+        "scripts/ops/test_change_impact_evidence.py",
         "scripts/ops/typescript_change_facts.mjs",
     }
 )
@@ -102,6 +114,14 @@ OBLIGATIONS: dict[str, dict[str, Any]] = {
         "layer": "L3",
         "assertions": ["business.valid_transition", "business.invalid_transition"],
     },
+    "L3.migration": {
+        "layer": "L3",
+        "assertions": [
+            "migration.old_schema_compatible",
+            "migration.failure_recovery",
+            "migration.persisted_result",
+        ],
+    },
     "L4.delivery": {
         "layer": "L4",
         "assertions": ["delivery.tool_behavior", "delivery.workflow_contract"],
@@ -118,6 +138,10 @@ OBLIGATIONS: dict[str, dict[str, Any]] = {
         "layer": "L4",
         "assertions": ["docs.links_and_governance"],
     },
+    "L4.assertions": {
+        "layer": "L4",
+        "assertions": ["assertion.suite_current", "evidence.invalidate_dependents"],
+    },
 }
 
 
@@ -127,6 +151,12 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 8,
         "evidence_kind": "contract-static",
+        "classes": [
+            "contract-unit",
+            "producer-serialization",
+            "action-view-identity",
+            "relation-normalization",
+        ],
         "covers": [
             "schema.identity",
             "schema.field_compatibility",
@@ -142,6 +172,12 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 5,
         "evidence_kind": "unit",
+        "classes": [
+            "contract-unit",
+            "strict-decoder",
+            "consumer-compile",
+            "contract-symbol-diff",
+        ],
         "covers": [
             "schema.identity",
             "schema.field_compatibility",
@@ -157,6 +193,7 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 3,
         "evidence_kind": "unit",
+        "classes": ["renderer-registry-unit"],
         "covers": [
             "renderer.contract_key",
             "renderer.registry_identity",
@@ -168,6 +205,12 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make-runtime",
         "cost": 13,
         "evidence_kind": "browser",
+        "classes": [
+            "focused-page-browser",
+            "visual-layout",
+            "responsive-browser-unit",
+            "page-interaction",
+        ],
         "covers": [
             "page.affected_surface_rendered",
             "page.no_contract_gap",
@@ -182,6 +225,12 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "workflow-runtime",
         "cost": 13,
         "evidence_kind": "orm-and-contract",
+        "classes": [
+            "governed-ORM",
+            "permission-negative",
+            "business-outcome",
+            "contract",
+        ],
         "covers": [
             "orm.persisted_result",
             "orm.failure_recovery",
@@ -196,6 +245,7 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 4,
         "evidence_kind": "unit",
+        "classes": ["tool-unit", "workflow-contract", "evidence-invalidation"],
         "covers": ["delivery.tool_behavior", "delivery.workflow_contract"],
     },
     "delivery.change_impact_planner": {
@@ -203,6 +253,12 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 2,
         "evidence_kind": "unit",
+        "classes": [
+            "tool-unit",
+            "semantic-resolution-probe",
+            "contract-symbol-diff",
+            "evidence-fingerprint-negative",
+        ],
         "covers": [
             "planner.deterministic",
             "planner.unknown_policy",
@@ -214,7 +270,30 @@ CHECKS: dict[str, dict[str, Any]] = {
         "kind": "make",
         "cost": 1,
         "evidence_kind": "docs",
+        "classes": ["docs-links", "metadata-policy"],
         "covers": ["docs.links_and_governance"],
+    },
+    "delivery.changed_assertion": {
+        "entrypoint": "make verify.frontend.dev.incremental.execute",
+        "kind": "make",
+        "cost": 3,
+        "evidence_kind": "non-zero-test",
+        "classes": ["assertion-test", "evidence-invalidation"],
+        "covers": ["assertion.suite_current", "evidence.invalidate_dependents"],
+    },
+    "backend.migration_compatibility": {
+        "entrypoint": "make verify.smart_construction_core.migration_compatibility.orm",
+        "kind": "make-runtime",
+        "cost": 12,
+        "evidence_kind": "migration-orm",
+        "classes": ["governed-ORM", "contract", "evidence-invalidation"],
+        "covers": [
+            "migration.old_schema_compatible",
+            "migration.failure_recovery",
+            "migration.persisted_result",
+            "orm.persisted_result",
+            "orm.failure_recovery",
+        ],
     },
 }
 
@@ -229,7 +308,8 @@ SEMANTIC_OBLIGATIONS: dict[str, tuple[str, ...]] = {
         "L2.renderer_selection",
         "L2.page_presentation",
     ),
-    "presentation_component": ("L2.page_presentation",),
+    "presentation_component": ("L1.consumer", "L2.page_presentation"),
+    "renderer_component_identity": ("L1.renderer_identity", "L2.page_presentation"),
     "layout_style": ("L2.layout_responsive",),
     "page_interaction": ("L1.action_view_identity", "L2.page_interaction"),
     "orm_field": ("L1.schema_contract", "L3.orm_persistence"),
@@ -240,11 +320,44 @@ SEMANTIC_OBLIGATIONS: dict[str, tuple[str, ...]] = {
     ),
     "acl": ("L1.action_view_identity", "L3.acl_positive", "L3.acl_negative"),
     "business_workflow": ("L1.relation_contract", "L3.business_outcome"),
-    "migration": ("L3.orm_persistence", "L4.delivery"),
+    "migration": ("L1.schema_contract", "L3.orm_persistence", "L3.migration", "L4.delivery"),
     "delivery_tool": ("L4.delivery",),
     "change_impact_tool": ("L4.planner_self",),
+    "verification_assertion": ("L4.assertions",),
     "docs": ("L4.docs",),
 }
+
+SEMANTIC_CAPABILITIES: dict[str, tuple[str, ...]] = {
+    "decoder": ("contract.v2.decode",),
+    "schema_field": ("contract.v2.schema", "contract.v2.decode"),
+    "contract_producer": ("contract.v2.produce",),
+    "action_view_contract": ("contract.action_view.search.identity",),
+    "renderer_registry": ("presentation.renderer.selection",),
+    "presentation_component": ("presentation.component.render",),
+    "renderer_component_identity": (
+        "presentation.renderer.selection",
+        "presentation.component.render",
+    ),
+    "layout_style": ("presentation.layout.responsive",),
+    "page_interaction": ("presentation.interaction", "business.intent.execute"),
+    "orm_field": ("business.orm.model",),
+    "orm_business": ("business.orm.mutate", "business.workflow"),
+    "acl": ("business.permission",),
+    "business_workflow": ("business.workflow",),
+    "migration": ("business.persistence.migration",),
+    "delivery_tool": ("delivery.tool",),
+    "change_impact_tool": ("delivery.change_impact",),
+    "verification_assertion": ("delivery.assertion",),
+    "docs": ("delivery.documentation",),
+}
+
+GRAPH_PATH_PREFIXES = (
+    "addons",
+    "customer_addons",
+    "demo_addons",
+    "frontend/apps/web/src",
+    "frontend/apps/web/scripts",
+)
 
 
 @dataclass(frozen=True)
@@ -293,10 +406,28 @@ def python_facts(text: str) -> dict[str, Any]:
     symbols: list[Symbol] = []
     classes: list[dict[str, Any]] = []
     imports: set[str] = set()
+    import_bindings: list[dict[str, Any]] = []
+    methods: list[dict[str, Any]] = []
     for node in ast.walk(tree):
-        if isinstance(node, (ast.Import, ast.ImportFrom)):
+        if isinstance(node, ast.Import):
             for alias in node.names:
                 imports.add(alias.name)
+            import_bindings.append(
+                {
+                    "module": "",
+                    "level": 0,
+                    "names": [alias.name for alias in node.names],
+                }
+            )
+        if isinstance(node, ast.ImportFrom):
+            imports.add(node.module or "")
+            import_bindings.append(
+                {
+                    "module": node.module or "",
+                    "level": node.level,
+                    "names": [alias.name for alias in node.names],
+                }
+            )
         if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef, ast.ClassDef)):
             base_names = [
                 ast.unparse(base)
@@ -310,6 +441,8 @@ def python_facts(text: str) -> dict[str, Any]:
             )
             symbols.append(symbol)
             if isinstance(node, ast.ClassDef):
+                model_name = ""
+                inherit_values: list[str] = []
                 fields = [
                     item.targets[0].id
                     for item in node.body
@@ -318,23 +451,68 @@ def python_facts(text: str) -> dict[str, Any]:
                     and isinstance(item.targets[0], ast.Name)
                     and isinstance(item.value, ast.Call)
                 ]
+                for item in node.body:
+                    if not (
+                        isinstance(item, ast.Assign)
+                        and len(item.targets) == 1
+                        and isinstance(item.targets[0], ast.Name)
+                    ):
+                        continue
+                    target = item.targets[0].id
+                    if target == "_name" and isinstance(item.value, ast.Constant):
+                        model_name = str(item.value.value or "")
+                    if target == "_inherit" and isinstance(item.value, (ast.List, ast.Tuple)):
+                        inherit_values = [
+                            str(element.value)
+                            for element in item.value.elts
+                            if isinstance(element, ast.Constant)
+                        ]
+                class_methods = [
+                    item.name
+                    for item in node.body
+                    if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
+                ]
                 classes.append(
                     {
                         "name": node.name,
                         "bases": base_names,
+                        "model_name": model_name,
+                        "inherit": sorted(inherit_values),
                         "fields": sorted(set(fields)),
-                        "methods": sorted(
-                            item.name
-                            for item in node.body
-                            if isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef))
-                        ),
+                        "methods": sorted(class_methods),
                     }
                 )
+                for item in node.body:
+                    if not isinstance(item, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                        continue
+                    calls = [
+                        call.func.attr
+                        if isinstance(call.func, ast.Attribute)
+                        else call.func.id
+                        for call in ast.walk(item)
+                        if isinstance(call, ast.Call)
+                        and isinstance(call.func, (ast.Attribute, ast.Name))
+                    ]
+                    methods.append(
+                        {
+                            "class_name": node.name,
+                            "name": item.name,
+                            "start_line": item.lineno,
+                            "end_line": getattr(item, "end_lineno", item.lineno),
+                            "calls": sorted(set(calls)),
+                            "orm_operations": sorted(
+                                set(calls)
+                                & {"create", "write", "unlink", "copy"}
+                            ),
+                        }
+                    )
     return {
         "ok": True,
         "symbols": [symbol.object for symbol in symbols],
         "classes": classes,
         "imports": sorted(imports),
+        "import_bindings": import_bindings,
+        "methods": methods,
     }
 
 
@@ -448,7 +626,18 @@ def classify_document(
             "dynamic_dependency_possible"
         ):
             unknown.append("dynamic_dependency_unresolved")
-        if "/app/contracts/v2/" in normalized:
+        assertion_calls = [
+            *(before_facts.get("assertion_calls") or []),
+            *(after_facts.get("assertion_calls") or []),
+        ]
+        if normalized.startswith("frontend/apps/web/scripts/") or any(
+            marker in Path(normalized).name for marker in ("_test.", ".test.")
+        ):
+            semantic_kinds.add("verification_assertion")
+            basis.extend(["typescript_compiler", "assertion_calls"])
+            if not assertion_calls:
+                unknown.append("verification_assertion_unresolved")
+        elif "/app/contracts/v2/" in normalized:
             if changed_names or changed_fields or fields_after:
                 semantic_kinds.add("decoder")
                 if changed_fields:
@@ -471,6 +660,10 @@ def classify_document(
             )
         ):
             semantic_kinds.add("presentation_component")
+            if "Renderer" in normalized or any(
+                "Renderer" in name for name in changed_names
+            ):
+                semantic_kinds.add("renderer_component_identity")
             if any(
                 token in name.lower()
                 for name in changed_names
@@ -480,16 +673,43 @@ def classify_document(
             basis.extend(["compiler_symbols", "frontend_surface_path"])
         elif changed_names:
             semantic_kinds.add("presentation_component")
+            if any("Renderer" in name for name in changed_names):
+                semantic_kinds.add("renderer_component_identity")
             basis.extend(["compiler_symbols", "frontend_runtime_symbols"])
         else:
             unknown.append("frontend_change_symbol_unresolved")
     elif normalized.startswith(("addons/", "demo_addons/", "customer_addons/")):
-        if "/security/" in normalized or "ir.model.access" in normalized:
+        is_python_test = (
+            "/tests/" in normalized
+            and suffix == ".py"
+            and Path(normalized).name.startswith("test_")
+        )
+        if is_python_test:
+            semantic_kinds.add("verification_assertion")
+            basis.append("python_test_path")
+        elif "/security/" in normalized or "ir.model.access" in normalized:
             semantic_kinds.add("acl")
             basis.append("security_declaration_path")
         elif "/migrations/" in normalized:
             semantic_kinds.add("migration")
             basis.append("migration_path")
+        elif suffix == ".sha256" or normalized.endswith(".json.sha256"):
+            semantic_kinds.add("verification_assertion")
+            basis.append("declaration_digest")
+        elif suffix == ".json":
+            try:
+                payload = json.loads(after or before or "{}")
+            except json.JSONDecodeError:
+                unknown.append("json_declaration_parse_failed")
+            else:
+                semantic_kinds.add("contract_producer")
+                basis.append("structured_json_parse")
+                if isinstance(payload, dict) and any(
+                    "menu" in str(key).lower() or "action" in str(key).lower()
+                    for key in payload
+                ):
+                    semantic_kinds.add("action_view_contract")
+                    basis.append("structured_json_action_identity")
         elif suffix == ".xml":
             parsed = xml_facts(after or before)
             models = parsed.get("models") or []
@@ -537,14 +757,34 @@ def classify_document(
         },
         key=lambda value: (LAYER_ORDER.index(OBLIGATIONS[value]["layer"]), value),
     )
+    capabilities = sorted(
+        {
+            capability
+            for kind in semantic_kinds
+            for capability in SEMANTIC_CAPABILITIES.get(kind, ())
+        }
+    )
     confidence = "high" if semantic_kinds and not unknown else (
         "partial" if semantic_kinds else "unknown"
     )
+    fact_id = "cf:" + _sha(
+        json.dumps(
+            {
+                "path": normalized,
+                "before": before,
+                "after": after,
+                "semantic_kinds": sorted(semantic_kinds),
+            },
+            sort_keys=True,
+        )
+    )[:20]
     return {
+        "id": fact_id,
         "path": normalized,
         "change_kind": "added" if not before else "deleted" if not after else "modified",
         "semantic_kinds": sorted(semantic_kinds),
         "obligation_ids": obligations,
+        "capabilities": capabilities,
         "layers": sorted(
             {OBLIGATIONS[item]["layer"] for item in obligations},
             key=LAYER_ORDER.index,
@@ -613,6 +853,9 @@ def _evidence_decisions(
     facts: list[dict[str, Any]],
     checks: list[dict[str, Any]],
     evidence: dict[str, Any],
+    *,
+    graph_digest: str | None,
+    environment_identity: dict[str, Any],
 ) -> list[dict[str, Any]]:
     fact_digest = _sha(json.dumps(facts, ensure_ascii=False, sort_keys=True))
     rows = []
@@ -624,6 +867,11 @@ def _evidence_decisions(
                     "check": check["id"],
                     "assertions": check["covered_assertions"],
                     "entrypoint": check["entrypoint"],
+                    "graph_digest": check.get(
+                        "invalidation_fingerprint",
+                        graph_digest,
+                    ),
+                    "environment_identity": environment_identity,
                 },
                 sort_keys=True,
             )
@@ -633,6 +881,7 @@ def _evidence_decisions(
             record.get("status") in {"passed", "checked", "reused"}
             and record.get("input_fingerprint") == fingerprint
             and record.get("assertion_closure") is True
+            and record.get("environment_identity") == environment_identity
         )
         rows.append(
             {
@@ -657,7 +906,14 @@ def analyze_change_set(
     base: str,
     head: str,
     evidence: dict[str, Any] | None = None,
+    graph: dict[str, Any] | None = None,
+    environment_identity: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
+    environment = environment_identity or {
+        "profile": "offline",
+        "database": "none",
+        "artifact": "none",
+    }
     facts = [
         classify_document(
             path=item["path"],
@@ -667,9 +923,20 @@ def analyze_change_set(
         )
         for item in items
     ]
+    for fact in facts:
+        trace = semantic_graph.trace_nodes_for_path(graph or {}, fact["path"])
+        fact["consumer_nodes"] = {
+            "forward": trace["forward"],
+            "reverse": trace["reverse"],
+        }
+        fact["graph_resolution"] = (
+            "resolved"
+            if trace["forward"] or trace["reverse"]
+            else "no_local_edge"
+        )
     if not facts:
         return {
-            "schema": "change_impact_plan.v1",
+            "schema": "change_impact_plan.v2",
             "identity": {"base": base, "head": head},
             "mode": "shadow",
             "change_facts": [],
@@ -685,6 +952,21 @@ def analyze_change_set(
             },
             "status": "passed",
             "cutover_eligible": False,
+            "semantic_graph": (graph or {}).get("summary"),
+            "environment_identity": environment,
+            "layer_disposition": [
+                {
+                    "layer": layer,
+                    "state": "not_applicable",
+                    "reason": "no changed product or verification tool semantics",
+                    "reverse_condition": "any parseable change fact for this layer",
+                }
+                for layer in ("L1", "L2", "L3")
+            ],
+            "delivery_governance": {
+                "state": "delegated_to_existing_delivery_gates",
+                "reason": "L4 is cross-cutting and remains owned by the existing exact-head delivery gates",
+            },
         }
     sources = sorted({item["path"] for item in facts})
     sources_by_obligation: dict[str, set[str]] = {}
@@ -714,7 +996,51 @@ def analyze_change_set(
             for reason in fact["unknown_reasons"]
         }
     )
-    decisions = _evidence_decisions(facts, checks, evidence or {})
+    if unknowns and not any(
+        check["id"] == "semantic.resolution_probe" for check in checks
+    ):
+        checks.append(
+            {
+                "id": "semantic.resolution_probe",
+                "entrypoint": "planner:resolve-semantic-consumers",
+                "kind": "diagnostic",
+                "cost": 0,
+                "evidence_kind": "semantic-resolution",
+                "classes": ["semantic-resolution-probe"],
+                "covers": [],
+                "covered_assertions": [],
+            }
+        )
+    if evidence and not any(
+        check["id"] == "delivery.change_impact_planner" for check in checks
+    ):
+        planner_check = CHECKS["delivery.change_impact_planner"]
+        checks.append(
+            {
+                "id": "delivery.change_impact_planner",
+                **planner_check,
+                "covered_assertions": [],
+            }
+        )
+    reverse_trace = semantic_graph.reverse_evidence_trace(
+        checks,
+        obligations,
+        facts,
+        graph or {},
+    )
+    trace_by_check = {row["check_id"]: row for row in reverse_trace}
+    for check in checks:
+        check["invalidation_fingerprint"] = trace_by_check.get(
+            check["id"], {}
+        ).get("invalidation_fingerprint")
+    graph_digest = (graph or {}).get("digest")
+    decisions = _evidence_decisions(
+        facts,
+        checks,
+        evidence or {},
+        graph_digest=graph_digest,
+        environment_identity=environment,
+    )
     required_assertions = {
         assertion
         for obligation in obligations
@@ -726,10 +1052,67 @@ def analyze_change_set(
         for assertion in check["covered_assertions"]
     }
     blocked = bool(unknowns or uncovered_assertions)
+    required_layers = {
+        obligation["layer"] for obligation in obligations
+    }
+    semantic_kinds = {
+        kind for fact in facts for kind in fact["semantic_kinds"]
+    }
+    layer_disposition = []
+    na_rules = {
+        "L1": (
+            "changed semantics contain no contract producer/decoder/consumer identity",
+            "a changed contract field, producer, consumer, action identity, ACL projection or migration contract",
+        ),
+        "L2": (
+            "no frontend runtime, renderer, component, layout or interaction semantics changed",
+            "any frontend presentation runtime or affected-page compatibility defect",
+        ),
+        "L3": (
+            "no ORM mutation, permission, state, workflow or migration semantics changed",
+            "any persisted business result, ACL/record rule, state transition or workflow change",
+        ),
+    }
+    for layer in ("L1", "L2", "L3"):
+        if layer in required_layers:
+            layer_disposition.append(
+                {
+                    "layer": layer,
+                    "state": "required",
+                    "reason": "at least one changed semantic fact requires this layer",
+                }
+            )
+        elif layer == "L1" and "layout_style" in semantic_kinds:
+            layer_disposition.append(
+                {
+                    "layer": layer,
+                    "state": "not_applicable",
+                    "reason": "style-only change does not alter contract semantics",
+                    "reverse_condition": na_rules[layer][1],
+                }
+            )
+        elif not unknowns:
+            layer_disposition.append(
+                {
+                    "layer": layer,
+                    "state": "not_applicable",
+                    "reason": na_rules[layer][0],
+                    "reverse_condition": na_rules[layer][1],
+                }
+            )
+        else:
+            layer_disposition.append(
+                {
+                    "layer": layer,
+                    "state": "blocked_unknown",
+                    "reason": "unresolved change semantics prevent an N/A decision",
+                }
+            )
     return {
-        "schema": "change_impact_plan.v1",
+        "schema": "change_impact_plan.v2",
         "identity": {"base": base, "head": head},
         "mode": "shadow",
+        "environment_identity": environment,
         "change_facts": facts,
         "obligations": obligations,
         "checks": checks,
@@ -742,6 +1125,24 @@ def analyze_change_set(
             "required_assertions": len(required_assertions),
             "covered_assertions": len(covered_assertions & required_assertions),
             "assertion_closure": not uncovered_assertions,
+        },
+        "trace": {
+            "forward": [
+                {
+                    "change_fact_id": fact["id"],
+                    "path": fact["path"],
+                    "consumer_nodes": fact["consumer_nodes"],
+                    "obligation_ids": fact["obligation_ids"],
+                }
+                for fact in facts
+            ],
+            "reverse": reverse_trace,
+        },
+        "semantic_graph": (graph or {}).get("summary"),
+        "layer_disposition": layer_disposition,
+        "delivery_governance": {
+            "state": "delegated_to_existing_delivery_gates",
+            "reason": "L4 is cross-cutting and remains owned by the existing exact-head delivery gates",
         },
         "status": "blocked" if blocked else "planned",
         "cutover_eligible": False,
@@ -805,6 +1206,75 @@ def _typescript_facts(items: list[dict[str, Any]]) -> dict[str, Any]:
     return json.loads(process.stdout or "{}")
 
 
+def _graph_source(path: str) -> bool:
+    return Path(path).suffix.lower() in semantic_graph.SOURCE_SUFFIXES
+
+
+def _revision_source_files(revision: str) -> dict[str, str]:
+    process = subprocess.run(
+        ["git", "archive", "--format=tar", revision, *GRAPH_PATH_PREFIXES],
+        cwd=ROOT,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        check=False,
+    )
+    if process.returncode:
+        raise ValueError(
+            process.stderr.decode("utf-8", errors="replace").strip()
+            or "unable to archive semantic graph revision"
+        )
+    files: dict[str, str] = {}
+    with tarfile.open(fileobj=io.BytesIO(process.stdout), mode="r:") as archive:
+        for member in archive.getmembers():
+            if not member.isfile() or not _graph_source(member.name):
+                continue
+            extracted = archive.extractfile(member)
+            if extracted is None:
+                continue
+            files[member.name] = extracted.read().decode("utf-8", errors="replace")
+    return files
+
+
+def _worktree_source_files() -> dict[str, str]:
+    paths = _git("ls-files", "-z", *GRAPH_PATH_PREFIXES).split("\0")
+    files: dict[str, str] = {}
+    for path in paths:
+        if not path or not _graph_source(path):
+            continue
+        source = ROOT / path
+        if source.is_file():
+            files[path] = source.read_text(encoding="utf-8", errors="replace")
+    return files
+
+
+def _semantic_graph_for_items(
+    items: list[dict[str, Any]],
+    *,
+    revision: str,
+    worktree: bool,
+) -> dict[str, Any] | None:
+    if not any(
+        item["path"].startswith(GRAPH_PATH_PREFIXES) and _graph_source(item["path"])
+        for item in items
+    ):
+        return None
+    files = _worktree_source_files() if worktree else _revision_source_files(revision)
+    for item in items:
+        if item.get("after") and _graph_source(item["path"]):
+            files[item["path"]] = item["after"]
+    graph_items = [
+        {"path": path, "before": "", "after": text}
+        for path, text in sorted(files.items())
+    ]
+    graph_ts_facts = _typescript_facts(graph_items)
+    return semantic_graph.build_semantic_graph(
+        files,
+        revision=revision,
+        ts_facts=graph_ts_facts,
+        changed_paths=[item["path"] for item in items],
+    )
+
+
 def plan_from_git(
     *,
     base: str,
@@ -812,6 +1282,8 @@ def plan_from_git(
     paths: list[str] | None = None,
     worktree: bool = False,
     evidence: dict[str, Any] | None = None,
+    environment_identity: dict[str, Any] | None = None,
+    graph_output: Path | None = None,
 ) -> dict[str, Any]:
     if not FULL_SHA.fullmatch(base):
         raise ValueError("base must be a full lowercase SHA")
@@ -845,7 +1317,21 @@ def plan_from_git(
     ts = _typescript_facts(items)
     for item in items:
         item["ts_facts"] = ts.get(item["path"])
-    return analyze_change_set(items, base=base, head=head, evidence=evidence)
+    graph = _semantic_graph_for_items(items, revision=head, worktree=worktree)
+    if graph_output is not None and graph is not None:
+        graph_output.parent.mkdir(parents=True, exist_ok=True)
+        graph_output.write_text(
+            json.dumps(graph, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    return analyze_change_set(
+        items,
+        base=base,
+        head=head,
+        evidence=evidence,
+        graph=graph,
+        environment_identity=environment_identity,
+    )
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -856,6 +1342,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--path", action="append", default=[])
     parser.add_argument("--evidence", type=Path)
     parser.add_argument("--output", type=Path)
+    parser.add_argument("--graph-output", type=Path)
     args = parser.parse_args(argv)
     try:
         base = _git("rev-parse", args.base).strip()
@@ -871,6 +1358,7 @@ def main(argv: list[str] | None = None) -> int:
             paths=args.path or None,
             worktree=args.worktree,
             evidence=evidence,
+            graph_output=args.graph_output,
         )
         text = json.dumps(plan, ensure_ascii=False, indent=2, sort_keys=True) + "\n"
         if args.output:
@@ -887,6 +1375,7 @@ def main(argv: list[str] | None = None) -> int:
                     "obligations": len(plan["obligations"]),
                     "checks": len(plan["checks"]),
                     "unknowns": len(plan["unknowns"]),
+                    "graph_edges": (plan.get("semantic_graph") or {}).get("edges", 0),
                     "cutover_eligible": plan["cutover_eligible"],
                 },
                 ensure_ascii=False,

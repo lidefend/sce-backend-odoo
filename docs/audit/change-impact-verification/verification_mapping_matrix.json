@@ -1429,8 +1429,8 @@
     ]
   },
   "schema": "change_impact_verification.inventory.v1",
-  "source_head": "911e40b4104ec7513caa11344dda24e16d262c01",
-  "source_tree": "ea76d8b92f9d1afb348492e63df593834d1b9bad",
+  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740",
+  "source_tree": "dc1079a626ef5babd5fe179edac2219cfd75fa64",
   "surface_summary": {
     "anchor_parser_non_target_nodes": 6,
     "anchor_reachable_targets": {
@@ -1512,10 +1512,10 @@
       "scripts/verify/test_menu_metadata_batch.py",
       "scripts/verify/test_system_performance_baseline.py"
     ],
-    "normalized_all_targets": 2459,
+    "normalized_all_targets": 2460,
     "normalized_anchor_targets": 240,
     "parser_non_target_nodes_all": 0,
-    "phony_targets": 2331,
+    "phony_targets": 2332,
     "remote_only_scripts": [
       "scripts/ci/frontend_professional_extension_guard.py",
       "scripts/ci/python_syntax_check.py",
@@ -1600,8 +1600,8 @@
       "scripts/verify/test_frontend_state_presentation_guard.py",
       "scripts/verify/test_python_name_binding_guard.py"
     ],
-    "scripts_on_disk": 2489,
-    "scripts_owned_surface": 862,
+    "scripts_on_disk": 2494,
+    "scripts_owned_surface": 867,
     "scripts_retired": 41,
     "scripts_unreferenced_anywhere": [
       "scripts/audit/tenant_pro_03_data_responsibility_inventory.py",
@@ -1710,7 +1710,7 @@
       "scripts/verify/invoice_output_detail_browser_smoke.js"
     ],
     "scripts_verify_lifecycle_owned": 1627,
-    "targets_defined": 2459,
+    "targets_defined": 2460,
     "targets_missing_asset": {
       "daily.candidate.continuity.remote_install": [
         "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
@@ -1787,7 +1787,7 @@
         "scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
       ]
     },
-    "targets_unreached_from_anchor": 2219,
+    "targets_unreached_from_anchor": 2220,
     "targets_zero_reference": [
       "acceptance.baseline.upgrade",
       "acceptance.frontend.activity_surface.browser",

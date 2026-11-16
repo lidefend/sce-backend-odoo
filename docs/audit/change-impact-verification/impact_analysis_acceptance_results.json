@@ -1,0 +1,672 @@
+{
+  "cases": [
+    {
+      "actual_layers": [
+        "L1",
+        "L4"
+      ],
+      "actual_obligations": [
+        "L1.consumer",
+        "L1.producer",
+        "L1.schema_contract",
+        "L4.assertions"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.contract.entry_equivalence.guard",
+          "verify.native_action.view_set.orm",
+          "verify.native_action.view_set.unit",
+          "verify.unified_page_contract.v2.assembler"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit",
+          "delivery.changed_assertion",
+          "contract.unified_v2"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L1.producer",
+        "L1.schema_contract"
+      ],
+      "false_negative": false,
+      "id": "decoder-only-compatible-field",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L2"
+      ],
+      "actual_obligations": [
+        "L1.consumer",
+        "L1.renderer_identity",
+        "L2.page_presentation"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.form_container_presentation.guard",
+          "verify.frontend.action_view_page_actions.unit",
+          "verify.frontend.action_view_page_size_runtime.unit",
+          "verify.frontend.action_view_surface_gate_runtime.unit",
+          "verify.frontend.canonical_form_presenter.unit",
+          "verify.frontend.contract_basis.unit",
+          "verify.frontend.lint.src",
+          "verify.frontend.overlay_lifecycle.unit",
+          "verify.frontend.page_pattern_reference_parity.unit",
+          "verify.frontend.primitive_adapter.unit",
+          "verify.frontend.product_page_pattern.unit",
+          "verify.frontend.style_system.guard",
+          "verify.frontend.typecheck.strict"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.renderer_registry_unit",
+          "frontend.contract_unit",
+          "frontend.presentation_browser"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L2"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L2.page_presentation"
+      ],
+      "false_negative": false,
+      "id": "renderer-registry-only",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L2"
+      ],
+      "actual_obligations": [
+        "L2.layout_responsive"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.frontend.canonical_form_presenter.unit",
+          "verify.frontend.contract_v2_occurrence_authority.unit",
+          "verify.frontend.lint.src",
+          "verify.frontend.page_pattern_reference_parity.unit",
+          "verify.frontend.primitive_adapter.unit",
+          "verify.frontend.product_page_pattern.unit",
+          "verify.frontend.professional_detail_collection.unit",
+          "verify.frontend.style_system.guard",
+          "verify.frontend.typecheck.strict"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.presentation_browser"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L2"
+      ],
+      "expected_obligations": [
+        "L2.layout_responsive"
+      ],
+      "false_negative": false,
+      "id": "css-responsive-only",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "synthetic-from-current-surface",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "actual_obligations": [
+        "L1.action_view_identity",
+        "L1.consumer",
+        "L1.producer",
+        "L1.schema_contract",
+        "L3.business_outcome",
+        "L3.orm_persistence",
+        "L4.assertions"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.approval.contract_closure.orm",
+          "verify.capability.identity_boundary.orm",
+          "verify.capability.identity_boundary.unit",
+          "verify.daily.permission_truth.capability.orm",
+          "verify.frontend.contract_header_action.unit",
+          "verify.frontend.navigation_policy.unit",
+          "verify.frontend.role_surface_exposure_declaration.guard",
+          "verify.general_contract.review_authority.unit",
+          "verify.page.finalize.authority.orm",
+          "verify.page.project_finalize.authority.orm",
+          "verify.payment.authorization_boundary.orm",
+          "verify.platform.capability_explorer.unit",
+          "verify.product.menu.contract_v1.guard",
+          "verify.product_system_parameter_catalog",
+          "verify.project.dashboard.contract",
+          "verify.role_surface.landing.contract.unit",
+          "verify.scene.publication_authority.orm",
+          "verify.unified_page_contract.v2.action",
+          "verify.unified_page_contract.v2.assembler",
+          "verify.unified_page_contract.v2.runtime",
+          "verify.unified_page_contract.v2.status",
+          "verify.workflow_action_semantics.guard"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit",
+          "delivery.changed_assertion",
+          "contract.unified_v2",
+          "backend.contract_suite"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L3"
+      ],
+      "expected_obligations": [
+        "L1.action_view_identity",
+        "L1.consumer",
+        "L1.schema_contract",
+        "L3.business_outcome",
+        "L3.orm_persistence"
+      ],
+      "false_negative": false,
+      "id": "orm-or-acl-change",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L3"
+      ],
+      "actual_obligations": [
+        "L1.action_view_identity",
+        "L3.acl_negative",
+        "L3.acl_positive"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "backend.contract_suite",
+          "contract.unified_v2"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L3"
+      ],
+      "expected_obligations": [
+        "L1.action_view_identity",
+        "L3.acl_negative",
+        "L3.acl_positive"
+      ],
+      "false_negative": false,
+      "id": "acl-record-rule-change",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "synthetic-conformance",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L2"
+      ],
+      "actual_obligations": [
+        "L1.consumer",
+        "L1.producer",
+        "L1.schema_contract",
+        "L2.page_presentation"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.business_config.formal_list.unit",
+          "verify.contract.entry_equivalence.guard",
+          "verify.form_structure_authority_unification.unit",
+          "verify.frontend.action_view_page_actions.unit",
+          "verify.frontend.action_view_page_size_runtime.unit",
+          "verify.frontend.action_view_surface_gate_runtime.unit",
+          "verify.frontend.contract_basis.unit",
+          "verify.frontend.lint.src",
+          "verify.frontend.overlay_lifecycle.unit",
+          "verify.frontend.style_system.guard",
+          "verify.frontend.typecheck.strict",
+          "verify.unified_page_contract.v2.assembler"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit",
+          "contract.unified_v2",
+          "frontend.presentation_browser"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L2"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L1.schema_contract",
+        "L2.page_presentation"
+      ],
+      "false_negative": false,
+      "id": "backend-frontend-mixed",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "actual_obligations": [
+        "L1.action_view_identity",
+        "L1.consumer",
+        "L1.decoder",
+        "L1.renderer_identity",
+        "L1.schema_contract",
+        "L2.page_interaction",
+        "L2.page_presentation",
+        "L2.renderer_selection",
+        "L3.business_outcome",
+        "L3.orm_persistence"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.frontend.action_view_page_actions.unit",
+          "verify.frontend.action_view_page_size_runtime.unit",
+          "verify.frontend.action_view_surface_gate_runtime.unit",
+          "verify.frontend.canonical_form_presenter.unit",
+          "verify.frontend.contract_basis.unit",
+          "verify.frontend.contract_record_action_state.unit",
+          "verify.frontend.lint.src",
+          "verify.frontend.overlay_lifecycle.unit",
+          "verify.frontend.professional_component_registry.unit",
+          "verify.frontend.style_system.guard",
+          "verify.frontend.typecheck.strict",
+          "verify.semantic.registry.lint"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit",
+          "frontend.renderer_registry_unit",
+          "backend.contract_suite",
+          "frontend.presentation_browser",
+          "contract.unified_v2"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L1.decoder",
+        "L1.renderer_identity",
+        "L1.schema_contract",
+        "L2.page_presentation",
+        "L2.renderer_selection",
+        "L3.business_outcome",
+        "L3.orm_persistence"
+      ],
+      "false_negative": false,
+      "id": "mixed-business-outcome",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "synthetic-conformance",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L2"
+      ],
+      "actual_obligations": [
+        "L1.renderer_identity",
+        "L2.page_presentation",
+        "L2.renderer_selection"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.frontend.lint.src",
+          "verify.frontend.professional_component_registry.unit",
+          "verify.frontend.typecheck.strict",
+          "verify.semantic.registry.lint"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.renderer_registry_unit",
+          "frontend.presentation_browser",
+          "semantic.resolution_probe"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "UNKNOWN"
+      ],
+      "expected_obligations": [],
+      "false_negative": false,
+      "id": "dynamic-consumer-unresolved",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "blocked",
+      "replay_kind": "synthetic-conformance",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": [
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts: dynamic_dependency_unresolved"
+      ]
+    },
+    {
+      "actual_layers": [
+        "L1"
+      ],
+      "actual_obligations": [
+        "L1.consumer",
+        "L1.decoder",
+        "L1.schema_contract"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.frontend.canonical_form_presenter.unit",
+          "verify.frontend.contract_record_action_state.unit",
+          "verify.frontend.lint.src",
+          "verify.frontend.typecheck.strict"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L1.decoder",
+        "L1.schema_contract"
+      ],
+      "false_negative": false,
+      "id": "contract-field-rename-delete",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "synthetic-conformance",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "actual_obligations": [
+        "L1.schema_contract",
+        "L3.migration",
+        "L3.orm_persistence",
+        "L4.assertions",
+        "L4.delivery"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.daily.permission_truth.capability.orm",
+          "verify.navigation.publication_consumers.unit",
+          "verify.scenario.center_projection.guard",
+          "verify.smart_construction_core.migration_compatibility.orm"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "delivery.changed_assertion",
+          "delivery.ci_workflow_contract",
+          "backend.migration_compatibility",
+          "frontend.contract_unit"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "expected_obligations": [
+        "L1.schema_contract",
+        "L3.migration",
+        "L3.orm_persistence",
+        "L4.assertions"
+      ],
+      "false_negative": false,
+      "id": "assertion-or-fixture-change",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L4"
+      ],
+      "actual_obligations": [
+        "L4.docs"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "delivery.docs_links"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L4"
+      ],
+      "expected_obligations": [
+        "L4.docs"
+      ],
+      "false_negative": false,
+      "id": "documentation-only",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L1"
+      ],
+      "actual_obligations": [
+        "L1.consumer",
+        "L1.decoder",
+        "L1.schema_contract"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.acceptance.evolution.binding"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "frontend.contract_unit",
+          "delivery.change_impact_planner"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligations": [
+        "L1.consumer",
+        "L1.decoder",
+        "L1.schema_contract"
+      ],
+      "false_negative": false,
+      "id": "incorrect-evidence-reuse",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "synthetic-conformance",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    },
+    {
+      "actual_layers": [
+        "L4"
+      ],
+      "actual_obligations": [
+        "L4.delivery"
+      ],
+      "assertion_closure": true,
+      "dual_run_observation": {
+        "current_path_router_targets": [
+          "verify.ci.workflow.contract",
+          "verify.github_actions.security"
+        ],
+        "equal_target_identity": false,
+        "note": "Target identity is intentionally different: path targets are execution units while semantic checks are assertion-covering units. This observation is not a cutover proof.",
+        "semantic_check_ids": [
+          "delivery.ci_workflow_contract"
+        ]
+      },
+      "evidence_reuse_error": false,
+      "expected_layers": [
+        "L4"
+      ],
+      "expected_obligations": [
+        "L4.delivery"
+      ],
+      "false_negative": false,
+      "id": "governance-tooling-change",
+      "missing_check_classes": [],
+      "missing_layers": [],
+      "missing_obligations": [],
+      "planner_status": "planned",
+      "replay_kind": "historical-candidate",
+      "status": "pass",
+      "unexpected_product_layers": [],
+      "unknowns": []
+    }
+  ],
+  "cutover_blockers": [
+    "required-gate dual-run has not been approved",
+    "independent review has not approved cutover"
+  ],
+  "cutover_eligible": false,
+  "cutover_note": "Matrix conformance is necessary but not sufficient. Required-gate cutover still needs dual-run and independent review.",
+  "input_fingerprint": "1de9db748480049cfae14072d51857c6bdd0f7d723113dc80e066fb99ce888b5",
+  "input_paths": [
+    "scripts/audit/generate_change_impact_verification_inventory.py",
+    "scripts/ops/change_impact_acceptance.py",
+    "scripts/ops/change_impact_evidence.py",
+    "scripts/ops/change_impact_graph.py",
+    "scripts/ops/change_impact_planner.py",
+    "scripts/ops/typescript_change_facts.mjs",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "matrix_conformance_complete": true,
+  "metrics": {
+    "cases": 13,
+    "evidence_reuse_error": 0,
+    "false_negative": 0,
+    "false_positive_product_layer": 0,
+    "obligation_coverage": 1.0,
+    "passed_cases": 13,
+    "unknown_obligations": 0
+  },
+  "mode": "offline-shadow-replay",
+  "planner_schema": "change_impact_plan.v2",
+  "schema": "change_impact_verification.acceptance_results.v1"
+}

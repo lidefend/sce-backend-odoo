@@ -9,6 +9,11 @@
       "expected_layers": [
         "L1"
       ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.producer",
+        "L1.consumer"
+      ],
       "fail_policy": "BLOCK on schema/decoder/consumer mismatch or assertion gap",
       "id": "decoder-only-compatible-field",
       "must_not_run": [
@@ -43,6 +48,10 @@
         "L1",
         "L2"
       ],
+      "expected_obligation_ids": [
+        "L1.consumer",
+        "L2.page_presentation"
+      ],
       "fail_policy": "BLOCK if only a generic frontend unit or page reachability ran",
       "id": "renderer-registry-only",
       "must_not_run": [
@@ -72,6 +81,9 @@
       ],
       "expected_layers": [
         "L2"
+      ],
+      "expected_obligation_ids": [
+        "L2.layout_responsive"
       ],
       "fail_policy": "BLOCK on missing target viewport evidence",
       "id": "css-responsive-only",
@@ -105,6 +117,13 @@
         "L1",
         "L3"
       ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.consumer",
+        "L1.action_view_identity",
+        "L3.orm_persistence",
+        "L3.business_outcome"
+      ],
       "fail_policy": "BLOCK on missing positive or negative permission proof",
       "id": "orm-or-acl-change",
       "must_not_run": [
@@ -113,9 +132,8 @@
       "replay_kind": "historical-candidate",
       "required_obligations": [
         "contract-visibility-projection",
-        "authorized-positive-case",
-        "unauthorized-negative-case",
-        "persisted-state-result"
+        "persisted-state-result",
+        "business-state-transition"
       ],
       "sample": {
         "commit": "5897cb3c3cf23be94cc935741fcf11840e31f54f",
@@ -132,13 +150,55 @@
     },
     {
       "evidence_requirements": [
+        "real ORM runtime",
+        "database identity",
+        "assertion counts"
+      ],
+      "expected_layers": [
+        "L1",
+        "L3"
+      ],
+      "expected_obligation_ids": [
+        "L1.action_view_identity",
+        "L3.acl_positive",
+        "L3.acl_negative"
+      ],
+      "fail_policy": "BLOCK on missing positive or negative permission proof",
+      "id": "acl-record-rule-change",
+      "must_not_run": [
+        "browser unless frontend visibility component changed"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "contract-visibility-projection",
+        "authorized-positive-case",
+        "unauthorized-negative-case"
+      ],
+      "sample": {
+        "paths": [
+          "addons/smart_construction_core/security/ir.model.access.csv",
+          "addons/smart_construction_core/security/sc_record_rules.xml"
+        ]
+      },
+      "selected_check_classes": [
+        "contract-unit",
+        "governed-ORM",
+        "permission-negative"
+      ]
+    },
+    {
+      "evidence_requirements": [
         "per-layer evidence union",
         "exact affected page/unit identities"
       ],
       "expected_layers": [
         "L1",
-        "L2",
-        "L3"
+        "L2"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.consumer",
+        "L2.page_presentation"
       ],
       "fail_policy": "BLOCK when a dominant file type masks another layer",
       "id": "backend-frontend-mixed",
@@ -146,10 +206,10 @@
         "unrelated modules or pages"
       ],
       "replay_kind": "historical-candidate",
+      "replay_note": "The historical change controls page hydration and contract consumption; it does not mutate ORM state. The L3 mixed change is covered separately by mixed-business-outcome.",
       "required_obligations": [
         "backend-contract-projection",
-        "frontend-renderer-consumption",
-        "affected-business-outcome"
+        "frontend-renderer-consumption"
       ],
       "sample": {
         "commit": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
@@ -161,6 +221,50 @@
       },
       "selected_check_classes": [
         "contract-unit",
+        "focused-page-browser"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "per-layer evidence union",
+        "assertion closure"
+      ],
+      "expected_layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer",
+        "L1.renderer_identity",
+        "L2.renderer_selection",
+        "L2.page_presentation",
+        "L3.orm_persistence",
+        "L3.business_outcome"
+      ],
+      "fail_policy": "BLOCK when any changed layer lacks an obligation or check",
+      "id": "mixed-business-outcome",
+      "must_not_run": [
+        "one layer masking another layer"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "decoder-and-consumer-contract",
+        "renderer-and-page-presentation",
+        "business-state-transition"
+      ],
+      "sample": {
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/schema.ts",
+          "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+          "frontend/apps/web/src/views/ActionView.vue",
+          "addons/smart_construction_core/models/project.py"
+        ]
+      },
+      "selected_check_classes": [
+        "strict-decoder",
         "focused-page-browser",
         "governed-ORM"
       ]
@@ -172,6 +276,7 @@
       "expected_layers": [
         "UNKNOWN"
       ],
+      "expected_obligation_ids": [],
       "fail_policy": "BLOCK",
       "id": "dynamic-consumer-unresolved",
       "must_not_run": [
@@ -196,6 +301,11 @@
       ],
       "expected_layers": [
         "L1"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer"
       ],
       "fail_policy": "BLOCK on unresolved consumer or missing rejection case",
       "id": "contract-field-rename-delete",
@@ -230,6 +340,12 @@
         "L3",
         "L4"
       ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L3.orm_persistence",
+        "L3.migration",
+        "L4.assertions"
+      ],
       "fail_policy": "BLOCK on stale evidence reuse",
       "id": "assertion-or-fixture-change",
       "must_not_run": [
@@ -262,6 +378,9 @@
       "expected_layers": [
         "L4"
       ],
+      "expected_obligation_ids": [
+        "L4.docs"
+      ],
       "fail_policy": "BLOCK on broken governance documents; reuse unchanged product evidence",
       "id": "documentation-only",
       "must_not_run": [
@@ -289,10 +408,12 @@
         "no recorded success"
       ],
       "expected_layers": [
-        "L1",
-        "L2",
-        "L3",
-        "L4"
+        "L1"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer"
       ],
       "fail_policy": "BLOCK and increment Evidence Reuse Error",
       "id": "incorrect-evidence-reuse",
@@ -301,7 +422,8 @@
       ],
       "replay_kind": "synthetic-conformance",
       "required_obligations": [
-        "invalidate-all-dependent-suite-proofs"
+        "invalidate-all-dependent-suite-proofs",
+        "rerun-only-the-changed-contract-obligations"
       ],
       "sample": {
         "paths": [
@@ -318,6 +440,9 @@
       ],
       "expected_layers": [
         "L4"
+      ],
+      "expected_obligation_ids": [
+        "L4.delivery"
       ],
       "fail_policy": "BLOCK on unmapped tool or selector behavior",
       "id": "governance-tooling-change",
@@ -368,5 +493,5 @@
   },
   "purpose": "P4-01/P4-02 conformance input. These are expected outcomes, not implemented planner results.",
   "schema": "change_impact_verification.acceptance_matrix.v1",
-  "source_head": "911e40b4104ec7513caa11344dda24e16d262c01"
+  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740"
 }
