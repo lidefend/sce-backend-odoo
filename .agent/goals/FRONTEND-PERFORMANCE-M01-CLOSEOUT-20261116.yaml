@@ -1,0 +1,40 @@
+schema_version: 1
+goal:
+  id: FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116
+  title: close FRONTEND-PERFORMANCE-M01 after PR 898
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed post-merge integration closeout
+  module:
+    - .agent
+    - docs/ops
+  objective: >-
+    Record that PR #898 merged the exact FRONTEND-PERFORMANCE-M01 source into
+    main, close the source run and goal, and remove the active-run binding so
+    the verified topic branch can be retired without leaving dangling context.
+  baseline:
+    branch: main
+    full_sha: c54c7e2dafa879846e97b411fb34e33177819bd9
+    source: clean_main_after_pr_898
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_tooling
+    why_here: >-
+      PR merge identity, run lifecycle and branch-retirement readiness are
+      delivery-control metadata, not frontend product semantics.
+    why_not_elsewhere:
+      - no_frontend_runtime_change
+      - no_backend_contract_or_permission_change
+      - no_database_or_runtime_environment_change
+    blast_radius:
+      - the FRONTEND-PERFORMANCE-M01 goal, run and living batch record
+      - the governed active-run index
+  exclusions:
+    - no_product_source_or_test_change
+    - no_deployment
+    - no_desktop_or_mobile_performance_acceptance
+    - no_database_or_runtime_mutation
+  rollback:
+    - revert this closeout commit and recreate the active binding if follow-up work resumes
+  next_exact_step: >-
+    Publish and merge this closeout metadata update, then run the governed
+    exact-SHA branch cleanup for PR #898 and this closeout branch.
