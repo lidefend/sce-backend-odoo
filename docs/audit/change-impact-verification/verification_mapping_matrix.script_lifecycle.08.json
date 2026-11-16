@@ -1,0 +1,449 @@
+{
+  "chunk": 8,
+  "chunks": 9,
+  "items": [
+    {
+      "boundary_answers": {
+        "answer_grades": {
+          "defects_it_can_detect": "conservative_inference",
+          "duplicate_or_overlap": "unknown",
+          "services_and_database_dependencies": "unknown",
+          "what_it_actually_executes": "observed_recipe_reference",
+          "what_it_can_prove": "conservative_boundary",
+          "what_it_cannot_prove": "conservative_boundary",
+          "what_it_verifies": "unknown",
+          "what_triggers_it": "observed_declaration"
+        },
+        "call_chain_status": "direct_recipe_or_workflow_reference_only",
+        "defects_it_can_detect": "A violation of declarations in the executed files, subject to the unknown transitive-call and assertion analysis recorded here",
+        "duplicate_or_overlap": {
+          "reason": "P4-00 has no obligation-to-assertion graph. Shared targets/scripts are observable, but actual duplicate assertions are not established.",
+          "status": "UNKNOWN"
+        },
+        "evidence_profile": {
+          "duplicate_or_overlap": {
+            "level": "unknown",
+            "reason": "assertion/obligation graph not built in P4-00"
+          },
+          "execution_edges": {
+            "basis": "workflow/Make recipe/registry declaration",
+            "level": "observed_declaration",
+            "transitive_runtime_calls": "unknown"
+          },
+          "layer_hints": {
+            "is_obligation": false,
+            "level": "static_inference"
+          },
+          "resource_dependencies": {
+            "level": "unknown",
+            "runtime_verified": false,
+            "source": "not_statically_detected"
+          },
+          "semantic_responsibility": {
+            "level": "unknown",
+            "manual_reviewed": false,
+            "source": "not_declared"
+          }
+        },
+        "responsibility_status": "unknown",
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [],
+            "kind": "not_statically_detected"
+          }
+        ],
+        "what_it_actually_executes": [
+          "scripts/verify/workspace_home_sections_schema_guard.py"
+        ],
+        "what_it_can_prove": "Only an explicit manual invocation can prove its encoded assertions; it is not dispatched by the automated gate graph.",
+        "what_it_cannot_prove": [
+          "it does not execute a contract/schema/decoder assertion for this surface",
+          "it does not prove real browser rendering or interaction for this surface",
+          "it does not prove ORM persistence, permissions or business-state outcome",
+          "it does not by itself establish delivery governance",
+          "it does not prove behavior outside the assertions encoded by the executed files",
+          "it does not make historical PASS evidence current when declared inputs, identity or environment changed"
+        ],
+        "what_it_verifies": "scripts/verify/workspace_home_sections_schema_guard.py: no stable semantic summary is declared; assertion scope requires source tracing",
+        "what_triggers_it": {
+          "gate_enforced": false,
+          "make_targets": [
+            "verify.workspace_home.sections_schema.guard"
+          ],
+          "workflows": []
+        }
+      },
+      "execution_role": "guard_or_probe",
+      "layer_hints": [
+        "L2"
+      ],
+      "lifecycle": "manual_or_non_gate_dispatch",
+      "path": "scripts/verify/workspace_home_sections_schema_guard.py",
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "referenced_by_make_targets": [
+        "verify.workspace_home.sections_schema.guard"
+      ],
+      "referenced_by_workflows": [],
+      "resources": [],
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "boundary_answers": {
+        "answer_grades": {
+          "defects_it_can_detect": "conservative_inference",
+          "duplicate_or_overlap": "unknown",
+          "services_and_database_dependencies": "unknown",
+          "what_it_actually_executes": "observed_recipe_reference",
+          "what_it_can_prove": "conservative_boundary",
+          "what_it_cannot_prove": "conservative_boundary",
+          "what_it_verifies": "unknown",
+          "what_triggers_it": "observed_declaration"
+        },
+        "call_chain_status": "direct_recipe_or_workflow_reference_only",
+        "defects_it_can_detect": "A violation of declarations in the executed files, subject to the unknown transitive-call and assertion analysis recorded here",
+        "duplicate_or_overlap": {
+          "reason": "P4-00 has no obligation-to-assertion graph. Shared targets/scripts are observable, but actual duplicate assertions are not established.",
+          "status": "UNKNOWN"
+        },
+        "evidence_profile": {
+          "duplicate_or_overlap": {
+            "level": "unknown",
+            "reason": "assertion/obligation graph not built in P4-00"
+          },
+          "execution_edges": {
+            "basis": "workflow/Make recipe/registry declaration",
+            "level": "observed_declaration",
+            "transitive_runtime_calls": "unknown"
+          },
+          "layer_hints": {
+            "is_obligation": false,
+            "level": "static_inference"
+          },
+          "resource_dependencies": {
+            "level": "unknown",
+            "runtime_verified": false,
+            "source": "not_statically_detected"
+          },
+          "semantic_responsibility": {
+            "level": "unknown",
+            "manual_reviewed": false,
+            "source": "not_declared"
+          }
+        },
+        "responsibility_status": "unknown",
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [],
+            "kind": "not_statically_detected"
+          }
+        ],
+        "what_it_actually_executes": [
+          "scripts/verify/write_intent_permission_audit.py"
+        ],
+        "what_it_can_prove": "Only an explicit manual invocation can prove its encoded assertions; it is not dispatched by the automated gate graph.",
+        "what_it_cannot_prove": [
+          "it does not execute a contract/schema/decoder assertion for this surface",
+          "it does not prove real browser rendering or interaction for this surface",
+          "it does not prove ORM persistence, permissions or business-state outcome",
+          "it does not by itself establish delivery governance",
+          "it does not prove behavior outside the assertions encoded by the executed files",
+          "it does not make historical PASS evidence current when declared inputs, identity or environment changed"
+        ],
+        "what_it_verifies": "scripts/verify/write_intent_permission_audit.py: no stable semantic summary is declared; assertion scope requires source tracing",
+        "what_triggers_it": {
+          "gate_enforced": false,
+          "make_targets": [
+            "verify.write_intent.permission.audit"
+          ],
+          "workflows": []
+        }
+      },
+      "execution_role": "guard_or_probe",
+      "layer_hints": [
+        "L3"
+      ],
+      "lifecycle": "manual_or_non_gate_dispatch",
+      "path": "scripts/verify/write_intent_permission_audit.py",
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "referenced_by_make_targets": [
+        "verify.write_intent.permission.audit"
+      ],
+      "referenced_by_workflows": [],
+      "resources": [],
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "boundary_answers": {
+        "answer_grades": {
+          "defects_it_can_detect": "conservative_inference",
+          "duplicate_or_overlap": "unknown",
+          "services_and_database_dependencies": "unknown",
+          "what_it_actually_executes": "observed_recipe_reference",
+          "what_it_can_prove": "conservative_boundary",
+          "what_it_cannot_prove": "conservative_boundary",
+          "what_it_verifies": "unknown",
+          "what_triggers_it": "observed_declaration"
+        },
+        "call_chain_status": "direct_recipe_or_workflow_reference_only",
+        "defects_it_can_detect": "A violation of declarations in the executed files, subject to the unknown transitive-call and assertion analysis recorded here",
+        "duplicate_or_overlap": {
+          "reason": "P4-00 has no obligation-to-assertion graph. Shared targets/scripts are observable, but actual duplicate assertions are not established.",
+          "status": "UNKNOWN"
+        },
+        "evidence_profile": {
+          "duplicate_or_overlap": {
+            "level": "unknown",
+            "reason": "assertion/obligation graph not built in P4-00"
+          },
+          "execution_edges": {
+            "basis": "workflow/Make recipe/registry declaration",
+            "level": "observed_declaration",
+            "transitive_runtime_calls": "unknown"
+          },
+          "layer_hints": {
+            "is_obligation": false,
+            "level": "static_inference"
+          },
+          "resource_dependencies": {
+            "level": "unknown",
+            "runtime_verified": false,
+            "source": "not_statically_detected"
+          },
+          "semantic_responsibility": {
+            "level": "unknown",
+            "manual_reviewed": false,
+            "source": "not_declared"
+          }
+        },
+        "responsibility_status": "unknown",
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [],
+            "kind": "not_statically_detected"
+          }
+        ],
+        "what_it_actually_executes": [
+          "scripts/verify/write_intent_sudo_guard.py"
+        ],
+        "what_it_can_prove": "Only an explicit manual invocation can prove its encoded assertions; it is not dispatched by the automated gate graph.",
+        "what_it_cannot_prove": [
+          "it does not execute a contract/schema/decoder assertion for this surface",
+          "it does not prove real browser rendering or interaction for this surface",
+          "it does not prove ORM persistence, permissions or business-state outcome",
+          "it does not by itself establish delivery governance",
+          "it does not prove behavior outside the assertions encoded by the executed files",
+          "it does not make historical PASS evidence current when declared inputs, identity or environment changed"
+        ],
+        "what_it_verifies": "scripts/verify/write_intent_sudo_guard.py: no stable semantic summary is declared; assertion scope requires source tracing",
+        "what_triggers_it": {
+          "gate_enforced": false,
+          "make_targets": [
+            "verify.intent.write.sudo.guard"
+          ],
+          "workflows": []
+        }
+      },
+      "execution_role": "guard_or_probe",
+      "layer_hints": [
+        "L3"
+      ],
+      "lifecycle": "manual_or_non_gate_dispatch",
+      "path": "scripts/verify/write_intent_sudo_guard.py",
+      "referenced_by_files": [
+        "make/dev_test.mk"
+      ],
+      "referenced_by_make_targets": [
+        "verify.intent.write.sudo.guard"
+      ],
+      "referenced_by_workflows": [],
+      "resources": [],
+      "status": "active",
+      "summary": ""
+    },
+    {
+      "boundary_answers": {
+        "answer_grades": {
+          "defects_it_can_detect": "conservative_inference",
+          "duplicate_or_overlap": "unknown",
+          "services_and_database_dependencies": "unknown",
+          "what_it_actually_executes": "observed_recipe_reference",
+          "what_it_can_prove": "conservative_boundary",
+          "what_it_cannot_prove": "conservative_boundary",
+          "what_it_verifies": "declared_metadata",
+          "what_triggers_it": "observed_declaration"
+        },
+        "call_chain_status": "direct_recipe_or_workflow_reference_only",
+        "defects_it_can_detect": "A violation of declarations in the executed files, subject to the unknown transitive-call and assertion analysis recorded here",
+        "duplicate_or_overlap": {
+          "reason": "P4-00 has no obligation-to-assertion graph. Shared targets/scripts are observable, but actual duplicate assertions are not established.",
+          "status": "UNKNOWN"
+        },
+        "evidence_profile": {
+          "duplicate_or_overlap": {
+            "level": "unknown",
+            "reason": "assertion/obligation graph not built in P4-00"
+          },
+          "execution_edges": {
+            "basis": "workflow/Make recipe/registry declaration",
+            "level": "observed_declaration",
+            "transitive_runtime_calls": "unknown"
+          },
+          "layer_hints": {
+            "is_obligation": false,
+            "level": "static_inference"
+          },
+          "resource_dependencies": {
+            "level": "unknown",
+            "runtime_verified": false,
+            "source": "not_statically_detected"
+          },
+          "semantic_responsibility": {
+            "level": "declared_metadata",
+            "manual_reviewed": false,
+            "source": "module docstring/header comment"
+          }
+        },
+        "responsibility_status": "partially_characterized_not_assertion_verified",
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [],
+            "kind": "not_statically_detected"
+          }
+        ],
+        "what_it_actually_executes": [
+          "scripts/verify/x2many_command_semantic_guard.py"
+        ],
+        "what_it_can_prove": "Only an explicit manual invocation can prove its encoded assertions; it is not dispatched by the automated gate graph.",
+        "what_it_cannot_prove": [
+          "it does not prove real browser rendering or interaction for this surface",
+          "it does not prove ORM persistence, permissions or business-state outcome",
+          "it does not by itself establish delivery governance",
+          "it does not prove behavior outside the assertions encoded by the executed files",
+          "it does not make historical PASS evidence current when declared inputs, identity or environment changed"
+        ],
+        "what_it_verifies": "Guard x2many command semantic layer stays wired in the form runtime.",
+        "what_triggers_it": {
+          "gate_enforced": false,
+          "make_targets": [
+            "verify.frontend.x2many_command_semantic.guard"
+          ],
+          "workflows": []
+        }
+      },
+      "execution_role": "guard_or_probe",
+      "layer_hints": [
+        "L1",
+        "L3"
+      ],
+      "lifecycle": "manual_or_non_gate_dispatch",
+      "path": "scripts/verify/x2many_command_semantic_guard.py",
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "referenced_by_make_targets": [
+        "verify.frontend.x2many_command_semantic.guard"
+      ],
+      "referenced_by_workflows": [],
+      "resources": [],
+      "status": "active",
+      "summary": "Guard x2many command semantic layer stays wired in the form runtime."
+    },
+    {
+      "boundary_answers": {
+        "answer_grades": {
+          "defects_it_can_detect": "conservative_inference",
+          "duplicate_or_overlap": "unknown",
+          "services_and_database_dependencies": "unknown",
+          "what_it_actually_executes": "observed_recipe_reference",
+          "what_it_can_prove": "conservative_boundary",
+          "what_it_cannot_prove": "conservative_boundary",
+          "what_it_verifies": "declared_metadata",
+          "what_triggers_it": "observed_declaration"
+        },
+        "call_chain_status": "direct_recipe_or_workflow_reference_only",
+        "defects_it_can_detect": "A violation of declarations in the executed files, subject to the unknown transitive-call and assertion analysis recorded here",
+        "duplicate_or_overlap": {
+          "reason": "P4-00 has no obligation-to-assertion graph. Shared targets/scripts are observable, but actual duplicate assertions are not established.",
+          "status": "UNKNOWN"
+        },
+        "evidence_profile": {
+          "duplicate_or_overlap": {
+            "level": "unknown",
+            "reason": "assertion/obligation graph not built in P4-00"
+          },
+          "execution_edges": {
+            "basis": "workflow/Make recipe/registry declaration",
+            "level": "observed_declaration",
+            "transitive_runtime_calls": "unknown"
+          },
+          "layer_hints": {
+            "is_obligation": false,
+            "level": "static_inference"
+          },
+          "resource_dependencies": {
+            "level": "unknown",
+            "runtime_verified": false,
+            "source": "not_statically_detected"
+          },
+          "semantic_responsibility": {
+            "level": "declared_metadata",
+            "manual_reviewed": false,
+            "source": "module docstring/header comment"
+          }
+        },
+        "responsibility_status": "partially_characterized_not_assertion_verified",
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [],
+            "kind": "not_statically_detected"
+          }
+        ],
+        "what_it_actually_executes": [
+          "scripts/verify/x2many_inline_edit_guard.py"
+        ],
+        "what_it_can_prove": "Only an explicit manual invocation can prove its encoded assertions; it is not dispatched by the automated gate graph.",
+        "what_it_cannot_prove": [
+          "it does not execute a contract/schema/decoder assertion for this surface",
+          "it does not prove real browser rendering or interaction for this surface",
+          "it does not prove ORM persistence, permissions or business-state outcome",
+          "it does not by itself establish delivery governance",
+          "it does not prove behavior outside the assertions encoded by the executed files",
+          "it does not make historical PASS evidence current when declared inputs, identity or environment changed"
+        ],
+        "what_it_verifies": "Guard one2many inline edit wiring remains active in ContractFormPage.",
+        "what_triggers_it": {
+          "gate_enforced": false,
+          "make_targets": [
+            "verify.frontend.x2many_inline_edit.guard"
+          ],
+          "workflows": []
+        }
+      },
+      "execution_role": "guard_or_probe",
+      "layer_hints": [
+        "L3"
+      ],
+      "lifecycle": "manual_or_non_gate_dispatch",
+      "path": "scripts/verify/x2many_inline_edit_guard.py",
+      "referenced_by_files": [
+        "make/frontend.mk"
+      ],
+      "referenced_by_make_targets": [
+        "verify.frontend.x2many_inline_edit.guard"
+      ],
+      "referenced_by_workflows": [],
+      "resources": [],
+      "status": "active",
+      "summary": "Guard one2many inline edit wiring remains active in ContractFormPage."
+    }
+  ],
+  "part": "script_lifecycle",
+  "schema": "change_impact_verification.mapping_part.v1",
+  "source_head": "730b82cf60f60399a70901a7fcd65476dc718f93"
+}

@@ -1,0 +1,170 @@
+from __future__ import annotations
+
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import generate_change_impact_verification_inventory as inventory
+
+
+class ChangeImpactVerificationInventoryTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.data = inventory.build_inventory()
+
+    def test_workflow_inventory_contains_every_checked_in_workflow(self) -> None:
+        workflows = {
+            path.name
+            for path in (inventory.ROOT / ".github/workflows").glob("*.yml")
+        }
+        seen = {row["workflow"].split("/")[-1] for row in self.data["workflow_jobs"]}
+        self.assertEqual(seen, workflows)
+
+    def test_gate_boundaries_have_all_eight_answers(self) -> None:
+        required = {
+            "what_it_verifies",
+            "what_triggers_it",
+            "what_it_actually_executes",
+            "services_and_database_dependencies",
+            "defects_it_can_detect",
+            "what_it_can_prove",
+            "what_it_cannot_prove",
+            "duplicate_or_overlap",
+        }
+        self.assertTrue(self.data["make_targets"])
+        self.assertTrue(self.data["gate_scripts"])
+        for item in [*self.data["make_targets"], *self.data["gate_scripts"]]:
+            answers = item["boundary_answers"]
+            self.assertLessEqual(required, set(answers), item["id"])
+            self.assertEqual(answers["duplicate_or_overlap"]["status"], "UNKNOWN")
+            self.assertFalse(
+                answers["evidence_profile"]["semantic_responsibility"]["manual_reviewed"]
+            )
+            self.assertEqual(
+                answers["call_chain_status"],
+                "direct_recipe_or_workflow_reference_only",
+            )
+
+    def test_inventory_separates_unknown_from_confirmed_responsibility(self) -> None:
+        coverage = self.data["analysis_coverage"]
+        self.assertEqual(coverage["obligation_linked_items"], 0)
+        self.assertEqual(coverage["assertion_linked_items"], 0)
+        self.assertGreater(
+            coverage["duplicate_analysis_status_counts"].get("UNKNOWN", 0), 0
+        )
+        self.assertIn("warning", coverage)
+
+    def test_make_inventory_contains_real_rules_not_variable_shapes(self) -> None:
+        identifiers = {item["entrypoint"].removeprefix("make ") for item in self.data["make_targets"]}
+        for invalid in (":=", "DB_NAME", "ACCEPTANCE_BASE_URL"):
+            self.assertNotIn(invalid, identifiers)
+        self.assertGreater(
+            self.data["surface_summary"]["anchor_parser_non_target_nodes"], 0
+        )
+        self.assertLess(
+            self.data["surface_summary"]["normalized_anchor_targets"],
+            self.data["surface_summary"]["anchor_union_targets"],
+        )
+
+    def test_gate_scripts_declare_execution_mode_and_role(self) -> None:
+        for item in self.data["gate_scripts"]:
+            self.assertIn(
+                item["execution_role"],
+                {
+                    "test",
+                    "guard_or_probe",
+                    "tool_or_orchestrator",
+                    "implementation_or_fixture",
+                },
+            )
+            self.assertTrue(item["execution_modes"])
+
+    def test_surface_is_non_empty_and_debt_is_visible(self) -> None:
+        summary = self.data["surface_summary"]
+        self.assertGreater(summary["anchor_union_targets"], 200)
+        self.assertGreater(summary["targets_unreached_from_anchor"], 1000)
+        self.assertGreater(len(summary["targets_zero_reference"]), 0)
+        self.assertGreater(len(summary["targets_missing_asset"]), 0)
+
+    def test_contract_decoder_path_is_l1_only_on_latest_main(self) -> None:
+        row = next(
+            item
+            for item in self.data["classification_probes"]
+            if item["path"] == "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        )
+        self.assertEqual(row["acceptance_rule"], "frontend-contract-v2-codec")
+        self.assertEqual(row["acceptance_suites"], ["frontend_contract"])
+        self.assertEqual(row["evidence_suites"], [])
+
+    def test_renderer_registry_path_currently_lacks_presentation_evidence(self) -> None:
+        row = next(
+            item
+            for item in self.data["classification_probes"]
+            if item["path"].endswith(
+                "/app/presentation/professionalComponentRegistry.ts"
+            )
+        )
+        self.assertEqual(row["acceptance_rule"], "frontend-runtime")
+        self.assertEqual(row["evidence_suites"], [])
+
+    def test_manual_long_tail_is_not_reported_as_gate_enforced(self) -> None:
+        lifecycle = {row["path"]: row["lifecycle"] for row in self.data["script_lifecycle"]}
+        gate_scripts = {row["path"] for row in self.data["gate_scripts"]}
+        for path, state in lifecycle.items():
+            if path not in gate_scripts:
+                self.assertNotEqual(state, "gate_enforced")
+
+    def test_execution_graph_keeps_workflow_and_script_boundaries(self) -> None:
+        graph = inventory.build_execution_graph(self.data)
+        kinds = {node["kind"] for node in graph["nodes"]}
+        relations = {edge["relation"] for edge in graph["edges"]}
+        self.assertIn("workflow_job", kinds)
+        self.assertIn("make_target", kinds)
+        self.assertIn("executable_check", kinds)
+        self.assertIn("contains_job", relations)
+        self.assertIn("invokes_make", relations)
+        self.assertIn("executes_script", relations)
+
+    def test_mapping_matrix_parts_stay_below_history_blob_limit(self) -> None:
+        graph = inventory.build_execution_graph(self.data)
+        cost = inventory.build_cost_baseline(self.data)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            inventory.write_outputs(self.data, graph, cost, root)
+            sizes = {path.name: path.stat().st_size for path in root.iterdir()}
+        self.assertLess(max(sizes.values()), 5 * 1024 * 1024)
+        self.assertIn("verification_mapping_matrix.json", sizes)
+        self.assertIn("verification_mapping_matrix.gate_scripts.json", sizes)
+        self.assertIn("impact_analysis_acceptance_matrix.json", sizes)
+        self.assertIn("verification_mapping_matrix.script_lifecycle.00.json", sizes)
+
+    def test_impact_acceptance_matrix_covers_review_required_failures(self) -> None:
+        matrix = inventory.impact_analysis_acceptance_matrix()
+        cases = {case["id"]: case for case in matrix["cases"]}
+        for required in (
+            "decoder-only-compatible-field",
+            "renderer-registry-only",
+            "css-responsive-only",
+            "orm-or-acl-change",
+            "backend-frontend-mixed",
+            "dynamic-consumer-unresolved",
+            "contract-field-rename-delete",
+            "assertion-or-fixture-change",
+            "documentation-only",
+            "incorrect-evidence-reuse",
+        ):
+            self.assertIn(required, cases)
+        self.assertTrue(matrix["assertion_closure_required"])
+        self.assertEqual(
+            matrix["cutover_metrics"]["false_negative"]["required"], 0
+        )
+        self.assertEqual(
+            matrix["cutover_metrics"]["evidence_reuse_error"]["required"], 0
+        )
+
+
+if __name__ == "__main__":
+    unittest.main()

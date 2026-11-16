@@ -1,0 +1,104 @@
+schema_version: 1
+goal:
+  id: CHANGE-IMPACT-VERIFICATION-20261116
+  title: Change Impact Driven Verification Governance
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: verification impact classification, selection and evidence governance
+  module:
+    - CI planning and risk classification
+    - contract verification
+    - frontend presentation acceptance
+    - backend and ORM business acceptance
+    - delivery governance and evidence lifecycle
+  standard_vs_user_specific: repository-wide verification governance
+  objective: >-
+    Establish an independent P4 engineering governance program that selects the
+    smallest sufficient verification set from the contract semantics, presentation
+    behavior and business execution impact actually changed by a candidate. Start
+    with a complete read-only inventory of the existing verification system before
+    changing path mappings or execution gates.
+  why_here: >-
+    Verification selection, evidence reuse, CI routing and delivery gates are P4
+    delivery-tool responsibilities. The program must change how the repository
+    proves product behavior without redefining the product behavior itself.
+  why_not_elsewhere:
+    - no_contract_model_or_runtime_semantics_change
+    - no_frontend_renderer_interaction_or_business_logic_change
+    - no_product_acl_record_rule_or_orm_state_change
+    - no_manual_database_upgrade_fixture_or_browser_environment
+    - no_path_only_rule_presented_as_product_impact_proof
+  architecture:
+    product_behavior_layers:
+      L1_contract_verification: schema, strict decoder, producer, consumer, identity and compatibility
+      L2_presentation_verification: renderer selection, composition, layout, accessibility and page interaction
+      L3_business_acceptance: state transitions, persistence, permissions, workflows, transactions and end-to-end business outcomes
+    cross_cutting_layer:
+      L4_delivery_governance: quality, security, types, dependencies, builds, exact identity, CI and review
+    selection_principles:
+      - irrelevant_verification_is_not_executed
+      - relevant_verification_requires_evidence
+      - uncovered_risk_cannot_pass_from_path_classification_or_historical_pass
+    current_root_cause_hypothesis: >-
+      Existing gates use code location as the primary proxy for product impact.
+      This over-triggers browser, database and unrelated checks for contract-only
+      decoder changes while allowing real renderer or interaction changes to be
+      hidden by broad suites that do not bind changed behavior to evidence.
+  current_batch:
+    id: P4-00
+    title: existing verification system inventory and design review
+    mode: read_only_audit
+    status: in_progress
+    required_outputs:
+      - verification_system_inventory.md
+      - verification_mapping_matrix.json
+      - verification_execution_graph.json
+      - verification_cost_baseline.json
+      - change_impact_verification_design_v1.md
+    required_answers:
+      - what_the_check_verifies
+      - what_change_triggers_it
+      - what_tests_it_actually_executes
+      - services_and_databases_it_depends_on
+      - defects_it_can_detect
+      - claims_it_can_prove
+      - claims_it_cannot_prove
+      - duplicate_or_overlapping_checks
+    inventory_scope:
+      - CI workflows
+      - merge and publish preflight
+      - acceptance evolution
+      - frontend presentation acceptance
+      - managed ORM and backend shards
+      - contract schema and decoder tests
+      - browser and business acceptance
+      - evidence registration reuse and invalidation
+      - database upgrade and environment preparation
+  acceptance:
+    - every_inventoried_verification_item_answers_all_eight_required_questions
+    - no_gate_is_described_from_name_alone
+    - execution_graph_and_cost_baseline_are_derived_from_commands_dependencies_and_runtime_requirements
+    - current_path_to_actual_verification_behavior_is_reviewable
+    - unknowns_and_uncovered_risks_are_explicit_and_fail_closed
+    - observed_facts_static_inference_manual_review_and_unknown_are_separated
+    - duplicate_coverage_is_unknown_without_assertion_linkage
+    - design_keeps_p4_01_and_later_batches_unimplemented_until_review
+    - design_decouples_backend_contract_iteration_from_browser_presentation
+    - impact_analysis_acceptance_matrix_covers_required_replay_and_negative_cases
+    - cutover_requires_zero_false_negative_and_zero_evidence_reuse_error
+    - no_product_code_gate_assertion_or_database_state_is_changed_in_p4_00
+  exclusions:
+    - implementation_of_p4_01_through_later_batches
+    - product_code_contract_schema_decoder_renderer_or_business_logic
+    - database_upgrade_restore_fixture_reset_or_persistent_write
+    - browser_matrix_or_runtime_acceptance
+    - push_merge_release_or_deployment
+  rollback: >-
+    Revert the P4-00 metadata and documentation commit. No product source,
+    verification assertion, database or runtime state is changed.
+  completion:
+    batch: design_review_pending
+    mainline_integration: not_performed
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json
