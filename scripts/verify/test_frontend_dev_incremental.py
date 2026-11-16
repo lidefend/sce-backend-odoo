@@ -114,6 +114,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.acceptance.evolution.binding"],
                 )
 
+    def test_backend_contract_instance_selects_list_surface_receipt(self) -> None:
+        self.assertEqual(
+            select_targets(["config/acceptance/backend_contract_instance_v1.json"]),
+            ["verify.frontend.list_surface_search_contract.unit"],
+        )
+
     def test_delivery_plan_inputs_select_the_delivery_unit(self) -> None:
         for path in (
             "scripts/ops/validation_delivery_plan.py",

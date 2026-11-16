@@ -195,6 +195,11 @@ RULES = (
         "verify.acceptance.evolution.binding",
     )),
     Rule((
+        "config/acceptance/backend_contract_instance_v1.json",
+    ), (
+        "verify.frontend.list_surface_search_contract.unit",
+    )),
+    Rule((
         "scripts/ops/validation_delivery_plan.py",
         "scripts/verify/test_validation_delivery_plan.py",
     ), (
