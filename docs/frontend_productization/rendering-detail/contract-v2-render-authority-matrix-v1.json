@@ -4,6 +4,10 @@
   "scope": [
     "sourceContext",
     "searchContract",
+    "nativeActionContract",
+    "nativeActionView",
+    "nativeActionSearch",
+    "nativeActionReadinessAxis",
     "pageInfo",
     "layoutContract",
     "activityProfile",
@@ -40,9 +44,9 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 335,
-    "renderedOrInteractionAuthorityCount": 213,
-    "validatedNonVisualAuthorityCount": 122,
+    "schemaFieldCount": 361,
+    "renderedOrInteractionAuthorityCount": 224,
+    "validatedNonVisualAuthorityCount": 137,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
@@ -1076,6 +1080,151 @@
       "classification": "validated_non_visual_authority",
       "reason": "snapshot identity and provenance",
       "consumer": "ContractV2 decoder / trace identity"
+    },
+    {
+      "path": "nativeActionContract.actionScope",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action domain/context scope provenance",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.capabilities",
+      "classification": "validated_non_visual_authority",
+      "reason": "declared Action contract capabilities",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.entryRefs",
+      "classification": "validated_non_visual_authority",
+      "reason": "non-authoritative entry references",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.identity",
+      "classification": "validated_non_visual_authority",
+      "reason": "native Action identity provenance",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.projectionAvailability",
+      "classification": "validated_non_visual_authority",
+      "reason": "existing access projection reference",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.readiness",
+      "classification": "validated_non_visual_authority",
+      "reason": "three-axis readiness control plane",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.schemaVersion",
+      "classification": "validated_non_visual_authority",
+      "reason": "Native Action Contract protocol version",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.search",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action Search control-plane identity",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.sourceAuthority",
+      "classification": "validated_non_visual_authority",
+      "reason": "projection provenance boundary",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionContract.viewSet",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionReadinessAxis.reasonCodes",
+      "classification": "validated_non_visual_authority",
+      "reason": "readiness control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionReadinessAxis.status",
+      "classification": "validated_non_visual_authority",
+      "reason": "readiness control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionSearch.authority",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action Search identity control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionSearch.profileRef",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action Search identity control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionSearch.viewId",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action Search identity control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionSearch.viewXmlId",
+      "classification": "validated_non_visual_authority",
+      "reason": "Action Search identity control-plane authority",
+      "consumer": "ContractV2 decoder / Action contract authority guard"
+    },
+    {
+      "path": "nativeActionView.actionViewSequence",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.profile",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.projectionStatus",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.reasonCode",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.rendererStatus",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.selectable",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.surfaceRole",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.viewId",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.viewType",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
+    },
+    {
+      "path": "nativeActionView.viewXmlId",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "ActionView view navigation runtime"
     },
     {
       "path": "nativeLayoutNode.action",

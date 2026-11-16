@@ -309,6 +309,21 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertNotIn("list_surface_structure", plan["required_suites"])
         self.assertNotIn("relation_roundtrip", plan["required_suites"])
 
+    def test_backend_contract_instance_requires_only_affected_list_evidence(self):
+        path = "config/acceptance/backend_contract_instance_v1.json"
+        plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-contract-instance")
+        self.assertEqual(plan["required_evidence_suites"], ["list_surface_structure"])
+        self.assertNotIn("path_namespace_identity", plan["required_suites"])
+        self.assertNotIn("daily_runtime_entry", plan["required_suites"])
+
+    def test_daily_contract_instance_requires_only_frontend_contract(self):
+        path = "config/acceptance/backend_contract_instance_daily_v1.json"
+        plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "frontend-acceptance-daily-contract-instance")
+        self.assertEqual(plan["required_suites"], ["frontend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
     def test_capability_contract_rule_does_not_shadow_other_construction_files(self):
         """Other smart_construction_core files keep backend contract coverage."""
         handler = "addons/smart_construction_core/handlers/project_initiation_enter.py"

@@ -1083,6 +1083,7 @@ import {
   resolveActionCollectionPresentation,
   resolveGroupedCollectionPresentation,
   resolveActionViewAvailableModes,
+  resolveActionViewDefaultMode,
   resolveRenderableActionViewMode,
   resolveActionViewModeLabel,
   resolveActionViewSurfaceIntent,
@@ -1750,8 +1751,14 @@ const availableViewModes = computed(() => resolveActionViewAvailableModes({ cont
   metaViewModesRaw: (actionMeta.value as { view_modes?: unknown } | null)?.view_modes,
   contract: actionContract.value }));
 const viewMode = computed(() => {
-  const fallbackMode = resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '';
-  return resolveRenderableActionViewMode(preferredViewMode.value, availableViewModes.value, fallbackMode);
+  const fallbackMode = resolveActionViewDefaultMode(actionContract.value)
+    || (resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '');
+  return resolveRenderableActionViewMode(
+    preferredViewMode.value,
+    availableViewModes.value,
+    fallbackMode,
+    Boolean(actionContract.value?.snapshot.nativeActionContract),
+  );
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
   actionContract.value, viewMode.value), route.query.group_by));
@@ -1764,6 +1771,7 @@ const {
   pageText,
   preferredViewMode,
   viewMode,
+  availableViewModes,
   normalizeActionViewMode,
   resolveActionViewModeLabel,
   contract: actionContract,

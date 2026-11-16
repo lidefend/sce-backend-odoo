@@ -381,6 +381,19 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "many2many_tags",
     "mobile_compact",
     "mobile_primary",
+    # Native Action Contract formal vocables and decoded enum values.
+    "NATIVE_ACTION_PROJECTION_STATUSES",
+    "NATIVE_ACTION_READINESS_STATUSES",
+    "NATIVE_ACTION_RENDERER_STATUSES",
+    "NATIVE_ACTION_VIEW_TYPES",
+    "action_search_view",
+    "action_view_set",
+    "existing_action_access_projection",
+    "model_default_search_view",
+    "native_action_contract_projection",
+    "not_applicable",
+    "record_detail",
+    "search_identity",
 }
 
 FORBIDDEN_STRICT_ALIAS_HELPERS = (

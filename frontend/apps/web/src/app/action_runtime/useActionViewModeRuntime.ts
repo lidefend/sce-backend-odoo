@@ -6,6 +6,7 @@ type UseActionViewModeRuntimeOptions = {
   pageText: (key: string, fallback: string) => string;
   preferredViewMode: { value: string };
   viewMode: { value: string };
+  availableViewModes: { value: string[] };
   normalizeActionViewMode: (mode: string) => string;
   resolveActionViewModeLabel: (input: {
     mode: string;
@@ -33,6 +34,11 @@ export function useActionViewModeRuntime(options: UseActionViewModeRuntimeOption
   function switchViewMode(mode: string) {
     const normalized = options.normalizeActionViewMode(mode);
     if (!normalized || normalized === options.viewMode.value) return;
+    const hasNativeActionViewSet = Boolean(options.contract.value.snapshot.nativeActionContract);
+    if (hasNativeActionViewSet && !options.availableViewModes.value.includes(normalized)) return;
+    if (!hasNativeActionViewSet
+      && options.availableViewModes.value.length
+      && !options.availableViewModes.value.includes(normalized)) return;
     options.preferredViewMode.value = normalized;
     if (options.persistMode) {
       options.persistMode(normalized);

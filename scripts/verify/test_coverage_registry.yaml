@@ -726,6 +726,14 @@ entries:
   gate: 'make:verify.native_action.search_view.orm :: native_action_search_view'
   reason: Selects the Odoo integration carrier for Action-bound Search View resolution, native identity
     provenance, same-model multi-action isolation, and explicit Search View failure semantics.
+- group: native_action_contract
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.native_action.contract.orm :: native_action_contract'
+  reason: Selects the Odoo integration carrier that publishes the resolved Action View Set,
+    Search identity and readiness axes into the public Unified Page Contract V2.
 - group: native_advisory_draft
   kind: odoo_tag
   status: on-demand

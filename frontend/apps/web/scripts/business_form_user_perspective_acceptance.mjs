@@ -513,7 +513,7 @@ async function assertDeclaredEntryActions(page, token, assertion, context) {
     view_type: "form",
     render_profile: "create",
     client_type: "web_pc",
-    accepted_contract_versions: ["2.0.x", "2.1.x", "2.2.x"],
+    accepted_contract_versions: ["2.0.x", "2.1.x", "2.2.x", "2.3.x"],
     client_contract_capabilities: [
       "container_tree.v2",
       "data_source.v2",

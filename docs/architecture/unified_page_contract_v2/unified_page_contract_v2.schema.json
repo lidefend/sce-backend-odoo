@@ -38,6 +38,9 @@
     "searchContract": {
       "$ref": "#/$defs/searchContract"
     },
+    "nativeActionContract": {
+      "$ref": "#/$defs/nativeActionContract"
+    },
     "workflowContract": {
       "type": "object",
       "properties": {
@@ -353,6 +356,348 @@
         }
       }
     },
+    "nativeActionContract": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "identity",
+        "entryRefs",
+        "actionScope",
+        "projectionAvailability",
+        "viewSet",
+        "readiness",
+        "capabilities",
+        "sourceAuthority"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "actionType",
+            "actionId",
+            "actionXmlId",
+            "model"
+          ],
+          "properties": {
+            "actionType": {
+              "const": "ir.actions.act_window"
+            },
+            "actionId": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "actionXmlId": {
+              "type": "string"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "entryRefs": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "kind",
+              "menuId",
+              "menuXmlId"
+            ],
+            "properties": {
+              "kind": {
+                "const": "menu"
+              },
+              "menuId": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "menuXmlId": {
+                "type": "string"
+              }
+            }
+          }
+        },
+        "actionScope": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "domainRaw",
+            "domain",
+            "contextRaw",
+            "context",
+            "sourceAuthority"
+          ],
+          "properties": {
+            "domainRaw": {
+              "type": "string"
+            },
+            "domain": {
+              "type": "array"
+            },
+            "contextRaw": {
+              "type": "string"
+            },
+            "context": {
+              "type": "object"
+            },
+            "sourceAuthority": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "kind"
+              ],
+              "properties": {
+                "kind": {
+                  "const": "ir.actions.act_window"
+                }
+              }
+            }
+          }
+        },
+        "projectionAvailability": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "reasonCode",
+            "authorityRef"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "available",
+                "blocked",
+                "unresolved"
+              ]
+            },
+            "reasonCode": {
+              "type": "string"
+            },
+            "authorityRef": {
+              "const": "existing_action_access_projection"
+            }
+          }
+        },
+        "search": {
+          "$ref": "#/$defs/nativeActionSearch"
+        },
+        "viewSet": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "orderAuthority",
+            "defaultViewType",
+            "activeViewType",
+            "orderedViews"
+          ],
+          "properties": {
+            "orderAuthority": {
+              "const": "ir.actions.act_window.views"
+            },
+            "defaultViewType": {
+              "$ref": "#/$defs/nativeActionViewType"
+            },
+            "activeViewType": {
+              "$ref": "#/$defs/nativeActionViewType"
+            },
+            "orderedViews": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/nativeActionView"
+              }
+            }
+          }
+        },
+        "readiness": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "backendContract",
+            "clientRenderer",
+            "businessExecution"
+          ],
+          "properties": {
+            "backendContract": {
+              "$ref": "#/$defs/nativeActionReadinessAxis"
+            },
+            "clientRenderer": {
+              "$ref": "#/$defs/nativeActionReadinessAxis"
+            },
+            "businessExecution": {
+              "$ref": "#/$defs/nativeActionReadinessAxis"
+            }
+          }
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "action_view_set.v1",
+              "search_identity.v1"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "sourceAuthority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "projectionOnly",
+            "noBusinessFactAuthority"
+          ],
+          "properties": {
+            "kind": {
+              "const": "native_action_contract_projection"
+            },
+            "projectionOnly": {
+              "const": true
+            },
+            "noBusinessFactAuthority": {
+              "const": true
+            }
+          }
+        }
+      }
+    },
+    "nativeActionViewType": {
+      "enum": [
+        "tree",
+        "kanban",
+        "pivot",
+        "graph",
+        "calendar",
+        "gantt",
+        "activity",
+        "dashboard",
+        "form"
+      ]
+    },
+    "nativeActionView": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "viewType",
+        "viewId",
+        "viewXmlId",
+        "actionViewSequence",
+        "surfaceRole",
+        "selectable",
+        "projectionStatus",
+        "rendererStatus",
+        "reasonCode",
+        "profile"
+      ],
+      "properties": {
+        "viewType": {
+          "$ref": "#/$defs/nativeActionViewType"
+        },
+        "viewId": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "viewXmlId": {
+          "type": "string"
+        },
+        "actionViewSequence": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "surfaceRole": {
+          "enum": [
+            "collection",
+            "record_detail"
+          ]
+        },
+        "selectable": {
+          "type": "boolean"
+        },
+        "projectionStatus": {
+          "enum": [
+            "ready",
+            "blocked",
+            "unresolved"
+          ]
+        },
+        "rendererStatus": {
+          "enum": [
+            "ready",
+            "fallback",
+            "unsupported",
+            "unknown"
+          ]
+        },
+        "reasonCode": {
+          "type": "string"
+        },
+        "profile": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "nativeActionSearch": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "viewId",
+        "viewXmlId",
+        "authority",
+        "profileRef"
+      ],
+      "properties": {
+        "viewId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "viewXmlId": {
+          "type": "string"
+        },
+        "authority": {
+          "enum": [
+            "action_search_view",
+            "model_default_search_view"
+          ]
+        },
+        "profileRef": {
+          "const": "searchContract"
+        }
+      }
+    },
+    "nativeActionReadinessAxis": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "reasonCodes"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "ready",
+            "blocked",
+            "unresolved",
+            "unknown",
+            "not_applicable"
+          ]
+        },
+        "reasonCodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        }
+      }
+    },
     "pageInfo": {
       "type": "object",
       "additionalProperties": false,
@@ -418,7 +763,7 @@
         },
         "contractVersion": {
           "type": "string",
-          "pattern": "^2\\.(0|1|2)\\.[0-9]+$"
+          "pattern": "^2\\.(0|1|2|3)\\.[0-9]+$"
         },
         "clientType": {
           "enum": [
@@ -2790,14 +3135,14 @@
           "const": "smart_core.unified_page_contract_v2"
         },
         "schemaVersion": {
-          "const": "2.2.0"
+          "const": "2.3.0"
         },
         "schemaSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
         "contractVersion": {
-          "const": "2.2.0"
+          "const": "2.3.0"
         },
         "normativeStatus": {
           "const": "stable"

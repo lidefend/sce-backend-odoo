@@ -166,6 +166,15 @@ export function resolveActionViewAvailableModes(options: {
   const addModes = (raw: unknown) => {
     parseViewModes(raw).forEach((mode) => addMode(mode));
   };
+  const nativeActionContract = options.contract?.snapshot.nativeActionContract;
+  if (nativeActionContract) {
+    nativeActionContract.viewSet.orderedViews.forEach((view) => {
+      if (!view.selectable || view.projectionStatus !== 'ready' || view.rendererStatus === 'unsupported') return;
+      if (view.surfaceRole !== 'collection') return;
+      addMode(view.viewType);
+    });
+    return out;
+  }
   addModes(options.contractViewTypeRaw);
   addModes(options.metaViewModesRaw);
   addModes(options.metaViewsRaw);
@@ -173,8 +182,22 @@ export function resolveActionViewAvailableModes(options: {
   return out;
 }
 
-export function resolveRenderableActionViewMode(preferredRaw: unknown, modes: string[], fallback: string): string {
-  const mode = normalizeActionViewMode(preferredRaw) || modes[0] || fallback;
+export function resolveActionViewDefaultMode(contract: ContractV2NormalizedStore | null): string {
+  const mode = normalizeActionViewMode(contract?.snapshot.nativeActionContract?.viewSet.defaultViewType);
+  return mode === 'list' ? 'tree' : mode;
+}
+
+export function resolveRenderableActionViewMode(
+  preferredRaw: unknown,
+  modes: string[],
+  fallback: string,
+  exclusiveModes = false,
+): string {
+  const preferred = normalizeActionViewMode(preferredRaw);
+  const normalizedFallback = normalizeActionViewMode(fallback);
+  const mode = exclusiveModes
+    ? (modes.includes(preferred) ? preferred : (modes.includes(normalizedFallback) ? normalizedFallback : modes[0] || normalizedFallback))
+    : preferred || modes[0] || normalizedFallback;
   if (mode === 'list' || mode === 'tree') return 'tree';
   if (['kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard'].includes(mode)) return mode;
   return '';

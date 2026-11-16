@@ -43,6 +43,10 @@ import type {
   ContractV2LayoutContract,
   ContractV2Lifecycle,
   ContractV2Meta,
+  ContractV2NativeActionContract,
+  ContractV2NativeActionReadinessAxis,
+  ContractV2NativeActionView,
+  ContractV2NativeActionViewType,
   ContractV2NoticeContract,
   ContractV2SubmissionReadinessNotice,
   ContractV2PageRenderMode,
@@ -597,8 +601,8 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.(0|1|2)\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, or 2.2 version' });
+  if (!/^2\.(0|1|2|3)\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, 2.2, or 2.3 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -2556,6 +2560,265 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
   return out;
 }
 
+function requiredIntegerMin(
+  source: ContractV2Dictionary,
+  key: string,
+  path: string,
+  issues: DecodeIssue[],
+  minimum: number,
+): number {
+  const value = source[key];
+  if (typeof value === 'number' && Number.isInteger(value) && value >= minimum) return value;
+  issues.push({ path: `${path}.${key}`, message: `must be an integer >= ${minimum}` });
+  return minimum;
+}
+
+function requiredEnumString<T extends string>(
+  source: ContractV2Dictionary,
+  key: string,
+  allowed: readonly T[],
+  path: string,
+  issues: DecodeIssue[],
+): T {
+  const value = asString(source[key]) as T;
+  if (!allowed.includes(value)) {
+    issues.push({ path: `${path}.${key}`, message: `must be one of ${allowed.join(', ')}` });
+  }
+  return value;
+}
+
+const NATIVE_ACTION_VIEW_TYPES = [
+  'tree', 'kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard', 'form',
+] as const satisfies readonly ContractV2NativeActionViewType[];
+const NATIVE_ACTION_PROJECTION_STATUSES = ['ready', 'blocked', 'unresolved'] as const;
+const NATIVE_ACTION_RENDERER_STATUSES = ['ready', 'fallback', 'unsupported', 'unknown'] as const;
+const NATIVE_ACTION_READINESS_STATUSES = ['ready', 'blocked', 'unresolved', 'unknown', 'not_applicable'] as const;
+
+function decodeNativeActionReadinessAxis(
+  value: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2NativeActionReadinessAxis {
+  const row = requiredRecordValue(value, path, issues);
+  rejectUnknownKeys(row, ['status', 'reasonCodes'], path, issues);
+  return {
+    status: requiredEnumString(row, 'status', NATIVE_ACTION_READINESS_STATUSES, path, issues),
+    reasonCodes: requiredUniqueStringArrayValue(row.reasonCodes, `${path}.reasonCodes`, issues),
+  };
+}
+
+function requiredRecordValue(value: unknown, path: string, issues: DecodeIssue[]): ContractV2Dictionary {
+  if (!isRecord(value)) {
+    issues.push({ path, message: 'must be an object' });
+    return {};
+  }
+  return value;
+}
+
+function requiredUniqueStringArrayValue(value: unknown, path: string, issues: DecodeIssue[]): string[] {
+  if (!Array.isArray(value)) {
+    issues.push({ path, message: 'must be an array' });
+    return [];
+  }
+  const out = value.map((item, index) => {
+    if (typeof item !== 'string' || !item.trim()) {
+      issues.push({ path: `${path}[${index}]`, message: 'must be a non-empty string' });
+      return '';
+    }
+    return item.trim();
+  }).filter(Boolean);
+  if (new Set(out).size !== out.length) issues.push({ path, message: 'must contain unique values' });
+  return out;
+}
+
+function decodeNativeActionView(value: unknown, path: string, issues: DecodeIssue[]): ContractV2NativeActionView {
+  const row = requiredRecordValue(value, path, issues);
+  rejectUnknownKeys(row, [
+    'viewType', 'viewId', 'viewXmlId', 'actionViewSequence', 'surfaceRole', 'selectable',
+    'projectionStatus', 'rendererStatus', 'reasonCode', 'profile',
+  ], path, issues);
+  const viewType = requiredEnumString(row, 'viewType', NATIVE_ACTION_VIEW_TYPES, path, issues);
+  if (!viewType) issues.push({ path: `${path}.viewType`, message: 'is required for an ordered Action view' });
+  return {
+    viewType,
+    viewId: requiredIntegerMin(row, 'viewId', path, issues, 0),
+    viewXmlId: requiredDisplayString(row, 'viewXmlId', path, issues),
+    actionViewSequence: requiredIntegerMin(row, 'actionViewSequence', path, issues, 1),
+    surfaceRole: requiredEnumString(row, 'surfaceRole', ['collection', 'record_detail'] as const, path, issues),
+    selectable: requiredBoolean(row, 'selectable', path, issues, false),
+    projectionStatus: requiredEnumString(row, 'projectionStatus', NATIVE_ACTION_PROJECTION_STATUSES, path, issues),
+    rendererStatus: requiredEnumString(row, 'rendererStatus', NATIVE_ACTION_RENDERER_STATUSES, path, issues),
+    reasonCode: requiredDisplayString(row, 'reasonCode', path, issues),
+    profile: requiredString(row, 'profile', path, issues),
+  };
+}
+
+function decodeNativeActionContract(value: unknown, issues: DecodeIssue[]): ContractV2NativeActionContract | undefined {
+  if (value === undefined) return undefined;
+  const row = requiredRecordValue(value, '$.nativeActionContract', issues);
+  rejectUnknownKeys(row, [
+    'schemaVersion', 'identity', 'entryRefs', 'actionScope', 'projectionAvailability', 'search',
+    'viewSet', 'readiness', 'capabilities', 'sourceAuthority',
+  ], '$.nativeActionContract', issues);
+  const schemaVersion = requiredString(row, 'schemaVersion', '$.nativeActionContract', issues);
+  if (schemaVersion !== '1.0.0') {
+    issues.push({ path: '$.nativeActionContract.schemaVersion', message: 'must be 1.0.0' });
+  }
+  const identity = requiredRecordValue(row.identity, '$.nativeActionContract.identity', issues);
+  rejectUnknownKeys(identity, ['actionType', 'actionId', 'actionXmlId', 'model'], '$.nativeActionContract.identity', issues);
+  const actionType = requiredString(identity, 'actionType', '$.nativeActionContract.identity', issues);
+  if (actionType !== 'ir.actions.act_window') {
+    issues.push({ path: '$.nativeActionContract.identity.actionType', message: 'must be ir.actions.act_window' });
+  }
+  const entryRefsRaw = row.entryRefs;
+  if (!Array.isArray(entryRefsRaw)) issues.push({ path: '$.nativeActionContract.entryRefs', message: 'must be an array' });
+  const entryRefs = (Array.isArray(entryRefsRaw) ? entryRefsRaw : []).map((item, index) => {
+    const itemPath = `$.nativeActionContract.entryRefs[${index}]`;
+    const entry = requiredRecordValue(item, itemPath, issues);
+    rejectUnknownKeys(entry, ['kind', 'menuId', 'menuXmlId'], itemPath, issues);
+    const kind = requiredString(entry, 'kind', itemPath, issues);
+    if (kind !== 'menu') issues.push({ path: `${itemPath}.kind`, message: 'must be menu' });
+    return {
+      kind: 'menu' as const,
+      menuId: requiredIntegerMin(entry, 'menuId', itemPath, issues, 1),
+      menuXmlId: requiredDisplayString(entry, 'menuXmlId', itemPath, issues),
+    };
+  });
+  const actionScope = requiredRecordValue(row.actionScope, '$.nativeActionContract.actionScope', issues);
+  rejectUnknownKeys(actionScope, ['domainRaw', 'domain', 'contextRaw', 'context', 'sourceAuthority'], '$.nativeActionContract.actionScope', issues);
+  const actionScopeAuthority = requiredRecordValue(actionScope.sourceAuthority, '$.nativeActionContract.actionScope.sourceAuthority', issues);
+  rejectUnknownKeys(actionScopeAuthority, ['kind'], '$.nativeActionContract.actionScope.sourceAuthority', issues);
+  if (requiredString(actionScopeAuthority, 'kind', '$.nativeActionContract.actionScope.sourceAuthority', issues) !== 'ir.actions.act_window') {
+    issues.push({ path: '$.nativeActionContract.actionScope.sourceAuthority.kind', message: 'must be ir.actions.act_window' });
+  }
+  if (!Array.isArray(actionScope.domain)) issues.push({ path: '$.nativeActionContract.actionScope.domain', message: 'must be an array' });
+  const actionContext = requiredRecordValue(actionScope.context, '$.nativeActionContract.actionScope.context', issues);
+  const availability = requiredRecordValue(row.projectionAvailability, '$.nativeActionContract.projectionAvailability', issues);
+  rejectUnknownKeys(availability, ['status', 'reasonCode', 'authorityRef'], '$.nativeActionContract.projectionAvailability', issues);
+  const availabilityStatus = requiredEnumString(availability, 'status', ['available', 'blocked', 'unresolved'] as const, '$.nativeActionContract.projectionAvailability', issues);
+  const authorityRef = requiredString(availability, 'authorityRef', '$.nativeActionContract.projectionAvailability', issues);
+  if (authorityRef !== 'existing_action_access_projection') {
+    issues.push({ path: '$.nativeActionContract.projectionAvailability.authorityRef', message: 'must reference existing_action_access_projection' });
+  }
+  let search: ContractV2NativeActionContract['search'];
+  if (row.search !== undefined) {
+    const searchRow = requiredRecordValue(row.search, '$.nativeActionContract.search', issues);
+    rejectUnknownKeys(searchRow, ['viewId', 'viewXmlId', 'authority', 'profileRef'], '$.nativeActionContract.search', issues);
+    const profileRef = requiredString(searchRow, 'profileRef', '$.nativeActionContract.search', issues);
+    if (profileRef !== 'searchContract') issues.push({ path: '$.nativeActionContract.search.profileRef', message: 'must be searchContract' });
+    search = {
+      viewId: requiredIntegerMin(searchRow, 'viewId', '$.nativeActionContract.search', issues, 1),
+      viewXmlId: requiredDisplayString(searchRow, 'viewXmlId', '$.nativeActionContract.search', issues),
+      authority: requiredEnumString(searchRow, 'authority', ['action_search_view', 'model_default_search_view'] as const, '$.nativeActionContract.search', issues),
+      profileRef: 'searchContract',
+    };
+  }
+  const viewSet = requiredRecordValue(row.viewSet, '$.nativeActionContract.viewSet', issues);
+  rejectUnknownKeys(viewSet, ['orderAuthority', 'defaultViewType', 'activeViewType', 'orderedViews'], '$.nativeActionContract.viewSet', issues);
+  const orderAuthority = requiredString(viewSet, 'orderAuthority', '$.nativeActionContract.viewSet', issues);
+  if (orderAuthority !== 'ir.actions.act_window.views') {
+    issues.push({ path: '$.nativeActionContract.viewSet.orderAuthority', message: 'must be ir.actions.act_window.views' });
+  }
+  const orderedViewsRaw = viewSet.orderedViews;
+  if (!Array.isArray(orderedViewsRaw)) issues.push({ path: '$.nativeActionContract.viewSet.orderedViews', message: 'must be an array' });
+  const orderedViews = (Array.isArray(orderedViewsRaw) ? orderedViewsRaw : []).map((item, index) => (
+    decodeNativeActionView(item, `$.nativeActionContract.viewSet.orderedViews[${index}]`, issues)
+  ));
+  const readiness = requiredRecordValue(row.readiness, '$.nativeActionContract.readiness', issues);
+  rejectUnknownKeys(readiness, ['backendContract', 'clientRenderer', 'businessExecution'], '$.nativeActionContract.readiness', issues);
+  const capabilitiesRaw = row.capabilities;
+  if (!Array.isArray(capabilitiesRaw)) issues.push({ path: '$.nativeActionContract.capabilities', message: 'must be an array' });
+  const capabilities = (Array.isArray(capabilitiesRaw) ? capabilitiesRaw : []).map((item, index) => {
+    const capability = asString(item);
+    if (!['action_view_set.v1', 'search_identity.v1'].includes(capability)) {
+      issues.push({ path: `$.nativeActionContract.capabilities[${index}]`, message: 'is not a declared capability' });
+    }
+    return capability as ContractV2NativeActionContract['capabilities'][number];
+  });
+  const sourceAuthority = requiredRecordValue(row.sourceAuthority, '$.nativeActionContract.sourceAuthority', issues);
+  rejectUnknownKeys(sourceAuthority, ['kind', 'projectionOnly', 'noBusinessFactAuthority'], '$.nativeActionContract.sourceAuthority', issues);
+  if (requiredString(sourceAuthority, 'kind', '$.nativeActionContract.sourceAuthority', issues) !== 'native_action_contract_projection') {
+    issues.push({ path: '$.nativeActionContract.sourceAuthority.kind', message: 'must be native_action_contract_projection' });
+  }
+  if (!requiredBoolean(sourceAuthority, 'projectionOnly', '$.nativeActionContract.sourceAuthority', issues, false)) {
+    issues.push({ path: '$.nativeActionContract.sourceAuthority.projectionOnly', message: 'must be true' });
+  }
+  if (!requiredBoolean(sourceAuthority, 'noBusinessFactAuthority', '$.nativeActionContract.sourceAuthority', issues, false)) {
+    issues.push({ path: '$.nativeActionContract.sourceAuthority.noBusinessFactAuthority', message: 'must be true' });
+  }
+  return {
+    schemaVersion: '1.0.0',
+    identity: {
+      actionType: 'ir.actions.act_window',
+      actionId: requiredIntegerMin(identity, 'actionId', '$.nativeActionContract.identity', issues, 1),
+      actionXmlId: requiredDisplayString(identity, 'actionXmlId', '$.nativeActionContract.identity', issues),
+      model: requiredString(identity, 'model', '$.nativeActionContract.identity', issues),
+    },
+    entryRefs,
+    actionScope: {
+      domainRaw: requiredDisplayString(actionScope, 'domainRaw', '$.nativeActionContract.actionScope', issues),
+      domain: Array.isArray(actionScope.domain) ? actionScope.domain : [],
+      contextRaw: requiredDisplayString(actionScope, 'contextRaw', '$.nativeActionContract.actionScope', issues),
+      context: actionContext,
+      sourceAuthority: { kind: 'ir.actions.act_window' },
+    },
+    projectionAvailability: {
+      status: availabilityStatus,
+      reasonCode: requiredDisplayString(availability, 'reasonCode', '$.nativeActionContract.projectionAvailability', issues),
+      authorityRef: 'existing_action_access_projection',
+    },
+    ...(search ? { search } : {}),
+    viewSet: {
+      orderAuthority: 'ir.actions.act_window.views',
+      defaultViewType: requiredEnumString(viewSet, 'defaultViewType', NATIVE_ACTION_VIEW_TYPES, '$.nativeActionContract.viewSet', issues),
+      activeViewType: requiredEnumString(viewSet, 'activeViewType', NATIVE_ACTION_VIEW_TYPES, '$.nativeActionContract.viewSet', issues),
+      orderedViews,
+    },
+    readiness: {
+      backendContract: decodeNativeActionReadinessAxis(readiness.backendContract, '$.nativeActionContract.readiness.backendContract', issues),
+      clientRenderer: decodeNativeActionReadinessAxis(readiness.clientRenderer, '$.nativeActionContract.readiness.clientRenderer', issues),
+      businessExecution: decodeNativeActionReadinessAxis(readiness.businessExecution, '$.nativeActionContract.readiness.businessExecution', issues),
+    },
+    capabilities,
+    sourceAuthority: {
+      kind: 'native_action_contract_projection',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+  };
+}
+
+function validateNativeActionContract(
+  contract: ContractV2NativeActionContract | undefined,
+  pageInfo: ContractV2PageInfo,
+  searchContract: ContractV2Dictionary | undefined,
+  issues: DecodeIssue[],
+): void {
+  if (!contract) return;
+  if (contract.identity.model !== pageInfo.model) {
+    issues.push({ path: '$.nativeActionContract.identity.model', message: 'must match pageInfo.model' });
+  }
+  const activeView = contract.viewSet.activeViewType;
+  const pageView = pageInfo.viewType === 'list' ? 'tree' : pageInfo.viewType;
+  if (activeView !== pageView) {
+    issues.push({ path: '$.nativeActionContract.viewSet.activeViewType', message: 'must match pageInfo.viewType' });
+  }
+  const types = new Set(contract.viewSet.orderedViews.map((row) => row.viewType));
+  if (contract.viewSet.orderedViews.length && !types.has(contract.viewSet.defaultViewType)) {
+    issues.push({ path: '$.nativeActionContract.viewSet.defaultViewType', message: 'must name an ordered view' });
+  }
+  if (contract.viewSet.orderedViews.length && !types.has(contract.viewSet.activeViewType)) {
+    issues.push({ path: '$.nativeActionContract.viewSet.activeViewType', message: 'must name an ordered view' });
+  }
+  const searchIdentity = asRecord(searchContract?.nativeIdentity);
+  if (contract.search && (
+    Number(searchIdentity.viewId) !== contract.search.viewId
+    || asString(searchIdentity.authority) !== contract.search.authority
+  )) {
+    issues.push({ path: '$.nativeActionContract.search', message: 'must agree with searchContract.nativeIdentity' });
+  }
+}
+
 function decodeFieldOwnership(value: unknown, issues: DecodeIssue[]): ContractV2FieldOwnership | undefined {
   if (value === undefined) return undefined;
   if (!isRecord(value)) {
@@ -2682,7 +2945,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const issues: DecodeIssue[] = [];
   rejectUnknownKeys(root, [
     'pageInfo', 'layoutContract', 'statusContract', 'actionContract', 'dataContract', 'runtimeContract',
-    'formStructureContract', 'searchContract', 'workflowContract', 'fieldOwnership', 'pageComposition', 'meta',
+    'formStructureContract', 'searchContract', 'nativeActionContract', 'workflowContract', 'fieldOwnership', 'pageComposition', 'meta',
     'noticeContract',
   ], '$', issues);
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
@@ -2699,11 +2962,13 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     issues,
   );
   const searchContract = decodeSearchContract(root.searchContract, issues);
+  const nativeActionContract = decodeNativeActionContract(root.nativeActionContract, issues);
   const workflowContract = optionalRecord(root, 'workflowContract', '$', issues);
   const fieldOwnership = decodeFieldOwnership(root.fieldOwnership, issues);
   const pageComposition = decodePageComposition(root.pageComposition, issues);
   const noticeContract = decodeNoticeContract(root.noticeContract, issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
+  validateNativeActionContract(nativeActionContract, pageInfo, searchContract, issues);
   validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (!issues.length) projectNodeComponents({layoutContract, statusContract, dataContract});
   if (issues.length) {
@@ -2719,6 +2984,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     meta,
     ...(formStructureContract ? { formStructureContract } : {}),
     ...(searchContract ? { searchContract } : {}),
+    ...(nativeActionContract ? { nativeActionContract } : {}),
     ...(workflowContract ? { workflowContract } : {}),
     ...(fieldOwnership ? { fieldOwnership } : {}),
     ...(pageComposition ? { pageComposition } : {}),

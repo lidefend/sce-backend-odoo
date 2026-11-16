@@ -15,6 +15,14 @@ OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/contract-v2-rende
 EXPECTED = {
     "sourceContext": "context domain contextRaw domainRaw renderProfile order limit formViewId",
     "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults nativeIdentity",
+    "nativeActionContract": (
+        "schemaVersion identity entryRefs actionScope projectionAvailability search viewSet readiness capabilities sourceAuthority"
+    ),
+    "nativeActionView": (
+        "viewType viewId viewXmlId actionViewSequence surfaceRole selectable projectionStatus rendererStatus reasonCode profile"
+    ),
+    "nativeActionSearch": "viewId viewXmlId authority profileRef",
+    "nativeActionReadinessAxis": "status reasonCodes",
     "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType deliveryProfile",
     "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile graphProfile pivotProfile",
     "activityProfile": (
@@ -138,6 +146,15 @@ NON_VISUAL = {
     "sourceContext.limit": "data pagination policy",
     "sourceContext.formViewId": "active form view identity",
     "searchContract.nativeIdentity": "native Search View identity provenance",
+    "nativeActionContract.schemaVersion": "Native Action Contract protocol version",
+    "nativeActionContract.identity": "native Action identity provenance",
+    "nativeActionContract.entryRefs": "non-authoritative entry references",
+    "nativeActionContract.actionScope": "Action domain/context scope provenance",
+    "nativeActionContract.projectionAvailability": "existing access projection reference",
+    "nativeActionContract.search": "Action Search control-plane identity",
+    "nativeActionContract.readiness": "three-axis readiness control plane",
+    "nativeActionContract.capabilities": "declared Action contract capabilities",
+    "nativeActionContract.sourceAuthority": "projection provenance boundary",
     "dataMeta.nativeModifierFieldTypes": "native modifier evaluation field types",
     "dataMeta.nativeModifierRelationSnapshots": "native modifier relation identity bindings",
     "activitySourceAuthority.kind": "activity projection provenance",
@@ -176,11 +193,17 @@ NON_VISUAL_DEFINITIONS = {
     "deliveryTrim": "client delivery projection evidence",
     "deliveryCountRecord": "client delivery projection evidence",
     "deliveryLimitRecord": "client delivery projection limits",
+    "nativeActionSearch": "Action Search identity control-plane authority",
+    "nativeActionReadinessAxis": "readiness control-plane authority",
 }
 
 CONSUMERS = {
     "sourceContext": "ContractV2 store / data request runtime",
     "searchContract": "ActionView search presentation runtime",
+    "nativeActionContract": "ActionView view navigation runtime",
+    "nativeActionView": "ActionView view navigation runtime",
+    "nativeActionSearch": "ContractV2 decoder / Action contract authority guard",
+    "nativeActionReadinessAxis": "ContractV2 decoder / Action contract authority guard",
     "pageInfo": "page runtime / contractFormPresenter.identity",
     "layoutContract": "contractFormPresenter / ContractFormDriverHost",
     "activityProfile": "activity renderer registry",
