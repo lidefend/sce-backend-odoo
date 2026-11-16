@@ -2693,7 +2693,7 @@ verify.customer_module.extraction: guard.prod.forbid
 verify.tenant_architecture.boundary: guard.prod.forbid verify.tenant.product_payload_boundary verify.product_image.tenant_neutral verify.product_to_customer.dependency verify.customer_module.extraction
 	@echo "[verify.tenant_architecture.boundary] PASS"
 
-verify.docs.all: guard.prod.forbid verify.docs.inventory verify.docs.links verify.docs.temp_guard verify.docs.contract_sync verify.docs.product_boundary
+verify.docs.all: guard.prod.forbid verify.docs.inventory verify.docs.links verify.docs.temp_guard verify.docs.contract_sync verify.docs.product_boundary verify.native_scene.inventory.unit
 	@echo "[OK] verify.docs.all done"
 
 .PHONY: verify.portal.scene_product_filter_guard verify.portal.product_scene_mapping_guard verify.portal.role_home_scene_guard verify.portal.template_schema_guard verify.portal.entry_registry_guard verify.portal.entry_registry_quality_guard verify.portal.navigation_entry_registry_guard verify.portal.role_scene_navigation_guard verify.portal.navigation_registry_quality_guard

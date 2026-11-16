@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01.yaml",
+    ".agent/runs/NATIVE-SCENE-01-A01-A04/run.json",
+    ".gitignore",
+    "docs/audit/native-scene-01/",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/audit/native_scene_inventory.py",
+    "scripts/audit/test_native_scene_inventory.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/guards.mk",
+    "make/dev_test.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only repository source inspection; no database, service, credential, fixture, publication or remote mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/NATIVE-SCENE-01.yaml",
+        ".agent/runs/NATIVE-SCENE-01-A01-A04/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/NATIVE-SCENE-01-A01-A04/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Wait for all required checks on the final exact PR #902 head, confirm unchanged head and scope registration, then complete independent review; do not start B01-B06 before approval.",
+  "id": "NATIVE-SCENE-01-A01-A04",
+  "branch": "audit/native-scene-01-a01-a04-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01.yaml",
+  "record": "docs/audit/native-scene-01/native_capability_inventory_summary.md"
+}

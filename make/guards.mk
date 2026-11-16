@@ -443,6 +443,12 @@ verify.odoo_native_capability_explorer.unit: guard.prod.forbid
 	  scripts/verify/test_odoo_native_capability_explorer_probe.py
 	@python3 -m unittest scripts.verify.test_odoo_native_capability_explorer_probe
 
+.PHONY: verify.native_scene.inventory.unit
+verify.native_scene.inventory.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/audit/native_scene_inventory.py scripts/audit/test_native_scene_inventory.py
+	@python3 -m unittest scripts.audit.test_native_scene_inventory
+	@python3 scripts/audit/native_scene_inventory.py --check
+
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid
 	@python3 -m py_compile \

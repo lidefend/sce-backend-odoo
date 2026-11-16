@@ -113,6 +113,9 @@ docs/audit/*.csv
 docs/audit/*.sc_*.csv
 docs/audit/*.tsv
 docs/audit/*.json
+!docs/audit/native-scene-01/evidence/*.json
+!docs/audit/native-scene-01/evidence/*.sha256
+!docs/audit/native-scene-01/inventories/*.json
 tmp/
 .tmp/
 

@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01
+  title: Odoo native business scene complete takeover program
+  status: active
+  formal_product_layer: P4 read-only audit and delivery evidence
+  layer_target: native Odoo model, menu, action and view capability inventory
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_scene
+    - addons/smart_construction_scene
+    - addons_external/oca_server_ux
+  baseline:
+    branch: origin/main
+    full_sha: 44cfed924b44b690dbb9f833ca9fcb605e8196cc
+  objective: >-
+    Establish a source-bound inventory of Odoo native models, menus, actions and
+    views, then determine which native capabilities and action/view types are
+    already parsed, consumed, executable or still unverified by the custom frontend.
+  current_checkpoint: A01-A04
+  product_boundary:
+    standard_vs_user_specific: platform-neutral research across current repository modules
+    why_here: >-
+      The result is read-only delivery evidence. It classifies existing native
+      facts and custom contract/frontend consumers without changing product behavior.
+    why_not_elsewhere:
+      - no P0 contract or renderer change
+      - no P1 or P2 business semantics change
+      - no P3 runtime configuration change
+      - no database or fixture mutation
+      - no menu or publication mutation
+  deliverables:
+    - docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json
+    - docs/audit/native-scene-01/inventories/inventory_manifest.json
+    - docs/audit/native-scene-01/inventories/native_model_inventory.json
+    - docs/audit/native-scene-01/inventories/native_menu_inventory.json
+    - docs/audit/native-scene-01/inventories/native_action_inventory.json
+    - docs/audit/native-scene-01/inventories/native_view_inventory.json
+    - docs/audit/native-scene-01/native_model_inventory.md
+    - docs/audit/native-scene-01/native_action_inventory.md
+    - docs/audit/native-scene-01/native_view_inventory.md
+    - docs/audit/native-scene-01/native_business_entry_topology.md
+    - docs/audit/native-scene-01/native_capability_inventory_summary.md
+  acceptance:
+    - every conclusion binds repository paths and exact line numbers
+    - module ownership, XMLID and technical identity are distinguished where evidence allows
+    - implemented, declaration-only, not-consumed and not-verified states are separate
+    - menu absence is never treated as capability absence
+    - menu presence is never treated as complete business delivery
+    - custom frontend fallback is never treated as native view takeover
+  exclusions:
+    - product source changes
+    - database, configuration or business-data changes
+    - B01-B12 runtime chain validation
+    - C/D/E/F implementation
+    - PR creation, merge or deployment
+  rollback: >-
+    Remove the A01-A04 audit documents and this run registration. No runtime or
+    persistent product state is created by the audit.
