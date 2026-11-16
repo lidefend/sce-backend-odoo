@@ -62,9 +62,9 @@ The schema version is now `2.3.0` with a closed `nativeActionContract` definitio
 
 ### 3.3 Frontend consumption
 
-- `frontend/apps/web/src/app/contracts/v2/schema.ts:2658` strictly decodes the new
-  root and cross-checks model, active View and Search identity.
-- `frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts:152-188`
+- `frontend/apps/web/src/app/contracts/v2/schema.ts:2656-2819` strictly decodes
+  the new root and cross-checks model, active View and Search identity.
+- `frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts:152-196`
   derives available collection modes from `orderedViews/selectable`, excluding
   non-ready and unsupported rows, and reads the default mode from the contract.
 - `frontend/apps/web/src/views/ActionView.vue:1750-1762` uses that authority for
@@ -96,13 +96,20 @@ Passed:
 - `make verify.native_scene.inventory.unit`: PASS, generated inventory current.
 - Selected docs guards `inventory`, `contract_sync`, `temp_guard` and
   `product_boundary`: PASS.
-- Earlier `make ci.local.iteration`: PASS, 36 affected targets at the prior
-  candidate; the empty-View correction requires one final run on the new hash.
+- `make ci.local.iteration`: PASS, 21 affected targets on candidate
+  `00afae6d41306c10b74c6fbfa4125e30c145bf86`. Receipt:
+  `.runtime/frontend-dev-validation/executions/20261116T141811Z-4002020-425895752/receipt.json`.
+- `make ci.delivery.freeze.prepare`: PASS on the same candidate.
 
 `make verify.docs.links` remains **not passed**: 72 missing links are reported.
 The report contains no missing link sourced from this batch's implementation
 record or Unified Page Contract files; this is classified as a pre-existing
 `baseline_evidence_defect`, not a P0-3/P0-5 pass claim.
+
+The governed delivery plan still requires `daily_runtime_entry` and
+`list_surface_structure` runtime evidence. This batch did not have runtime
+environment/credential authority for those checks, so they remain not run rather
+than being counted as product passes.
 
 ## 5. L1-L4
 
