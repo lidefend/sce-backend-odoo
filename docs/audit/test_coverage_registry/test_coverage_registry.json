@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 216,
+    "odoo_tags": 217,
     "gated": 5,
-    "on_demand": 73,
+    "on_demand": 74,
     "unwired": 138,
-    "odoo_tag_declarations": 444,
+    "odoo_tag_declarations": 446,
     "gated_declarations": 102,
-    "uncovered_declarations": 342,
+    "uncovered_declarations": 344,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -137,7 +137,7 @@
       "group": "smart_core",
       "status": "on-demand",
       "kind": "odoo_tag",
-      "declarations": 23,
+      "declarations": 24,
       "files": [
         "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/tests/test_api_data_mutation_failure_atomicity_orm.py",
@@ -147,6 +147,7 @@
         "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/tests/test_menu_delivery_convergence_service.py",
         "addons/smart_core/tests/test_narrow_tenant_payload_importer.py",
+        "addons/smart_core/tests/test_native_action_contract_integration.py",
         "addons/smart_core/tests/test_native_action_search_view_integration.py",
         "addons/smart_core/tests/test_native_action_selection_alignment.py",
         "addons/smart_core/tests/test_native_action_view_set_integration.py",
@@ -1518,6 +1519,20 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "native_action_contract",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_action_contract_integration.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.native_action.contract.orm :: native_action_contract"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "native_action_search_view",

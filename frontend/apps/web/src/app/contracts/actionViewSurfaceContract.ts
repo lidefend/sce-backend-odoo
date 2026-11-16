@@ -166,11 +166,25 @@ export function resolveActionViewAvailableModes(options: {
   const addModes = (raw: unknown) => {
     parseViewModes(raw).forEach((mode) => addMode(mode));
   };
+  const nativeActionContract = options.contract?.snapshot.nativeActionContract;
+  if (nativeActionContract) {
+    nativeActionContract.viewSet.orderedViews.forEach((view) => {
+      if (!view.selectable || view.projectionStatus !== 'ready' || view.rendererStatus === 'unsupported') return;
+      if (view.surfaceRole !== 'collection') return;
+      addMode(view.viewType);
+    });
+    return out;
+  }
   addModes(options.contractViewTypeRaw);
   addModes(options.metaViewModesRaw);
   addModes(options.metaViewsRaw);
   collectContractViewModes(options.contract).forEach((mode) => addMode(mode));
   return out;
+}
+
+export function resolveActionViewDefaultMode(contract: ContractV2NormalizedStore | null): string {
+  const mode = normalizeActionViewMode(contract?.snapshot.nativeActionContract?.viewSet.defaultViewType);
+  return mode === 'list' ? 'tree' : mode;
 }
 
 export function resolveRenderableActionViewMode(preferredRaw: unknown, modes: string[], fallback: string): string {

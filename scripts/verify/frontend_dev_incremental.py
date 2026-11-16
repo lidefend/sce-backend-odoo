@@ -309,6 +309,7 @@ RULES = (
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
     Rule((
+        "contracts/registry/component.yaml",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
         "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
@@ -1403,6 +1404,33 @@ RULES = (
         "verify.native_action.search_view.orm",
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
+    )),
+    Rule((
+        "addons/smart_core/core/native_action_contract.py",
+        "addons/smart_core/tests/test_native_action_contract_integration.py",
+        "scripts/verify/test_native_action_contract.py",
+    ), (
+        "verify.native_action.contract.unit",
+        "verify.native_action.contract.orm",
+        "verify.unified_page_contract.v2.assembler",
+    )),
+    Rule((
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py",
+    ), (
+        "verify.backend.contract_lifecycle.authority",
+    )),
+    Rule((
+        "scripts/verify/unified_page_contract_v2_intent_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.intent",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    ), (
+        "verify.frontend.contract_record_action_state.unit",
+        "verify.frontend.collection_view_semantics.unit",
     )),
     Rule((
         "addons/smart_core/core/native_advisory.py",

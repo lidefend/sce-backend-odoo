@@ -36,14 +36,14 @@ assert.deepEqual(RENDERER_CAPABILITY_PROVIDERS, {
 });
 assert.deepEqual(parseRendererVersion('2.2.0'), [2, 2, 0]);
 assert.equal(parseRendererVersion('02.2.0'), null);
-assert.deepEqual(parseRendererContractVersionRange('>=2.0.0 <2.3.0'), {
+assert.deepEqual(parseRendererContractVersionRange('>=2.0.0 <2.4.0'), {
   minimum: [2, 0, 0],
-  maximumExclusive: [2, 3, 0],
+  maximumExclusive: [2, 4, 0],
 });
-assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.3.0', '2.0.0'), true);
-assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.3.0', '2.2.9'), true);
-assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.3.0', '2.3.0'), false);
-assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.3.0', '1.9.9'), false);
+assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.4.0', '2.0.0'), true);
+assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.4.0', '2.3.9'), true);
+assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.4.0', '2.4.0'), false);
+assert.equal(rendererSupportsContractVersion('>=2.0.0 <2.4.0', '1.9.9'), false);
 
 const ready = resolveProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', pageContractVersion: '2.2.0', presentationMode: 'task', renderProfile: 'edit',
@@ -60,10 +60,10 @@ assert.equal(contractBound.contractVersion, '1.0');
 assert.equal(contractBound.renderer, 'ProfessionalBaseFieldControl');
 assert.equal(contractBound.pageContractVersion, '2.2.0');
 assert.equal(contractBound.rendererVersion, '1.0.0');
-assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.3.0');
+assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.4.0');
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
-  pageContractVersion: '2.3.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
+  pageContractVersion: '2.4.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
 }), /PROFESSIONAL_COMPONENT_CONTRACT_VERSION_UNSUPPORTED/);
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
@@ -101,7 +101,7 @@ const paymentRow = {
   readiness: 'ready',
   renderer: paymentRenderer,
   rendererVersion: '1.0.0',
-  supportedContractVersion: '>=2.0.0 <2.3.0',
+  supportedContractVersion: '>=2.0.0 <2.4.0',
   requiredCapabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
 } as const;
 const dummyIndustryComponent = {} as never;
@@ -160,7 +160,7 @@ assert.equal(resolveIndustryRendererForField({
   componentKey: paymentRow.componentKey,
   componentRenderer: paymentRenderer,
   fieldType: 'one2many',
-  pageContractVersion: '2.3.0',
+  pageContractVersion: '2.4.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
@@ -218,7 +218,7 @@ const stagedRow = {
   readiness: 'ready',
   renderer: 'FixtureAtomicFirstRenderer',
   rendererVersion: '1.0.0',
-  supportedContractVersion: '>=2.0.0 <2.3.0',
+  supportedContractVersion: '>=2.0.0 <2.4.0',
   requiredCapabilities: [],
 } as const;
 assert.throws(() => registerIndustryRendererExtensions([
@@ -422,7 +422,7 @@ assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
 assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey,
   fieldType: 'char',
-  pageContractVersion: '2.3.0',
+  pageContractVersion: '2.4.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: ['relation.read'],

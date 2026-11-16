@@ -20,6 +20,7 @@ import {
 } from '../src/components/professional-fields/professionalDetailCollectionModel';
 import {
   resolveActionCollectionPresentation,
+  resolveActionViewDefaultMode,
   resolveGroupedCollectionPresentation,
   resolveActionViewAvailableModes,
 } from '../src/app/contracts/actionViewSurfaceContract';
@@ -35,6 +36,7 @@ import { pickContractNavQuery } from '../src/app/navigationContext';
 import { extractKanbanFieldsFromContract } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import { resolveListSemanticDependencyFields } from '../src/app/action_runtime/useActionViewLoadRequestRuntime';
 import { resolveLoadKanbanFieldApplyState } from '../src/app/runtime/actionViewLoadViewFieldStateRuntime';
+import { useActionViewModeRuntime } from '../src/app/action_runtime/useActionViewModeRuntime';
 import { resolveDesktopListCandidates } from '../src/pages/listPage/listColumnVisibility';
 import { resolveCollectionEmptyStateKind } from '../src/app/presentation/collectionEmptyStatePresentation';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
@@ -60,6 +62,38 @@ const cardContract = normalizedCollectionContract('tree,kanban,form', {
 const workflowContract = normalizedCollectionContract('kanban,tree,form', {
   semantic: 'workflow_board', label: '流程看板', group_field: 'state', capabilities: { grouped_lanes: true },
 });
+const nativeActionView = (viewType: string, overrides: Record<string, unknown> = {}) => ({
+  viewType,
+  viewId: viewType === 'tree' ? 11 : viewType === 'kanban' ? 12 : 13,
+  viewXmlId: `demo.${viewType}`,
+  actionViewSequence: viewType === 'tree' ? 1 : viewType === 'kanban' ? 2 : 3,
+  surfaceRole: viewType === 'form' ? 'record_detail' : 'collection',
+  selectable: viewType !== 'form',
+  projectionStatus: 'ready',
+  rendererStatus: 'unknown',
+  reasonCode: '',
+  profile: viewType,
+  ...overrides,
+});
+const nativeActionContract = {
+  ...cardContract,
+  snapshot: {
+    ...cardContract.snapshot,
+    nativeActionContract: {
+      viewSet: {
+        defaultViewType: 'kanban',
+        activeViewType: 'tree',
+        orderedViews: [
+          nativeActionView('tree'),
+          nativeActionView('kanban'),
+          nativeActionView('graph', { viewId: 14, viewXmlId: 'demo.graph' }),
+          nativeActionView('gantt', { viewId: 15, viewXmlId: 'demo.gantt', rendererStatus: 'unsupported' }),
+          nativeActionView('form'),
+        ],
+      },
+    },
+  },
+} as unknown as ContractV2NormalizedStore;
 
 // fresh_project_ledger_defaults_to_table
 assert.equal(resolvePreferredActionViewMode({
@@ -71,6 +105,34 @@ assert.equal(resolvePreferredActionViewMode({
 assert.deepEqual(resolveActionViewAvailableModes({
   contractViewTypeRaw: 'tree,kanban,form', metaViewModesRaw: '', contract: cardContract,
 }), ['tree', 'kanban']);
+assert.deepEqual(resolveActionViewAvailableModes({
+  contractViewTypeRaw: 'tree,kanban,graph,gantt,form',
+  metaViewModesRaw: 'tree,kanban,graph,gantt,form',
+  contract: nativeActionContract,
+}), ['tree', 'kanban', 'graph']);
+assert.equal(resolveActionViewDefaultMode(nativeActionContract), 'kanban');
+const preferredMode = { value: '' };
+const currentMode = { value: 'tree' };
+const switchableModes = { value: ['tree', 'kanban'] };
+let modeLoads = 0;
+const { switchViewMode } = useActionViewModeRuntime({
+  strictContractMode: { value: true },
+  strictViewModeLabelMap: { value: {} },
+  pageText: (_key, fallback) => fallback,
+  preferredViewMode: preferredMode,
+  viewMode: currentMode,
+  availableViewModes: switchableModes,
+  normalizeActionViewMode: (raw) => String(raw || '').trim().toLowerCase(),
+  resolveActionViewModeLabel: ({ mode }) => mode,
+  contract: { value: nativeActionContract },
+  load: async () => { modeLoads += 1; },
+});
+switchViewMode('graph');
+assert.equal(preferredMode.value, '', 'a mode excluded by nativeActionContract must not be selected');
+assert.equal(modeLoads, 0);
+switchViewMode('kanban');
+assert.equal(preferredMode.value, 'kanban');
+assert.equal(modeLoads, 1);
 
 // card_label_not_workflow_board
 assert.equal(resolveActionCollectionPresentation(cardContract, 'kanban').label, '卡片');

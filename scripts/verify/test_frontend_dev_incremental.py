@@ -96,7 +96,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "contracts/registry/component.yaml",
                 "contracts/registry/registry.schema.json",
             ]),
-            ["verify.semantic.registry.lint"],
+            [
+                "verify.frontend.professional_component_registry.unit",
+                "verify.semantic.registry.lint",
+            ],
         )
 
     def test_acceptance_evolution_inputs_select_their_binding_lock(self) -> None:
@@ -688,6 +691,37 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         ):
             with self.subTest(path=path):
                 self.assertLessEqual(expected, set(select_targets([path])))
+
+    def test_native_action_contract_paths_select_atomic_backend_and_frontend_l2(self) -> None:
+        backend_expected = {
+            "verify.native_action.contract.unit",
+            "verify.native_action.contract.orm",
+            "verify.unified_page_contract.v2.assembler",
+        }
+        for path in (
+            "addons/smart_core/core/native_action_contract.py",
+            "addons/smart_core/tests/test_native_action_contract_integration.py",
+            "scripts/verify/test_native_action_contract.py",
+        ):
+            with self.subTest(path=path):
+                self.assertLessEqual(backend_expected, set(select_targets([path])))
+        for path in (
+            "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+            "frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts",
+            "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        ):
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.frontend.contract_record_action_state.unit", targets)
+                self.assertIn("verify.frontend.collection_view_semantics.unit", targets)
+        self.assertEqual(
+            select_targets(["scripts/verify/backend_contract_lifecycle_authority_guard.py"]),
+            ["verify.backend.contract_lifecycle.authority"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/unified_page_contract_v2_intent_guard.py"]),
+            ["verify.unified_page_contract.v2.intent"],
+        )
 
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
         self.assertIn(
@@ -1854,7 +1888,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         registry = "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
         test = "frontend/apps/web/scripts/professional_component_registry_test.ts"
         self.assertEqual(
-            select_targets([registry, test]),
+            select_targets(["contracts/registry/component.yaml", registry, test]),
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.professional_component_registry.unit",

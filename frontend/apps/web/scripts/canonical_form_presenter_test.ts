@@ -500,7 +500,7 @@ function snapshot(): ContractV2Snapshot {
     pageInfo: {
       pageId: 'page.x.document.form', sceneKey: 'x.document.form', pageName: 'Document',
       model: 'x.document', viewType: 'form', layoutType: 'form', renderMode: 'governed',
-      contractVersion: '2.2.0', clientType: 'web_pc',
+      contractVersion: '2.3.0', clientType: 'web_pc',
     },
     layoutContract: {
       pageId: 'page.x.document.form', layoutType: 'form', adaptMode: 'pc',
@@ -1031,11 +1031,11 @@ assert.throws(
   'legacy compatibility must not erase a malformed child carrier before strict decoding',
 );
 const unsupportedFutureVersion = snapshot();
-unsupportedFutureVersion.pageInfo.contractVersion = '2.3.0';
+unsupportedFutureVersion.pageInfo.contractVersion = '2.4.0';
 assert.throws(
   () => decodeContractV2Snapshot(unsupportedFutureVersion),
-  /must be a negotiated 2\.0, 2\.1, or 2\.2 version/,
-  'an unadvertised future minor must fail closed instead of using the 2.2 decoder',
+  /must be a negotiated 2\.0, 2\.1, 2\.2, or 2\.3 version/,
+  'an unadvertised future minor must fail closed instead of using the 2.3 decoder',
 );
 assert.deepEqual(
   collectUnifiedPageContractV2FieldWidgets(snapshot()).map((widget) => widget.fieldCode),
@@ -1322,8 +1322,8 @@ assert.deepEqual(
   {
     version: '1.0',
     rendererVersion: '1.0.0',
-    supportedContractVersion: '>=2.0.0 <2.3.0',
-    pageContractVersion: '2.2.0',
+    supportedContractVersion: '>=2.0.0 <2.4.0',
+    pageContractVersion: '2.3.0',
   },
   'component identity, renderer version and page Contract V2 version must reach the presentation model',
 );

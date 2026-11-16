@@ -11,6 +11,7 @@ from typing import Any
 _logger = logging.getLogger(__name__)
 
 from .native_relation_domain import compile_relation_domain
+from .native_action_contract import build_native_action_contract
 from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
@@ -39,7 +40,7 @@ from .unified_page_contract_v2_runtime_actions import normalize_runtime_business
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
 
-CONTRACT_VERSION = "2.2.0"
+CONTRACT_VERSION = "2.3.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
 SOURCE_AUTHORITIES = ("ui_contract", "page_orchestration", "scene_contract", "unified_page_contract_v2_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -56,7 +57,7 @@ def source_authority_contract() -> dict[str, Any]:
         runtime_carrier="unified_page_contract_v2_assembler",
     )
 
-PATCH_VERSION = "2.2.0"
+PATCH_VERSION = "2.3.0"
 STABLE_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
 
 
@@ -1250,6 +1251,21 @@ def _assemble_ui_contract(
         source_payload=source,
         request_id=request_id,
     )
+    native_action_contract = build_native_action_contract(
+        model=model,
+        active_view_type=view_type,
+        action_identity=source.get("action_identity"),
+        view_set=source.get("action_view_set"),
+        search_identity=_dict(_dict(source.get("search")).get("nativeIdentity")),
+        domain=source.get("domain"),
+        domain_raw=source.get("domain_raw"),
+        context=source.get("context"),
+        context_raw=source.get("context_raw"),
+        access_policy=source.get("access_policy"),
+        entry_refs=source.get("action_entry_refs"),
+    )
+    if native_action_contract:
+        contract["nativeActionContract"] = native_action_contract
     fields = _field_rows(source, ui, view_type=view_type)
     # The entity's declared field semantics (contracts/domain/*.yaml, projected
     # into the addon carrier) become a descriptor-level declaration here.  This

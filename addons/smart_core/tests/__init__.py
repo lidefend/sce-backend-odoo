@@ -12,6 +12,7 @@ from . import test_native_action_selection_alignment
 from . import test_action_dispatcher_server_mapping
 from . import test_native_action_view_set_integration
 from . import test_native_action_search_view_integration
+from . import test_native_action_contract_integration
 from . import test_menu_delivery_convergence_service
 from . import test_odoo_native_alignment_boundaries
 from . import test_native_tree_presentation_semantic

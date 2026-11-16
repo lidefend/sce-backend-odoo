@@ -196,6 +196,88 @@ export interface ContractV2PageInfo {
   deliveryProfile?: ContractV2DeliveryProfile;
 }
 
+export type ContractV2NativeActionViewType =
+  | 'tree'
+  | 'kanban'
+  | 'pivot'
+  | 'graph'
+  | 'calendar'
+  | 'gantt'
+  | 'activity'
+  | 'dashboard'
+  | 'form'
+  | '';
+
+export interface ContractV2NativeActionView {
+  viewType: ContractV2NativeActionViewType;
+  viewId: number;
+  viewXmlId: string;
+  actionViewSequence: number;
+  surfaceRole: 'collection' | 'record_detail';
+  selectable: boolean;
+  projectionStatus: 'ready' | 'blocked' | 'unresolved';
+  rendererStatus: 'ready' | 'fallback' | 'unsupported' | 'unknown';
+  reasonCode: string;
+  profile: string;
+}
+
+export interface ContractV2NativeActionReadinessAxis {
+  status: 'ready' | 'blocked' | 'unresolved' | 'unknown' | 'not_applicable';
+  reasonCodes: string[];
+}
+
+export interface ContractV2NativeActionContract {
+  schemaVersion: '1.0.0';
+  identity: {
+    actionType: 'ir.actions.act_window';
+    actionId: number;
+    actionXmlId: string;
+    model: string;
+  };
+  entryRefs: Array<{
+    kind: 'menu';
+    menuId: number;
+    menuXmlId: string;
+  }>;
+  actionScope: {
+    domainRaw: string;
+    domain: unknown[];
+    contextRaw: string;
+    context: ContractV2Dictionary;
+    sourceAuthority: {
+      kind: 'ir.actions.act_window';
+    };
+  };
+  projectionAvailability: {
+    status: 'available' | 'blocked' | 'unresolved';
+    reasonCode: string;
+    authorityRef: 'existing_action_access_projection';
+  };
+  search?: {
+    viewId: number;
+    viewXmlId: string;
+    authority: 'action_search_view' | 'model_default_search_view';
+    profileRef: 'searchContract';
+  };
+  viewSet: {
+    orderAuthority: 'ir.actions.act_window.views';
+    defaultViewType: ContractV2NativeActionViewType;
+    activeViewType: ContractV2NativeActionViewType;
+    orderedViews: ContractV2NativeActionView[];
+  };
+  readiness: {
+    backendContract: ContractV2NativeActionReadinessAxis;
+    clientRenderer: ContractV2NativeActionReadinessAxis;
+    businessExecution: ContractV2NativeActionReadinessAxis;
+  };
+  capabilities: Array<'action_view_set.v1' | 'search_identity.v1'>;
+  sourceAuthority: {
+    kind: 'native_action_contract_projection';
+    projectionOnly: true;
+    noBusinessFactAuthority: true;
+  };
+}
+
 export interface ContractV2Widget {
   widgetId: string;
   widgetType: ContractV2WidgetType;
@@ -655,6 +737,7 @@ export interface ContractV2Snapshot {
   fieldOwnership?: ContractV2FieldOwnership;
   pageComposition?: ContractV2PageComposition;
   noticeContract?: ContractV2NoticeContract;
+  nativeActionContract?: ContractV2NativeActionContract;
 }
 
 export interface ContractV2FieldOwnership {

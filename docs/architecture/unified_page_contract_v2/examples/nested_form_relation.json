@@ -7,7 +7,7 @@
     "viewType": "form",
     "layoutType": "combine",
     "renderMode": "governed",
-    "contractVersion": "2.2.0",
+    "contractVersion": "2.3.0",
     "clientType": "web_pc"
   },
   "layoutContract": {
@@ -198,14 +198,14 @@
       "stage": "runtime_delivery",
       "definition": {
         "schemaId": "smart_core.unified_page_contract_v2",
-        "schemaVersion": "2.2.0",
-        "schemaSha256": "e9994018c00dbdd841bb2f18474e3cafad6fdf74f1f6caf1b62f67981e1fd678",
-        "contractVersion": "2.2.0",
+        "schemaVersion": "2.3.0",
+        "schemaSha256": "3d70ee82f9257db93f7bd1913070fb4250d3c212dd6780ccf67b73aebfe775fe",
+        "contractVersion": "2.3.0",
         "normativeStatus": "stable"
       },
       "generation": {
         "generator": "documentation.example",
-        "generatorVersion": "2.2.0",
+        "generatorVersion": "2.3.0",
         "sourceType": "ui.contract",
         "sourceSha256": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a"
       },
@@ -217,7 +217,7 @@
       },
       "integrity": {
         "algorithm": "sha256",
-        "contractSha256": "e2746806edb60643f1aac48b24eb2bc82e83ac303ce914241ee6fcf916d3b1a2"
+        "contractSha256": "f471648d99f2fc641c37c2a11c31a0603f53c6a2aa7ebbeda3f408342559d9e9"
       },
       "authority": {
         "kind": "documentation_example",

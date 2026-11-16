@@ -49,11 +49,11 @@ const runtimeContract = {
   retryPolicy: { maxRetries: 1 },
 };
 
-function snapshot(globalStatus, searchContract) {
+function snapshot(globalStatus, searchContract, nativeActionContract) {
   return {
     pageInfo: {
       pageId: 'contract.form', sceneKey: 'contract.form', pageName: 'Contract', model: 'sc.general.contract',
-      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc',
+      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.3.0', clientType: 'web_pc',
     },
     layoutContract: { pageId: 'contract.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {} },
     statusContract: {
@@ -64,6 +64,7 @@ function snapshot(globalStatus, searchContract) {
     dataContract: { mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {} },
     runtimeContract,
     ...(searchContract === undefined ? {} : { searchContract }),
+    ...(nativeActionContract === undefined ? {} : { nativeActionContract }),
     meta: {
       etag: 'test', snapshotId: 'test', traceId: 'test', requestId: 'test', sourceType: 'test',
       lifecycle: {
@@ -85,6 +86,90 @@ const searchNativeIdentity = {
   authority: 'action_search_view',
   sourceLocator: 'ir.actions.act_window.search_view_id',
 };
+
+const nativeActionContract = {
+  schemaVersion: '1.0.0',
+  identity: {
+    actionType: 'ir.actions.act_window',
+    actionId: 11,
+    actionXmlId: 'demo.action_contract',
+    model: 'sc.general.contract',
+  },
+  entryRefs: [{ kind: 'menu', menuId: 41, menuXmlId: 'demo.menu_contract' }],
+  actionScope: {
+    domainRaw: "[]",
+    domain: [],
+    contextRaw: "{}",
+    context: {},
+    sourceAuthority: { kind: 'ir.actions.act_window' },
+  },
+  projectionAvailability: {
+    status: 'available',
+    reasonCode: '',
+    authorityRef: 'existing_action_access_projection',
+  },
+  search: {
+    viewId: 22,
+    viewXmlId: 'smart_core.p0_2_search_alpha',
+    authority: 'action_search_view',
+    profileRef: 'searchContract',
+  },
+  viewSet: {
+    orderAuthority: 'ir.actions.act_window.views',
+    defaultViewType: 'form',
+    activeViewType: 'form',
+    orderedViews: [{
+      viewType: 'form',
+      viewId: 33,
+      viewXmlId: 'demo.contract_form',
+      actionViewSequence: 1,
+      surfaceRole: 'record_detail',
+      selectable: false,
+      projectionStatus: 'ready',
+      rendererStatus: 'unknown',
+      reasonCode: '',
+      profile: 'form',
+    }],
+  },
+  readiness: {
+    backendContract: { status: 'ready', reasonCodes: [] },
+    clientRenderer: { status: 'unknown', reasonCodes: [] },
+    businessExecution: { status: 'not_applicable', reasonCodes: [] },
+  },
+  capabilities: ['action_view_set.v1', 'search_identity.v1'],
+  sourceAuthority: {
+    kind: 'native_action_contract_projection',
+    projectionOnly: true,
+    noBusinessFactAuthority: true,
+  },
+};
+
+check(() => assert.deepEqual(
+  decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: searchNativeIdentity },
+    nativeActionContract,
+  )).nativeActionContract,
+  nativeActionContract,
+), 'nativeActionContract must survive strict decoding');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: searchNativeIdentity },
+    { ...nativeActionContract, inventedActionRoot: true },
+  )),
+  /nativeActionContract.*not allowed|unknown/i,
+), 'nativeActionContract must reject undeclared fields');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: { ...searchNativeIdentity, viewId: 999 } },
+    nativeActionContract,
+  )),
+  /nativeActionContract\.search/,
+), 'nativeActionContract.search must agree with searchContract.nativeIdentity');
 
 check(() => assert.deepEqual(
   decodeContractV2Snapshot(snapshot(
