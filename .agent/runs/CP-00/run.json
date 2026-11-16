@@ -1,0 +1,120 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "1bfe1f500320a35d59bef156db3c5ba746735668",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CP-00.yaml",
+    ".agent/runs/CP-00/run.json",
+    "docs/audit/cp00",
+    "docs/audit/cp00/README.md",
+    "docs/audit/cp00/capability_productization_lifecycle_audit_20261116.md",
+    "docs/audit/cp00/model_relationship_map.md",
+    "docs/audit/cp00/state_transition_and_api_call_chain.md",
+    "docs/audit/cp00/permission_identity_matrix.md",
+    "docs/audit/cp00/productization_admission_checklist.md",
+    "docs/audit/cp00/gap_inventory.json",
+    "docs/audit/cp00/evidence_index.json",
+    "docs/audit/cp00/SHA256SUMS"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current repository source plus committed read-only baselines and evidence; no database or service access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CP-00.yaml",
+        ".agent/runs/CP-00/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/audit/cp00/README.md",
+        "docs/audit/cp00/capability_productization_lifecycle_audit_20261116.md",
+        "docs/audit/cp00/model_relationship_map.md",
+        "docs/audit/cp00/state_transition_and_api_call_chain.md",
+        "docs/audit/cp00/permission_identity_matrix.md",
+        "docs/audit/cp00/productization_admission_checklist.md",
+        "docs/audit/cp00/gap_inventory.json",
+        "docs/audit/cp00/evidence_index.json",
+        "scripts/verify/docs_links.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_core/delivery/runtime_route_authority.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "platform_explorer": {
+      "target": "verify.platform.capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_catalog": {
+      "target": "verify.runtime_capability_catalog.unit",
+      "inputs": [
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_explorer": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "capability_maturity": {
+      "target": "verify.capability.maturity.unit",
+      "inputs": [
+        "addons/smart_core/core/capability_maturity.py",
+        "addons/smart_core/tests/test_capability_maturity.py",
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+        "scripts/verify/capability_maturity_evidence.py",
+        "scripts/verify/test_capability_maturity_evidence.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run CP-00 targeted checks and agent ledger, generate SHA256SUMS, then request independent exact-head review.",
+  "id": "CP-00",
+  "branch": "audit/cp00-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CP-00.yaml",
+  "record": "docs/audit/cp00/capability_productization_lifecycle_audit_20261116.md"
+}

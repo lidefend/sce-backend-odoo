@@ -1,0 +1,67 @@
+schema_version: 1
+goal:
+  id: CP-00
+  title: Odoo-native capability productization lifecycle audit
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: source, API and permission authority audit
+  module:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_scene
+    - frontend
+  standard_vs_user_specific: ops_delivery_audit
+  objective: >-
+    Establish, from the current mainline source and committed evidence, the real
+    read/write paths and authority boundaries for capability identity, scene
+    composition, qualification, product release, tenant enablement, Explorer,
+    Release Operator and user delivery. The audit must answer CP00-A through
+    CP00-H without changing product code or persistent state.
+  why_here: >-
+    The deliverable is read-only P4 evidence that maps existing P0-P3 mechanisms.
+    It does not define capability semantics, create a registry, modify a scene,
+    publish a product, enable a tenant or grant access.
+  why_not_elsewhere:
+    - no_orm_acl_record_rule_or_business_model_change
+    - no_scene_candidate_qualification_release_or_enablement_write
+    - no_frontend_inference_or_fallback
+    - no_second_capability_registry_or_scan_engine
+    - no_database_upgrade_restore_or_runtime_mutation
+    - no_model_merge_before_consumer_and_lifecycle_proof
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/CP-00.yaml
+      - .agent/runs/CP-00/run.json
+      - docs/audit/cp00
+    runtime:
+      - repository source inspection only
+      - committed read-only evidence and historical baselines only
+      - no database, service, browser or deployment access
+  acceptance:
+    - cp00_a_capability_identity_and_payload_consumers_are_traced_to_source
+    - cp00_b_scene_tile_composition_and_publish_lifecycle_are_traced_to_source
+    - cp00_c_product_scenario_entry_and_native_menu_action_relationship_is_proven
+    - cp00_d_preview_standard_qualification_authority_and_evidence_gaps_are_identified
+    - cp00_e_release_snapshot_contents_and_dependency_closure_are_assessed
+    - cp00_f_tenant_enablement_release_consumption_chain_is_traced
+    - cp00_g_explorer_release_operator_native_forms_and_frontend_calls_are_mapped
+    - cp00_h_platform_tenant_business_user_permission_boundaries_are_mapped
+    - every_material_claim_cites_repository_evidence
+    - historical_runtime_counts_are_labeled_with_their_source_baseline
+    - blocked_and_not_verified_items_are_explicit
+  exclusions:
+    - implementation of CP-01 through CP-08
+    - merge or modification of PR 895 or PR 896
+    - database reconciliation restore upgrade or cleanup
+    - deployment and browser acceptance
+    - backend performance work
+  rollback: >-
+    Revert the CP-00 audit commit. No product configuration, database,
+    qualification, release, enablement or deployment state is changed.
+  completion:
+    batch: source_audit_complete_pending_validation_and_review
+    mainline_integration: not_performed
+    deployment: not_performed
+    user_acceptance: not_performed
+  run: .agent/runs/CP-00/run.json

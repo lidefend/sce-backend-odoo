@@ -1,0 +1,223 @@
+{
+  "schema": "cp00.evidence_index.v1",
+  "audit": {
+    "id": "CP-00",
+    "date": "2026-11-16",
+    "baseline_branch": "audit/cp00-20261116",
+    "baseline_sha": "1bfe1f500320a35d59bef156db3c5ba746735668",
+    "baseline_tree": "d77beb3eade78a3a0784dd7271604ce4e14001bb",
+    "mode": "read_only_source_and_committed_evidence",
+    "database_access": false,
+    "runtime_service_access": false,
+    "browser_access": false
+  },
+  "current_source_counts": {
+    "semantic_capability_definitions": 63,
+    "semantic_capability_query_actions": 10,
+    "semantic_capability_required_role_definitions": 52,
+    "semantic_capability_required_group_definitions": 3,
+    "acceptance_contracts": 8,
+    "product_menu_source_entries": 132,
+    "product_menu_source_released_entries": 92,
+    "product_menu_source_preview_entries": 40,
+    "formal_policy_unique_menus": 132,
+    "formal_policy_unique_actions": 131,
+    "formal_policy_actionless_scene_entries": 1,
+    "maturity_evidence_bundles": 0
+  },
+  "historical_runtime_counts": {
+    "source_baseline": "main@2571346afc8c69cea20e32fcba36082c949cf825",
+    "source_record": "docs/architecture/platform_capability_studio_audit_v1.md",
+    "business_root_native_action_menus": 282,
+    "scenario_referenced_entries": 75,
+    "published_but_unbound_entries": 207,
+    "status": "historical_only_not_current_runtime_verification"
+  },
+  "work_packages": [
+    {
+      "id": "CP00-A",
+      "status": "source_verified",
+      "scope": "capability identity and payload consumers",
+      "evidence": [
+        "addons/smart_construction_core/models/support/scene_orchestration.py:39",
+        "addons/smart_construction_core/models/support/scene_orchestration.py:278",
+        "addons/smart_construction_core/services/capability_registry.py:34",
+        "addons/smart_core/delivery/runtime_capability_catalog.py:85",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py:227"
+      ]
+    },
+    {
+      "id": "CP00-B",
+      "status": "source_verified",
+      "scope": "Scene composition and publication",
+      "evidence": [
+        "addons/smart_construction_core/models/support/scene_orchestration.py:491",
+        "addons/smart_construction_core/models/support/scene_orchestration.py:719",
+        "addons/smart_core/delivery/scene_service.py:29",
+        "addons/smart_core/delivery/scene_snapshot_service.py:77"
+      ]
+    },
+    {
+      "id": "CP00-C",
+      "status": "source_verified",
+      "scope": "product Scenario and native Menu/Action relation",
+      "evidence": [
+        "addons/smart_construction_core/models/support/product_scenario.py:56",
+        "addons/smart_construction_core/models/support/product_scenario.py:282",
+        "addons/smart_construction_core/services/scenario_surface_projection.py:557",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:170"
+      ]
+    },
+    {
+      "id": "CP00-D",
+      "status": "source_verified_with_gap",
+      "scope": "Preview and Standard qualification",
+      "evidence": [
+        "addons/smart_core/core/capability_maturity.py:40",
+        "scripts/verify/capability_maturity_evidence.py:20",
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:258"
+      ]
+    },
+    {
+      "id": "CP00-E",
+      "status": "source_verified_with_gap",
+      "scope": "product release snapshot contents",
+      "evidence": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py:158",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py:240",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py:768",
+        "addons/smart_core/delivery/product_policy_service.py:180"
+      ]
+    },
+    {
+      "id": "CP00-F",
+      "status": "source_verified_with_gap",
+      "scope": "tenant enablement and release consumption",
+      "evidence": [
+        "addons/smart_construction_scene/handlers/scenario_activation.py:95",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py:24",
+        "addons/smart_construction_scene/services/business_scene_enablement.py:21",
+        "addons/smart_construction_scene/services/business_scene_enablement.py:150"
+      ]
+    },
+    {
+      "id": "CP00-G",
+      "status": "source_verified_with_gap",
+      "scope": "Explorer, Release Operator, native forms and frontend calls",
+      "evidence": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue:425",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue:779",
+        "addons/smart_core/handlers/release_operator.py:224",
+        "addons/smart_core/views/platform_company_access_views.xml:519",
+        "addons/smart_construction_core/controllers/scene_template_controller.py:604"
+      ]
+    },
+    {
+      "id": "CP00-H",
+      "status": "source_verified_with_gap",
+      "scope": "platform, tenant and business-user permission boundaries",
+      "evidence": [
+        "addons/smart_core/security/platform_admin.py:142",
+        "addons/smart_core/security/platform_admin.py:199",
+        "addons/smart_core/security/ir.model.access.csv:14",
+        "addons/smart_construction_core/security/ir.model.access.csv:78",
+        "addons/smart_construction_scene/handlers/scenario_activation.py:95"
+      ]
+    }
+  ],
+  "source_digests": {
+    "addons/smart_construction_core/models/support/scene_orchestration.py": "9704ac9526f923529477318cae6ee5582b40be353f91f00da8af1fbd15792a0d",
+    "addons/smart_core/models/release_management.py": "218ba638353adac6616446ed932a86adf074f15f569257042ebe843dc2af1f0f",
+    "addons/smart_construction_core/models/support/product_scenario.py": "d549fff8cb613dbba40b4d45e8624727769825dd51377f6b005a17ed84c80186",
+    "addons/smart_construction_core/services/capability_registry.py": "dcddc2cc18e5e70d0b4ba2eba5eeccb4cb387402395c2ecf8063984759a39b5c",
+    "addons/smart_construction_core/services/product_menu_source.py": "284ce3a2cb6f97845c3f9b6a1885fc5fd9bbec8d1461b1798604778cc557a1f9",
+    "addons/smart_construction_core/services/platform_capability_explorer_contributions.py": "a992a54eef5f3898cb632dec7f02a3b1da40c880c5eb8888d32bfd9211e21dec",
+    "addons/smart_core/delivery/runtime_capability_catalog.py": "e1f489720e779334a06b7fe10e57c9449f0c7c40e773384e314c31561fef71a7",
+    "addons/smart_core/delivery/platform_capability_explorer.py": "ad7368d7a65df0dd295e21af3c37bcb34a02eb328e318f884a4c6a5d44fbaf79",
+    "addons/smart_core/delivery/delivery_engine.py": "a3bfaba05b0dadf3c19e92364462ef8f2e6984ad97d58d79fe9c864ed1a59c6d",
+    "addons/smart_core/delivery/menu_service.py": "3172dac962569fcbcbf3322fe539f6f2dc5fbeae7f6d330d63ba10073a16df92",
+    "addons/smart_core/delivery/scene_service.py": "f0e45ec2bbd31a17e6f6f310fa7a7c26732c983560e5349a3ec99d4bdabd7242",
+    "addons/smart_core/delivery/scene_snapshot_service.py": "73eb2e2da5bab0f474462c927eae39040c22cd49e66e73d7813ad6ca9858e74f",
+    "addons/smart_core/delivery/effective_delivery_inputs.py": "1e42e87367c7144bd24228833f6672756c1a439fabb31153289253a1a3e7e2da",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py": "b69d3bbe2c165a996f81a72ba9292618c32e2b6164982fa0f85482cca59cea47",
+    "addons/smart_core/delivery/edition_release_snapshot_promotion_service.py": "7aae26acac73380ffbb1afbd1166cf8e1d7293bce276f0cfd5bbf0d0e92b475e",
+    "addons/smart_core/delivery/release_operator_read_model_service.py": "10454167e5d27b5912486ca1e7c7da779a8d9d9046a56a1de7f59207d5c6c877",
+    "addons/smart_core/handlers/release_operator.py": "b20ed279bc696a009ecbdf670648d4c1e67eb1393efe5a4f0a605a39da686da4",
+    "addons/smart_core/delivery/release_approval_policy_service.py": "30a7d0931a99bf745181660e5c45290123638afba5b447348efd8b775644a0bd",
+    "addons/smart_core/handlers/platform_capability_explorer.py": "887a3f9d6c9a01f17d6cdae7c82f56178daaac95db377236f537be9d4580c696",
+    "addons/smart_core/security/platform_admin.py": "3346c463766ff901d8f875f39fc9b111f8187b3da972529b6013fdfa18c1561e",
+    "addons/smart_construction_scene/handlers/scenario_activation.py": "02788f4e014f65560904616a8d1060aae35381b88c4d85299f195c51cc66299e",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py": "f454edbfb7c726b393aa613d7cf002ef465bcfef900e22c67dd46320ff977a56",
+    "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py": "e872eb3fe217c28eb8fd44f0ce40ab9cb104117e9e0a9ff3cc3599a32ca7e129",
+    "frontend/apps/web/src/api/platformCapabilityExplorer.ts": "5f8944d88dd987cd41a4a8ab57ddcdbe90d41eb2ca999d3a5a69aac968c964d2",
+    "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue": "aa603580849277c884964591bb67815a3224597639206673327cf6e4061067d2",
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue": "582d1d63a7c08e0c548dc6732ca41888c6bfb781b8879ae0d05145ecabbcbb32",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts": "599e9f27bb6d8f841a207403c9b2f8759e710169a83f1786892dd82fd986027c",
+    "addons/smart_construction_core/data/product_menu_source.json": "ba4e660c1fe18b838fb6f1c44515dee9edc1e8b298512871f4c096be395869fe",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json": "f85a73818ca45789b0cb60b8060b4f62728894c3ad78c610842a98f1222a0da5",
+    "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json": "d7254c55e5a28eb092c40c77ee6b3a1fcb89c226ee698164e1d248373d23478d",
+    "addons/smart_core/core/capability_maturity.py": "18d86f707a01f948d8e3816870314578668f63831703b16948087f3cdac69ee3",
+    "scripts/verify/capability_maturity_evidence.py": "83ce4df3ed5abbe8512bbaf06a338a38b4014cca0d633b01c952d4e9fe16eda2"
+  },
+  "not_verified": [
+    "current_runtime_menu_and_release_counts",
+    "current_runtime_active_release_snapshot_contents",
+    "native_release_form_reachability_for_tenant_admin",
+    "end_to_end_left_to_right_product_delivery",
+    "browser_and_performance_behavior_of_future_workspace"
+  ],
+  "verification": {
+    "mode": "offline",
+    "ci_local_iteration": {
+      "status": "passed",
+      "selected_check": "verify.agent.ledger.unit",
+      "test_count": 18,
+      "receipt": ".runtime/frontend-dev-validation/executions/20261116T002126Z-2938462-312299367/receipt.json"
+    },
+    "checks": {
+      "verify.navigation.publication_consumers.unit": {
+        "status": "passed",
+        "test_count": 252,
+        "log": ".runtime/agent-runs/CP-00/publication_consumers.log"
+      },
+      "verify.platform.capability_explorer.unit": {
+        "status": "passed",
+        "test_count": 27,
+        "log": ".runtime/agent-runs/CP-00/platform_explorer.log"
+      },
+      "verify.runtime_capability_catalog.unit": {
+        "status": "passed",
+        "test_count": 19,
+        "log": ".runtime/agent-runs/CP-00/runtime_catalog.log"
+      },
+      "verify.frontend.platform_capability_explorer.unit": {
+        "status": "passed",
+        "test_count": 68,
+        "log": ".runtime/agent-runs/CP-00/frontend_explorer.log"
+      },
+      "verify.capability.maturity.unit": {
+        "status": "passed",
+        "test_count": 42,
+        "log": ".runtime/agent-runs/CP-00/capability_maturity.log"
+      },
+      "verify.agent.ledger.unit": {
+        "status": "passed",
+        "test_count": 18,
+        "log": ".runtime/agent-runs/CP-00/agent_ledger.log"
+      },
+      "verify.docs.links": {
+        "status": "passed_with_repository_baseline",
+        "cp00_missing_count": 0,
+        "repository_missing_count": 62,
+        "default_zero_missing_run": "failed_preexisting",
+        "development_environment_run": "passed",
+        "log": ".runtime/agent-runs/CP-00/docs_links.env-dev.log",
+        "default_failure_log": ".runtime/agent-runs/CP-00/docs_links.log"
+      }
+    },
+    "total_nonzero_unit_cases": 426,
+    "database_runtime_browser_deployment": "not_run"
+  },
+  "publication_state": "pending_independent_exact_head_review"
+}
