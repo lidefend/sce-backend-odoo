@@ -1,0 +1,66 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "ceaa207b716ed3e2157f49d315b72e071a722645",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
+    ".agent/runs/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION/run.json",
+    "docs/audit/native-scene-01/inventories/",
+    "docs/audit/native-scene-01/b-s3-widget-conversion/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only source inspection and existing offline documentation/schema guards; no database or service access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
+        ".agent/runs/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "documentation": {
+      "target": "verify.docs.all",
+      "inputs": [
+        "docs/audit/native-scene-01/b-s3-widget-conversion/"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "outcome": {
+    "audit": "completed_source_level",
+    "product_source_modified": false,
+    "contract_schema_modified": false,
+    "database_modified": false,
+    "primary_findings": [
+      "nativeWidget conflates explicit XML widgets with field-type derived compatibility values",
+      "unknown native widgets and declared semantics silently fall back instead of failing closed",
+      "field occurrence Domain/Context evidence is preserved but not uniformly compiled into Widget selection behavior",
+      "embedded <widget name> nodes and non-Form Widget semantics remain unsupported or partial",
+      "specialized daterange, analytic distribution, attachment, avatar and radio behavior remains partly code-specialized"
+    ],
+    "baseline_evidence_repair": "Refreshed A01 machine inventories and manifest to the current baseline HEAD; no product source changed."
+  },
+  "completion_status_dimensions": {
+    "batch": "verification_pending",
+    "mainline": "not_merged",
+    "deployment": "not_deployed",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Publish the clean B-S3 audit commit through the governed exact-head PR review lane, monitor all required checks, and do not start Widget implementation before independent review.",
+  "statements": [
+    "The audit is read-only with respect to product source, contract schema, parser, Renderer and runtime configuration.",
+    "The refreshed native-scene inventories are generated audit evidence, not product capability claims.",
+    "L4 browser, role and business execution evidence is not part of this checkpoint."
+  ],
+  "id": "NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION",
+  "branch": "audit/native-scene-01-b-s3-widget-conversion-20261117",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
+  "record": "docs/audit/native-scene-01/b-s3-widget-conversion/native_widget_takeover_audit.md"
+}

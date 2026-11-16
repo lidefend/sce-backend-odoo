@@ -5,7 +5,7 @@
     "write": "python3 scripts/audit/native_scene_inventory.py"
   },
   "inputs": {
-    "file_count": 1352,
+    "file_count": 1353,
     "files": [
       "addons/sc_norm_engine/__init__.py",
       "addons/sc_norm_engine/__manifest__.py",
@@ -902,6 +902,7 @@
       "addons/smart_core/core/native_projection_shadow.py",
       "addons/smart_core/core/native_relation_domain.py",
       "addons/smart_core/core/native_view_contract_projection.py",
+      "addons/smart_core/core/native_view_occurrence.py",
       "addons/smart_core/core/native_view_parsed_cache.py",
       "addons/smart_core/core/native_view_projection.py",
       "addons/smart_core/core/navigation_entry_target.py",
@@ -1360,7 +1361,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "bfa3cb541329991a678c1e78b77df343efd5cc99a5354cd57b327cb6684577b7"
+    "sha256": "0e61a142cae8359ff02b455891c80853007d43d7a3f308d9f12a1072ad117c4d"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1372,22 +1373,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "a6de4cfb243e610dff1d4280b32d5337c77dd6bf8f89aaec654a6093dd1976ab"
+      "sha256": "27f669239112d475a4fc0a9de20610d5916836b3c17d05c7a8f2a1b110ec742b"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "6616109e1231422e47770323a0d676eb8fe079dd2167e9535a3c3d0943147a74"
+      "sha256": "723842fc346c1d606d143a838e7ea8f7bfb2aa1987d8c130a91e14dc6c565799"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "6d752173a5ee1995baec7f265ee8f4c398ca80c0a9062bf91c0df50e57750bc8"
+      "sha256": "08cf6426756eaa9a6ca0aa32fe1c8a46dd9532128edbd8ed44ba98a6d90d37fc"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "f665f2d3538711236da0e1c4b1423c803ab0265d4d2c670fc8c1377a0741c31e"
+      "sha256": "ae80113d46217f0ea6a1e2a181bbbfb577886d33e991c879bf38e04020dd7549"
     }
   },
   "runtime_evidence": {
@@ -1456,11 +1457,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T22:15:52+08:00",
+    "commit_time": "2026-11-16T14:38:35-08:00",
     "dirty_paths": [],
-    "revision": "072820e5f433962ea452ba39083878d62d59ed77",
+    "revision": "ceaa207b716ed3e2157f49d315b72e071a722645",
     "root": ".",
-    "tree": "f6a508ac97234014fd659a83ea454b2ce9d3b4a4"
+    "tree": "6dd1d7baae7fba775b66919a93551e6a4a840447"
   },
   "statistics": {
     "actions": {
