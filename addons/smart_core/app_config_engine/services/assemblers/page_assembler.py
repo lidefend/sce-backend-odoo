@@ -440,11 +440,12 @@ class PageAssembler:
         resolved_view_id = int(view_id or 0)
         if not model or not key or not resolved_view_id:
             return {}
-        if view_data is None:
-            view_data = (
-                carrier.fetch(self.env, model, key, resolved_view_id)
-                if carrier is not None
-                else self.env[model].get_view(view_id=resolved_view_id, view_type=key)
+        if view_data is None and carrier is not None:
+            view_data = carrier.fetch(self.env, model, key, resolved_view_id)
+        if not isinstance(view_data, dict) or not str(view_data.get("arch") or ""):
+            view_data = self.env[model].get_view(
+                view_id=resolved_view_id,
+                view_type=key,
             )
         arch = str((view_data or {}).get("arch") or "")
         if not arch:

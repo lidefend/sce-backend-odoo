@@ -56,6 +56,14 @@ at profile load. A candidate operator must supply
 `SC_ACCEPTANCE_FIXTURE_PASSWORD` explicitly, so credential provenance is known
 before any service or browser work starts.
 
+### Assembled-contract cache fingerprints include the native View producer
+
+The cache guard now includes
+`addons/smart_core/app_config_engine/services/assemblers/page_assembler.py`
+in the assembled-contract input digest. A change to native View identity
+production can no longer reuse a previously assembled response merely because
+the handler and core assembler file hashes stayed unchanged.
+
 ### Integration evidence recording is part of the integration entry
 
 `verify.frontend.acceptance.integration` now records the three affected merge

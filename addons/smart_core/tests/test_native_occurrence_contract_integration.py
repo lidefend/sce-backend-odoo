@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from odoo.tests.common import TransactionCase, tagged
 
+from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
 from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
     _native_view_identity_for,
@@ -226,3 +227,24 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertEqual(identity["schemaVersion"], "1.0.0")
         self.assertEqual(identity["kind"], "button")
         self.assertTrue(identity["occurrenceKey"].startswith("occ.v1."))
+
+    def test_identity_helper_falls_back_when_carrier_has_no_arch(self):
+        class _ParsedOnlyCarrier:
+            @staticmethod
+            def fetch(_env, _model, _view_type, _view_id):
+                return {"_arch_root": None, "view_type": "tree"}
+
+        contract = {"views": {"tree": {}}}
+        identity = PageAssembler(
+            self.env,
+            self.env["ir.model"].sudo().env,
+        ).ensure_native_view_identity(
+            contract,
+            model="res.partner",
+            view_type="tree",
+            view_id=self.tree.id,
+            carrier=_ParsedOnlyCarrier(),
+        )
+        self.assertTrue(identity)
+        self.assertEqual(identity["viewXmlId"], "smart_core.native_occurrence_tree")
+        self.assertEqual(contract["views"]["tree"]["viewIdentity"], identity)

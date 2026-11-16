@@ -18,7 +18,7 @@ Generated from repository source files. This report is informational during the 
 | 5651 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4981 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4982 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4660 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4564 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
@@ -186,7 +186,7 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
-| 927 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
+| 928 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 915 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 914 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
@@ -260,7 +260,7 @@ Generated from repository source files. This report is informational during the 
 | 5651 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4981 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
+| 4982 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4660 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4564 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
