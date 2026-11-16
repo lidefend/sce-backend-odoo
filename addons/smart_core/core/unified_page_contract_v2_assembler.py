@@ -1863,6 +1863,9 @@ def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str,
         value = search.get(key)
         if isinstance(value, dict):
             out[key] = deepcopy(value)
+    native_identity = search.get("nativeIdentity") or search.get("native_identity")
+    if isinstance(native_identity, dict) and native_identity:
+        out["nativeIdentity"] = deepcopy(native_identity)
     search_panel = search.get("search_panel") or search.get("searchpanel")
     if isinstance(search_panel, dict):
         out["search_panel"] = deepcopy(search_panel)

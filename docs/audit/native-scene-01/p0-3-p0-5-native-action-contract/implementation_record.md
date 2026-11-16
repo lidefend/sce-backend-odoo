@@ -74,6 +74,19 @@ The schema version is now `2.3.0` with a closed `nativeActionContract` definitio
   empty-set case.
 - Model-only pages without an Action continue without a fabricated contract.
 
+### 3.4 Runtime-discovered Search identity closure
+
+The first exact-head `local` list acceptance exposed a real contract-consistency
+defect: `nativeActionContract.search` was published, while the sibling
+`searchContract.nativeIdentity` was omitted by the V2 search projection. The
+strict Decoder therefore stopped the payment-request list with
+`ContractV2DecodeError`.
+
+The correction carries the already-resolved `nativeIdentity` into
+`searchContract` and adds an Odoo integration assertion that both contracts
+publish the same Search View ID and authority. The browser client and acceptance
+declaration now advertise contract version `2.3.x` as well.
+
 ## 4. Verification
 
 Passed:
@@ -82,7 +95,7 @@ Passed:
 - `make verify.native_action.contract.orm`: 3 tests, including a real Odoo
   Window Action projected into V2.
 - `make verify.unified_page_contract.v2.schema`: PASS.
-- `make verify.unified_page_contract.v2.assembler`: PASS, cache v59.
+- `make verify.unified_page_contract.v2.assembler`: PASS, cache v60.
 - `make verify.backend.contract_lifecycle.authority`: PASS, schema 2.3.0.
 - `make verify.frontend.contract_record_action_state.unit`: PASS, 33 checks.
 - `make verify.frontend.collection_view_semantics.unit`: PASS.

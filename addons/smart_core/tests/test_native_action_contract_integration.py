@@ -87,6 +87,14 @@ class TestNativeActionContractIntegration(TransactionCase):
         )
         self.assertEqual(native_action["search"]["viewId"], self.search.id)
         self.assertEqual(native_action["search"]["authority"], "action_search_view")
+        self.assertEqual(
+            contract["searchContract"]["nativeIdentity"]["viewId"],
+            native_action["search"]["viewId"],
+        )
+        self.assertEqual(
+            contract["searchContract"]["nativeIdentity"]["authority"],
+            native_action["search"]["authority"],
+        )
         self.assertEqual(native_action["readiness"]["backendContract"]["status"], "ready")
         self.assertEqual(native_action["readiness"]["clientRenderer"]["status"], "unknown")
         self.assertEqual(native_action["readiness"]["businessExecution"]["status"], "not_applicable")
