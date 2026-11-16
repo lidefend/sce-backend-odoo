@@ -56,6 +56,35 @@ class TestNativeActionViewSetIntegration(TransactionCase):
             ],
         })
 
+    def _verified_preview_env(self):
+        token = "p0-1-preview-%s" % self._testMethodName
+        self.env["ui.business.config.change.set"].sudo().create({
+            "name": "P0-1 preview authority",
+            "state": "ready",
+            "preview_token": token,
+            "preview_expires_at": fields.Datetime.now() + timedelta(minutes=5),
+        })
+        actor, _metadata = build_projection_environments(
+            self.env,
+            self.env,
+            {"preview_token": token},
+            {},
+        )
+        return actor
+
+    def _dispatch_model(self, *, env=None, action_id=None, view_id=None):
+        source, _versions = ActionDispatcher(
+            env or self.env,
+            self.env["ir.model"].sudo().env,
+        ).dispatch({
+            "subject": "model",
+            "model": "res.partner",
+            "action_id": self.action.id if action_id is None else action_id,
+            "view_type": "form",
+            "view_id": view_id,
+        })
+        return source
+
     def test_resolver_preserves_effective_action_views_and_identity(self):
         info = ActionResolver(self.env).as_action_info(self.action)
 
@@ -111,6 +140,14 @@ class TestNativeActionViewSetIntegration(TransactionCase):
                 requested_view_type="form",
             )
 
+    def test_requested_view_never_skips_an_incomplete_action_identity(self):
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SET_UNRESOLVED"):
+            PageAssembler._validate_requested_action_view(
+                {"id": self.action.id, "name": self.action.name},
+                requested_view_id=self.form.id,
+                requested_view_type="form",
+            )
+
     def test_authorized_override_is_the_only_non_candidate_path(self):
         info = ActionResolver(self.env).as_action_info(self.action)
 
@@ -121,24 +158,58 @@ class TestNativeActionViewSetIntegration(TransactionCase):
             authorized_override=True,
         )
 
-    def test_only_verified_preview_marks_request_view_override_authority(self):
-        token = "p0-1-verified-preview-token"
-        self.env["ui.business.config.change.set"].sudo().create({
-            "name": "P0-1 preview authority",
-            "state": "ready",
-            "preview_token": token,
-            "preview_expires_at": fields.Datetime.now() + timedelta(minutes=5),
-        })
+    def test_action_dispatch_rejects_unbound_view(self):
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_REQUEST_OVERRIDE_DENIED"):
+            ActionDispatcher(
+                self.env,
+                self.env["ir.model"].sudo().env,
+            ).dispatch({
+                "subject": "action",
+                "action_id": self.action.id,
+                "view_type": "form",
+                "view_id": self.unbound_form.id,
+            })
 
-        verified_context = {
+    def test_model_dispatch_uses_the_complete_action_view_set(self):
+        bound = self._dispatch_model(view_id=self.form.id)
+        self.assertEqual(bound["action_identity"]["action_id"], self.action.id)
+        self.assertEqual(bound["view_id"], self.form.id)
+
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_REQUEST_OVERRIDE_DENIED"):
+            self._dispatch_model(view_id=self.unbound_form.id)
+
+    def test_model_dispatch_without_action_keeps_model_view_projection(self):
+        source = self._dispatch_model(action_id=0, view_id=self.unbound_form.id)
+
+        self.assertNotIn("action_identity", source)
+        self.assertEqual(source["view_id"], self.unbound_form.id)
+
+    def test_model_dispatch_rejects_unresolved_action_identity(self):
+        with self.assertRaisesRegex(ValueError, "ACTION_IDENTITY_UNRESOLVED"):
+            self._dispatch_model(action_id=999999999, view_id=self.form.id)
+
+    def test_model_dispatch_accepts_only_verified_preview_override(self):
+        verified = self._dispatch_model(
+            env=self._verified_preview_env(),
+            view_id=self.unbound_form.id,
+        )
+        self.assertEqual(verified["view_id"], self.unbound_form.id)
+
+        fake_context = {
+            **self.env.context,
             NATIVE_ACTION_VIEW_OVERRIDE_AUTHORIZED: True,
         }
-        actor, _metadata = build_projection_environments(
+        fake_env, _metadata = build_projection_environments(
             self.env,
             self.env,
-            {"preview_token": token},
-            verified_context,
+            {},
+            fake_context,
         )
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_REQUEST_OVERRIDE_DENIED"):
+            self._dispatch_model(env=fake_env, view_id=self.unbound_form.id)
+
+    def test_only_verified_preview_marks_request_view_override_authority(self):
+        actor = self._verified_preview_env()
         self.assertTrue(has_authorized_action_view_override(actor.context))
 
         unverified_context = {

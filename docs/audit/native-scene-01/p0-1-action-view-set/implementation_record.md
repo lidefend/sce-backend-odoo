@@ -1,6 +1,6 @@
 # NATIVE-SCENE-01 / P0-1 · Action identity and effective View Set
 
-Status: batch verification complete; independent review and remote CI pending.
+Status: independent-review remediation implemented; exact-head re-review and remote CI pending.
 
 Date: 2026-11-16
 
@@ -72,10 +72,14 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 
 ### 2.3 PageAssembler 请求约束与内部载体
 
-- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:368-396`
+- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:368-402`
   验证显式请求 View 是否为 Action 候选。
 - `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:551-583`
   在显式 View ID 进入 `get_view()` 前执行候选校验。
+- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:2295-2342`
+  `subject=model + action_id/xmlid` 通过现有 `ActionResolver` 重建完整 Action
+  身份和 View Set；Action 无法解析、类型错误、模型不一致或 View Set 不完整均
+  fail closed。没有 Action 身份的纯 Model 请求仍保持原有模型级投影。
 - `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:828-838`
   在 `ui.contract` 源中加入内部 `action_identity` / `action_view_set` 载体。
 
@@ -94,10 +98,28 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 
 - `addons/smart_core/handlers/ui_contract_v2.py:97`
   将 assembled contract 缓存版本提升为
-  `ui-contract-v2-demand-driven-snapshot-v51`。
+  `ui-contract-v2-demand-driven-snapshot-v52`。
 - `scripts/verify/unified_page_contract_v2_assembler_guard.py:32,81`
   同步重钉缓存版本和输入摘要
-  `a1e53cdd...f97a8`，防止 Action/Page 装配语义变化后继续命中旧契约。
+  `636df7bd...6f8d`，防止 Action/Page 装配语义变化后继续命中旧契约。
+
+### 2.5 独立复核 P0 修复
+
+独立复核发现 `subject=model + action_id` 会走 PageAssembler 自身的 Action
+读取路径；该路径原先只返回 ID、名称、Domain、Context 和 target，没有返回
+`view_set`，导致显式 View ID 校验被跳过。
+
+修订后：
+
+- `subject=model + action_id/xmlid` 复用 `ActionResolver` 的完整 Action
+  identity/View Set。
+- 请求显式 View ID 时，已绑定 Action 但 View Set 不完整会直接拒绝。
+- 不存在的 Action 不再静默退化为纯 Model 页面。
+- 真正的纯 Model 请求在没有 Action 身份时仍保持可用。
+- 已核验预览可覆盖；客户端伪造内部标记会被现有预览环境构建链清除并拒绝。
+
+全链路测试通过 `ActionDispatcher.dispatch()` 覆盖 action 与 model 两种入口，
+不只测试静态 helper。
 
 ## 3. 真实 Odoo 验证发现
 
@@ -123,13 +145,13 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 ### Odoo 集成
 
 - `make verify.native_action.view_set.orm`：
-  PASS，7 tests。
+  PASS，13 tests。
 - Receipt：
-  `.runtime/test-baseline/1794811717162028204/receipt.json`
+  `.runtime/test-baseline/1794813496607387067/receipt.json`
 - `make local.test.test MODULE=smart_core TEST_TAGS=native_action_view_set,action_dispatcher`：
-  PASS，17 tests。
+  PASS，23 tests。
 - Receipt：
-  `.runtime/test-baseline/1794810616436464479/receipt.json`
+  `.runtime/test-baseline/1794813078176202246/receipt.json`
 
 覆盖：
 
@@ -139,6 +161,8 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 - Action identity 二次标准化不丢失 view/search 身份。
 - Action identity 不含 Menu/Scene。
 - 请求 View 候选和拒绝。
+- `subject=model` 已绑定/未绑定 View、无 Action 纯 Model、无效 Action。
+- 已核验预览覆盖与客户端伪造标记拒绝。
 - 已核验预览授权、未验证 context 标记清除和独立 override 路径。
 - `ActionDispatcher → PageAssembler` 内部身份载体。
 
@@ -156,7 +180,7 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 - `make verify.docs.all`：PASS，文档、链接及 inventory 同步。
 - `make ci.local.iteration`：PASS。
 - Receipt：
-  `.runtime/frontend-dev-validation/executions/20261116T064803Z-1330576-529165031/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261116T071808Z-1594342-389223411/receipt.json`
 - `make ci.delivery.freeze.prepare`：PASS；仅同步新增测试与文件计数相关的四份
   `docs/engineering_convergence/` 生成报告。
 
@@ -191,6 +215,13 @@ Search View ID 本轮只传递和保留，不消费；Search Contract 闭环属�
 - 原因：PageAssembler/Action 输入变化后，V2 assembled-contract 缓存身份仍为 v50；
 - 修复：缓存版本提升至 v51，并重钉 assembler guard 的输入摘要；
 - 受影响入口：`make verify.unified_page_contract.v2.assembler` 已非零通过。
+
+独立复核修复第一次 Odoo 运行：
+
+- 结果：12 tests，3 errors，ORM guard 判失败；
+- 分类：`product_defect`；
+- 原因：新局部导入的相对路径多了一层，运行时找不到 ActionResolver；
+- 修复：改为同级 services 路径后重跑，13 tests PASS。
 
 ## 5. 当前状态
 

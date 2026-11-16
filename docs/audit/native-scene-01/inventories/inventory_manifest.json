@@ -1358,7 +1358,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "4f78d3c1963f5684aa2240a36b805c07c4e7414a7714357ddc2bf5b9b0c23286"
+    "sha256": "070a0f4dbeffcab380e4b396ba8400377148dbd2e047854bd6af9b8aade0e87b"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1370,22 +1370,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "333557da4051c3767bcdbfc59700e0e2b269166654210c4dea04132db122eea5"
+      "sha256": "329d8fffce4dc38b70aac5314ffaf69c4640ab2063295e15e23f96ce7507ed93"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "1fa5ddcba36088ae5e720962abfb05b131c25cdbfdfb0af0c9b01016b1253180"
+      "sha256": "6a873765751fa7806ae63c7080ee8e74eeb856f65ff6ba8a78a4ad3cac5b0f72"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "0fd9a9bda0f3feed6f0709af168ec313785489b06cacd34e43f0e76f6b0938ea"
+      "sha256": "a15f65af295848161eec7a1dae8fa9da2cdeca604553fc3f7d0029c89922a02f"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "e57648b210b53439836b3a468f64ba86ef9f8bd38ab620f9675e8091abdebd99"
+      "sha256": "3dc92a136bb6397584f66bd832573a37a0de4fdd6b42c4b75f21317433783d9c"
     }
   },
   "runtime_evidence": {
@@ -1454,17 +1454,14 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T14:01:03+08:00",
+    "commit_time": "2026-11-16T14:52:13+08:00",
     "dirty_paths": [
       "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
-      "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
-      "addons/smart_core/core/native_action_view_set.py",
-      "addons/smart_core/handlers/ui_contract_preview.py",
       "addons/smart_core/handlers/ui_contract_v2.py"
     ],
-    "revision": "375dc9ac2ced2d21872fd55d60feb52f6ffec53f",
+    "revision": "17e6bb0671a4745a5d9c87f5e470ae2baae374fc",
     "root": ".",
-    "tree": "33edceb6536b3a2d4855069df318a8e23756e571"
+    "tree": "8ab6b2c8042f772f87d586abf9c13d6b707febeb"
   },
   "statistics": {
     "actions": {
