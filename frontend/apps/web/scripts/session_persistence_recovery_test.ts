@@ -16,7 +16,6 @@ const check = (condition: unknown, message: string): void => {
   cases += 1;
   assert.ok(condition, message);
 };
-const waitForScheduledFlush = () => new Promise((resolve) => setTimeout(resolve, 10));
 
 const scope = `${resolveEntryAudience() || 'unscoped'}:${resolveEntryBasePath() || 'root'}`;
 const snapshotKey = durableSessionStorageKey(scope);
