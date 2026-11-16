@@ -28,6 +28,7 @@
     "codex/cap02d-asset-reconciliation-20261105": ".agent/runs/CAP02D-ASSET-RECONCILIATION-20261105/run.json",
     "codex/ci-backend-impact-sharding-efficiency-20261113": ".agent/runs/CI-BACKEND-IMPACT-SHARD-EFFICIENCY-20261113/run.json",
     "codex/ci-main-recovery-incremental-efficiency-20261113": ".agent/runs/CI-MAIN-RECOVERY-INCREMENTAL-EFFICIENCY-20261113/run.json",
+    "codex/change-impact-verification-aligned-20261116": ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
     "codex/entry-coverage-project-save-20261113": ".agent/runs/DELIVERED-ENTRY-COVERAGE-PROJECT-SAVE-20261113/run.json",
     "codex/fe-converge-01-presentation": ".agent/runs/FE-CONVERGE-01/run.json",
     "codex/fe-loop-01-quality-closure": ".agent/runs/FE-LOOP-01/run.json",

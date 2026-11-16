@@ -1,0 +1,177 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "730b82cf60f60399a70901a7fcd65476dc718f93",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+    ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
+    "docs/audit/change-impact-verification/change_impact_verification_design_v1.md",
+    "docs/audit/change-impact-verification/impact_analysis_acceptance_matrix.json",
+    "docs/audit/change-impact-verification/impact_analysis_acceptance_results.json",
+    "docs/audit/change-impact-verification/p4-01-shadow-planner-v1.md",
+    "docs/audit/change-impact-verification/README.md",
+    "docs/audit/change-impact-verification/review_remediation_v1.md",
+    "docs/audit/change-impact-verification/verification_governance_v2.md",
+    "docs/audit/change-impact-verification/verification_cost_baseline.json",
+    "docs/audit/change-impact-verification/verification_execution_graph.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.gate_scripts.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.make_targets.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.00.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.01.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.02.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.03.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.04.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.05.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.06.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.07.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.08.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.script_lifecycle.json",
+    "docs/audit/change-impact-verification/verification_mapping_matrix.workflow_jobs.json",
+    "docs/audit/change-impact-verification/verification_system_inventory.md",
+    "make/ci.mk",
+    "make/help.mk",
+    "scripts/audit/generate_change_impact_verification_inventory.py",
+    "scripts/audit/test_generate_change_impact_verification_inventory.py",
+    "scripts/ops/change_impact_planner.py",
+    "scripts/ops/change_impact_graph.py",
+    "scripts/ops/change_impact_evidence.py",
+    "scripts/ops/change_impact_acceptance.py",
+    "scripts/ops/test_change_impact_planner.py",
+    "scripts/ops/test_change_impact_graph.py",
+    "scripts/ops/test_change_impact_evidence.py",
+    "scripts/ops/typescript_change_facts.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/ops/iterations/change_impact_verification_20261116.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, browser, service or deployment access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+        ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/audit/change-impact-verification/",
+        "docs/ops/iterations/change_impact_verification_20261116.md",
+        "scripts/verify/docs_links.py"
+      ],
+      "kind": "offline"
+    },
+    "iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "change_impact_inventory": {
+      "target": "verify.change_impact.verification.unit",
+      "inputs": [
+        ".github/workflows/",
+        "Makefile",
+        "addons/",
+        "config/acceptance/",
+        "config/ci/",
+        "customer_addons/",
+        "demo_addons/",
+        "docs/audit/guard_registry/guard_registry.json",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/src/",
+        "frontend/packages/ui/package.json",
+        "frontend/packages/ui/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/ci.mk",
+        "make/dev_test.mk",
+        "make/frontend.mk",
+        "make/frontend_professional_extensions.mk",
+        "make/help.mk",
+        "scripts/",
+        "scripts/verify/registry.yaml"
+      ],
+      "kind": "offline"
+    },
+    "change_impact_planner": {
+      "target": "verify.change_impact.plan.unit",
+      "inputs": [
+        "make/ci.mk",
+        "make/help.mk",
+        "scripts/ops/change_impact_planner.py",
+        "scripts/ops/change_impact_graph.py",
+        "scripts/ops/change_impact_evidence.py",
+        "scripts/ops/change_impact_acceptance.py",
+        "scripts/ops/test_change_impact_planner.py",
+        "scripts/ops/test_change_impact_graph.py",
+        "scripts/ops/test_change_impact_evidence.py",
+        "scripts/ops/typescript_change_facts.mjs"
+      ],
+      "kind": "offline"
+    },
+    "change_impact_acceptance": {
+      "target": "verify.change_impact.acceptance",
+      "inputs": [
+        "docs/audit/change-impact-verification/impact_analysis_acceptance_matrix.json",
+        "make/ci.mk",
+        "scripts/audit/generate_change_impact_verification_inventory.py",
+        "scripts/ops/change_impact_acceptance.py",
+        "scripts/ops/change_impact_graph.py",
+        "scripts/ops/change_impact_planner.py",
+        "scripts/ops/change_impact_evidence.py",
+        "scripts/ops/typescript_change_facts.mjs",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "Makefile",
+        "config/acceptance/evolution_binding.v1.json",
+        "config/ci/",
+        "make/ci.mk",
+        "make/help.mk",
+        "scripts/ci/",
+        "scripts/verify/registry.yaml",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_validation_delivery_plan.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Open one final integration PR for the exact committed shadow-governance candidate, obtain independent review and current remote required checks, then merge only if approved. Do not cut over required gates.",
+  "id": "CHANGE-IMPACT-VERIFICATION-20261116",
+  "branch": "codex/change-impact-verification-aligned-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+  "record": "docs/ops/iterations/change_impact_verification_20261116.md"
+}

@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5234`
-- Files requiring split plan: `79`
-- Files above warning threshold: `149`
+- Scanned files: `5244`
+- Files requiring split plan: `80`
+- Files above warning threshold: `150`
 
 ## Split Plan Required
 
@@ -32,12 +32,12 @@ Generated from repository source files. This report is informational during the 
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2956 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2991 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2702 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2727 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -49,6 +49,7 @@ Generated from repository source files. This report is informational during the 
 | 2129 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1974 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -109,6 +110,7 @@ Generated from repository source files. This report is informational during the 
 | 1415 | Python source | `addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py` |
 | 1414 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
+| 1392 | Python source | `scripts/ops/change_impact_planner.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1360 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
@@ -270,12 +272,12 @@ Generated from repository source files. This report is informational during the 
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2956 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2991 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2702 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2727 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -287,6 +289,7 @@ Generated from repository source files. This report is informational during the 
 | 2129 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1974 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
@@ -329,7 +332,6 @@ Generated from repository source files. This report is informational during the 
 | 1518 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | warning | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
-| 1469 | warning | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 
 ## Interpretation
 

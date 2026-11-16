@@ -805,6 +805,31 @@ RULES = (
     ), (
         "verify.guard.registry",
     )),
+    # The P4-00 inventory generator, its tests and its discoverability entry
+    # are one audit-only contract. They do not enter a required product gate,
+    # but must route to their own non-zero unit check instead of becoming an
+    # unmapped development path.
+    Rule((
+        "scripts/audit/generate_change_impact_verification_inventory.py",
+        "scripts/audit/test_generate_change_impact_verification_inventory.py",
+        "make/help.mk",
+    ), (
+        "verify.change_impact.verification.unit",
+        "verify.change_impact.acceptance",
+    )),
+    Rule((
+        "scripts/ops/change_impact_planner.py",
+        "scripts/ops/change_impact_graph.py",
+        "scripts/ops/change_impact_evidence.py",
+        "scripts/ops/change_impact_acceptance.py",
+        "scripts/ops/test_change_impact_planner.py",
+        "scripts/ops/test_change_impact_graph.py",
+        "scripts/ops/test_change_impact_evidence.py",
+        "scripts/ops/typescript_change_facts.mjs",
+    ), (
+        "verify.change_impact.plan.unit",
+        "verify.change_impact.acceptance",
+    )),
     Rule((
         "scripts/verify/backend_authority_closure_guard.py",
         "scripts/verify/test_backend_authority_closure_guard.py",

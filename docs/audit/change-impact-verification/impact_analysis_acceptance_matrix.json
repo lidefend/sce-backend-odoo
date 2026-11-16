@@ -1,0 +1,497 @@
+{
+  "assertion_closure_required": true,
+  "cases": [
+    {
+      "evidence_requirements": [
+        "contract assertion receipt",
+        "non-zero test count"
+      ],
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.producer",
+        "L1.consumer"
+      ],
+      "fail_policy": "BLOCK on schema/decoder/consumer mismatch or assertion gap",
+      "id": "decoder-only-compatible-field",
+      "must_not_run": [
+        "browser",
+        "database-upgrade"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "decode-old-and-new-contract",
+        "reject-illegal-payload",
+        "producer-consumer-identity"
+      ],
+      "sample": {
+        "commit": "3c7682647352cdf52b790e9a46b893e2535be77d",
+        "paths": [
+          "addons/smart_core/core/native_action_view_set.py",
+          "addons/smart_core/tests/test_native_action_view_set_integration.py"
+        ],
+        "pr": 905
+      },
+      "selected_check_classes": [
+        "contract-unit",
+        "strict-decoder"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "renderer identity assertion",
+        "real affected page evidence"
+      ],
+      "expected_layers": [
+        "L1",
+        "L2"
+      ],
+      "expected_obligation_ids": [
+        "L1.consumer",
+        "L2.page_presentation"
+      ],
+      "fail_policy": "BLOCK if only a generic frontend unit or page reachability ran",
+      "id": "renderer-registry-only",
+      "must_not_run": [
+        "unrelated ORM module suites"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "renderer-identity-from-contract",
+        "affected-page-renders-selected-component"
+      ],
+      "sample": {
+        "commit": "413e791d3c317808ef13fd2dd6a688405c66ecfe",
+        "paths": [
+          "frontend/apps/web/src/views/ActionView.vue",
+          "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+        ],
+        "pr": 877
+      },
+      "selected_check_classes": [
+        "renderer-registry-unit",
+        "focused-page-browser"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "affected viewport evidence"
+      ],
+      "expected_layers": [
+        "L2"
+      ],
+      "expected_obligation_ids": [
+        "L2.layout_responsive"
+      ],
+      "fail_policy": "BLOCK on missing target viewport evidence",
+      "id": "css-responsive-only",
+      "must_not_run": [
+        "ORM",
+        "database-upgrade",
+        "contract revalidation unless semantics changed"
+      ],
+      "replay_kind": "synthetic-from-current-surface",
+      "required_obligations": [
+        "responsive-layout-without-overflow"
+      ],
+      "sample": {
+        "paths": [
+          "frontend/apps/web/src/pages/ListPage.css",
+          "frontend/apps/web/src/components/template/FormSection.vue"
+        ]
+      },
+      "selected_check_classes": [
+        "visual-layout",
+        "responsive-browser-unit"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "real ORM runtime",
+        "database identity",
+        "assertion counts"
+      ],
+      "expected_layers": [
+        "L1",
+        "L3"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.consumer",
+        "L1.action_view_identity",
+        "L3.orm_persistence",
+        "L3.business_outcome"
+      ],
+      "fail_policy": "BLOCK on missing positive or negative permission proof",
+      "id": "orm-or-acl-change",
+      "must_not_run": [
+        "browser unless frontend visibility component changed"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "contract-visibility-projection",
+        "persisted-state-result",
+        "business-state-transition"
+      ],
+      "sample": {
+        "commit": "5897cb3c3cf23be94cc935741fcf11840e31f54f",
+        "paths": [
+          "addons/smart_construction_core"
+        ],
+        "pr": 870
+      },
+      "selected_check_classes": [
+        "contract-unit",
+        "governed-ORM",
+        "permission-negative"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "real ORM runtime",
+        "database identity",
+        "assertion counts"
+      ],
+      "expected_layers": [
+        "L1",
+        "L3"
+      ],
+      "expected_obligation_ids": [
+        "L1.action_view_identity",
+        "L3.acl_positive",
+        "L3.acl_negative"
+      ],
+      "fail_policy": "BLOCK on missing positive or negative permission proof",
+      "id": "acl-record-rule-change",
+      "must_not_run": [
+        "browser unless frontend visibility component changed"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "contract-visibility-projection",
+        "authorized-positive-case",
+        "unauthorized-negative-case"
+      ],
+      "sample": {
+        "paths": [
+          "addons/smart_construction_core/security/ir.model.access.csv",
+          "addons/smart_construction_core/security/sc_record_rules.xml"
+        ]
+      },
+      "selected_check_classes": [
+        "contract-unit",
+        "governed-ORM",
+        "permission-negative"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "per-layer evidence union",
+        "exact affected page/unit identities"
+      ],
+      "expected_layers": [
+        "L1",
+        "L2"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.consumer",
+        "L2.page_presentation"
+      ],
+      "fail_policy": "BLOCK when a dominant file type masks another layer",
+      "id": "backend-frontend-mixed",
+      "must_not_run": [
+        "unrelated modules or pages"
+      ],
+      "replay_kind": "historical-candidate",
+      "replay_note": "The historical change controls page hydration and contract consumption; it does not mutate ORM state. The L3 mixed change is covered separately by mixed-business-outcome.",
+      "required_obligations": [
+        "backend-contract-projection",
+        "frontend-renderer-consumption"
+      ],
+      "sample": {
+        "commit": "5d631f6dd304a003f09c72e7de22fde45b8c3dbc",
+        "paths": [
+          "addons/smart_core/handlers/ui_contract_v2.py",
+          "frontend/apps/web/src/views/ActionView.vue"
+        ],
+        "pr": 886
+      },
+      "selected_check_classes": [
+        "contract-unit",
+        "focused-page-browser"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "per-layer evidence union",
+        "assertion closure"
+      ],
+      "expected_layers": [
+        "L1",
+        "L2",
+        "L3"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer",
+        "L1.renderer_identity",
+        "L2.renderer_selection",
+        "L2.page_presentation",
+        "L3.orm_persistence",
+        "L3.business_outcome"
+      ],
+      "fail_policy": "BLOCK when any changed layer lacks an obligation or check",
+      "id": "mixed-business-outcome",
+      "must_not_run": [
+        "one layer masking another layer"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "decoder-and-consumer-contract",
+        "renderer-and-page-presentation",
+        "business-state-transition"
+      ],
+      "sample": {
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/schema.ts",
+          "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+          "frontend/apps/web/src/views/ActionView.vue",
+          "addons/smart_construction_core/models/project.py"
+        ]
+      },
+      "selected_check_classes": [
+        "strict-decoder",
+        "focused-page-browser",
+        "governed-ORM"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "complete dynamic edge or explicit unknown"
+      ],
+      "expected_layers": [
+        "UNKNOWN"
+      ],
+      "expected_obligation_ids": [],
+      "fail_policy": "BLOCK",
+      "id": "dynamic-consumer-unresolved",
+      "must_not_run": [
+        "automatic N/A based on unresolved path"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "resolve-dynamic-renderer-consumer"
+      ],
+      "sample": {
+        "paths": [
+          "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
+        ]
+      },
+      "selected_check_classes": [
+        "semantic-resolution-probe"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "old and new endpoint identities"
+      ],
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer"
+      ],
+      "fail_policy": "BLOCK on unresolved consumer or missing rejection case",
+      "id": "contract-field-rename-delete",
+      "must_not_run": [
+        "browser from path alone"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "old-consumer-migration",
+        "new-consumer-identity",
+        "deleted-field-no-residual-consumer"
+      ],
+      "sample": {
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/schema.ts",
+          "frontend/apps/web/src/app/contracts/v2/types.ts"
+        ]
+      },
+      "selected_check_classes": [
+        "contract-symbol-diff",
+        "strict-decoder",
+        "consumer-compile"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "new input fingerprint",
+        "current execution receipt"
+      ],
+      "expected_layers": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L3.orm_persistence",
+        "L3.migration",
+        "L4.assertions"
+      ],
+      "fail_policy": "BLOCK on stale evidence reuse",
+      "id": "assertion-or-fixture-change",
+      "must_not_run": [
+        "reuse prior receipt with changed assertion/fixture"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "rerun-tests-dependent-on-assertion-or-fixture",
+        "invalidate-prior-evidence",
+        "prove-migration-result"
+      ],
+      "sample": {
+        "commit": "9c537187c05306663758c86f95e0e91d317381db",
+        "paths": [
+          "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+          "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py"
+        ],
+        "pr": 893
+      },
+      "selected_check_classes": [
+        "contract",
+        "governed-ORM",
+        "evidence-invalidation"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "documentation check receipt"
+      ],
+      "expected_layers": [
+        "L4"
+      ],
+      "expected_obligation_ids": [
+        "L4.docs"
+      ],
+      "fail_policy": "BLOCK on broken governance documents; reuse unchanged product evidence",
+      "id": "documentation-only",
+      "must_not_run": [
+        "product browser or ORM solely for docs"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "documentation-integrity"
+      ],
+      "sample": {
+        "commit": "d159514c7bb64a4e99727e4349f5f39146c1c854",
+        "paths": [
+          "docs/audit/native-scene-01"
+        ],
+        "pr": 904
+      },
+      "selected_check_classes": [
+        "docs-links",
+        "metadata-policy"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "mismatch reason",
+        "no recorded success"
+      ],
+      "expected_layers": [
+        "L1"
+      ],
+      "expected_obligation_ids": [
+        "L1.schema_contract",
+        "L1.decoder",
+        "L1.consumer"
+      ],
+      "fail_policy": "BLOCK and increment Evidence Reuse Error",
+      "id": "incorrect-evidence-reuse",
+      "must_not_run": [
+        "PASS inherited from unchanged HEAD label alone"
+      ],
+      "replay_kind": "synthetic-conformance",
+      "required_obligations": [
+        "invalidate-all-dependent-suite-proofs",
+        "rerun-only-the-changed-contract-obligations"
+      ],
+      "sample": {
+        "paths": [
+          "config/acceptance/evolution_binding.v1.json"
+        ]
+      },
+      "selected_check_classes": [
+        "evidence-fingerprint-negative"
+      ]
+    },
+    {
+      "evidence_requirements": [
+        "direct tool tests and workflow contract test"
+      ],
+      "expected_layers": [
+        "L4"
+      ],
+      "expected_obligation_ids": [
+        "L4.delivery"
+      ],
+      "fail_policy": "BLOCK on unmapped tool or selector behavior",
+      "id": "governance-tooling-change",
+      "must_not_run": [
+        "ORM solely because a CI selector changed"
+      ],
+      "replay_kind": "historical-candidate",
+      "required_obligations": [
+        "tool-unit-behavior",
+        "workflow-order",
+        "negative-reuse-blocking"
+      ],
+      "sample": {
+        "commit": "ab739d620a1dc55b85133d64dc69a3d31ab105c1",
+        "paths": [
+          "scripts/ci/backend_suite_plan.py",
+          ".github/workflows/backend_test_suite.yml"
+        ],
+        "pr": 883
+      },
+      "selected_check_classes": [
+        "tool-unit",
+        "workflow-contract"
+      ]
+    }
+  ],
+  "cutover_metrics": {
+    "evidence_reuse_error": {
+      "blocks_cutover": true,
+      "required": 0
+    },
+    "false_negative": {
+      "blocks_cutover": true,
+      "required": 0
+    },
+    "false_positive": {
+      "blocks_cutover": "per unresolved relevant false positive",
+      "required": "tracked and justified per replay case"
+    },
+    "obligation_coverage": {
+      "blocks_cutover": true,
+      "required": 1.0
+    },
+    "unknown_obligations": {
+      "blocks_cutover": true,
+      "required": 0
+    }
+  },
+  "purpose": "P4-01/P4-02 conformance input. These are expected outcomes, not implemented planner results.",
+  "schema": "change_impact_verification.acceptance_matrix.v1",
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121"
+}

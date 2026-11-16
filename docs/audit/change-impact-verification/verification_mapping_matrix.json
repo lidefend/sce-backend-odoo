@@ -1,0 +1,2464 @@
+{
+  "acceptance_binding": {
+    "policy": {
+      "evidence_carry_forward": {
+        "enabled": true,
+        "mode": "suite_input_fingerprint"
+      },
+      "unmapped_changes": "fail"
+    },
+    "rules": [
+      {
+        "id": "offline-delivery-governance",
+        "paths": [
+          "scripts/ops/agent_run_context.py",
+          "scripts/ops/local_quick_evidence.py",
+          "scripts/ops/evidence_scope.py",
+          "scripts/ops/test_evidence_scope.py",
+          "scripts/ops/validation_delivery_plan.py",
+          "config/acceptance/evolution_binding.v1.json",
+          "scripts/ops/gitee_published_branch_sync.py",
+          "scripts/ops/github_published_branch_sync.py",
+          "scripts/ops/test_github_published_branch_sync.py",
+          "scripts/ops/test_gitee_published_branch_sync.py"
+        ],
+        "suites": [
+          "governance_static"
+        ]
+      },
+      {
+        "id": "offline-scene-test-implementation",
+        "paths": [
+          "addons/smart_construction_scene/tests/test_scene_data_ref_order.py",
+          "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+          "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+          "addons/smart_construction_core/tests/__init__.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "id": "acceptance-runner-list-surface",
+        "paths": [
+          "scripts/verify/frontend_list_surface_structure_browser.mjs"
+        ],
+        "suites": [
+          "governance_static",
+          "list_surface_structure"
+        ]
+      },
+      {
+        "id": "acceptance-runner-relation-roundtrip",
+        "paths": [
+          "scripts/verify/record_relation_roundtrip_acceptance.js"
+        ],
+        "suites": [
+          "governance_static",
+          "relation_roundtrip"
+        ]
+      },
+      {
+        "id": "acceptance-runner-shared-environment",
+        "paths": [
+          "scripts/verify/lib/frontend_acceptance_environment.mjs"
+        ],
+        "suites": [
+          "governance_static",
+          "list_surface_structure",
+          "relation_roundtrip"
+        ]
+      },
+      {
+        "id": "frontend-acceptance-carrier-lifecycle",
+        "paths": [
+          "scripts/dev/frontend_acceptance_carrier*",
+          "scripts/dev/frontend_acceptance_runtime.sh",
+          "scripts/dev/frontend_acceptance_module_upgrade.py"
+        ],
+        "suites": [
+          "governance_static",
+          "path_namespace_identity"
+        ]
+      },
+      {
+        "id": "acceptance-orm-execution",
+        "paths": [
+          "scripts/test/frontend_acceptance_fixture_orm.sh",
+          "scripts/ci/frontend_fixture_orm_entry.sh"
+        ],
+        "suites": [
+          "governance_static",
+          "backend_contract"
+        ]
+      },
+      {
+        "description": "Exact backend snapshot producers: validate freeze/reuse/integrity in backend tests; deployed entry validation remains deployment-scoped. Other acceptance entry scripts retain browser and namespace requirements.",
+        "id": "native-release-snapshot-producers",
+        "paths": [
+          "scripts/test/frontend_acceptance_release_snapshot.py",
+          "scripts/release/initialize_colocated_platform_snapshot.py"
+        ],
+        "suites": [
+          "backend_contract",
+          "daily_runtime_entry"
+        ]
+      },
+      {
+        "id": "isolated-acceptance-entry-identity",
+        "paths": [
+          "config/acceptance/**",
+          "scripts/dev/frontend_acceptance*",
+          "scripts/test/frontend_acceptance*",
+          "scripts/verify/frontend_acceptance*"
+        ],
+        "suites": [
+          "governance_static",
+          "path_namespace_identity"
+        ]
+      },
+      {
+        "id": "governance-static",
+        "paths": [
+          "make/**",
+          "scripts/verify/**",
+          "scripts/ci/**",
+          "scripts/audit/**",
+          ".github/**",
+          "tools/**",
+          "agent_ops/**",
+          "Makefile",
+          "AGENTS.md",
+          "ARCHITECTURE_GUARD.md"
+        ],
+        "suites": [
+          "governance_static"
+        ]
+      },
+      {
+        "id": "docs-bookkeeping",
+        "paths": [
+          "docs/**",
+          "**/*.md",
+          ".agent/**",
+          ".codex/**",
+          ".devcontainer/**"
+        ],
+        "suites": []
+      },
+      {
+        "id": "contracts-schemas",
+        "paths": [
+          "contracts/**",
+          "schemas/**",
+          "config/contracts/**"
+        ],
+        "suites": [
+          "governance_static",
+          "backend_contract"
+        ]
+      },
+      {
+        "id": "frontend-acceptance-schema",
+        "paths": [
+          "config/frontend/*.schema.json"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-acceptance-harness",
+        "paths": [
+          "config/frontend/acceptance_environments_v1.json",
+          "config/frontend/acceptance_tool_matrix_v1.json"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-product-runtime-config",
+        "paths": [
+          "config/frontend/authoritative_navigation.json",
+          "config/frontend/product_stable_baseline_v1.json",
+          "config/frontend/role_surface_exposure_declarations_v1.json",
+          "config/frontend/release_performance_budgets_v1.json"
+        ],
+        "suites": [
+          "frontend_contract",
+          "list_surface_structure"
+        ]
+      },
+      {
+        "id": "frontend-acceptance-config",
+        "paths": [
+          "config/frontend/**"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-presentation",
+        "paths": [
+          "frontend/apps/web/src/components/product-page-header/**",
+          "frontend/apps/web/src/components/product-page-patterns/**",
+          "frontend/apps/web/src/components/design-system/ScDescriptions.vue",
+          "frontend/apps/web/src/components/template/FormSection.vue",
+          "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+          "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue"
+        ],
+        "suites": [
+          "frontend_contract",
+          "frontend_presentation"
+        ]
+      },
+      {
+        "id": "frontend-test-tools",
+        "paths": [
+          "frontend/apps/web/scripts/**/*_test.*",
+          "frontend/apps/web/scripts/**/*.test.*",
+          "frontend/apps/web/scripts/**/*.spec.*",
+          "frontend/apps/web/src/**/*.test.*",
+          "frontend/apps/web/src/**/*_test.*",
+          "frontend/apps/web/src/**/*.spec.*"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-relation-consumer",
+        "paths": [
+          "frontend/apps/web/src/app/nativeModifierRelationValue.ts",
+          "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+          "frontend/apps/web/src/app/runtime/relationRendererDataRuntime.ts",
+          "frontend/apps/web/src/components/design-system/ScRelationField.vue",
+          "frontend/apps/web/src/components/design-system/ScRelationshipFlow.vue",
+          "frontend/apps/web/src/components/design-system/relationSelectPanelA11y.ts",
+          "frontend/apps/web/src/components/professional-fields/*Relation*",
+          "frontend/apps/web/src/components/template/*Relation*",
+          "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue",
+          "frontend/apps/web/src/pages/contractForm/Relation*",
+          "frontend/apps/web/src/pages/contractForm/relation*",
+          "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
+          "frontend/apps/web/src/pages/contractForm/professionalRelationLifecycleModel.ts",
+          "frontend/apps/web/src/pages/contractForm/useRecordRelation*",
+          "frontend/apps/web/src/pages/contractForm/useRelationRuntime.ts"
+        ],
+        "suites": [
+          "frontend_contract",
+          "relation_roundtrip"
+        ]
+      },
+      {
+        "id": "frontend-contract-v2-codec",
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/**"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-contract-form-consumer",
+        "paths": [
+          "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+          "frontend/apps/web/src/pages/contractForm/**"
+        ],
+        "suites": [
+          "frontend_contract",
+          "frontend_presentation"
+        ]
+      },
+      {
+        "id": "frontend-list-surface-consumer",
+        "paths": [
+          "frontend/apps/web/src/pages/listPage/**",
+          "frontend/apps/web/src/pages/ListPage.css",
+          "frontend/apps/web/src/pages/ListPage.vue",
+          "frontend/apps/web/src/components/product-list/**",
+          "frontend/apps/web/src/components/action/**",
+          "frontend/apps/web/src/components/design-system/ScList.vue",
+          "frontend/apps/web/src/components/design-system/ScTable.vue",
+          "frontend/apps/web/src/views/ActionView.vue",
+          "frontend/apps/web/src/app/action_runtime/**",
+          "frontend/apps/web/src/app/runtime/actionView*",
+          "frontend/apps/web/src/app/runtime/businessListQueryRuntime.ts",
+          "frontend/apps/web/src/app/runtime/collectionViewRuntime.ts",
+          "frontend/apps/web/src/app/runtime/listPreferenceProjection.ts",
+          "frontend/apps/web/src/app/presentation/collection*",
+          "frontend/apps/web/src/app/presentation/standardListComposition.ts"
+        ],
+        "suites": [
+          "frontend_contract",
+          "list_surface_structure"
+        ]
+      },
+      {
+        "description": "Internal Primitive Port, Provider and Scene adapter conformance has no product-page consumer; it requires contract/static verification but does not invalidate list-surface runtime evidence.",
+        "id": "scene-primitive-contract-internal",
+        "paths": [
+          "frontend/packages/ui/src/primitive-port/**",
+          "frontend/apps/web/src/components/design-system/scene-adapter/**",
+          "frontend/apps/web/scripts/scene_primitive_adapter_bundle.mjs",
+          "frontend/apps/web/tsconfig.scene-primitive-adapter.json"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "condition": "package_export_addition_only",
+        "description": "Adding a @sc/ui export subpath cannot change an existing consumer; dependency/manifest changes outside exports fall through to the conservative frontend-runtime rule.",
+        "id": "ui-package-export-only",
+        "paths": [
+          "frontend/packages/ui/package.json"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "frontend-runtime",
+        "paths": [
+          "frontend/**"
+        ],
+        "suites": [
+          "frontend_contract"
+        ]
+      },
+      {
+        "id": "smart-core-runtime",
+        "paths": [
+          "addons/smart_core/**"
+        ],
+        "suites": [
+          "backend_contract",
+          "daily_runtime_entry"
+        ]
+      },
+      {
+        "id": "acceptance-fixture-infrastructure",
+        "paths": [
+          "addons/smart_construction_acceptance_fixture/**"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "description": "Backend capability acceptance contract data; backend contract verification only, not frontend browser evidence.",
+        "id": "capability-acceptance-contract",
+        "paths": [
+          "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "description": "Navigation membership, company scope and publication diagnosis: backend/managed navigation ORM, not list geometry or relation-field roundtrip. No wildcard exemption for scene orchestration or business models.",
+        "id": "scenario-fact-and-enablement",
+        "paths": [
+          "addons/smart_construction_core/data/product_scenario_seed.xml",
+          "addons/smart_construction_core/models/support/product_scenario.py",
+          "addons/smart_construction_core/services/scenario_surface_projection.py",
+          "addons/smart_construction_core/views/support/product_scenario_views.xml",
+          "addons/smart_construction_scene/handlers/scenario_activation.py",
+          "addons/smart_construction_scene/handlers/scenario_dependency.py",
+          "addons/smart_construction_scene/models/product_policy.py",
+          "addons/smart_construction_scene/models/scene_company_enablement.py",
+          "addons/smart_construction_scene/services/business_scene_enablement.py",
+          "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+          "addons/smart_construction_scene/services/scenario_dependency_diagnosis.py",
+          "addons/smart_construction_scene/services/tenant_scene_activation.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "condition": "manifest_version_only",
+        "id": "construction-manifest-version-only",
+        "paths": [
+          "addons/smart_construction_core/__manifest__.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "description": "Native catalog maintenance, publication qualification and its ORM regression. Backend contract coverage; no list layout or relation-field behavior. Exact paths only; mixed business changes retain their own suites.",
+        "id": "native-product-publication",
+        "paths": [
+          "addons/smart_construction_core/models/support/product_policy_sync.py",
+          "addons/smart_construction_core/services/product_menu_source.py",
+          "addons/smart_construction_core/tests/test_product_policy_fact_authority.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "description": "Approval policy step seed initialization and maintenance authority (forcecreate=0, install-only initializer). Backend contract coverage; no list layout or relation-field behavior. Exact paths only; mixed business changes retain their own suites.",
+        "id": "approval-policy-initialization",
+        "paths": [
+          "addons/smart_construction_core/data/approval_policy_seed.xml",
+          "addons/smart_construction_core/data/approval_policy_tier_sync.xml",
+          "addons/smart_construction_core/tests/test_approval_step_upgrade.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "condition": "approval_policy_initialization_only",
+        "description": "Change confined to ScApprovalPolicy.apply_user_visible_approval_templates. Backend contract coverage; any other method change in the shared model file keeps construction-product-runtime suites.",
+        "id": "approval-policy-initializer-method",
+        "paths": [
+          "addons/smart_construction_core/models/support/approval_policy.py"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "id": "construction-product-runtime",
+        "paths": [
+          "addons/smart_construction_core/**",
+          "addons/smart_construction_*/**"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "id": "demo-data",
+        "paths": [
+          "demo_addons/**",
+          "addons/smart_construction_seed/**"
+        ],
+        "suites": [
+          "backend_contract",
+          "daily_runtime_entry"
+        ]
+      },
+      {
+        "id": "backend-other",
+        "paths": [
+          "addons/**",
+          "addons_external/**",
+          "customer_addons/**",
+          "backend/**"
+        ],
+        "suites": [
+          "backend_contract"
+        ]
+      },
+      {
+        "id": "ops-runtime",
+        "paths": [
+          "scripts/ops/**",
+          "scripts/release/**",
+          "config/ops/**",
+          "deploy/**",
+          "docker-compose*.yml",
+          "Dockerfile*",
+          "requirements-odoo.txt"
+        ],
+        "suites": [
+          "daily_runtime_entry",
+          "path_namespace_identity"
+        ]
+      },
+      {
+        "id": "config-other",
+        "paths": [
+          "config/**"
+        ],
+        "suites": [
+          "governance_static"
+        ]
+      },
+      {
+        "id": "release-artifacts",
+        "paths": [
+          "release/**",
+          "artifacts/**"
+        ],
+        "suites": [
+          "governance_static"
+        ]
+      },
+      {
+        "id": "scripts-other",
+        "paths": [
+          "scripts/**"
+        ],
+        "suites": [
+          "governance_static"
+        ]
+      },
+      {
+        "id": "root-metadata",
+        "paths": [
+          "README.md",
+          "LICENSE",
+          "VERSION",
+          ".gitignore",
+          ".gitattributes",
+          ".dockerignore",
+          ".env*.example"
+        ],
+        "suites": []
+      }
+    ],
+    "schema": "acceptance_evolution_binding.v1",
+    "suites": [
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "make ci.professional.backend.shard-verify",
+            "backend_impact_suite"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "后端契约、单测与影响面套件",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "后端契约、单测与影响面套件",
+        "entrypoints": [
+          "make ci.professional.backend.shard-verify",
+          "backend_impact_suite"
+        ],
+        "evidence": null,
+        "id": "backend_contract",
+        "inputs": [],
+        "layer_hints": [
+          "L1",
+          "L3",
+          "L4"
+        ],
+        "make_inputs": [],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "make verify.frontend.pr.unit",
+            "make verify.frontend.release.unit"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "前端组件、契约消费与发布单测",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "前端组件、契约消费与发布单测",
+        "entrypoints": [
+          "make verify.frontend.pr.unit",
+          "make verify.frontend.release.unit"
+        ],
+        "evidence": null,
+        "id": "frontend_contract",
+        "inputs": [],
+        "layer_hints": [
+          "L1",
+          "L2",
+          "L4"
+        ],
+        "make_inputs": [],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "make verify.frontend.presentation.browser",
+            "make verify.frontend.presentation.local.browser"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "纯呈现组件的轻量页面证据：页面身份、契约消费、零写入、零运行错误与响应式无溢出",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "纯呈现组件的轻量页面证据：页面身份、契约消费、零写入、零运行错误与响应式无溢出",
+        "entrypoints": [
+          "make verify.frontend.presentation.browser",
+          "make verify.frontend.presentation.local.browser"
+        ],
+        "evidence": {
+          "adapter": "presentation_header",
+          "min_counts": {
+            "targets_total": 1
+          }
+        },
+        "id": "frontend_presentation",
+        "inputs": [
+          "Makefile",
+          "config/acceptance/daily_demo_credential.v1.json",
+          "config/acceptance/frontend_presentation_targets.v1.json",
+          "config/acceptance/isolated_entry_identity.v1.env",
+          "config/frontend/**",
+          "scripts/verify/daily_demo_credential_confirmation.py",
+          "scripts/verify/frontend_product_page_header_browser.mjs",
+          "scripts/verify/lib/frontend_acceptance_environment.mjs",
+          "scripts/verify/playwright_runtime.mjs",
+          "scripts/verify/test_daily_demo_credential_confirmation.py",
+          "make/frontend_professional_extensions.mk",
+          "scripts/dev/frontend_acceptance*",
+          "scripts/dev/frontend_standard_preview.py",
+          "scripts/verify/frontend_delivery_hardening_runtime_ids.py",
+          "scripts/ops/dev_acceptance_release_probe.py",
+          "config/acceptance/backend_contract_instance_v1.json"
+        ],
+        "layer_hints": [
+          "L2"
+        ],
+        "make_inputs": [
+          {
+            "path": "make/frontend.mk",
+            "targets": [
+              "verify.daily.demo_credential.confirmation",
+              "verify.frontend.presentation.browser",
+              "verify.frontend.presentation.local.browser",
+              "acceptance.runtime.contract_receipt"
+            ],
+            "variables": [
+              "FRONTEND_PRESENTATION_LOGIN",
+              "FRONTEND_PRESENTATION_OUTPUT",
+              "FRONTEND_PRESENTATION_TARGETS_FILE"
+            ]
+          },
+          {
+            "path": "make/guards.mk",
+            "targets": [
+              "guard.prod.forbid"
+            ],
+            "variables": []
+          }
+        ],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "make verify.contract.architecture.suite"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "静态守卫、结构锁与治理清单",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "静态守卫、结构锁与治理清单",
+        "entrypoints": [
+          "make verify.contract.architecture.suite"
+        ],
+        "evidence": null,
+        "id": "governance_static",
+        "inputs": [],
+        "layer_hints": [
+          "L4"
+        ],
+        "make_inputs": [],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "python3 scripts/ops/daily_runtime_entry_verify.py"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "日常入口、双实例分流、发布身份与 Odoo 运行态验收",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "日常入口、双实例分流、发布身份与 Odoo 运行态验收",
+        "entrypoints": [
+          "python3 scripts/ops/daily_runtime_entry_verify.py"
+        ],
+        "evidence": {
+          "adapter": "entry_verify",
+          "min_checks": 40,
+          "required_checks": [
+            "entry_declares_one_serving_duty",
+            "exactly_one_container_publishes_the_public_port",
+            "bare_root_requires_a_namespace",
+            "root_api_requires_a_namespace",
+            "root_login_contract_requires_a_namespace",
+            "client_database_hint_x_odoo_database_is_refused",
+            "client_database_query_is_refused",
+            "client_namespace_header_cannot_override_the_path",
+            "unknown_namespace_is_refused",
+            "unknown_namespace_page_shell_is_refused",
+            "invalid_namespace_prefix_is_refused",
+            "tenant_namespace_lands_on_the_serving_database",
+            "platform_namespace_lands_on_the_platform_database",
+            "tenant_runtime_publishes_the_deployed_revision",
+            "platform_runtime_publishes_the_deployed_revision",
+            "serving_application_reads_the_deployed_revision",
+            "platform_application_reads_the_deployed_revision"
+          ]
+        },
+        "id": "daily_runtime_entry",
+        "inputs": [],
+        "layer_hints": [
+          "L3",
+          "L4"
+        ],
+        "make_inputs": [],
+        "stages": [
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "python3 scripts/ops/path_ns_c_acceptance.py"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "路径命名空间身份、跨域重放、退出与公司边界",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "路径命名空间身份、跨域重放、退出与公司边界",
+        "entrypoints": [
+          "python3 scripts/ops/path_ns_c_acceptance.py"
+        ],
+        "evidence": {
+          "adapter": "path_ns_c",
+          "required_checks": [
+            "server_head_matches_expected",
+            "server_worktree_clean",
+            "server_applied_commit_in_history",
+            "bare_root_requires_a_namespace",
+            "bare_api_requires_namespace",
+            "database_header_hint_refused",
+            "database_query_hint_refused",
+            "unknown_namespace_refused",
+            "tenant_entry_binds_tenant_database",
+            "platform_entry_binds_platform_database",
+            "tenant_runtime_reports_deployed_revision",
+            "platform_runtime_reports_deployed_revision",
+            "demo_entry_admin_login_succeeds",
+            "platform_entry_admin_login_succeeds",
+            "tokens_are_independent",
+            "demo_token_accepted_on_demo_entry",
+            "platform_token_accepted_on_platform_entry",
+            "demo_token_rejected_on_platform_entry",
+            "platform_token_rejected_on_demo_entry",
+            "demo_logout_succeeds",
+            "demo_token_invalid_after_demo_logout",
+            "platform_token_survives_demo_logout",
+            "unauthorized_company_is_refused"
+          ]
+        },
+        "id": "path_namespace_identity",
+        "inputs": [],
+        "layer_hints": [
+          "L2",
+          "L3",
+          "L4"
+        ],
+        "make_inputs": [],
+        "stages": [
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "node scripts/verify/frontend_list_surface_structure_browser.mjs"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "列表页结构、几何与运行时错误浏览器验收",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "列表页结构、几何与运行时错误浏览器验收",
+        "entrypoints": [
+          "node scripts/verify/frontend_list_surface_structure_browser.mjs"
+        ],
+        "evidence": {
+          "adapter": "list_surface",
+          "min_counts": {
+            "gated_total": 108,
+            "negative_fixtures_total": 5,
+            "records_total": 8
+          }
+        },
+        "id": "list_surface_structure",
+        "inputs": [
+          "Makefile",
+          "config/acceptance/**",
+          "config/frontend/**",
+          "scripts/common/frontend_acceptance*",
+          "scripts/dev/frontend_acceptance*",
+          "scripts/dev/frontend_standard_preview.py",
+          "scripts/verify/frontend_authenticated_intent.mjs",
+          "scripts/verify/frontend_list_surface_structure_browser.mjs",
+          "scripts/verify/lib/acceptance_contract_receipt.mjs",
+          "scripts/verify/lib/frontend_acceptance*",
+          "scripts/verify/playwright_runtime.mjs",
+          "scripts/verify/released_navigation_target.mjs",
+          "make/frontend_professional_extensions.mk"
+        ],
+        "layer_hints": [
+          "L1",
+          "L2"
+        ],
+        "make_inputs": [
+          {
+            "path": "make/frontend.mk",
+            "targets": [
+              "verify.frontend.list_surface_search_contract.unit",
+              "verify.frontend.list_surface_structure.browser"
+            ],
+            "variables": [
+              "SC_ACCEPTANCE_CONTRACT_DECLARATION",
+              "SC_ACCEPTANCE_CONTRACT_RECEIPT",
+              "SC_ACCEPTANCE_REQUIRED_SHA",
+              "SC_LIST_PREVIEW_DB_KEYS",
+              "SC_LIST_PREVIEW_URL_KEYS"
+            ]
+          },
+          {
+            "path": "make/dev.mk",
+            "targets": [],
+            "variables": [
+              "ACCEPTANCE_BASE_URL",
+              "FRONTEND_ACCEPTANCE_DB",
+              "SC_ACCEPTANCE_RUNTIME_PROFILE"
+            ]
+          },
+          {
+            "path": "make/guards.mk",
+            "targets": [
+              "guard.prod.forbid"
+            ],
+            "variables": []
+          }
+        ],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      },
+      {
+        "boundary_answers": {
+          "defects_it_can_detect": "a failure in the suite evidence adapter, required check set or bound input fingerprint",
+          "duplicate_or_overlap": [],
+          "services_and_database_dependencies": "runtime/browser/database dependencies are encoded by the entrypoint; inspect the graph nodes for this suite",
+          "what_it_actually_executes": [
+            "node scripts/verify/record_relation_roundtrip_acceptance.js"
+          ],
+          "what_it_can_prove": "the declared evidence adapter accepted a current exact-head record for this suite",
+          "what_it_cannot_prove": [
+            "behavior outside the adapter's required checks",
+            "a different stage or environment",
+            "pass during another head when suite inputs or identity changed"
+          ],
+          "what_it_verifies": "关系字段回环、入口与操作恢复浏览器验收",
+          "what_triggers_it": "acceptance-evolution first-match rule for changed paths plus the selected stage"
+        },
+        "description": "关系字段回环、入口与操作恢复浏览器验收",
+        "entrypoints": [
+          "node scripts/verify/record_relation_roundtrip_acceptance.js"
+        ],
+        "evidence": {
+          "adapter": "relation_roundtrip",
+          "allowed_non_blocking_difference_kinds": [
+            "CONTRACT_LABEL_RENDER_DIFF",
+            "CONTRACT_READONLY_MISMATCH",
+            "CONTRACT_REQUIRED_MISMATCH",
+            "CONTRACT_VISIBILITY_MISMATCH",
+            "OPENABLE_EMPTY_VALUE_HAS_NO_TARGET"
+          ],
+          "min_counts": {
+            "contract_openable_entries": 7,
+            "declared_entry_count": 13,
+            "declared_openable": 3,
+            "visible_openable_entries": 6
+          },
+          "model_min_counts": {
+            "sc.general.contract": {
+              "contract_openable_entries": 4,
+              "declared_entry_count": 8,
+              "declared_openable": 3,
+              "visible_openable_entries": 3
+            }
+          }
+        },
+        "id": "relation_roundtrip",
+        "inputs": [
+          "Makefile",
+          "config/acceptance/**",
+          "config/frontend/**",
+          "scripts/common/frontend_acceptance*",
+          "scripts/dev/frontend_acceptance*",
+          "scripts/dev/frontend_standard_preview.py",
+          "scripts/verify/frontend_authenticated_intent.mjs",
+          "scripts/verify/lib/frontend_acceptance*",
+          "scripts/verify/playwright_runtime.mjs",
+          "scripts/verify/record_relation_roundtrip_acceptance.js",
+          "scripts/verify/released_navigation_target.mjs",
+          "make/frontend_professional_extensions.mk"
+        ],
+        "layer_hints": [
+          "L1",
+          "L2",
+          "L3"
+        ],
+        "make_inputs": [
+          {
+            "path": "make/frontend.mk",
+            "targets": [
+              "verify.frontend.relation_roundtrip.browser"
+            ],
+            "variables": [
+              "RELATION_FIELD",
+              "RELATION_RESOLUTION_KEY",
+              "SC_ACCEPTANCE_RELATION_LOGIN"
+            ]
+          },
+          {
+            "path": "make/dev.mk",
+            "targets": [],
+            "variables": [
+              "ACCEPTANCE_RECORD_RESOLUTION",
+              "SC_ACCEPTANCE_RUNTIME_PROFILE"
+            ]
+          },
+          {
+            "path": "make/guards.mk",
+            "targets": [
+              "guard.prod.forbid"
+            ],
+            "variables": []
+          }
+        ],
+        "stages": [
+          "merge",
+          "deployment"
+        ]
+      }
+    ]
+  },
+  "analysis_coverage": {
+    "assertion_linked_items": 0,
+    "call_chain_status_counts": {
+      "direct_recipe_or_workflow_reference_only": 2127,
+      "unknown": 261,
+      "workflow_step_declaration_only": 23
+    },
+    "duplicate_analysis_status_counts": {
+      "UNKNOWN": 2411
+    },
+    "inventory_items_analyzed": 2411,
+    "manual_reviewed_semantic_items": 23,
+    "obligation_linked_items": 0,
+    "responsibility_status_counts": {
+      "manually_characterized_not_assertion_verified": 23,
+      "partially_characterized_not_assertion_verified": 1014,
+      "unknown": 1374
+    },
+    "warning": "P4-00 enumerates direct declarations and partial static signals. It does not establish assertion-level obligation coverage or duplicate assertions."
+  },
+  "classification_probes": [
+    {
+      "acceptance_rule": "frontend-contract-v2-codec",
+      "acceptance_suites": [
+        "frontend_contract"
+      ],
+      "evidence_suites": [],
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-contract-v2-codec",
+      "acceptance_suites": [
+        "frontend_contract"
+      ],
+      "evidence_suites": [],
+      "path": "frontend/apps/web/src/app/contracts/v2/legacyLayoutNormalizer.ts",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/app/contracts/v2/legacyLayoutNormalizer.ts"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-runtime",
+      "acceptance_suites": [
+        "frontend_contract"
+      ],
+      "evidence_suites": [],
+      "path": "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-contract-form-consumer",
+      "acceptance_suites": [
+        "frontend_contract",
+        "frontend_presentation"
+      ],
+      "evidence_suites": [
+        "frontend_presentation"
+      ],
+      "path": "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/app/presentation/contractFormPresenter.ts"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-contract-form-consumer",
+      "acceptance_suites": [
+        "frontend_contract",
+        "frontend_presentation"
+      ],
+      "evidence_suites": [
+        "frontend_presentation"
+      ],
+      "path": "frontend/apps/web/src/pages/contractForm/ContractForm.vue",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/pages/contractForm/ContractForm.vue"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-list-surface-consumer",
+      "acceptance_suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ],
+      "evidence_suites": [
+        "list_surface_structure"
+      ],
+      "path": "frontend/apps/web/src/pages/listPage/ListPage.vue",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/pages/listPage/ListPage.vue"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-presentation",
+      "acceptance_suites": [
+        "frontend_contract",
+        "frontend_presentation"
+      ],
+      "evidence_suites": [
+        "frontend_presentation"
+      ],
+      "path": "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "frontend-list-surface-consumer",
+      "acceptance_suites": [
+        "frontend_contract",
+        "list_surface_structure"
+      ],
+      "evidence_suites": [
+        "list_surface_structure"
+      ],
+      "path": "frontend/apps/web/src/app/runtime/businessListQueryRuntime.ts",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_runtime"
+        ],
+        "paths": [
+          "frontend/apps/web/src/app/runtime/businessListQueryRuntime.ts"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "smart-core-runtime",
+      "acceptance_suites": [
+        "backend_contract",
+        "daily_runtime_entry"
+      ],
+      "evidence_suites": [
+        "daily_runtime_entry"
+      ],
+      "path": "addons/smart_core/contracts/schema.py",
+      "risk_classifier": {
+        "backend_changed": true,
+        "backend_runtime_changed": true,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": false,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": true,
+        "ownership_categories": [
+          "backend_runtime"
+        ],
+        "paths": [
+          "addons/smart_core/contracts/schema.py"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "construction-product-runtime",
+      "acceptance_suites": [
+        "backend_contract"
+      ],
+      "evidence_suites": [],
+      "path": "addons/smart_construction_core/models/project.py",
+      "risk_classifier": {
+        "backend_changed": true,
+        "backend_runtime_changed": true,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": false,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": true,
+        "ownership_categories": [
+          "backend_runtime"
+        ],
+        "paths": [
+          "addons/smart_construction_core/models/project.py"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "approval-policy-initialization",
+      "acceptance_suites": [
+        "backend_contract"
+      ],
+      "evidence_suites": [],
+      "path": "addons/smart_construction_core/data/approval_policy_seed.xml",
+      "risk_classifier": {
+        "backend_changed": true,
+        "backend_runtime_changed": true,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": false,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": true,
+        "ownership_categories": [
+          "backend_runtime"
+        ],
+        "paths": [
+          "addons/smart_construction_core/data/approval_policy_seed.xml"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "governance-static",
+      "acceptance_suites": [
+        "governance_static"
+      ],
+      "evidence_suites": [],
+      "path": "scripts/verify/frontend_page_contract_boundary_guard.py",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": true,
+        "frontend_full_required": false,
+        "lane": "STANDARD",
+        "orm_required": false,
+        "ownership_categories": [
+          "frontend_quality_tooling"
+        ],
+        "paths": [
+          "scripts/verify/frontend_page_contract_boundary_guard.py"
+        ],
+        "reasons": [
+          "standard_runtime_change"
+        ]
+      }
+    },
+    {
+      "acceptance_rule": "docs-bookkeeping",
+      "acceptance_suites": [],
+      "evidence_suites": [],
+      "path": "docs/audit/change-impact-verification/README.md",
+      "risk_classifier": {
+        "backend_changed": false,
+        "backend_runtime_changed": false,
+        "control_plane_changed": false,
+        "database_lifecycle_paths": [],
+        "frontend_changed": false,
+        "frontend_full_required": false,
+        "lane": "FAST",
+        "orm_required": false,
+        "ownership_categories": [
+          "docs_bookkeeping"
+        ],
+        "paths": [
+          "docs/audit/change-impact-verification/README.md"
+        ],
+        "reasons": [
+          "non_runtime_change"
+        ]
+      }
+    }
+  ],
+  "long_tail_boundary": {
+    "cannot_support_claim": "A long-tail script cannot support merge or delivery evidence until a workflow or governed lane actually dispatches it and its receipt is current.",
+    "definition": "Make targets or scripts not reachable from the four declared gate anchors. They may be manual, diagnostic, runtime, deployment, legacy or dead surface."
+  },
+  "method": {
+    "make_graph": "Parsed by scripts/audit/verification_lane_coverage.py from Makefile and make/*.mk",
+    "resource_inference": "Keyword/resource signals are evidence hints, not proof of execution. not_statically_detected means the repository metadata does not establish the dependency.",
+    "semantic_inference": "Module docstrings/header comments and executable commands are cited. No verification responsibility is accepted from a filename alone.",
+    "verification_item": "A workflow job, automated make anchor/target, gate-enforced executable, acceptance suite, or explicitly classified long-tail guard.",
+    "workflow_graph": "Parsed from all .github/workflows/*.yml jobs and steps"
+  },
+  "part_policy": "Large inventories are split into bounded files below the repository 5 MiB history-scan threshold. Each part retains the same verification boundary answers; the index is not a reduction of coverage.",
+  "parts": {
+    "gate_scripts": [
+      "verification_mapping_matrix.gate_scripts.json"
+    ],
+    "make_targets": [
+      "verification_mapping_matrix.make_targets.json"
+    ],
+    "script_lifecycle": [
+      "verification_mapping_matrix.script_lifecycle.00.json",
+      "verification_mapping_matrix.script_lifecycle.01.json",
+      "verification_mapping_matrix.script_lifecycle.02.json",
+      "verification_mapping_matrix.script_lifecycle.03.json",
+      "verification_mapping_matrix.script_lifecycle.04.json",
+      "verification_mapping_matrix.script_lifecycle.05.json",
+      "verification_mapping_matrix.script_lifecycle.06.json",
+      "verification_mapping_matrix.script_lifecycle.07.json",
+      "verification_mapping_matrix.script_lifecycle.08.json"
+    ],
+    "workflow_jobs": [
+      "verification_mapping_matrix.workflow_jobs.json"
+    ]
+  },
+  "schema": "change_impact_verification.inventory.v1",
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121",
+  "source_tree": "3eed77292d6a0a7be3d236a68830d61174a518b2",
+  "surface_summary": {
+    "anchor_parser_non_target_nodes": 6,
+    "anchor_reachable_targets": {
+      "ci.local.quick.run": 155,
+      "ci.professional.backend.shard-verify": 102,
+      "verify.frontend.pr.unit": 53,
+      "verify.frontend.release.audit": 112
+    },
+    "anchor_union_targets": 246,
+    "gate_anchors": [
+      "ci.local.quick.run",
+      "ci.professional.backend.shard-verify",
+      "verify.frontend.pr.unit",
+      "verify.frontend.release.audit"
+    ],
+    "lanes": {
+      "deployment.postverify": {
+        "scripts": 0,
+        "targets": 4
+      },
+      "local.iteration": {
+        "scripts": 17,
+        "targets": 12
+      },
+      "local.quick": {
+        "scripts": 274,
+        "targets": 156
+      },
+      "remote.frontend.full": {
+        "scripts": 109,
+        "targets": 112
+      },
+      "remote.frontend.standard": {
+        "scripts": 32,
+        "targets": 53
+      },
+      "remote.professional.backend.reports": {
+        "scripts": 9,
+        "targets": 4
+      },
+      "remote.professional.backend.tests": {
+        "scripts": 9,
+        "targets": 6
+      },
+      "remote.professional.backend.verify": {
+        "scripts": 211,
+        "targets": 102
+      },
+      "remote.standard_backend": {
+        "scripts": 9,
+        "targets": 5
+      },
+      "runtime.feedback.acceptance": {
+        "scripts": 2,
+        "targets": 8
+      }
+    },
+    "local_only_scripts": [
+      "scripts/contract/gate_contract.sh",
+      "scripts/dev/frontend_static_build.sh",
+      "scripts/dev/pnpm_exec.sh",
+      "scripts/ops/git_safe_push.sh",
+      "scripts/ops/local_dev_performance_identity.py",
+      "scripts/verify/determinism_probe.py",
+      "scripts/verify/frontend_dev_incremental.py",
+      "scripts/verify/intent_cases_integrity_guard.py",
+      "scripts/verify/list_preference_single_application_guard.py",
+      "scripts/verify/local_dev_runtime_contract_role_matrix_probe.py",
+      "scripts/verify/local_dev_runtime_performance.py",
+      "scripts/verify/local_dev_runtime_permission_probe.py",
+      "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+      "scripts/verify/local_dev_runtime_record_form_probe.py",
+      "scripts/verify/system_performance_baseline.py",
+      "scripts/verify/test_contract_gate_case_normalisation.py",
+      "scripts/verify/test_frontend_dev_incremental.py",
+      "scripts/verify/test_local_dev_runtime_performance.py",
+      "scripts/verify/test_local_dev_runtime_permission_probe.py",
+      "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+      "scripts/verify/test_menu_metadata_batch.py",
+      "scripts/verify/test_system_performance_baseline.py"
+    ],
+    "normalized_all_targets": 2460,
+    "normalized_anchor_targets": 240,
+    "parser_non_target_nodes_all": 0,
+    "phony_targets": 2332,
+    "remote_only_scripts": [
+      "scripts/ci/frontend_professional_extension_guard.py",
+      "scripts/ci/python_syntax_check.py",
+      "scripts/ci/test_node_syntax_check.py",
+      "scripts/common/check_env.sh",
+      "scripts/dev/frontend_acceptance_operation_entry.sh",
+      "scripts/e2e/e2e_boq_import_fixed_data_preflight.py",
+      "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
+      "scripts/e2e/e2e_settlement_approval_preflight.py",
+      "scripts/test_render_odoo_conf.py",
+      "scripts/verify/auth_credential_frontend_guard.py",
+      "scripts/verify/collection_view_semantics_guard.py",
+      "scripts/verify/frontend_acceptance_login_probe.py",
+      "scripts/verify/frontend_action_view_page_actions_guard.py",
+      "scripts/verify/frontend_action_view_route_lease_race.test.mjs",
+      "scripts/verify/frontend_auth_surface_guard.py",
+      "scripts/verify/frontend_boq_import_preview_guard.py",
+      "scripts/verify/frontend_contract_prompt_action_presentation_guard.py",
+      "scripts/verify/frontend_contract_render_profile.test.mjs",
+      "scripts/verify/frontend_dashboard_state_guard.py",
+      "scripts/verify/frontend_decision_authority.py",
+      "scripts/verify/frontend_delivery_hardening_browser.mjs",
+      "scripts/verify/frontend_dev_process_isolation_guard.py",
+      "scripts/verify/frontend_evidence_capture_guard.test.mjs",
+      "scripts/verify/frontend_form_header_action_primitives_guard.py",
+      "scripts/verify/frontend_list_optional_columns_contract_test.ts",
+      "scripts/verify/frontend_localized_display_contract_test.ts",
+      "scripts/verify/frontend_low_code_field_create_dialog_guard.py",
+      "scripts/verify/frontend_mobile_viewport_guard.py",
+      "scripts/verify/frontend_navigation_audit.test.mjs",
+      "scripts/verify/frontend_navigation_initialization_race.test.mjs",
+      "scripts/verify/frontend_navigation_shell_guard.py",
+      "scripts/verify/frontend_official_icon_resource_guard.py",
+      "scripts/verify/frontend_performance_budget.test.mjs",
+      "scripts/verify/frontend_primitive_adapter_guard.py",
+      "scripts/verify/frontend_product_page_header_guard.py",
+      "scripts/verify/frontend_product_page_pattern_guard.py",
+      "scripts/verify/frontend_professional_audit_guard.py",
+      "scripts/verify/frontend_professional_base_field_guard.py",
+      "scripts/verify/frontend_professional_business_value_guard.py",
+      "scripts/verify/frontend_professional_collaboration_guard.py",
+      "scripts/verify/frontend_professional_component_registry_guard.py",
+      "scripts/verify/frontend_professional_detail_collection_guard.py",
+      "scripts/verify/frontend_professional_relation_field_guard.py",
+      "scripts/verify/frontend_professional_relation_lifecycle_guard.py",
+      "scripts/verify/frontend_professional_workflow_guard.py",
+      "scripts/verify/frontend_relational_action_primitives_guard.py",
+      "scripts/verify/frontend_release_audit.py",
+      "scripts/verify/frontend_release_ci_guard.py",
+      "scripts/verify/frontend_scene_component_bridge_guard.py",
+      "scripts/verify/frontend_state_presentation_guard.py",
+      "scripts/verify/frontend_static_release_audit.py",
+      "scripts/verify/python_name_binding_guard.py",
+      "scripts/verify/test_common_env_explicit_path.py",
+      "scripts/verify/test_frontend_acceptance_login_probe.py",
+      "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+      "scripts/verify/test_frontend_boq_import_preview_guard.py",
+      "scripts/verify/test_frontend_contract_prompt_action_presentation_guard.py",
+      "scripts/verify/test_frontend_dashboard_state_guard.py",
+      "scripts/verify/test_frontend_decision_authority_guard.py",
+      "scripts/verify/test_frontend_delivery_hardening_guard.py",
+      "scripts/verify/test_frontend_form_header_action_primitives_guard.py",
+      "scripts/verify/test_frontend_low_code_field_create_dialog_guard.py",
+      "scripts/verify/test_frontend_mobile_viewport_guard.py",
+      "scripts/verify/test_frontend_navigation_shell_guard.py",
+      "scripts/verify/test_frontend_product_page_header_guard.py",
+      "scripts/verify/test_frontend_product_page_pattern_guard.py",
+      "scripts/verify/test_frontend_professional_audit_guard.py",
+      "scripts/verify/test_frontend_professional_base_field_guard.py",
+      "scripts/verify/test_frontend_professional_business_value_guard.py",
+      "scripts/verify/test_frontend_professional_collaboration_guard.py",
+      "scripts/verify/test_frontend_professional_component_registry_guard.py",
+      "scripts/verify/test_frontend_professional_detail_collection_guard.py",
+      "scripts/verify/test_frontend_professional_relation_field_guard.py",
+      "scripts/verify/test_frontend_professional_relation_lifecycle_guard.py",
+      "scripts/verify/test_frontend_professional_workflow_guard.py",
+      "scripts/verify/test_frontend_relational_action_primitives_guard.py",
+      "scripts/verify/test_frontend_release_audit.py",
+      "scripts/verify/test_frontend_release_ci_guard.py",
+      "scripts/verify/test_frontend_release_gate.py",
+      "scripts/verify/test_frontend_release_local_entry.py",
+      "scripts/verify/test_frontend_state_presentation_guard.py",
+      "scripts/verify/test_python_name_binding_guard.py"
+    ],
+    "scripts_on_disk": 2494,
+    "scripts_owned_surface": 867,
+    "scripts_retired": 41,
+    "scripts_unreferenced_anywhere": [
+      "scripts/audit/tenant_pro_03_data_responsibility_inventory.py",
+      "scripts/audit/test_generate_frontend_professionalization_baseline.py",
+      "scripts/ci/checkout_from_ci_mirror.sh",
+      "scripts/ci/ci_gate.sh",
+      "scripts/ops/backfill_material_rfq_source_plan.sh",
+      "scripts/ops/gitee_publication_scope.py",
+      "scripts/ops/install_agent_dispatch_inbox.sh",
+      "scripts/ops/setup_mobile_device_acceptance_wsl.sh",
+      "scripts/ops/validate_business_category_dictionary.sh",
+      "scripts/ops/validate_company_contractor_responsibility_context.sh",
+      "scripts/ops/validate_company_contractor_responsibility_summary.sh",
+      "scripts/ops/validate_construction_diary_visible_fields.sh",
+      "scripts/ops/validate_contract_business_categories.sh",
+      "scripts/ops/validate_contract_business_category_binding.sh",
+      "scripts/ops/validate_contract_settlement_payment_closure.sh",
+      "scripts/ops/validate_finance_browser_acceptance.sh",
+      "scripts/ops/validate_finance_business_categories.sh",
+      "scripts/ops/validate_finance_business_category_runtime.sh",
+      "scripts/ops/validate_finance_downstream_traceability.sh",
+      "scripts/ops/validate_finance_handling_evidence.sh",
+      "scripts/ops/validate_finance_relation_required.sh",
+      "scripts/ops/validate_finance_role_permissions.sh",
+      "scripts/ops/validate_income_contract_receipt_invoice_closure.sh",
+      "scripts/ops/validate_interfund_financing_loan_partner_candidate.sh",
+      "scripts/ops/validate_invoice_tax_business_categories.sh",
+      "scripts/ops/validate_invoice_tax_business_category_runtime.sh",
+      "scripts/ops/validate_invoice_tax_category_binding.sh",
+      "scripts/ops/validate_invoice_tax_downstream_traceability.sh",
+      "scripts/ops/validate_invoice_tax_handling_evidence.sh",
+      "scripts/ops/validate_invoice_tax_partner_anchor.sh",
+      "scripts/ops/validate_invoice_tax_role_permissions.sh",
+      "scripts/ops/validate_labor_settlement_candidate.sh",
+      "scripts/ops/validate_labor_usage_legacy_settlement_projection.sh",
+      "scripts/ops/validate_material_business_categories.sh",
+      "scripts/ops/validate_material_business_category_binding.sh",
+      "scripts/ops/validate_material_business_category_runtime.sh",
+      "scripts/ops/validate_material_cost_trigger_policy.sh",
+      "scripts/ops/validate_material_cross_document_traceability.sh",
+      "scripts/ops/validate_material_downstream_traceability.sh",
+      "scripts/ops/validate_material_handling_evidence.sh",
+      "scripts/ops/validate_material_loss_approval_policy.sh",
+      "scripts/ops/validate_material_outbound_derivative_strategy.sh",
+      "scripts/ops/validate_material_plan_purchase_request_traceability.sh",
+      "scripts/ops/validate_material_plan_visible_note.sh",
+      "scripts/ops/validate_material_purchase_request_downstream_strategy.sh",
+      "scripts/ops/validate_material_rfq_source_coverage.sh",
+      "scripts/ops/validate_material_role_permissions.sh",
+      "scripts/ops/validate_material_settlement_payment_execution_approval_policy.sh",
+      "scripts/ops/validate_material_settlement_payment_execution_traceability.sh",
+      "scripts/ops/validate_material_settlement_payment_reversal.sh",
+      "scripts/ops/validate_material_settlement_split_payment.sh",
+      "scripts/ops/validate_mechanical_settlement_partner.sh",
+      "scripts/ops/validate_operation_strategy_contract_surface.sh",
+      "scripts/ops/validate_payment_execution_request_anchor.sh",
+      "scripts/ops/validate_project_budget_legacy_material.sh",
+      "scripts/ops/validate_receipt_income_partner_anchor.sh",
+      "scripts/ops/validate_receipt_invoice_source_document.sh",
+      "scripts/ops/validate_settlement_contract_surface.sh",
+      "scripts/ops/validate_site_quality_safety_closure.sh",
+      "scripts/ops/validate_subcontract_request_contract_anchor.sh",
+      "scripts/ops/validate_user_confirmed_settlement_usability.sh",
+      "scripts/product/build_capability_productization_v1.py",
+      "scripts/tenant_payload/__init__.py",
+      "scripts/verify/company_operation_summary_browser_acceptance.js",
+      "scripts/verify/direct_acceptance_formal_browser_probe.js",
+      "scripts/verify/direct_acceptance_full_formal_browser_coverage.js",
+      "scripts/verify/direct_project_business_browser_acceptance.js",
+      "scripts/verify/fe_scene_core_openable_guard.js",
+      "scripts/verify/fe_scene_registry_coerce_smoke.js",
+      "scripts/verify/finance_interfund_product_menu_browser_acceptance.js",
+      "scripts/verify/form_accessibility_acceptance.js",
+      "scripts/verify/form_action_path_acceptance.js",
+      "scripts/verify/form_attachment_delete_policy_acceptance.js",
+      "scripts/verify/form_body_action_safety_acceptance.js",
+      "scripts/verify/form_business_path_acceptance.js",
+      "scripts/verify/form_chatter_note_acceptance.js",
+      "scripts/verify/form_concurrency_conflict_acceptance.js",
+      "scripts/verify/form_create_entry_acceptance.js",
+      "scripts/verify/form_edit_discard_acceptance.js",
+      "scripts/verify/form_entry_routing_acceptance.js",
+      "scripts/verify/form_localization_acceptance.js",
+      "scripts/verify/form_m2_payment_request_acceptance.js",
+      "scripts/verify/form_m2_payment_request_reject_acceptance.js",
+      "scripts/verify/form_m3_purchase_order_acceptance.js",
+      "scripts/verify/form_m3_purchase_order_line_acceptance.js",
+      "scripts/verify/form_m4_legacy_readonly_acceptance.js",
+      "scripts/verify/form_m5_dictionary_maintenance_acceptance.js",
+      "scripts/verify/form_many2many_multi_select_acceptance.js",
+      "scripts/verify/form_model_error_recovery_acceptance.js",
+      "scripts/verify/form_model_tier_acceptance.js",
+      "scripts/verify/form_native_custom_gap_audit.js",
+      "scripts/verify/form_navigation_recovery_acceptance.js",
+      "scripts/verify/form_primitive_fields_acceptance.js",
+      "scripts/verify/form_primitive_html_acceptance.js",
+      "scripts/verify/form_primitive_numeric_date_acceptance.js",
+      "scripts/verify/form_primitive_text_datetime_acceptance.js",
+      "scripts/verify/form_relation_deferred_create_save_acceptance.js",
+      "scripts/verify/form_relation_dialog_create_entry_acceptance.js",
+      "scripts/verify/form_relation_quick_input_edge_acceptance.js",
+      "scripts/verify/form_role_state_acceptance.js",
+      "scripts/verify/form_smart_button_overflow_acceptance.js",
+      "scripts/verify/form_status_transition_acceptance.js",
+      "scripts/verify/form_visual_containment_acceptance.js",
+      "scripts/verify/invoice_output_detail_browser_smoke.js"
+    ],
+    "scripts_verify_lifecycle_owned": 1627,
+    "targets_defined": 2460,
+    "targets_missing_asset": {
+      "daily.candidate.continuity.remote_install": [
+        "scripts/ops/daily_candidate_clone_upgrade_contract_v1.js",
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.js",
+        "scripts/ops/daily_candidate_data_sentinel_contract_v1.js",
+        "scripts/ops/daily_runtime_tenant_recovery_contract_v1.js",
+        "scripts/ops/production_acceptance_contract_v1.js",
+        "scripts/ops/production_acceptance_package_v1.sh",
+        "scripts/ops/r10_performance_ab_continuity_contract_v1.js"
+      ],
+      "daily.demo.write.recovery_gate": [
+        "scripts/ops/daily_candidate_data_continuity_contract_v1.js"
+      ],
+      "online.capture.preflight": [
+        "scripts/verify/online_capture_security.py"
+      ],
+      "verify.business_config.change_set_acceptance": [
+        "scripts/low_code_change_set_acceptance.mjs"
+      ],
+      "verify.business_config.config_workbench_operation_acceptance": [
+        "scripts/config_workbench_operation_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_acceptance": [
+        "scripts/low_code_business_config_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_global_stability": [
+        "scripts/low_code_global_stability_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_group_matrix": [
+        "scripts/low_code_form_group_matrix_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_layout_runtime": [
+        "scripts/low_code_form_layout_runtime_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_menu_navigation_alignment": [
+        "scripts/low_code_menu_navigation_alignment_acceptance.mjs"
+      ],
+      "verify.business_config.low_code_runtime_consistency": [
+        "scripts/low_code_form_runtime_consistency_acceptance.mjs"
+      ],
+      "verify.business_config.safe_open_acceptance": [
+        "scripts/low_code_safe_open_acceptance.mjs"
+      ],
+      "verify.business_config.workbench_fault_acceptance": [
+        "scripts/low_code_workbench_fault_acceptance.mjs"
+      ],
+      "verify.business_config.workbench_product_acceptance": [
+        "scripts/low_code_workbench_product_acceptance.mjs"
+      ],
+      "verify.frontend.list_selection_contract_smoke": [
+        "scripts/list_selection_contract_smoke.mjs"
+      ],
+      "verify.output_invoice.source_gap_audit": [
+        "scripts/verify/output_invoice_source_gap_audit.py"
+      ],
+      "verify.product.page_structure": [
+        "scripts/product_page_structure_guard.mjs"
+      ],
+      "verify.productization.system_closure.topic_guard": [
+        "scripts/verify/productization_system_closure_topic_guard.py",
+        "scripts/verify/test_productization_system_closure_topic_guard.py"
+      ],
+      "verify.system_user_experience.business_form_user_perspective": [
+        "scripts/business_form_user_perspective_summary_guard.mjs"
+      ],
+      "verify.system_user_experience.full_browser": [
+        "scripts/system_user_experience_full_browser_summary_guard.mjs"
+      ],
+      "verify.system_user_experience.shell_acceptance": [
+        "scripts/system_user_experience_shell_acceptance.mjs",
+        "scripts/system_user_experience_shell_summary_guard.mjs"
+      ],
+      "verify.system_user_experience.visible_surface_visual_coverage": [
+        "scripts/user_visible_surface_visual_coverage_summary_guard.mjs"
+      ]
+    },
+    "targets_unreached_from_anchor": 2220,
+    "targets_zero_reference": [
+      "acceptance.baseline.upgrade",
+      "acceptance.frontend.activity_surface.browser",
+      "acceptance.frontend.core_record_form.journeys",
+      "acceptance.frontend.fixture_guard",
+      "acceptance.runtime.baseline_restore",
+      "acceptance.runtime.infrastructure.restore",
+      "agent.controller.config.check",
+      "agent.controller.disable",
+      "agent.controller.enable",
+      "agent.controller.install",
+      "agent.controller.linger.enable",
+      "agent.controller.logs",
+      "agent.controller.notify.test",
+      "agent.controller.status",
+      "agent.controller.watch",
+      "agent.dispatch.review",
+      "agent.dispatch.status",
+      "agent.dispatch.submit",
+      "agent.feishu_bridge.config.check",
+      "agent.feishu_bridge.disable",
+      "agent.feishu_bridge.enable",
+      "agent.feishu_bridge.logs",
+      "agent.feishu_bridge.status",
+      "agent.hooks.install",
+      "architecture.complexity_report",
+      "architecture.module_dependency_map",
+      "architecture.split_plan_queue",
+      "audit.boundary",
+      "audit.daily.demo.business_readiness",
+      "audit.daily.demo.data_inventory",
+      "audit.frontend.industry_agnostic",
+      "audit.odoo_native_capability_explorer.demo",
+      "audit.platform_capability_explorer.demo",
+      "audit.scene.config",
+      "audit.tenant.boundary.history_counts",
+      "audit.tenant.boundary.legacy_carriers",
+      "audit.verification.lane_coverage",
+      "backfill.finance_legacy_cash_ledger",
+      "backfill.finance_legacy_handling.currency",
+      "backfill.finance_legacy_source_less_ledger.attach",
+      "backfill.finance_legacy_source_linked_ledger.payment_request_boundary",
+      "backfill.finance_legacy_treasury.currency",
+      "ci.local.quick.compose",
+      "ci.local.quick.shard",
+      "ci.tenant.pro03.demo.dispatch",
+      "cn.audit.docstrings.clean",
+      "cn.help",
+      "cn.p",
+      "cn.p.stdin",
+      "cn.test",
+      "cn.tui",
+      "codex.print",
+      "contract.schema.declaration.sync",
+      "contract.structure.fingerprint",
+      "daily.candidate.clone_rehearsal.freeze",
+      "daily.candidate.clone_rehearsal.remote_execute",
+      "daily.candidate.clone_rehearsal.remote_image_import",
+      "daily.candidate.clone_rehearsal.remote_preflight",
+      "daily.candidate.continuity.backup",
+      "daily.candidate.continuity.baseline",
+      "daily.candidate.continuity.remote_backup",
+      "daily.candidate.continuity.remote_baseline",
+      "daily.candidate.continuity.remote_closeout",
+      "daily.candidate.continuity.remote_restore_drill",
+      "daily.candidate.continuity.restore_drill",
+      "daily.candidate.continuity.validate",
+      "daily.candidate.sentinel.remote_capture",
+      "daily.candidate.sentinel.remote_verify",
+      "daily.demo.contract.api_acceptance",
+      "daily.demo.contract.write_acceptance",
+      "daily.demo.filestore.preserve",
+      "daily.demo.project_manager.repair",
+      "daily.demo.scenario.configure",
+      "daily.demo.walkthrough.contract_flow",
+      "daily.demo.walkthrough.ui",
+      "daily.personnel_views",
+      "daily.runtime.database.duty.apply",
+      "daily.runtime.database.duty.initialize",
+      "daily.runtime.database.duty.recreate",
+      "daily.runtime.database.duty.seed",
+      "daily.runtime.duty.database_registration.remote_readback",
+      "daily.runtime.duty.database_registration.remote_register",
+      "daily.runtime.duty.operator_grant.remote_grant",
+      "daily.runtime.duty.operator_grant.remote_provision",
+      "daily.runtime.duty.operator_grant.remote_readback",
+      "daily.runtime.duty.operator_grant.remote_revoke",
+      "daily.runtime.duty.payload.remote_import",
+      "daily.runtime.duty.payload.remote_plan",
+      "daily.runtime.duty.payload.remote_verify",
+      "daily.runtime.legacy_stack.retire.apply",
+      "daily.runtime.legacy_stack.retire.plan",
+      "daily.runtime.platform.admin.credential.ensure",
+      "daily.runtime.platform.admin.credential.seed",
+      "daily.runtime.platform.admin.credential.verify",
+      "daily.runtime.tenant.addons.deliver",
+      "daily.runtime.tenant.addons.plan",
+      "db.branch",
+      "demo.experience_reset.plan",
+      "demo.frontend.build",
+      "demo.frontend.fixture",
+      "demo.ownership_cleanup.apply",
+      "demo.ownership_cleanup.report",
+      "demo.repro",
+      "demo.scenario_tick.run",
+      "demo.tenant.verify",
+      "export.product.delivery.package",
+      "export.product.documentation",
+      "fe.dev",
+      "fe.dev.daily",
+      "fe.dev.reset",
+      "fe.dev.test",
+      "fe.dev.uat",
+      "fe.install",
+      "formal_entry_metadata.non_business_creator.write",
+      "frontend.dev",
+      "frontend.restart",
+      "frontend.standard.favorite_probe.recover",
+      "gate.audit",
+      "gate.contract.bootstrap",
+      "gate.contract.bootstrap-pass",
+      "gitee.ci.https.install",
+      "gitee.ci.https.status",
+      "gitee.ci.repository.configure",
+      "gitee.ci.server.install",
+      "gitee.ci.server.status",
+      "gitee.github.mirror.install",
+      "gitee.github.mirror.run",
+      "gitee.github.mirror.seed",
+      "gitee.pr.bot.create",
+      "gitee.pr.bot.professional.run",
+      "gitee.pr.bot.status",
+      "github.mirror.non_mirror_push.test",
+      "github.mirror.ruleset.configure",
+      "github.remote_execution_plan",
+      "guard.registry.export",
+      "guard.retire",
+      "history.material_product.projection.probe",
+      "history.user_data_migration.closure",
+      "integration.cycle",
+      "local.clean.contract_projection_cache.probe",
+      "local.clean.dependency_fixture.ensure",
+      "local.clean.dependency_fixture.revoke",
+      "local.clean.dependency_fixture.revoke_deactivate",
+      "local.clean.dependency_fixture.verify",
+      "local.clean.entry_identity.ensure",
+      "local.clean.entry_identity.verify",
+      "local.clean.finance_fixture.ensure",
+      "local.clean.install",
+      "local.clean.restart",
+      "local.clean.upgrade",
+      "local.clean.view_capability_ledger_gate",
+      "local.clean.view_carrier_export",
+      "local.clean.view_carrier_gate",
+      "local.clean.view_normalized_map_gate",
+      "local.clean.view_structure_baseline",
+      "local.clean.view_structure_gate",
+      "local.contract-lifecycle.down",
+      "local.contract-lifecycle.odoo-shell.run",
+      "local.contract-lifecycle.ps",
+      "local.contract-lifecycle.upgrade",
+      "local.contract-snapshot.contract_export",
+      "local.contract-snapshot.down",
+      "local.contract-snapshot.gate_contract",
+      "local.contract-snapshot.logs",
+      "local.contract-snapshot.matrix_audit",
+      "local.contract-snapshot.matrix_audit.run",
+      "local.contract-snapshot.odoo-shell.run",
+      "local.contract-snapshot.preference_record.probe",
+      "local.contract-snapshot.ps",
+      "local.contract-snapshot.up",
+      "local.contract-snapshot.upgrade",
+      "local.dev.candidate.frontend.down",
+      "local.dev.entry_identity.ensure",
+      "local.dev.experience_reset.plan",
+      "local.dev.gate_contract.bounded",
+      "local.dev.gate_contract.bounded.run",
+      "local.dev.journal.recovery",
+      "local.dev.journal.role.identities",
+      "local.dev.restart",
+      "local.dev.runtime.allocation_attribution.probe",
+      "local.dev.runtime.entry_target.probe",
+      "local.dev.runtime.performance.baseline",
+      "local.dev.runtime.performance.browser",
+      "local.dev.runtime.preference_record.probe",
+      "local.dev.runtime.projection_cache_identity.probe",
+      "local.dev.runtime.record_form.probe",
+      "local.dev.runtime.startup_fact_reuse.probe",
+      "local.dev.scenario_tick.run",
+      "local.dev.user_permission.rehearsal",
+      "local.dev.verify_realistic",
+      "local.dev.write_lease.status",
+      "local.sample.health",
+      "local.test.down",
+      "obs.coverage.report",
+      "odoo.exec",
+      "odoo.logs",
+      "online.capture.preflight",
+      "ops.auth.dev.apply",
+      "ops.auth.dev.rollback",
+      "ops.auth.dev.verify",
+      "ops.scene.company_secondary.access",
+      "policy.cleanup.formal_list_surface_test_contract",
+      "policy.sync.config_center_menu_baseline",
+      "prod.fix.mail_from",
+      "prod.restart.full",
+      "prod.upgrade.core",
+      "product.install",
+      "product.upgrade",
+      "product.verify",
+      "production.acceptance.candidate.remote_import",
+      "production.acceptance.clone.remote_publish",
+      "production.acceptance.clone.remote_replace",
+      "production.acceptance.final_image.real_plan",
+      "production.acceptance.image.remote_import",
+      "production.acceptance.payload.remote.import",
+      "production.acceptance.payload.remote.plan",
+      "production.acceptance.payload.remote.verify",
+      "production.acceptance.restore.remote_verify",
+      "production.attachment_preview.csp.apply",
+      "production.backup.timer.restore",
+      "production.restore.cleanup",
+      "production.restore.tool.sync",
+      "production.tenant.delivery.artifacts.sync",
+      "project.legacy_entry.backfill",
+      "r10.performance_ab.plan",
+      "r10.performance_ab.preflight",
+      "r10.performance_ab.twins.cold_reset",
+      "r10.performance_ab.twins.deploy",
+      "r10.performance_ab.twins.destroy",
+      "r10.performance_ab.twins.prepare",
+      "r10.performance_ab.twins.readback",
+      "r10.performance_ab.twins.redeploy",
+      "r10.performance_ab.twins.restore",
+      "r10.performance_ab.twins.stack.sync",
+      "refresh.frontend.rendering_detail.inventory",
+      "release.boundary.candidate.build",
+      "release.daily_dev.production_acceptance.harness",
+      "release.daily_dev.promotion.config.preflight",
+      "release.pilot.all",
+      "release.production.acceptance.harness",
+      "release.production.acceptance.report",
+      "release.production.customer_module.install",
+      "release.production.customer_package.preflight",
+      "release.production.customer_package.prepare",
+      "release.production.db.preflight",
+      "release.production.first_fresh.cleanup",
+      "release.production.health.readonly",
+      "release.production.public_signup.close.apply",
+      "release.production.public_signup.close.plan",
+      "release.production.public_signup.close.verify",
+      "release.production.readonly_baseline",
+      "release.production.single_user_activation.apply",
+      "release.production.single_user_activation.plan",
+      "release.production.single_user_activation.verify",
+      "release.production.tenant_payload.import",
+      "release.production.tenant_payload.operator.grant",
+      "release.production.tenant_payload.verify",
+      "release.rc6.identity.publish",
+      "release.rc6.workspace.prepare",
+      "release.rehearsal.cleanup",
+      "release.rehearsal.filestore.recover",
+      "scene.export",
+      "scene.pin.stable",
+      "scene.rollback.stable",
+      "scene.snapshot.update",
+      "security.secret_scan",
+      "stage.preflight",
+      "tenant.payload.filestore.reconcile",
+      "tenant.payload.import",
+      "tenant.payload.plan",
+      "tenant.payload.recovery.backup",
+      "tenant.payload.recovery.restore",
+      "tenant.payload.rehearsal.down",
+      "tenant.payload.rehearsal.install",
+      "tenant.payload.rehearsal.shell",
+      "tenant.payload.rehearsal.sql",
+      "tenant.payload.rehearsal.up",
+      "tenant.payload.verify",
+      "tenant.rc.profile.customer",
+      "tenant.rc.profile.digest.verify",
+      "tenant.rc.profile.product",
+      "tenant.rc.profile.sample",
+      "tenant.rc.runtime.acceptance",
+      "test-install-gate",
+      "test-upgrade-gate",
+      "test.admin-vis-p3.project-record-rule-orm",
+      "test.all",
+      "test.e2e.matrix",
+      "test.inventory",
+      "test.inventory.summary",
+      "user_data.demo_impact_report",
+      "user_data.demo_removal.apply",
+      "user_data.demo_removal.plan",
+      "verify.acceptance.runtime.baseline_rebuild.unit",
+      "verify.acceptance_action_count.unit",
+      "verify.admin-vis-p3.registry-audit",
+      "verify.application_form.required_marker_audit",
+      "verify.attachment_upload.frontend_browser.acceptance.host",
+      "verify.attachment_upload.frontend_browser.matrix.host",
+      "verify.attachment_upload.surface_manifest.prod",
+      "verify.backend.architecture.full",
+      "verify.backend.architecture.static",
+      "verify.backend.contract.closure.guard",
+      "verify.backend.contract.closure.snapshot.guard",
+      "verify.backend.contract_fact_readback.runtime",
+      "verify.backend.contract_lifecycle.runtime",
+      "verify.backend.contract_lifecycle.runtime.schema.guard",
+      "verify.backend.contract_lifecycle.runtime.schema.guard.unit",
+      "verify.backend.contract_slo_telemetry",
+      "verify.backend.contract_slo_telemetry.runtime.run",
+      "verify.backend.contract_slo_telemetry.unit",
+      "verify.backend.contract_supply_chain",
+      "verify.backend.contract_supply_chain.runtime.run",
+      "verify.backend.contract_supply_chain.runtime.schema.guard",
+      "verify.backend.scene_surface_boundary.unit",
+      "verify.backend_business_fact.model_standard",
+      "verify.boq.dual_role.five_viewport.evidence",
+      "verify.branch.retire.historical",
+      "verify.business.document_state_policy_switch",
+      "verify.business.finance_document_tier_runtime_smoke",
+      "verify.business.increment.preflight.strict",
+      "verify.business.increment.readiness.brief.strict",
+      "verify.business_config.approval_targets.unit",
+      "verify.business_config.standard_list_loop",
+      "verify.business_config.standard_list_loop.unit",
+      "verify.business_scope.context.runtime",
+      "verify.capability.lint",
+      "verify.capability.maturity",
+      "verify.capability.maturity.unit",
+      "verify.clean_product_tree",
+      "verify.construction.create_defaults.unit",
+      "verify.construction_contract_history_value_gap.probe",
+      "verify.construction_product_menu.release",
+      "verify.contract.evidence",
+      "verify.contract.form_field_policy.unit",
+      "verify.contract.governed_policy_guard",
+      "verify.contract.native_integrity_guard",
+      "verify.contract.operation_gateway.guard",
+      "verify.contract.schema.declaration.sync",
+      "verify.contract_product_menu.release",
+      "verify.contract_retirement.declaration.unit",
+      "verify.core_history_field.physical_boundary_audit",
+      "verify.daily.demo.contract.ui",
+      "verify.daily.duty.database_registration",
+      "verify.daily.duty.edition_release",
+      "verify.daily.duty.operator_grant",
+      "verify.daily.duty.payload",
+      "verify.daily.permission_truth.payment.orm",
+      "verify.daily_dev.list_surface.readonly.browser",
+      "verify.daily_dev.relation_roundtrip.browser",
+      "verify.delivery.cost.search_pagination",
+      "verify.delivery.default_scene.semantic_monitor",
+      "verify.delivery.executive.readonly",
+      "verify.delivery.ledger.reconciliation_trend",
+      "verify.delivery.lifecycle.audit_export",
+      "verify.delivery.material.action_replay",
+      "verify.delivery.payment_approval.chain_summary",
+      "verify.delivery.project_journey.trace_archive",
+      "verify.delivery.quality_safety.closure",
+      "verify.demo.baseline_readiness.unit",
+      "verify.demo.experience_reset_scope.unit",
+      "verify.demo.role_startup.smoke",
+      "verify.demo.usage_foundation.unit",
+      "verify.demo.usage_foundation_role_scope.smoke",
+      "verify.demo.usage_foundation_role_scope.unit",
+      "verify.dev.acceptance.contract",
+      "verify.dev.acceptance.record_identity.resolve",
+      "verify.direct_acceptance_engineering_settlement.income_projection",
+      "verify.e2e.capability_smoke",
+      "verify.e2e.marketplace_smoke",
+      "verify.finance_expense.approval_policy.audit",
+      "verify.finance_expense_category.handling_policy.audit",
+      "verify.finance_handling.http_surface.smoke",
+      "verify.finance_interfund_category.handling_policy.audit",
+      "verify.finance_legacy_cash_ledger.backfill.audit",
+      "verify.finance_legacy_cash_ledger.backfill_readiness.audit",
+      "verify.finance_legacy_handling.currency.audit",
+      "verify.finance_legacy_source_less_ledger.attach.audit",
+      "verify.finance_legacy_source_less_ledger.reconciliation.audit",
+      "verify.finance_legacy_source_linked_ledger.payment_request_boundary.audit",
+      "verify.finance_legacy_treasury.currency.audit",
+      "verify.finance_p0.currency_default.audit",
+      "verify.foreign_tax_certificate.visible_surface_alignment.audit",
+      "verify.form_view.orchestration_boundary_guard",
+      "verify.formal_business.release_gate",
+      "verify.formal_business_operation_capability_matrix",
+      "verify.formal_business_operation_core_flow_smoke",
+      "verify.formal_entry_metadata.non_business_creator.unit",
+      "verify.formal_list_surface.no_test_placeholder_guard.prod",
+      "verify.formal_menu.runtime_no_legacy_carrier_guard.prod",
+      "verify.frontend.action_surface_renderer_registry.unit",
+      "verify.frontend.activation_form_engine.unit",
+      "verify.frontend.bootstrap_inventory.unit",
+      "verify.frontend.bound_form_configuration.unit",
+      "verify.frontend.business_entry.general_contract.browser",
+      "verify.frontend.business_entry.lifecycle.browser",
+      "verify.frontend.business_entry.matrix.evidence_scope.status",
+      "verify.frontend.business_entry.negative_closures",
+      "verify.frontend.business_entry.payment_request.browser",
+      "verify.frontend.contract_consumer_intrusion.guard",
+      "verify.frontend.contract_consumer_intrusion.report",
+      "verify.frontend.contract_form_dirty_semantics.unit",
+      "verify.frontend.contract_form_presentation.browser",
+      "verify.frontend.contract_prompt_action_presentation.browser",
+      "verify.frontend.contract_v2_runtime_policy.unit",
+      "verify.frontend.core_record_form.audit",
+      "verify.frontend.decision_authority.export",
+      "verify.frontend.delivery_hardening.inventory",
+      "verify.frontend.density.baseline",
+      "verify.frontend.detail_form_productization.guard",
+      "verify.frontend.dev.incremental",
+      "verify.frontend.dev.watch",
+      "verify.frontend.dynamic_list_optional_columns.browser",
+      "verify.frontend.explicit_any.unit",
+      "verify.frontend.field_configuration_component.unit",
+      "verify.frontend.financial_workspace.guard",
+      "verify.frontend.form_canvas_wide_grid.audit",
+      "verify.frontend.form_designer_actions.unit",
+      "verify.frontend.form_grid_span.browser",
+      "verify.frontend.form_structure_contract_projection.unit",
+      "verify.frontend.form_structure_surface_contract.unit",
+      "verify.frontend.industry_agnostic.guard",
+      "verify.frontend.lint",
+      "verify.frontend.list_order_field_contract.unit",
+      "verify.frontend.list_selection_contract_smoke",
+      "verify.frontend.low_code_field_create_dialog.browser",
+      "verify.frontend.menu_navigation.diagnostic",
+      "verify.frontend.navigation_initialization_race.browser",
+      "verify.frontend.page_identity.deep.browser",
+      "verify.frontend.page_renderer.browser",
+      "verify.frontend.page_width_contract.audit",
+      "verify.frontend.page_width_contract.guard",
+      "verify.frontend.platform_capability_explorer.browser",
+      "verify.frontend.product_configuration_capability.browser",
+      "verify.frontend.product_design_system.audit",
+      "verify.frontend.professionalization.accounting_center.browser",
+      "verify.frontend.professionalization.accounting_center.runtime",
+      "verify.frontend.professionalization.administration_domain.browser",
+      "verify.frontend.professionalization.administration_domain.runtime",
+      "verify.frontend.professionalization.base_configuration_domain.browser",
+      "verify.frontend.professionalization.base_configuration_domain.runtime",
+      "verify.frontend.professionalization.collaboration_domain.browser",
+      "verify.frontend.professionalization.collaboration_domain.runtime",
+      "verify.frontend.professionalization.contract_domain.runtime",
+      "verify.frontend.professionalization.cost_domain.browser",
+      "verify.frontend.professionalization.cost_domain.runtime",
+      "verify.frontend.professionalization.finance_center.browser",
+      "verify.frontend.professionalization.finance_center.runtime",
+      "verify.frontend.professionalization.material_domain.browser",
+      "verify.frontend.professionalization.material_domain.runtime",
+      "verify.frontend.professionalization.payment_domain.browser",
+      "verify.frontend.professionalization.payment_domain.runtime",
+      "verify.frontend.professionalization.project_domain.runtime",
+      "verify.frontend.professionalization.quality_safety_domain.browser",
+      "verify.frontend.professionalization.quality_safety_domain.runtime",
+      "verify.frontend.professionalization.reporting_center.browser",
+      "verify.frontend.professionalization.reporting_center.runtime",
+      "verify.frontend.professionalization.settlement_domain.browser",
+      "verify.frontend.professionalization.settlement_domain.runtime",
+      "verify.frontend.professionalization.systemwide_public_metric.acceptance",
+      "verify.frontend.professionalization.systemwide_public_metric.unit",
+      "verify.frontend.professionalization.tax_center.browser",
+      "verify.frontend.professionalization.tax_center.runtime",
+      "verify.frontend.professionalization.workbench_center.browser",
+      "verify.frontend.professionalization.workbench_center.runtime",
+      "verify.frontend.project_workspace_dom.browser",
+      "verify.frontend.public_auth_bootstrap.unit",
+      "verify.frontend.record_form_return.unit",
+      "verify.frontend.relation_navigation.diagnostic",
+      "verify.frontend.scene_component_bridge.browser",
+      "verify.frontend.shell_usability.browser",
+      "verify.frontend.standard_bootstrap.browser",
+      "verify.frontend.standard_bootstrap.inventory",
+      "verify.frontend.standard_config_field.browser",
+      "verify.frontend.standard_list_scroll_contract.guard",
+      "verify.frontend.standard_menu_config.browser",
+      "verify.frontend.standard_page_type.browser",
+      "verify.frontend.standard_public_auth.browser",
+      "verify.frontend.system_state_recovery.unit",
+      "verify.frontend.typed_dependencies.unit",
+      "verify.frontend.workspace_composition.unit",
+      "verify.frontend.workspace_content_alignment.audit",
+      "verify.fund_account.balance_backfill_readiness.audit",
+      "verify.fund_daily.handling.audit",
+      "verify.gitee.check_run_ids.unit",
+      "verify.gitee.integration.unit",
+      "verify.income_contract_execution.acceptance_projection",
+      "verify.income_contract_settlement_surface.cutover",
+      "verify.industry_form.required_marker_audit",
+      "verify.industry_list.delete_action_audit",
+      "verify.input_invoice.visible_surface_alignment.audit",
+      "verify.legacy_attachment.frontend_browser.acceptance.host",
+      "verify.legacy_attachment.frontend_browser.sample_manifest.prod",
+      "verify.legacy_attachment.mirror.completeness.audit",
+      "verify.legacy_attachment.missing_residual.summarize",
+      "verify.legacy_online_attachment.custody.evidence",
+      "verify.legacy_online_attachment.mirror.job.audit",
+      "verify.local.dev.analysis",
+      "verify.local.dev.approval.feedback",
+      "verify.local.dev.capability.browser",
+      "verify.local.dev.capability.readback",
+      "verify.local.dev.certificate",
+      "verify.local.dev.conditioned.feedback",
+      "verify.local.dev.cost.feedback",
+      "verify.local.dev.create_authority",
+      "verify.local.dev.entry_identity.unit",
+      "verify.local.dev.journal.draft",
+      "verify.local.dev.journal.role",
+      "verify.local.dev.journal.save",
+      "verify.local.dev.native_child.draft",
+      "verify.local.dev.payment_request.floorplan.readonly",
+      "verify.local.dev.payment_request.floorplan.submit",
+      "verify.local.dev.payment_request.relation_lifecycle",
+      "verify.local.dev.payroll",
+      "verify.local.dev.project_create_contract_action_scope",
+      "verify.local.dev.readiness.browser",
+      "verify.local.dev.readiness.readback",
+      "verify.local.dev.system_parameter.browser",
+      "verify.local.dev.system_parameter.denial",
+      "verify.local.dev.system_parameter.mutation",
+      "verify.local.dev.usability",
+      "verify.local.dev.workspace.feedback",
+      "verify.local.dev.write_lease.unit",
+      "verify.menu.navigation_snapshot",
+      "verify.menu.scene_resolve",
+      "verify.model_view.standardization.plan",
+      "verify.native_view.coverage.report",
+      "verify.native_view.ecosystem.readiness",
+      "verify.native_view.samples.compare",
+      "verify.nav.pro01.browser",
+      "verify.nav.pro01.http",
+      "verify.nav.pro01r.route_authority.http",
+      "verify.orm.guard.self_test",
+      "verify.output_invoice.source_gap_audit",
+      "verify.page_contract_gate_wiring.unit",
+      "verify.payment.approval_state_machine.unit",
+      "verify.payment_execution.form_productization.runtime_guard",
+      "verify.phase_next.evidence.bundle.strict",
+      "verify.phasea.a0a1",
+      "verify.phasex.operating.summary",
+      "verify.phasex.p1",
+      "verify.phasex.p2",
+      "verify.platform.maturity.ready",
+      "verify.platform_company_access_kernel.probe",
+      "verify.platform_usage_handler_ownership.guard",
+      "verify.portal.attachment_list_smoke.container",
+      "verify.portal.bridge.e2e",
+      "verify.portal.business_real_user_browser_closure",
+      "verify.portal.business_real_user_browser_reject_closure",
+      "verify.portal.capability_guard",
+      "verify.portal.capability_policy_smoke",
+      "verify.portal.edit_tx_smoke.container",
+      "verify.portal.entry_registry_guard",
+      "verify.portal.fe_smoke.host",
+      "verify.portal.file_guard_smoke.container",
+      "verify.portal.file_upload_smoke.container",
+      "verify.portal.kanban_view_smoke.container",
+      "verify.portal.navigation_entry_registry_guard",
+      "verify.portal.navigation_registry_quality_guard",
+      "verify.portal.one2many_edit_smoke.container",
+      "verify.portal.one2many_read_smoke.container",
+      "verify.portal.payment_request_approval.prepare.container",
+      "verify.portal.payment_request_approval_handoff_smoke.container",
+      "verify.portal.payment_request_approval_smoke.container",
+      "verify.portal.product_scene_mapping_guard",
+      "verify.portal.role_home_scene_guard",
+      "verify.portal.role_scene_navigation_guard",
+      "verify.portal.role_surface_preflight.container",
+      "verify.portal.role_surface_smoke.container",
+      "verify.portal.scene_filters_semantic_smoke.container",
+      "verify.portal.scene_observability.structure_guard.update",
+      "verify.portal.scene_observability_preflight.brief",
+      "verify.portal.scene_product_filter_guard",
+      "verify.portal.search_mvp_smoke.container",
+      "verify.portal.semantic_route",
+      "verify.portal.sort_mvp_smoke.container",
+      "verify.portal.template_schema_guard",
+      "verify.portal.ui.v0_7.container",
+      "verify.portal.ui.v0_8.semantic.strict.container",
+      "verify.portal.ui.v0_8_4.container",
+      "verify.portal.usage_track_concurrency_smoke.container",
+      "verify.portal.v0_5.all",
+      "verify.portal.v0_5.host",
+      "verify.portal.write_conflict_smoke.container",
+      "verify.prod.guard",
+      "verify.prod.sim.formal.projections",
+      "verify.product.capability.matrix.v2.report",
+      "verify.product.delivery.demo_data",
+      "verify.product.delivery.execute_button_whitelist",
+      "verify.product.delivery.governance_truth.schema.guard",
+      "verify.product.delivery.journeys",
+      "verify.product.delivery.menu",
+      "verify.product.delivery.module9.smoke",
+      "verify.product.delivery.productization.readiness",
+      "verify.product.delivery.ready",
+      "verify.product.delivery.role_home_openability",
+      "verify.product.delivery.roles",
+      "verify.product.delivery.scoreboard.final_closeout.guard",
+      "verify.product.delivery.visibility",
+      "verify.product.fullstack.ready",
+      "verify.product.menu.governance.m4.closure",
+      "verify.product.menu.governance.m4.runtime",
+      "verify.product.retired_views.source_contract",
+      "verify.product.tier.ready",
+      "verify.product_configuration.capability",
+      "verify.production.promotion.config.preflight",
+      "verify.production_blocker.fresh_and_rollback",
+      "verify.production_blocker.image",
+      "verify.production_blocker.runtime_assets",
+      "verify.productization.ready",
+      "verify.project_context.selector_product_boundary.guard.prod",
+      "verify.project_migration_field_continuity_gap.probe",
+      "verify.release.master_stage.final_closeout.guard",
+      "verify.release.phase1.navigation_convergence.guard",
+      "verify.release.phase2.core_scenarios_closure.guard",
+      "verify.release.phase6.launch_closeout.guard",
+      "verify.release.rc6.identity",
+      "verify.release.rc6.supersession",
+      "verify.release_v2_0_0.checklist.guard",
+      "verify.release_v2_0_0.control_docs.guard",
+      "verify.release_v2_0_0.evidence_manifest.guard",
+      "verify.release_v2_0_0.formal_evidence.schema.guard",
+      "verify.release_v2_0_0.governance.guard",
+      "verify.release_v2_0_0.preflight",
+      "verify.release_v2_0_0.product_hardening",
+      "verify.repository.local_hygiene",
+      "verify.repository.public_old_sha",
+      "verify.role.acl.minimum_set.guard",
+      "verify.role.project_member.unification.guard",
+      "verify.role.system_admin.minimum_permission_audit.guard",
+      "verify.scene.coverage.dashboard",
+      "verify.scene.data_source.schema.guard",
+      "verify.scene.inventory.draft.diff.report",
+      "verify.scene.maturity.guard",
+      "verify.scene.r1_r2.upgrade.queue.report",
+      "verify.scene.r2_r3.upgrade.queue.report",
+      "verify.scene.r3.runtime.guard",
+      "verify.scene.r3.runtime.quick",
+      "verify.scene.ready.blocks_by_view.guard",
+      "verify.scene.registry_asset_snapshot.company_primary",
+      "verify.scene.registry_asset_snapshot.company_secondary",
+      "verify.scene.role.policy.consistency.guard",
+      "verify.scene.role.surface.consistency.guard",
+      "verify.self_funding.handling.audit",
+      "verify.semantic.behavior.guard.report",
+      "verify.smart_core.tenant_payload_operator.policy",
+      "verify.sprint.week1.audit.report",
+      "verify.sprint.week2.final.report",
+      "verify.system.stability.stress.regression",
+      "verify.system_user_experience.quick",
+      "verify.tenant.boundary_q11_profile",
+      "verify.tenant.customer_module_ownership",
+      "verify.tenant.payload.permission",
+      "verify.tenant_architecture.boundary",
+      "verify.tenant_rc.clean_profile.unit",
+      "verify.tender_optional_scope_metadata.probe",
+      "verify.unified_page_contract.lite.mainline_readiness",
+      "verify.user.entry.delivery.browser_acceptance",
+      "verify.user_data.post_demo_removal",
+      "verify.user_data.role_boundary",
+      "verify.user_delete_data.closure_guard.self_test",
+      "verify.user_menu.config_panel",
+      "verify.user_menu.config_policy",
+      "verify.user_menu.preference.runtime_audit",
+      "verify.user_priority.page_alignment.complete",
+      "verify.view.orchestration_user_surface.browser",
+      "verify.visible_data_usability_warning.classify",
+      "verify.workbench.extraction_hit_rate.report",
+      "verify.workbench.product_acceptance.guard",
+      "verify.workflow_contract"
+    ]
+  }
+}

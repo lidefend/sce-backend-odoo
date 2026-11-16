@@ -764,6 +764,34 @@ verify.unified_page_contract.lite: guard.prod.forbid
 # ----------------------------------------------------------------------
 .PHONY: ci ci.professional.backend ci.local.iteration ci.local.quick ci.local.quick.diagnostic ci.local.quick.gc ci.local.quick.run ci.local.quick.shard ci.local.quick.compose lane.telemetry.record lane.telemetry.report lane.telemetry.check verify.lane.telemetry.unit ci.delivery.freeze.prepare ci.generated_evidence.preflight ci.generated_reports.guard verify.contract_form_split_evidence refresh.contract_form_split_evidence refresh.generated_reports test.frontend test.unit test.odoo.integration test.contract test.e2e.preflight test.e2e.fixed_data.odoo test.e2e test.all test.inventory test.inventory.summary test.e2e.matrix architecture.module_dependency_map architecture.complexity_report architecture.complexity_baseline_lock architecture.split_plan_queue github.remote_execution_plan security.secret_scan security.secrets.scan security.personal_data_scan security.legacy_credential_guard verify.repository.clean_history security.trusted_scan.group security.trusted_scan_group.unit repository.clean_history.scan verify.python_name_binding verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix ci.tenant.pro03.demo.dispatch verify.contract.structure_lock verify.ci.scheduled_gates
 
+# P4-00 audit-only entry. This is intentionally outside every required gate and
+# makes the verification inventory reproducible while the design is reviewed.
+.PHONY: audit.change_impact.verification verify.change_impact.verification.unit
+verify.change_impact.verification.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/audit/generate_change_impact_verification_inventory.py scripts/audit/test_generate_change_impact_verification_inventory.py
+	@python3 -m unittest scripts.audit.test_generate_change_impact_verification_inventory
+
+audit.change_impact.verification: guard.prod.forbid verify.change_impact.verification.unit
+	@python3 scripts/audit/generate_change_impact_verification_inventory.py --write
+
+CHANGE_IMPACT_BASE ?= origin/main
+CHANGE_IMPACT_OUTPUT ?= .runtime/change-impact/plan.json
+CHANGE_IMPACT_GRAPH_OUTPUT ?=
+
+.PHONY: verification.change-impact.plan verify.change_impact.plan.unit verify.change_impact.acceptance
+verify.change_impact.plan.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/change_impact_planner.py scripts/ops/change_impact_graph.py scripts/ops/change_impact_evidence.py scripts/ops/change_impact_acceptance.py scripts/ops/test_change_impact_planner.py scripts/ops/test_change_impact_graph.py scripts/ops/test_change_impact_evidence.py
+	@node --check scripts/ops/typescript_change_facts.mjs
+	@python3 -m unittest scripts.ops.test_change_impact_planner scripts.ops.test_change_impact_graph scripts.ops.test_change_impact_evidence
+
+verification.change-impact.plan: guard.prod.forbid verify.change_impact.plan.unit
+	@python3 scripts/ops/change_impact_planner.py --worktree --base "$(CHANGE_IMPACT_BASE)" --output "$(CHANGE_IMPACT_OUTPUT)" $(if $(CHANGE_IMPACT_GRAPH_OUTPUT),--graph-output "$(CHANGE_IMPACT_GRAPH_OUTPUT)")
+
+CHANGE_IMPACT_ACCEPTANCE_OUTPUT ?= .runtime/change-impact/acceptance.json
+CHANGE_IMPACT_ACCEPTANCE_TRACKED ?= docs/audit/change-impact-verification/impact_analysis_acceptance_results.json
+verify.change_impact.acceptance: guard.prod.forbid verify.change_impact.plan.unit
+	@python3 scripts/ops/change_impact_acceptance.py --output "$(CHANGE_IMPACT_ACCEPTANCE_OUTPUT)" --check "$(CHANGE_IMPACT_ACCEPTANCE_TRACKED)"
+
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated
 # scope as a pass). Kept separate from verify.ci.scheduled_gates so the required

@@ -1,0 +1,139 @@
+{
+  "analysis_coverage": {
+    "assertion_linked_items": 0,
+    "call_chain_status_counts": {
+      "direct_recipe_or_workflow_reference_only": 2127,
+      "unknown": 261,
+      "workflow_step_declaration_only": 23
+    },
+    "duplicate_analysis_status_counts": {
+      "UNKNOWN": 2411
+    },
+    "inventory_items_analyzed": 2411,
+    "manual_reviewed_semantic_items": 23,
+    "obligation_linked_items": 0,
+    "responsibility_status_counts": {
+      "manually_characterized_not_assertion_verified": 23,
+      "partially_characterized_not_assertion_verified": 1014,
+      "unknown": 1374
+    },
+    "warning": "P4-00 enumerates direct declarations and partial static signals. It does not establish assertion-level obligation coverage or duplicate assertions."
+  },
+  "documented_typical_minutes": {
+    "frontend_release_gate": "10-16",
+    "merge_policy_gate_critical_path": "14-16",
+    "professional_quality_gate": "9-14",
+    "public_guard": "4-5",
+    "source": "docs/ops/ci_feedback_latency_v1.md"
+  },
+  "dominant_costs": [
+    "trusted full-history and security scans when scan authority changes",
+    "managed ORM containers, disposable databases and fixture preparation",
+    "full frontend release: pnpm toolchain, Playwright browser, build and browser journeys",
+    "duplicated target/script execution across local.quick and remote professional lanes"
+  ],
+  "lane_static_cost": {
+    "deployment.postverify": {
+      "relative_weight": "bounded",
+      "scripts": 0,
+      "targets": 4
+    },
+    "local.iteration": {
+      "relative_weight": "bounded",
+      "scripts": 17,
+      "targets": 12
+    },
+    "local.quick": {
+      "relative_weight": "very_high",
+      "scripts": 274,
+      "targets": 156
+    },
+    "remote.frontend.full": {
+      "relative_weight": "very_high",
+      "scripts": 109,
+      "targets": 112
+    },
+    "remote.frontend.standard": {
+      "relative_weight": "high",
+      "scripts": 32,
+      "targets": 53
+    },
+    "remote.professional.backend.reports": {
+      "relative_weight": "high",
+      "scripts": 9,
+      "targets": 4
+    },
+    "remote.professional.backend.tests": {
+      "relative_weight": "high",
+      "scripts": 9,
+      "targets": 6
+    },
+    "remote.professional.backend.verify": {
+      "relative_weight": "very_high",
+      "scripts": 211,
+      "targets": 102
+    },
+    "remote.standard_backend": {
+      "relative_weight": "high",
+      "scripts": 9,
+      "targets": 5
+    },
+    "runtime.feedback.acceptance": {
+      "relative_weight": "bounded",
+      "scripts": 2,
+      "targets": 8
+    }
+  },
+  "layer_hint_counts": {
+    "L1": 168,
+    "L2": 118,
+    "L3": 167,
+    "L4": 144
+  },
+  "measurement_policy": {
+    "resource_classes": "Heuristic static classes from actual commands and referenced source. static_or_unknown is not a claim that execution is cheap.",
+    "seconds": "No fabricated seconds. Only lane telemetry observations and explicit documented typical-method estimates may be reported as durations."
+  },
+  "observed_lane_telemetry": {
+    "note": "Current checkout has no recorded lane telemetry; no runtime duration is inferred.",
+    "observations": 0,
+    "source": "make lane.telemetry.report"
+  },
+  "resource_class_counts": {
+    "browser": 29,
+    "container": 54,
+    "database": 48,
+    "filesystem_evidence": 14,
+    "frontend_toolchain": 93,
+    "network": 32
+  },
+  "schema": "change_impact_verification.cost_baseline.v1",
+  "script_lifecycle_counts": {
+    "file_reference_only": 169,
+    "gate_enforced": 247,
+    "manual_or_non_gate_dispatch": 1097,
+    "orphan": 92
+  },
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121",
+  "surface": {
+    "all_make_targets": 2460,
+    "all_scripts_on_disk": 2494,
+    "gate_anchor_targets": 246,
+    "gate_enforced_executables": 543,
+    "gate_enforced_make_targets": 240,
+    "missing_asset_targets": 22,
+    "normalized_all_make_targets": 2460,
+    "unreferenced_scripts": 104,
+    "workflow_jobs": 23,
+    "workflow_steps": 166,
+    "zero_reference_targets": 670
+  },
+  "target_class_counts": {
+    "browser": 24,
+    "container": 27,
+    "database_or_orm": 48,
+    "frontend_toolchain": 56,
+    "network": 2,
+    "static_or_unknown": 83
+  }
+}
