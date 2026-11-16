@@ -1161,6 +1161,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.guard.registry"])
 
+    def test_change_impact_inventory_inputs_route_to_their_audit_unit(self) -> None:
+        for path in (
+            "scripts/audit/generate_change_impact_verification_inventory.py",
+            "scripts/audit/test_generate_change_impact_verification_inventory.py",
+            "make/help.mk",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.change_impact.verification.unit"],
+                )
+
     def test_contract_handler_chain_routes_to_its_backend_unit_suites(self) -> None:
         # The v2 contract handler chain is asserted by backend unit suites.  It
         # must not fall through as "unmapped": on 2026-10-10 the chain was edited

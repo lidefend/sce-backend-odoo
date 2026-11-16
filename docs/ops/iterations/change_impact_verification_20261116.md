@@ -6,7 +6,7 @@
 - 主线基线：`3c7682647352cdf52b790e9a46b893e2535be77d`
 - 工作树：
   `/home/lidefend/workspace/sce-backend-odoo-change-impact-verification-20261116`
-- 当前阶段：`active`，P4-00 尚未开始执行盘点
+- 当前阶段：`active`，P4-00 盘点与设计方案已完成，等待独立审查
 
 ## 责任层声明
 
@@ -35,6 +35,11 @@
 代码质量、安全、类型、依赖、构建、精确身份、CI 和审查归 L4 Delivery Governance，
 不再与浏览器或业务验收混为一谈。
 
+所有者追加边界（2026-11-16）：后端迭代只需要证明契约正确，不要求浏览器结果。纯后端候选默认
+执行 L1；只有业务状态、ORM、ACL 或跨模型流程变化时追加 L3。浏览器 L2 只由真实前端
+runtime/Renderer/组件/交互变化触发，或由明确登记的真实页面兼容缺陷复现触发。后端契约消费
+正确性由 strict decoder、producer/consumer 和 contract unit 证明。
+
 ## 当前批次边界
 
 P4-00 是只读盘点。范围包括 CI workflows、merge/publish preflight、acceptance evolution、
@@ -55,6 +60,16 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
 `frontend-contract-form-consumer` 等名称不得作为作用证明；必须追踪实际调用组件、页面创建、
 浏览器依赖、布局断言和业务写入。
 
+本批新增可复现只读审计器：
+
+- `scripts/audit/generate_change_impact_verification_inventory.py`
+- `scripts/audit/test_generate_change_impact_verification_inventory.py`
+- 手工入口 `make audit.change_impact.verification`
+
+手工入口只生成 P4-00 四份审计物，不进入 local.quick、professional、merge 或 frontend release
+的必需闭包。设计交付物为
+`docs/audit/change-impact-verification/change_impact_verification_design_v1.md`。
+
 ## 明确排除
 
 - 不实施 P4-01 或后续批次。
@@ -72,7 +87,16 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/docs_links.env-dev.log`。
 - L1 执行策略：passed，`make verify.baseline.iteration.execution.policy`，19 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/iteration_policy.log`。
-- L2-L4 产品验证：not_run，本批尚未产生路径映射、执行器或产品行为变更。
+- 审计器：passed，`make verify.change_impact.verification.unit`，9 tests；原始日志
+  `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/change_impact_inventory.final.log`。
+- CI workflow contract：passed，`make verify.ci.workflow.contract`，434 tests；原始日志
+  `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/ci_workflow_contract.final.log`。
+- 前端增量路由器：passed，`make verify.frontend.dev.incremental.unit`，156 tests；原始日志
+  `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/frontend_incremental.log`。
+- 增量路由修复后：`make ci.local.iteration` PASS，执行 6 个必需 target，结果
+  `ready_for_existing_gates`；原始日志
+  `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/iteration.design.after_mapping.log`。
+- L2-L4 产品验证：not_run，本批没有产品代码、路径映射、执行器或产品行为变更。
 - L5 审查/发布：not_run。
 
 `make ci.local.iteration` 首次运行在 `verify.frontend.console.guard` 停止：
@@ -91,5 +115,5 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
 
 ## 下一精确动作
 
-执行 P4-00-01：逐项盘点 `.github/workflows/**`，从 workflow job、Make 入口和命令追踪到
-实际测试、服务、数据库、断言、可证明与不可证明范围，并将结果写入四项 P4-00 交付物。
+完成审计器、台账、设计文档和生成物的本地定向验证，提交并发布设计 PR。PR 审查合格且合入前，
+不得实施 P4-01，不得修改现有验证映射或必需门禁。

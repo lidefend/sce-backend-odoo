@@ -46,14 +46,15 @@ goal:
       hidden by broad suites that do not bind changed behavior to evidence.
   current_batch:
     id: P4-00
-    title: existing verification system inventory
+    title: existing verification system inventory and design review
     mode: read_only_audit
-    status: planned
+    status: in_progress
     required_outputs:
       - verification_system_inventory.md
       - verification_mapping_matrix.json
       - verification_execution_graph.json
       - verification_cost_baseline.json
+      - change_impact_verification_design_v1.md
     required_answers:
       - what_the_check_verifies
       - what_change_triggers_it
@@ -79,6 +80,8 @@ goal:
     - execution_graph_and_cost_baseline_are_derived_from_commands_dependencies_and_runtime_requirements
     - current_path_to_actual_verification_behavior_is_reviewable
     - unknowns_and_uncovered_risks_are_explicit_and_fail_closed
+    - design_keeps_p4_01_and_later_batches_unimplemented_until_review
+    - design_decouples_backend_contract_iteration_from_browser_presentation
     - no_product_code_gate_assertion_or_database_state_is_changed_in_p4_00
   exclusions:
     - implementation_of_p4_01_through_later_batches
@@ -90,7 +93,7 @@ goal:
     Revert the P4-00 metadata and documentation commit. No product source,
     verification assertion, database or runtime state is changed.
   completion:
-    batch: not_started
+    batch: design_review_pending
     mainline_integration: not_performed
     deployment: not_performed
     user_acceptance: not_performed

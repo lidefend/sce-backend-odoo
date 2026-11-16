@@ -3,6 +3,16 @@
 本专题是 P4 独立的验证体系治理专项。目标不是继续扩展路径规则，而是根据候选实际改变的
 契约语义、呈现行为和业务执行影响，选择最小充分验证集合，并保留能够证明这些影响的证据。
 
+当前 PR 是“盘点 + 设计方案”审查包，不落地新门禁：
+
+- `verification_system_inventory.md`
+- `verification_mapping_matrix.json`
+- `verification_execution_graph.json`
+- `verification_cost_baseline.json`
+- `change_impact_verification_design_v1.md`
+
+设计审查合格前，不修改现有验证映射、必需门禁、产品代码、数据库或验收断言。
+
 ## 治理原则
 
 1. 不相关的验证不执行。
