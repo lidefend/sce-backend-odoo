@@ -15,6 +15,24 @@
 - [A03 Action 清单](native_action_inventory.md)
 - [A04 View 清单](native_view_inventory.md)
 - [A08/A02 入口拓扑](native_business_entry_topology.md)
+- [扫描 Manifest](inventories/inventory_manifest.json)
+- [模型机器清单](inventories/native_model_inventory.json)
+- [菜单机器清单](inventories/native_menu_inventory.json)
+- [Action 机器清单](inventories/native_action_inventory.json)
+- [View 机器清单](inventories/native_view_inventory.json)
+
+PR #902 独立审查 R1 已按六项补齐：
+
+1. Registry 原始快照已进入
+   [`evidence/navigation_capability_inventory_v1.json`](evidence/navigation_capability_inventory_v1.json)，
+   SHA256 `5baa7b10cfe1aab3a75df4594f2ad813ed4245ed799ea422d3c68cd73133415a`。
+2. 446 个唯一菜单已输出为 `native_menu_inventory.json`。
+3. 模型、Action、View 已输出为独立机器可读清单。
+4. 只读扫描工具为 `scripts/audit/native_scene_inventory.py`，精确命令记录在
+   `inventory_manifest.json`；写入与校验分别使用脚本默认模式和 `--check`。
+5. Markdown 统计已按机器清单重新核对；模型 Abstract/Transient 区分“身份数/声明数”，
+   View 类型、SQL 约束和菜单 Groups 等数字已修正。
+6. 完成修订后将在新 HEAD 重跑检查并请求独立复审。
 
 ## 2. 必须明确的五个答案
 
@@ -136,7 +154,7 @@ Action route 已通 != 权限和业务事务已验收
 | `NATIVE-A04-R3` | Activity ready 只证明构造链，无当前正式产品入口 | parser/profile/registry 源码；132 正式入口无 activity mode | C05 |
 | `NATIVE-A04-R4` | 源 View 静态种类不等于运行态全量 | 797 个仓库 View vs 历史 Registry 2,113 个 View | B02/B03 |
 | `NATIVE-A08-R1` | Action XMLID 不能单独标识入口 | 16 个 Action XMLID 被 34 个入口复用 | 所有后续任务使用 Menu+Action 复合键 |
-| `NATIVE-A08-R2` | 运行时存在 27 个无 Action 叶子 | `navigation_capability_inventory_v1.json:25` | A08/B01 运行态分类 |
+| `NATIVE-A08-R2` | 运行时存在 27 个无 Action 叶子 | [原始证据第 25 行](evidence/navigation_capability_inventory_v1.json#L25) | A08/B01 运行态分类 |
 
 ## 4. 四层验收状态
 
@@ -160,6 +178,9 @@ Action route 已通 != 权限和业务事务已验收
 | `make verify.frontend.view_type_render_coverage.guard` | PASS，9 tests | 可执行渲染架构，不证明 Action Route/Browser |
 | `make verify.frontend.view_type_contract_semantic.guard` | PASS | UI contract + normalizer 保留高级 View 语义标记 |
 | `make verify.native_view.workflow_action_coverage` | PASS，3 + 8 tests | 40 个 View action registration；不是全业务验收 |
+| `python3 scripts/audit/native_scene_inventory.py` | PASS | 生成 4 个机器清单和 1 份 Manifest |
+| `python3 scripts/audit/native_scene_inventory.py --check` | PASS | 机器清单与扫描输入、结果哈希一致 |
+| `python3 -m unittest scripts.audit.test_native_scene_inventory` | PASS，2 tests | 最小 fixture 的模型/菜单/Action/View 与漂移检测 |
 | 静态 AST/XML 对账 | PASS | 当前 HEAD 的源码声明数量 |
 | 正式 `product_menu_source.load_source()` | PASS | 132 个入口全部解析为唯一 native identity |
 

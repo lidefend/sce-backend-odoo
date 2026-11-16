@@ -18,6 +18,9 @@
 - 当前正式产品定义为 132 个入口，其中 131 个绑定 Action，1 个是 Scene Entry；
   92 个 `released`，40 个 `preview`。
 
+机器可读 Action 清单：
+[`native_action_inventory.json`](inventories/native_action_inventory.json)。
+
 因此，“Action 全量”必须同时覆盖：
 
 1. 模块 XML 声明的持久 Action；
@@ -41,6 +44,17 @@
 
 同一 XMLID 可能被多个 XML 文件后续更新，例如安全组补丁、导航重排和正式产品版面投影。
 上表按 unique XMLID 统计，不把后续更新误算为多个 Action。
+
+静态源引用拓扑：
+
+| 状态 | 数量 | 说明 |
+|---|---:|---|
+| 有菜单引用 | 237 | 361 个菜单身份引用这些 Action |
+| 有非菜单引用 | 343 | Button、View/配置、Python string、manifest data |
+| 无静态 XML/Python/data 引用 | 103 | Window 101、Client 1、Server 1；不是“孤儿”定论 |
+
+“无静态引用”可能来自数据库 tier 配置、外部模块、运行时 context 或动态调用；
+B01/B12 必须继续解释，不能把静态扫描盲区当作不存在。
 
 ### 2.2 Python 动态 Action
 
@@ -67,8 +81,9 @@
 
 ## 3. Odoo Registry Action 事实
 
-只读 Registry 快照
-[`navigation_capability_inventory_v1.json:3`](../../../artifacts/backend/navigation_capability_inventory_v1.json#L3)
+只读 Registry 原始快照已随 PR 提交：
+[`navigation_capability_inventory_v1.json:3`](evidence/navigation_capability_inventory_v1.json#L3)，
+SHA256 `5baa7b10cfe1aab3a75df4594f2ad813ed4245ed799ea422d3c68cd73133415a`。
 身份为 `sc_dev_demo@cb769bd0e7004ab8cff9b3d533ce02987d923f35`，生成于
 `2026-11-11T07:15:34Z`。Action 总量：
 
@@ -82,10 +97,10 @@
 | `ir.actions.act_window_close` | 969 |
 
 数据位置：
-[`navigation_capability_inventory_v1.json:274`](../../../artifacts/backend/navigation_capability_inventory_v1.json#L274)。
+[`navigation_capability_inventory_v1.json:274`](evidence/navigation_capability_inventory_v1.json#L274)。
 该快照同时记录 520 个 Action 被至少一个菜单引用，555 次菜单引用，31 个 Action 被多个菜单
 复用，未解析菜单 Action 引用为 0：
-[`navigation_capability_inventory_v1.json:283`](../../../artifacts/backend/navigation_capability_inventory_v1.json#L283)。
+[`navigation_capability_inventory_v1.json:283`](evidence/navigation_capability_inventory_v1.json#L283)。
 
 重要边界：
 

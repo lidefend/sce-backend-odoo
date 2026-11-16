@@ -31,6 +31,12 @@ goal:
       - no database or fixture mutation
       - no menu or publication mutation
   deliverables:
+    - docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json
+    - docs/audit/native-scene-01/inventories/inventory_manifest.json
+    - docs/audit/native-scene-01/inventories/native_model_inventory.json
+    - docs/audit/native-scene-01/inventories/native_menu_inventory.json
+    - docs/audit/native-scene-01/inventories/native_action_inventory.json
+    - docs/audit/native-scene-01/inventories/native_view_inventory.json
     - docs/audit/native-scene-01/native_model_inventory.md
     - docs/audit/native-scene-01/native_action_inventory.md
     - docs/audit/native-scene-01/native_view_inventory.md

@@ -5,7 +5,10 @@
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01.yaml",
     ".agent/runs/NATIVE-SCENE-01-A01-A04/run.json",
-    "docs/audit/native-scene-01/"
+    ".gitignore",
+    "docs/audit/native-scene-01/",
+    "scripts/audit/native_scene_inventory.py",
+    "scripts/audit/test_native_scene_inventory.py"
   ],
   "environment": {
     "kind": "offline",
@@ -35,10 +38,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Independent review of the A01-A04 checkpoint; do not start B01-B06 until the reviewer confirms the inventory, source references and implementation-state classification.",
+  "next_exact_step": "Complete PR #902 R1 by committing the recoverable Registry snapshot, deterministic source scanner, five machine-readable inventories and refreshed Markdown evidence references; then rerun all checks and request independent re-review.",
   "id": "NATIVE-SCENE-01-A01-A04",
   "branch": "audit/native-scene-01-a01-a04-20261116",
-  "status": "verification_pending",
+  "status": "active",
   "goal": ".agent/goals/NATIVE-SCENE-01.yaml",
   "record": "docs/audit/native-scene-01/native_capability_inventory_summary.md"
 }

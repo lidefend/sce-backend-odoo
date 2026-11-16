@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5226`
+- Scanned files: `5228`
 - Files requiring split plan: `79`
-- Files above warning threshold: `148`
+- Files above warning threshold: `149`
 
 ## Split Plan Required
 
@@ -122,6 +122,7 @@ Generated from repository source files. This report is informational during the 
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1278 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
+| 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
 | 1271 | Python source | `scripts/ops/retire_historical_branch_refs.py` |
 | 1267 | Python source | `scripts/verify/local_dev_runtime_performance.py` |
 | 1263 | Python source | `addons/smart_construction_core/models/core/cost_domain.py` |

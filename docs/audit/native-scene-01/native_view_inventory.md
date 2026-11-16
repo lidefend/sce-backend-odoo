@@ -29,8 +29,8 @@
 
 | 类型 | Unique View XMLID | 基础 View | 说明 |
 |---|---:|---:|---|
-| tree | 335 | 242 | Odoo 17 XML 仍使用 `<tree>`；前端语义名可为 list |
-| form | 228 | 221 | 含业务表单和 Wizard 表单 |
+| tree | 333 | 242 | Odoo 17 XML 仍使用 `<tree>`；前端语义名可为 list |
+| form | 230 | 221 | 含业务表单和 Wizard 表单 |
 | search | 158 | 158 | filters、group by、search panel |
 | pivot | 29 | 29 | measure/dimension/interval/aggregate |
 | qweb | 14 | 14 | 登录、Portal、品牌和邮件/模板布局 |
@@ -38,6 +38,9 @@
 | kanban | 3 | 3 | 项目生命周期和驾驶舱卡片 |
 | 继承类型待运行态解析 | 21 | 0 | 父 View 位于 `project/account/purchase/product/base/base_setup` |
 | 合计 | 797 | 676 | 121 个继承 View |
+
+机器可读 View 清单：
+[`native_view_inventory.json`](inventories/native_view_inventory.json)。
 
 静态扫描按 manifest 的 `data`/`demo` 范围执行；一个 View 被后续文件更新时按
 unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态解析”，不标不存在。

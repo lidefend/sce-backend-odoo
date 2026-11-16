@@ -39,16 +39,21 @@
 | Related 字段 | 313 | 声明中含 `related=` |
 | 必填字段声明 | 1,074 | 声明中含 `required=` |
 | `@api.constrains` 方法 | 124 | 覆盖 96 个 distinct 模型 |
-| class-level `_sql_constraints` 声明 | 126 | 一个列表可包含多条 SQL 约束 |
+| class-level `_sql_constraints` 声明 | 136 | 共含 175 条可解析约束 |
 | `@api.onchange` 方法 | 63 | 覆盖 33 个 distinct 模型 |
 | public 模型方法 | 1,356 | 非下划线开头的方法，含业务动作、compute、helper |
-| TransientModel 模型身份 | 23 | 向导、设置页和 workspace 临时模型 |
-| AbstractModel 模型身份 | 29 | mixin、parser、service 等不可实例化模型 |
+| TransientModel | 21 个身份 / 23 个类声明 | 向导、设置页和 workspace 临时模型 |
+| AbstractModel | 27 个身份 / 29 个类声明 | mixin、parser、service 等不可实例化模型 |
 | `mail.thread` 模型 | 92 | 同时继承 `mail.activity.mixin` 的 distinct 模型也是 92 |
 | `tier.validation` 模型 | 50 | OCA 审批能力复用覆盖 |
 | 运行态 Registry 模型 | 758 | `sc_dev_demo` 只读探针，来源 revision `f35d981b2` |
 | 282 个业务入口直接触及模型 | 167 | 不是 Registry 全量，也不是仓库源码全量 |
 | 正式投影/读取面登记 | 36 | 见 `backend_business_projection_registry_v1.json` |
+
+机器可读模型清单：
+[`native_model_inventory.json`](inventories/native_model_inventory.json)；
+扫描口径和结果哈希：
+[`inventory_manifest.json`](inventories/inventory_manifest.json)。
 
 运行态模型数量证据：
 [`docs/audit/capability-explorer-05/evidence/current-native.log:19854`](../capability-explorer-05/evidence/current-native.log#L19854)
@@ -57,7 +62,7 @@
 
 ## 3. 模块与模型声明分布
 
-| 模块 | 类声明 | Distinct 模型 | 新模型类 | 扩展类 | Transient | Abstract | 字段声明 | 关系字段 | 计算字段 | Related |
+| 模块 | 类声明 | Distinct 模型 | 新模型类 | 扩展类 | Transient 类 | Abstract 类 | 字段声明 | 关系字段 | 计算字段 | Related |
 |---|---:|---:|---:|---:|---:|---:|---:|---:|---:|---:|
 | `base_tier_validation` | 7 | 7 | 5 | 2 | 2 | 1 | 76 | 23 | 19 | 11 |
 | `base_tier_validation_server_action` | 2 | 2 | 0 | 2 | 0 | 1 | 4 | 2 | 0 | 0 |
@@ -136,7 +141,7 @@
 
 ### 4.4 临时向导模型
 
-共 23 个 TransientModel 身份：
+共 23 个 TransientModel 类声明，落在 21 个 distinct 模型身份上：
 
 | 模块 | Transient 模型 |
 |---|---|
@@ -154,7 +159,7 @@
 | 机制 | 数量 | 代表证据 |
 |---|---:|---|
 | `@api.constrains` | 124 个方法 / 96 个模型 | 例如投标、付款、预算、WBS、材料数量与金额约束 |
-| `_sql_constraints` | 126 个类级列表声明 | 业务编号/来源/唯一键约束 |
+| `_sql_constraints` | 136 个类级列表声明 / 175 条约束 | 业务编号/来源/唯一键约束 |
 | `@api.onchange` | 63 个方法 / 33 个模型 | 例如 `execution_structure`、`purchase_extend`、`payment_request` |
 | `@api.depends` | compute 字段依赖链 | `project_core.py`、`cost_domain.py`、`cost_plan.py` 等 |
 | public methods | 1,356 个声明 | 包含业务动作、compute、helper 和 service |

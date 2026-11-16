@@ -40,7 +40,7 @@ Unique Menu 中：
 - 361 个至少由一个声明提供 Action。
 - 85 个没有声明 Action，通常是目录/分组节点。
 - 439 个有 parent。
-- 402 个声明了 groups。
+- 396 个能解析出至少一个 Groups XMLID。
 
 复用仓库已登记 `product_native_menu_inventory.py` 工具（`PYTHONPATH=.`）对
 `smart_construction_core` 的源码事实再做一次分类，得到 411 个菜单事实：
@@ -55,11 +55,18 @@ Unique Menu 中：
 132 个入口。`native_action_requires_review` 不是“孤儿”定论，只表示尚未进入当前产品
 选择，仍需从按钮、Wizard、上下文和外部模块反向解释。
 
-源码 Action 全量与本轮静态反向引用结果：
+源码 Action 全量与静态反向引用结果：
 
-- `530` 个 unique Action XMLID 均在至少一个 XML 源位置被引用。
-- 这包括菜单、`type=action` 按钮、`view_ids/views` 字段和配置引用。
-- “源码有引用”仍不等于“运行态可达”；B01 必须按 actor/company/context 再验证。
+- 237 个 unique Action 有菜单引用。
+- 343 个 Action 有至少一个非菜单引用，包括 `type=action` 按钮、View/配置引用、
+  Python 字符串引用和 manifest data JSON/CSV 引用。
+- 103 个 Action 没有静态 XML/Python/data 引用；其中 Window 101、Client 1、Server 1。
+- “没有静态引用”不是“孤儿能力”定论；它们可能由数据库 tier 配置、运行时上下文、
+  外部模块或动态方式调用，B01/B12 仍需核验。
+
+全量 446 个菜单身份及 XMLID、名称、父菜单、Action、Action 类型、Groups、来源模块、
+容器/叶子状态和非菜单引用均在：
+[`native_menu_inventory.json`](inventories/native_menu_inventory.json)。
 
 ### 2.2 一个 Window 入口的最小拓扑
 
@@ -85,8 +92,9 @@ ir.ui.menu
 ## 3. Registry 拓扑
 
 历史只读快照
-[`navigation_capability_inventory_v1.json:26`](../../../artifacts/backend/navigation_capability_inventory_v1.json#L26)
-记录：
+[`navigation_capability_inventory_v1.json:26`](evidence/navigation_capability_inventory_v1.json#L26)
+记录；原始文件 SHA256 为
+`5baa7b10cfe1aab3a75df4594f2ad813ed4245ed799ea422d3c68cd73133415a`：
 
 | 指标 | 数量 |
 |---|---:|
@@ -103,7 +111,7 @@ ir.ui.menu
 
 Registry Action 总量为 744 Window、173 Server、9 Client、3 URL、40 Report、
 969 Close：
-[`navigation_capability_inventory_v1.json:274`](../../../artifacts/backend/navigation_capability_inventory_v1.json#L274)。
+[`navigation_capability_inventory_v1.json:274`](evidence/navigation_capability_inventory_v1.json#L274)。
 
 不能简单用 `1938 - 520` 计算“无菜单业务能力”：
 
