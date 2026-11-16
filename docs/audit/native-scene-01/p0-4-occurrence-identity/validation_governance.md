@@ -104,11 +104,15 @@ An already-covered suite may be rerun only with
 runtime rerun requires `SC_ACCEPTANCE_FULL=1` and
 `SC_ACCEPTANCE_FULL_REASON`. Empty reasons fail before any runtime mutation.
 
-Validation tools must resolve declared frontend dependencies from the owning
-package boundary (`frontend/apps/web/package.json`) rather than assuming a
-repository-root or hoisted `node_modules` layout. This keeps npm and pnpm
-installations equivalent without broadening the runtime lane or skipping the
-predicate assertion.
+Validation ownership includes the dependency environment. A host-only CI shard
+must not select a check that requires an installed frontend `node_modules` tree.
+The acceptance-instance declaration is now owned by
+`verify.frontend.acceptance.environment.guard`; the Node/esbuild-dependent
+list-search predicate remains in its frontend lane. When that lane runs, it
+resolves `esbuild` from `frontend/apps/web/package.json` instead of assuming a
+repository-root or hoisted package layout. This keeps both the declaration
+assertion and the browser predicate assertion real while removing the
+cross-environment false dependency.
 
 ## 3. Verification
 

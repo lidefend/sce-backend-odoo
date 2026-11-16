@@ -84,7 +84,7 @@ class ImpactSelectionTest(unittest.TestCase):
     def test_acceptance_contract_inputs_select_exact_checks_without_full_backend(self):
         expected = {
             'config/acceptance/backend_contract_instance_v1.json':
-                ['verify.frontend.list_surface_search_contract.unit'],
+                ['verify.frontend.acceptance.environment.guard'],
             'config/acceptance/backend_contract_instance_daily_v1.json':
                 ['verify.daily_dev.acceptance_fixture.unit'],
             'config/contract/page_contract_v1_retirement_manifest.json':

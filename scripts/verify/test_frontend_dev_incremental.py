@@ -117,7 +117,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_backend_contract_instance_selects_list_surface_receipt(self) -> None:
         self.assertEqual(
             select_targets(["config/acceptance/backend_contract_instance_v1.json"]),
-            ["verify.frontend.list_surface_search_contract.unit"],
+            ["verify.frontend.acceptance.environment.guard"],
         )
 
     def test_daily_contract_instance_selects_daily_declaration_tests(self) -> None:

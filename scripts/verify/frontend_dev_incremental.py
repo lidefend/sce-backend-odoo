@@ -199,7 +199,7 @@ RULES = (
     Rule((
         "config/acceptance/backend_contract_instance_v1.json",
     ), (
-        "verify.frontend.list_surface_search_contract.unit",
+        "verify.frontend.acceptance.environment.guard",
     )),
     Rule((
         "config/acceptance/backend_contract_instance_daily_v1.json",
