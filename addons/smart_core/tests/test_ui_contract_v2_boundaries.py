@@ -148,6 +148,7 @@ def _load_handler():
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
         project_workflow_action_semantics=lambda contract: contract,
+        rebind_native_occurrence_identities=real_assembler.rebind_native_occurrence_identities,
         declare_container_columns=real_assembler.declare_container_columns,
         declared_container_columns=real_assembler.declared_container_columns,
     )

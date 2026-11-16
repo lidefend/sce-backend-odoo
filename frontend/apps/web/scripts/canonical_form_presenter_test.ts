@@ -1322,7 +1322,7 @@ assert.deepEqual(
   {
     version: '1.0',
     rendererVersion: '1.0.0',
-    supportedContractVersion: '>=2.0.0 <2.4.0',
+    supportedContractVersion: '>=2.0.0 <2.5.0',
     pageContractVersion: '2.3.0',
   },
   'component identity, renderer version and page Contract V2 version must reach the presentation model',

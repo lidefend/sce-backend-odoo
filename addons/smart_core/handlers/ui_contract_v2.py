@@ -20,6 +20,7 @@ from ..core.unified_page_contract_v2_assembler import (
     hydrate_final_layout_modifier_status,
     project_runtime_business_actions,
     project_workflow_action_semantics,
+    rebind_native_occurrence_identities,
 )
 from ..core.unified_page_contract_v2_client import (
     resolve_client_type,
@@ -94,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v64"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v65"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1281,6 +1282,7 @@ class UiContractV2Handler(BaseIntentHandler):
         # consumes a declared purpose instead of inferring one from a method
         # name or a button caption.
         contract_v2 = project_workflow_action_semantics(contract_v2)
+        rebind_native_occurrence_identities(contract_v2, source_contract)
         runtime_actions_projected_at = time.monotonic()
         hydrate_final_modifier_dependencies(
             self.env,

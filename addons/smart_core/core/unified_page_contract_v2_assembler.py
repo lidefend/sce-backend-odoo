@@ -1032,6 +1032,21 @@ def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[st
         contract["layoutContract"]["listProfile"] = profile
 
 
+def rebind_native_occurrence_identities(
+    contract: dict[str, Any],
+    source: dict[str, Any],
+) -> None:
+    """Restore native occurrence authority after post-assembly mutations.
+
+    Handler finalizers may merge new Action rules or replace List profiles after
+    the initial assembly. Those mutations can reintroduce legacy action
+    identities or drop column occurrences. The final response boundary rebinds
+    the same deterministic identity function once, instead of asking every
+    extension to duplicate P0-4 projection rules.
+    """
+    _bind_native_occurrence_identities(contract, source)
+
+
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
     codes: set[str] = set()
 

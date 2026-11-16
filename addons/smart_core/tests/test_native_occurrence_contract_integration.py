@@ -6,6 +6,7 @@ from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispat
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
     _native_view_identity_for,
     assemble_unified_page_contract_v2,
+    rebind_native_occurrence_identities,
 )
 
 
@@ -196,3 +197,26 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             ),
             {},
         )
+
+    def test_final_handler_boundary_restores_occurrences_after_mutation(self):
+        source = self._source("tree")
+        contract = self._contract("tree")
+        profile = contract["layoutContract"]["listProfile"]
+        profile.pop("columnOccurrences", None)
+        legacy_rule = contract["actionContract"]["actionRuleList"][1]
+        legacy_rule["nativeIdentity"] = {
+            "authoritative": True,
+            "name": "action_archive",
+            "native_locator": "/form[1]/header[1]/button[1]",
+            "occurrence_index": 1,
+            "type": "object",
+        }
+
+        rebind_native_occurrence_identities(contract, source)
+
+        columns = contract["layoutContract"]["listProfile"]["columnOccurrences"]
+        self.assertEqual(len(columns), 2)
+        identity = legacy_rule["nativeIdentity"]
+        self.assertEqual(identity["schemaVersion"], "1.0.0")
+        self.assertEqual(identity["kind"], "button")
+        self.assertTrue(identity["occurrenceKey"].startswith("occ.v1."))

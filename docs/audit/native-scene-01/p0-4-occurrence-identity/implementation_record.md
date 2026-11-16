@@ -60,7 +60,7 @@ The shared producer is `addons/smart_core/core/native_view_occurrence.py`:
 
 The contract protocol moves atomically to `2.4.0`. The Schema SHA256 is
 `82bbf586ef1ff56433a22264e62baac57c0400dedebc5098d8a7ea6c51476a66`, and the
-assembled-contract cache generation moves to `v64`.
+assembled-contract cache generation moves to `v65`.
 
 ## 4. Strict Consumer
 
@@ -136,12 +136,16 @@ as historical failure/repair evidence rather than being overwritten.
   widgets inheriting their container occurrence instead of their owning field
   occurrence. The generic assembler now resolves each widget through
   `ownerContainerId`, publishes only its field identity, and omits the carrier
-  when no owning field identity exists. The assembled cache advances to `v64`.
+  when no owning field identity exists.
 - `product_defect`: the strict frontend Decoder compared every widget identity
   with its current row identity. For direct field widgets carried by a native
   container this rejected the valid field occurrence because it differed from
   the container occurrence. Widget equality is now enforced only on field-owned
   rows; container-carried direct widgets retain their own field identity.
+- `product_defect`: handler finalizers could merge legacy Action rules or drop
+  List column occurrences after the assembler's initial identity pass. The
+  final response boundary now rebinds native occurrences once from the same
+  deterministic producer. The assembled cache advances to `v65`.
 
 The repair was verified with:
 
