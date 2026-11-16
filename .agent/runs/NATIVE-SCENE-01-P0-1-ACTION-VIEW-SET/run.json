@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "d159514c7bb64a4e99727e4349f5f39146c1c854",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET.yaml",
+    ".agent/runs/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET/run.json",
+    "addons/smart_core/core/native_action_view_set.py",
+    "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/handlers/ui_contract_preview.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_action_view_set_integration.py",
+    "addons/smart_core/tests/__init__.py",
+    "scripts/verify/test_native_action_view_set.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "docs/audit/test_coverage_registry/",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "make/guards.mk",
+    "make/ci.mk",
+    "docs/audit/native-scene-01/inventories/",
+    "docs/audit/native-scene-01/p0-1-action-view-set/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed offline checks recorded in this run; the affected Odoo suite ran on the fresh disposable sc_test carrier and its receipt is referenced by the implementation record; no persistent database, fixture or service mutation"
+  },
+  "checks": {
+    "native_action_view_set": {
+      "target": "verify.native_action.view_set.unit",
+      "inputs": [
+        "addons/smart_core/core/native_action_view_set.py",
+        "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/ui_contract_preview.py",
+        "scripts/verify/test_native_action_view_set.py",
+        "make/guards.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "docs/audit/test_coverage_registry/"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "assembled_contract_cache": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "native_scene_inventory": {
+      "target": "verify.native_scene.inventory.unit",
+      "inputs": [
+        "scripts/audit/native_scene_inventory.py",
+        "scripts/audit/test_native_scene_inventory.py",
+        "docs/audit/native-scene-01/inventories/"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET.yaml",
+        ".agent/runs/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Record merged-head receipts, run ci.local.iteration, publish P0-1, and complete exact-head required CI before integration; do not start P0-2.",
+  "id": "NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET",
+  "branch": "feature/native-scene-01-p0-1-action-view-set-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01-P0-1-ACTION-VIEW-SET.yaml",
+  "record": "docs/audit/native-scene-01/p0-1-action-view-set/implementation_record.md"
+}

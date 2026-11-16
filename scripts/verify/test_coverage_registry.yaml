@@ -710,6 +710,14 @@ entries:
   reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
     it to a gate or retire the group.
   review_by: '2026-12-31'
+- group: native_action_view_set
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.native_action.view_set.orm :: native_action_view_set'
+  reason: Selects the Odoo integration carrier for effective action.views ordering, Action-bound view
+    and search identities, request View rejection, and the internal ActionDispatcher/PageAssembler carrier.
 - group: native_advisory_draft
   kind: odoo_tag
   status: on-demand

@@ -71,6 +71,10 @@ verify.permission_check.availability.unit: guard.prod.forbid
 verify.payment.authorization_boundary.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=payment_domain_permission_isolation
 
+.PHONY: verify.native_action.view_set.orm
+verify.native_action.view_set.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=native_action_view_set
+
 .PHONY: verify.capability.identity_boundary.unit
 verify.capability.identity_boundary.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
@@ -448,6 +452,14 @@ verify.native_scene.inventory.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/audit/native_scene_inventory.py scripts/audit/test_native_scene_inventory.py
 	@python3 -m unittest scripts.audit.test_native_scene_inventory
 	@python3 scripts/audit/native_scene_inventory.py --check
+
+.PHONY: verify.native_action.view_set.unit
+verify.native_action.view_set.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/core/native_action_view_set.py \
+	  addons/smart_core/handlers/ui_contract_preview.py \
+	  scripts/verify/test_native_action_view_set.py
+	@python3 -m unittest scripts.verify.test_native_action_view_set
 
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid

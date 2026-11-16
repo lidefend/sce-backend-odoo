@@ -5,6 +5,7 @@
 #   - drill_down_action：只接受显式 server→window 映射；client/url/report 原样返回
 import logging
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+from odoo.addons.smart_core.core.native_action_view_set import build_action_view_set
 
 _logger = logging.getLogger(__name__)
 
@@ -34,6 +35,75 @@ class ActionResolver:
 
     def __init__(self, env):
         self.env = env
+
+    @staticmethod
+    def _related_id(value):
+        if not value:
+            return 0
+        if isinstance(value, (int, str)):
+            try:
+                return max(int(value), 0)
+            except (TypeError, ValueError):
+                return 0
+        try:
+            return max(int(getattr(value, "id", 0) or 0), 0)
+        except (TypeError, ValueError):
+            return 0
+
+    @classmethod
+    def _related_type(cls, value):
+        if isinstance(value, dict):
+            return str(value.get("type") or value.get("view_type") or "").strip()
+        return str(getattr(value, "type", "") or "").strip()
+
+    def _action_identity_extras(self, act):
+        if isinstance(act, dict):
+            existing_view_set = act.get("view_set")
+            raw_views = act.get("views")
+            view_mode_raw = act.get("view_mode") or act.get("view_modes") or ""
+            action_view = act.get("view_id") or {}
+            existing_view_type = act.get("view_type") or act.get("viewType") or ""
+            search_view = act.get("search_view_id") or {}
+            search_view_xmlid = act.get("search_view_xmlid") or act.get("search_view_xml_id") or ""
+        else:
+            existing_view_set = None
+            raw_views = getattr(act, "views", []) or []
+            view_mode_raw = getattr(act, "view_mode", "") or ""
+            action_view = getattr(act, "view_id", False)
+            existing_view_type = ""
+            search_view = getattr(act, "search_view_id", False)
+            search_view_xmlid = ""
+            if search_view:
+                try:
+                    search_view_xmlid = (search_view.get_external_id() or {}).get(search_view.id, "")
+                except Exception:
+                    search_view_xmlid = ""
+        view_id = self._related_id(action_view)
+        view_type = self._related_type(action_view) or str(existing_view_type or "").strip()
+        view_mode = (
+            ",".join(str(item).strip() for item in view_mode_raw if str(item).strip())
+            if isinstance(view_mode_raw, (list, tuple))
+            else str(view_mode_raw or "").strip()
+        )
+        view_set = (
+            dict(existing_view_set)
+            if isinstance(existing_view_set, dict)
+            else build_action_view_set(
+                views=raw_views,
+                view_mode=view_mode,
+                action_view_id=view_id,
+                action_view_type=view_type,
+            )
+        )
+        return {
+            "view_id": view_id or None,
+            "view_type": view_type,
+            "view_mode": view_mode,
+            "views": list(view_set.get("orderedViews") or []),
+            "view_set": view_set,
+            "search_view_id": self._related_id(search_view) or None,
+            "search_view_xmlid": str(search_view_xmlid or "").strip(),
+        }
 
     # ----------------- 外部调用入口 -----------------
 
@@ -118,6 +188,7 @@ class ActionResolver:
             d.setdefault('target', d.get('target'))
             d.setdefault('name', d.get('name'))
             d.setdefault('exists', True)
+            d.update(self._action_identity_extras(act))
             return d
         # recordset → 提取关键属性/外部 xmlid
         try:
@@ -138,6 +209,7 @@ class ActionResolver:
                 'name': getattr(act, 'name', None),
                 'domain': getattr(act, 'domain', None),
                 'context': getattr(act, 'context', None),
+                **self._action_identity_extras(act),
                 'exists': True,
             }
         except Exception:
@@ -197,11 +269,13 @@ class ActionResolver:
                 out["xml_id"] = xid.get(act.id) if isinstance(xid, dict) else xid
             except Exception:
                 pass
+            out.update(self._action_identity_extras(act))
             return out
         out = dict(act or {})
         out.setdefault("url", out.get("url"))
         out.setdefault("domain", []); out.setdefault("context", {})
         out.setdefault("view_mode", out.get("view_mode") or "tree,form")
+        out.update(self._action_identity_extras(out))
         return out
 
     def map_server_to_window(self, server_id=None, server_xmlid=None):

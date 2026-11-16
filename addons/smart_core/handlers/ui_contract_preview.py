@@ -3,6 +3,8 @@ from __future__ import annotations
 
 from odoo import api
 
+from ..core.native_action_view_set import NATIVE_ACTION_VIEW_OVERRIDE_AUTHORIZED
+
 
 BUSINESS_CONFIG_GROUP = "smart_core.group_smart_core_business_config_admin"
 PLATFORM_ADMIN_GROUP = "smart_core.group_smart_core_admin"
@@ -40,6 +42,7 @@ def authenticated_projection_locale(env, params: dict) -> dict[str, str]:
 
 def build_projection_environments(env, su_env, params: dict, projection_context: dict):
     """Return read-only projection environments with an optional verified preview."""
+    projection_context.pop(NATIVE_ACTION_VIEW_OVERRIDE_AUTHORIZED, None)
     preview_token = str(params.get("preview_token") or params.get("previewToken") or "").strip()
     preview_role_key = str(params.get("preview_role_key") or params.get("previewRoleKey") or "").strip()
     if preview_token:
@@ -66,6 +69,7 @@ def build_projection_environments(env, su_env, params: dict, projection_context:
             "business_config_preview_token": preview_token,
             "business_config_preview_user_id": int(user.id),
             "business_config_preview_role_key": preview_role_key,
+            NATIVE_ACTION_VIEW_OVERRIDE_AUTHORIZED: True,
         })
     try:
         return (

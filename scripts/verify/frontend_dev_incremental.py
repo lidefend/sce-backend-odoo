@@ -1356,6 +1356,18 @@ RULES = (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
+        "addons/smart_core/core/native_action_view_set.py",
+        "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
+        "addons/smart_core/handlers/ui_contract_preview.py",
+        "addons/smart_core/tests/test_native_action_view_set_integration.py",
+        "scripts/verify/test_native_action_view_set.py",
+    ), (
+        "verify.native_action.view_set.unit",
+        "verify.native_action.view_set.orm",
+        "verify.unified_page_contract.v2.assembler",
+        "verify.contract.entry_equivalence.guard",
+    )),
+    Rule((
         "addons/smart_core/core/native_advisory.py",
         "addons/smart_core/core/draft_feedback.py",
         "addons/smart_core/core/node_component_validation.py",

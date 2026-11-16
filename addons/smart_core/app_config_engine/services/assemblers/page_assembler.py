@@ -10,6 +10,10 @@ import re
 import time
 from copy import deepcopy
 from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+from odoo.addons.smart_core.core.native_action_view_set import (
+    has_authorized_action_view_override,
+    resolve_requested_action_view,
+)
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -361,6 +365,42 @@ class PageAssembler:
         except (TypeError, ValueError):
             return 0
 
+    @staticmethod
+    def _validate_requested_action_view(
+        action,
+        *,
+        requested_view_id=0,
+        requested_view_type="",
+        authorized_override=False,
+    ):
+        action_bound = (
+            isinstance(action, dict)
+            and bool(action.get("id") or action.get("xml_id"))
+        )
+        action_view_set = action.get("view_set") if isinstance(action, dict) else {}
+        if not requested_view_id or not action_bound:
+            return
+        if not isinstance(action_view_set, dict) or not action_view_set.get("complete"):
+            raise ValueError(
+                "ACTION_VIEW_SET_UNRESOLVED: view_id=%s cannot be validated for action_id=%s"
+                % (requested_view_id, action.get("id"))
+            )
+        requested_view = resolve_requested_action_view(
+            action_view_set,
+            requested_view_id=requested_view_id,
+            requested_view_type=requested_view_type,
+            authorized_override=authorized_override,
+        )
+        if not requested_view.get("allowed"):
+            raise ValueError(
+                "%s: view_id=%s is not bound to action_id=%s"
+                % (
+                    requested_view.get("reasonCode") or "ACTION_VIEW_REQUEST_DENIED",
+                    requested_view_id,
+                    action.get("id"),
+                )
+            )
+
     def assemble_page_contract(self, p, action=None):
         """
         页面契约主装配：
@@ -540,6 +580,13 @@ class PageAssembler:
         ).strip().lower()
         if requested_view_type == "list":
             requested_view_type = "tree"
+        if requested_view_explicit:
+            self._validate_requested_action_view(
+                action,
+                requested_view_id=requested_view_id,
+                requested_view_type=requested_view_type,
+                authorized_override=has_authorized_action_view_override(env_context),
+            )
         canonical_view_types = [
             "tree" if str(value or "").strip().lower() == "list" else str(value or "").strip().lower()
             for value in view_types
@@ -784,6 +831,17 @@ class PageAssembler:
         data["domain_raw"] = action_domain_raw
         data["context"] = effective_context
         data["context_raw"] = action_context_raw
+        if isinstance(action, dict) and isinstance(action.get("view_set"), dict):
+            data["action_identity"] = {
+                "action_id": action.get("id"),
+                "action_xmlid": action.get("xml_id"),
+                "model": action.get("res_model") or model,
+                "view_id": action.get("view_id"),
+                "view_type": action.get("view_type"),
+                "view_mode": action.get("view_mode"),
+                "search_view_id": action.get("search_view_id"),
+            }
+            data["action_view_set"] = deepcopy(action["view_set"])
         self._inject_native_collection_presentation(data, effective_context)
         self._inject_create_defaults(
             data,
@@ -2236,22 +2294,52 @@ class PageAssembler:
 
     def _resolve_action_from_payload(self, p, model):
         raw_action_id = p.get("action_id") or p.get("actionId")
+        raw_action_xmlid = p.get("action_xmlid") or p.get("action_xml_id")
+        if raw_action_id in (None, "", False) and not raw_action_xmlid:
+            return None
         try:
-            action_id = int(raw_action_id or 0)
-        except Exception:
-            action_id = 0
-        if action_id <= 0:
-            return None
-        action = self.su_env["ir.actions.act_window"].browse(action_id)
-        if not action.exists() or action.res_model != model:
-            return None
-        return {
-            "id": action.id,
-            "name": action.name or "",
-            "context": action.context or "{}",
-            "domain": action.domain or "[]",
-            "target": action.target or "current",
-        }
+            action_id = int(raw_action_id) if raw_action_id not in (None, "", False) else None
+        except (TypeError, ValueError) as exc:
+            raise ValueError(
+                "ACTION_IDENTITY_UNRESOLVED: invalid action_id=%r" % (raw_action_id,)
+            ) from exc
+        if action_id is not None and action_id <= 0:
+            raise ValueError(
+                "ACTION_IDENTITY_UNRESOLVED: action_id must be a positive integer"
+            )
+
+        from ..resolvers.action_resolver import ActionResolver
+
+        resolver = ActionResolver(self.env)
+        action = resolver.resolve_action(
+            action_id=action_id,
+            action_xmlid=raw_action_xmlid,
+        )
+        if not action:
+            raise ValueError(
+                "ACTION_IDENTITY_UNRESOLVED: action_id=%r action_xmlid=%r"
+                % (raw_action_id, raw_action_xmlid)
+            )
+        info = resolver.as_action_info(action)
+        action_type = str(info.get("type") or info.get("_name") or "").strip()
+        if action_type != "ir.actions.act_window":
+            raise ValueError(
+                "ACTION_IDENTITY_NOT_WINDOW: action_id=%r type=%r"
+                % (raw_action_id, action_type)
+            )
+        action_model = str(info.get("res_model") or "").strip()
+        if action_model != str(model or "").strip():
+            raise ValueError(
+                "ACTION_IDENTITY_MODEL_MISMATCH: action_model=%r request_model=%r"
+                % (action_model, model)
+            )
+        view_set = info.get("view_set") if isinstance(info.get("view_set"), dict) else {}
+        if not view_set.get("complete"):
+            raise ValueError(
+                "ACTION_VIEW_SET_UNRESOLVED: action_id=%s model=%s"
+                % (info.get("id"), action_model)
+            )
+        return info
 
     def _resolve_page_title(self, model, action=None):
         if isinstance(action, dict):

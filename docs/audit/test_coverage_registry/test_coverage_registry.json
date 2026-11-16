@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 214,
+    "odoo_tags": 215,
     "gated": 5,
-    "on_demand": 71,
+    "on_demand": 72,
     "unwired": 138,
-    "odoo_tag_declarations": 440,
+    "odoo_tag_declarations": 442,
     "gated_declarations": 102,
-    "uncovered_declarations": 338,
+    "uncovered_declarations": 340,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -134,28 +134,10 @@
       ]
     },
     {
-      "group": "sc_regression",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 21,
-      "files": [
-        "addons/sc_norm_engine/tests/test_boq_norm_link.py",
-        "addons/smart_construction_core/tests/test_boq_version_contract.py",
-        "addons/smart_construction_core/tests/test_budget.py",
-        "addons/smart_construction_core/tests/test_contract_center.py",
-        "addons/smart_construction_core/tests/test_cost_compare.py",
-        "addons/smart_construction_core/tests/test_profit_compare.py",
-        "addons/smart_construction_core/tests/test_stock_cost.py"
-      ],
-      "owner": "platform-team",
-      "evidence": [],
-      "disposition": "wire-pending"
-    },
-    {
       "group": "smart_core",
       "status": "on-demand",
       "kind": "odoo_tag",
-      "declarations": 21,
+      "declarations": 22,
       "files": [
         "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/tests/test_api_data_mutation_failure_atomicity_orm.py",
@@ -166,6 +148,7 @@
         "addons/smart_core/tests/test_menu_delivery_convergence_service.py",
         "addons/smart_core/tests/test_narrow_tenant_payload_importer.py",
         "addons/smart_core/tests/test_native_action_selection_alignment.py",
+        "addons/smart_core/tests/test_native_action_view_set_integration.py",
         "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
         "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
         "addons/smart_core/tests/test_scene_delivery_policy.py",
@@ -181,6 +164,24 @@
       "evidence": [
         "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
       ],
+      "disposition": "wire-pending"
+    },
+    {
+      "group": "sc_regression",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 21,
+      "files": [
+        "addons/sc_norm_engine/tests/test_boq_norm_link.py",
+        "addons/smart_construction_core/tests/test_boq_version_contract.py",
+        "addons/smart_construction_core/tests/test_budget.py",
+        "addons/smart_construction_core/tests/test_contract_center.py",
+        "addons/smart_construction_core/tests/test_cost_compare.py",
+        "addons/smart_construction_core/tests/test_profit_compare.py",
+        "addons/smart_construction_core/tests/test_stock_cost.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [],
       "disposition": "wire-pending"
     },
     {
@@ -1528,6 +1529,20 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "native_action_view_set",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_action_view_set_integration.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.native_action.view_set.orm :: native_action_view_set"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "native_advisory_draft",
