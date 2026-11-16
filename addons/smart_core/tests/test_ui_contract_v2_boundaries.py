@@ -4168,6 +4168,21 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(params["view_type"], "tree")
         self.assertEqual(params["viewType"], "tree")
 
+    def test_final_occurrence_rebind_follows_all_action_projections(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "handlers" / "ui_contract_v2.py"
+        ).read_text(encoding="utf-8")
+        guidance = source.index(
+            "project_native_action_guidance(contract_v2, read_action_fact)"
+        )
+        rebind = source.index(
+            "rebind_native_occurrence_identities(contract_v2, source_contract)",
+            guidance,
+        )
+        validation = source.index("validate_final_nodes(", rebind)
+        self.assertLess(guidance, rebind)
+        self.assertLess(rebind, validation)
+
     def test_form_structure_contract_uses_generic_slots_not_contract_template(self):
         handler = self.module.UiContractV2Handler(env=object())
         field_types = {

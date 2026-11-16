@@ -95,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v65"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v67"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1282,7 +1282,6 @@ class UiContractV2Handler(BaseIntentHandler):
         # consumes a declared purpose instead of inferring one from a method
         # name or a button caption.
         contract_v2 = project_workflow_action_semantics(contract_v2)
-        rebind_native_occurrence_identities(contract_v2, source_contract)
         runtime_actions_projected_at = time.monotonic()
         hydrate_final_modifier_dependencies(
             self.env,
@@ -1308,6 +1307,7 @@ class UiContractV2Handler(BaseIntentHandler):
             fact_id = contract_v2["dataContract"]["mainData"]["id"]
             return fact_model.browse(fact_id).read([field_name])[0][field_name]
         project_native_action_guidance(contract_v2, read_action_fact)
+        rebind_native_occurrence_identities(contract_v2, source_contract)
         modifier_status_at = time.monotonic()
         from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
         node_validation_contract = (

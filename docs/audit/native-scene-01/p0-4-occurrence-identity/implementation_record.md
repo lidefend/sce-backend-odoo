@@ -60,7 +60,7 @@ The shared producer is `addons/smart_core/core/native_view_occurrence.py`:
 
 The contract protocol moves atomically to `2.4.0`. The Schema SHA256 is
 `82bbf586ef1ff56433a22264e62baac57c0400dedebc5098d8a7ea6c51476a66`, and the
-assembled-contract cache generation moves to `v65`.
+assembled-contract cache generation moves to `v67`.
 
 ## 4. Strict Consumer
 
@@ -146,6 +146,8 @@ as historical failure/repair evidence rather than being overwritten.
   List column occurrences after the assembler's initial identity pass. The
   final response boundary now rebinds native occurrences once from the same
   deterministic producer. The assembled cache advances to `v65`.
+  A second verification pass placed the rebind after all guidance/status
+  projections at the final response boundary.
 
 The repair was verified with:
 
