@@ -14,6 +14,11 @@ from odoo.addons.smart_core.core.native_action_view_set import (
     has_authorized_action_view_override,
     resolve_requested_action_view,
 )
+from odoo.addons.smart_core.core.native_action_search_view import (
+    ACTION_SEARCH_VIEW_AUTHORITY,
+    MODEL_SEARCH_VIEW_AUTHORITY,
+    build_search_native_identity,
+)
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -401,6 +406,77 @@ class PageAssembler:
                 )
             )
 
+    @staticmethod
+    def _view_xmlid(env, view_id):
+        try:
+            view = env["ir.ui.view"].sudo().browse(int(view_id or 0))
+            if view.exists():
+                return str((view.get_external_id() or {}).get(view.id) or "").strip()
+        except Exception:
+            return ""
+        return ""
+
+    def _resolve_search_view_projection(
+        self,
+        *,
+        env,
+        model,
+        action,
+        view_projection_sources,
+        view_context,
+        carrier=None,
+    ):
+        action_info = action if isinstance(action, dict) else {}
+        action_id = int(action_info.get("id") or 0)
+        action_search_view_id = int(action_info.get("search_view_id") or 0)
+        search_view_data = view_projection_sources.get("search")
+        if not isinstance(search_view_data, dict) or not search_view_data.get("arch"):
+            scoped_view_context = dict(view_context)
+            scoped_view_context["contract_view_id"] = action_search_view_id or False
+            scoped_view_context["requested_view_id"] = False
+            search_view_config = env["app.view.config"].with_context(**scoped_view_context)
+            search_view_data = search_view_config._safe_get_view_data(
+                model,
+                "search",
+                carrier=carrier,
+            )
+        if not isinstance(search_view_data, dict) or not search_view_data.get("arch"):
+            raise ValueError(
+                "ACTION_SEARCH_VIEW_UNRESOLVED: action_id=%s model=%s"
+                % (action_id or None, model)
+                if action_search_view_id
+                else "MODEL_SEARCH_VIEW_UNRESOLVED: model=%s" % model
+            )
+        try:
+            resolved_search_view_id = int(search_view_data.get("_source_view_id") or 0)
+        except (TypeError, ValueError) as exc:
+            raise ValueError("resolved Search View id is invalid") from exc
+        if action_search_view_id and resolved_search_view_id != action_search_view_id:
+            raise ValueError(
+                "ACTION_SEARCH_VIEW_IDENTITY_MISMATCH: action_id=%s declared=%s resolved=%s"
+                % (action_id, action_search_view_id, resolved_search_view_id)
+            )
+        authority = (
+            ACTION_SEARCH_VIEW_AUTHORITY
+            if action_search_view_id
+            else MODEL_SEARCH_VIEW_AUTHORITY
+        )
+        view_xmlid = (
+            str(action_info.get("search_view_xmlid") or "").strip()
+            if action_search_view_id
+            else ""
+        )
+        if not view_xmlid:
+            view_xmlid = self._view_xmlid(env, resolved_search_view_id)
+        native_identity = build_search_native_identity(
+            model=model,
+            action_id=action_id,
+            view_id=resolved_search_view_id,
+            view_xmlid=view_xmlid,
+            authority=authority,
+        )
+        return search_view_data, native_identity
+
     def assemble_page_contract(self, p, action=None):
         """
         页面契约主装配：
@@ -672,16 +748,26 @@ class PageAssembler:
         versions["view"] = ",".join(v_versions) if v_versions else "1"
 
         # 3) 搜索条件（运行时需要当前用户上下文，因此用 env）
+        search_view_data, search_native_identity = self._resolve_search_view_projection(
+            env=env,
+            model=model,
+            action=action,
+            view_projection_sources=view_projection_sources,
+            view_context=view_context,
+            carrier=p.get("_request_carrier"),
+        )
         try:
             scfg = env['app.search.config']._generate_from_search(
                 model,
                 fields_get_snapshot=model_fields_snapshot,
-                search_view_data=view_projection_sources.get("search"),
+                search_view_data=search_view_data,
+                native_identity=search_native_identity,
             )
             data["search"] = scfg.get_search_contract(
                 filter_runtime=True,
                 include_user_filters=True,
                 action_id=action.get("id") if isinstance(action, dict) else p.get("action_id") or p.get("actionId"),
+                native_identity=search_native_identity,
             )
             versions["search"] = scfg.version
         except KeyError:
@@ -840,6 +926,7 @@ class PageAssembler:
                 "view_type": action.get("view_type"),
                 "view_mode": action.get("view_mode"),
                 "search_view_id": action.get("search_view_id"),
+                "search_view_xmlid": action.get("search_view_xmlid"),
             }
             data["action_view_set"] = deepcopy(action["view_set"])
         self._inject_native_collection_presentation(data, effective_context)

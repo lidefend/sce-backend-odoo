@@ -40,9 +40,9 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 326,
-    "renderedOrInteractionAuthorityCount": 208,
-    "validatedNonVisualAuthorityCount": 118,
+    "schemaFieldCount": 335,
+    "renderedOrInteractionAuthorityCount": 213,
+    "validatedNonVisualAuthorityCount": 122,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
@@ -210,6 +210,11 @@
       "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
+      "path": "actionRule.reasonMessage",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
       "path": "actionRule.refreshMode",
       "classification": "validated_non_visual_authority",
       "reason": "post-action refresh semantics",
@@ -219,6 +224,16 @@
       "path": "actionRule.refreshPolicy",
       "classification": "validated_non_visual_authority",
       "reason": "post-action refresh policy",
+      "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
+      "path": "actionRule.required_params",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentAction / action executor"
+    },
+    {
+      "path": "actionRule.requires_reason",
+      "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentAction / action executor"
     },
     {
@@ -564,6 +579,16 @@
       "consumer": "contractFormPresenter.presentAction"
     },
     {
+      "path": "buttonStatus.reasonMessage",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentAction"
+    },
+    {
+      "path": "buttonStatus.visibilityExplanation",
+      "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.presentAction"
+    },
+    {
       "path": "buttonStatus.visible",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter.presentAction"
@@ -845,6 +870,18 @@
     {
       "path": "dataMeta.fieldGroups",
       "classification": "rendered_or_interaction_authority",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "dataMeta.nativeModifierFieldTypes",
+      "classification": "validated_non_visual_authority",
+      "reason": "native modifier evaluation field types",
+      "consumer": "ContractV2 store / form and collection policy adapters"
+    },
+    {
+      "path": "dataMeta.nativeModifierRelationSnapshots",
+      "classification": "validated_non_visual_authority",
+      "reason": "native modifier relation identity bindings",
       "consumer": "ContractV2 store / form and collection policy adapters"
     },
     {
@@ -1522,6 +1559,12 @@
       "consumer": "ActionView search presentation runtime"
     },
     {
+      "path": "searchContract.nativeIdentity",
+      "classification": "validated_non_visual_authority",
+      "reason": "native Search View identity provenance",
+      "consumer": "ActionView search presentation runtime"
+    },
+    {
       "path": "searchContract.saved_filters",
       "classification": "rendered_or_interaction_authority",
       "consumer": "ActionView search presentation runtime"
@@ -1625,6 +1668,12 @@
       "path": "sourceContext.domainRaw",
       "classification": "validated_non_visual_authority",
       "reason": "source domain trace",
+      "consumer": "ContractV2 store / data request runtime"
+    },
+    {
+      "path": "sourceContext.formViewId",
+      "classification": "validated_non_visual_authority",
+      "reason": "active form view identity",
       "consumer": "ContractV2 store / data request runtime"
     },
     {

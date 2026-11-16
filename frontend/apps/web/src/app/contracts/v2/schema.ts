@@ -2531,7 +2531,7 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
   const row = value as ContractV2Dictionary;
   const allowed = new Set([
     'default_sort', 'default_order', 'mode', 'filters', 'saved_filters', 'group_by', 'fields',
-    'search_panel', 'favorites', 'custom', 'ui_labels', 'defaults',
+    'search_panel', 'favorites', 'custom', 'ui_labels', 'defaults', 'nativeIdentity',
   ]);
   Object.keys(row).filter((key) => !allowed.has(key)).forEach((key) => {
     issues.push({ path: `$.searchContract.${key}`, message: 'is not allowed' });
@@ -2549,7 +2549,7 @@ function decodeSearchContract(value: unknown, issues: DecodeIssue[]): ContractV2
     const decoded = optionalRecordArray(row, key, '$.searchContract', issues);
     if (decoded) out[key] = decoded;
   }
-  for (const key of ['search_panel', 'favorites', 'custom', 'ui_labels', 'defaults'] as const) {
+  for (const key of ['search_panel', 'favorites', 'custom', 'ui_labels', 'defaults', 'nativeIdentity'] as const) {
     const decoded = optionalRecord(row, key, '$.searchContract', issues);
     if (decoded) out[key] = decoded;
   }

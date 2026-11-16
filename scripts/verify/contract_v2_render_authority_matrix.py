@@ -13,8 +13,8 @@ SCHEMA = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contrac
 OUTPUT = ROOT / "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json"
 
 EXPECTED = {
-    "sourceContext": "context domain contextRaw domainRaw renderProfile order limit",
-    "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults",
+    "sourceContext": "context domain contextRaw domainRaw renderProfile order limit formViewId",
+    "searchContract": "default_sort default_order mode filters saved_filters group_by fields search_panel favorites custom ui_labels defaults nativeIdentity",
     "pageInfo": "pageId sceneKey pageName model viewType layoutType renderMode contractVersion clientType deliveryProfile",
     "layoutContract": "pageId layoutType adaptMode containerTree layoutHints componentRegistry listProfile activityProfile graphProfile pivotProfile",
     "activityProfile": (
@@ -45,7 +45,7 @@ EXPECTED = {
     "statusContract": "globalStatus containerStatus widgetStatus buttonStatus selectorStatus",
     "containerStatus": "containerId visible disabled reasonCode",
     "widgetStatus": "widgetId visible readonly required disabled placeholder auth reasonCode",
-    "buttonStatus": "btnId visible disabled reasonCode backendIdentity",
+    "buttonStatus": "btnId visible disabled reasonCode backendIdentity reasonMessage visibilityExplanation",
     "selectorStatus": "selector visible readonly required disabled reasonCode",
     "actionContract": "actionRuleList dependencyGraph deletePolicy surfacePolicies identityPolicy primaryResolution",
     "actionRule": (
@@ -53,10 +53,13 @@ EXPECTED = {
         "intent target button visible modifiers invisible visibleProfiles presentation actionSafety submitPolicy tracePolicy "
         "backendIdentity nativeIdentity sourceTrace presentationAuthority presentationPriority sourceActionKey sourceChannel "
         "permissionConstraints entitlementEvaluated allowed enabled disabled reasonCode actionSemantics "
-        "authorizationAllowed businessAvailable"
+        "authorizationAllowed businessAvailable reasonMessage required_params requires_reason"
     ),
     "dataContract": "mainData tableRows relationRows treeData ganttData dictData pagination dataSource dataMeta",
-    "dataMeta": "businessOperationProfile visibleFields fieldGroups sourceContext",
+    "dataMeta": (
+        "businessOperationProfile visibleFields fieldGroups sourceContext nativeModifierFieldTypes "
+        "nativeModifierRelationSnapshots"
+    ),
     "visibleFields": "fields sourceAuthority",
     "fieldGroups": "groups sourceAuthority",
     "sourceAuthority": "kind runtime_carrier projection_only no_business_fact_authority source_key formal_projection",
@@ -133,6 +136,10 @@ NON_VISUAL = {
     "sourceContext.domainRaw": "source domain trace",
     "sourceContext.order": "data ordering policy",
     "sourceContext.limit": "data pagination policy",
+    "sourceContext.formViewId": "active form view identity",
+    "searchContract.nativeIdentity": "native Search View identity provenance",
+    "dataMeta.nativeModifierFieldTypes": "native modifier evaluation field types",
+    "dataMeta.nativeModifierRelationSnapshots": "native modifier relation identity bindings",
     "activitySourceAuthority.kind": "activity projection provenance",
     "activitySourceAuthority.authorities": "activity projection provenance",
     "activitySourceAuthority.projection_only": "activity authority boundary",

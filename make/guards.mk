@@ -75,6 +75,10 @@ verify.payment.authorization_boundary.orm: guard.prod.forbid
 verify.native_action.view_set.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=native_action_view_set
 
+.PHONY: verify.native_action.search_view.orm
+verify.native_action.search_view.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=native_action_search_view
+
 .PHONY: verify.capability.identity_boundary.unit
 verify.capability.identity_boundary.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
@@ -460,6 +464,15 @@ verify.native_action.view_set.unit: guard.prod.forbid
 	  addons/smart_core/handlers/ui_contract_preview.py \
 	  scripts/verify/test_native_action_view_set.py
 	@python3 -m unittest scripts.verify.test_native_action_view_set
+
+.PHONY: verify.native_action.search_view.unit
+verify.native_action.search_view.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/core/native_action_search_view.py \
+	  addons/smart_core/app_config_engine/models/app_search_config.py \
+	  addons/smart_core/app_config_engine/models/app_view_config.py \
+	  scripts/verify/test_native_action_search_view.py
+	@python3 -m unittest scripts.verify.test_native_action_search_view
 
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid

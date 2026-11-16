@@ -1368,6 +1368,18 @@ RULES = (
         "verify.contract.entry_equivalence.guard",
     )),
     Rule((
+        "addons/smart_core/core/native_action_search_view.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/tests/test_native_action_search_view_integration.py",
+        "scripts/verify/test_native_action_search_view.py",
+    ), (
+        "verify.native_action.search_view.unit",
+        "verify.native_action.search_view.orm",
+        "verify.unified_page_contract.v2.assembler",
+        "verify.contract.entry_equivalence.guard",
+    )),
+    Rule((
         "addons/smart_core/core/native_advisory.py",
         "addons/smart_core/core/draft_feedback.py",
         "addons/smart_core/core/node_component_validation.py",
@@ -1384,6 +1396,7 @@ RULES = (
         "frontend/apps/web/src/app/contracts/v2/types.ts",
     ), (
         "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.contract_record_action_state.unit",
     )),
     Rule((
         "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
@@ -1391,6 +1404,19 @@ RULES = (
         "addons/smart_core/core/contract_lifecycle.py",
     ), (
         "verify.backend.contract_lifecycle.authority",
+        "verify.frontend.contract_v2_render_authority.unit",
+        "verify.unified_page_contract.v2.schema",
+    )),
+    Rule((
+        "scripts/verify/contract_v2_render_authority_matrix.py",
+        "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+    ), (
+        "verify.frontend.contract_v2_render_authority.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+    ), (
+        "verify.frontend.contract_record_action_state.unit",
     )),
     Rule((
         "scripts/verify/unified_page_contract_v2_schema_guard.py",

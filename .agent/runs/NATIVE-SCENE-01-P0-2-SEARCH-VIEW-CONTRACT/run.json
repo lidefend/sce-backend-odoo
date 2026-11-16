@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "3c7682647352cdf52b790e9a46b893e2535be77d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT.yaml",
+    ".agent/runs/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT/run.json",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/app_config_engine/models/app_search_config.py",
+    "addons/smart_core/app_config_engine/models/app_view_config.py",
+    "addons/smart_core/core/native_action_search_view.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_native_action_search_view_integration.py",
+    "addons/smart_core/tests/__init__.py",
+    "scripts/verify/test_native_action_search_view.py",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "docs/architecture/unified_page_contract_v2/examples/",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "scripts/verify/frontend_contract_record_action_state.test.mjs",
+    "scripts/verify/contract_v2_render_authority_matrix.py",
+    "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "make/guards.mk",
+    "make/ci.mk",
+    "docs/audit/native-scene-01/p0-2-search-view-contract/",
+    "docs/audit/native-scene-01/inventories/",
+    "docs/audit/test_coverage_registry/",
+    "docs/engineering_convergence/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed source and disposable sc_test ORM verification only; no persistent database, fixture or service mutation"
+  },
+  "checks": {
+    "native_action_search_view": {
+      "target": "verify.native_action.search_view.unit",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/core/native_action_search_view.py",
+        "scripts/verify/test_native_action_search_view.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "assembled_contract_cache": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/core/native_action_search_view.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_contract_search_identity": {
+      "target": "verify.frontend.contract_record_action_state.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_v2_render_authority": {
+      "target": "verify.frontend.contract_v2_render_authority.unit",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "scripts/verify/contract_v2_render_authority_matrix.py",
+        "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_lifecycle_authority": {
+      "target": "verify.backend.contract_lifecycle.authority",
+      "inputs": [
+        "addons/smart_core/core/contract_lifecycle.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "addons/smart_core/tests/test_contract_lifecycle.py",
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "ucp_v2_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+        "scripts/verify/contract_v2_render_authority_matrix.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "docs/audit/test_coverage_registry/"
+      ],
+      "kind": "offline"
+    },
+    "native_scene_inventory": {
+      "target": "verify.native_scene.inventory.unit",
+      "inputs": [
+        "scripts/audit/native_scene_inventory.py",
+        "scripts/audit/test_native_scene_inventory.py",
+        "docs/audit/native-scene-01/inventories/"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT.yaml",
+        ".agent/runs/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT/run.json"
+      ],
+      "kind": "offline"
+    },
+    "native_action_search_view_orm": {
+      "target": "verify.native_action.search_view.orm",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/core/native_action_search_view.py",
+        "addons/smart_core/tests/test_native_action_search_view_integration.py",
+        "addons/smart_core/tests/__init__.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "docs_and_inventory": {
+      "target": "verify.docs.all",
+      "inputs": [
+        "docs/audit/native-scene-01/",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+        "scripts/audit/native_scene_inventory.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_architecture_suite": {
+      "target": "verify.contract.architecture.suite",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/models/app_search_config.py",
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/core/native_action_search_view.py",
+        "addons/smart_core/core/contract_lifecycle.py",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/audit/verification_lane_dispositions.json",
+        "make/ci.mk",
+        "make/guards.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/package.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified P0-2 candidate, publish it through the governed PR entrypoint, and monitor required CI on the exact head.",
+  "id": "NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT",
+  "branch": "feature/native-scene-01-p0-2-search-view-contract-20261116",
+  "status": "active",
+  "goal": ".agent/goals/NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT.yaml",
+  "record": "docs/audit/native-scene-01/p0-2-search-view-contract/implementation_record.md"
+}

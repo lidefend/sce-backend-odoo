@@ -672,6 +672,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(set(select_targets([path])), expected)
 
+    def test_native_action_search_view_paths_select_their_runtime_and_contract_l2(self) -> None:
+        expected = {
+            "verify.native_action.search_view.unit",
+            "verify.native_action.search_view.orm",
+            "verify.unified_page_contract.v2.assembler",
+            "verify.contract.entry_equivalence.guard",
+        }
+        for path in (
+            "addons/smart_core/core/native_action_search_view.py",
+            "addons/smart_core/app_config_engine/models/app_search_config.py",
+            "addons/smart_core/app_config_engine/models/app_view_config.py",
+            "addons/smart_core/tests/test_native_action_search_view_integration.py",
+            "scripts/verify/test_native_action_search_view.py",
+        ):
+            with self.subTest(path=path):
+                self.assertLessEqual(expected, set(select_targets([path])))
+
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
         self.assertIn(
             "verify.frontend.contract_header_action.unit",
@@ -712,6 +729,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.frontend.canonical_form_presenter.unit",
+                "verify.frontend.contract_record_action_state.unit",
                 "verify.frontend.lint.src",
                 "verify.frontend.typecheck.strict",
             ],
@@ -724,8 +742,25 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.backend.contract_lifecycle.authority"],
+                    [
+                        "verify.backend.contract_lifecycle.authority",
+                        "verify.frontend.contract_v2_render_authority.unit",
+                        "verify.unified_page_contract.v2.schema",
+                    ],
                 )
+        for path in (
+            "scripts/verify/contract_v2_render_authority_matrix.py",
+            "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.contract_v2_render_authority.unit"],
+                )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_contract_record_action_state.test.mjs"]),
+            ["verify.frontend.contract_record_action_state.unit"],
+        )
         for path in (
             "scripts/verify/unified_page_contract_v2_schema_guard.py",
             "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
