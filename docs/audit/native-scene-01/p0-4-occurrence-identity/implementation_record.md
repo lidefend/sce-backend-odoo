@@ -60,7 +60,7 @@ The shared producer is `addons/smart_core/core/native_view_occurrence.py`:
 
 The contract protocol moves atomically to `2.4.0`. The Schema SHA256 is
 `82bbf586ef1ff56433a22264e62baac57c0400dedebc5098d8a7ea6c51476a66`, and the
-assembled-contract cache generation moves to `v61`.
+assembled-contract cache generation moves to `v63`.
 
 ## 4. Strict Consumer
 
@@ -100,13 +100,13 @@ Passed on the current dirty candidate:
 | L1 frontend | `make verify.frontend.contract_v2_occurrence_authority.unit` | passed |
 | L1 frontend | `make verify.frontend.contract_field_occurrence_identity.unit` | passed |
 | L1 frontend | `make verify.frontend.typecheck.strict` | passed |
-| L2 ORM | `make verify.native_occurrence.contract.orm` | 2 non-zero disposable Odoo tests passed |
+| L2 ORM | `make verify.native_occurrence.contract.orm` | 3 non-zero disposable Odoo tests passed |
 | L2 iteration | `make ci.local.iteration` | 26 affected targets passed; exact before-freeze candidate |
 | V2 integration | `make verify.unified_page_contract.v2.professional_backend` | full UPage V2 static/contract aggregate passed |
 | Governance | `make audit.verification.lane_coverage.check` | within frozen baseline |
 
 The ORM receipt on the last isolated run is
-`.runtime/test-baseline/1794849318701949499/receipt.json`; earlier runs remain
+`.runtime/test-baseline/1794855003107430908/receipt.json`; earlier runs remain
 as historical failure/repair evidence rather than being overwritten.
 
 ## 6. Failure Classification and Repair
@@ -128,7 +128,7 @@ as historical failure/repair evidence rather than being overwritten.
   attempted to resolve Form/List occurrence identities. The producer now reads
   both camelCase and legacy locator/index fields, and occurrence binding is
   explicitly limited to Form/List views.
-- `validation_tool_defect`: a subsequent admin-visibility shard exposed legacy
+- `product_defect`: a subsequent admin-visibility shard exposed legacy
   `viewIdentity` metadata that has no P0-4 `viewType`. The assembler now skips
   that legacy carrier instead of claiming it as a native occurrence identity;
   a focused regression test binds this distinction.

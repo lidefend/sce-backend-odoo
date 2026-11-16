@@ -186,7 +186,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Refresh generated evidence, commit the frozen P0-4 candidate, run exact-head Quick and publish for independent review.",
+  "next_exact_step": "Run exact-head remote checks and obtain independent review for the documentation-corrected P0-4 candidate.",
   "id": "NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY",
   "branch": "feature/native-scene-01-p0-4-occurrence-identity-20261117",
   "status": "verification_pending",
