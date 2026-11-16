@@ -10,6 +10,10 @@ import re
 import time
 from copy import deepcopy
 from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+from odoo.addons.smart_core.core.native_action_view_set import (
+    has_authorized_action_view_override,
+    resolve_requested_action_view,
+)
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -361,6 +365,36 @@ class PageAssembler:
         except (TypeError, ValueError):
             return 0
 
+    @staticmethod
+    def _validate_requested_action_view(
+        action,
+        *,
+        requested_view_id=0,
+        requested_view_type="",
+        authorized_override=False,
+    ):
+        action_view_set = action.get("view_set") if isinstance(action, dict) else {}
+        if not (
+            requested_view_id
+            and isinstance(action_view_set, dict)
+        ):
+            return
+        requested_view = resolve_requested_action_view(
+            action_view_set,
+            requested_view_id=requested_view_id,
+            requested_view_type=requested_view_type,
+            authorized_override=authorized_override,
+        )
+        if not requested_view.get("allowed"):
+            raise ValueError(
+                "%s: view_id=%s is not bound to action_id=%s"
+                % (
+                    requested_view.get("reasonCode") or "ACTION_VIEW_REQUEST_DENIED",
+                    requested_view_id,
+                    action.get("id"),
+                )
+            )
+
     def assemble_page_contract(self, p, action=None):
         """
         页面契约主装配：
@@ -540,6 +574,13 @@ class PageAssembler:
         ).strip().lower()
         if requested_view_type == "list":
             requested_view_type = "tree"
+        if requested_view_explicit:
+            self._validate_requested_action_view(
+                action,
+                requested_view_id=requested_view_id,
+                requested_view_type=requested_view_type,
+                authorized_override=has_authorized_action_view_override(env_context),
+            )
         canonical_view_types = [
             "tree" if str(value or "").strip().lower() == "list" else str(value or "").strip().lower()
             for value in view_types
@@ -784,6 +825,17 @@ class PageAssembler:
         data["domain_raw"] = action_domain_raw
         data["context"] = effective_context
         data["context_raw"] = action_context_raw
+        if isinstance(action, dict) and isinstance(action.get("view_set"), dict):
+            data["action_identity"] = {
+                "action_id": action.get("id"),
+                "action_xmlid": action.get("xml_id"),
+                "model": action.get("res_model") or model,
+                "view_id": action.get("view_id"),
+                "view_type": action.get("view_type"),
+                "view_mode": action.get("view_mode"),
+                "search_view_id": action.get("search_view_id"),
+            }
+            data["action_view_set"] = deepcopy(action["view_set"])
         self._inject_native_collection_presentation(data, effective_context)
         self._inject_create_defaults(
             data,

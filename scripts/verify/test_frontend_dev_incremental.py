@@ -655,6 +655,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.acceptance.db_preparation.unit"],
         )
 
+    def test_native_action_view_set_paths_select_their_runtime_and_contract_l2(self) -> None:
+        expected = {
+            "verify.native_action.view_set.unit",
+            "verify.native_action.view_set.orm",
+            "verify.unified_page_contract.v2.assembler",
+            "verify.contract.entry_equivalence.guard",
+        }
+        for path in (
+            "addons/smart_core/core/native_action_view_set.py",
+            "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
+            "addons/smart_core/handlers/ui_contract_preview.py",
+            "addons/smart_core/tests/test_native_action_view_set_integration.py",
+            "scripts/verify/test_native_action_view_set.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(set(select_targets([path])), expected)
+
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:
         self.assertIn(
             "verify.frontend.contract_header_action.unit",
