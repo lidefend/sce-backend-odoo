@@ -132,6 +132,25 @@ class TestNativeActionSearchViewIntegration(TransactionCase):
             self.search_a.id,
         )
 
+    def test_model_search_arch_without_view_id_does_not_invent_identity(self):
+        search_data, identity = PageAssembler(
+            self.env,
+            self.env["ir.model"].sudo().env,
+        )._resolve_search_view_projection(
+            env=self.env,
+            model="res.partner",
+            action={},
+            view_projection_sources={
+                "search": {
+                    "arch": '<search><field name="name"/></search>',
+                },
+            },
+            view_context={},
+        )
+
+        self.assertIn("arch", search_data)
+        self.assertEqual(identity, {})
+
     def test_actions_on_same_model_keep_distinct_search_views(self):
         source_a = self._dispatch(self.action_a)
         source_b = self._dispatch(self.action_b)

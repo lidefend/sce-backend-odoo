@@ -451,6 +451,16 @@ class PageAssembler:
             resolved_search_view_id = int(search_view_data.get("_source_view_id") or 0)
         except (TypeError, ValueError) as exc:
             raise ValueError("resolved Search View id is invalid") from exc
+        if not resolved_search_view_id:
+            if action_search_view_id:
+                raise ValueError(
+                    "ACTION_SEARCH_VIEW_UNRESOLVED: action_id=%s model=%s"
+                    % (action_id, model)
+                )
+            # Some native models only expose a generated search arch without a
+            # persisted ir.ui.view identity. Keep the Search profile, but do not
+            # invent a native identity that Odoo did not resolve.
+            return search_view_data, {}
         if action_search_view_id and resolved_search_view_id != action_search_view_id:
             raise ValueError(
                 "ACTION_SEARCH_VIEW_IDENTITY_MISMATCH: action_id=%s declared=%s resolved=%s"
