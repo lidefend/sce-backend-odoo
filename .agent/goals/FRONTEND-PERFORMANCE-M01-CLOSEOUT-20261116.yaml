@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116
   title: close FRONTEND-PERFORMANCE-M01 after PR 898
-  status: completed
+  status: active
   formal_product_layer: P4
   layer_target: governed post-merge integration closeout
   module:

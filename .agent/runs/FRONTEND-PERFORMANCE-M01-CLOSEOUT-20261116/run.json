@@ -3,7 +3,7 @@
   "id": "FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116",
   "branch": "codex/frontend-performance-m01-closeout-20261116",
   "baseline_sha": "c54c7e2dafa879846e97b411fb34e33177819bd9",
-  "status": "completed",
+  "status": "active",
   "goal": ".agent/goals/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116.yaml",
   "record": "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
   "scope": [
