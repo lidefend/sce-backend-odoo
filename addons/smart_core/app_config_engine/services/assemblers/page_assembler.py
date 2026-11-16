@@ -435,9 +435,27 @@ class PageAssembler:
         if not isinstance(view, dict):
             return {}
         existing = view.get("viewIdentity") or view.get("view_identity")
-        if isinstance(existing, dict) and existing:
+        required_identity_keys = {
+            "model",
+            "viewType",
+            "viewContentHash",
+            "viewStructureKey",
+            "crossEnvironmentStable",
+        }
+        if (
+            isinstance(existing, dict)
+            and required_identity_keys.issubset(existing)
+            and str(existing.get("model") or "") == str(model or "")
+            and str(existing.get("viewType") or "").lower() == key
+        ):
             return existing
-        resolved_view_id = int(view_id or 0)
+        view.pop("viewIdentity", None)
+        view.pop("view_identity", None)
+        resolved_view_id = int(
+            view_id
+            or (existing.get("viewId") if isinstance(existing, dict) else 0)
+            or 0
+        )
         if not model or not key or not resolved_view_id:
             return {}
         if view_data is None and carrier is not None:

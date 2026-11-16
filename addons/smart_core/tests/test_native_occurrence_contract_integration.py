@@ -248,3 +248,31 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertTrue(identity)
         self.assertEqual(identity["viewXmlId"], "smart_core.native_occurrence_tree")
         self.assertEqual(contract["views"]["tree"]["viewIdentity"], identity)
+
+    def test_identity_helper_replaces_partial_existing_identity(self):
+        partial = {
+            "viewId": self.tree.id,
+            "model": "res.partner",
+            "viewType": "tree",
+        }
+        contract = {"views": {"tree": {"viewIdentity": partial}}}
+        identity = PageAssembler(
+            self.env,
+            self.env["ir.model"].sudo().env,
+        ).ensure_native_view_identity(
+            contract,
+            model="res.partner",
+            view_type="tree",
+            view_id=self.tree.id,
+        )
+        self.assertTrue(identity)
+        self.assertNotEqual(identity, partial)
+        for key in (
+            "model",
+            "viewType",
+            "viewContentHash",
+            "viewStructureKey",
+            "crossEnvironmentStable",
+        ):
+            self.assertIn(key, identity)
+        self.assertEqual(contract["views"]["tree"]["viewIdentity"], identity)

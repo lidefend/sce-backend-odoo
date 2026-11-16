@@ -60,7 +60,7 @@ The shared producer is `addons/smart_core/core/native_view_occurrence.py`:
 
 The contract protocol moves atomically to `2.4.0`. The Schema SHA256 is
 `82bbf586ef1ff56433a22264e62baac57c0400dedebc5098d8a7ea6c51476a66`, and the
-assembled-contract cache generation moves to `v70`.
+the assembled-contract cache generation moves to `v71`.
 
 ## 4. Strict Consumer
 
@@ -100,7 +100,8 @@ Passed on the current dirty candidate:
 | L1 frontend | `make verify.frontend.contract_v2_occurrence_authority.unit` | passed |
 | L1 frontend | `make verify.frontend.contract_field_occurrence_identity.unit` | passed |
 | L1 frontend | `make verify.frontend.typecheck.strict` | passed |
-| L2 ORM | `make verify.native_occurrence.contract.orm` | 3 non-zero disposable Odoo tests passed |
+| L2 ORM | `make verify.native_occurrence.contract.orm` | 6 non-zero disposable Odoo tests passed |
+| L2 settlement ORM | `make test.payment-settlement.component-profile.orm` | 7 real Odoo tests passed; cleanup restored |
 | L2 iteration | `make ci.local.iteration` | 38 affected targets passed on the final dirty scope |
 | V2 integration | `make verify.unified_page_contract.v2.professional_backend` | full UPage V2 static/contract aggregate passed |
 | Governance | `make audit.verification.lane_coverage.check` | within frozen baseline |
@@ -142,6 +143,12 @@ as historical failure/repair evidence rather than being overwritten.
   owner that needs only the system Node runtime and Python. The list predicate
   remains in its own frontend lane and resolves `esbuild` from
   `frontend/apps/web/package.json` when that lane actually needs it.
+- `product_defect`: three settlement/payment Action contracts carried a non-empty
+  but partial native `viewIdentity`. `PageAssembler` reused any non-empty
+  dictionary, so the final occurrence rebind received no complete View hash and
+  failed closed. The assembler now reuses an identity only when model, view type
+  and all structural fields are complete; otherwise it removes the partial
+  carrier and reconstructs the identity from Odoo `get_view()`.
 - `product_defect`: the first remote backend shard exposed two consumers that
   still read the legacy snake_case identity fields. Native button backend
   identity was collapsing to the generic button key, and Pivot/Graph assembly
