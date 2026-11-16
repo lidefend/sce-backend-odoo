@@ -1183,7 +1183,7 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 	@python3 scripts/verify/list_preference_single_application_guard.py --output artifacts/backend/list_preference_single_application_guard.json
 
 .PHONY: verify.contract.architecture.suite
-verify.contract.architecture.suite: verify.construction.policy_maps.unit verify.native_advisory.unit verify.native_action.view_set.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
+verify.contract.architecture.suite: verify.construction.policy_maps.unit verify.native_advisory.unit verify.native_action.view_set.unit verify.native_action.search_view.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
 	verify.workspace.branch.sync-github.unit \
 	guard.prod.forbid \
 	verify.backend.authority_closure.unit \

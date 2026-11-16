@@ -55,7 +55,13 @@ class AppSearchConfig(models.Model):
     # ======================= 生成（聚合） =======================
 
     @api.model
-    def _generate_from_search(self, model_name, fields_get_snapshot=None, search_view_data=None):
+    def _generate_from_search(
+        self,
+        model_name,
+        fields_get_snapshot=None,
+        search_view_data=None,
+        native_identity=None,
+    ):
         """
         生成/更新 “搜索契约”：
         1) 解析 search 视图：filters（含 domain/context/groups）、默认 group_by
@@ -64,6 +70,10 @@ class AppSearchConfig(models.Model):
         仅当结构变化时 +1 版本
         """
         try:
+            from odoo.addons.smart_core.core.native_action_search_view import (
+                ACTION_SEARCH_VIEW_AUTHORITY,
+            )
+
             if model_name not in self.env:
                 raise ValueError(_("模型不存在：%s") % model_name)
 
@@ -104,6 +114,10 @@ class AppSearchConfig(models.Model):
                     "page_size_range": dict(DEFAULT_PAGE_SIZE_RANGE),
                 }
             )
+            if isinstance(native_identity, dict) and native_identity:
+                search_def["nativeIdentity"] = json.loads(
+                    json.dumps(native_identity, ensure_ascii=False, default=str)
+                )
 
             # 5) 稳定哈希并落库
             payload = json.dumps(search_def, sort_keys=True, ensure_ascii=False, default=str)
@@ -116,12 +130,19 @@ class AppSearchConfig(models.Model):
                 "config_hash": new_hash,
                 "last_generated": fields.Datetime.now(),
             }
-            if self.env.context.get('contract_projection_readonly'):
+            runtime_projection = bool(self.env.context.get('contract_projection_readonly'))
+            if (
+                isinstance(native_identity, dict)
+                and native_identity.get("authority") == ACTION_SEARCH_VIEW_AUTHORITY
+            ):
+                runtime_projection = True
+            if runtime_projection:
                 vals["version"] = cfg.version if cfg else 0
                 vals["meta_info"] = {
                     "source": self._source_contract(model_name),
                     "transient": True,
                     "runtime_readonly": True,
+                    "nativeIdentity": search_def.get("nativeIdentity") or {},
                 }
                 return self.new(vals)
             if cfg:
@@ -144,7 +165,13 @@ class AppSearchConfig(models.Model):
 
     # ======================= 标准化输出 =======================
 
-    def get_search_contract(self, filter_runtime=True, include_user_filters=True, action_id=None):
+    def get_search_contract(
+        self,
+        filter_runtime=True,
+        include_user_filters=True,
+        action_id=None,
+        native_identity=None,
+    ):
         """
         返回标准化搜索契约：
         - filter_runtime=True：按当前用户组过滤“视图内置 filter”（基于 groups_xmlids）
@@ -164,6 +191,10 @@ class AppSearchConfig(models.Model):
         block = dict(self.search_def or {})
         if not block:
             return {}
+        if isinstance(native_identity, dict) and native_identity:
+            block["nativeIdentity"] = json.loads(
+                json.dumps(native_identity, ensure_ascii=False, default=str)
+            )
 
         if not filter_runtime and not include_user_filters:
             # 直接返回“全量定义”

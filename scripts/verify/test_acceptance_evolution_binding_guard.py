@@ -514,6 +514,13 @@ class TestGlobAndPlan(unittest.TestCase):
         self.assertEqual(plan["required_suites"], ["frontend_contract"])
         self.assertEqual(plan["required_evidence_suites"], [])
 
+    def test_contract_v2_codec_requires_contract_not_presentation_evidence(self):
+        path = "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        plan = guard.build_plan(self.registry, [path], "base", HEAD)
+        self.assertEqual(plan["matched_rules"][path], "frontend-contract-v2-codec")
+        self.assertEqual(plan["required_suites"], ["frontend_contract"])
+        self.assertEqual(plan["required_evidence_suites"], [])
+
     def test_frontend_test_tool_changes_do_not_require_runtime_evidence(self):
         for path in (
             "frontend/apps/web/scripts/readonly_block_component_test.mjs",

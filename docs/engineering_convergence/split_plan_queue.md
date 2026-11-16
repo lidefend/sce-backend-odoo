@@ -19,7 +19,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 5435 | Platform owner | `addons/smart_core/core/unified_page_contract_v2_assembler.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 5294 | DevOps owner | `scripts/verify/business_config_approval_runtime_smoke.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 5028 | DevOps owner | `scripts/verify/local_dev_candidate_visual_smoke.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P1 | 4763 | Platform owner | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
+| P1 | 4903 | Platform owner | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 4635 | Platform owner | `addons/smart_core/handlers/ui_contract_v2.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 4564 | DevOps owner | `scripts/verify/test_payment_approval_state_machine.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3753 | DevOps owner | `scripts/ops/daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -43,14 +43,14 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 1864 | Platform owner | `addons/smart_core/core/page_contracts_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 1863 | Platform owner | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 1676 | Platform owner | `addons/smart_core/core/scene_ready_contract_builder.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P1 | 1594 | Platform owner | `addons/smart_core/app_config_engine/models/app_view_config.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
+| P1 | 1602 | Platform owner | `addons/smart_core/app_config_engine/models/app_view_config.py` | Separate parser/assembler/dispatcher responsibilities and preserve backend source-of-truth boundary. |
 | P1 | 1525 | Platform owner | `addons/smart_core/tests/test_view_orchestrator.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 1521 | Platform owner | `addons/smart_core/handlers/business_config_surface.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
-| P2 | 2921 | DevOps owner | `scripts/verify/test_frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 2956 | DevOps owner | `scripts/verify/test_frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2894 | Construction backend owner | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 2765 | Construction backend owner | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 2727 | Frontend owner | `frontend/apps/web/src/app/contracts/v2/schema.ts` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 2676 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 2702 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2472 | DevOps owner | `scripts/verify/test_frontend_professional_component_registry_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2359 | DevOps owner | `scripts/verify/registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 2342 | DevOps owner | `scripts/verify/backend_business_fact_model_audit.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -73,8 +73,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1783 | Frontend owner | `frontend/apps/web/src/components/template/FormSection.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1735 | Frontend owner | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1730 | DevOps owner | `scripts/verify/system_performance_baseline.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1727 | DevOps owner | `scripts/verify/test_coverage_registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1719 | DevOps owner | `scripts/verify/frontend_list_surface_structure_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1719 | DevOps owner | `scripts/verify/test_coverage_registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1699 | Architecture owner | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1675 | Frontend owner | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1668 | Construction backend owner | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
@@ -86,7 +86,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1573 | Construction backend owner | `addons/smart_construction_core/models/core/settlement_order.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1573 | Frontend owner | `frontend/apps/web/src/layouts/AppShell.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1538 | DevOps owner | `scripts/ops/agent_dispatch_inbox.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1524 | DevOps owner | `scripts/verify/test_acceptance_evolution_binding_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1531 | DevOps owner | `scripts/verify/test_acceptance_evolution_binding_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1518 | Construction backend owner | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1064 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 685 | DevOps owner | `.github/workflows/backend_test_suite.yml` | Define owner-specific decomposition plan before adding unrelated behavior. |

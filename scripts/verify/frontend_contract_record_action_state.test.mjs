@@ -6,8 +6,8 @@
  * producer test:
  *
  * 1. `schema.ts` decodes `statusContract.globalStatus.recordDeniedReasons` and
- *    still refuses an undeclared key, so the projection is a decoded contract
- *    field and not a free-form bag.
+ *    `searchContract.nativeIdentity`, while still refusing an undeclared key,
+ *    so both projections are decoded contract fields and not free-form bags.
  * 2. `store.ts` combines the declared record capability with the delete policy's
  *    declared state gate, and never invents a reason code the contract did not
  *    publish.  Delete stays fail-closed: an undeclared page is not deletable.
@@ -49,7 +49,7 @@ const runtimeContract = {
   retryPolicy: { maxRetries: 1 },
 };
 
-function snapshot(globalStatus) {
+function snapshot(globalStatus, searchContract) {
   return {
     pageInfo: {
       pageId: 'contract.form', sceneKey: 'contract.form', pageName: 'Contract', model: 'sc.general.contract',
@@ -63,6 +63,7 @@ function snapshot(globalStatus) {
     actionContract: { actionRuleList: [], dependencyGraph: {} },
     dataContract: { mainData: {}, tableRows: {}, relationRows: {}, dictData: {}, pagination: {}, dataSource: {}, dataMeta: {} },
     runtimeContract,
+    ...(searchContract === undefined ? {} : { searchContract }),
     meta: {
       etag: 'test', snapshotId: 'test', traceId: 'test', requestId: 'test', sourceType: 'test',
       lifecycle: {
@@ -75,6 +76,39 @@ function snapshot(globalStatus) {
     },
   };
 }
+
+const searchNativeIdentity = {
+  model: 'res.partner',
+  actionId: 11,
+  viewId: 22,
+  viewXmlId: 'smart_core.p0_2_search_alpha',
+  authority: 'action_search_view',
+  sourceLocator: 'ir.actions.act_window.search_view_id',
+};
+
+check(() => assert.deepEqual(
+  decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: searchNativeIdentity },
+  )).searchContract.nativeIdentity,
+  searchNativeIdentity,
+), 'searchContract.nativeIdentity must survive decoding');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: [searchNativeIdentity] },
+  )),
+  /searchContract\.nativeIdentity/,
+), 'searchContract.nativeIdentity must be an object');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
+    { inventedSearchAuthority: searchNativeIdentity },
+  )),
+  /searchContract\.inventedSearchAuthority|not allowed|unknown/i,
+), 'the Search Contract must still reject undeclared keys');
 
 // 1. The decoder keeps the published reasons and still rejects an undeclared key.
 const decoded = decodeContractV2Snapshot(snapshot({

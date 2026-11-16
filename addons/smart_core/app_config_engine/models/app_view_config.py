@@ -148,6 +148,14 @@ class AppViewConfig(models.Model, ContractSchemaMixin):
         if action_id:
             action = self.env['ir.actions.act_window'].sudo().browse(action_id)
             if action.exists() and getattr(action, 'res_model', None) == model_name:
+                if not source_view_id and view_type == 'search' and action.search_view_id:
+                    search_view = action.search_view_id
+                    if search_view.model != model_name or search_view.type != 'search':
+                        raise ValueError(
+                            "Action %s search_view_id %s does not match %s.search"
+                            % (action.id, search_view.id, model_name)
+                        )
+                    source_view_id = int(search_view.id or 0) or False
                 if not source_view_id:
                     for view_spec in (action.views or []):
                         if view_spec and len(view_spec) >= 2 and view_spec[1] == view_type:

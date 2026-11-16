@@ -90729,7 +90729,7 @@
       "business_methods": [
         {
           "decorators": [],
-          "line": 147,
+          "line": 168,
           "name": "get_search_contract",
           "path": "addons/smart_core/app_config_engine/models/app_search_config.py"
         },
@@ -90737,7 +90737,7 @@
           "decorators": [
             "api.model"
           ],
-          "line": 326,
+          "line": 357,
           "name": "refresh_saved_search_runtime",
           "path": "addons/smart_core/app_config_engine/models/app_search_config.py"
         }
@@ -91003,13 +91003,13 @@
       "business_methods": [
         {
           "decorators": [],
-          "line": 536,
+          "line": 544,
           "name": "get_contract_api",
           "path": "addons/smart_core/app_config_engine/models/app_view_config.py"
         },
         {
           "decorators": [],
-          "line": 1518,
+          "line": 1526,
           "name": "build_final_contract",
           "path": "addons/smart_core/app_config_engine/models/app_view_config.py"
         }
@@ -104317,8 +104317,8 @@
       "sce_customer_sample",
       "smart_construction_demo"
     ],
-    "source_revision": "a83bd016177e7c6b9417dd3f911448a66b1eea93",
-    "source_tree": "e422c2444e5b8f1c0422c5187098c510f6a012c4"
+    "source_revision": "69a798cb9e0751733a30ef8c20e656fd01cd0e9b",
+    "source_tree": "6c946ac2e8474afbb6c82f5383a625c0f5518ca1"
   },
   "summary": {
     "abstract_declarations": 29,

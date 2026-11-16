@@ -303,6 +303,53 @@
         },
         "defaults": {
           "type": "object"
+        },
+        "nativeIdentity": {
+          "$ref": "#/$defs/searchNativeIdentity"
+        }
+      }
+    },
+    "searchNativeIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "model",
+        "actionId",
+        "viewId",
+        "viewXmlId",
+        "authority",
+        "sourceLocator"
+      ],
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actionId": {
+          "type": [
+            "integer",
+            "null"
+          ],
+          "minimum": 1
+        },
+        "viewId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "viewXmlId": {
+          "type": "string"
+        },
+        "authority": {
+          "enum": [
+            "action_search_view",
+            "model_default_search_view"
+          ]
+        },
+        "sourceLocator": {
+          "enum": [
+            "ir.actions.act_window.search_view_id",
+            "ir.ui.view:search"
+          ]
         }
       }
     },

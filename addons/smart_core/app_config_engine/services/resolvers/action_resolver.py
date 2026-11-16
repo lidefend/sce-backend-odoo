@@ -40,6 +40,10 @@ class ActionResolver:
     def _related_id(value):
         if not value:
             return 0
+        if isinstance(value, (list, tuple)):
+            value = value[0] if value else 0
+        elif isinstance(value, dict):
+            value = value.get("id") or 0
         if isinstance(value, (int, str)):
             try:
                 return max(int(value), 0)

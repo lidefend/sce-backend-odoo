@@ -1,0 +1,78 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-P0-2-SEARCH-VIEW-CONTRACT
+  title: Close Action-bound native Search View identity
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: PageAssembler and app.search.config Search identity projection
+  module:
+    - addons/smart_core
+  supporting_layer:
+    layer: P4 ops delivery tool
+    scope: Correct contract-codec acceptance routing only
+  baseline:
+    branch: main
+    full_sha: 3c7682647352cdf52b790e9a46b893e2535be77d
+    prerequisite_pr: 905
+  objective: >-
+    Load the Search View explicitly bound to the current Window Action, preserve
+    its native model/action/view/XMLID authority in searchContract.nativeIdentity,
+    prevent Action-specific search profiles from contaminating the model-level
+    cache, and fail closed when an explicit Action Search View cannot be resolved.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral native Search projection mechanism
+    why_here: >-
+      Search View authority, Action-bound resolution and provenance are generic
+      mechanisms shared by all Odoo business modules.
+    why_not_elsewhere:
+      - no P1 industry search defaults
+      - no P2 customer search preferences
+      - no P3 low-code overlay redesign
+      - no frontend search inference
+  deliverables:
+    - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
+    - addons/smart_core/app_config_engine/models/app_search_config.py
+    - addons/smart_core/app_config_engine/models/app_view_config.py
+    - addons/smart_core/app_config_engine/services/resolvers/action_resolver.py
+    - addons/smart_core/core/native_action_search_view.py
+    - addons/smart_core/handlers/ui_contract_v2.py
+    - addons/smart_core/tests/test_native_action_search_view_integration.py
+    - scripts/verify/test_native_action_search_view.py
+    - frontend/apps/web/src/app/contracts/v2/schema.ts
+    - config/acceptance/evolution_binding.v1.json
+    - scripts/verify/test_acceptance_evolution_binding_guard.py
+    - docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json
+    - docs/architecture/unified_page_contract_v2/examples/
+    - addons/smart_core/core/contract_lifecycle.py
+    - scripts/verify/frontend_contract_record_action_state.test.mjs
+    - scripts/verify/contract_v2_render_authority_matrix.py
+    - docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json
+    - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    - scripts/audit/verification_lane_dispositions.json
+    - make/guards.mk
+    - make/ci.mk
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_frontend_dev_incremental.py
+    - scripts/verify/unified_page_contract_v2_assembler_guard.py
+    - scripts/verify/test_coverage_registry.yaml
+    - docs/audit/native-scene-01/p0-2-search-view-contract/implementation_record.md
+    - docs/audit/native-scene-01/inventories/
+    - docs/audit/test_coverage_registry/
+    - docs/engineering_convergence/
+  acceptance:
+    - Action search_view_id and search XMLID are consumed by page assembly
+    - searchContract.nativeIdentity carries action/model/view/XMLID authority
+    - explicit Action Search View resolution failure does not fall back
+    - Action-specific search data is projected transiently without model-cache contamination
+    - two Actions on the same model preserve distinct Search View filters
+    - the coordinated V2 decoder preserves nativeIdentity and still rejects undeclared fields
+    - contract V2 codec changes require frontend contract proof, not page presentation evidence
+    - focused pure and Odoo tests pass with non-zero collection
+  exclusions:
+    - Native Action Contract root schema
+    - occurrence identity changes
+    - Renderer or search interaction changes
+    - database model or business data changes
+    - P0-3, P0-4 and P0-5
+    - deployment
+  rollback: Revert the P0-2 source and focused-test commit; no persistent schema state is created.
