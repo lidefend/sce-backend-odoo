@@ -217,13 +217,27 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - `make verify.acceptance.evolution.binding`：PASS，72 tests；
   `contracts/v2/**` 经 `frontend-contract-v2-codec` 只要求
   `frontend_contract`。
+- `make acceptance.runtime.contract_receipt SC_ACCEPTANCE_RUNTIME_PROFILE=candidate`：
+  PASS，绑定 serving/expected SHA `69a798cb9e0751733a30ef8c20e656fd01cd0e9b`。
+- 精确 candidate 上的
+  `ui.contract.v2(project.responsibility, view_type=form, render_profile=edit)`
+  真实 API 契约回执：HTTP 200、`ok=true`、`pageInfo.model=project.responsibility`、
+  `pageInfo.viewType=form`、formal schema 0 errors、`searchContract` 存在且
+  `nativeIdentity` 缺失而不是伪造。
+  - response SHA256：
+    `1c911a718d6799c874cf1fb29bee1fd009af8b11c6f91e9d62d0c07aec2421bd`
+  - contract lifecycle SHA256：
+    `13712e5d129673d2357f233d48cce0cb8d6787f0b8d3332e2c84068b92e475e7`
+  - response custody：
+    `.runtime/native-scene-01-p0-2/project-responsibility-contract.json`
 
 测试证据限制：
 
 - Odoo receipt 的干净来源身份是 baseline HEAD `3c7682647` 加声明的 dirty
   source fingerprint；它不是 clean candidate SHA。
 - Search ORM 使用 disposable `sc-local-test/sc_test`，不等于真实业务数据库验收。
-- 本轮没有执行浏览器或真实业务角色验收，因此 L3/L4 不因 Decoder/ORM 通过而升级。
+- 本轮核心验收是契约正确性，因此使用真实 fixture 角色、Company 4 和 candidate
+  API 回执作为业务契约证据；没有把浏览器表现当作契约事实。
 
 ## 6. 失败分类与修复
 
@@ -265,17 +279,17 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 
 - L1 原生事实：PASS。Action `search_view_id`、XMLID、模型和 View type 有真实源码
   与 Odoo ORM 证据。
-- L2 后端契约：PASS（本阶段范围）。身份、filter 语义、缓存隔离、fail-closed 和
-  schema 摘要已有非零测试。
-- L3 前端实际消费：PARTIAL。严格 V2 Decoder 已证明保留 `nativeIdentity` 并拒绝
-  未知字段；尚未执行浏览器页面和真实 Action 切换。
-- L4 真实业务验收：NOT RUN。未使用真实付款/项目角色、真实数据、浏览器操作和
-  权限拒绝业务闭环；不能把 ORM 权限负例冒充 L4。
+- L2 后端契约：PASS。身份、filter 语义、缓存隔离、fail-closed、schema 摘要和
+  精确 candidate 的完整 API 契约均有非零证据。
+- L3 前端契约消费：PASS（本阶段范围）。严格 V2 Decoder 已证明保留
+  `nativeIdentity` 并拒绝未知字段；本阶段没有改变 Renderer 或页面交互。
+- L4 真实业务契约：PASS（本阶段范围）。candidate fixture 角色、Company 4 和真实
+  `project.responsibility` 模型返回 schema-valid 完整契约。页面像素、Renderer 与
+  用户交互不属于本轮契约验收范围，未运行也不构成契约正确性缺口。
 
 ## 8. 下一步
 
-1. 在最终未改动候选上重跑 `make ci.local.iteration` 和完整
-   `make verify.contract.architecture.suite`。
+1. 在最终文档后代候选上复用已通过的代码绑定的契约回执；文档变化不重新定义契约行为。
 2. 提交并发布 P0-2 独立 PR，绑定精确 HEAD 的远端必需 CI。
 3. 停止在 P0-2 独立审核检查点；审核通过并另行调度后才进入 P0-3。
 
