@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-B-S2-CONTRACT
+  title: Native Action Contract and occurrence design
+  status: active
+  formal_product_layer: P4 read-only contract design audit
+  layer_target: Native Action View Set, Search identity and occurrence contract
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+  baseline:
+    branch: audit/native-scene-01-b-semantic-conversion-20261116
+    full_sha: 89ce5325085c89513c83773787ff353e0ba2f5ce
+    prerequisite_pr: 903
+  objective: >-
+    Determine the precise reusable contract shape and existing producer paths
+    needed to deliver a native Action as one business-scene identity while
+    preserving ordered views, Action-bound search identity and occurrence-level
+    field semantics.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral contract design
+    why_here: >-
+      The checkpoint compares existing P0 contract producers and P1 native
+      declarations without changing either implementation.
+    why_not_elsewhere:
+      - no P0 contract implementation change
+      - no P1 business semantics change
+      - no new Odoo model or persisted contract
+      - no frontend renderer or component change
+      - no scene composition expansion
+  deliverables:
+    - docs/audit/native-scene-01/b-s2-contract/native_action_contract_design.md
+  acceptance:
+    - define the minimal Native Action Contract by reusing ui.contract.v2
+    - prove ordered Action View Set and active-view identity from Odoo effective action.views
+    - keep Action identity separate from multiple menu and product-scene references
+    - deny request view ids that do not select an Action-bound candidate or authorized preview override
+    - define Action-bound search view precedence and identity propagation
+    - define deterministic field, button and container occurrence identity by view type and view version
+    - separate full View content hash, structural fingerprint and node occurrence identity
+    - classify domain, context, groups and options into explicit contract locations
+    - separate native explicit, model-derived, compatibility default and unresolved provenance
+    - separate backend contract, client renderer and business execution readiness
+    - keep per-request projection availability distinct from backend contract structural readiness
+    - reference existing authorization projections without creating a second permission decision
+    - provide an implementation sequence that changes no product code in this checkpoint
+  exclusions:
+    - product source, contract schema, database, configuration or business-data changes
+    - browser, role, runtime or business-method acceptance
+    - Widget renderer, interaction execution, Calendar/Gantt/Dashboard, budget/WBS or scene composition
+    - merge, deployment or implementation of B-S2 proposals
+  rollback: Remove the B-S2 design document and run registration; no runtime state is created.

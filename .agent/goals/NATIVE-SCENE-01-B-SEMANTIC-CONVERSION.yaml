@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-B-SEMANTIC-CONVERSION
+  title: Odoo native semantics to unified page contract conversion
+  status: active
+  formal_product_layer: P4 read-only audit and delivery evidence
+  layer_target: Odoo XML, field metadata, modifiers, actions and context to ui.contract.v2
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+  baseline:
+    branch: audit/native-scene-01-a01-a04-20261116
+    full_sha: ff6587d833f85469e1075c8ec3fcac09b9063462
+    prerequisite_pr: 902
+  objective: >-
+    Determine the lowest-cost, highest-coverage rules that transform Odoo native
+    models, views, fields, modifiers, actions and context into the custom
+    frontend's unified page contract. Use payment.request and project.project as
+    semantic samples, not as page-delivery acceptance cases.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral conversion audit
+    why_here: >-
+      The checkpoint classifies existing P0 conversion mechanisms and P1 native
+      declarations without changing either.
+    why_not_elsewhere:
+      - no P0 contract implementation change
+      - no P1 business semantics change
+      - no P2 customer configuration change
+      - no P3 low-code runtime change
+      - no frontend renderer or page change
+  deliverables:
+    - docs/audit/native-scene-01/b-semantic-conversion/native_semantic_conversion_audit.md
+  acceptance:
+    - trace native source facts to contract producers with paths and line numbers
+    - identify generic conversion rules independently of the two sample models
+    - identify model-specific or industry-specific hooks and why they exist
+    - distinguish native, projected, normalized and frontend-consumed semantics
+    - expose lossy or duplicate conversion stages without implementing a fix
+  exclusions:
+    - ordinary page delivery acceptance
+    - browser acceptance
+    - widget renderer implementation
+    - interaction execution validation
+    - professional renderer implementation
+    - auto-onboarding implementation
+    - product source, database, configuration or business-data changes
+    - merge, deployment or B02+ execution
+  rollback: Remove the B-S1 audit document and run registration; no runtime state is created.
