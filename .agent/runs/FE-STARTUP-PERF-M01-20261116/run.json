@@ -45,7 +45,10 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_delivery_hardening_guard.py",
     "scripts/verify/test_frontend_delivery_hardening_guard.py",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+    "frontend/apps/web/scripts/platform_capability_explorer_browser_support.mjs",
+    "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs"
   ],
   "excluded": [
     "backend contract and permission changes",
@@ -391,7 +394,41 @@
         "scripts/verify/frontend_probe_toolchain_guard.py",
         "scripts/verify/test_frontend_probe_toolchain_guard.py",
         "config/frontend",
-        "make/frontend.mk"
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs"
+      ],
+      "kind": "offline"
+    },
+    "platform_explorer_probe": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support.mjs",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "scripts/verify/frontend_authenticated_intent.mjs",
+        "make/frontend.mk",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/scripts/admin_route_access_test.ts",
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "make/ci.mk",
+        "addons/smart_core/core/platform_duty_contract.py",
+        "addons/smart_core/core/system_init_identity_payload.py",
+        "addons/smart_core/core/source_authority.py",
+        "addons/smart_core/security/platform_admin.py",
+        "addons/smart_core/controllers/platform_duty_controller.py",
+        "addons/smart_core/controllers/platform_ops_controller.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/delivery/effective_delivery_service.py",
+        "addons/smart_core/views/platform_company_access_views.xml",
+        "addons/smart_core/data/sc_platform_namespace_seed.xml",
+        "addons/smart_core/tests/test_platform_admin_duty_contract.py"
       ],
       "kind": "offline"
     }
