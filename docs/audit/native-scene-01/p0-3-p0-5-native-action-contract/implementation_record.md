@@ -85,7 +85,7 @@ strict Decoder therefore stopped the payment-request list with
 The correction carries the already-resolved `nativeIdentity` into
 `searchContract` and adds an Odoo integration assertion that both contracts
 publish the same Search View ID and authority. The browser client and acceptance
-client now advertise contract version `2.3.x` as well.
+declarations now advertise contract version `2.3.x` as well.
 
 ## 4. Verification
 

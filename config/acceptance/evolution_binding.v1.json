@@ -421,6 +421,15 @@
       "list_surface_structure"
     ]
   },
+  {
+    "id": "frontend-acceptance-daily-contract-instance",
+    "paths": [
+      "config/acceptance/backend_contract_instance_daily_v1.json"
+    ],
+    "suites": [
+      "frontend_contract"
+    ]
+  },
     {
       "id": "isolated-acceptance-entry-identity",
       "paths": [

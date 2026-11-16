@@ -16,6 +16,7 @@
     "docs/architecture/unified_page_contract_v2/",
     "contracts/registry/component.yaml",
     "config/acceptance/backend_contract_instance_v1.json",
+    "config/acceptance/backend_contract_instance_daily_v1.json",
     "config/acceptance/evolution_binding.v1.json",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
     "frontend/apps/web/src/app/contracts/v2/client.ts",
