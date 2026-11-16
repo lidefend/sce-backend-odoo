@@ -53,6 +53,7 @@
     "scripts/verify/test_frontend_acceptance_candidate_guards.py",
     "scripts/verify/test_frontend_acceptance_runtime_profile.py",
     "scripts/verify/test_frontend_release_local_entry.py",
+    "scripts/verify/test_frontend_list_surface_search_contract.py",
     "scripts/verify/test_frontend_professional_component_registry_guard.py",
     "scripts/verify/test_node_component_registry.py",
     "scripts/verify/test_semantic_registry_lint.py",
@@ -243,6 +244,7 @@
         "scripts/verify/acceptance_evolution_binding_guard.py",
         "scripts/verify/test_acceptance_evolution_binding_guard.py",
         "scripts/verify/test_acceptance_evolution_integration.py",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
         "make/frontend.mk",
         "make/guards.mk"
       ],

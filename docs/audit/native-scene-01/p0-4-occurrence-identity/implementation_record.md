@@ -108,6 +108,7 @@ Passed on the current dirty candidate:
 | P4 frontend routing | `make verify.frontend.dev.incremental.unit` | 164 non-zero tests passed |
 | P4 execution policy | `make verify.baseline.iteration.execution.policy` | 19 tests passed |
 | P4 path ownership | `make verify.ci.path_ownership.unit` | 22 tests passed |
+| P4 CI dependency resolution | `make verify.frontend.list_surface_search_contract.unit` | 26 tests passed |
 
 The ORM receipt on the last isolated run is
 `.runtime/test-baseline/1794855003107430908/receipt.json`; earlier runs remain
@@ -132,6 +133,12 @@ as historical failure/repair evidence rather than being overwritten.
   plans RUN/REUSE first, prepares the carrier only when a RUN suite exists,
   executes only declared suite targets, and records through the existing
   validated recorder.
+- `validation_tool_defect`: the list-search predicate test loaded `esbuild`
+  through a repository-root relative `node_modules` path. Local npm layout
+  exposed that path, while the pnpm CI layout did not. The test now resolves the
+  package from `frontend/apps/web/package.json` through Node's `createRequire`,
+  so it consumes the owning package's dependency graph without assuming a
+  hoisted module path.
 - `product_defect`: the first remote backend shard exposed two consumers that
   still read the legacy snake_case identity fields. Native button backend
   identity was collapsing to the generic button key, and Pivot/Graph assembly

@@ -137,7 +137,9 @@ class ListSurfaceSearchContractTest(unittest.TestCase):
     def test_daily_read_boundary_executes_real_predicate(self):
         source = self.probe.split('function dailyReadonlyRequest(')[1].split('let browser,')[0]
         program = """const assert = require('node:assert/strict');
-const build = require('./frontend/apps/web/node_modules/esbuild').buildSync;
+const {createRequire} = require('node:module');
+const webRequire = createRequire(process.cwd() + '/frontend/apps/web/package.json');
+const build = webRequire('esbuild').buildSync;
 const code = build({stdin:{contents:"export * from './app/runtime/recordEntryContract'; export * from './app/routeQuery'; export * from './app/resolvers/sceneRegistry';",resolveDir:process.cwd()+'/frontend/apps/web/src',loader:'ts'},bundle:true,platform:'node',format:'cjs',define:{'import.meta.env.DEV':'false'},write:false}).outputFiles[0].text;
 const mod={exports:{}};new Function('module','exports','require',code)(mod,mod.exports,require);const dailyRuntime=mod.exports;
 function dailyReadonlyRequest(""" + source + "\n"

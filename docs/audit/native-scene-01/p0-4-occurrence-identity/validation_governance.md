@@ -104,6 +104,12 @@ An already-covered suite may be rerun only with
 runtime rerun requires `SC_ACCEPTANCE_FULL=1` and
 `SC_ACCEPTANCE_FULL_REASON`. Empty reasons fail before any runtime mutation.
 
+Validation tools must resolve declared frontend dependencies from the owning
+package boundary (`frontend/apps/web/package.json`) rather than assuming a
+repository-root or hoisted `node_modules` layout. This keeps npm and pnpm
+installations equivalent without broadening the runtime lane or skipping the
+predicate assertion.
+
 ## 3. Verification
 
 The supporting P4 batch requires non-zero targeted tests for:
