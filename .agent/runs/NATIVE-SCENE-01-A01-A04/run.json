@@ -10,6 +10,7 @@
     "scripts/audit/native_scene_inventory.py",
     "scripts/audit/test_native_scene_inventory.py",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "make/guards.mk",
     "make/dev_test.mk"
   ],
