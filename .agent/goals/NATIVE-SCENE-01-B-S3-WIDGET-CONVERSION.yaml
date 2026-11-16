@@ -1,0 +1,46 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
+  title: Odoo native Widget semantics to reusable frontend components
+  status: active
+  formal_product_layer: P4 read-only audit supporting P0
+  layer_target: Native View Widget and modifier semantics to unified Widget contract and component identity
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+  baseline:
+    branch: main
+    full_sha: ceaa207b716ed3e2157f49d315b72e071a722645
+  objective: >-
+    Trace how Odoo View XML widgets, attributes, modifiers, domains, contexts
+    and options become ui.contract.v2 Widget descriptors and frontend component
+    identities. Identify reusable conversion rules, lossy stages, fallback
+    sources and the smallest implementation boundary needed for automatic
+    Widget takeover.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral native View semantic audit
+    why_here: >-
+      Widget interpretation, identity, capability resolution and contract
+      projection are platform-wide mechanisms owned by smart_core and the
+      generic Contract V2 consumer.
+    why_not_elsewhere:
+      - no industry model or customer preference belongs in the platform audit
+      - no Renderer implementation is introduced in this checkpoint
+      - no P2 or P3 configuration is created
+      - no frontend model-specific fallback is accepted as native authority
+  deliverables:
+    - docs/audit/native-scene-01/b-s3-widget-conversion/native_widget_takeover_audit.md
+  acceptance:
+    - trace native XML Widget facts through parser, contract producer and frontend consumer
+    - classify explicit native, metadata-derived, compatibility fallback and unresolved facts
+    - identify generic Widget identity and configuration fields already available
+    - identify duplicate, lossy or frontend-only interpretation paths
+    - define reusable component mapping and capability boundaries without implementing them
+    - bind every conclusion to source paths and precise line numbers
+  exclusions:
+    - product source, schema, parser, Renderer or frontend behavior changes
+    - ordinary page delivery or browser acceptance
+    - occurrence implementation, Gantt, Calendar, Pivot, Graph or Dashboard implementation
+    - persistent models, database writes, configuration writes or business data changes
+    - merge or deployment
+  rollback: Remove the B-S3 audit document and run registration; no runtime state is created.
