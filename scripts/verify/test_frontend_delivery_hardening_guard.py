@@ -15,6 +15,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 
+class ContractFormRouteBindingTest(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        tree = ast.parse((ROOT / 'scripts/verify/frontend_delivery_hardening_guard.py').read_text())
+        function = next(node for node in tree.body if isinstance(node, ast.FunctionDef)
+                        and node.name == 'contract_form_route_errors')
+        namespace = {'re': re}
+        exec(compile(ast.Module(body=[function], type_ignores=[]), '<route-guard>', 'exec'), namespace)
+        cls.check_route = staticmethod(namespace['contract_form_route_errors'])
+        cls.source = (ROOT / 'frontend/apps/web/src/pages/ContractFormRoute.vue').read_text()
+
+    def test_controlled_lazy_route_is_accepted(self):
+        self.assertEqual(self.check_route(self.source), [])
+
+    def test_other_component_or_uncontrolled_assignment_is_rejected(self):
+        mutations = (
+            self.source.replace("import('./ContractFormPage.vue')", "import('./OtherPage.vue')"),
+            self.source.replace(':is="page"', ':is="otherPage"'),
+            self.source.replace('page.value = result.module.default;', 'page.value = arbitraryPage;'),
+            self.source.replace("if ('module' in result)", "if (true)"),
+            self.source.replace("from './contractFormRouteLoader'", "from './otherLoader'"),
+            self.source + '\npage.value = arbitraryPage;',
+            self.source + "\nimport ContractFormPage from './ContractFormPage.vue';",
+        )
+        for source in mutations:
+            with self.subTest(source=source[-90:]):
+                self.assertTrue(self.check_route(source))
+
+
 class AuthenticatedIntentProbeTest(unittest.TestCase):
     def test_request_identity_and_failures(self):
         program = r"""

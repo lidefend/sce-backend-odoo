@@ -749,6 +749,7 @@ RULES = (
         "verify.frontend.style_system.guard",
     )),
     Rule((
+        "frontend/apps/web/src/pages/ContractFormRoute.vue",
         "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
         "frontend/apps/web/src/app/performance/startupTiming.ts",
         "frontend/apps/web/scripts/startup_performance_test.ts",
@@ -1045,6 +1046,8 @@ RULES = (
     Rule((
         "scripts/verify/frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/pages/ContractFormRoute.vue",
+        "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
         "frontend/apps/web/src/App.vue",
         "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
     ), (

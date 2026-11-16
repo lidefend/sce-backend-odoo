@@ -597,6 +597,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.frontend.lint.src", select_targets([path]))
                 self.assertIn("verify.frontend.typecheck.strict", select_targets([path]))
 
+        for route_path in (
+            "frontend/apps/web/src/pages/ContractFormRoute.vue",
+            "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
+        ):
+            with self.subTest(route_path=route_path):
+                self.assertIn("verify.frontend.delivery_hardening.guard", select_targets([route_path]))
+                self.assertIn("verify.frontend.startup_performance.unit", select_targets([route_path]))
+
         delivery_paths = (
             "scripts/verify/frontend_delivery_hardening_guard.py",
             "scripts/verify/test_frontend_delivery_hardening_guard.py",

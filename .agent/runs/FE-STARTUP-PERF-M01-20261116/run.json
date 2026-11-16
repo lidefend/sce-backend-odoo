@@ -42,7 +42,10 @@
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     "scripts/verify/line_budgets.py",
     "make/frontend.mk",
-    "scripts/verify/frontend_dev_incremental.py"
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "excluded": [
     "backend contract and permission changes",
@@ -376,6 +379,19 @@
         "frontend/apps/web/scripts/record_deep_link_evidence.d.mts",
         "scripts/verify/test_local_dev_runtime_performance.py",
         "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "config/frontend",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     }
