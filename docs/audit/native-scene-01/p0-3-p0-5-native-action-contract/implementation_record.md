@@ -88,9 +88,9 @@ Passed:
 - `make verify.unified_page_contract.v2.intent`: PASS.
 - `make verify.frontend.contract_v2_render_authority.unit`: PASS, 361 fields,
   unclassified=0.
-- `make ci.local.iteration`: PASS, 34 affected targets.
+- `make ci.local.iteration`: PASS, 36 affected targets.
   Receipt:
-  `.runtime/frontend-dev-validation/executions/20261116T134853Z-3843866-120235427/receipt.json`.
+  `.runtime/frontend-dev-validation/executions/20261116T135832Z-3897864-517607132/receipt.json`.
 
 ## 5. L1-L4
 

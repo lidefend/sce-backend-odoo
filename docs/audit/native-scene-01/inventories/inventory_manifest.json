@@ -1372,22 +1372,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "16e70253a34b6750c127f538c4f0f3664434fc8c064d5d6ed6ee83aea9969c50"
+      "sha256": "72460e101e040b4091dc117b6b5a007f8cf9fe2eae4a93846fc4003394516999"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "36cd21c992ab5ffc35cd7dc20078fc8bd6c613a6d9975aab7df3a1a00ab01697"
+      "sha256": "5e5fb21cb2ab3e7703eb7bbdedfd209744e056a9058fb9b26594c6b877c29784"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "a82f6facf60d8511331f2091cd637f4892cc81121e5b90089e4f001c69a7dfe9"
+      "sha256": "e9ce3d1fc1257ab804a03cdabe6715f01232ba7272f0da6eb2869f9830ca61ec"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "e47128c41074b29db10060102d1e64105e632de610899d0d2f1f83c2aae925e1"
+      "sha256": "d16a6cc04da3af154c3119d9aeaecdfc6b70ce80e66b439d2f256bc6cb32b7f6"
     }
   },
   "runtime_evidence": {
@@ -1456,11 +1456,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T21:56:53+08:00",
+    "commit_time": "2026-11-16T21:57:43+08:00",
     "dirty_paths": [],
-    "revision": "d990575dec43897a4b7488a804bae261217e7d67",
+    "revision": "368436dc0e4247a53501eeb0721bd5b5ee7c2744",
     "root": ".",
-    "tree": "91d2d1029eed9fdebe2dde037f1a70caa135d7e7"
+    "tree": "38a6a71952192a684e111d525235f71cf50abfbe"
   },
   "statistics": {
     "actions": {
