@@ -493,5 +493,5 @@
   },
   "purpose": "P4-01/P4-02 conformance input. These are expected outcomes, not implemented planner results.",
   "schema": "change_impact_verification.acceptance_matrix.v1",
-  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740"
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121"
 }

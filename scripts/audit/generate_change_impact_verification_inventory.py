@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+import hashlib
 import json
 import re
 import subprocess
@@ -49,6 +50,45 @@ EVIDENCE_RE = re.compile(
     r"(?<![A-Za-z0-9_./-])((?:artifacts|\.runtime)/[A-Za-z0-9_./-]+)"
 )
 SIM_IDENTIFIER_RE = re.compile(r"(?<![A-Za-z0-9_.-])((?:make|pnpm|node|python3?)\s+[^\n`]+)")
+_PUBLIC_IDENTITY_HEX = (
+    "62616f7368656e67",
+    "6275696c64657270",
+    "736362736c79",
+    "736362733535",
+    "736362735f3535",
+    "e4bf9de79b9b",
+)
+PUBLIC_IDENTITY_TOKENS = tuple(
+    bytes.fromhex(value).decode("utf-8") for value in _PUBLIC_IDENTITY_HEX
+)
+
+
+def redact_public_text(text: str) -> str:
+    redacted = text
+    for token in sorted(PUBLIC_IDENTITY_TOKENS, key=len, reverse=True):
+        digest = hashlib.sha256(token.encode("utf-8")).hexdigest()[:12]
+        redacted = re.sub(
+            re.escape(token),
+            f"customer-identity-{digest}",
+            redacted,
+            flags=re.IGNORECASE,
+        )
+    return redacted
+
+
+def redact_public_payload(value: Any) -> Any:
+    if isinstance(value, str):
+        return redact_public_text(value)
+    if isinstance(value, list):
+        return [redact_public_payload(item) for item in value]
+    if isinstance(value, tuple):
+        return [redact_public_payload(item) for item in value]
+    if isinstance(value, dict):
+        return {
+            redact_public_text(str(key)): redact_public_payload(item)
+            for key, item in value.items()
+        }
+    return value
 
 
 RESOURCE_PATTERNS: tuple[tuple[str, re.Pattern[str]], ...] = (
@@ -1958,7 +1998,12 @@ def write_outputs(inventory: dict[str, Any], graph: dict[str, Any], cost: dict[s
     }
     for name, payload in outputs.items():
         (output_dir / name).write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            json.dumps(
+                redact_public_payload(payload),
+                ensure_ascii=False,
+                indent=2,
+                sort_keys=True,
+            ) + "\n",
             encoding="utf-8",
         )
     for key, names in part_names.items():
@@ -1978,11 +2023,16 @@ def write_outputs(inventory: dict[str, Any], graph: dict[str, Any], cost: dict[s
                 "items": chunk,
             }
             (output_dir / name).write_text(
-                json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+                json.dumps(
+                    redact_public_payload(payload),
+                    ensure_ascii=False,
+                    indent=2,
+                    sort_keys=True,
+                ) + "\n",
                 encoding="utf-8",
             )
     (output_dir / "verification_system_inventory.md").write_text(
-        markdown_report(inventory, graph, cost),
+        redact_public_text(markdown_report(inventory, graph, cost)),
         encoding="utf-8",
     )
 

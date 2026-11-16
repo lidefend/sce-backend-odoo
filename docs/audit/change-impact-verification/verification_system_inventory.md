@@ -2,8 +2,8 @@
 
 ## 1. 身份与口径
 
-- 源码 HEAD：`803f5f7ab1b07a13344112abe3330ab160a50740`
-- 源码 tree：`dc1079a626ef5babd5fe179edac2219cfd75fa64`
+- 源码 HEAD：`7169230580faaeae971695ac232c1d27173ad121`
+- 源码 tree：`3eed77292d6a0a7be3d236a68830d61174a518b2`
 - 类型：P4 只读审计，不执行产品门禁、不写数据库、不改变断言。
 - 验证项：workflow job、四个 gate anchor 可达的 Make target、其实际执行的脚本、
   acceptance suite，以及 guard registry 中的完整脚本生命周期。

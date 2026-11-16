@@ -24,6 +24,10 @@
 - `config/acceptance/evolution_binding.v1.json`。
 - 任何现有必需 CI 检查或门禁裁决。
 
+公开审计生成物不得复制客户身份或品牌标识。盘点器在序列化边界把已登记身份 token
+替换为稳定的 `customer-identity-<digest>`；测试同时验证所有生成分片和报告不再包含
+原 token。该处理只影响公开审计物，不改变源仓库事实或验证责任。
+
 ## 2. 分层边界
 
 | 层 | 证明责任 | 不证明 |

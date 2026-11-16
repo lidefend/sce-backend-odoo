@@ -7828,7 +7828,7 @@
     {
       "from": "make:verify.tenant.product_payload_boundary",
       "relation": "may_write_or_read_evidence",
-      "to": "evidence:artifacts/baosheng-history.tar.gz"
+      "to": "evidence:artifacts/customer-identity-67a129f1c75e-history.tar.gz"
     },
     {
       "from": "make:verify.tenant.product_payload_boundary",
@@ -11430,9 +11430,9 @@
       "path": "artifacts/backend/web_contract_v2_frontend_architecture_guard.json"
     },
     {
-      "id": "evidence:artifacts/baosheng-history.tar.gz",
+      "id": "evidence:artifacts/customer-identity-67a129f1c75e-history.tar.gz",
       "kind": "evidence_path",
-      "path": "artifacts/baosheng-history.tar.gz"
+      "path": "artifacts/customer-identity-67a129f1c75e-history.tar.gz"
     },
     {
       "id": "evidence:artifacts/candidate-frontend-image.tar",
@@ -24776,5 +24776,5 @@
     }
   ],
   "schema": "change_impact_verification.execution_graph.v1",
-  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740"
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121"
 }

@@ -1429,8 +1429,8 @@
     ]
   },
   "schema": "change_impact_verification.inventory.v1",
-  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740",
-  "source_tree": "dc1079a626ef5babd5fe179edac2219cfd75fa64",
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121",
+  "source_tree": "3eed77292d6a0a7be3d236a68830d61174a518b2",
   "surface_summary": {
     "anchor_parser_non_target_nodes": 6,
     "anchor_reachable_targets": {

@@ -28078,7 +28078,7 @@
       ],
       "entrypoint": "make verify.tenant.product_payload_boundary",
       "evidence_paths": [
-        "artifacts/baosheng-history.tar.gz"
+        "artifacts/customer-identity-67a129f1c75e-history.tar.gz"
       ],
       "id": "make:verify.tenant.product_payload_boundary",
       "layer_hints": [
@@ -31598,5 +31598,5 @@
   ],
   "part": "make_targets",
   "schema": "change_impact_verification.mapping_part.v1",
-  "source_head": "803f5f7ab1b07a13344112abe3330ab160a50740"
+  "source_head": "7169230580faaeae971695ac232c1d27173ad121"
 }

@@ -646,7 +646,7 @@
   ],
   "cutover_eligible": false,
   "cutover_note": "Matrix conformance is necessary but not sufficient. Required-gate cutover still needs dual-run and independent review.",
-  "input_fingerprint": "1de9db748480049cfae14072d51857c6bdd0f7d723113dc80e066fb99ce888b5",
+  "input_fingerprint": "c7d3bc37a5919a336b2ff0a7201c30aefbd891920f3c21f44011533c6f3b992e",
   "input_paths": [
     "scripts/audit/generate_change_impact_verification_inventory.py",
     "scripts/ops/change_impact_acceptance.py",

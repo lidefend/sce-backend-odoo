@@ -135,11 +135,16 @@ class ChangeImpactVerificationInventoryTests(unittest.TestCase):
             root = Path(temporary)
             inventory.write_outputs(self.data, graph, cost, root)
             sizes = {path.name: path.stat().st_size for path in root.iterdir()}
+            public_output = "\n".join(
+                path.read_text(encoding="utf-8") for path in root.iterdir()
+            ).lower()
         self.assertLess(max(sizes.values()), 5 * 1024 * 1024)
         self.assertIn("verification_mapping_matrix.json", sizes)
         self.assertIn("verification_mapping_matrix.gate_scripts.json", sizes)
         self.assertIn("impact_analysis_acceptance_matrix.json", sizes)
         self.assertIn("verification_mapping_matrix.script_lifecycle.00.json", sizes)
+        for token in inventory.PUBLIC_IDENTITY_TOKENS:
+            self.assertNotIn(token.lower(), public_output)
 
     def test_impact_acceptance_matrix_covers_review_required_failures(self) -> None:
         matrix = inventory.impact_analysis_acceptance_matrix()

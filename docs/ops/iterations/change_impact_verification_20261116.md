@@ -249,6 +249,23 @@ Stable baseline：
 `daily_runtime_entry` 和 `path_namespace_identity` 的未提交输入阻断；它们属于交付计划级
 观察，不是本次 shadow governance 的产品运行通过，也不会被记作候选证据。
 
+### PR #908 远端治理修复
+
+第一次 exact-head CI 暴露两个公开治理缺口：
+
+1. `public_guard` RH007：已关闭 PR #907 的旧远端分支仍暴露 6.76 MiB
+   `verification_mapping_matrix.json` 历史 blob。通过受管 historical-branch retirement：
+   - 删除已关闭 PR 的远端同名 branch；
+   - 原本地工作树切到 detached HEAD，并保留 `refs/recovery/...`；
+   - 写入并验证 39 MiB 完整 recovery bundle；
+   - 同命令本地 clean-history guard PASS。
+2. `tenant_product_payload_boundary_guard`：公开审计生成物中带出了 2 个固定客户身份 token。
+   盘点器现在在序列化边界使用稳定 `customer-identity-<digest>` 替换已登记 token；测试检查
+   所有 JSON 分片和 Markdown 报告不再含原 token。产品 payload boundary guard 与完整
+   `clean_product_release_scan.py` 14/14 检查 PASS。
+
+上述修复只改变发布历史可达性和公开审计脱敏，不修改产品语义或现有验证裁决。
+
 边界：
 
 - 本批不修改路径 ownership、acceptance binding 或任何必需 CI 裁决。

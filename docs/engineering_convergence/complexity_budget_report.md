@@ -49,8 +49,8 @@ Generated from repository source files. This report is informational during the 
 | 2129 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2066 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2018 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 1999 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1974 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1971 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -289,8 +289,8 @@ Generated from repository source files. This report is informational during the 
 | 2129 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
+| 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2066 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
-| 2018 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 1999 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1974 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1971 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |
