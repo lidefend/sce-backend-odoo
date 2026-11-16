@@ -725,8 +725,8 @@
       "literal": "editing",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        94,
-        101
+        95,
+        102
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -740,8 +740,8 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        103,
-        125
+        104,
+        132
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -755,9 +755,9 @@
       "literal": "error",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        80,
-        103,
-        125
+        81,
+        104,
+        132
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -771,7 +771,7 @@
       "literal": "idle",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        103
+        104
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -785,8 +785,8 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        80,
-        103
+        81,
+        104
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -800,7 +800,7 @@
       "literal": "ok",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        125
+        132
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -814,7 +814,21 @@
       "literal": "saving",
       "path": "frontend/apps/web/src/app/pageIdentityAdapters.ts",
       "lines": [
-        94
+        95
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|ok|frontend/apps/web/src/app/performance/startupTiming.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "ok",
+      "path": "frontend/apps/web/src/app/performance/startupTiming.ts",
+      "lines": [
+        81
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1730,21 +1744,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 162,
-    "distinctDecisions": 116,
+    "totalFindings": 163,
+    "distinctDecisions": 117,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 126
+      "R4_business_state_literal": 127
     },
     "byClassification": {
       "contract-derived": 64,
-      "excluded-render-interaction": 98
+      "excluded-render-interaction": 99
     },
     "unclassified": 0,
     "contractDerived": 64,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 98
+    "excludedRenderInteraction": 99
   }
 }

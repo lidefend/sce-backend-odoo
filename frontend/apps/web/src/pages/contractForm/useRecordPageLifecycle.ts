@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed } from 'vue';
+import { computed, nextTick } from 'vue';
 import { dispatchSceneBlockAction } from './sceneBlockAction';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
+import { canPublishRecordReady, markStartupPhase } from '../../app/performance/startupTiming';
 import {
   loadAuthoritativeCreateDefaults,
   resolveCreateRouteRelationLabels,
@@ -279,6 +280,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       const message = policy.message || 'contract access policy blocked this page';
       throw new ContractAccessPolicyError(message, policy.reasonCode || 'CONTRACT_ACCESS_BLOCKED');
     }
+    markStartupPhase('contract_loaded', 'record.loadContract');
     const hasCore = coreFieldNames.value.length > 0;
     advancedExpanded.value = renderProfile.value !== 'create' || !hasCore;
   }
@@ -461,6 +463,15 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         if (!reloadIsCurrent()) return;
         applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });
         retainedRouteIdentity.value = formRouteIdentity();
+        if (recordMissing.value) return;
+        await nextTick();
+        if (!canPublishRecordReady({
+          routeCurrent: reloadIsCurrent(),
+          recordMissing: recordMissing.value,
+          hasContract: Boolean(contract.value),
+          status: status.value,
+        })) return;
+        markStartupPhase('record_ready', 'record.formReload');
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
         if (!reloadIsCurrent()) return;

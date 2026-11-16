@@ -18,6 +18,25 @@ def require(path: str, *markers: str) -> str:
     return source
 
 
+def contract_form_route_errors(source: str) -> list[str]:
+    """Keep the route bound to the controlled form loader, including its result."""
+    required = (
+        '<component :is="page" v-else />',
+        "import { createContractFormRouteLoader } from './contractFormRouteLoader';",
+        "const page = shallowRef<Component | null>(null);",
+        "const pageLoader = createContractFormRouteLoader(() => import('./ContractFormPage.vue'));",
+        "const result = await pageLoader.load();",
+        "if ('module' in result) {\n    page.value = result.module.default;",
+    )
+    errors = [f"missing controlled route binding: {marker}" for marker in required if marker not in source]
+    assignments = re.findall(r"\bpage\.value\s*=\s*([^;]+);", source)
+    if assignments != ["result.module.default"]:
+        errors.append("page must only receive the controlled loader result")
+    if re.search(r"import\s+\w+\s+from\s+['\"]\./ContractFormPage\.vue", source):
+        errors.append("form page must remain lazily loaded")
+    return errors
+
+
 def forbid(path: str, *markers: str) -> None:
     source = (ROOT / path).read_text(encoding="utf-8")
     found = [marker for marker in markers if marker in source]
@@ -250,10 +269,10 @@ require(
     "viewType === 'form'",
     "? 'create'",
 )
-require(
-    "frontend/apps/web/src/pages/ContractFormRoute.vue",
-    "<ContractFormPage />",
-)
+route_path = "frontend/apps/web/src/pages/ContractFormRoute.vue"
+route_errors = contract_form_route_errors((ROOT / route_path).read_text(encoding="utf-8"))
+if route_errors:
+    raise SystemExit(f"[frontend_delivery_hardening_guard] FAIL {route_path}: {route_errors}")
 require(
     "frontend/apps/web/src/App.vue",
     "import { resolveActivityCacheKey } from './app/activityPageCacheIdentity';",

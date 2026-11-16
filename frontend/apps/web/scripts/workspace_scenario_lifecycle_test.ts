@@ -466,6 +466,12 @@ async function readyAndResolve() {
   await Promise.resolve();
   const requests = pending.slice(offset);
   assert.equal(requests.filter(row => row.intent === 'workspace.scenario.projection.get').length, 1);
+  const workspaceHomeRequests = requests.filter(row => (
+    row.intent === 'system.init'
+    && Array.isArray(row.params.with)
+    && row.params.with.includes('workspace_home')
+  ));
+  assert.equal(workspaceHomeRequests.length, 1, 'home readiness must backfill the skipped workspace_home section');
   for (const request of requests) {
     request.settle(request.intent === 'workspace.scenario.projection.get' ? projection('allowed') : {});
   }

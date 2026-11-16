@@ -16,6 +16,7 @@ import { applySceneValidationRecoveryStrategyRuntime, setSceneValidationRecovery
 import { setActiveDb } from '../services/dbContext';
 import { resolveEntryAudience, resolveEntryBasePath } from '../services/entryNamespace';
 import { beginContextTransition, currentContextEpoch, invalidateContextRequests, isCurrentContextEpoch } from '../app/contextEpoch';
+import { markStartupPhase } from '../app/performance/startupTiming';
 import { nextRouteAuthorityRecordContext, routeAuthorityForPrincipal, type RouteAuthorityContract, type RouteAuthorityRecordContextSnapshot } from '../app/routeAuthority';
 import { createCanonicalNavigationModel } from '../app/canonicalNavigation';
 import {
@@ -1281,7 +1282,11 @@ export const useSessionStore = defineStore('session', {
       }
       this.clearSession();
     },
-    async loadAppInit(options: { force?: boolean; contextEpoch?: number } = {}) {
+    async loadAppInit(options: {
+      force?: boolean;
+      contextEpoch?: number;
+      includeWorkspaceHome?: boolean;
+    } = {}) {
       const requestEpoch = options.contextEpoch ?? currentContextEpoch();
       if (!isCurrentContextEpoch(requestEpoch)) return;
       const pendingAppInit = () => appInitInFlight && appInitEpoch === requestEpoch ? appInitInFlight : null;
@@ -1377,7 +1382,7 @@ export const useSessionStore = defineStore('session', {
           scene: 'web',
           with_preload: false,
           scene_ready_mode: 'registry',
-          with: ['workspace_home'],
+          with: options.includeWorkspaceHome === false ? [] : ['workspace_home'],
           ...(config.startupRootXmlid ? { root_xmlid: config.startupRootXmlid } : {}),
           ...(currentSceneKey ? { scene_key: currentSceneKey } : {}),
           ...(this.recordContext?.request_context || {}),
@@ -1708,6 +1713,7 @@ export const useSessionStore = defineStore('session', {
       if (!bootstrapIsCurrent()) return;
       this.isReady = true;
       this.initStatus = 'ready';
+      markStartupPhase('session_ready', 'session.loadAppInit');
       this.persistDurableNow();
       } catch (err) {
         if (!publishFailure(err)) return;

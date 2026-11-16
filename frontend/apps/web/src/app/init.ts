@@ -1,4 +1,5 @@
 import { useSessionStore } from '../stores/session';
+import { shouldPreloadWorkspaceHomeAtStartup } from './performance/startupTiming';
 import { logger } from '../utils/logger';
 
 const EXTENSION_NOISE_PATTERNS = [
@@ -44,7 +45,7 @@ function installExtensionNoiseGuard() {
   });
 }
 
-export async function bootstrapApp() {
+export async function bootstrapApp(options: { initialRouteName?: unknown; initialPath?: unknown } = {}) {
   installExtensionNoiseGuard();
   const session = useSessionStore();
   // main.ts already calls session.restore() before mount to avoid
@@ -59,7 +60,12 @@ export async function bootstrapApp() {
     return;
   }
   try {
-    await session.loadAppInit();
+    await session.loadAppInit({
+      includeWorkspaceHome: shouldPreloadWorkspaceHomeAtStartup(
+        options.initialRouteName,
+        options.initialPath,
+      ),
+    });
   } catch {
     // initStatus handled in store; avoid unhandled promise
   }

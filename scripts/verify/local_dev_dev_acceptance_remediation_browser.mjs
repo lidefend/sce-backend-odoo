@@ -1,13 +1,16 @@
 import assert from 'node:assert/strict';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { launchChromium } from './playwright_runtime.mjs';
+import { validateRecordDeepLinkEvidence } from '../../frontend/apps/web/scripts/record_deep_link_evidence.mjs';
 
 const ROOT = process.cwd();
 const BASE = process.env.DEV_ACCEPTANCE_BASE_URL || 'http://127.0.0.1:18081';
 const ACTOR = process.env.DEV_ACCEPTANCE_ACTOR || 'demo_full';
 const PASSWORD = process.env.SC_DEMO_USER_PASSWORD || '';
+const RECORD_MODEL = process.env.DEV_ACCEPTANCE_RECORD_MODEL || 'payment.request';
 const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
   ? path.resolve(ROOT, process.env.DEV_ACCEPTANCE_OUTPUT)
   : path.join(
@@ -17,7 +20,8 @@ const OUTPUT = process.env.DEV_ACCEPTANCE_OUTPUT
 
 const technicalTitles = new Set(['enterprise.department', 'portal.notifications']);
 const affectedHeadings = ['消息通知', '材料出库', '施工日志', '项目台账', '安全检查', '部门管理'];
-const RECORD_READY_SELECTOR = '[data-product-page-mode="form"][data-form-model="payment.request"][data-state="ok"]';
+const RECORD_READY_SELECTOR = `[data-product-page-mode="form"][data-form-model="${RECORD_MODEL}"][data-state="ok"]`;
+const STARTUP_PHASES = ['boot_start', 'skeleton_shown', 'session_ready', 'contract_loaded', 'record_ready'];
 const runtimeState = {
   navigation: [],
   scenarioSurface: null,
@@ -45,6 +49,9 @@ function safeRequestShape(payload) {
     projection: /^[a-zA-Z0-9_.]{1,100}$/.test(String(params.projection || ''))
       ? String(params.projection)
       : null,
+    with_keys: Array.isArray(params.with)
+      ? params.with.map(item => String(item || '')).filter(item => /^[a-zA-Z0-9_.]{1,100}$/.test(item))
+      : [],
   };
 }
 
@@ -70,14 +77,24 @@ async function attachNetworkCapture(page, sink, startedAt = performance.now()) {
     const started = startedRequests.get(request);
     if (!response.url().includes('/api/v1/intent')) {
       if (!started || !['document', 'script', 'stylesheet'].includes(started.resource_type)) return;
-      sink.push({
+      const resource = {
         intent: '',
         status: response.status(),
         resource_type: started.resource_type,
         resource_url: started.resource_url,
         request_start_ms: started.request_start_ms,
         response_end_ms: Math.round(performance.now() - startedAt),
-      });
+      };
+      if (started.resource_type === 'script' && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(started.resource_url)) {
+        try {
+          const body = await response.body();
+          resource.decoded_body_size = body.length;
+          resource.resource_sha256 = createHash('sha256').update(body).digest('hex');
+        } catch {
+          resource.resource_sha256 = '';
+        }
+      }
+      sink.push(resource);
       return;
     }
     let payload;
@@ -90,6 +107,7 @@ async function attachNetworkCapture(page, sink, startedAt = performance.now()) {
       ...safeRequestShape(payload),
       status: response.status(),
       url: response.url(),
+      content_length: Number(response.headers()['content-length'] || 0) || null,
       request_start_ms: started?.request_start_ms ?? null,
       response_end_ms: Math.round(performance.now() - startedAt),
       duration_ms: started
@@ -315,7 +333,7 @@ async function recordPageSnapshot(page) {
       return style.display !== 'none' && style.visibility !== 'hidden'
         && (node.offsetWidth > 0 || node.offsetHeight > 0);
     };
-    const form = document.querySelector('[data-product-page-mode="form"][data-form-model="payment.request"]');
+    const form = document.querySelector('[data-product-page-mode="form"]');
     const skeleton = document.querySelector('[data-loading-progress]');
     const shellLoading = document.querySelector('[data-shell-loading="true"], [aria-busy="true"]');
     const bodyText = cleanText(document.body?.innerText);
@@ -438,6 +456,43 @@ async function readRecordDiagnostics(page) {
   });
 }
 
+async function readStartupTiming(page) {
+  return page.evaluate(phases => {
+    const marks = {};
+    for (const phase of phases) {
+      const entry = performance.getEntriesByName(phase, 'mark')[0];
+      if (entry) marks[phase] = Math.round(entry.startTime * 1000) / 1000;
+    }
+    const boot = marks.boot_start;
+    const elapsed = {};
+    if (typeof boot === 'number') {
+      for (const [phase, value] of Object.entries(marks)) {
+        elapsed[phase] = Math.round((value - boot) * 1000) / 1000;
+      }
+    }
+    return {
+      marks,
+      elapsed_from_boot_ms: elapsed,
+      missing: phases.filter(phase => marks[phase] === undefined),
+    };
+  }, STARTUP_PHASES);
+}
+
+async function readServedBuildInfo(page) {
+  return page.evaluate(async () => {
+    try {
+      const response = await fetch(new URL('/build-info.json', window.location.origin).href, {
+        cache: 'no-store',
+        credentials: 'same-origin',
+      });
+      if (!response.ok) return null;
+      return await response.json();
+    } catch {
+      return null;
+    }
+  });
+}
+
 async function locatePaymentRecordHref(page) {
   await openMenu(page, '付款申请');
   const queryInput = page.locator('[data-list-query-action-bar] input[type="search"]:visible').first();
@@ -544,10 +599,18 @@ async function main() {
       await recordPage.goto(href, { waitUntil: 'domcontentloaded', timeout: 45000 });
       const observation = await observeRecordPage(recordPage, started);
       const diagnostics = await readRecordDiagnostics(recordPage);
+      const startupTiming = await readStartupTiming(recordPage);
+      const servedBuildInfo = await readServedBuildInfo(recordPage);
       detachRecordNetwork();
+      const canonicalElapsed = startupTiming.elapsed_from_boot_ms.record_ready;
+      const bundleAssets = recordNetwork.filter(row => (
+        row.resource_type === 'script'
+        && /(?:index|ContractFormRoute|ContractFormPage|ProductFormLoadingSkeleton)-/u.test(row.resource_url)
+      ));
       report.record_deep_link = {
         href,
-        elapsed_ms: observation.elapsedMs,
+        elapsed_ms: typeof canonicalElapsed === 'number' ? canonicalElapsed : observation.elapsedMs,
+        wall_elapsed_ms: observation.elapsedMs,
         ready: observation.ready,
         headings: await activeHeadingTexts(recordPage),
         errors: recordNetwork.filter(row => row.status >= 400),
@@ -558,11 +621,23 @@ async function main() {
         console_errors: consoleErrors,
         source_revision: runtimeState.sourceRevision,
         diagnostics,
+        startup_timing: startupTiming,
+        served_build_info: servedBuildInfo,
+        bundle_assets: bundleAssets,
+        init_data_keys: [...runtimeState.dataKeys],
+        workspace_home_loaded_at_startup: runtimeState.dataKeys.includes('workspace_home'),
       };
       report.findings = [];
       if (report.record_deep_link.errors.length) report.findings.push('record_deep_link_http_error');
       if (!observation.ready) report.findings.push('record_deep_link_not_ready');
       if (pageErrors.length) report.findings.push('record_deep_link_page_error');
+      for (const phase of startupTiming.missing) report.findings.push(`startup_mark_missing:${phase}`);
+      const expectedBuildSha = String(process.env.DEV_ACCEPTANCE_EXPECTED_BUILD_SHA || '').trim();
+      report.findings.push(...validateRecordDeepLinkEvidence({
+        expectedBuildSha,
+        servedBuildInfo,
+        bundleAssets,
+      }));
       report.status = report.findings.length ? 'failed' : 'passed';
       if (report.findings.length) process.exitCode = 1;
       return;

@@ -1,4 +1,5 @@
 import type { PageBreadcrumb, PageIdentityInput } from './pageIdentity';
+import { productIdentityText } from './pageIdentity';
 export { resolveRoutePageIdentity } from './pageIdentityRoute';
 
 type BusinessMetadata = Record<string, unknown> | null | undefined;
@@ -111,12 +112,18 @@ export function buildActionPageIdentity(input: {
   legacyTitle?: unknown;
   menuName?: unknown;
   modelName?: unknown;
+  sceneLabel?: unknown;
   status: string;
   subtitle?: unknown;
 }): PageIdentityInput {
   return {
     kind: 'list',
-    actionName: input.actionContractTitle || actionName(input.action) || input.legacyTitle,
+    actionName: [
+      input.actionContractTitle,
+      input.sceneLabel,
+      actionName(input.action),
+      input.legacyTitle,
+    ].map(productIdentityText).find(Boolean) || '',
     menuName: input.menuName,
     modelName: input.modelName,
     modelLabel: input.action?.model_label,

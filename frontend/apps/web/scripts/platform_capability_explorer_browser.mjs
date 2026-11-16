@@ -1,7 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
-import { createExpectedHttpFailureBudget } from './platform_capability_explorer_browser_support.mjs';
+import { authenticateDeniedProbe, createExpectedHttpFailureBudget } from './platform_capability_explorer_browser_support.mjs';
 
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
 const DB_NAME = String(process.env.DB_NAME || 'sc_dev_demo').trim();
@@ -60,13 +60,17 @@ async function screenshot(page, name) {
   report.screenshots.push({ name, file, url: page.url() });
 }
 
-async function login(page, loginName = LOGIN, password = PASSWORD) {
+async function login(page, loginName = LOGIN, password = PASSWORD, captureDeniedIntent = false) {
   await page.goto(`${BASE_URL}/t/demo/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(loginName);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(password);
-  await page.getByRole('button', { name: /^登录$/ }).click();
+  const submit = () => page.getByRole('button', { name: /^登录$/ }).click();
+  const deniedIntent = captureDeniedIntent
+    ? await authenticateDeniedProbe(page, loginName, submit)
+    : await submit();
   await page.waitForFunction(() => !window.location.pathname.includes('/login'), null, { timeout: 60000 });
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
+  return deniedIntent;
 }
 
 const browser = await launchChromium({ headless: true });
@@ -399,7 +403,7 @@ try {
   const deniedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'zh-CN' });
   try {
     const deniedPage = await deniedContext.newPage();
-    await login(deniedPage, DENIED_LOGIN, DENIED_PASSWORD);
+    const deniedIntent = await login(deniedPage, DENIED_LOGIN, DENIED_PASSWORD, true);
     const deniedListRequests = [];
     deniedPage.on('request', (request) => {
       if (intentOf(request) === 'platform.capability.explorer.list') deniedListRequests.push(request.url());
@@ -421,29 +425,7 @@ try {
       'non-management route access never calls the explorer API',
       { deniedRouteRequestCount, deniedListRequests },
     );
-    const deniedHandler = await deniedPage.evaluate(async () => {
-      const tokenKey = Object.keys(sessionStorage).find((key) => key.startsWith('sc_auth_token:'));
-      const token = tokenKey ? sessionStorage.getItem(tokenKey) : '';
-      const response = await fetch('/t/demo/api/v1/intent', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant': 'demo',
-          'X-Trace-Id': `denied-capability-explorer-${Date.now()}`,
-          ...(token ? { Authorization: `Bearer ${token}` } : {}),
-        },
-        body: JSON.stringify({ intent: 'platform.capability.explorer.list', params: {} }),
-        credentials: 'omit',
-      });
-      let reasonCode = '';
-      try {
-        const body = await response.json();
-        reasonCode = String(body?.error?.reason_code || body?.error?.code || '');
-      } catch {
-        reasonCode = '';
-      }
-      return { status: response.status, reasonCode };
-    });
+    const deniedHandler = await deniedIntent(deniedContext);
     check(
       deniedHandler.status === 403 && deniedHandler.reasonCode === 'PERMISSION_DENIED',
       'backend returns exact permission denial for a non-management user',
@@ -453,7 +435,7 @@ try {
       denied_login: DENIED_LOGIN,
       redirected: true,
       route_list_request_count: deniedRouteRequestCount,
-      direct_handler_list_request_count: deniedListRequests.length,
+      direct_handler_list_request_count: deniedHandler.requestCount,
       handler: deniedHandler,
     };
   } finally {

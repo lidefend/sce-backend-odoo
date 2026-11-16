@@ -189,8 +189,8 @@ REQUIRED_ROUTE_TOKENS: tuple[str, ...] = (
 )
 
 REQUIRED_CONTRACT_FORM_ROUTE_TOKENS: tuple[str, ...] = (
-    "import ContractFormPage from './ContractFormPage.vue'",
-    "<ContractFormPage />",
+    "import('./ContractFormPage.vue')",
+    '<component :is="page" v-else />',
 )
 
 FORBIDDEN_CONTRACT_FORM_ROUTE_TOKENS: tuple[str, ...] = (

@@ -47,8 +47,8 @@ def main() -> int:
             )
         route_target = CONTRACT_FORM_ROUTE.read_text(encoding="utf-8", errors="ignore")
         compatible_tokens = [
-            "<ContractFormPage",
-            "import ContractFormPage from './ContractFormPage.vue'",
+            '<component :is="page" v-else />',
+            "import('./ContractFormPage.vue')",
         ]
         missing_compatible = [token for token in compatible_tokens if token not in route_target]
         if missing_compatible:

@@ -258,6 +258,14 @@
       "rationale": "显式场景补载的客户端传输截止时间；超时中止等待并进入已有错误恢复契约，不改变权限、业务状态或可见集合，不代表业务SLA。"
     },
     {
+      "symbol": "ASSET_LOAD_TIMEOUT_MS",
+      "file": "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
+      "class": "transport_deadline",
+      "layer": "P0",
+      "carriesProductSemantics": false,
+      "rationale": "动态记录页面 chunk 的客户端传输截止时间；超时后进入显式错误态并提供整页重新加载，不改变权限、业务状态或可见集合，不代表业务SLA。"
+    },
+    {
       "symbol": "relationDomainExpression",
       "file": "frontend/apps/web/src/pages/contractForm/nativeRelationDomain.ts",
       "class": "expression_complexity",

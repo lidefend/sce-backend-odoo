@@ -1,0 +1,46 @@
+schema_version: 1
+goal:
+  id: FE-STARTUP-PERF-M01-20261116
+  title: 前端启动性能口径、记录路由分包与 M-01 标题收敛
+  status: verification_pending
+  formal_product_layer: P0 generic frontend runtime and presentation; P4 bounded performance verification
+  layer_target: canonical startup timing marks, record route loading boundary, and declared scene title consumption
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make/frontend.mk
+  standard_vs_user_specific: platform_engineering_standard
+  why_here: >-
+    The five startup phases and route loading boundary are generic frontend
+    runtime mechanisms. Business titles must come from the runtime scene and
+    route declarations already supplied by the backend.
+  why_not_elsewhere:
+    - no department/menu-specific title dictionary in shared frontend code
+    - no backend contract or permission change to compensate for a consumer defect
+    - no product database, fixture, or runtime mutation for inner-loop timing
+    - no inferred FCP threshold or completion percentage
+  objective: >-
+    Make direct-record startup measurements use one canonical five-mark code
+    contract, split the record route shell from the heavy form page, identify
+    remaining API and asset costs, and close the remaining M-01 declared-title
+    fallback on department-management-style entries.
+  acceptance:
+    - boot_start, skeleton_shown, session_ready, contract_loaded, and record_ready are emitted once in order for a cold direct record
+    - performance probes consume the canonical marks instead of inferring equivalent phases from selectors
+    - the record route shell can render before the heavy ContractFormPage chunk is imported
+    - affected title entries display their declared business labels rather than technical scene keys
+    - focused tests execute non-zero and affected browser behavior is observed
+    - remaining API payload or bundle cost is reported with an exact next action
+  exclusions:
+    - backend contract, schema, ACL, permission, or data changes
+    - customer-specific labels or frontend business dictionaries
+    - deployment, PR publication, merge, or cleanup unless separately requested
+    - full product acceptance or unrelated route performance
+  rollback: >-
+    Revert this branch's frontend, test, and measurement changes. No schema,
+    fixture, permission, or persisted business data migration is introduced.
+  next_exact_step: >-
+    Deploy the candidate to the daily development server, run the affected
+    department/notification title entries, and repeat the payment record using
+    the canonical five marks. Then profile the 1.5 MB record contract payload as
+    the next API reduction target.

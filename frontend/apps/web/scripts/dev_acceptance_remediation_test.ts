@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import {
+  resolveBusinessActivityTitle,
   resolveSceneActivityTitle,
   shouldRenderScenePageHeading,
 } from '../src/app/activityPageTitle';
 import { formatLoadingProgress } from '../src/app/presentation/loadingProgress';
 import { resolveListColumnPreferenceScope } from '../src/app/runtime/listPreferenceScope';
+import { buildActionPageIdentity } from '../src/app/pageIdentityAdapters';
+import { resolveProductPageIdentity } from '../src/app/pageIdentity';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -71,6 +74,33 @@ check(
   }),
   '项目台账',
   'a distinct route-carried business label is consumed',
+);
+check(
+  resolveBusinessActivityTitle({
+    authorityName: 'enterprise.department',
+    actionTitle: '部门管理',
+  }),
+  '部门管理',
+  'technical action authority does not override the declared business title',
+);
+check(
+  resolveSceneActivityTitle({
+    sceneKey: 'enterprise.department',
+    queryLabel: 'enterprise.department',
+  }),
+  '业务场景',
+  'a technical scene key is not exposed as a business title',
+);
+check(
+  resolveProductPageIdentity(buildActionPageIdentity({
+    action: { name: 'enterprise.department' },
+    actionContractTitle: 'enterprise.department',
+    sceneLabel: '部门管理',
+    menuName: '部门管理',
+    status: 'ok',
+  })).title,
+  '部门管理',
+  'action identity consumes the declared scene label before a technical key',
 );
 
 // N-03: scene pages always expose one semantic heading. Handling surfaces that

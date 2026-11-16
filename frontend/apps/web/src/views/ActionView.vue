@@ -1897,7 +1897,7 @@ const {
 const actionIdentityInput = computed(() => buildActionPageIdentity({
     action: actionMeta.value, breadcrumbs: resolveRoutePageIdentity(route, session.menuTree).breadcrumbs,
     actionContractTitle: actionContract.value?.snapshot.pageInfo.pageName || actionMetaName.value,
-    legacyTitle: legacyPageTitle.value, menuName: currentMenuTitle.value,
+    legacyTitle: legacyPageTitle.value, menuName: currentMenuTitle.value, sceneLabel: scene.value?.label,
     modelName: resolvedModelRef.value || model.value, status: status.value, subtitle: subtitle.value,
 }));
 const pageIdentity = usePublishedPageIdentity(actionIdentityInput, { routeKey: () => route.fullPath,
