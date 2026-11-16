@@ -60,7 +60,7 @@ The shared producer is `addons/smart_core/core/native_view_occurrence.py`:
 
 The contract protocol moves atomically to `2.4.0`. The Schema SHA256 is
 `82bbf586ef1ff56433a22264e62baac57c0400dedebc5098d8a7ea6c51476a66`, and the
-assembled-contract cache generation moves to `v63`.
+assembled-contract cache generation moves to `v64`.
 
 ## 4. Strict Consumer
 
@@ -132,6 +132,11 @@ as historical failure/repair evidence rather than being overwritten.
   `viewIdentity` metadata that has no P0-4 `viewType`. The assembler now skips
   that legacy carrier instead of claiming it as a native occurrence identity;
   a focused regression test binds this distinction.
+- `product_defect`: a real `project.project` browser load exposed nested Form
+  widgets inheriting their container occurrence instead of their owning field
+  occurrence. The generic assembler now resolves each widget through
+  `ownerContainerId`, publishes only its field identity, and omits the carrier
+  when no owning field identity exists. The assembled cache advances to `v64`.
 
 The repair was verified with:
 

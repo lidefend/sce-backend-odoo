@@ -873,10 +873,13 @@ def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[st
             native_attributes=native_attributes,
         )
 
+    field_identities: dict[str, dict[str, Any]] = {}
+
     def bind_layout_nodes(nodes: list[Any]) -> None:
         for node in nodes:
             if not isinstance(node, dict):
                 continue
+            bind_layout_nodes(_list(node.get("children")))
             locator = _text(node.get("nativeLocator") or node.get("native_locator"))
             occurrence_index = _positive_int(
                 node.get("occurrenceIndex") or node.get("occurrence_index"),
@@ -900,10 +903,26 @@ def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[st
                     native_attributes=node.get("attributes"),
                 )
                 node["nativeIdentity"] = native_identity
+                if identity_kind == "field":
+                    for identity_key in (
+                        node.get("containerId"),
+                        node.get("widgetId"),
+                    ):
+                        identity_key = _text(identity_key)
+                        if identity_key:
+                            field_identities[identity_key] = native_identity
                 for widget in _list(node.get("widgetList")):
                     if isinstance(widget, dict):
-                        widget["nativeIdentity"] = deepcopy(native_identity)
-            bind_layout_nodes(_list(node.get("children")))
+                        owner_key = _text(
+                            widget.get("ownerContainerId")
+                            or widget.get("owner_container_id")
+                            or widget.get("widgetId")
+                        )
+                        owner_identity = field_identities.get(owner_key)
+                        if owner_identity:
+                            widget["nativeIdentity"] = deepcopy(owner_identity)
+                        else:
+                            widget.pop("nativeIdentity", None)
 
     bind_layout_nodes(_list(_dict(contract.get("layoutContract")).get("containerTree")))
 

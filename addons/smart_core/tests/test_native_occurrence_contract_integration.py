@@ -143,6 +143,24 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             self.assertIn(identity["kind"], {"field", "container"})
             self.assertTrue(identity["occurrenceKey"].startswith("occ.v1."))
 
+        field_by_container = {
+            node["containerId"]: node["nativeIdentity"]
+            for node in field_nodes
+            if node.get("containerId")
+        }
+        widget_count = 0
+        for node in nodes:
+            for widget in node.get("widgetList") or []:
+                self.assertIsInstance(widget, dict)
+                identity = widget.get("nativeIdentity")
+                self.assertTrue(identity, widget)
+                self.assertEqual(identity["kind"], "field", widget)
+                owner = field_by_container.get(widget.get("ownerContainerId"))
+                self.assertTrue(owner, widget)
+                self.assertEqual(identity, owner, widget)
+                widget_count += 1
+        self.assertGreater(widget_count, 0)
+
         name_occurrences = [
             node["nativeIdentity"]["occurrenceKey"]
             for node in field_nodes
