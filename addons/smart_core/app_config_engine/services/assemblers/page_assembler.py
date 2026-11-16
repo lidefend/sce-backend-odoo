@@ -501,7 +501,11 @@ class PageAssembler:
         su_context = dict(self.su_env.context or {})
         su_context["contract_projection_readonly"] = True
         su = self.su_env(context=su_context)
-        action = action or self._resolve_action_from_payload(p, model)
+        action = (
+            self._canonicalize_page_action(action, p, model)
+            if action
+            else self._resolve_action_from_payload(p, model)
+        )
         view_types = self._include_configured_orchestrated_view_types(
             p.get("view_types"),
             model_name=model,
@@ -2427,6 +2431,45 @@ class PageAssembler:
                 % (info.get("id"), action_model)
             )
         return info
+
+    def _canonicalize_page_action(self, action, p, model):
+        """Resolve any provided Action carrier to the authoritative identity.
+
+        ``PageAssembler`` historically accepted both normalized dictionaries
+        from ``ActionResolver`` and raw ``record.read()[0]`` dictionaries. Raw
+        many2one fields are ``(id, display_name)`` tuples and are not a stable
+        contract carrier. Normalize through the existing resolver and reuse a
+        complete View Set; only re-read the Action when its identity is
+        incomplete.
+        """
+        from ..resolvers.action_resolver import ActionResolver
+
+        info = ActionResolver(self.env).as_action_info(action)
+        action_type = str(info.get("type") or info.get("_name") or "").strip()
+        if not info.get("exists") or action_type != "ir.actions.act_window":
+            raise ValueError(
+                "ACTION_IDENTITY_UNRESOLVED: provided action is not a Window Action"
+            )
+        action_model = str(info.get("res_model") or "").strip()
+        if action_model != str(model or "").strip():
+            raise ValueError(
+                "ACTION_IDENTITY_MODEL_MISMATCH: action_model=%r request_model=%r"
+                % (action_model, model)
+            )
+        view_set = info.get("view_set") if isinstance(info.get("view_set"), dict) else {}
+        if view_set.get("complete"):
+            return info
+
+        identity_payload = dict(p)
+        if info.get("id"):
+            identity_payload["action_id"] = info.get("id")
+        if info.get("xml_id"):
+            identity_payload["action_xmlid"] = info.get("xml_id")
+        if not (identity_payload.get("action_id") or identity_payload.get("action_xmlid")):
+            raise ValueError(
+                "ACTION_VIEW_SET_UNRESOLVED: provided action has no resolvable identity"
+            )
+        return self._resolve_action_from_payload(identity_payload, model)
 
     def _resolve_page_title(self, model, action=None):
         if isinstance(action, dict):

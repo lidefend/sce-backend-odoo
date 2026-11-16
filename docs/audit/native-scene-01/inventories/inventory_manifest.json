@@ -1359,7 +1359,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "a98c2d36a85ad39980777c1516f4b0993d4381e4c3577cb855d7fd766442d103"
+    "sha256": "724e63746b971667b8d98d15be8d9344f3aba30fbc9bca21e183ed5c4b8688f6"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1457,11 +1457,8 @@
   "source": {
     "commit_time": "2026-11-16T00:16:03-08:00",
     "dirty_paths": [
-      "addons/smart_core/app_config_engine/models/app_search_config.py",
-      "addons/smart_core/app_config_engine/models/app_view_config.py",
       "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
-      "addons/smart_core/core/contract_lifecycle.py",
-      "addons/smart_core/core/native_action_search_view.py",
+      "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
       "addons/smart_core/handlers/ui_contract_v2.py"
     ],
     "revision": "3c7682647352cdf52b790e9a46b893e2535be77d",

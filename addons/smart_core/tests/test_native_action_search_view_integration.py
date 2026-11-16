@@ -3,6 +3,7 @@ from __future__ import annotations
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
+from odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler import PageAssembler
 
 
 @tagged("post_install", "-at_install", "smart_core", "native_action_search_view")
@@ -110,6 +111,25 @@ class TestNativeActionSearchViewIntegration(TransactionCase):
         self.assertEqual(
             source["action_identity"]["search_view_xmlid"],
             "smart_core.p0_2_search_alpha",
+        )
+
+    def test_page_assembler_accepts_odoo_many2one_action_dict(self):
+        page, _versions = PageAssembler(
+            self.env,
+            self.env["ir.model"].sudo().env,
+        ).assemble_page_contract(
+            {
+                "model": "res.partner",
+                "view_types": ["tree"],
+                "action_id": self.action_a.id,
+            },
+            action=self.action_a.read()[0],
+        )
+
+        self.assertIsInstance(self.action_a.read()[0]["search_view_id"], tuple)
+        self.assertEqual(
+            page["search"]["nativeIdentity"]["viewId"],
+            self.search_a.id,
         )
 
     def test_actions_on_same_model_keep_distinct_search_views(self):

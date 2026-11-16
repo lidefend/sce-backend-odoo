@@ -90,6 +90,22 @@ Action authority 必须有正 Action ID 和已解析 View ID；未知 authority 
 - `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:920-931`
   内部 Action identity 同时保留 `search_view_id` 与 `search_view_xmlid`。
 
+本轮真实 CI 进一步定位了长期 Search View 异常的根因：`PageAssembler` 同时接收
+`ActionResolver` 标准字典、Action recordset 和 Odoo `record.read()[0]` 结果。
+many2one 在 `read()` 的传输表示是 `(id, display_name)` tuple，而 Search 投影
+原先假定它是整数；旧 Resolver 对 tuple 又会静默得到 ID 0。结果是部分入口看起来
+正常，但 Search 已丢失 Action binding 并退回模型默认视图。
+
+根因修复复用 Odoo 自身的表示边界：
+
+- `addons/smart_core/app_config_engine/services/resolvers/action_resolver.py:40-54`
+  `_related_id()` 统一处理 scalar、recordset、dict 和 many2one tuple。
+- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:2435-2473`
+  新增 `_canonicalize_page_action()`；完整 Action/View Set 已提供时直接复用，
+  不重复查库；缺少完整身份时才通过现有 `_resolve_action_from_payload()` 回表补齐。
+- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:504-509`
+  所有 PageAssembler Action 入口统一走该规范化边界。
+
 当前请求面没有独立的“受权 Search View 覆盖”参数；`requested_view_id` 只用于
 当前 Activity View 候选校验。因此本阶段不虚构新的预览覆盖协议，也不允许普通
 客户端通过 `requested_view_id` 改写 Action Search View。授权 Search View
@@ -134,7 +150,7 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - 非法 authority 拒绝；
 - 缺失 XMLID 不伪造值。
 
-`addons/smart_core/tests/test_native_action_search_view_integration.py:8-188` 通过
+`addons/smart_core/tests/test_native_action_search_view_integration.py:8-202` 通过
 `ActionDispatcher -> PageAssembler` 覆盖：
 
 - Action-bound Search View 身份与 filter；
@@ -143,23 +159,26 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - Action Search View 模型错误时 fail closed；
 - Action Search 投影不写 model 级缓存；
 - 非系统用户的受限 filter 被运行时裁剪，同时 Action Search identity 保持不变。
+- 原始 `record.read()[0]` Action 的 many2one tuple 在 PageAssembler 边界被正确规范化。
 
 ## 5. 验证回执
 
 通过的验证：
 
 - `make verify.native_action.search_view.unit`：5 tests。
-- `make verify.native_action.search_view.orm`：6 tests。
-  Receipt：`.runtime/test-baseline/1794818512143040408/receipt.json`。
+- `make verify.native_action.search_view.orm`：7 tests。
+  Receipt：`.runtime/test-baseline/1794821653445514313/receipt.json`。
+- `make test.payment-settlement.component-profile.orm`：PASS，7 tests；
+  真实付款执行/收入结算/支出结算 Action 和 Search View 全链路通过。
 - `make local.test.test MODULE=smart_core TEST_TAGS=native_action_search_view,native_action_view_set,action_dispatcher`：
-  29 tests。
-  Receipt：`.runtime/test-baseline/1794818539705187435/receipt.json`。
+  30 tests。
+  Receipt：`.runtime/test-baseline/1794822255784495778/receipt.json`。
 - `make verify.frontend.contract_record_action_state.unit`：29 checks，含
   native identity 保留、数组拒绝和未知 Search 字段拒绝。
 - `make verify.frontend.contract_v2_render_authority.unit`：335 fields，
   unclassified=0。
 - `make verify.frontend.dev.incremental.unit`：156 tests。
-- `make verify.unified_page_contract.v2.assembler`：PASS，4 sources，缓存 v53。
+- `make verify.unified_page_contract.v2.assembler`：PASS，4 sources，缓存 v56。
 - `make verify.backend.contract_lifecycle.authority`：PASS，schema digest 与 4
   examples 一致，authority guard L4 100/100。
 - `make verify.verification.lane.coverage`：PASS，74 tests。
@@ -199,6 +218,11 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
   已用原始失败日志覆盖为 failed；重新生成 inventory 后，
   `verify.native_scene.inventory.unit` 和 `verify.docs.all` 以新的 begin/record
   非零通过，未删除或改写失败事实。
+- 远端 `professional_quality_gate` 首次失败：真实付款/结算测试把
+  `read()[0]` Action 直接传给 PageAssembler，`search_view_id` many2one tuple
+  进入 Search 投影并触发 `TypeError`。分类：`product_defect`。修复没有在 Search
+  子层猜类型，而是统一 Action 入口并补强 `ActionResolver._related_id()`；随后专项
+  ORM 7/7 和同一付款/结算真实 ORM 7/7 均通过。
 
 ## 7. L1-L4 状态
 

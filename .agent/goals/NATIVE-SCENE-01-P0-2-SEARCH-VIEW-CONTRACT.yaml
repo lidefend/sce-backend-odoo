@@ -30,6 +30,7 @@ goal:
     - addons/smart_core/app_config_engine/services/assemblers/page_assembler.py
     - addons/smart_core/app_config_engine/models/app_search_config.py
     - addons/smart_core/app_config_engine/models/app_view_config.py
+    - addons/smart_core/app_config_engine/services/resolvers/action_resolver.py
     - addons/smart_core/core/native_action_search_view.py
     - addons/smart_core/handlers/ui_contract_v2.py
     - addons/smart_core/tests/test_native_action_search_view_integration.py
