@@ -200,6 +200,7 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
 
     def test_final_handler_boundary_restores_occurrences_after_mutation(self):
         source = self._source("tree")
+        view_identity = _native_view_identity_for(source, "tree")
         contract = self._contract("tree")
         profile = contract["layoutContract"]["listProfile"]
         profile.pop("columnOccurrences", None)
@@ -211,8 +212,13 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             "occurrence_index": 1,
             "type": "object",
         }
+        source["views"]["tree"].pop("viewIdentity", None)
 
-        rebind_native_occurrence_identities(contract, source)
+        rebind_native_occurrence_identities(
+            contract,
+            source,
+            view_identity=view_identity,
+        )
 
         columns = contract["layoutContract"]["listProfile"]["columnOccurrences"]
         self.assertEqual(len(columns), 2)

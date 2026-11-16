@@ -143,6 +143,7 @@ def _load_handler():
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
+        _native_view_identity_for=real_assembler._native_view_identity_for,
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
         hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
@@ -4176,12 +4177,16 @@ class TestUiContractV2Boundaries(unittest.TestCase):
             "project_native_action_guidance(contract_v2, read_action_fact)"
         )
         rebind = source.index(
-            "rebind_native_occurrence_identities(contract_v2, source_contract)",
+            "rebind_native_occurrence_identities(",
             guidance,
         )
         validation = source.index("validate_final_nodes(", rebind)
         self.assertLess(guidance, rebind)
         self.assertLess(rebind, validation)
+        self.assertIn(
+            "view_identity=native_view_identity",
+            source[rebind:validation],
+        )
 
     def test_form_structure_contract_uses_generic_slots_not_contract_template(self):
         handler = self.module.UiContractV2Handler(env=object())

@@ -844,13 +844,18 @@ def _native_view_identity_for(source: dict[str, Any], view_type: str) -> dict[st
     return identity
 
 
-def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[str, Any]) -> None:
+def _bind_native_occurrence_identities(
+    contract: dict[str, Any],
+    source: dict[str, Any],
+    *,
+    view_identity: dict[str, Any] | None = None,
+) -> None:
     """Bind one deterministic identity shape to native Form/List/button nodes."""
     page_info = _dict(contract.get("pageInfo"))
     view_type = _text(page_info.get("viewType") or page_info.get("layoutType")).lower()
     if view_type not in {"form", "tree", "list"}:
         return
-    view_identity = _native_view_identity_for(source, view_type)
+    view_identity = view_identity or _native_view_identity_for(source, view_type)
     if not view_identity:
         return
 
@@ -1035,6 +1040,8 @@ def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[st
 def rebind_native_occurrence_identities(
     contract: dict[str, Any],
     source: dict[str, Any],
+    *,
+    view_identity: dict[str, Any] | None = None,
 ) -> None:
     """Restore native occurrence authority after post-assembly mutations.
 
@@ -1044,7 +1051,11 @@ def rebind_native_occurrence_identities(
     the same deterministic identity function once, instead of asking every
     extension to duplicate P0-4 projection rules.
     """
-    _bind_native_occurrence_identities(contract, source)
+    _bind_native_occurrence_identities(
+        contract,
+        source,
+        view_identity=view_identity,
+    )
 
 
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:

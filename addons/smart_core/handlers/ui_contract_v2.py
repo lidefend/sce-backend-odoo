@@ -15,6 +15,7 @@ from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
+    _native_view_identity_for,
     assemble_unified_page_contract_v2,
     hydrate_final_action_modifier_status,
     hydrate_final_layout_modifier_status,
@@ -95,7 +96,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v67"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v68"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1101,6 +1102,10 @@ class UiContractV2Handler(BaseIntentHandler):
             "record": source_record,
             "source_meta": ui_meta,
         })
+        native_view_identity = _native_view_identity_for(
+            source_contract,
+            str(view_type or "").strip().lower(),
+        )
         route_source_ready_at = time.monotonic()
         try:
             from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
@@ -1307,7 +1312,11 @@ class UiContractV2Handler(BaseIntentHandler):
             fact_id = contract_v2["dataContract"]["mainData"]["id"]
             return fact_model.browse(fact_id).read([field_name])[0][field_name]
         project_native_action_guidance(contract_v2, read_action_fact)
-        rebind_native_occurrence_identities(contract_v2, source_contract)
+        rebind_native_occurrence_identities(
+            contract_v2,
+            source_contract,
+            view_identity=native_view_identity,
+        )
         modifier_status_at = time.monotonic()
         from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
         node_validation_contract = (
