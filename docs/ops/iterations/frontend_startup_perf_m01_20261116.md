@@ -2,9 +2,11 @@
 
 ## Stage identity
 
-- Baseline: `70d01d8fa52c76dc3a296f0431e39be79b98dab5`
+- Baseline: `1bfe1f500320a35d59bef156db3c5ba746735668`
+- Source HEAD: `0092f4f262d701f6ae6dd958f9bbd114b8bec721`
+- Merge commit: `c54c7e2dafa879846e97b411fb34e33177819bd9`
 - Branch: `fix/frontend-performance-m01-20261116`
-- Status: independent review approved; extended-main sync unblocker applied
+- Status: mainline integrated through PR #898; deployment pending
 
 ## Objective and layer
 
@@ -110,10 +112,10 @@ The clean candidate then reused that content-identical execution:
 - clean reused receipt:
   `.runtime/frontend-dev-validation/executions/20261115T233710Z-2519118-210689907/receipt.json`
 
-Not yet covered: a fresh independent review of the fixed candidate, exact-head
-remote CI, isolated daily-clone deployment, and desktop/mobile A/B. The prior
-static-proxy timing report remains diagnostic only and is not exact-candidate
-deployment evidence.
+The fixed candidate received independent exact-head review and exact-head remote
+checks before protected integration. Isolated daily-clone deployment and
+desktop/mobile A/B remain separate follow-up work. The prior static-proxy timing
+report remains diagnostic only and is not deployment evidence.
 
 ### Second independent review remediation
 
@@ -145,7 +147,8 @@ from the clean candidate HEAD. These checks share one pure validator exercised
 through the existing startup performance target, so the verification lane did
 not grow a new remote-only script.
 
-Another independent exact-head review and browser observation remain pending.
+The final P4 follow-ups received incremental independent review, affected
+read-only browser verification, and current-head remote checks before merge.
 
 ### Extended-main sync P4 unblocker
 
@@ -202,6 +205,31 @@ M-01 is closed at the shared title-consumption layer by unit coverage, including
 a technical action/scene identity falling through to “部门管理”. A target-daily
 browser rerun remains required after deployment because the local development
 data exposes only one scenario center and does not contain the affected entries.
+
+## Mainline integration closeout
+
+PR #898 merged the exact source head into `main` on 2026-11-16. GitHub reported
+the merge commit as a single-parent squash commit, and the source tree and merge
+tree are byte-identical at
+`b72ec7ef5ffffb75dbc7ee61536042f90dc48c75`.
+
+| Integration identity | Value |
+| --- | --- |
+| Base | `1bfe1f500320a35d59bef156db3c5ba746735668` |
+| Source HEAD | `0092f4f262d701f6ae6dd958f9bbd114b8bec721` |
+| Merge commit | `c54c7e2dafa879846e97b411fb34e33177819bd9` |
+| Source / merge tree | `b72ec7ef5ffffb75dbc7ee61536042f90dc48c75` |
+
+Required checks all succeeded on the PR:
+
+- `public_guard`
+- `merge_policy_gate`
+- `professional_quality_gate`
+- `frontend_release_gate`
+
+This closes the integration batch and active-run binding. It does not deploy the
+merged code and does not claim desktop/mobile production acceptance. The roughly
+1.5 MB record contract remains the measured M-02 follow-up.
 
 ## Rollback
 

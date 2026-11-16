@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "id": "FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116",
+  "branch": "codex/frontend-performance-m01-closeout-20261116",
+  "baseline_sha": "c54c7e2dafa879846e97b411fb34e33177819bd9",
+  "status": "active",
+  "goal": ".agent/goals/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116.yaml",
+  "record": "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116.yaml",
+    ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
+    ".agent/runs/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116/run.json",
+    ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json",
+    "docs/ops/iterations/frontend_startup_perf_m01_20261116.md"
+  ],
+  "excluded": [
+    "frontend product source and tests",
+    "backend contract and permissions",
+    "deployment and performance acceptance",
+    "database and runtime state"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline agent ledger and resume guards; no database or service access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116.yaml",
+        ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
+        ".agent/runs/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116/run.json",
+        ".agent/runs/FE-STARTUP-PERF-M01-20261116/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/FRONTEND-PERFORMANCE-M01-CLOSEOUT-20261116/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish and merge this closeout metadata update, then retire both merged topic branches by exact SHA."
+}
