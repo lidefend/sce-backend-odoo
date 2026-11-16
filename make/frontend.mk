@@ -1456,7 +1456,7 @@ SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_config_admin
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs
-.PHONY: acceptance.runtime.integration.prepare acceptance.runtime.contract_receipt verify.frontend.acceptance.integration verify.frontend.relation_roundtrip.browser
+.PHONY: acceptance.runtime.integration.prepare acceptance.runtime.contract_receipt acceptance.integration.plan verify.frontend.acceptance.integration verify.frontend.relation_roundtrip.browser
 # Explicit acceptance preparation follows the merge-evidence Runbook. Keeping
 # these mutators in one front-door prevents an ordinary browser target invoked
 # by another iteration from replacing the shared backend as a hidden side effect.
@@ -1475,15 +1475,34 @@ acceptance.runtime.contract_receipt: guard.prod.forbid
 verify.frontend.relation_roundtrip.browser: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_RELATION_LOGIN="$(SC_ACCEPTANCE_RELATION_LOGIN)" RELATION_RESOLUTION_KEY="$(or $(RELATION_RESOLUTION_KEY),project)" RELATION_FIELD="$(RELATION_FIELD)" bash scripts/dev/frontend_acceptance_operation_entry.sh standard-relation-roundtrip-browser
 
-# One operator-facing entry applies the same order for every affected suite.
-# Individual browser targets remain available for bounded reruns and fail when
-# their receipt prerequisite is stale.
+ACCEPTANCE_EVOLUTION_INTEGRATION_PLAN ?= .runtime/acceptance-evolution/integration-plan.json
+SC_ACCEPTANCE_FULL ?= 0
+SC_ACCEPTANCE_FULL_REASON ?=
+SC_ACCEPTANCE_REVERIFY_SUITES ?=
+SC_ACCEPTANCE_REVERIFY_REASON ?=
+
+# Planning is read-only. The same planner is consumed by execution so a suite
+# runs only when its declared inputs changed, reusable evidence is missing, or
+# an operator supplies an explicit bounded rerun reason.
+acceptance.integration.plan: guard.prod.forbid
+	@python3 scripts/ops/acceptance_evolution_integration.py \
+		--output "$(ACCEPTANCE_EVOLUTION_INTEGRATION_PLAN)" \
+		$(if $(filter 1,$(SC_ACCEPTANCE_FULL)),--full --full-reason "$(SC_ACCEPTANCE_FULL_REASON)") \
+		$(foreach suite,$(SC_ACCEPTANCE_REVERIFY_SUITES),--reverify-suite "$(suite)") \
+		$(if $(SC_ACCEPTANCE_REVERIFY_REASON),--reverify-reason "$(SC_ACCEPTANCE_REVERIFY_REASON)")
+
+# One operator-facing entry plans and executes only the affected acceptance
+# evidence suites. Preparation and every suite still use their governed Make
+# entries; a plan with no RUN suite performs no build, database or browser work.
 verify.frontend.acceptance.integration: guard.prod.forbid
-	@$(MAKE) --no-print-directory acceptance.runtime.integration.prepare
-	@$(MAKE) --no-print-directory verify.frontend.presentation.local.browser.internal
-	@$(MAKE) --no-print-directory verify.frontend.list_surface_search_contract.unit
-	@$(MAKE) --no-print-directory verify.frontend.list_surface_structure.browser.internal
-	@$(MAKE) --no-print-directory verify.frontend.relation_roundtrip.browser
+	@python3 scripts/ops/acceptance_evolution_integration.py \
+		--execute \
+		--prepare-target acceptance.runtime.integration.prepare \
+		--manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+		--output "$(ACCEPTANCE_EVOLUTION_INTEGRATION_PLAN)" \
+		$(if $(filter 1,$(SC_ACCEPTANCE_FULL)),--full --full-reason "$(SC_ACCEPTANCE_FULL_REASON)") \
+		$(foreach suite,$(SC_ACCEPTANCE_REVERIFY_SUITES),--reverify-suite "$(suite)") \
+		$(if $(SC_ACCEPTANCE_REVERIFY_REASON),--reverify-reason "$(SC_ACCEPTANCE_REVERIFY_REASON)")
 
 # The list browser consumes the resolver receipt. Make that prerequisite
 # explicit so a current frontend preview can never be paired with a receipt

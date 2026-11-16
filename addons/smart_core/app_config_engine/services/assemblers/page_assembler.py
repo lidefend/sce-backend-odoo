@@ -20,6 +20,7 @@ from odoo.addons.smart_core.core.native_action_search_view import (
     MODEL_SEARCH_VIEW_AUTHORITY,
     build_search_native_identity,
 )
+from odoo.addons.smart_core.core.native_view_occurrence import build_native_view_identity
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -417,6 +418,67 @@ class PageAssembler:
             return ""
         return ""
 
+    def ensure_native_view_identity(
+        self,
+        contract,
+        *,
+        model,
+        view_type,
+        view_id,
+        view_data=None,
+        carrier=None,
+    ):
+        """Attach the one effective native View identity when it is absent."""
+        key = "tree" if str(view_type or "").lower() in {"tree", "list"} else str(view_type or "").lower()
+        views = contract.get("views") if isinstance(contract, dict) else None
+        view = views.get(key) if isinstance(views, dict) else None
+        if not isinstance(view, dict):
+            return {}
+        existing = view.get("viewIdentity") or view.get("view_identity")
+        required_identity_keys = {
+            "model",
+            "viewType",
+            "viewContentHash",
+            "viewStructureKey",
+            "crossEnvironmentStable",
+        }
+        if (
+            isinstance(existing, dict)
+            and required_identity_keys.issubset(existing)
+            and str(existing.get("model") or "") == str(model or "")
+            and str(existing.get("viewType") or "").lower() == key
+        ):
+            return existing
+        view.pop("viewIdentity", None)
+        view.pop("view_identity", None)
+        resolved_view_id = int(
+            view_id
+            or (existing.get("viewId") if isinstance(existing, dict) else 0)
+            or 0
+        )
+        if not model or not key or not resolved_view_id:
+            return {}
+        if view_data is None and carrier is not None:
+            view_data = carrier.fetch(self.env, model, key, resolved_view_id)
+        if not isinstance(view_data, dict) or not str(view_data.get("arch") or ""):
+            view_data = self.env[model].get_view(
+                view_id=resolved_view_id,
+                view_type=key,
+            )
+        arch = str((view_data or {}).get("arch") or "")
+        if not arch:
+            return {}
+        identity = build_native_view_identity(
+            model=model,
+            view_type=key,
+            view_id=resolved_view_id,
+            view_xmlid=self._view_xmlid(self.env, resolved_view_id),
+            arch=arch,
+            root=(view_data or {}).get("_arch_root"),
+        )
+        view["viewIdentity"] = identity
+        return identity
+
     def _resolve_search_view_projection(
         self,
         *,
@@ -750,8 +812,15 @@ class PageAssembler:
                 v_contract = {"type": vt}
 
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
-
             data["views"][vt] = v_contract
+            self.ensure_native_view_identity(
+                data,
+                model=model,
+                view_type=vt,
+                view_id=resolved_view_id,
+                view_data=view_data,
+                carrier=p.get("_request_carrier"),
+            )
         data["view_field_requirements"] = view_field_requirements
         if resolved_view_ids_by_type:
             data["view_ids_by_type"] = resolved_view_ids_by_type

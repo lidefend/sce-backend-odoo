@@ -87,6 +87,14 @@
           "targets_total": 1
         }
       },
+      "integration": {
+        "targets": [
+          "verify.frontend.presentation.local.browser.internal"
+        ],
+        "evidence": [
+          ".runtime/final-acceptance/frontend-presentation/header.json"
+        ]
+      },
       "stages": [
         "merge",
         "deployment"
@@ -232,6 +240,15 @@
           "negative_fixtures_total": 5
         }
       },
+      "integration": {
+        "targets": [
+          "verify.frontend.list_surface_search_contract.unit",
+          "verify.frontend.list_surface_structure.browser.internal"
+        ],
+        "evidence": [
+          ".runtime/final-acceptance/list-surface-structure.json"
+        ]
+      },
       "stages": [
         "merge",
         "deployment"
@@ -308,6 +325,14 @@
           }
         }
       },
+      "integration": {
+        "targets": [
+          "verify.frontend.relation_roundtrip.browser"
+        ],
+        "evidence": [
+          ".runtime/acceptance/*/{head}/relation-roundtrip/*/summary.json"
+        ]
+      },
       "stages": [
         "merge",
         "deployment"
@@ -323,6 +348,7 @@
         "scripts/ops/evidence_scope.py",
         "scripts/ops/test_evidence_scope.py",
         "scripts/ops/validation_delivery_plan.py",
+        "scripts/ops/acceptance_evolution_integration.py",
         "config/acceptance/evolution_binding.v1.json",
         "scripts/ops/gitee_published_branch_sync.py",
         "scripts/ops/github_published_branch_sync.py",

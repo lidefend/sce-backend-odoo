@@ -121,6 +121,30 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         ):
             self.assertIn(marker, runtime)
 
+    def test_candidate_requires_explicit_fixture_password(self):
+        dev_make = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        origin = dev_make.index(
+            "SC_ACCEPTANCE_FIXTURE_PASSWORD_ORIGIN := $(origin SC_ACCEPTANCE_FIXTURE_PASSWORD)"
+        )
+        default = dev_make.index("SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass")
+        self.assertLess(origin, default)
+        runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
+            encoding="utf-8"
+        )
+        profile_load = runtime.split("load_profile() {", 1)[1].split("\n}\n", 1)[0]
+        self.assertIn(
+            '"$PROFILE" == candidate',
+            profile_load,
+        )
+        self.assertIn(
+            "SC_ACCEPTANCE_FIXTURE_PASSWORD_ORIGIN",
+            profile_load,
+        )
+        self.assertIn(
+            "must be supplied explicitly",
+            profile_load,
+        )
+
     def test_release_static_server_proxies_odoo_web_assets_before_spa_fallback(self):
         server = (ROOT / "scripts/release/release_static_server.mjs").read_text(
             encoding="utf-8"
@@ -154,6 +178,15 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
             backend_up.index("backend_acceptance_up.sh"),
         )
         self.assertIn("replacing stale backend identity", backend_up)
+        self.assertEqual(backend_up.count("record_candidate_runtime_identity"), 2)
+        self.assertLess(
+            backend_up.index("record_candidate_runtime_identity"),
+            backend_up.index("REUSED exact healthy artifact carrier"),
+        )
+        self.assertLess(
+            backend_up.index("validate_backend_runtime"),
+            backend_up.index("record_candidate_runtime_identity", backend_up.index("validate_backend_runtime")),
+        )
         self.assertLess(
             backend_down.index("validate_backend_identity"),
             backend_down.index("backend_acceptance_down.sh"),
@@ -193,6 +226,10 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
                 rf'require_container_env \"\$container\" {key} .* \|\| return 1',
             )
         self.assertIn("REUSED governed pid=", runtime)
+        self.assertIn("scripts/dev/candidate_runtime_identity.py", runtime)
+        self.assertIn('--source-sha "$source_sha"', runtime)
+        self.assertIn('--database "$DB_NAME"', runtime)
+        self.assertIn('--compose-project "$COMPOSE_PROJECT_NAME"', runtime)
 
     def test_make_exposes_governed_stale_backend_replacement(self):
         dev_make = (ROOT / "make/dev.mk").read_text(encoding="utf-8")

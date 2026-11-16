@@ -50,7 +50,16 @@ class CandidateGuardHarness:
             git() {{ echo "{expected_sha}"; }}
             container_env_value() {{ if [[ "$2" == SC_SOURCE_REVISION ]]; then echo "{served_sha}"; else echo "{served_db}"; fi; }}
             docker() {{ echo "{live_ns}"; }}
-            python3() {{ echo "{receipt_ns}"; }}
+            python3() {{
+              if [[ "$1" == *candidate_runtime_identity.py && " $* " == *" verify "* ]]; then
+                local receipt="" args=("$@")
+                for ((i=0; i<${{#args[@]}}; i++)); do
+                  [[ "${{args[i]}}" == "--receipt" ]] && receipt="${{args[i+1]}}"
+                done
+                [[ -f "$receipt" ]] || {{ echo "receipt missing: $receipt" >&2; return 2; }}
+              fi
+              echo "{receipt_ns}"
+            }}
             export CANDIDATE_RUNTIME_IDENTITY_RECEIPT="{receipt_path}"
             export ROOT_DIR=/fixture
             export BACKEND_ACCEPTANCE_NAME=cand-backend

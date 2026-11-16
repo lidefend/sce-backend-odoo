@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 217,
+    "odoo_tags": 218,
     "gated": 5,
-    "on_demand": 74,
+    "on_demand": 75,
     "unwired": 138,
-    "odoo_tag_declarations": 446,
+    "odoo_tag_declarations": 448,
     "gated_declarations": 102,
-    "uncovered_declarations": 344,
+    "uncovered_declarations": 346,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -137,7 +137,7 @@
       "group": "smart_core",
       "status": "on-demand",
       "kind": "odoo_tag",
-      "declarations": 24,
+      "declarations": 25,
       "files": [
         "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/tests/test_api_data_mutation_failure_atomicity_orm.py",
@@ -151,6 +151,7 @@
         "addons/smart_core/tests/test_native_action_search_view_integration.py",
         "addons/smart_core/tests/test_native_action_selection_alignment.py",
         "addons/smart_core/tests/test_native_action_view_set_integration.py",
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
         "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
         "addons/smart_core/tests/test_runtime_view_contract_fail_closed.py",
         "addons/smart_core/tests/test_scene_delivery_policy.py",
@@ -1599,6 +1600,20 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "native_occurrence_contract",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.native_occurrence.contract.orm :: native_occurrence_contract"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "native_tree_presentation_semantic",

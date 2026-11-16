@@ -53,7 +53,7 @@ function snapshot(globalStatus, searchContract, nativeActionContract) {
   return {
     pageInfo: {
       pageId: 'contract.form', sceneKey: 'contract.form', pageName: 'Contract', model: 'sc.general.contract',
-      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.3.0', clientType: 'web_pc',
+      viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.4.0', clientType: 'web_pc',
     },
     layoutContract: { pageId: 'contract.form', layoutType: 'form', adaptMode: 'pc', containerTree: [], layoutHints: {}, componentRegistry: {} },
     statusContract: {
@@ -144,6 +144,75 @@ const nativeActionContract = {
   },
 };
 
+function occurrenceIdentity({
+  kind = 'column',
+  name = 'name',
+  keyHex = 'a'.repeat(24),
+  viewXmlId = 'demo.list_view',
+  crossEnvironmentStable = true,
+  locator = '/tree[1]/field[1]',
+  index = 1,
+} = {}) {
+  return {
+    schemaVersion: '1.0.0',
+    model: 'sc.general.contract',
+    viewType: kind === 'column' ? 'tree' : 'form',
+    viewId: kind === 'column' ? 44 : 33,
+    viewXmlId,
+    viewContentHash: 'c'.repeat(64),
+    viewStructureKey: `struct.v1.${'d'.repeat(24)}`,
+    crossEnvironmentStable,
+    kind,
+    name,
+    nativeLocator: locator,
+    occurrenceIndex: index,
+    sourcePosition: 0,
+    occurrenceKey: `occ.v1.${keyHex}`,
+    authoritative: true,
+    sourceAuthority: {
+      kind: 'ir.ui.view',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+    nativeBehavior: { domainRaw: '', contextRaw: '', optionsRaw: '' },
+  };
+}
+
+function columnOccurrence(keyHex = 'a'.repeat(24), locator = '/tree[1]/field[1]', index = 1) {
+  return {
+    occurrenceKey: `occ.v1.${keyHex}`,
+    fieldCode: 'name',
+    nativeIdentity: occurrenceIdentity({ keyHex, locator, index }),
+    label: 'Name',
+    widget: '',
+    optional: '',
+    sum: '',
+    modifiers: {},
+    domainRaw: '',
+    contextRaw: '',
+    optionsRaw: '',
+  };
+}
+
+function listSnapshot(columns) {
+  const value = snapshot({ pageVisible: true, pageAuth: 'read' });
+  value.pageInfo = {
+    ...value.pageInfo,
+    viewType: 'list',
+    layoutType: 'table',
+    contractVersion: '2.4.0',
+  };
+  value.layoutContract = {
+    ...value.layoutContract,
+    layoutType: 'table',
+    listProfile: {
+      columns: ['name', 'name'],
+      columnOccurrences: columns,
+    },
+  };
+  return value;
+}
+
 check(() => assert.deepEqual(
   decodeContractV2Snapshot(snapshot(
     { pageVisible: true, pageAuth: 'read' },
@@ -211,6 +280,78 @@ check(() => assert.throws(
   )),
   /searchContract\.inventedSearchAuthority|not allowed|unknown/i,
 ), 'the Search Contract must still reject undeclared keys');
+
+check(() => {
+  const decoded = decodeContractV2Snapshot(listSnapshot([
+    columnOccurrence('a'.repeat(24), '/tree[1]/field[1]', 1),
+    columnOccurrence('b'.repeat(24), '/tree[1]/field[2]', 2),
+  ]));
+  const columns = decoded.layoutContract.listProfile?.columnOccurrences || [];
+  assert.equal(columns.length, 2);
+  assert.notEqual(columns[0].occurrenceKey, columns[1].occurrenceKey);
+  assert.equal(columns[0].nativeIdentity.kind, 'column');
+  assert.equal(columns[0].nativeIdentity.sourceAuthority.kind, 'ir.ui.view');
+}, 'List column occurrences must preserve duplicate field names by deterministic identity');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(listSnapshot([
+    { ...columnOccurrence(), nativeIdentity: undefined },
+  ])),
+  /nativeIdentity/,
+), 'a List occurrence without backend identity must fail closed');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(listSnapshot([
+    columnOccurrence('a'.repeat(24), '/tree[1]/field[1]', 1),
+    columnOccurrence('a'.repeat(24), '/tree[1]/field[2]', 2),
+  ])),
+  /duplicates occurrence/,
+), 'duplicate occurrence keys must fail closed even when locators differ');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(listSnapshot([
+    {
+      ...columnOccurrence(),
+      nativeIdentity: {
+        ...occurrenceIdentity(),
+        viewXmlId: '',
+        crossEnvironmentStable: true,
+      },
+    },
+  ])),
+  /crossEnvironmentStable/,
+), 'cross-environment stability must agree with XMLID presence');
+
+check(() => {
+  const value = snapshot({ pageVisible: true, pageAuth: 'read' });
+  value.pageInfo.contractVersion = '2.4.0';
+  value.actionContract.actionRuleList = [{
+    actionId: 'action.confirm',
+    nativeIdentity: {
+      ...occurrenceIdentity({
+        kind: 'button',
+        name: 'action_confirm',
+        keyHex: 'e'.repeat(24),
+        locator: '/form[1]/header[1]/button[1]',
+        index: 1,
+      }),
+      type: 'object',
+      id: 'native_confirm',
+      string: 'Confirm',
+    },
+    triggerType: 'click',
+    sourceWidgetId: 'page.header',
+    targetIds: [],
+    dispatchMode: 'server',
+    targetScope: 'page',
+    refreshMode: 'partial',
+  }];
+  const identity = decodeContractV2Snapshot(value).actionContract.actionRuleList[0].nativeIdentity;
+  assert.equal(identity?.kind, 'button');
+  assert.equal(identity?.type, 'object');
+  assert.equal(identity?.id, 'native_confirm');
+  assert.equal(identity?.string, 'Confirm');
+}, 'button native identity must retain action evidence without changing occurrence identity');
 
 // 1. The decoder keeps the published reasons and still rejects an undeclared key.
 const decoded = decodeContractV2Snapshot(snapshot({

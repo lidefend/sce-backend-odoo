@@ -1031,11 +1031,11 @@ assert.throws(
   'legacy compatibility must not erase a malformed child carrier before strict decoding',
 );
 const unsupportedFutureVersion = snapshot();
-unsupportedFutureVersion.pageInfo.contractVersion = '2.4.0';
+unsupportedFutureVersion.pageInfo.contractVersion = '2.5.0';
 assert.throws(
   () => decodeContractV2Snapshot(unsupportedFutureVersion),
-  /must be a negotiated 2\.0, 2\.1, 2\.2, or 2\.3 version/,
-  'an unadvertised future minor must fail closed instead of using the 2.3 decoder',
+  /must be a negotiated 2\.0, 2\.1, 2\.2, 2\.3, or 2\.4 version/,
+  'an unadvertised future minor must fail closed instead of using the 2.4 decoder',
 );
 assert.deepEqual(
   collectUnifiedPageContractV2FieldWidgets(snapshot()).map((widget) => widget.fieldCode),
@@ -1322,7 +1322,7 @@ assert.deepEqual(
   {
     version: '1.0',
     rendererVersion: '1.0.0',
-    supportedContractVersion: '>=2.0.0 <2.4.0',
+    supportedContractVersion: '>=2.0.0 <2.5.0',
     pageContractVersion: '2.3.0',
   },
   'component identity, renderer version and page Contract V2 version must reach the presentation model',
@@ -4347,3 +4347,83 @@ assert.throws(() => presentContractV2Form(createRelationStore, 'edit', { line_id
 }), { name: 'ContractGapError' }, 'changed commands cannot reuse or forge server snapshot identity');
 assert.deepEqual(createRelationStore.snapshot.dataContract.mainData.line_ids, createSource);
 console.log('native create relation snapshot binding: passed');
+
+const nestedWidgetSnapshot: any = structuredClone(snapshot());
+nestedWidgetSnapshot.pageInfo.contractVersion = '2.4.0';
+const nestedContainer = nestedWidgetSnapshot.layoutContract.containerTree[0];
+const sourceAuthority = {
+  kind: 'ir.ui.view' as const,
+  projectionOnly: true as const,
+  noBusinessFactAuthority: true as const,
+};
+const containerLocator = '//form/sheet/group[1]';
+const containerIdentity = {
+  schemaVersion: '1.0.0' as const,
+  model: nestedWidgetSnapshot.pageInfo.model,
+  viewType: 'form',
+  viewId: 801,
+  viewXmlId: 'demo.nested_widget_form',
+  viewContentHash: 'a'.repeat(64),
+  viewStructureKey: `struct.v1.${'b'.repeat(24)}`,
+  crossEnvironmentStable: true,
+  kind: 'container' as const,
+  name: nestedContainer.containerId,
+  nativeLocator: containerLocator,
+  occurrenceIndex: 1,
+  sourcePosition: 0,
+  occurrenceKey: `occ.v1.${'c'.repeat(24)}`,
+  authoritative: true,
+  sourceAuthority,
+};
+nestedContainer.nativeLocator = containerLocator;
+nestedContainer.occurrenceIndex = 1;
+nestedContainer.nativeIdentity = containerIdentity;
+const widgetLocator = '//form/sheet/group[1]/field[@name="name"]';
+const fieldIdentity = {
+  ...containerIdentity,
+  kind: 'field' as const,
+  name: 'name',
+  nativeLocator: widgetLocator,
+  occurrenceKey: `occ.v1.${'d'.repeat(24)}`,
+};
+const nestedWidget = {
+  widgetId: 'field.name.direct',
+  widgetType: 'input',
+  fieldCode: 'name',
+  label: 'Name',
+  span: 12,
+  componentKey: 'sc.input.text',
+  capabilities: [],
+  componentConfig: { fieldType: 'char' },
+  ownerContainerId: nestedContainer.containerId,
+  nativeLocator: widgetLocator,
+  occurrenceIndex: 1,
+  nativeIdentity: fieldIdentity,
+};
+nestedContainer.widgetList = [nestedWidget];
+nestedWidget.nativeLocator = widgetLocator;
+nestedWidget.occurrenceIndex = 1;
+nestedWidget.nativeIdentity = fieldIdentity;
+assert.doesNotThrow(
+  () => decodeContractV2Snapshot(nestedWidgetSnapshot),
+  'a direct field widget under a container may carry its own field occurrence identity',
+);
+
+const fieldOwnerSnapshot: any = structuredClone(snapshot());
+fieldOwnerSnapshot.pageInfo.contractVersion = '2.4.0';
+const fieldOwnerNode = fieldOwnerSnapshot.layoutContract.containerTree[0].children[0];
+fieldOwnerNode.nativeLocator = widgetLocator;
+fieldOwnerNode.occurrenceIndex = 1;
+fieldOwnerNode.nativeIdentity = fieldIdentity;
+fieldOwnerNode.widgetList[0].nativeLocator = widgetLocator;
+fieldOwnerNode.widgetList[0].occurrenceIndex = 1;
+fieldOwnerNode.widgetList[0].nativeIdentity = {
+  ...fieldIdentity,
+  occurrenceKey: `occ.v1.${'e'.repeat(24)}`,
+};
+assert.throws(
+  () => decodeContractV2Snapshot(fieldOwnerSnapshot),
+  /must match the owning field occurrence/,
+  'a field-owned widget still has to match its owning field occurrence',
+);
+console.log('nested container and owning field widget identity separation: passed');

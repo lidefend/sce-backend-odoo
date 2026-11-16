@@ -135,6 +135,40 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             ("security.secrets.scan",),
         )
 
+    def test_acceptance_contract_inputs_have_exact_nonruntime_owners(self):
+        expected = {
+            "config/acceptance/backend_contract_instance_v1.json":
+                "acceptance_contract_instance_config",
+            "config/acceptance/backend_contract_instance_daily_v1.json":
+                "daily_acceptance_contract_instance_config",
+            "config/contract/page_contract_v1_retirement_manifest.json":
+                "contract_retirement_manifest_config",
+        }
+        result = ownership.classify_paths(expected)
+        self.assertEqual(result.assignments, expected)
+        self.assertTrue(result.control_plane_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertFalse(result.frontend_changed)
+
+    def test_candidate_acceptance_tooling_is_a_nonruntime_control_plane(self):
+        paths = {
+            "make/dev.mk",
+            "scripts/dev/candidate_runtime_identity.py",
+            "scripts/dev/frontend_acceptance_runtime.sh",
+            "scripts/verify/test_candidate_runtime_identity.py",
+            "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+            "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        }
+        result = ownership.classify_paths(paths)
+        self.assertEqual(set(result.assignments.values()), {"candidate_acceptance_tooling"})
+        self.assertTrue(result.control_plane_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertFalse(result.frontend_changed)
+        self.assertEqual(
+            result.category_for("scripts/dev/candidate_runtime_identity.py").tool_checks,
+            ("verify.candidate.profile.unit",),
+        )
+
     def test_database_lifecycle_tooling_selects_managed_consumer_without_module_shards(self):
         paths = [
             "scripts/db/create.sh",

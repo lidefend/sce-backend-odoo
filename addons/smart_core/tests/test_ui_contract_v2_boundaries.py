@@ -143,11 +143,13 @@ def _load_handler():
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
         CONTRACT_VERSION="2.0",
+        _native_view_identity_for=real_assembler._native_view_identity_for,
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
         hydrate_final_action_modifier_status=_hydrate_final_action_modifier_status,
         hydrate_final_layout_modifier_status=_hydrate_final_layout_modifier_status,
         project_runtime_business_actions=_project_runtime_business_actions,
         project_workflow_action_semantics=lambda contract: contract,
+        rebind_native_occurrence_identities=real_assembler.rebind_native_occurrence_identities,
         declare_container_columns=real_assembler.declare_container_columns,
         declared_container_columns=real_assembler.declared_container_columns,
     )
@@ -224,6 +226,11 @@ def _load_handler():
         def apply_runtime_record_overlay(self, ui_data, **kwargs):
             captured.setdefault("record_overlays", []).append(dict(kwargs))
             return ui_data
+
+        def ensure_native_view_identity(self, contract, **_kwargs):
+            views = contract.get("views") if isinstance(contract, dict) else {}
+            view = (views.get("tree") if isinstance(views, dict) else None) or {}
+            return view.get("viewIdentity") or view.get("view_identity") or {}
 
     _install_module(
         "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler",
@@ -4166,6 +4173,25 @@ class TestUiContractV2Boundaries(unittest.TestCase):
 
         self.assertEqual(params["view_type"], "tree")
         self.assertEqual(params["viewType"], "tree")
+
+    def test_final_occurrence_rebind_follows_all_action_projections(self):
+        source = (
+            Path(__file__).resolve().parents[1] / "handlers" / "ui_contract_v2.py"
+        ).read_text(encoding="utf-8")
+        guidance = source.index(
+            "project_native_action_guidance(contract_v2, read_action_fact)"
+        )
+        rebind = source.index(
+            "rebind_native_occurrence_identities(",
+            guidance,
+        )
+        validation = source.index("validate_final_nodes(", rebind)
+        self.assertLess(guidance, rebind)
+        self.assertLess(rebind, validation)
+        self.assertIn(
+            "view_identity=native_view_identity",
+            source[rebind:validation],
+        )
 
     def test_form_structure_contract_uses_generic_slots_not_contract_template(self):
         handler = self.module.UiContractV2Handler(env=object())

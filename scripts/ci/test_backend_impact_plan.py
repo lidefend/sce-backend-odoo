@@ -81,6 +81,23 @@ class ImpactSelectionTest(unittest.TestCase):
                 )
                 self.assertEqual(plan['scope_status'], 'NOT_APPLICABLE')
 
+    def test_acceptance_contract_inputs_select_exact_checks_without_full_backend(self):
+        expected = {
+            'config/acceptance/backend_contract_instance_v1.json':
+                ['verify.frontend.acceptance.environment.guard'],
+            'config/acceptance/backend_contract_instance_daily_v1.json':
+                ['verify.daily_dev.acceptance_fixture.unit'],
+            'config/contract/page_contract_v1_retirement_manifest.json':
+                ['verify.contract.page_v1_zero_residue.guard'],
+        }
+        for path, targets in expected.items():
+            with self.subTest(path=path):
+                plan = planner.select([path], self.graph, self.graph)
+                self.assertEqual(plan['modules'], [])
+                self.assertEqual(plan['mode'], 'incremental')
+                self.assertEqual(plan['tool_checks'], targets)
+                self.assertEqual(plan['scope_status'], 'NOT_APPLICABLE')
+
     def test_other_scripts_test_runner_remains_full(self):
         plan = planner.select(['scripts/test/unrelated_runner.sh'], self.graph, self.graph)
         self.assertEqual(plan['mode'], 'full')

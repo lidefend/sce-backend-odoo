@@ -117,7 +117,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_backend_contract_instance_selects_list_surface_receipt(self) -> None:
         self.assertEqual(
             select_targets(["config/acceptance/backend_contract_instance_v1.json"]),
-            ["verify.frontend.list_surface_search_contract.unit"],
+            ["verify.frontend.acceptance.environment.guard"],
         )
 
     def test_daily_contract_instance_selects_daily_declaration_tests(self) -> None:
@@ -125,6 +125,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["config/acceptance/backend_contract_instance_daily_v1.json"]),
             ["verify.daily_dev.acceptance_fixture.unit"],
         )
+
+    def test_candidate_runtime_identity_tools_select_their_unit(self) -> None:
+        for path in (
+            "scripts/dev/candidate_runtime_identity.py",
+            "scripts/verify/test_candidate_runtime_identity.py",
+            "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.candidate.profile.unit"],
+                )
 
     def test_delivery_plan_inputs_select_the_delivery_unit(self) -> None:
         for path in (
@@ -733,6 +745,30 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["scripts/verify/unified_page_contract_v2_intent_guard.py"]),
             ["verify.unified_page_contract.v2.intent"],
+        )
+
+    def test_native_occurrence_paths_select_producer_and_decoder_gates(self) -> None:
+        expected = {
+            "verify.native_occurrence.contract.unit",
+            "verify.native_occurrence.contract.orm",
+            "verify.unified_page_contract.v2.assembler",
+        }
+        for path in (
+            "addons/smart_core/core/native_view_occurrence.py",
+            "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+            "scripts/verify/test_native_occurrence_contract.py",
+        ):
+            with self.subTest(path=path):
+                self.assertLessEqual(expected, set(select_targets([path])))
+
+    def test_contract_retirement_manifest_selects_zero_residue_guard(self) -> None:
+        self.assertEqual(
+            select_targets(["config/contract/page_contract_v1_retirement_manifest.json"]),
+            ["verify.contract.page_v1_zero_residue.guard"],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/web_contract_v2_frontend_architecture_guard.py"]),
+            ["verify.unified_page_contract.v2.web_architecture"],
         )
 
     def test_action_semantics_backend_paths_select_existing_executors(self) -> None:

@@ -29,7 +29,7 @@
       "lang": "zh_CN",
       "tz": "Asia/Shanghai"
     },
-    "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x"],
+    "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x"],
     "client_contract_capabilities": [
       "container_tree.v2",
       "data_source.v2",

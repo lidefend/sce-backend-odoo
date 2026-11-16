@@ -149,15 +149,25 @@ load_profile
         integration = source.split(
             "verify.frontend.acceptance.integration:", 1
         )[1].split("\n\n", 1)[0]
-        evidence_steps = [
-            "acceptance.runtime.integration.prepare",
+        self.assertIn("acceptance_evolution_integration.py", integration)
+        self.assertIn("--execute", integration)
+        self.assertIn(
+            "--prepare-target acceptance.runtime.integration.prepare",
+            integration,
+        )
+        self.assertIn("SC_ACCEPTANCE_FULL_REASON", integration)
+        self.assertIn("SC_ACCEPTANCE_REVERIFY_SUITES", integration)
+        self.assertNotIn(
             "verify.frontend.presentation.local.browser.internal",
-            "verify.frontend.list_surface_search_contract.unit",
-            "verify.frontend.list_surface_structure.browser.internal",
-            "verify.frontend.relation_roundtrip.browser",
-        ]
-        positions = [integration.index(step) for step in evidence_steps]
-        self.assertEqual(positions, sorted(positions))
+            integration,
+        )
+        self.assertNotIn("acceptance.evidence.record.integration", integration)
+
+        planning = source.split("acceptance.integration.plan:", 1)[1].split(
+            "\n\n", 1
+        )[0]
+        self.assertIn("acceptance_evolution_integration.py", planning)
+        self.assertNotIn("--execute", planning)
 
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"

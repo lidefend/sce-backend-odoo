@@ -20,6 +20,7 @@ from ..core.unified_page_contract_v2_assembler import (
     hydrate_final_layout_modifier_status,
     project_runtime_business_actions,
     project_workflow_action_semantics,
+    rebind_native_occurrence_identities,
 )
 from ..core.unified_page_contract_v2_client import (
     resolve_client_type,
@@ -94,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v60"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v71"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1100,6 +1101,25 @@ class UiContractV2Handler(BaseIntentHandler):
             "record": source_record,
             "source_meta": ui_meta,
         })
+        from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+        view_ids_by_type = source_contract.get("view_ids_by_type") or {}
+        native_view_type = (
+            str(view_type or "").strip().lower()
+        )
+        native_view_id = (
+            view_ids_by_type.get("tree" if native_view_type in {"tree", "list"} else native_view_type)
+            or source_contract.get("view_id")
+        )
+        native_view_identity = PageAssembler(
+            self.env,
+            self.su_env,
+        ).ensure_native_view_identity(
+            source_contract,
+            model=str(model or "").strip(),
+            view_type=native_view_type,
+            view_id=native_view_id,
+            carrier=self._request_carrier,
+        )
         route_source_ready_at = time.monotonic()
         try:
             from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
@@ -1306,6 +1326,11 @@ class UiContractV2Handler(BaseIntentHandler):
             fact_id = contract_v2["dataContract"]["mainData"]["id"]
             return fact_model.browse(fact_id).read([field_name])[0][field_name]
         project_native_action_guidance(contract_v2, read_action_fact)
+        rebind_native_occurrence_identities(
+            contract_v2,
+            source_contract,
+            view_identity=native_view_identity,
+        )
         modifier_status_at = time.monotonic()
         from odoo.addons.smart_core.core.node_component_validation import validate_final_nodes, validate_delivered_references
         node_validation_contract = (

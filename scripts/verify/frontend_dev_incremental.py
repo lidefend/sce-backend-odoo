@@ -189,15 +189,17 @@ RULES = (
     )),
     Rule((
         "config/acceptance/evolution_binding.v1.json",
+        "scripts/ops/acceptance_evolution_integration.py",
         "scripts/verify/acceptance_evolution_binding_guard.py",
         "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_integration.py",
     ), (
         "verify.acceptance.evolution.binding",
     )),
     Rule((
         "config/acceptance/backend_contract_instance_v1.json",
     ), (
-        "verify.frontend.list_surface_search_contract.unit",
+        "verify.frontend.acceptance.environment.guard",
     )),
     Rule((
         "config/acceptance/backend_contract_instance_daily_v1.json",
@@ -533,9 +535,18 @@ RULES = (
     Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",
         "scripts/verify/frontend_contract_route_guard.py",
-        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
+    )),
+    Rule((
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.web_architecture",
+    )),
+    Rule((
+        "config/contract/page_contract_v1_retirement_manifest.json",
+    ), (
+        "verify.contract.page_v1_zero_residue.guard",
     )),
     Rule((
         "scripts/verify/frontend_decision_authority.py",
@@ -1050,6 +1061,13 @@ RULES = (
         "verify.baseline.iteration.execution.policy",
     )),
     Rule((
+        "scripts/dev/candidate_runtime_identity.py",
+        "scripts/verify/test_candidate_runtime_identity.py",
+        "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+    ), (
+        "verify.candidate.profile.unit",
+    )),
+    Rule((
         "make/runtime_ops.mk",
         "scripts/dev/frontend_cached_dependencies_restore.sh",
         "scripts/dev/frontend_standard_preview.py",
@@ -1422,6 +1440,15 @@ RULES = (
     ), (
         "verify.native_action.contract.unit",
         "verify.native_action.contract.orm",
+        "verify.unified_page_contract.v2.assembler",
+    )),
+    Rule((
+        "addons/smart_core/core/native_view_occurrence.py",
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+        "scripts/verify/test_native_occurrence_contract.py",
+    ), (
+        "verify.native_occurrence.contract.unit",
+        "verify.native_occurrence.contract.orm",
         "verify.unified_page_contract.v2.assembler",
     )),
     Rule((
