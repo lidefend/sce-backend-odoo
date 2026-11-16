@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "3c7682647352cdf52b790e9a46b893e2535be77d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+    ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
+    "docs/audit/change-impact-verification/README.md",
+    "docs/ops/iterations/change_impact_verification_20261116.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; no database, browser, service or deployment access"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+        ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_run_context.py"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs/audit/change-impact-verification/README.md",
+        "docs/ops/iterations/change_impact_verification_20261116.md",
+        "scripts/verify/docs_links.py"
+      ],
+      "kind": "offline"
+    },
+    "iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/ops/codex_workspace_execution_rules.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Execute P4-00-01 by inventorying every CI workflow and tracing each entry to its actual commands and product-verification responsibility.",
+  "id": "CHANGE-IMPACT-VERIFICATION-20261116",
+  "branch": "codex/change-impact-verification-20261116",
+  "status": "active",
+  "goal": ".agent/goals/CHANGE-IMPACT-VERIFICATION-20261116.yaml",
+  "record": "docs/ops/iterations/change_impact_verification_20261116.md"
+}
