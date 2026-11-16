@@ -411,6 +411,16 @@
         "daily_runtime_entry"
       ]
     },
+  {
+    "id": "frontend-acceptance-contract-instance",
+    "paths": [
+      "config/acceptance/backend_contract_instance_v1.json"
+    ],
+    "suites": [
+      "frontend_contract",
+      "list_surface_structure"
+    ]
+  },
     {
       "id": "isolated-acceptance-entry-identity",
       "paths": [
