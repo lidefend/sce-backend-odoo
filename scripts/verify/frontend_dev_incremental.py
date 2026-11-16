@@ -200,6 +200,11 @@ RULES = (
         "verify.frontend.list_surface_search_contract.unit",
     )),
     Rule((
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+    ), (
+        "verify.daily_dev.acceptance_fixture.unit",
+    )),
+    Rule((
         "scripts/ops/validation_delivery_plan.py",
         "scripts/verify/test_validation_delivery_plan.py",
     ), (
