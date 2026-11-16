@@ -2,8 +2,8 @@
 
 ## 1. 身份与口径
 
-- 源码 HEAD：`62dd1badb52b3de902792633b6e066a9e3f8261d`
-- 源码 tree：`cc13c29438299fde455cfff0b8ba48be9fe2cdfe`
+- 源码 HEAD：`1174988960f0a8aacbc5b3c6aceaf05fba46104e`
+- 源码 tree：`9df2b47027a8299d7babae1e59204b8239f38849`
 - 类型：P4 只读审计，不执行产品门禁、不写数据库、不改变断言。
 - 验证项：workflow job、四个 gate anchor 可达的 Make target、其实际执行的脚本、
   acceptance suite，以及 guard registry 中的完整脚本生命周期。
@@ -233,7 +233,7 @@ guard registry 生命周期统计：
 ## 12. Gate-enforced 脚本责任索引
 
 下表只列四个 anchor 可达、实际被执行脚本中的一部分元数据。完整八问责任、调用 target、
-资源信号、层提示和重叠关系在 `verification_mapping_matrix.json`。
+资源信号、层提示和重叠关系由 `verification_mapping_matrix.json` 索引到四个 part 文件。
 
 | script | lifecycle | inferred layers | declared summary |
 | --- | --- | --- | --- |

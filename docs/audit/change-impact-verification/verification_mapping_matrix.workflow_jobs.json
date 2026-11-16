@@ -1,0 +1,5699 @@
+{
+  "items": [
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "Container",
+              "container",
+              "docker compose"
+            ],
+            "kind": "container"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "ODOO_DBFILTER",
+              "Postgres",
+              "postgres"
+            ],
+            "kind": "database"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "daily.runtime.contract_fact.readback",
+            "test"
+          ],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/backend_suite_plan.py",
+            "scripts/ci/backend_test_receipt.py",
+            "scripts/ci/orm_result_guard.sh",
+            "scripts/ci/run_mixed_python_tests.py",
+            "scripts/ci/self_hosted_runner_cleanup.sh"
+          ],
+          "steps": [
+            "Checkout exact authoritative GitHub commit",
+            "Download immutable execution plan",
+            "Resolve module list",
+            "Configure compose environment",
+            "Set up isolated BuildKit builder",
+            "Bind backend source identity",
+            "Restore backend test pip downloads",
+            "Prepare isolated pip download cache",
+            "Build images and start database",
+            "Run backend test suite per module",
+            "Return pip cache ownership to runner",
+            "Preserve per-target execution observations",
+            "Dump logs on failure",
+            "Cleanup"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "L2 rendered behavior",
+          "dynamic contract/fact closure when receipt blockers remain open",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "planned Odoo/Python module tests in isolated databases and records non-zero execution receipts",
+        "what_triggers_it": {
+          "job_if": "needs.plan.outputs.required == 'true'",
+          "needs": "plan",
+          "on": {
+            "workflow_call": {
+              "inputs": {
+                "base_sha": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_ref": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_sha": {
+                  "required": "true",
+                  "type": "string"
+                }
+              }
+            },
+            "workflow_dispatch": {
+              "inputs": {
+                "head_ref": {
+                  "default": "",
+                  "description": "Branch or tag to test (default: default branch)",
+                  "required": "false"
+                },
+                "modules": {
+                  "default": "",
+                  "description": "Comma-separated module override (default: all runnable module tests)",
+                  "required": "false"
+                },
+                "test_tags": {
+                  "default": "",
+                  "description": "Odoo --test-tags override (default: module default tags)",
+                  "required": "false"
+                }
+              }
+            }
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "240",
+          "workflow": ".github/workflows/backend_test_suite.yml"
+        }
+      },
+      "id": "workflow:backend_test_suite.yml:backend_suite",
+      "job_id": "backend_suite",
+      "job_name": "backend_suite",
+      "layer_hints": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "make_targets": [
+        "daily.runtime.contract_fact.readback",
+        "test"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "Container",
+            "container",
+            "docker compose"
+          ],
+          "kind": "container"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "ODOO_DBFILTER",
+            "Postgres",
+            "postgres"
+          ],
+          "kind": "database"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/backend_test_receipt.py",
+        "scripts/ci/orm_result_guard.sh",
+        "scripts/ci/run_mixed_python_tests.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact authoritative GitHub commit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Download immutable execution plan",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+        },
+        {
+          "commands": [
+            "python3 -c 'import json,os; p=json.load(open(os.environ[\"RUNNER_TEMP\"]+\"/backend-plan.json\")); p.pop(\"input_inventory\",None); print(json.dumps(p,indent=2))' >> \"${GITHUB_STEP_SUMMARY}\"",
+            "python3 scripts/ci/backend_suite_plan.py --base \"${IMPACT_BASE}\" \\"
+          ],
+          "env_keys": [
+            "GH_TOKEN",
+            "PLAN_SHA256"
+          ],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Resolve module list",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_suite_plan.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Configure compose environment",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME",
+                "ODOO_DBFILTER"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Set up isolated BuildKit builder",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "container"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Bind backend source identity",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 7,
+          "make_targets": [],
+          "name": "Restore backend test pip downloads",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830"
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "SC_TEST_PIP_CACHE_HOST"
+          ],
+          "if": "",
+          "index": 8,
+          "make_targets": [],
+          "name": "Prepare isolated pip download cache",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "Container"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 9,
+          "make_targets": [],
+          "name": "Build images and start database",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "Postgres",
+                "postgres"
+              ],
+              "kind": "database"
+            },
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make daily.runtime.contract_fact.readback 2>&1 || true)\"",
+            "make test MODULE=\"${module}\" TEST_TAGS=\"${module_test_tags}\" \\",
+            "make test MODULE=\"${module}\" \\",
+            "python --attempt 1 --head \"${HEAD_SHA}\" \\",
+            "python --execution \"${mixed_execution}\" --attempt 1 --head \"${HEAD_SHA}\" \\",
+            "python --execution \"${mixed_execution}\" --head \"${HEAD_SHA}\" --base \"${receipt_base}\" \\",
+            "python --head \"${HEAD_SHA}\" --base \"${receipt_base}\" \\",
+            "python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); assert d[\"source_head\"]==sys.argv[2] and d[\"decision\"] in (\"RUN\",\"REUSE\"); print(d[\"decision\"])' \"${decision_file}\" \"${HEAD_SHA}\")\"; then",
+            "python3 -c 'import json,sys; d=json.load(sys.stdin); assert d.get(\"schema\")==\"backend-contract-fact-readback/v1\" and d.get(\"source_head\")==sys.argv[1], \"witness identity mismatch\"' \"${HEAD_SHA}\"; then",
+            "python3 -m unittest <file>",
+            "python3 -m unittest discover -v -s \"${test_dir}\" -p 'test*.py' 2>&1 | tee \"${python_log}\"",
+            "python3 <file> -v emits __main__.Class.method, and",
+            "python3 scripts/ci/backend_changed_test_coverage.py --plan \"${RUNNER_TEMP}/backend-plan.json\" --module \"${module}\")\" || exit 1",
+            "python3 scripts/ci/backend_test_receipt.py archive-attempt \\",
+            "python3 scripts/ci/backend_test_receipt.py context --output \"${receipt_dir}/runtime-context.json\" || exit 1",
+            "python3 scripts/ci/backend_test_receipt.py isolated-python \\",
+            "python3 scripts/ci/backend_test_receipt.py record \\",
+            "python3 scripts/ci/run_mixed_python_tests.py \"${mixed_file}\" 2>&1 | tee \"${mixed_log}\""
+          ],
+          "env_keys": [
+            "GH_TOKEN",
+            "SC_TEST_PIP_CACHE_HOST"
+          ],
+          "if": "",
+          "index": 10,
+          "make_targets": [
+            "2",
+            "MODULE",
+            "daily.runtime.contract_fact.readback",
+            "test"
+          ],
+          "name": "Run backend test suite per module",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME",
+                "ODOO_DBFILTER"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/backend_test_receipt.py",
+            "scripts/ci/orm_result_guard.sh",
+            "scripts/ci/run_mixed_python_tests.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "SC_TEST_PIP_CACHE_HOST"
+          ],
+          "if": "always()",
+          "index": 11,
+          "make_targets": [],
+          "name": "Return pip cache ownership to runner",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "container"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always() && env.BACKEND_RECEIPT_DIR != ''",
+          "index": 12,
+          "make_targets": [],
+          "name": "Preserve per-target execution observations",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "failure()",
+          "index": 13,
+          "make_targets": [],
+          "name": "Dump logs on failure",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 14,
+          "make_targets": [],
+          "name": "Cleanup",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [
+            "scripts/ci/self_hosted_runner_cleanup.sh"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "needs.plan.outputs.required == 'true'",
+        "needs": "plan",
+        "on": {
+          "workflow_call": {
+            "inputs": {
+              "base_sha": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_ref": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_sha": {
+                "required": "true",
+                "type": "string"
+              }
+            }
+          },
+          "workflow_dispatch": {
+            "inputs": {
+              "head_ref": {
+                "default": "",
+                "description": "Branch or tag to test (default: default branch)",
+                "required": "false"
+              },
+              "modules": {
+                "default": "",
+                "description": "Comma-separated module override (default: all runnable module tests)",
+                "required": "false"
+              },
+              "test_tags": {
+                "default": "",
+                "description": "Odoo --test-tags override (default: module default tags)",
+                "required": "false"
+              }
+            }
+          }
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "240",
+        "workflow": ".github/workflows/backend_test_suite.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/backend_test_suite.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/backend_suite_plan.py"
+          ],
+          "steps": [
+            "Checkout exact candidate for scope planning",
+            "Partition exact scope without reducing coverage",
+            "Upload immutable execution plan"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "test correctness",
+          "runtime contract or business behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "backend module scope, reuse decision and frozen execution-plan identity",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))",
+          "needs": [],
+          "on": {
+            "workflow_call": {
+              "inputs": {
+                "base_sha": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_ref": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_sha": {
+                  "required": "true",
+                  "type": "string"
+                }
+              }
+            },
+            "workflow_dispatch": {
+              "inputs": {
+                "head_ref": {
+                  "default": "",
+                  "description": "Branch or tag to test (default: default branch)",
+                  "required": "false"
+                },
+                "modules": {
+                  "default": "",
+                  "description": "Comma-separated module override (default: all runnable module tests)",
+                  "required": "false"
+                },
+                "test_tags": {
+                  "default": "",
+                  "description": "Odoo --test-tags override (default: module default tags)",
+                  "required": "false"
+                }
+              }
+            }
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "10",
+          "workflow": ".github/workflows/backend_test_suite.yml"
+        }
+      },
+      "id": "workflow:backend_test_suite.yml:plan",
+      "job_id": "plan",
+      "job_name": "plan",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/backend_suite_plan.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact candidate for scope planning",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 -c 'import json,os; p=json.load(open(os.environ[\"RUNNER_TEMP\"]+\"/backend-plan.json\")); p.pop(\"input_inventory\",None); print(json.dumps(p,indent=2))' >> \"${GITHUB_STEP_SUMMARY}\"",
+            "python3 scripts/ci/backend_suite_plan.py --base \"${IMPACT_BASE}\" \\"
+          ],
+          "env_keys": [
+            "GH_TOKEN",
+            "GITHUB_EVENT_NAME",
+            "HEAD_SHA",
+            "IMPACT_BASE",
+            "MODULE_OVERRIDE",
+            "TEST_TAGS_INPUT"
+          ],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Partition exact scope without reducing coverage",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_suite_plan.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Upload immutable execution plan",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event_name == 'schedule' || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository))",
+        "needs": [],
+        "on": {
+          "workflow_call": {
+            "inputs": {
+              "base_sha": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_ref": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_sha": {
+                "required": "true",
+                "type": "string"
+              }
+            }
+          },
+          "workflow_dispatch": {
+            "inputs": {
+              "head_ref": {
+                "default": "",
+                "description": "Branch or tag to test (default: default branch)",
+                "required": "false"
+              },
+              "modules": {
+                "default": "",
+                "description": "Comma-separated module override (default: all runnable module tests)",
+                "required": "false"
+              },
+              "test_tags": {
+                "default": "",
+                "description": "Odoo --test-tags override (default: module default tags)",
+                "required": "false"
+              }
+            }
+          }
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "10",
+        "workflow": ".github/workflows/backend_test_suite.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/backend_test_suite.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/backend_suite_plan.py"
+          ],
+          "steps": [
+            "Checkout candidate for coverage verification",
+            "Download coverage evidence",
+            "Download coverage evidence",
+            "Reconcile module identities",
+            "Verify changed test execution identities",
+            "Publish changed test coverage",
+            "Enforce complete backend coverage"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "the product semantics of a reused test",
+          "frontend or deployment behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "planned module identities equal executed plus independently authorized reused test evidence",
+        "what_triggers_it": {
+          "job_if": "always() && !cancelled()",
+          "needs": [
+            "plan",
+            "backend_suite"
+          ],
+          "on": {
+            "workflow_call": {
+              "inputs": {
+                "base_sha": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_ref": {
+                  "required": "true",
+                  "type": "string"
+                },
+                "head_sha": {
+                  "required": "true",
+                  "type": "string"
+                }
+              }
+            },
+            "workflow_dispatch": {
+              "inputs": {
+                "head_ref": {
+                  "default": "",
+                  "description": "Branch or tag to test (default: default branch)",
+                  "required": "false"
+                },
+                "modules": {
+                  "default": "",
+                  "description": "Comma-separated module override (default: all runnable module tests)",
+                  "required": "false"
+                },
+                "test_tags": {
+                  "default": "",
+                  "description": "Odoo --test-tags override (default: module default tags)",
+                  "required": "false"
+                }
+              }
+            }
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "125",
+          "workflow": ".github/workflows/backend_test_suite.yml"
+        }
+      },
+      "id": "workflow:backend_test_suite.yml:verify_coverage",
+      "job_id": "verify_coverage",
+      "job_name": "verify_coverage",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/backend_suite_plan.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout candidate for coverage verification",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Download coverage evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "needs.plan.outputs.required == 'true'",
+          "index": 3,
+          "make_targets": [],
+          "name": "Download coverage evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093"
+        },
+        {
+          "commands": [
+            "python3 -c 'import json,os; print(json.dumps(json.load(open(os.environ[\"RUNNER_TEMP\"]+\"/verified-plan.json\"))[\"execution_summary\"], indent=2))' >> \"${GITHUB_STEP_SUMMARY}\"",
+            "python3 scripts/ci/backend_suite_plan.py --head \"${HEAD_SHA}\" --base \"${IMPACT_BASE}\" \\"
+          ],
+          "env_keys": [
+            "GH_TOKEN",
+            "HEAD_SHA",
+            "IMPACT_BASE",
+            "MODULE_OVERRIDE",
+            "PLAN_SHA256",
+            "TEST_TAGS_INPUT"
+          ],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Reconcile module identities",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_suite_plan.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/backend_changed_test_coverage.py \\"
+          ],
+          "env_keys": [
+            "GH_TOKEN",
+            "MANAGED_WAIT_SECONDS"
+          ],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Verify changed test execution identities",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 6,
+          "make_targets": [],
+          "name": "Publish changed test coverage",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "REQUIRED",
+            "REUSE_AUTHORITY",
+            "SUITE_RESULT"
+          ],
+          "if": "",
+          "index": 7,
+          "make_targets": [],
+          "name": "Enforce complete backend coverage",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "always() && !cancelled()",
+        "needs": [
+          "plan",
+          "backend_suite"
+        ],
+        "on": {
+          "workflow_call": {
+            "inputs": {
+              "base_sha": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_ref": {
+                "required": "true",
+                "type": "string"
+              },
+              "head_sha": {
+                "required": "true",
+                "type": "string"
+              }
+            }
+          },
+          "workflow_dispatch": {
+            "inputs": {
+              "head_ref": {
+                "default": "",
+                "description": "Branch or tag to test (default: default branch)",
+                "required": "false"
+              },
+              "modules": {
+                "default": "",
+                "description": "Comma-separated module override (default: all runnable module tests)",
+                "required": "false"
+              },
+              "test_tags": {
+                "default": "",
+                "description": "Odoo --test-tags override (default: module default tags)",
+                "required": "false"
+              }
+            }
+          }
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "125",
+        "workflow": ".github/workflows/backend_test_suite.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/backend_test_suite.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "docker compose"
+            ],
+            "kind": "container"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "ODOO_DBFILTER",
+              "Postgres",
+              "postgres"
+            ],
+            "kind": "database"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "demo.ci"
+          ],
+          "scripts": [],
+          "steps": [
+            "Checkout exact authoritative GitHub commit",
+            "Docker info",
+            "Generate ephemeral demo environment",
+            "Verify professional runner Buildx",
+            "Calculate frontend build fingerprint",
+            "Build images",
+            "Start db & redis",
+            "Wait for PostgreSQL",
+            "Run demo.ci",
+            "Dump logs on failure",
+            "Cleanup"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "ordinary PR gates",
+          "general product acceptance beyond the selected scenario",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "manual disposable demo scenario setup, frontend build identity and scenario command",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+          "needs": [],
+          "on": {
+            "workflow_dispatch": {
+              "inputs": {
+                "scenario": {
+                  "default": "",
+                  "description": "可选：场景名，如 s50_repairable_paths",
+                  "required": "false"
+                },
+                "step": {
+                  "default": "all",
+                  "description": "可选：bad|fix|all",
+                  "required": "false"
+                }
+              }
+            }
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "45",
+          "workflow": ".github/workflows/demo-ci.yml"
+        }
+      },
+      "id": "workflow:demo-ci.yml:demo_ci",
+      "job_id": "demo_ci",
+      "job_name": "demo_ci",
+      "layer_hints": [
+        "L3",
+        "L4"
+      ],
+      "make_targets": [
+        "demo.ci"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "docker compose"
+          ],
+          "kind": "container"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "ODOO_DBFILTER",
+            "Postgres",
+            "postgres"
+          ],
+          "kind": "database"
+        }
+      ],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact authoritative GitHub commit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Docker info",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Generate ephemeral demo environment",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME",
+                "ODOO_DBFILTER"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Verify professional runner Buildx",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Calculate frontend build fingerprint",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Build images",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 7,
+          "make_targets": [],
+          "name": "Start db & redis",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 8,
+          "make_targets": [],
+          "name": "Wait for PostgreSQL",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "Postgres",
+                "postgres"
+              ],
+              "kind": "database"
+            },
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make demo.ci DB_NAME=\"${DB_NAME}\"",
+            "make demo.ci DB_NAME=\"${DB_NAME}\" SCENARIO=\"${SCENARIO}\" STEP=\"${STEP}\""
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 9,
+          "make_targets": [
+            "DB_NAME",
+            "demo.ci"
+          ],
+          "name": "Run demo.ci",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "failure()",
+          "index": 10,
+          "make_targets": [],
+          "name": "Dump logs on failure",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 11,
+          "make_targets": [],
+          "name": "Cleanup",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+        "needs": [],
+        "on": {
+          "workflow_dispatch": {
+            "inputs": {
+              "scenario": {
+                "default": "",
+                "description": "可选：场景名，如 s50_repairable_paths",
+                "required": "false"
+              },
+              "step": {
+                "default": "all",
+                "description": "可选：bad|fix|all",
+                "required": "false"
+              }
+            }
+          }
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "45",
+        "workflow": ".github/workflows/demo-ci.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/demo-ci.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "pnpm"
+            ],
+            "kind": "frontend_toolchain"
+          },
+          {
+            "evidence_tokens": [
+              "gh api"
+            ],
+            "kind": "network"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "frontend/apps/web/package.js",
+            "scripts/release/generate_frontend_release_evidence_bundle.py",
+            "scripts/verify/frontend_release_evidence_bundle.py"
+          ],
+          "steps": [
+            "Checkout exact main commit without persisted credentials",
+            "Prove candidate identity",
+            "Collect current-main GitHub check and ruleset metadata",
+            "Download exact frontend gate artifact",
+            "Install locked frontend toolchain and build exact tree",
+            "Generate qualification evidence bundle",
+            "Upload qualified current-main evidence",
+            "Clean temporary evidence inputs"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "new product behavior; it packages and verifies existing evidence",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "a current-main frontend artifact and its exact check/run/artifact/branch-protection provenance",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner && github.ref == 'refs/heads/main'",
+          "needs": [],
+          "on": {
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "45",
+          "workflow": ".github/workflows/frontend_release_evidence_bundle.yml"
+        }
+      },
+      "id": "workflow:frontend_release_evidence_bundle.yml:frontend_release_evidence_bundle",
+      "job_id": "frontend_release_evidence_bundle",
+      "job_name": "frontend_release_evidence_bundle",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "pnpm"
+          ],
+          "kind": "frontend_toolchain"
+        },
+        {
+          "evidence_tokens": [
+            "gh api"
+          ],
+          "kind": "network"
+        }
+      ],
+      "scripts": [
+        "frontend/apps/web/package.js",
+        "scripts/release/generate_frontend_release_evidence_bundle.py",
+        "scripts/verify/frontend_release_evidence_bundle.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact main commit without persisted credentials",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Prove candidate identity",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 - <<'PY'"
+          ],
+          "env_keys": [
+            "CANDIDATE_SHA"
+          ],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Collect current-main GitHub check and ruleset metadata",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "gh api"
+              ],
+              "kind": "network"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "CANDIDATE_SHA",
+            "FRONTEND_RUN_ATTEMPT",
+            "FRONTEND_RUN_ID"
+          ],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Download exact frontend gate artifact",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "gh api"
+              ],
+              "kind": "network"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "node --version)\" \\",
+            "pnpm --version)\" \\",
+            "pnpm -C frontend install --frozen-lockfile",
+            "pnpm -C frontend/apps/web build"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Install locked frontend toolchain and build exact tree",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "pnpm"
+              ],
+              "kind": "frontend_toolchain"
+            }
+          ],
+          "scripts": [
+            "frontend/apps/web/package.js"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/release/generate_frontend_release_evidence_bundle.py \\",
+            "python3 scripts/verify/frontend_release_evidence_bundle.py \\"
+          ],
+          "env_keys": [
+            "CANDIDATE_SHA",
+            "CANDIDATE_TREE"
+          ],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Generate qualification evidence bundle",
+          "resources": [],
+          "scripts": [
+            "scripts/release/generate_frontend_release_evidence_bundle.py",
+            "scripts/verify/frontend_release_evidence_bundle.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 7,
+          "make_targets": [],
+          "name": "Upload qualified current-main evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 8,
+          "make_targets": [],
+          "name": "Clean temporary evidence inputs",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner && github.ref == 'refs/heads/main'",
+        "needs": [],
+        "on": {
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "45",
+        "workflow": ".github/workflows/frontend_release_evidence_bundle.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/frontend_release_evidence_bundle.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "chromium",
+              "playwright"
+            ],
+            "kind": "browser"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "ODOO_DBFILTER"
+            ],
+            "kind": "database"
+          },
+          {
+            "evidence_tokens": [
+              "artifacts/"
+            ],
+            "kind": "filesystem_evidence"
+          },
+          {
+            "evidence_tokens": [
+              "pnpm"
+            ],
+            "kind": "frontend_toolchain"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "acceptance.frontend.fixture_orm",
+            "verify.frontend.systemic.convergence.static"
+          ],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/scheduled_validation.py",
+            "scripts/ci/self_hosted_runner_cleanup.sh",
+            "scripts/common/frontend_release_ci_identity.sh",
+            "scripts/verify/frontend_release_gate.py"
+          ],
+          "steps": [
+            "Checkout the authoritative code object",
+            "Prove checkout identity",
+            "Observe scheduled validation time",
+            "Classify change risk",
+            "Resolve effective frontend lane",
+            "Generate isolated acceptance environment",
+            "Freeze isolated frontend release identity",
+            "Pin frontend Node toolchain",
+            "Restore content-addressed pnpm store",
+            "Restore content-addressed Playwright browser",
+            "Install locked frontend toolchain",
+            "Run the single authoritative frontend release command",
+            "Execute governed managed ORM regressions",
+            "Upload managed ORM execution identities",
+            "Run standard frontend checks in parallel",
+            "Run systemic convergence static gates",
+            "Fail closed on command or evidence identity",
+            "Record explicit non-release lane result",
+            "Upload current-run non-sensitive release evidence",
+            "Upload current-run risk-lane evidence",
+            "Clean isolated runner state"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "L3 persistence unless the specific journey observes the durable business result",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "frontend lint, strict types, unit tests, build, release browser suite and exact-head release evidence in full mode",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "120",
+          "workflow": ".github/workflows/frontend_release_gate.yml"
+        }
+      },
+      "id": "workflow:frontend_release_gate.yml:frontend_release_gate",
+      "job_id": "frontend_release_gate",
+      "job_name": "frontend_release_gate",
+      "layer_hints": [
+        "L1",
+        "L2",
+        "L4"
+      ],
+      "make_targets": [
+        "acceptance.frontend.fixture_orm",
+        "verify.frontend.systemic.convergence.static"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "chromium",
+            "playwright"
+          ],
+          "kind": "browser"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "ODOO_DBFILTER"
+          ],
+          "kind": "database"
+        },
+        {
+          "evidence_tokens": [
+            "artifacts/"
+          ],
+          "kind": "filesystem_evidence"
+        },
+        {
+          "evidence_tokens": [
+            "pnpm"
+          ],
+          "kind": "frontend_toolchain"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/frontend_professional_extension_guard.py",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
+        "scripts/common/frontend_release_ci_identity.sh",
+        "scripts/verify/frontend_release_gate.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout the authoritative code object",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Prove checkout identity",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/scheduled_validation.py"
+          ],
+          "env_keys": [
+            "GH_TOKEN"
+          ],
+          "if": "github.event_name == 'schedule'",
+          "index": 3,
+          "make_targets": [],
+          "name": "Observe scheduled validation time",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Classify change risk",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Resolve effective frontend lane",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 6,
+          "make_targets": [],
+          "name": "Generate isolated acceptance environment",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME",
+                "ODOO_DBFILTER"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 7,
+          "make_targets": [],
+          "name": "Freeze isolated frontend release identity",
+          "resources": [],
+          "scripts": [
+            "scripts/common/frontend_release_ci_identity.sh"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode != 'skip'",
+          "index": 8,
+          "make_targets": [],
+          "name": "Pin frontend Node toolchain",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode != 'skip'",
+          "index": 9,
+          "make_targets": [],
+          "name": "Restore content-addressed pnpm store",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode != 'skip'",
+          "index": 10,
+          "make_targets": [],
+          "name": "Restore content-addressed Playwright browser",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830"
+        },
+        {
+          "commands": [
+            "pnpm -C frontend install --frozen-lockfile",
+            "pnpm -C frontend/apps/web exec playwright install --with-deps chromium",
+            "pnpm -C frontend/apps/web exec playwright install-deps chromium",
+            "pnpm config set store-dir \"${HOME}/.local/share/pnpm/store\"",
+            "python3 scripts/ci/frontend_professional_extension_guard.py"
+          ],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode != 'skip'",
+          "index": 11,
+          "make_targets": [],
+          "name": "Install locked frontend toolchain",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "chromium",
+                "playwright"
+              ],
+              "kind": "browser"
+            },
+            {
+              "evidence_tokens": [
+                "pnpm"
+              ],
+              "kind": "frontend_toolchain"
+            }
+          ],
+          "scripts": [
+            "scripts/ci/frontend_professional_extension_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "pnpm test:release"
+          ],
+          "env_keys": [
+            "FRONTEND_RELEASE_PR_HEAD_SHA"
+          ],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 12,
+          "make_targets": [],
+          "name": "Run the single authoritative frontend release command",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "pnpm"
+              ],
+              "kind": "frontend_toolchain"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make acceptance.frontend.fixture_orm 2>&1 | tee \"${RUNNER_TEMP}/managed-orm.log\"",
+            "python3 scripts/ci/backend_changed_test_coverage.py --record-managed \"${RUNNER_TEMP}/managed-orm.log\" \\"
+          ],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 13,
+          "make_targets": [
+            "2",
+            "acceptance.frontend.fixture_orm"
+          ],
+          "name": "Execute governed managed ORM regressions",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 14,
+          "make_targets": [],
+          "name": "Upload managed ORM execution identities",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [
+            "pnpm -C frontend/apps/web build",
+            "pnpm -C frontend/apps/web lint:src",
+            "pnpm -C frontend/apps/web test",
+            "pnpm -C frontend/apps/web typecheck:strict"
+          ],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'standard'",
+          "index": 15,
+          "make_targets": [],
+          "name": "Run standard frontend checks in parallel",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "pnpm"
+              ],
+              "kind": "frontend_toolchain"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.frontend.systemic.convergence.static"
+          ],
+          "env_keys": [],
+          "if": "steps.effective_lane.outputs.frontend_mode == 'standard'",
+          "index": 16,
+          "make_targets": [
+            "verify.frontend.systemic.convergence.static"
+          ],
+          "name": "Run systemic convergence static gates",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/verify/frontend_release_gate.py \\"
+          ],
+          "env_keys": [
+            "RELEASE_COMMAND_OUTCOME"
+          ],
+          "if": "always() && steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 17,
+          "make_targets": [],
+          "name": "Fail closed on command or evidence identity",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "artifacts/"
+              ],
+              "kind": "filesystem_evidence"
+            }
+          ],
+          "scripts": [
+            "scripts/verify/frontend_release_gate.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 - \"${RISK_LANE}\" \"${FRONTEND_MODE}\" \"${CHECKOUT_SHA}\" \\"
+          ],
+          "env_keys": [
+            "FRONTEND_MODE",
+            "RISK_LANE",
+            "STANDARD_OUTCOME"
+          ],
+          "if": "always() && steps.effective_lane.outputs.frontend_mode != 'full'",
+          "index": 18,
+          "make_targets": [],
+          "name": "Record explicit non-release lane result",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "artifacts/"
+              ],
+              "kind": "filesystem_evidence"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always() && steps.effective_lane.outputs.frontend_mode == 'full'",
+          "index": 19,
+          "make_targets": [],
+          "name": "Upload current-run non-sensitive release evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always() && steps.effective_lane.outputs.frontend_mode != 'full'",
+          "index": 20,
+          "make_targets": [],
+          "name": "Upload current-run risk-lane evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "FRONTEND_MODE"
+          ],
+          "if": "always()",
+          "index": 21,
+          "make_targets": [],
+          "name": "Clean isolated runner state",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/self_hosted_runner_cleanup.sh"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "120",
+        "workflow": ".github/workflows/frontend_release_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/frontend_release_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "docker compose"
+            ],
+            "kind": "container"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "ODOO_DBFILTER"
+            ],
+            "kind": "database"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "acceptance.frontend.fixture",
+            "acceptance.frontend.fixture_orm",
+            "db.frontend.acceptance.ensure"
+          ],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py",
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/self_hosted_runner_cleanup.sh",
+            "scripts/common/frontend_release_ci_identity.sh"
+          ],
+          "steps": [
+            "Checkout the authoritative code object",
+            "Prove checkout identity",
+            "Classify change risk",
+            "Generate isolated acceptance environment",
+            "Freeze isolated frontend release identity",
+            "Prepare isolated ORM fixture without frontend build",
+            "Execute governed managed ORM regressions",
+            "Upload managed ORM execution identities",
+            "Clean isolated ORM runner state"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "real browser rendering",
+          "operator-data authority not present in the fixture",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "selected managed Odoo ORM regressions in an isolated frontend acceptance runtime",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.action != 'labeled') && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "120",
+          "workflow": ".github/workflows/frontend_release_gate.yml"
+        }
+      },
+      "id": "workflow:frontend_release_gate.yml:managed_orm",
+      "job_id": "managed_orm",
+      "job_name": "managed_orm",
+      "layer_hints": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "make_targets": [
+        "acceptance.frontend.fixture",
+        "acceptance.frontend.fixture_orm",
+        "db.frontend.acceptance.ensure"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "docker compose"
+          ],
+          "kind": "container"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "ODOO_DBFILTER"
+          ],
+          "kind": "database"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/backend_changed_test_coverage.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
+        "scripts/common/frontend_release_ci_identity.sh"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout the authoritative code object",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Prove checkout identity",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Classify change risk",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 4,
+          "make_targets": [],
+          "name": "Generate isolated acceptance environment",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME",
+                "ODOO_DBFILTER"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 5,
+          "make_targets": [],
+          "name": "Freeze isolated frontend release identity",
+          "resources": [],
+          "scripts": [
+            "scripts/common/frontend_release_ci_identity.sh"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make acceptance.frontend.fixture",
+            "make db.frontend.acceptance.ensure"
+          ],
+          "env_keys": [],
+          "if": "steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 6,
+          "make_targets": [
+            "acceptance.frontend.fixture",
+            "db.frontend.acceptance.ensure"
+          ],
+          "name": "Prepare isolated ORM fixture without frontend build",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make acceptance.frontend.fixture_orm 2>&1 | tee \"${RUNNER_TEMP}/managed-orm.log\"",
+            "python3 scripts/ci/backend_changed_test_coverage.py --record-managed \"${RUNNER_TEMP}/managed-orm.log\" \\"
+          ],
+          "env_keys": [],
+          "if": "steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 7,
+          "make_targets": [
+            "2",
+            "acceptance.frontend.fixture_orm"
+          ],
+          "name": "Execute governed managed ORM regressions",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_changed_test_coverage.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 8,
+          "make_targets": [],
+          "name": "Upload managed ORM execution identities",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "FRONTEND_MODE"
+          ],
+          "if": "always() && steps.risk.outputs.managed_orm_required == 'true'",
+          "index": 9,
+          "make_targets": [],
+          "name": "Clean isolated ORM runner state",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/self_hosted_runner_cleanup.sh"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && (github.event_name == 'push' || github.event_name == 'pull_request' && github.event.action != 'labeled') && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "120",
+        "workflow": ".github/workflows/frontend_release_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/frontend_release_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "docker compose"
+            ],
+            "kind": "container"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "Postgres",
+              "postgres"
+            ],
+            "kind": "database"
+          },
+          {
+            "evidence_tokens": [
+              "artifacts/"
+            ],
+            "kind": "filesystem_evidence"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "audit.nav.alignment",
+            "audit.nav.role_diff",
+            "ci.gate.tp08",
+            "gate.boundary",
+            "policy.ensure.extension_modules",
+            "stage.run",
+            "verify.e2e.contract",
+            "verify.e2e.scene"
+          ],
+          "scripts": [],
+          "steps": [
+            "Checkout exact authoritative GitHub commit",
+            "Docker info",
+            "Pull & build images",
+            "Start db/redis/odoo",
+            "Wait for PostgreSQL",
+            "Ensure databases exist",
+            "Verify extension modules baseline",
+            "Gate tp08",
+            "Gate boundary audit",
+            "Verify E2E contract",
+            "Verify E2E scene",
+            "Stage p2",
+            "Stage p3-runtime-r1",
+            "Navigation alignment audit",
+            "Role navigation diff audit",
+            "Publish nav alignment summary",
+            "Publish role nav diff summary",
+            "Publish menu scene coverage summary",
+            "Upload menu scene coverage artifacts",
+            "Dump logs on failure",
+            "Cleanup"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "ordinary PR merge eligibility",
+          "full modern frontend release presentation",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "manually dispatched legacy Compose startup, stage gates, E2E contract/scene and navigation audits",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+          "needs": [],
+          "on": {
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "60",
+          "workflow": ".github/workflows/infra-stage-gate.yml"
+        }
+      },
+      "id": "workflow:infra-stage-gate.yml:infra_stage_gate",
+      "job_id": "infra_stage_gate",
+      "job_name": "infra_stage_gate",
+      "layer_hints": [
+        "L1",
+        "L3"
+      ],
+      "make_targets": [
+        "audit.nav.alignment",
+        "audit.nav.role_diff",
+        "ci.gate.tp08",
+        "gate.boundary",
+        "policy.ensure.extension_modules",
+        "stage.run",
+        "verify.e2e.contract",
+        "verify.e2e.scene"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "docker compose"
+          ],
+          "kind": "container"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "Postgres",
+            "postgres"
+          ],
+          "kind": "database"
+        },
+        {
+          "evidence_tokens": [
+            "artifacts/"
+          ],
+          "kind": "filesystem_evidence"
+        }
+      ],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact authoritative GitHub commit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Docker info",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Pull & build images",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Start db/redis/odoo",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Wait for PostgreSQL",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "Postgres",
+                "postgres"
+              ],
+              "kind": "database"
+            },
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Ensure databases exist",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make policy.ensure.extension_modules DB_NAME=sc_demo"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 7,
+          "make_targets": [
+            "DB_NAME",
+            "policy.ensure.extension_modules"
+          ],
+          "name": "Verify extension modules baseline",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make ci.gate.tp08 DB=sc_demo"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 8,
+          "make_targets": [
+            "DB",
+            "ci.gate.tp08"
+          ],
+          "name": "Gate tp08",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make gate.boundary"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 9,
+          "make_targets": [
+            "gate.boundary"
+          ],
+          "name": "Gate boundary audit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.e2e.contract"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 10,
+          "make_targets": [
+            "verify.e2e.contract"
+          ],
+          "name": "Verify E2E contract",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.e2e.scene"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 11,
+          "make_targets": [
+            "verify.e2e.scene"
+          ],
+          "name": "Verify E2E scene",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make stage.run STAGE=p2 DB=sc_p2"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 12,
+          "make_targets": [
+            "STAGE",
+            "stage.run"
+          ],
+          "name": "Stage p2",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make stage.run STAGE=p3-runtime-r1 DB=sc_p3"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 13,
+          "make_targets": [
+            "STAGE",
+            "stage.run"
+          ],
+          "name": "Stage p3-runtime-r1",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make audit.nav.alignment DB_NAME=sc_demo E2E_LOGIN=demo_pm E2E_PASSWORD=demo"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 14,
+          "make_targets": [
+            "DB_NAME",
+            "audit.nav.alignment"
+          ],
+          "name": "Navigation alignment audit",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make audit.nav.role_diff DB_NAME=sc_demo"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 15,
+          "make_targets": [
+            "DB_NAME",
+            "audit.nav.role_diff"
+          ],
+          "name": "Role navigation diff audit",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 - <<'PY'"
+          ],
+          "env_keys": [],
+          "if": "always()",
+          "index": 16,
+          "make_targets": [],
+          "name": "Publish nav alignment summary",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "artifacts/"
+              ],
+              "kind": "filesystem_evidence"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 - <<'PY'"
+          ],
+          "env_keys": [],
+          "if": "always()",
+          "index": 17,
+          "make_targets": [],
+          "name": "Publish role nav diff summary",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "artifacts/"
+              ],
+              "kind": "filesystem_evidence"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 - <<'PY'"
+          ],
+          "env_keys": [],
+          "if": "always()",
+          "index": 18,
+          "make_targets": [],
+          "name": "Publish menu scene coverage summary",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "artifacts/"
+              ],
+              "kind": "filesystem_evidence"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 19,
+          "make_targets": [],
+          "name": "Upload menu scene coverage artifacts",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "failure()",
+          "index": 20,
+          "make_targets": [],
+          "name": "Dump logs on failure",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 21,
+          "make_targets": [],
+          "name": "Cleanup",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+        "needs": [],
+        "on": {
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "60",
+        "workflow": ".github/workflows/infra-stage-gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/infra-stage-gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "step-2",
+            "step-3"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "selects and publishes the merge-policy lane from the candidate change set",
+        "what_triggers_it": {
+          "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/merge_policy_gate.yml"
+        }
+      },
+      "id": "workflow:merge_policy_gate.yml:classify",
+      "job_id": "classify",
+      "job_name": "classify",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/ci_risk_classifier.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "step-2",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py --base \"${{ github.event.pull_request.base.sha || github.event.before || github.sha }}\" --head \"${{ github.event.pull_request.head.sha || github.sha }}\" --event \"$GITHUB_EVENT_NAME\" --ref \"$GITHUB_REF\" --github-output \"$GITHUB_OUTPUT\""
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "step-3",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/merge_policy_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/merge_policy_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "verify.product.release.version"
+          ],
+          "scripts": [
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py",
+            "scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "step-2"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product contract, page or business behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "cheap governance, security and release-version integrity for the FAST lane",
+        "what_triggers_it": {
+          "job_if": "needs.classify.outputs.lane == 'FAST'",
+          "needs": "classify",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/merge_policy_gate.yml"
+        }
+      },
+      "id": "workflow:merge_policy_gate.yml:fast",
+      "job_id": "fast",
+      "job_name": "fast",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [
+        "verify.product.release.version"
+      ],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py",
+        "scripts/verify/test_repository_clean_history_guard.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "make verify.product.release.version",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/ci/test_ci_risk_workflow_contract.py",
+            "python3 scripts/ci/test_select_authoritative_workflow_run.py",
+            "python3 scripts/verify/github_actions_security_guard.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py",
+            "python3 scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [
+            "verify.product.release.version"
+          ],
+          "name": "step-2",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py",
+            "scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "needs.classify.outputs.lane == 'FAST'",
+        "needs": "classify",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/merge_policy_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/merge_policy_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "Resolve merge-policy lane once",
+            "Publish lane summary"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "any product layer beyond the conclusions of the workflows it waits for",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "exact-head completion of the declared fact workflows and final merge-policy aggregation",
+        "what_triggers_it": {
+          "job_if": "always()",
+          "needs": [
+            "classify",
+            "fast",
+            "wait_for_fact_checks"
+          ],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/merge_policy_gate.yml"
+        }
+      },
+      "id": "workflow:merge_policy_gate.yml:merge_policy_gate",
+      "job_id": "merge_policy_gate",
+      "job_name": "merge_policy_gate",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Resolve merge-policy lane once",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "BACKEND_CHANGED",
+            "BACKEND_RUNTIME_CHANGED",
+            "CANDIDATE_REQUESTED",
+            "CONTROL_PLANE_CHANGED",
+            "EVENT_NAME",
+            "FACT_RESULT",
+            "FAST_RESULT",
+            "FRONTEND_CHANGED",
+            "FRONTEND_MODE",
+            "MANAGED_ORM_REQUIRED",
+            "PROFESSIONAL_MODE",
+            "REF",
+            "RISK_LANE"
+          ],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Publish lane summary",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "always()",
+        "needs": [
+          "classify",
+          "fast",
+          "wait_for_fact_checks"
+        ],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/merge_policy_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/merge_policy_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "gh api"
+            ],
+            "kind": "network"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py",
+            "scripts/ci/select_authoritative_workflow_run.py"
+          ],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "Observe scheduled validation time",
+            "Wait for exact-head fact workflows",
+            "Publish fact workflow summary"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior beyond the waited workflows",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "exact-head completion of public_guard, professional_quality_gate and frontend_release_gate",
+        "what_triggers_it": {
+          "job_if": "needs.classify.result == 'success'",
+          "needs": "classify",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "360",
+          "workflow": ".github/workflows/merge_policy_gate.yml"
+        }
+      },
+      "id": "workflow:merge_policy_gate.yml:wait_for_fact_checks",
+      "job_id": "wait_for_fact_checks",
+      "job_name": "wait_for_fact_checks",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "gh api"
+          ],
+          "kind": "network"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/select_authoritative_workflow_run.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/scheduled_validation.py"
+          ],
+          "env_keys": [
+            "GH_TOKEN"
+          ],
+          "if": "github.event_name == 'schedule'",
+          "index": 2,
+          "make_targets": [],
+          "name": "Observe scheduled validation time",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/select_authoritative_workflow_run.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Wait for exact-head fact workflows",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "gh api"
+              ],
+              "kind": "network"
+            }
+          ],
+          "scripts": [
+            "scripts/ci/select_authoritative_workflow_run.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Publish fact workflow summary",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "needs.classify.result == 'success'",
+        "needs": "classify",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "360",
+        "workflow": ".github/workflows/merge_policy_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/merge_policy_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [],
+          "steps": [],
+          "uses": "./.github/workflows/backend_test_suite.yml"
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "real frontend presentation",
+          "production data authority",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "the reusable backend suite selected from exact base/head trees",
+        "what_triggers_it": {
+          "job_if": "github.event_name == 'schedule' || (github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true')",
+          "needs": "professional_authorization",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/professional_quality_gate.yml"
+        }
+      },
+      "id": "workflow:professional_quality_gate.yml:backend_impact_suite",
+      "job_id": "backend_impact_suite",
+      "job_name": "backend_impact_suite",
+      "layer_hints": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [],
+      "steps": [],
+      "trigger": {
+        "job_if": "github.event_name == 'schedule' || (github.event_name == 'pull_request' && needs.professional_authorization.outputs.backend_impact_required == 'true')",
+        "needs": "professional_authorization",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/professional_quality_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "./.github/workflows/backend_test_suite.yml",
+      "workflow": ".github/workflows/professional_quality_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/backend_impact_plan.py",
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "steps": [
+            "Deny forks and non-owner actors",
+            "Checkout authorized commit without persisted credentials",
+            "Observe scheduled validation time",
+            "Classify change risk",
+            "Plan affected backend modules from exact trees"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "the selected product tests themselves",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "repository/actor authorization, risk classification and backend impact planning",
+        "what_triggers_it": {
+          "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "30",
+          "workflow": ".github/workflows/professional_quality_gate.yml"
+        }
+      },
+      "id": "workflow:professional_quality_gate.yml:professional_authorization",
+      "job_id": "professional_authorization",
+      "job_name": "professional_authorization",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/scheduled_validation.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [
+            "ACTOR",
+            "EVENT_NAME",
+            "EXPECTED_OWNER",
+            "EXPECTED_REPOSITORY",
+            "HEAD_REPOSITORY",
+            "REF",
+            "REPOSITORY",
+            "REPOSITORY_OWNER"
+          ],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Deny forks and non-owner actors",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Checkout authorized commit without persisted credentials",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/scheduled_validation.py"
+          ],
+          "env_keys": [
+            "GH_TOKEN"
+          ],
+          "if": "github.event_name == 'schedule'",
+          "index": 3,
+          "make_targets": [],
+          "name": "Observe scheduled validation time",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Classify change risk",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/backend_impact_plan.py --base \"${BASE_SHA}\" \\"
+          ],
+          "env_keys": [],
+          "if": "github.event_name == 'pull_request'",
+          "index": 5,
+          "make_targets": [],
+          "name": "Plan affected backend modules from exact trees",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/backend_impact_plan.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "30",
+        "workflow": ".github/workflows/professional_quality_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/professional_quality_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "bwrap",
+              "container"
+            ],
+            "kind": "container"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "architecture.complexity_baseline_lock",
+            "ci.generated_reports.guard",
+            "ci.professional.backend.shard-reports",
+            "ci.professional.backend.shard-tests",
+            "ci.professional.backend.shard-verify",
+            "test.candidate.contract-profiles.orm",
+            "test.contract",
+            "test.e2e.preflight",
+            "test.payment-settlement.component-profile.orm",
+            "test.unit",
+            "verify.acceptance.evolution.binding",
+            "verify.ci.execution_alignment.orders",
+            "verify.product.release.version",
+            "verify.tenant.data_responsibility_boundary",
+            "verify.test.baseline",
+            "verify.unified_page_contract.v2.assembler"
+          ],
+          "scripts": [
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/self_hosted_runner_cleanup.sh",
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/verify/ci_artifact_host_write_guard.py",
+            "scripts/verify/frontend_delivery_hardening_guard.py",
+            "scripts/verify/frontend_product_page_header_guard.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "steps": [
+            "Checkout exact authoritative GitHub commit",
+            "Provide the mainline base ref for history-based guards",
+            "Re-prove checkout identity after base fetch",
+            "Prepare governed verification dependencies",
+            "Run complete registered offline baseline for schedule",
+            "Preserve scheduled offline baseline evidence",
+            "Run owning tool checks for changed control plane",
+            "Run early static quality owners",
+            "Bind code evolution to acceptance impact",
+            "Prepare host-owned artifact root before container checks",
+            "Report ORM verification selection",
+            "Prove settlement component profile with real ORM",
+            "Restore pip dependency cache",
+            "Install pinned Node.js runtime for the syntax sweep",
+            "Run full professional quality gate (serialized artifact writers)",
+            "Run mainline integrity gate",
+            "Run standard backend quality gate",
+            "Run governance-only quality gate",
+            "Run Fast lightweight quality gate",
+            "Run standard frontend quality gate",
+            "Clean isolated runner state"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "L2 browser behavior unless separately covered by frontend_release_gate",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "mode-selected static, contract, backend, generated-report and governance checks",
+        "what_triggers_it": {
+          "job_if": "!cancelled() && needs.professional_authorization.result == 'success' && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && github.repository == 'lidefend/sce-backend-odoo' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+          "needs": "professional_authorization",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "90",
+          "workflow": ".github/workflows/professional_quality_gate.yml"
+        }
+      },
+      "id": "workflow:professional_quality_gate.yml:professional_quality_checks",
+      "job_id": "professional_quality_checks",
+      "job_name": "professional_quality_checks",
+      "layer_hints": [
+        "L1",
+        "L3",
+        "L4"
+      ],
+      "make_targets": [
+        "architecture.complexity_baseline_lock",
+        "ci.generated_reports.guard",
+        "ci.professional.backend.shard-reports",
+        "ci.professional.backend.shard-tests",
+        "ci.professional.backend.shard-verify",
+        "test.candidate.contract-profiles.orm",
+        "test.contract",
+        "test.e2e.preflight",
+        "test.payment-settlement.component-profile.orm",
+        "test.unit",
+        "verify.acceptance.evolution.binding",
+        "verify.ci.execution_alignment.orders",
+        "verify.product.release.version",
+        "verify.tenant.data_responsibility_boundary",
+        "verify.test.baseline",
+        "verify.unified_page_contract.v2.assembler"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "bwrap",
+            "container"
+          ],
+          "kind": "container"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/frontend_professional_extension_guard.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/verify/ci_artifact_host_write_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact authoritative GitHub commit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Provide the mainline base ref for history-based guards",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Re-prove checkout identity after base fetch",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Prepare governed verification dependencies",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "bwrap"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.test.baseline"
+          ],
+          "env_keys": [],
+          "if": "github.event_name == 'schedule'",
+          "index": 5,
+          "make_targets": [
+            "verify.test.baseline"
+          ],
+          "name": "Run complete registered offline baseline for schedule",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always() && github.event_name == 'schedule' && steps.scheduled_baseline.outcome != 'skipped'",
+          "index": 6,
+          "make_targets": [],
+          "name": "Preserve scheduled offline baseline evidence",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [
+            "make ${TOOL_CHECKS}",
+            "make verify.ci.execution_alignment.orders ;;"
+          ],
+          "env_keys": [],
+          "if": "env.TOOL_CHECKS != ''",
+          "index": 7,
+          "make_targets": [
+            "verify.ci.execution_alignment.orders"
+          ],
+          "name": "Run owning tool checks for changed control plane",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.unified_page_contract.v2.assembler",
+            "python3 scripts/verify/frontend_delivery_hardening_guard.py",
+            "python3 scripts/verify/frontend_product_page_header_guard.py"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 8,
+          "make_targets": [
+            "verify.unified_page_contract.v2.assembler"
+          ],
+          "name": "Run early static quality owners",
+          "resources": [],
+          "scripts": [
+            "scripts/verify/frontend_delivery_hardening_guard.py",
+            "scripts/verify/frontend_product_page_header_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.acceptance.evolution.binding"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 9,
+          "make_targets": [
+            "verify.acceptance.evolution.binding"
+          ],
+          "name": "Bind code evolution to acceptance impact",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/verify/ci_artifact_host_write_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'full'",
+          "index": 10,
+          "make_targets": [],
+          "name": "Prepare host-owned artifact root before container checks",
+          "resources": [],
+          "scripts": [
+            "scripts/verify/ci_artifact_host_write_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 11,
+          "make_targets": [],
+          "name": "Report ORM verification selection",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make test.candidate.contract-profiles.orm",
+            "make test.payment-settlement.component-profile.orm"
+          ],
+          "env_keys": [],
+          "if": "env.PAYMENT_ORM_REQUIRED == 'true' || (env.CANDIDATE_REQUESTED == 'true' && env.PROFESSIONAL_MODE == 'full')",
+          "index": 12,
+          "make_targets": [
+            "test.candidate.contract-profiles.orm",
+            "test.payment-settlement.component-profile.orm"
+          ],
+          "name": "Prove settlement component profile with real ORM",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 13,
+          "make_targets": [],
+          "name": "Restore pip dependency cache",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 14,
+          "make_targets": [],
+          "name": "Install pinned Node.js runtime for the syntax sweep",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020"
+        },
+        {
+          "commands": [
+            "make ci.professional.backend.shard-reports",
+            "make ci.professional.backend.shard-tests",
+            "make ci.professional.backend.shard-verify",
+            "python3 scripts/verify/ci_artifact_host_write_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'full'",
+          "index": 15,
+          "make_targets": [
+            "ci.professional.backend.shard-reports",
+            "ci.professional.backend.shard-tests",
+            "ci.professional.backend.shard-verify"
+          ],
+          "name": "Run full professional quality gate (serialized artifact writers)",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "container"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [
+            "scripts/verify/ci_artifact_host_write_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make ci.generated_reports.guard architecture.complexity_baseline_lock",
+            "make verify.product.release.version",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/ci/test_ci_risk_workflow_contract.py",
+            "python3 scripts/verify/github_actions_security_guard.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'mainline'",
+          "index": 16,
+          "make_targets": [
+            "architecture.complexity_baseline_lock",
+            "ci.generated_reports.guard",
+            "verify.product.release.version"
+          ],
+          "name": "Run mainline integrity gate",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make ci.generated_reports.guard architecture.complexity_baseline_lock",
+            "make test.unit test.contract test.e2e.preflight",
+            "make verify.product.release.version",
+            "make verify.tenant.data_responsibility_boundary \\"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'standard_backend'",
+          "index": 17,
+          "make_targets": [
+            "architecture.complexity_baseline_lock",
+            "ci.generated_reports.guard",
+            "test.contract",
+            "test.e2e.preflight",
+            "test.unit",
+            "verify.product.release.version",
+            "verify.tenant.data_responsibility_boundary"
+          ],
+          "name": "Run standard backend quality gate",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make ci.generated_reports.guard architecture.complexity_baseline_lock",
+            "make verify.product.release.version",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/ci/test_ci_risk_workflow_contract.py",
+            "python3 scripts/verify/github_actions_security_guard.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'governance'",
+          "index": 18,
+          "make_targets": [
+            "architecture.complexity_baseline_lock",
+            "ci.generated_reports.guard",
+            "verify.product.release.version"
+          ],
+          "name": "Run governance-only quality gate",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.product.release.version",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/verify/github_actions_security_guard.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'fast'",
+          "index": 19,
+          "make_targets": [
+            "verify.product.release.version"
+          ],
+          "name": "Run Fast lightweight quality gate",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make ci.generated_reports.guard architecture.complexity_baseline_lock",
+            "make verify.product.release.version",
+            "python3 scripts/ci/frontend_professional_extension_guard.py",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/verify/github_actions_security_guard.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "env_keys": [],
+          "if": "env.PROFESSIONAL_MODE == 'standard_frontend'",
+          "index": 20,
+          "make_targets": [
+            "architecture.complexity_baseline_lock",
+            "ci.generated_reports.guard",
+            "verify.product.release.version"
+          ],
+          "name": "Run standard frontend quality gate",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/test_github_actions_security_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 21,
+          "make_targets": [],
+          "name": "Clean isolated runner state",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/self_hosted_runner_cleanup.sh"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "!cancelled() && needs.professional_authorization.result == 'success' && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && github.repository == 'lidefend/sce-backend-odoo' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+        "needs": "professional_authorization",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "90",
+        "workflow": ".github/workflows/professional_quality_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/professional_quality_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [],
+          "steps": [
+            "Enforce affected backend execution",
+            "Enforce quality and compatibility execution",
+            "Enforce control-plane tool check execution"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior not executed by the required child jobs",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "all required professional jobs ran and their selected outcomes agree with the impact plan",
+        "what_triggers_it": {
+          "job_if": "always() && !cancelled() && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && github.repository == 'lidefend/sce-backend-odoo' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+          "needs": [
+            "professional_authorization",
+            "backend_impact_suite",
+            "professional_quality_checks",
+            "python310_runtime_compatibility"
+          ],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "5",
+          "workflow": ".github/workflows/professional_quality_gate.yml"
+        }
+      },
+      "id": "workflow:professional_quality_gate.yml:professional_quality_gate",
+      "job_id": "professional_quality_gate",
+      "job_name": "professional_quality_gate",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [
+            "AUTHORIZATION_RESULT",
+            "EVENT_NAME",
+            "IMPACT_REQUIRED",
+            "IMPACT_RESULT"
+          ],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Enforce affected backend execution",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "EVENT_NAME",
+            "PYTHON_RESULT",
+            "QUALITY_RESULT"
+          ],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Enforce quality and compatibility execution",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [
+            "TOOL_CHECKS",
+            "TOOL_CHECKS_RAN"
+          ],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Enforce control-plane tool check execution",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "always() && !cancelled() && (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && github.repository == 'lidefend/sce-backend-odoo' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'push' && github.ref == 'refs/heads/main') || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+        "needs": [
+          "professional_authorization",
+          "backend_impact_suite",
+          "professional_quality_checks",
+          "python310_runtime_compatibility"
+        ],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "5",
+        "workflow": ".github/workflows/professional_quality_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/professional_quality_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/release/production_admin_identity_baseline.py",
+            "scripts/release/production_public_signup_close.py",
+            "scripts/release/production_user_activation_predeploy.py",
+            "scripts/release/production_user_activation_readiness.py",
+            "scripts/release/test_production_admin_identity_baseline.py",
+            "scripts/release/test_production_public_signup_close.py",
+            "scripts/release/test_production_user_activation_predeploy.py",
+            "scripts/release/test_production_user_activation_readiness.py"
+          ],
+          "steps": [
+            "Checkout authorized commit",
+            "Classify change risk",
+            "Install Python 3.10",
+            "Verify production admin identity tool on Python 3.10"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product contract or business behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "selected release tools compile and preserve negative guards on Python 3.10",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.event_name != 'push' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "10",
+          "workflow": ".github/workflows/professional_quality_gate.yml"
+        }
+      },
+      "id": "workflow:professional_quality_gate.yml:python310_runtime_compatibility",
+      "job_id": "python310_runtime_compatibility",
+      "job_name": "python310_runtime_compatibility",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/release/production_admin_identity_baseline.py",
+        "scripts/release/production_public_signup_close.py",
+        "scripts/release/production_user_activation_predeploy.py",
+        "scripts/release/production_user_activation_readiness.py",
+        "scripts/release/test_production_admin_identity_baseline.py",
+        "scripts/release/test_production_public_signup_close.py",
+        "scripts/release/test_production_user_activation_predeploy.py",
+        "scripts/release/test_production_user_activation_readiness.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout authorized commit",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Classify change risk",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "github.event_name == 'schedule' || steps.risk.outputs.professional_mode == 'full'",
+          "index": 3,
+          "make_targets": [],
+          "name": "Install Python 3.10",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065"
+        },
+        {
+          "commands": [
+            "python --version",
+            "python -m py_compile scripts/release/production_admin_identity_baseline.py",
+            "python -m py_compile scripts/release/production_public_signup_close.py",
+            "python -m py_compile scripts/release/production_user_activation_predeploy.py",
+            "python -m py_compile scripts/release/production_user_activation_readiness.py",
+            "python \\",
+            "python scripts/release/test_production_admin_identity_baseline.py",
+            "python scripts/release/test_production_public_signup_close.py",
+            "python scripts/release/test_production_user_activation_predeploy.py",
+            "python scripts/release/test_production_user_activation_readiness.py"
+          ],
+          "env_keys": [],
+          "if": "github.event_name == 'schedule' || steps.risk.outputs.professional_mode == 'full'",
+          "index": 4,
+          "make_targets": [],
+          "name": "Verify production admin identity tool on Python 3.10",
+          "resources": [],
+          "scripts": [
+            "scripts/release/production_admin_identity_baseline.py",
+            "scripts/release/production_public_signup_close.py",
+            "scripts/release/production_user_activation_predeploy.py",
+            "scripts/release/production_user_activation_readiness.py",
+            "scripts/release/test_production_admin_identity_baseline.py",
+            "scripts/release/test_production_public_signup_close.py",
+            "scripts/release/test_production_user_activation_predeploy.py",
+            "scripts/release/test_production_user_activation_readiness.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.event_name != 'push' && ((github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository) || (github.event_name == 'workflow_dispatch' && github.actor == github.repository_owner) || (github.event_name == 'schedule' && github.ref == 'refs/heads/main'))",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "10",
+        "workflow": ".github/workflows/professional_quality_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/professional_quality_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "steps": [
+            "Checkout untrusted source without persisted credentials",
+            "Observe scheduled validation time",
+            "Classify change risk"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "selects the public-guard lane from the candidate change set",
+        "what_triggers_it": {
+          "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/public_guard.yml"
+        }
+      },
+      "id": "workflow:public_guard.yml:classify",
+      "job_id": "classify",
+      "job_name": "public_guard_classify",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/scheduled_validation.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout untrusted source without persisted credentials",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/scheduled_validation.py"
+          ],
+          "env_keys": [
+            "GH_TOKEN"
+          ],
+          "if": "github.event_name == 'schedule'",
+          "index": 2,
+          "make_targets": [],
+          "name": "Observe scheduled validation time",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/ci_risk_classifier.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Classify change risk",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.event.action != 'labeled' || github.event.label.name == 'ci:candidate'",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/public_guard.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/public_guard.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "verify.repository.clean_history"
+          ],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/select_authoritative_workflow_run.py",
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/ci/test_frontend_professional_extension_guard.py",
+            "scripts/ci/test_merge_policy_gate.py",
+            "scripts/ci/test_release_candidate_gate.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/release/frontend_release_evidence.py",
+            "scripts/release/generate_frontend_release_evidence_bundle.py",
+            "scripts/verify/clean_product_release_scan.py",
+            "scripts/verify/frontend_release_evidence_bundle.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/repository_clean_history_guard.py",
+            "scripts/verify/test_frontend_release_evidence_bundle.py",
+            "scripts/verify/test_github_actions_security_guard.py",
+            "scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "steps": [
+            "Checkout classified source without persisted credentials",
+            "Compile repository guards",
+            "Run guard unit and negative tests",
+            "Scan governed product history",
+            "Run clean product boundary scan",
+            "Verify workflow security policy"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "L1 contract runtime consumption",
+          "L2 rendered page",
+          "L3 business write outcome",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "repository history hygiene, workflow security policy, protected guard tests and clean product boundary",
+        "what_triggers_it": {
+          "job_if": "needs.classify.outputs.lane != 'FAST'",
+          "needs": "classify",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "push": {
+              "branches": [
+                "main"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "15",
+          "workflow": ".github/workflows/public_guard.yml"
+        }
+      },
+      "id": "workflow:public_guard.yml:public_guard",
+      "job_id": "public_guard",
+      "job_name": "public_guard",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [
+        "verify.repository.clean_history"
+      ],
+      "resources": [],
+      "scripts": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/frontend_professional_extension_guard.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_frontend_professional_extension_guard.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/release/frontend_release_evidence.py",
+        "scripts/release/generate_frontend_release_evidence_bundle.py",
+        "scripts/verify/clean_product_release_scan.py",
+        "scripts/verify/frontend_release_evidence_bundle.py",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/repository_clean_history_guard.py",
+        "scripts/verify/test_frontend_release_evidence_bundle.py",
+        "scripts/verify/test_github_actions_security_guard.py",
+        "scripts/verify/test_repository_clean_history_guard.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout classified source without persisted credentials",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 -m py_compile scripts/verify/repository_clean_history_guard.py scripts/verify/test_repository_clean_history_guard.py scripts/verify/github_actions_security_guard.py scripts/verify/test_github_actions_security_guard.py scripts/ci/ci_risk_classifier.py scripts/ci/test_ci_risk_classifier.py scripts/ci/test_ci_risk_workflow_contract.py scripts/ci/test_merge_policy_gate.py scripts/ci/test_release_candidate_gate.py scripts/ci/select_authoritative_workflow_run.py scripts/ci/test_select_authoritative_workflow_run.py scripts/ci/frontend_professional_extension_guard.py scripts/ci/test_frontend_professional_extension_guard.py scripts/release/frontend_release_evidence.py scripts/release/generate_frontend_release_evidence_bundle.py scripts/verify/frontend_release_evidence_bundle.py scripts/verify/test_frontend_release_evidence_bundle.py"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Compile repository guards",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/ci_risk_classifier.py",
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/select_authoritative_workflow_run.py",
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/ci/test_frontend_professional_extension_guard.py",
+            "scripts/ci/test_merge_policy_gate.py",
+            "scripts/ci/test_release_candidate_gate.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/release/frontend_release_evidence.py",
+            "scripts/release/generate_frontend_release_evidence_bundle.py",
+            "scripts/verify/frontend_release_evidence_bundle.py",
+            "scripts/verify/github_actions_security_guard.py",
+            "scripts/verify/repository_clean_history_guard.py",
+            "scripts/verify/test_frontend_release_evidence_bundle.py",
+            "scripts/verify/test_github_actions_security_guard.py",
+            "scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/frontend_professional_extension_guard.py",
+            "python3 scripts/ci/test_ci_risk_classifier.py",
+            "python3 scripts/ci/test_ci_risk_workflow_contract.py",
+            "python3 scripts/ci/test_frontend_professional_extension_guard.py",
+            "python3 scripts/ci/test_merge_policy_gate.py",
+            "python3 scripts/ci/test_release_candidate_gate.py",
+            "python3 scripts/ci/test_select_authoritative_workflow_run.py",
+            "python3 scripts/verify/test_frontend_release_evidence_bundle.py",
+            "python3 scripts/verify/test_github_actions_security_guard.py",
+            "python3 scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Run guard unit and negative tests",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/frontend_professional_extension_guard.py",
+            "scripts/ci/test_ci_risk_classifier.py",
+            "scripts/ci/test_ci_risk_workflow_contract.py",
+            "scripts/ci/test_frontend_professional_extension_guard.py",
+            "scripts/ci/test_merge_policy_gate.py",
+            "scripts/ci/test_release_candidate_gate.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/verify/test_frontend_release_evidence_bundle.py",
+            "scripts/verify/test_github_actions_security_guard.py",
+            "scripts/verify/test_repository_clean_history_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make verify.repository.clean_history",
+            "python3 scripts/verify/repository_clean_history_guard.py --trusted-base \"${BASE_SHA}\""
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [
+            "verify.repository.clean_history"
+          ],
+          "name": "Scan governed product history",
+          "resources": [],
+          "scripts": [
+            "scripts/verify/repository_clean_history_guard.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/verify/clean_product_release_scan.py --report \"${RUNNER_TEMP}/clean-product-release-scan.json\""
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Run clean product boundary scan",
+          "resources": [],
+          "scripts": [
+            "scripts/verify/clean_product_release_scan.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/verify/github_actions_security_guard.py"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Verify workflow security policy",
+          "resources": [],
+          "scripts": [
+            "scripts/verify/github_actions_security_guard.py"
+          ],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "needs.classify.outputs.lane != 'FAST'",
+        "needs": "classify",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "push": {
+            "branches": [
+              "main"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "15",
+        "workflow": ".github/workflows/public_guard.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/public_guard.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "step-2"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "identity of the explicit release-candidate head",
+        "what_triggers_it": {
+          "job_if": "(github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && (github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate')",
+          "needs": [],
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/release_candidate_gate.yml"
+        }
+      },
+      "id": "workflow:release_candidate_gate.yml:classify",
+      "job_id": "classify",
+      "job_name": "classify",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "step-2",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "(github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') && (github.event_name != 'pull_request' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate')",
+        "needs": [],
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/release_candidate_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/release_candidate_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [],
+          "steps": [
+            "step-1"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "deployment or user acceptance",
+          "any product assertion omitted by candidate workflows",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "exact-head merge eligibility and explicit candidate workflow completion",
+        "what_triggers_it": {
+          "job_if": "always()",
+          "needs": "wait_for_candidate_checks",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": null,
+          "workflow": ".github/workflows/release_candidate_gate.yml"
+        }
+      },
+      "id": "workflow:release_candidate_gate.yml:release_candidate_gate",
+      "job_id": "release_candidate_gate",
+      "job_name": "release_candidate_gate",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "step-1",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "always()",
+        "needs": "wait_for_candidate_checks",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": null,
+        "workflow": ".github/workflows/release_candidate_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/release_candidate_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "gh api"
+            ],
+            "kind": "network"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py",
+            "scripts/ci/select_authoritative_workflow_run.py"
+          ],
+          "steps": [
+            "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+            "Observe scheduled validation time",
+            "Wait for exact-head candidate checks",
+            "Publish release-candidate summary"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "product behavior beyond those workflows",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "exact-head completion of all merge and candidate workflows",
+        "what_triggers_it": {
+          "job_if": "needs.classify.result == 'success'",
+          "needs": "classify",
+          "on": {
+            "pull_request": {
+              "branches": [
+                "main"
+              ],
+              "types": [
+                "opened",
+                "reopened",
+                "synchronize",
+                "labeled"
+              ]
+            },
+            "schedule": [
+              {
+                "cron": "30 18 * * *"
+              }
+            ],
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "360",
+          "workflow": ".github/workflows/release_candidate_gate.yml"
+        }
+      },
+      "id": "workflow:release_candidate_gate.yml:wait_for_candidate_checks",
+      "job_id": "wait_for_candidate_checks",
+      "job_name": "wait_for_candidate_checks",
+      "layer_hints": [
+        "L4"
+      ],
+      "make_targets": [],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "gh api"
+          ],
+          "kind": "network"
+        }
+      ],
+      "scripts": [
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/select_authoritative_workflow_run.py"
+      ],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683"
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/scheduled_validation.py"
+          ],
+          "env_keys": [
+            "GH_TOKEN"
+          ],
+          "if": "github.event_name == 'schedule'",
+          "index": 2,
+          "make_targets": [],
+          "name": "Observe scheduled validation time",
+          "resources": [],
+          "scripts": [
+            "scripts/ci/scheduled_validation.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "python3 scripts/ci/select_authoritative_workflow_run.py \\"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Wait for exact-head candidate checks",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "gh api"
+              ],
+              "kind": "network"
+            }
+          ],
+          "scripts": [
+            "scripts/ci/select_authoritative_workflow_run.py"
+          ],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Publish release-candidate summary",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "needs.classify.result == 'success'",
+        "needs": "classify",
+        "on": {
+          "pull_request": {
+            "branches": [
+              "main"
+            ],
+            "types": [
+              "opened",
+              "reopened",
+              "synchronize",
+              "labeled"
+            ]
+          },
+          "schedule": [
+            {
+              "cron": "30 18 * * *"
+            }
+          ],
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "360",
+        "workflow": ".github/workflows/release_candidate_gate.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/release_candidate_gate.yml"
+    },
+    {
+      "boundary_answers": {
+        "defects_it_can_detect": "A failure in any executed command, selector, evidence adapter or declared exact-head condition",
+        "duplicate_or_overlap": [],
+        "services_and_database_dependencies": [
+          {
+            "evidence_tokens": [
+              "docker compose"
+            ],
+            "kind": "container"
+          },
+          {
+            "evidence_tokens": [
+              "DB_NAME",
+              "Postgres",
+              "postgres"
+            ],
+            "kind": "database"
+          }
+        ],
+        "what_it_actually_executes": {
+          "make_targets": [
+            "test"
+          ],
+          "scripts": [],
+          "steps": [
+            "Checkout exact authoritative GitHub commit",
+            "Docker info",
+            "Pull & build images",
+            "Start db & redis",
+            "Wait for PostgreSQL",
+            "Ensure database exists",
+            "Run smoke tests (sc_smoke)",
+            "Run data validator",
+            "Upload validation reports",
+            "Dump logs on failure",
+            "Cleanup"
+          ],
+          "uses": ""
+        },
+        "what_it_can_prove": "The selected workflow job completed its actual commands under its job condition and exact checked-out source.",
+        "what_it_cannot_prove": [
+          "merge gate status",
+          "L2 frontend presentation",
+          "blocking proof of the validator",
+          "a passing job does not override a failed/skipped prerequisite or an identity drift",
+          "workflow green does not mean deployment or user acceptance"
+        ],
+        "what_it_verifies": "manual disposable-container sc_smoke backend test; the data validator is non-blocking",
+        "what_triggers_it": {
+          "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+          "needs": [],
+          "on": {
+            "workflow_dispatch": ""
+          },
+          "runs_on": "ubuntu-latest",
+          "timeout_minutes": "30",
+          "workflow": ".github/workflows/sc_smoke.yml"
+        }
+      },
+      "id": "workflow:sc_smoke.yml:smoke",
+      "job_id": "smoke",
+      "job_name": "smoke",
+      "layer_hints": [
+        "L3"
+      ],
+      "make_targets": [
+        "test"
+      ],
+      "resources": [
+        {
+          "evidence_tokens": [
+            "docker compose"
+          ],
+          "kind": "container"
+        },
+        {
+          "evidence_tokens": [
+            "DB_NAME",
+            "Postgres",
+            "postgres"
+          ],
+          "kind": "database"
+        }
+      ],
+      "scripts": [],
+      "steps": [
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 1,
+          "make_targets": [],
+          "name": "Checkout exact authoritative GitHub commit",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 2,
+          "make_targets": [],
+          "name": "Docker info",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 3,
+          "make_targets": [],
+          "name": "Pull & build images",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 4,
+          "make_targets": [],
+          "name": "Start db & redis",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 5,
+          "make_targets": [],
+          "name": "Wait for PostgreSQL",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "Postgres",
+                "postgres"
+              ],
+              "kind": "database"
+            },
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "",
+          "index": 6,
+          "make_targets": [],
+          "name": "Ensure database exists",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "DB_NAME"
+              ],
+              "kind": "database"
+            },
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make test MODULE=smart_construction_core TEST_TAGS=sc_smoke"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 7,
+          "make_targets": [
+            "MODULE",
+            "test"
+          ],
+          "name": "Run smoke tests (sc_smoke)",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [
+            "make validate || true"
+          ],
+          "env_keys": [],
+          "if": "",
+          "index": 8,
+          "make_targets": [
+            "validate"
+          ],
+          "name": "Run data validator",
+          "resources": [],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 9,
+          "make_targets": [],
+          "name": "Upload validation reports",
+          "resources": [],
+          "scripts": [],
+          "uses": "actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02"
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "failure()",
+          "index": 10,
+          "make_targets": [],
+          "name": "Dump logs on failure",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        },
+        {
+          "commands": [],
+          "env_keys": [],
+          "if": "always()",
+          "index": 11,
+          "make_targets": [],
+          "name": "Cleanup",
+          "resources": [
+            {
+              "evidence_tokens": [
+                "docker compose"
+              ],
+              "kind": "container"
+            }
+          ],
+          "scripts": [],
+          "uses": ""
+        }
+      ],
+      "trigger": {
+        "job_if": "github.repository == 'lidefend/sce-backend-odoo' && github.actor == github.repository_owner && github.event_name == 'workflow_dispatch'",
+        "needs": [],
+        "on": {
+          "workflow_dispatch": ""
+        },
+        "runs_on": "ubuntu-latest",
+        "timeout_minutes": "30",
+        "workflow": ".github/workflows/sc_smoke.yml"
+      },
+      "type": "workflow_job",
+      "uses": "",
+      "workflow": ".github/workflows/sc_smoke.yml"
+    }
+  ],
+  "part": "workflow_jobs",
+  "schema": "change_impact_verification.mapping_part.v1",
+  "source_head": "1174988960f0a8aacbc5b3c6aceaf05fba46104e"
+}

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -107,6 +108,17 @@ class ChangeImpactVerificationInventoryTests(unittest.TestCase):
         self.assertIn("contains_job", relations)
         self.assertIn("invokes_make", relations)
         self.assertIn("executes_script", relations)
+
+    def test_mapping_matrix_parts_stay_below_history_blob_limit(self) -> None:
+        graph = inventory.build_execution_graph(self.data)
+        cost = inventory.build_cost_baseline(self.data)
+        with tempfile.TemporaryDirectory() as temporary:
+            root = Path(temporary)
+            inventory.write_outputs(self.data, graph, cost, root)
+            sizes = {path.name: path.stat().st_size for path in root.iterdir()}
+        self.assertLess(max(sizes.values()), 5 * 1024 * 1024)
+        self.assertIn("verification_mapping_matrix.json", sizes)
+        self.assertIn("verification_mapping_matrix.gate_scripts.json", sizes)
 
 
 if __name__ == "__main__":

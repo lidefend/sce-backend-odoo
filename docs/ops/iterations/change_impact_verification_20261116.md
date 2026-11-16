@@ -70,6 +70,14 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
 的必需闭包。设计交付物为
 `docs/audit/change-impact-verification/change_impact_verification_design_v1.md`。
 
+`verification_mapping_matrix.json` 是 98 KB 索引；完整内容拆分到 workflow、Make target、
+gate script 和 script lifecycle 四个 part 文件，全部低于仓库历史扫描的 5 MiB threshold。
+拆分不减少覆盖，每项仍保留八问责任。
+
+首次远端 `public_guard` 因单文件 6.5 MiB 触发 RH007 oversized-blob 失败；`merge_policy_gate`
+准确传播该失败。随后按覆盖不变原则拆分索引与 part 文件，最大 part 约 3.5 MiB，重新生成、
+定向测试和 local iteration 均通过，未添加 oversized-blob 例外。
+
 ## 明确排除
 
 - 不实施 P4-01 或后续批次。
@@ -87,7 +95,7 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/docs_links.env-dev.log`。
 - L1 执行策略：passed，`make verify.baseline.iteration.execution.policy`，19 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/iteration_policy.log`。
-- 审计器：passed，`make verify.change_impact.verification.unit`，9 tests；原始日志
+- 审计器：passed，`make verify.change_impact.verification.unit`，10 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/change_impact_inventory.final.log`。
 - CI workflow contract：passed，`make verify.ci.workflow.contract`，434 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/ci_workflow_contract.final.log`。

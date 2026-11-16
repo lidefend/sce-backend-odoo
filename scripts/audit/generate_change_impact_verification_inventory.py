@@ -1355,7 +1355,7 @@ guard registry 生命周期统计：
 ## 12. Gate-enforced 脚本责任索引
 
 下表只列四个 anchor 可达、实际被执行脚本中的一部分元数据。完整八问责任、调用 target、
-资源信号、层提示和重叠关系在 `verification_mapping_matrix.json`。
+资源信号、层提示和重叠关系由 `verification_mapping_matrix.json` 索引到四个 part 文件。
 
 | script | lifecycle | inferred layers | declared summary |
 | --- | --- | --- | --- |
@@ -1385,12 +1385,40 @@ resource/evidence 的有向边，并保留 Make prerequisite、recursive make、
 
 def write_outputs(inventory: dict[str, Any], graph: dict[str, Any], cost: dict[str, Any], output_dir: Path) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
+    part_names = {
+        "workflow_jobs": "verification_mapping_matrix.workflow_jobs.json",
+        "make_targets": "verification_mapping_matrix.make_targets.json",
+        "gate_scripts": "verification_mapping_matrix.gate_scripts.json",
+        "script_lifecycle": "verification_mapping_matrix.script_lifecycle.json",
+    }
+    index = {
+        key: value
+        for key, value in inventory.items()
+        if key not in part_names
+    }
+    index["parts"] = part_names
+    index["part_policy"] = (
+        "Large inventories are split into bounded files below the repository "
+        "5 MiB history-scan threshold. Each part retains the same verification "
+        "boundary answers; the index is not a reduction of coverage."
+    )
     outputs = {
-        "verification_mapping_matrix.json": inventory,
+        "verification_mapping_matrix.json": index,
         "verification_execution_graph.json": graph,
         "verification_cost_baseline.json": cost,
     }
     for name, payload in outputs.items():
+        (output_dir / name).write_text(
+            json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+            encoding="utf-8",
+        )
+    for key, name in part_names.items():
+        payload = {
+            "schema": "change_impact_verification.mapping_part.v1",
+            "source_head": inventory["source_head"],
+            "part": key,
+            "items": inventory[key],
+        }
         (output_dir / name).write_text(
             json.dumps(payload, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",

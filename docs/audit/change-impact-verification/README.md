@@ -11,6 +11,15 @@
 - `verification_cost_baseline.json`
 - `change_impact_verification_design_v1.md`
 
+`verification_mapping_matrix.json` is the bounded index. Its four companion part files retain the
+complete workflow, target, gate-script and script-lifecycle inventories below the repository history
+blob threshold:
+
+- `verification_mapping_matrix.workflow_jobs.json`
+- `verification_mapping_matrix.make_targets.json`
+- `verification_mapping_matrix.gate_scripts.json`
+- `verification_mapping_matrix.script_lifecycle.json`
+
 设计审查合格前，不修改现有验证映射、必需门禁、产品代码、数据库或验收断言。
 
 ## 治理原则

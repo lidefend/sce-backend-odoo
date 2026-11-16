@@ -101,9 +101,9 @@ Generated from repository source files. This report is informational during the 
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1485 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
+| 1460 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
-| 1432 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
 | 1421 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1420 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
