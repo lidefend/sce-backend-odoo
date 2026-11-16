@@ -81,9 +81,14 @@ Action authority 必须有正 Action ID 和已解析 View ID；未知 authority 
 - `addons/smart_core/app_config_engine/models/app_view_config.py:117-180`
   在解析 Search View 时优先使用当前 Action 的 `search_view_id`，并验证 View 的
   model/type 与请求模型一致。
-- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:406-478`
+- `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:419-488`
   解析并校验最终 Search View；Action 声明 ID 与实际解析 ID 不一致时抛出
   `ACTION_SEARCH_VIEW_IDENTITY_MISMATCH`，不会静默回退到模型默认 Search View。
+- 同一入口区分两种合法事实：
+  - Action 显式声明 Search View 却没有解析出持久化 View ID：继续 fail closed；
+  - 无 Action 的模型级 `get_view(view_type="search")` 返回 Odoo 生成的 arch，
+    但 Odoo 没有解析出持久化 View ID：保留 Search arch/profile，返回空的
+    `nativeIdentity`，不伪造 View ID。
 - `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:750-772`
   只把当前 Action 对应 Search View 的数据和 native identity 传给
   `app.search.config`。
@@ -140,6 +145,23 @@ many2one 在 `read()` 的传输表示是 `(id, display_name)` tuple，而 Search
 契约版本仍为 `2.2.0`。这是现有 `searchContract` 的向后兼容语义增量；
 Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 
+### 3.5 验证层边界
+
+本专项的核心验收对象是后端返回的 `ui.contract.v2` 契约正确性，而不是像素外观：
+
+- `addons/smart_core/controllers/intent_dispatcher.py:312-313` 提供统一
+  `/api/v1/intent` 入口；
+- `addons/smart_core/handlers/ui_contract_v2.py:1222-1233` 由后端装配完整
+  UCP V2 契约，`:1450-1483` 返回契约及来源、缓存和耗时元数据；
+- `frontend/apps/web/src/app/contracts/v2/client.ts:122` 只对响应执行
+  `decodeContractV2Snapshot()`，`schema.ts` 是契约 Decoder，不是页面表现实现。
+
+因此 `frontend/apps/web/src/app/contracts/v2/**` 的变更只要求
+`frontend_contract`，不再错误触发 `frontend_presentation` 浏览器证据。
+`config/acceptance/evolution_binding.v1.json` 新增独立
+`frontend-contract-v2-codec` 规则，`test_acceptance_evolution_binding_guard.py`
+锁定该分类。页面浏览器证据只在布局、组件、Renderer 或真实用户交互改变时保留。
+
 ## 4. 测试覆盖
 
 纯身份单测 `scripts/verify/test_native_action_search_view.py:16-87` 覆盖：
@@ -150,7 +172,7 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - 非法 authority 拒绝；
 - 缺失 XMLID 不伪造值。
 
-`addons/smart_core/tests/test_native_action_search_view_integration.py:8-202` 通过
+`addons/smart_core/tests/test_native_action_search_view_integration.py:8-227` 通过
 `ActionDispatcher -> PageAssembler` 覆盖：
 
 - Action-bound Search View 身份与 filter；
@@ -160,25 +182,27 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - Action Search 投影不写 model 级缓存；
 - 非系统用户的受限 filter 被运行时裁剪，同时 Action Search identity 保持不变。
 - 原始 `record.read()[0]` Action 的 many2one tuple 在 PageAssembler 边界被正确规范化。
+- 无 Action 且 Odoo 未解析出持久化 Search View ID 时，保留生成 arch 并省略
+  `nativeIdentity`，不构造虚假身份。
 
 ## 5. 验证回执
 
 通过的验证：
 
 - `make verify.native_action.search_view.unit`：5 tests。
-- `make verify.native_action.search_view.orm`：7 tests。
-  Receipt：`.runtime/test-baseline/1794821653445514313/receipt.json`。
+- `make verify.native_action.search_view.orm`：8 tests。
+  Receipt：`.runtime/test-baseline/1794825114476741506/receipt.json`。
 - `make test.payment-settlement.component-profile.orm`：PASS，7 tests；
   真实付款执行/收入结算/支出结算 Action 和 Search View 全链路通过。
 - `make local.test.test MODULE=smart_core TEST_TAGS=native_action_search_view,native_action_view_set,action_dispatcher`：
-  30 tests。
-  Receipt：`.runtime/test-baseline/1794822255784495778/receipt.json`。
+  31 tests。
+  Receipt：`.runtime/test-baseline/1794825197986822863/receipt.json`。
 - `make verify.frontend.contract_record_action_state.unit`：29 checks，含
   native identity 保留、数组拒绝和未知 Search 字段拒绝。
 - `make verify.frontend.contract_v2_render_authority.unit`：335 fields，
   unclassified=0。
 - `make verify.frontend.dev.incremental.unit`：156 tests。
-- `make verify.unified_page_contract.v2.assembler`：PASS，4 sources，缓存 v56。
+- `make verify.unified_page_contract.v2.assembler`：PASS，4 sources，缓存 v57。
 - `make verify.backend.contract_lifecycle.authority`：PASS，schema digest 与 4
   examples 一致，authority guard L4 100/100。
 - `make verify.verification.lane.coverage`：PASS，74 tests。
@@ -190,6 +214,9 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
 - `python3 addons/smart_core/tests/test_contract_projection_json_boundaries.py`：
   PASS，4 tests。
 - `make verify.docs.all`：PASS。
+- `make verify.acceptance.evolution.binding`：PASS，72 tests；
+  `contracts/v2/**` 经 `frontend-contract-v2-codec` 只要求
+  `frontend_contract`。
 
 测试证据限制：
 
@@ -223,6 +250,16 @@ Native Action Contract 根节点与 schema `2.3.0` 仍属于未启动的 P0-3。
   进入 Search 投影并触发 `TypeError`。分类：`product_defect`。修复没有在 Search
   子层猜类型，而是统一 Action 入口并补强 `ActionResolver._related_id()`；随后专项
   ORM 7/7 和同一付款/结算真实 ORM 7/7 均通过。
+- candidate 页面预检中，`project.responsibility` 的模型级 Form 请求返回 HTTP 400
+  `native search identity requires a resolved view id`。Odoo 能为该模型生成 Search
+  arch，但没有持久化 Search View ID；P0-2 把“没有 ID”错误等同于“身份非法”。
+  分类：`product_defect`。修复只放宽无 Action 的模型级生成 Search arch，
+  Action 显式绑定仍 fail closed；新增专项回归，缓存指纹升级到 v57。
+- 同一失败也暴露验证分层缺口：既有 L1/L2 用例只证明“收到无 ID arch 时如何分支”，
+  没有证明真实 Odoo 模型会产生这一输入；既有页面证据又没有先校验新的 exact
+  contract receipt。该缺口不通过增加相邻单元测试解决。本轮继续使用 L2 定向回归，
+  并在精确 candidate 上执行 `ui.contract.v2(project.responsibility/form)` 的真实
+  HTTP receipt，直接证明完整契约输出；页面表现不是本专项的验收对象。
 
 ## 7. L1-L4 状态
 

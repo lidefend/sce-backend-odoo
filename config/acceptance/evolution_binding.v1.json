@@ -560,9 +560,17 @@
       ]
     },
     {
+      "id": "frontend-contract-v2-codec",
+      "paths": [
+        "frontend/apps/web/src/app/contracts/v2/**"
+      ],
+      "suites": [
+        "frontend_contract"
+      ]
+    },
+    {
       "id": "frontend-contract-form-consumer",
       "paths": [
-        "frontend/apps/web/src/app/contracts/v2/**",
         "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
         "frontend/apps/web/src/pages/contractForm/**"
       ],
