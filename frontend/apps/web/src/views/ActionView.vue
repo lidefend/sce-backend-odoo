@@ -1753,7 +1753,12 @@ const availableViewModes = computed(() => resolveActionViewAvailableModes({ cont
 const viewMode = computed(() => {
   const fallbackMode = resolveActionViewDefaultMode(actionContract.value)
     || (resolvedModelRef.value || Number(route.query.action_id || 0) > 0 ? 'tree' : '');
-  return resolveRenderableActionViewMode(preferredViewMode.value, availableViewModes.value, fallbackMode);
+  return resolveRenderableActionViewMode(
+    preferredViewMode.value,
+    availableViewModes.value,
+    fallbackMode,
+    Boolean(actionContract.value?.snapshot.nativeActionContract),
+  );
 });
 const collectionPresentation = computed(() => resolveGroupedCollectionPresentation(resolveActionCollectionPresentation(
   actionContract.value, viewMode.value), route.query.group_by));

@@ -137,12 +137,10 @@ class NativeActionContractTest(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "model mismatch"):
             self.build(model="res.users")
 
-    def test_incomplete_view_set_is_explicitly_unresolved(self):
-        contract = self.build(view_set={"complete": False, "orderedViews": []})
-
-        self.assertEqual(contract["projectionAvailability"]["status"], "unresolved")
-        self.assertEqual(contract["viewSet"]["orderedViews"], [])
-        self.assertEqual(contract["readiness"]["backendContract"]["status"], "unresolved")
+    def test_action_without_resolved_views_does_not_publish_a_contract(self):
+        self.assertIsNone(
+            self.build(view_set={"complete": False, "orderedViews": []})
+        )
 
 
 if __name__ == "__main__":

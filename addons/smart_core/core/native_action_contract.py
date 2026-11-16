@@ -126,6 +126,11 @@ def build_native_action_contract(
         row for row in _list(normalized_view_set.get("orderedViews"))
         if isinstance(row, dict) and _canonical_view_type(row.get("viewType") or row.get("view_type"))
     ]
+    if not rows:
+        # A first-class Action contract describes a usable ordered View Set.
+        # An Action with no resolved rows remains on the existing page path;
+        # publishing a placeholder View type would weaken the closed protocol.
+        return None
     complete = bool(normalized_view_set.get("complete") and rows)
     ordered_views: list[dict[str, Any]] = []
     for index, row in enumerate(rows, start=1):

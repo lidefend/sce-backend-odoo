@@ -2588,7 +2588,7 @@ function requiredEnumString<T extends string>(
 }
 
 const NATIVE_ACTION_VIEW_TYPES = [
-  'tree', 'kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard', 'form', '',
+  'tree', 'kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard', 'form',
 ] as const satisfies readonly ContractV2NativeActionViewType[];
 const NATIVE_ACTION_PROJECTION_STATUSES = ['ready', 'blocked', 'unresolved'] as const;
 const NATIVE_ACTION_RENDERER_STATUSES = ['ready', 'fallback', 'unsupported', 'unknown'] as const;

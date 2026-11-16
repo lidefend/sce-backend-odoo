@@ -23,6 +23,7 @@ import {
   resolveActionViewDefaultMode,
   resolveGroupedCollectionPresentation,
   resolveActionViewAvailableModes,
+  resolveRenderableActionViewMode,
 } from '../src/app/contracts/actionViewSurfaceContract';
 import { resolvePreferredActionViewMode } from '../src/app/runtime/actionViewContractLoadRuntime';
 import {
@@ -111,6 +112,16 @@ assert.deepEqual(resolveActionViewAvailableModes({
   contract: nativeActionContract,
 }), ['tree', 'kanban', 'graph']);
 assert.equal(resolveActionViewDefaultMode(nativeActionContract), 'kanban');
+assert.equal(
+  resolveRenderableActionViewMode('pivot', ['tree', 'kanban', 'graph'], 'kanban', true),
+  'kanban',
+  'an unlisted persisted mode must fall back to the native Action default',
+);
+assert.equal(
+  resolveRenderableActionViewMode('tree', [], 'form', true),
+  '',
+  'an empty native View Set must not fall back to an implicit collection mode',
+);
 const preferredMode = { value: '' };
 const currentMode = { value: 'tree' };
 const switchableModes = { value: ['tree', 'kanban'] };
@@ -133,6 +144,24 @@ assert.equal(modeLoads, 0);
 switchViewMode('kanban');
 assert.equal(preferredMode.value, 'kanban');
 assert.equal(modeLoads, 1);
+
+const emptyPreferredMode = { value: '' };
+const emptyModeLoads = { value: 0 };
+const { switchViewMode: switchEmptyViewMode } = useActionViewModeRuntime({
+  strictContractMode: { value: true },
+  strictViewModeLabelMap: { value: {} },
+  pageText: (_key, fallback) => fallback,
+  preferredViewMode: emptyPreferredMode,
+  viewMode: { value: 'form' },
+  availableViewModes: { value: [] },
+  normalizeActionViewMode: (raw) => String(raw || '').trim().toLowerCase(),
+  resolveActionViewModeLabel: ({ mode }) => mode,
+  contract: { value: nativeActionContract },
+  load: async () => { emptyModeLoads.value += 1; },
+});
+switchEmptyViewMode('tree');
+assert.equal(emptyPreferredMode.value, '', 'an empty native View Set must reject every collection switch');
+assert.equal(emptyModeLoads.value, 0);
 
 // card_label_not_workflow_board
 assert.equal(resolveActionCollectionPresentation(cardContract, 'kanban').label, '卡片');

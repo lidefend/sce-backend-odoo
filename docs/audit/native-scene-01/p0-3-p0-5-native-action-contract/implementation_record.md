@@ -29,7 +29,7 @@ The public `nativeActionContract` carries:
 
 ### 3.1 Backend producer
 
-`addons/smart_core/core/native_action_contract.py:94-235` adds a pure producer
+`addons/smart_core/core/native_action_contract.py:94-240` adds a pure producer
 that consumes only facts already resolved by ActionResolver/PageAssembler. It:
 
 - preserves Odoo's effective `action.views` order and duplicate same-type rows;
@@ -37,6 +37,8 @@ that consumes only facts already resolved by ActionResolver/PageAssembler. It:
   Search identity and the active/default View;
 - keeps projection availability, backend contract readiness, client renderer
   readiness and business execution readiness independent;
+- omits the root contract when no ordered View row can be resolved instead of
+  publishing an invalid placeholder View type;
 - performs no Odoo lookup and grants no permission.
 
 `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:934-970`
@@ -52,9 +54,11 @@ The schema version is now `2.3.0` with a closed `nativeActionContract` definitio
 
 - `docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json:359`
 - schema SHA256:
-  `3d70ee82f9257db93f7bd1913070fb4250d3c212dd6780ccf67b73aebfe775fe`
+  `6b889eaa521cb7d564f27853a7e0d0c1e771da1d50e682e4d041027af056a887`
 - ActionViewType, ordered View, Search and readiness-axis definitions are closed
   objects; unknown fields fail validation.
+- An Action with no resolvable ordered View does not publish a placeholder
+  `nativeActionContract`; the page remains on the existing model projection path.
 
 ### 3.3 Frontend consumption
 
@@ -63,10 +67,11 @@ The schema version is now `2.3.0` with a closed `nativeActionContract` definitio
 - `frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts:152-188`
   derives available collection modes from `orderedViews/selectable`, excluding
   non-ready and unsupported rows, and reads the default mode from the contract.
-- `frontend/apps/web/src/views/ActionView.vue:1749-1771` uses that authority for
-  the active/default View.
-- `frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts:32-45`
-  refuses a switch to a mode absent from the delivered View Set.
+- `frontend/apps/web/src/views/ActionView.vue:1750-1762` uses that authority for
+  the active/default View and treats the delivered View Set as exclusive.
+- `frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts:32-49`
+  refuses a switch to a mode absent from the delivered View Set, including the
+  empty-set case.
 - Model-only pages without an Action continue without a fabricated contract.
 
 ## 4. Verification
@@ -77,20 +82,27 @@ Passed:
 - `make verify.native_action.contract.orm`: 3 tests, including a real Odoo
   Window Action projected into V2.
 - `make verify.unified_page_contract.v2.schema`: PASS.
-- `make verify.unified_page_contract.v2.assembler`: PASS, cache v58.
+- `make verify.unified_page_contract.v2.assembler`: PASS, cache v59.
 - `make verify.backend.contract_lifecycle.authority`: PASS, schema 2.3.0.
-- `make verify.frontend.contract_record_action_state.unit`: PASS, 32 checks.
+- `make verify.frontend.contract_record_action_state.unit`: PASS, 33 checks.
 - `make verify.frontend.collection_view_semantics.unit`: PASS.
-- `make verify.frontend.professional_component_registry.unit`: PASS.
+- `make verify.frontend.professional_component_registry.unit`: PASS, 162 tests.
 - `make verify.frontend.dev.incremental.unit`: PASS, 159 tests.
 - `make verify.frontend.typecheck.strict`: PASS.
 - `make verify.semantic.registry.lint`: PASS.
 - `make verify.unified_page_contract.v2.intent`: PASS.
 - `make verify.frontend.contract_v2_render_authority.unit`: PASS, 361 fields,
   unclassified=0.
-- `make ci.local.iteration`: PASS, 36 affected targets.
-  Receipt:
-  `.runtime/frontend-dev-validation/executions/20261116T135832Z-3897864-517607132/receipt.json`.
+- `make verify.native_scene.inventory.unit`: PASS, generated inventory current.
+- Selected docs guards `inventory`, `contract_sync`, `temp_guard` and
+  `product_boundary`: PASS.
+- Earlier `make ci.local.iteration`: PASS, 36 affected targets at the prior
+  candidate; the empty-View correction requires one final run on the new hash.
+
+`make verify.docs.links` remains **not passed**: 72 missing links are reported.
+The report contains no missing link sourced from this batch's implementation
+record or Unified Page Contract files; this is classified as a pre-existing
+`baseline_evidence_defect`, not a P0-3/P0-5 pass claim.
 
 ## 5. L1-L4
 

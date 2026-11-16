@@ -577,8 +577,7 @@
         "gantt",
         "activity",
         "dashboard",
-        "form",
-        ""
+        "form"
       ]
     },
     "nativeActionView": {

@@ -187,8 +187,17 @@ export function resolveActionViewDefaultMode(contract: ContractV2NormalizedStore
   return mode === 'list' ? 'tree' : mode;
 }
 
-export function resolveRenderableActionViewMode(preferredRaw: unknown, modes: string[], fallback: string): string {
-  const mode = normalizeActionViewMode(preferredRaw) || modes[0] || fallback;
+export function resolveRenderableActionViewMode(
+  preferredRaw: unknown,
+  modes: string[],
+  fallback: string,
+  exclusiveModes = false,
+): string {
+  const preferred = normalizeActionViewMode(preferredRaw);
+  const normalizedFallback = normalizeActionViewMode(fallback);
+  const mode = exclusiveModes
+    ? (modes.includes(preferred) ? preferred : (modes.includes(normalizedFallback) ? normalizedFallback : modes[0] || normalizedFallback))
+    : preferred || modes[0] || normalizedFallback;
   if (mode === 'list' || mode === 'tree') return 'tree';
   if (['kanban', 'pivot', 'graph', 'calendar', 'gantt', 'activity', 'dashboard'].includes(mode)) return mode;
   return '';

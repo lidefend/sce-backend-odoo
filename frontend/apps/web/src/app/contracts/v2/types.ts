@@ -205,8 +205,7 @@ export type ContractV2NativeActionViewType =
   | 'gantt'
   | 'activity'
   | 'dashboard'
-  | 'form'
-  | '';
+  | 'form';
 
 export interface ContractV2NativeActionView {
   viewType: ContractV2NativeActionViewType;

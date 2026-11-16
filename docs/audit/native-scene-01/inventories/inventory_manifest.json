@@ -1360,7 +1360,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "8afd29253b65385340849ca3cefa37327f5767ff9e497c34d2bac068a07b798d"
+    "sha256": "bfa3cb541329991a678c1e78b77df343efd5cc99a5354cd57b327cb6684577b7"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1372,22 +1372,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "72460e101e040b4091dc117b6b5a007f8cf9fe2eae4a93846fc4003394516999"
+      "sha256": "8300f3eb0df46a536206af0d34a01d92c201fac303a8947b77e14c543f01aa8d"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "5e5fb21cb2ab3e7703eb7bbdedfd209744e056a9058fb9b26594c6b877c29784"
+      "sha256": "15e0a83294248d766c2774d4461146f7503aad8220fd129c7cbac2bf2fb3b685"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "e9ce3d1fc1257ab804a03cdabe6715f01232ba7272f0da6eb2869f9830ca61ec"
+      "sha256": "2b15a6be4f9fa51271997965790e8151e2fda21c9c1b87f21515a9d6128ddf64"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "d16a6cc04da3af154c3119d9aeaecdfc6b70ce80e66b439d2f256bc6cb32b7f6"
+      "sha256": "4e57dcd62178924ee0e4bc3e15ef2ad3d14d34860e73c45a467c3bbe43ac4636"
     }
   },
   "runtime_evidence": {
@@ -1456,11 +1456,15 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T21:57:43+08:00",
-    "dirty_paths": [],
-    "revision": "368436dc0e4247a53501eeb0721bd5b5ee7c2744",
+    "commit_time": "2026-11-16T22:03:47+08:00",
+    "dirty_paths": [
+      "addons/smart_core/core/contract_lifecycle.py",
+      "addons/smart_core/core/native_action_contract.py",
+      "addons/smart_core/handlers/ui_contract_v2.py"
+    ],
+    "revision": "3d710096808655f9f98eb977ac83478451543162",
     "root": ".",
-    "tree": "38a6a71952192a684e111d525235f71cf50abfbe"
+    "tree": "136007e75121f0f9d1508d9e61ca49aaf4e678a0"
   },
   "statistics": {
     "actions": {

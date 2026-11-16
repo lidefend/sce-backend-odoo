@@ -165,6 +165,23 @@ check(() => assert.throws(
 check(() => assert.throws(
   () => decodeContractV2Snapshot(snapshot(
     { pageVisible: true, pageAuth: 'read' },
+    { nativeIdentity: searchNativeIdentity },
+    {
+      ...nativeActionContract,
+      viewSet: {
+        ...nativeActionContract.viewSet,
+        defaultViewType: '',
+        activeViewType: '',
+        orderedViews: [],
+      },
+    },
+  )),
+  /nativeActionContract\.viewSet\.(defaultViewType|activeViewType)/,
+), 'an unresolved Action without an ordered View Set must not publish an empty View type');
+
+check(() => assert.throws(
+  () => decodeContractV2Snapshot(snapshot(
+    { pageVisible: true, pageAuth: 'read' },
     { nativeIdentity: { ...searchNativeIdentity, viewId: 999 } },
     nativeActionContract,
   )),
