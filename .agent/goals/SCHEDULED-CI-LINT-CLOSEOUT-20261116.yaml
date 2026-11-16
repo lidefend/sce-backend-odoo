@@ -31,15 +31,18 @@ goal:
       - the closeout goal and run
       - the governed active-run index
       - the existing living batch record
+      - one exact immutable public-history false-positive registration
   acceptance_criteria:
     - source run and goal report completed
     - PR and merge identity are recorded by exact SHA
     - post-merge manual full-lane success and artifacts are recorded
     - active-run index no longer binds the merged topic branch
     - agent ledger and resume unit tests pass
+    - public history treats reviewed artifact identifiers as non-personal data
   exclusions:
     - no_product_source_or_test_change
     - no_workflow_trigger_or_assertion_change
+    - no_directory_or_mutable-history_scan_exemption
     - no_deployment
     - no_database_or_runtime_mutation
   rollback:

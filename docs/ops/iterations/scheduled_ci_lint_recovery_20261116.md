@@ -107,6 +107,30 @@ removed from the active-run index. Offline ledger closure checks passed:
 The closeout branch is the only active-run binding for this bookkeeping update;
 it carries no product, workflow, database, or runtime change.
 
+## Remote CI Correction
+
+PR #901 initially failed the exact-head `public_guard` history scan at blob
+`a3c4172d2a877b6a7a01da04056bba72d2c474ca`. The detector classified two
+GitHub Actions artifact numeric identifiers in the recovery run record as a
+mobile-phone pattern; the CI log explicitly reported
+`sensitive_values_recorded=false`. This is a P4 baseline/evidence false
+positive, not a product or credential leak.
+
+The current run record now carries immutable artifact names instead of numeric
+IDs. Because the public guard scans every candidate-introduced blob, the earlier
+revision remains reachable until the branch is rewritten. The existing governed
+false-positive mechanism therefore registers only the exact rule, path, full
+blob ID, classification, and reviewed public-artifact reason. No directory,
+branch, wildcard, future blob, or mutable history is exempted.
+
+The failed run is
+[43798116160](https://github.com/lidefend/sce-backend-odoo/actions/runs/43798116160).
+`merge_policy_gate` failed only as a downstream consumer of that exact-head
+`public_guard` failure. The correction is validated by the same local
+`repository.clean_history.scan` and then by a new exact remote candidate; the
+failed SHA `03cc579ebf3136f1ef7da88f86f6141595e48753` is never treated as
+passing.
+
 ## Rollback
 
 Revert the single test-script change. No external state is mutated by this batch.
