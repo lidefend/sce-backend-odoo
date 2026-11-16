@@ -51,10 +51,40 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the clean exact branch head through the protected GitHub PR lane and wait for exact-head required CI.",
+  "next_exact_step": "Closed. PR #900 merged as 44cfed924b44b690dbb9f833ca9fcb605e8196cc and manual frontend_release_gate run 43793607673 passed on that mainline.",
   "id": "SCHEDULED-CI-LINT-RECOVERY-20261116",
   "branch": "fix/scheduled-ci-lint-20261116",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
-  "record": "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md"
+  "record": "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md",
+  "completion": {
+    "mainline_sha": "44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+    "pull_request": 900,
+    "candidate_head": "0a6224829f1e22454e0c0aeee21bd1ac6da30a15",
+    "baseline_sha": "ce41f14870531fda9a1a8f247761e142aff711a2",
+    "required_checks": {
+      "frontend_release_gate": 43792896015,
+      "merge_policy_gate": 43792896016,
+      "public_guard": 43792896028,
+      "professional_quality_gate": 43792896083
+    },
+    "post_merge_full_lane": {
+      "run_id": 43793607673,
+      "event": "workflow_dispatch",
+      "head_sha": "44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+      "conclusion": "success",
+      "duration_seconds": 1407,
+      "static_audit": "PASS",
+      "managed_orm": "PASS",
+      "artifacts": {
+        "frontend_release_evidence_name": "frontend-release-evidence-43793607673-1-44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+        "frontend_release_evidence_digest": "sha256:95aa678b0bef7cc4dff33793a3607db70efff3c387215e9d97bdd030e111d7b4",
+        "managed_orm_name": "managed-orm-43793607673-1-44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+        "managed_orm_digest": "sha256:e4867f26a95d9ded41d0ce4df96401e86cf5b0aa2889cf83f4dbf80d25e54ef9"
+      }
+    },
+    "residual": [
+      "The next actual cron schedule will provide one additional natural-event observation; the manually dispatched full lane already passed on the merged mainline."
+    ]
+  }
 }
