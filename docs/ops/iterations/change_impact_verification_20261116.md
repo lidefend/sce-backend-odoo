@@ -80,6 +80,11 @@ and business acceptance、evidence lifecycle、database upgrade/environment prep
 `environment_defect`，不是本专题元数据或文档检查失败，也不据此宣称入口通过。原始日志为
 `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/iteration.log`。
 
+随后通过既有受管入口 `make fe.install.cached` 完成离线、锁定、禁用安装脚本的依赖恢复；
+未手工拼装 pnpm 或修改锁文件。环境恢复后重新执行 `make ci.local.iteration`：PASS，结果
+`ready_for_existing_gates`，最终增量检查为 `verify.agent.ledger.unit` 18 tests PASS。原始日志为
+`.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/iteration.after_deps.log`。
+
 `verify.docs.links` 在未声明环境下命中 72 条仓库既有坏链并拒绝通过；报告中没有本专题新增
 文档，属于仓库既有链接基线。随后按仓库登记的 `ENV=dev` 本地基线（允许最多 200 条既有
 坏链）重新执行并通过。未修改坏链、阈值或工具以掩盖该基线。
