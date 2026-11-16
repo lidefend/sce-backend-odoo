@@ -38,10 +38,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Complete PR #902 R1 by committing the recoverable Registry snapshot, deterministic source scanner, five machine-readable inventories and refreshed Markdown evidence references; then rerun all checks and request independent re-review.",
+  "next_exact_step": "PR #902 R1 evidence is complete; rerun the exact-head source inventory, documentation, governance and repository checks, publish the new HEAD, and request independent re-review without starting B01-B06.",
   "id": "NATIVE-SCENE-01-A01-A04",
   "branch": "audit/native-scene-01-a01-a04-20261116",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/NATIVE-SCENE-01.yaml",
   "record": "docs/audit/native-scene-01/native_capability_inventory_summary.md"
 }
