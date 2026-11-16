@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "ce41f14870531fda9a1a8f247761e142aff711a2",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
+    ".agent/runs/SCHEDULED-CI-LINT-RECOVERY-20261116/run.json",
+    "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md",
+    "frontend/apps/web/scripts/session_persistence_recovery_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local frontend lint and Make verification tools; no database or service access"
+  },
+  "checks": {
+    "frontend_lint": {
+      "target": "verify.frontend.lint",
+      "inputs": [
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "session_persistence_recovery": {
+      "target": "verify.frontend.session_persistence.recovery.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/session_persistence_recovery_test.ts",
+        "frontend/apps/web/scripts/session_persistence_snapshot_test.ts",
+        "frontend/apps/web/scripts/session_persistence_scheduler_test.ts",
+        "frontend/apps/web/scripts/session_persistence_failure_test.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
+        "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/app/sessionExpiredRecovery.ts",
+        "frontend/apps/web/src/services/entryNamespace.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "delivery_hardening_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish the clean exact branch head through the protected GitHub PR lane and wait for exact-head required CI.",
+  "id": "SCHEDULED-CI-LINT-RECOVERY-20261116",
+  "branch": "fix/scheduled-ci-lint-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md"
+}

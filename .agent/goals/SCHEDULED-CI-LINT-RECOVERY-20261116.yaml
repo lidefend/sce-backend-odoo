@@ -1,0 +1,50 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-LINT-RECOVERY-20261116
+  title: restore the scheduled frontend release lint lane
+  status: active
+  formal_product_layer: P4
+  layer_target: scheduled_frontend_release_lint
+  module:
+    - frontend/apps/web/scripts
+    - frontend lint
+  objective: >-
+    Remove the single reproducible frontend lint error that fails the scheduled
+    frontend_release_gate on the current mainline, without changing product
+    behavior, workflow triggers, lane selection, or any release assertion.
+  baseline:
+    branch: main
+    full_sha: ce41f14870531fda9a1a8f247761e142aff711a2
+    source: clean_local_and_origin_main_after_pr_899
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_ci_verification_tool
+    why_here: >-
+      The failure is an unused local declaration in a frontend test script
+      executed by the repository lint gate. The owning change is the test
+      script and P4 verification hygiene, not a product contract.
+    why_not_elsewhere:
+      - no_p0_contract_consumer_or_platform_mechanism_change
+      - no_p1_construction_industry_semantics
+      - no_p2_customer_preference_or_data_baseline
+      - no_p3_runtime_configuration
+      - no_workflow_trigger_or_required_check_relaxation
+    blast_radius:
+      - one_unused_declaration_in_session_persistence_recovery_test
+      - frontend_lint
+      - session_persistence_recovery_nonzero_test
+      - scheduled_frontend_release_static_audit
+  acceptance_criteria:
+    - frontend_lint_passes_with_zero_errors
+    - session_persistence_recovery_test_passes_with_nonzero_cases
+    - delivery_hardening_guard_still_passes
+    - frontend_release_static_audit_passes
+  exclusions:
+    - no_change_to_github_actions_cron_event_or_concurrency
+    - no_change_to_release_gate_assertions
+    - no_product_or_database_write
+    - no_daily_runtime_deployment
+  rollback:
+    - revert_the_single_test_script_change
+  next_exact_step: >-
+    Remove the unused waitForScheduledFlush declaration, then run frontend lint
+    and the affected session persistence tests.
