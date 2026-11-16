@@ -1372,22 +1372,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "0968f1efb8e3332af8d6084731eff6606b80b74933f65d32476958b236f09367"
+      "sha256": "16e70253a34b6750c127f538c4f0f3664434fc8c064d5d6ed6ee83aea9969c50"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "f5bf969d0e3c2797c0e64155e4d1b934369a855858a55ac742ab1a36f62ee920"
+      "sha256": "36cd21c992ab5ffc35cd7dc20078fc8bd6c613a6d9975aab7df3a1a00ab01697"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "391f1267036aa251ddaae802939f7b5a2e17841268601ea6251cd7a46c058cfd"
+      "sha256": "a82f6facf60d8511331f2091cd637f4892cc81121e5b90089e4f001c69a7dfe9"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "76a34b736dd934724373cebe914bb21b5ee544947800d3f5686505890e072b42"
+      "sha256": "e47128c41074b29db10060102d1e64105e632de610899d0d2f1f83c2aae925e1"
     }
   },
   "runtime_evidence": {
@@ -1456,17 +1456,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T04:51:51-08:00",
-    "dirty_paths": [
-      "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
-      "addons/smart_core/core/contract_lifecycle.py",
-      "addons/smart_core/core/native_action_contract.py",
-      "addons/smart_core/core/unified_page_contract_v2_assembler.py",
-      "addons/smart_core/handlers/ui_contract_v2.py"
-    ],
-    "revision": "56ded801d95cd2a30c9c8f976379e060936a9c3d",
+    "commit_time": "2026-11-16T21:56:53+08:00",
+    "dirty_paths": [],
+    "revision": "d990575dec43897a4b7488a804bae261217e7d67",
     "root": ".",
-    "tree": "47b8a4f01ffa8d97a27033cf92e159b3be8a61f2"
+    "tree": "91d2d1029eed9fdebe2dde037f1a70caa135d7e7"
   },
   "statistics": {
     "actions": {
