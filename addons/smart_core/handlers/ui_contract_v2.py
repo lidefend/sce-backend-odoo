@@ -15,7 +15,6 @@ from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
     CONTRACT_VERSION,
-    _native_view_identity_for,
     assemble_unified_page_contract_v2,
     hydrate_final_action_modifier_status,
     hydrate_final_layout_modifier_status,
@@ -96,7 +95,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v68"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v69"
 
 
 def _node_validation_snapshot_ready(source):
@@ -1102,9 +1101,24 @@ class UiContractV2Handler(BaseIntentHandler):
             "record": source_record,
             "source_meta": ui_meta,
         })
-        native_view_identity = _native_view_identity_for(
+        from ..app_config_engine.services.assemblers.page_assembler import PageAssembler
+        view_ids_by_type = source_contract.get("view_ids_by_type") or {}
+        native_view_type = (
+            str(view_type or "").strip().lower()
+        )
+        native_view_id = (
+            view_ids_by_type.get("tree" if native_view_type in {"tree", "list"} else native_view_type)
+            or source_contract.get("view_id")
+        )
+        native_view_identity = PageAssembler(
+            self.env,
+            self.su_env,
+        ).ensure_native_view_identity(
             source_contract,
-            str(view_type or "").strip().lower(),
+            model=str(model or "").strip(),
+            view_type=native_view_type,
+            view_id=native_view_id,
+            carrier=self._request_carrier,
         )
         route_source_ready_at = time.monotonic()
         try:

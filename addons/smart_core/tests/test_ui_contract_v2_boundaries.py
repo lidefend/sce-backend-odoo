@@ -227,6 +227,11 @@ def _load_handler():
             captured.setdefault("record_overlays", []).append(dict(kwargs))
             return ui_data
 
+        def ensure_native_view_identity(self, contract, **_kwargs):
+            views = contract.get("views") if isinstance(contract, dict) else {}
+            view = (views.get("tree") if isinstance(views, dict) else None) or {}
+            return view.get("viewIdentity") or view.get("view_identity") or {}
+
     _install_module(
         "odoo.addons.smart_core.app_config_engine.services.assemblers.page_assembler",
         PageAssembler=_PageAssembler,
