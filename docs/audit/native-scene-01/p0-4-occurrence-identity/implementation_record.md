@@ -122,6 +122,21 @@ as historical failure/repair evidence rather than being overwritten.
 - `validation_tool_defect`: the local incremental planner did not route the new
   producer/test paths or wire the new Make targets. The planner mapping and
   verification lanes were updated; the coverage audit passes.
+- `product_defect`: the first remote backend shard exposed two consumers that
+  still read the legacy snake_case identity fields. Native button backend
+  identity was collapsing to the generic button key, and Pivot/Graph assembly
+  attempted to resolve Form/List occurrence identities. The producer now reads
+  both camelCase and legacy locator/index fields, and occurrence binding is
+  explicitly limited to Form/List views.
+
+The repair was verified with:
+
+- `make local.test.test MODULE=smart_construction_core TEST_TAGS=product_reports`
+  — 2 tests passed;
+- `make local.test.test MODULE=smart_construction_core TEST_TAGS=p1_payment_request`
+  — 63 tests passed;
+- the focused native occurrence ORM test now also asserts the stable
+  `native_button:...` backend identity.
 
 ## 7. Coverage Limits and Next Step
 

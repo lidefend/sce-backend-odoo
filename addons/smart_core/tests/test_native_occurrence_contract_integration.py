@@ -163,3 +163,8 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertEqual(button_identity["id"], "native_occurrence_archive")
         self.assertEqual(button_identity["string"], "Confirm")
         self.assertEqual(button_identity["title"], "Archive partner")
+        self.assertTrue(
+            buttons[0]["backendIdentity"].startswith(
+                "native_button:object:action_archive:"
+            )
+        )

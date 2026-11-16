@@ -841,6 +841,8 @@ def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[st
     """Bind one deterministic identity shape to native Form/List/button nodes."""
     page_info = _dict(contract.get("pageInfo"))
     view_type = _text(page_info.get("viewType") or page_info.get("layoutType")).lower()
+    if view_type not in {"form", "tree", "list"}:
+        return
     view_identity = _native_view_identity_for(source, view_type)
     if not view_identity:
         return
@@ -3745,7 +3747,10 @@ def project_runtime_business_actions(contract: dict[str, Any]) -> dict[str, Any]
                     "object",
                 ).lower() == runtime_type
                 and _dict(row.get("nativeIdentity") or row.get("native_identity")).get("authoritative") is True
-                and _text(_dict(row.get("nativeIdentity") or row.get("native_identity")).get("native_locator"))
+                and _text(
+                    _dict(row.get("nativeIdentity") or row.get("native_identity")).get("nativeLocator")
+                    or _dict(row.get("nativeIdentity") or row.get("native_identity")).get("native_locator")
+                )
             ]
             if native_occurrences and not _dict(
                 runtime_action.get("nativeIdentity") or runtime_action.get("native_identity")
@@ -3930,11 +3935,16 @@ def _action_backend_identity(rule: dict[str, Any]) -> str:
             and rule.get("sourceChannel") == "platform_form_action"):
         return _text(rule.get("backendIdentity"))
     native_identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
-    native_locator = _text(native_identity.get("native_locator"))
+    native_locator = _text(
+        native_identity.get("nativeLocator") or native_identity.get("native_locator")
+    )
     if native_identity.get("authoritative") is True and native_locator:
         native_type = _text(native_identity.get("type"), "object").lower()
         native_name = _text(native_identity.get("name"), "anonymous")
-        occurrence_index = _positive_int(native_identity.get("occurrence_index"), 1)
+        occurrence_index = _positive_int(
+            native_identity.get("occurrenceIndex") or native_identity.get("occurrence_index"),
+            1,
+        )
         return f"native_button:{native_type}:{native_name}:{native_locator}:{occurrence_index}"
     button = _dict(rule.get("button"))
     button_type = _text(button.get("type") or button.get("buttonType"), "object").lower()
@@ -4739,7 +4749,10 @@ def hydrate_final_action_modifier_status(contract: dict[str, Any]) -> None:
         modifier_authoritative = (
             _text(row.get("sourceChannel")) == "native_form_header"
             and _text(_dict(row.get("button")).get("type")) == "object"
-            and bool(_text(_dict(row.get("nativeIdentity")).get("native_locator")))
+            and bool(_text(
+                _dict(row.get("nativeIdentity")).get("nativeLocator")
+                or _dict(row.get("nativeIdentity")).get("native_locator")
+            ))
         )
         permission_resolved = (
             isinstance(row.get("allowed"), bool)
@@ -5019,7 +5032,10 @@ def _native_layout_button_authority(action: dict[str, Any]) -> dict[str, Any] | 
     unresolved (fail-closed) instead of being authorized by assumption.
     """
     identity = _dict(action.get("native_identity") or action.get("nativeIdentity"))
-    if identity.get("authoritative") is not True or not _text(identity.get("native_locator")):
+    if (
+        identity.get("authoritative") is not True
+        or not _text(identity.get("nativeLocator") or identity.get("native_locator"))
+    ):
         return None
     declared_groups = (
         _dict(action.get("payload")).get("groups_xmlids")
