@@ -330,6 +330,12 @@ RULES = (
         "verify.frontend.component_driver_takeover.unit",
     )),
     Rule((
+        "scripts/audit/native_scene_inventory.py",
+        "scripts/audit/test_native_scene_inventory.py",
+    ), (
+        "verify.native_scene.inventory.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_professional_detail_collection_guard.py",
         "scripts/verify/test_frontend_professional_detail_collection_guard.py",
     ), (

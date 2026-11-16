@@ -428,6 +428,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_native_scene_inventory_selects_its_evidence_unit(self) -> None:
+        for path in (
+            "scripts/audit/native_scene_inventory.py",
+            "scripts/audit/test_native_scene_inventory.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.native_scene.inventory.unit"],
+                )
+
     def test_platform_capability_explorer_frontend_selects_its_consumer_unit(self) -> None:
         for path in (
             "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
