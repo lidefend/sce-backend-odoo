@@ -71,6 +71,39 @@ evidence suites after all browser lanes pass. Operators no longer need to find a
 timestamped relation-roundtrip directory manually before merge admission.
 Suite-specific validation still remains in `acceptance_evolution_record.py`.
 
+### Acceptance integration is plan-first and reuse-first
+
+The previous integration entry still invoked presentation, list and relation
+browser suites unconditionally. That contradicted the existing
+`acceptance_evolution_binding.v1` planner: a contract-only or list-only change
+could execute two unrelated paid browser lanes, and a candidate with reusable
+suite evidence still rebuilt the preview and performed every browser journey.
+
+`scripts/ops/acceptance_evolution_integration.py` now consumes the existing
+acceptance plan and evidence carry-forward rules:
+
+1. resolve the exact base/head and required evidence suites;
+2. mark each required suite RUN or REUSE from its declared input fingerprint;
+3. execute preparation and suite targets only when at least one suite is RUN;
+4. record new evidence through `acceptance_evolution_record.py`;
+5. carry forward unchanged suites through the existing validated input hash.
+
+The integration runbook is declared beside each suite in
+`config/acceptance/evolution_binding.v1.json`. It contains the governed Make
+targets and the evidence path/glob, so the runner cannot hardcode one product
+surface. Integration route metadata is excluded from the semantic suite input
+fingerprint: changing where a test is launched does not invalidate browser
+evidence when the browser inputs and assertions are unchanged.
+
+`acceptance.integration.plan` is read-only and writes
+`.runtime/acceptance-evolution/integration-plan.json`. A plan with no RUN suite
+performs no preview build, backend start, database write or browser launch.
+
+An already-covered suite may be rerun only with
+`SC_ACCEPTANCE_REVERIFY_SUITES` plus `SC_ACCEPTANCE_REVERIFY_REASON`. A full
+runtime rerun requires `SC_ACCEPTANCE_FULL=1` and
+`SC_ACCEPTANCE_FULL_REASON`. Empty reasons fail before any runtime mutation.
+
 ## 3. Verification
 
 The supporting P4 batch requires non-zero targeted tests for:
@@ -79,7 +112,9 @@ The supporting P4 batch requires non-zero targeted tests for:
 - candidate profile and runtime identity production;
 - candidate guard failure modes;
 - standard-preview runtime integration;
-- acceptance evolution evidence recording.
+- acceptance evolution evidence recording;
+- plan/reuse decisions, explicit rerun reasons, declared target order and
+  zero-runtime behavior for an all-reusable plan.
 
 These tests are prerequisites, not substitutes for the exact-head candidate
 browser evidence and required GitHub checks.

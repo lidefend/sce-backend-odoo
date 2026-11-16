@@ -101,9 +101,13 @@ Passed on the current dirty candidate:
 | L1 frontend | `make verify.frontend.contract_field_occurrence_identity.unit` | passed |
 | L1 frontend | `make verify.frontend.typecheck.strict` | passed |
 | L2 ORM | `make verify.native_occurrence.contract.orm` | 3 non-zero disposable Odoo tests passed |
-| L2 iteration | `make ci.local.iteration` | 26 affected targets passed; exact before-freeze candidate |
+| L2 iteration | `make ci.local.iteration` | 38 affected targets passed on the final dirty scope |
 | V2 integration | `make verify.unified_page_contract.v2.professional_backend` | full UPage V2 static/contract aggregate passed |
 | Governance | `make audit.verification.lane_coverage.check` | within frozen baseline |
+| P4 acceptance planner | `make verify.acceptance.evolution.binding` | 81 non-zero tests passed |
+| P4 frontend routing | `make verify.frontend.dev.incremental.unit` | 164 non-zero tests passed |
+| P4 execution policy | `make verify.baseline.iteration.execution.policy` | 19 tests passed |
+| P4 path ownership | `make verify.ci.path_ownership.unit` | 22 tests passed |
 
 The ORM receipt on the last isolated run is
 `.runtime/test-baseline/1794855003107430908/receipt.json`; earlier runs remain
@@ -122,6 +126,12 @@ as historical failure/repair evidence rather than being overwritten.
 - `validation_tool_defect`: the local incremental planner did not route the new
   producer/test paths or wire the new Make targets. The planner mapping and
   verification lanes were updated; the coverage audit passes.
+- `validation_tool_defect`: the acceptance integration entry still executed all
+  three evidence browser suites regardless of the binding plan, even though the
+  evidence planner already supported suite-level carry-forward. The entry now
+  plans RUN/REUSE first, prepares the carrier only when a RUN suite exists,
+  executes only declared suite targets, and records through the existing
+  validated recorder.
 - `product_defect`: the first remote backend shard exposed two consumers that
   still read the legacy snake_case identity fields. Native button backend
   identity was collapsing to the generic button key, and Pivot/Graph assembly
@@ -172,6 +182,6 @@ The repair was verified with:
 - Mainline status: pending freeze, independent review, PR and required CI.
 - Deployment and user acceptance: not performed.
 
-Next exact step: run `make ci.delivery.freeze.prepare`, review generated
-evidence, commit the P0-4 candidate, and publish it through the governed PR
-entry.
+Next exact step: run `make ci.local.iteration` for the complete affected set,
+run the clean exact-head acceptance integration plan, review generated evidence,
+and publish through the governed PR entry.

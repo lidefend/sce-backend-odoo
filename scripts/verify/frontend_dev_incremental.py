@@ -189,8 +189,10 @@ RULES = (
     )),
     Rule((
         "config/acceptance/evolution_binding.v1.json",
+        "scripts/ops/acceptance_evolution_integration.py",
         "scripts/verify/acceptance_evolution_binding_guard.py",
         "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_integration.py",
     ), (
         "verify.acceptance.evolution.binding",
     )),

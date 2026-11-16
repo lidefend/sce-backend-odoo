@@ -386,8 +386,8 @@ ACCEPTANCE_EVOLUTION_CARRY_FORWARD ?=
 
 .PHONY: verify.acceptance.evolution.binding acceptance.evolution.plan acceptance.evolution.record acceptance.evolution.verify
 verify.acceptance.evolution.binding: guard.prod.forbid acceptance.evolution.plan
-	@python3 -m py_compile scripts/verify/acceptance_evolution_binding_guard.py scripts/verify/test_acceptance_evolution_binding_guard.py scripts/ops/acceptance_evolution_record.py
-	@python3 scripts/verify/test_acceptance_evolution_binding_guard.py
+	@python3 -m py_compile scripts/verify/acceptance_evolution_binding_guard.py scripts/verify/test_acceptance_evolution_binding_guard.py scripts/verify/test_acceptance_evolution_integration.py scripts/ops/acceptance_evolution_record.py scripts/ops/acceptance_evolution_integration.py
+	@python3 -m unittest scripts.verify.test_acceptance_evolution_binding_guard scripts.verify.test_acceptance_evolution_integration
 
 acceptance.evolution.plan: guard.prod.forbid
 	@python3 scripts/verify/acceptance_evolution_binding_guard.py --output "$(ACCEPTANCE_EVOLUTION_PLAN)"

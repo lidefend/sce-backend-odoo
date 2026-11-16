@@ -1541,6 +1541,5 @@ class TestCarryForwardPolicy(unittest.TestCase):
                 )["status"],
                 "PASS",
             )
-
 if __name__ == "__main__":
     unittest.main()

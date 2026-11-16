@@ -200,6 +200,47 @@ def load_registry(path: Path) -> dict:
                 if key in seen_make_inputs:
                     raise BindingError(f"suite {suite_id!r} repeats make variable {path}:{variable}")
                 seen_make_inputs.add(key)
+        integration = suite.get("integration")
+        if integration is not None:
+            if (
+                not isinstance(integration, dict)
+                or set(integration) != {"targets", "evidence"}
+            ):
+                raise BindingError(
+                    f"suite {suite_id!r} integration requires exactly targets and evidence"
+                )
+            integration_targets = integration["targets"]
+            evidence_patterns = integration["evidence"]
+            if (
+                not isinstance(integration_targets, list)
+                or not integration_targets
+                or not all(
+                    isinstance(target, str)
+                    and re.fullmatch(r"[A-Za-z0-9_.%/-]+", target)
+                    for target in integration_targets
+                )
+            ):
+                raise BindingError(
+                    f"suite {suite_id!r} integration targets must be non-empty Make targets"
+                )
+            if len(set(integration_targets)) != len(integration_targets):
+                raise BindingError(f"suite {suite_id!r} integration targets contain duplicates")
+            if (
+                not isinstance(evidence_patterns, list)
+                or not evidence_patterns
+                or not all(
+                    isinstance(pattern, str)
+                    and pattern.startswith(".runtime/")
+                    and not Path(pattern).is_absolute()
+                    and ".." not in Path(pattern).parts
+                    for pattern in evidence_patterns
+                )
+            ):
+                raise BindingError(
+                    f"suite {suite_id!r} integration evidence must name relative .runtime paths"
+                )
+            if len(set(evidence_patterns)) != len(evidence_patterns):
+                raise BindingError(f"suite {suite_id!r} integration evidence contains duplicates")
     for rule in rules:
         if not isinstance(rule, dict):
             raise BindingError("every rule must be an object")
@@ -343,7 +384,7 @@ def suite_input_sha256(registry: dict, suite_id: str, revision: str) -> str:
                 f"{_make_variable_material(text, variable, item['path'], missing_is_error=strict_selectors)}"
             )
     descriptor = json.dumps(
-        suite,
+        {key: value for key, value in suite.items() if key != "integration"},
         ensure_ascii=False,
         sort_keys=True,
         separators=(",", ":"),
