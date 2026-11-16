@@ -6,7 +6,7 @@
 - 主线基线：`730b82cf60f60399a70901a7fcd65476dc718f93`
 - 工作树：
   `/home/lidefend/workspace/sce-backend-odoo-change-impact-verification-20261116-aligned`
-- 当前阶段：`active`，P4-00 盘点与设计方案已完成，等待独立审查
+- 当前阶段：`active`，P4-00 已完成本地落地前修订；P4-01 shadow planner 已实现
 
 早先误开并已关闭 Draft PR #907。该 PR 只用于审查讨论，未合入主线。其后 `origin/main`
 更新到 `730b82cf60f60399a70901a7fcd65476dc718f93`，本候选已从该精确主线重新建立对齐
@@ -102,7 +102,7 @@ gate script 和 script lifecycle 分片，全部低于仓库历史扫描的 5 Mi
 
 ## 明确排除
 
-- 不实施 P4-01 或后续批次。
+- 不实施 P4-02 或后续批次；P4-01 只生成 shadow plan，不接管门禁。
 - 不修改产品代码、契约 Schema、Decoder、Renderer、组件或业务逻辑。
 - 不修改验证断言、豁免、必需门禁或当前路径映射。
 - 不执行数据库升级、fixture、浏览器矩阵或运行态验收。
@@ -121,7 +121,7 @@ gate script 和 script lifecycle 分片，全部低于仓库历史扫描的 5 Mi
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/change_impact_inventory.final.log`。
 - CI workflow contract：passed，`make verify.ci.workflow.contract`，434 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/ci_workflow_contract.final.log`。
-- 前端增量路由器：passed，`make verify.frontend.dev.incremental.unit`，156 tests；原始日志
+- 前端增量路由器：passed，`make verify.frontend.dev.incremental.unit`，158 tests；原始日志
   `.runtime/agent-runs/CHANGE-IMPACT-VERIFICATION-20261116/frontend_incremental.log`。
 - 增量路由修复后：`make ci.local.iteration` PASS，执行 6 个必需 target，结果
   `ready_for_existing_gates`；原始日志
@@ -145,5 +145,36 @@ gate script 和 script lifecycle 分片，全部低于仓库历史扫描的 5 Mi
 
 ## 下一精确动作
 
-完成审计器、台账、设计文档和生成物的本地定向验证，提交并发布设计 PR。PR 审查合格且合入前，
-不得实施 P4-01，不得修改现有验证映射或必需门禁。
+P4-01 v1 已通过 12 项单元测试，并完成 PR #905/#886 的真实历史回放。下一批是 P4-02：
+建立 Producer → Decoder → Consumer、Renderer Registry → Component → Page、
+ORM Model → Business Method → Workflow 的可验证依赖图和双向追踪。仍不接管现有门禁。
+
+## P4-01 Shadow Planner v1
+
+新增：
+
+- `scripts/ops/change_impact_planner.py`
+- `scripts/ops/typescript_change_facts.mjs`
+- `scripts/ops/test_change_impact_planner.py`
+- `make verification.change-impact.plan`
+- `make verify.change_impact.plan.unit`
+
+能力：
+
+- TypeScript/Vue compiler symbols、fields、imports 与 dynamic import 线索。
+- Python AST 的 Model 类、字段和方法。
+- XML structured record/field/tag facts。
+- ChangeFact → obligation → assertion → check 选择。
+- UNKNOWN、uncovered assertion、无匹配证据均 fail-closed。
+- matching evidence 只有 input fingerprint + assertion closure 同时成立才 REUSE。
+- planner unit：`make verify.change_impact.plan.unit`，12 tests PASS。
+- 当前候选 shadow plan：`planned`，L4 delivery/docs/planner-self，UNKNOWN=0，
+  `cutover_eligible=false`。
+
+回放：
+
+- PR #905：`planned`，L1 contract + L4，未选择 browser，UNKNOWN=0。
+- PR #886：`blocked`，正确识别 mixed L1/L2/L4 并选择 browser；一个 frontend test symbol
+  尚未映射，按设计 BLOCK，未猜测为不受影响。
+
+`cutover_eligible` 固定为 false。该 planner 不是现有验证裁决，也不是新体系接管证明。

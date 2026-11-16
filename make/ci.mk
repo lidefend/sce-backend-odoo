@@ -774,6 +774,18 @@ verify.change_impact.verification.unit: guard.prod.forbid
 audit.change_impact.verification: guard.prod.forbid verify.change_impact.verification.unit
 	@python3 scripts/audit/generate_change_impact_verification_inventory.py --write
 
+CHANGE_IMPACT_BASE ?= origin/main
+CHANGE_IMPACT_OUTPUT ?= .runtime/change-impact/plan.json
+
+.PHONY: verification.change-impact.plan verify.change_impact.plan.unit
+verify.change_impact.plan.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ops/change_impact_planner.py scripts/ops/test_change_impact_planner.py
+	@node --check scripts/ops/typescript_change_facts.mjs
+	@python3 -m unittest scripts.ops.test_change_impact_planner
+
+verification.change-impact.plan: guard.prod.forbid verify.change_impact.plan.unit
+	@python3 scripts/ops/change_impact_planner.py --worktree --base "$(CHANGE_IMPACT_BASE)" --output "$(CHANGE_IMPACT_OUTPUT)"
+
 # Workflow-integrity contract tests: assert the CI entrypoints themselves cannot
 # silently degrade (e.g. an errexit-masked backend suite reporting a truncated
 # scope as a pass). Kept separate from verify.ci.scheduled_gates so the required

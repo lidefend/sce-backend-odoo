@@ -41798,7 +41798,7 @@
         "L3",
         "L4"
       ],
-      "line_count": 2713,
+      "line_count": 2720,
       "path": "scripts/verify/frontend_dev_incremental.py",
       "resource_dependencies": [
         {
@@ -54041,7 +54041,7 @@
         "L3",
         "L4"
       ],
-      "line_count": 2968,
+      "line_count": 2980,
       "path": "scripts/verify/test_frontend_dev_incremental.py",
       "resource_dependencies": [
         {
@@ -63091,5 +63091,5 @@
   ],
   "part": "gate_scripts",
   "schema": "change_impact_verification.mapping_part.v1",
-  "source_head": "730b82cf60f60399a70901a7fcd65476dc718f93"
+  "source_head": "911e40b4104ec7513caa11344dda24e16d262c01"
 }

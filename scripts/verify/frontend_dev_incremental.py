@@ -817,6 +817,13 @@ RULES = (
         "verify.change_impact.verification.unit",
     )),
     Rule((
+        "scripts/ops/change_impact_planner.py",
+        "scripts/ops/test_change_impact_planner.py",
+        "scripts/ops/typescript_change_facts.mjs",
+    ), (
+        "verify.change_impact.plan.unit",
+    )),
+    Rule((
         "scripts/verify/backend_authority_closure_guard.py",
         "scripts/verify/test_backend_authority_closure_guard.py",
     ), (

@@ -7,6 +7,7 @@
     ".agent/runs/CHANGE-IMPACT-VERIFICATION-20261116/run.json",
     "docs/audit/change-impact-verification/change_impact_verification_design_v1.md",
     "docs/audit/change-impact-verification/impact_analysis_acceptance_matrix.json",
+    "docs/audit/change-impact-verification/p4-01-shadow-planner-v1.md",
     "docs/audit/change-impact-verification/README.md",
     "docs/audit/change-impact-verification/review_remediation_v1.md",
     "docs/audit/change-impact-verification/verification_cost_baseline.json",
@@ -30,6 +31,9 @@
     "make/help.mk",
     "scripts/audit/generate_change_impact_verification_inventory.py",
     "scripts/audit/test_generate_change_impact_verification_inventory.py",
+    "scripts/ops/change_impact_planner.py",
+    "scripts/ops/test_change_impact_planner.py",
+    "scripts/ops/typescript_change_facts.mjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "docs/ops/iterations/change_impact_verification_20261116.md"
@@ -98,6 +102,17 @@
       ],
       "kind": "offline"
     },
+    "change_impact_planner": {
+      "target": "verify.change_impact.plan.unit",
+      "inputs": [
+        "make/ci.mk",
+        "make/help.mk",
+        "scripts/ops/change_impact_planner.py",
+        "scripts/ops/test_change_impact_planner.py",
+        "scripts/ops/typescript_change_facts.mjs"
+      ],
+      "kind": "offline"
+    },
     "ci_workflow_contract": {
       "target": "verify.ci.workflow.contract",
       "inputs": [
@@ -126,7 +141,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Resolve generated-report sync conflicts, complete the P4-00 review remediation, and continue the verification-system optimization on this latest-main aligned worktree. Do not open an intermediate PR; integrate only after the full candidate is converged.",
+  "next_exact_step": "Implement P4-02 semantic dependency graphs for Producer-to-Decoder-to-Consumer, Renderer Registry-to-Component-to-Page, and ORM Model-to-Business Method-to-Workflow, then replay the acceptance matrix without changing required gates.",
   "id": "CHANGE-IMPACT-VERIFICATION-20261116",
   "branch": "codex/change-impact-verification-aligned-20261116",
   "status": "verification_pending",

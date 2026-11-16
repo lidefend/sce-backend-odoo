@@ -51,6 +51,7 @@ help:
 	@echo "  vars: CODEX_MODE=$(CODEX_MODE) CODEX_NEED_UPGRADE=$(CODEX_NEED_UPGRADE) CODEX_DB=$(CODEX_DB)"
 	@echo "  make verify.codex.agent_controller | agent.controller.issue.create/install/config.check/notify.test/enable/linger.enable/status/logs"
 	@echo "  make audit.change_impact.verification | refresh the P4-00 verification inventory (manual audit only)"
+	@echo "  make verification.change-impact.plan | write a shadow semantic impact plan (no gate cutover)"
 	@echo "  make agent.feishu_bridge.install/config.check/enable/disable/status/logs"
 	@echo
 	@echo "Common vars:"

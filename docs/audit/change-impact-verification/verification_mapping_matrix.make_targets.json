@@ -203,7 +203,7 @@
         "prereq:ci.professional.backend.shard-reports"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1158",
+      "source": "make/ci.mk:1170",
       "type": "make_target"
     },
     {
@@ -1618,7 +1618,7 @@
         "recursive:ci.delivery.freeze.prepare"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:784",
+      "source": "make/ci.mk:796",
       "type": "make_target"
     },
     {
@@ -1794,7 +1794,7 @@
           "kind": "network"
         }
       ],
-      "source": "make/ci.mk:767",
+      "source": "make/ci.mk:779",
       "type": "make_target"
     },
     {
@@ -1938,7 +1938,7 @@
       ],
       "recursive_make_references": [],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1103",
+      "source": "make/ci.mk:1115",
       "type": "make_target"
     },
     {
@@ -2054,7 +2054,7 @@
       ],
       "recursive_make_references": [],
       "resource_dependencies": [],
-      "source": "make/ci.mk:756",
+      "source": "make/ci.mk:768",
       "type": "make_target"
     },
     {
@@ -3203,6 +3203,7 @@
         "prereq:test.payment-settlement.component-profile.orm",
         "prereq:test.safe",
         "prereq:test.unit",
+        "prereq:verification.change-impact.plan",
         "prereq:verify.acceptance.artifact.unit",
         "prereq:verify.acceptance.evolution.binding",
         "prereq:verify.acceptance.runtime.baseline_rebuild.unit",
@@ -3335,6 +3336,7 @@
         "prereq:verify.capability.schema",
         "prereq:verify.catalog.runtime.explain.report",
         "prereq:verify.catalog.runtime.source.rules.guard",
+        "prereq:verify.change_impact.plan.unit",
         "prereq:verify.change_impact.verification.unit",
         "prereq:verify.ci.execution_alignment.orders",
         "prereq:verify.ci.path_ownership.unit",
@@ -4807,7 +4809,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:1195",
+      "source": "make/ci.mk:1207",
       "type": "make_target"
     },
     {
@@ -4913,7 +4915,7 @@
         "prereq:verify.repository.clean_history.unit"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1175",
+      "source": "make/ci.mk:1187",
       "type": "make_target"
     },
     {
@@ -5016,7 +5018,7 @@
         "prereq:verify.repository.clean_history"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1229",
+      "source": "make/ci.mk:1241",
       "type": "make_target"
     },
     {
@@ -5122,7 +5124,7 @@
         "prereq:security.trusted_scan.group"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1232",
+      "source": "make/ci.mk:1244",
       "type": "make_target"
     },
     {
@@ -5375,7 +5377,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:817",
+      "source": "make/ci.mk:829",
       "type": "make_target"
     },
     {
@@ -6136,7 +6138,7 @@
           "kind": "container"
         }
       ],
-      "source": "make/ci.mk:1205",
+      "source": "make/ci.mk:1217",
       "type": "make_target"
     },
     {
@@ -6250,7 +6252,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:887",
+      "source": "make/ci.mk:899",
       "type": "make_target"
     },
     {
@@ -6360,7 +6362,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:876",
+      "source": "make/ci.mk:888",
       "type": "make_target"
     },
     {
@@ -6474,7 +6476,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:892",
+      "source": "make/ci.mk:904",
       "type": "make_target"
     },
     {
@@ -6595,7 +6597,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:1199",
+      "source": "make/ci.mk:1211",
       "type": "make_target"
     },
     {
@@ -6962,7 +6964,7 @@
           "kind": "container"
         }
       ],
-      "source": "make/ci.mk:707",
+      "source": "make/ci.mk:719",
       "type": "make_target"
     },
     {
@@ -7145,7 +7147,7 @@
           "kind": "filesystem_evidence"
         }
       ],
-      "source": "make/ci.mk:711",
+      "source": "make/ci.mk:723",
       "type": "make_target"
     },
     {
@@ -7733,7 +7735,7 @@
           "kind": "filesystem_evidence"
         }
       ],
-      "source": "make/ci.mk:1043",
+      "source": "make/ci.mk:1055",
       "type": "make_target"
     },
     {
@@ -8173,7 +8175,7 @@
           "kind": "filesystem_evidence"
         }
       ],
-      "source": "make/ci.mk:1039",
+      "source": "make/ci.mk:1051",
       "type": "make_target"
     },
     {
@@ -8384,7 +8386,7 @@
         "prereq:ci.professional.backend.shard-verify"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1161",
+      "source": "make/ci.mk:1173",
       "type": "make_target"
     },
     {
@@ -8602,7 +8604,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:806",
+      "source": "make/ci.mk:818",
       "type": "make_target"
     },
     {
@@ -8703,7 +8705,7 @@
         "prereq:verify.contract.architecture.suite"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:778",
+      "source": "make/ci.mk:790",
       "type": "make_target"
     },
     {
@@ -9389,7 +9391,7 @@
         "prereq:verify.user_confirmed.formal_surface.locked"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:848",
+      "source": "make/ci.mk:860",
       "type": "make_target"
     },
     {
@@ -22167,7 +22169,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:1210",
+      "source": "make/ci.mk:1222",
       "type": "make_target"
     },
     {
@@ -23020,7 +23022,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:797",
+      "source": "make/ci.mk:809",
       "type": "make_target"
     },
     {
@@ -24377,7 +24379,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:897",
+      "source": "make/ci.mk:909",
       "type": "make_target"
     },
     {
@@ -24864,7 +24866,7 @@
           "kind": "frontend_toolchain"
         }
       ],
-      "source": "make/ci.mk:903",
+      "source": "make/ci.mk:915",
       "type": "make_target"
     },
     {
@@ -25837,7 +25839,7 @@
         "prereq:ci.professional.backend.shard-verify"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1215",
+      "source": "make/ci.mk:1227",
       "type": "make_target"
     },
     {
@@ -25975,7 +25977,7 @@
           "kind": "filesystem_evidence"
         }
       ],
-      "source": "make/ci.mk:1241",
+      "source": "make/ci.mk:1253",
       "type": "make_target"
     },
     {
@@ -27410,7 +27412,7 @@
         "prereq:ci.professional.backend.shard-verify"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:842",
+      "source": "make/ci.mk:854",
       "type": "make_target"
     },
     {
@@ -27614,7 +27616,7 @@
         "prereq:ci.professional.backend.shard-verify"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:845",
+      "source": "make/ci.mk:857",
       "type": "make_target"
     },
     {
@@ -28360,7 +28362,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:853",
+      "source": "make/ci.mk:865",
       "type": "make_target"
     },
     {
@@ -28751,7 +28753,7 @@
         "prereq:verify.ci.workflow.contract"
       ],
       "resource_dependencies": [],
-      "source": "make/ci.mk:1282",
+      "source": "make/ci.mk:1294",
       "type": "make_target"
     },
     {
@@ -31165,7 +31167,7 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:870",
+      "source": "make/ci.mk:882",
       "type": "make_target"
     },
     {
@@ -31589,11 +31591,11 @@
           "kind": "database"
         }
       ],
-      "source": "make/ci.mk:881",
+      "source": "make/ci.mk:893",
       "type": "make_target"
     }
   ],
   "part": "make_targets",
   "schema": "change_impact_verification.mapping_part.v1",
-  "source_head": "730b82cf60f60399a70901a7fcd65476dc718f93"
+  "source_head": "911e40b4104ec7513caa11344dda24e16d262c01"
 }

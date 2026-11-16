@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5236`
+- Scanned files: `5239`
 - Files requiring split plan: `80`
-- Files above warning threshold: `149`
+- Files above warning threshold: `150`
 
 ## Split Plan Required
 
@@ -32,12 +32,12 @@ Generated from repository source files. This report is informational during the 
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2968 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2980 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2713 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2720 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
@@ -193,6 +193,7 @@ Generated from repository source files. This report is informational during the 
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 908 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
+| 903 | Python source | `scripts/ops/change_impact_planner.py` |
 | 900 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
 | 889 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
@@ -271,12 +272,12 @@ Generated from repository source files. This report is informational during the 
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2968 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 2980 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2727 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 2713 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2720 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |

@@ -45,16 +45,15 @@ goal:
       decoder changes while allowing real renderer or interaction changes to be
       hidden by broad suites that do not bind changed behavior to evidence.
   current_batch:
-    id: P4-00
-    title: existing verification system inventory and design review
-    mode: read_only_audit
+    id: P4-01
+    title: semantic change-impact shadow planner
+    mode: shadow_only
     status: in_progress
     required_outputs:
-      - verification_system_inventory.md
-      - verification_mapping_matrix.json
-      - verification_execution_graph.json
-      - verification_cost_baseline.json
-      - change_impact_verification_design_v1.md
+      - scripts/ops/change_impact_planner.py
+      - scripts/ops/typescript_change_facts.mjs
+      - scripts/ops/test_change_impact_planner.py
+      - docs/audit/change-impact-verification/p4-01-shadow-planner-v1.md
     required_answers:
       - what_the_check_verifies
       - what_change_triggers_it
@@ -86,9 +85,13 @@ goal:
     - design_decouples_backend_contract_iteration_from_browser_presentation
     - impact_analysis_acceptance_matrix_covers_required_replay_and_negative_cases
     - cutover_requires_zero_false_negative_and_zero_evidence_reuse_error
+    - shadow_planner_emits_change_facts_obligations_checks_unknowns_and_assertion_closure
+    - shadow_planner_blocks_dynamic_or_unresolved_impact
+    - shadow_planner_does_not_change_existing_gate_decisions
     - no_product_code_gate_assertion_or_database_state_is_changed_in_p4_00
   exclusions:
-    - implementation_of_p4_01_through_later_batches
+    - required_gate_cutover_or_path_ownership_replacement
+    - implementation_of_p4_02_through_later_batches
     - product_code_contract_schema_decoder_renderer_or_business_logic
     - database_upgrade_restore_fixture_reset_or_persistent_write
     - browser_matrix_or_runtime_acceptance
