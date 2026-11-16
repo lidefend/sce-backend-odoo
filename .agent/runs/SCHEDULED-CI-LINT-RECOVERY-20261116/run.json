@@ -77,9 +77,9 @@
       "static_audit": "PASS",
       "managed_orm": "PASS",
       "artifacts": {
-        "frontend_release_evidence_id": 14193863256,
+        "frontend_release_evidence_name": "frontend-release-evidence-43793607673-1-44cfed924b44b690dbb9f833ca9fcb605e8196cc",
         "frontend_release_evidence_digest": "sha256:95aa678b0bef7cc4dff33793a3607db70efff3c387215e9d97bdd030e111d7b4",
-        "managed_orm_id": 14193932879,
+        "managed_orm_name": "managed-orm-43793607673-1-44cfed924b44b690dbb9f833ca9fcb605e8196cc",
         "managed_orm_digest": "sha256:e4867f26a95d9ded41d0ce4df96401e86cf5b0aa2889cf83f4dbf80d25e54ef9"
       }
     },
