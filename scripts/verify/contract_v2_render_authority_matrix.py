@@ -43,11 +43,11 @@ EXPECTED = {
         "styleToken zone widgetId fieldCode nativeLocator occurrenceIndex sourcePosition widget componentKey componentConfig "
         "fieldInfo filename nolabel attributes modifiers action badge buttonType readonly required invisible "
         "column_invisible domain context options visible cols columns col class className fieldSize size formStructure "
-        "formStructureRole sourceAuthority children widgetList fields"
+        "formStructureRole sourceAuthority nativeIdentity children widgetList fields"
     ),
     "widget": (
         "widgetId widgetType fieldCode label span componentKey capabilities componentConfig ownerContainerId "
-        "nativeLocator occurrenceIndex sourcePosition fieldDescriptor formStructureRole"
+        "nativeLocator occurrenceIndex sourcePosition nativeIdentity fieldDescriptor formStructureRole"
     ),
     "componentRegistryEntry": "version",
     "statusContract": "globalStatus containerStatus widgetStatus buttonStatus selectorStatus",
@@ -98,6 +98,8 @@ NON_VISUAL = {
     "widget.nativeLocator": "native occurrence identity",
     "widget.occurrenceIndex": "native occurrence identity",
     "widget.sourcePosition": "native source ordering identity",
+    "widget.nativeIdentity": "deterministic native View and occurrence identity",
+    "nativeLayoutNode.nativeIdentity": "deterministic native View and occurrence identity",
     "containerStatus.containerId": "status binding identity",
     "widgetStatus.widgetId": "status binding identity",
     "buttonStatus.btnId": "status binding identity",

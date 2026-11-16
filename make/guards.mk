@@ -83,6 +83,10 @@ verify.native_action.search_view.orm: guard.prod.forbid
 verify.native_action.contract.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=native_action_contract
 
+.PHONY: verify.native_occurrence.contract.orm
+verify.native_occurrence.contract.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=native_occurrence_contract
+
 .PHONY: verify.capability.identity_boundary.unit
 verify.capability.identity_boundary.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
@@ -485,6 +489,14 @@ verify.native_action.contract.unit: guard.prod.forbid
 	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
 	  scripts/verify/test_native_action_contract.py
 	@python3 -m unittest scripts.verify.test_native_action_contract
+
+.PHONY: verify.native_occurrence.contract.unit
+verify.native_occurrence.contract.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/core/native_view_occurrence.py \
+	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
+	  scripts/verify/test_native_occurrence_contract.py
+	@python3 -m unittest scripts.verify.test_native_occurrence_contract
 
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid

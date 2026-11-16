@@ -763,7 +763,7 @@
         },
         "contractVersion": {
           "type": "string",
-          "pattern": "^2\\.(0|1|2|3)\\.[0-9]+$"
+          "pattern": "^2\\.(0|1|2|3|4)\\.[0-9]+$"
         },
         "clientType": {
           "enum": [
@@ -829,7 +829,7 @@
           }
         },
         "listProfile": {
-          "type": "object"
+          "$ref": "#/$defs/listProfile"
         },
         "activityProfile": {
           "$ref": "#/$defs/activityProfile"
@@ -1312,6 +1312,233 @@
         }
       }
     },
+    "nativeOccurrenceBehavior": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "domainRaw",
+        "contextRaw",
+        "optionsRaw"
+      ],
+      "properties": {
+        "domainRaw": {
+          "type": "string"
+        },
+        "contextRaw": {
+          "type": "string"
+        },
+        "optionsRaw": {
+          "type": "string"
+        }
+      }
+    },
+    "nativeOccurrenceSourceAuthority": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "projectionOnly",
+        "noBusinessFactAuthority"
+      ],
+      "properties": {
+        "kind": {
+          "const": "ir.ui.view"
+        },
+        "projectionOnly": {
+          "const": true
+        },
+        "noBusinessFactAuthority": {
+          "const": true
+        }
+      }
+    },
+    "nativeOccurrenceIdentity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "model",
+        "viewType",
+        "viewId",
+        "viewXmlId",
+        "viewContentHash",
+        "viewStructureKey",
+        "crossEnvironmentStable",
+        "kind",
+        "name",
+        "nativeLocator",
+        "occurrenceIndex",
+        "occurrenceKey",
+        "authoritative",
+        "sourceAuthority"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "1.0.0"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewType": {
+          "type": "string",
+          "minLength": 1
+        },
+        "viewId": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "viewXmlId": {
+          "type": "string"
+        },
+        "viewContentHash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "viewStructureKey": {
+          "type": "string",
+          "pattern": "^struct\\.v1\\.[0-9a-f]{24}$"
+        },
+        "crossEnvironmentStable": {
+          "type": "boolean"
+        },
+        "kind": {
+          "enum": [
+            "field",
+            "container",
+            "button",
+            "column"
+          ]
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "nativeLocator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "occurrenceIndex": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sourcePosition": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "occurrenceKey": {
+          "type": "string",
+          "pattern": "^occ\\.v1\\.[0-9a-f]{24}$"
+        },
+        "authoritative": {
+          "type": "boolean"
+        },
+        "sourceAuthority": {
+          "$ref": "#/$defs/nativeOccurrenceSourceAuthority"
+        },
+        "nativeBehavior": {
+          "$ref": "#/$defs/nativeOccurrenceBehavior"
+        },
+        "type": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        },
+        "string": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string"
+        },
+        "help": {
+          "type": "string"
+        },
+        "dataHotkey": {
+          "type": "string"
+        },
+        "confirmRaw": {
+          "type": "string"
+        },
+        "special": {
+          "type": "string"
+        },
+        "icon": {
+          "type": "string"
+        },
+        "canonicalRegion": {
+          "type": "string"
+        },
+        "projectionRegion": {
+          "type": "string"
+        }
+      }
+    },
+    "listColumnOccurrence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "occurrenceKey",
+        "fieldCode",
+        "nativeIdentity",
+        "label",
+        "widget",
+        "optional",
+        "sum",
+        "modifiers",
+        "domainRaw",
+        "contextRaw",
+        "optionsRaw"
+      ],
+      "properties": {
+        "occurrenceKey": {
+          "type": "string",
+          "pattern": "^occ\\.v1\\.[0-9a-f]{24}$"
+        },
+        "fieldCode": {
+          "$ref": "#/$defs/id"
+        },
+        "nativeIdentity": {
+          "$ref": "#/$defs/nativeOccurrenceIdentity"
+        },
+        "label": {
+          "type": "string"
+        },
+        "widget": {
+          "type": "string"
+        },
+        "optional": {
+          "type": "string"
+        },
+        "sum": {
+          "type": "string"
+        },
+        "modifiers": {
+          "type": "object"
+        },
+        "domainRaw": {
+          "type": "string"
+        },
+        "contextRaw": {
+          "type": "string"
+        },
+        "optionsRaw": {
+          "type": "string"
+        }
+      }
+    },
+    "listProfile": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "columnOccurrences": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/listColumnOccurrence"
+          }
+        }
+      }
+    },
     "container": {
       "type": "object",
       "additionalProperties": false,
@@ -1468,6 +1695,9 @@
         "sourcePosition": {
           "type": "integer",
           "minimum": 0
+        },
+        "nativeIdentity": {
+          "$ref": "#/$defs/nativeOccurrenceIdentity"
         },
         "widget": {
           "type": "string"
@@ -1656,6 +1886,9 @@
         "sourcePosition": {
           "type": "integer",
           "minimum": 0
+        },
+        "nativeIdentity": {
+          "$ref": "#/$defs/nativeOccurrenceIdentity"
         },
         "fieldDescriptor": {
           "type": "object"
@@ -2872,7 +3105,7 @@
           "type": "string"
         },
         "nativeIdentity": {
-          "type": "object"
+          "$ref": "#/$defs/nativeOccurrenceIdentity"
         },
         "sourceTrace": {
           "type": "array",
@@ -3135,14 +3368,14 @@
           "const": "smart_core.unified_page_contract_v2"
         },
         "schemaVersion": {
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "schemaSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
         "contractVersion": {
-          "const": "2.3.0"
+          "const": "2.4.0"
         },
         "normativeStatus": {
           "const": "stable"

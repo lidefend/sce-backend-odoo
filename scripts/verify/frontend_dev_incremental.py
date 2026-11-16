@@ -533,9 +533,18 @@ RULES = (
     Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",
         "scripts/verify/frontend_contract_route_guard.py",
-        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
+    )),
+    Rule((
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    ), (
+        "verify.unified_page_contract.v2.web_architecture",
+    )),
+    Rule((
+        "config/contract/page_contract_v1_retirement_manifest.json",
+    ), (
+        "verify.contract.page_v1_zero_residue.guard",
     )),
     Rule((
         "scripts/verify/frontend_decision_authority.py",
@@ -1422,6 +1431,15 @@ RULES = (
     ), (
         "verify.native_action.contract.unit",
         "verify.native_action.contract.orm",
+        "verify.unified_page_contract.v2.assembler",
+    )),
+    Rule((
+        "addons/smart_core/core/native_view_occurrence.py",
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+        "scripts/verify/test_native_occurrence_contract.py",
+    ), (
+        "verify.native_occurrence.contract.unit",
+        "verify.native_occurrence.contract.orm",
         "verify.unified_page_contract.v2.assembler",
     )),
     Rule((

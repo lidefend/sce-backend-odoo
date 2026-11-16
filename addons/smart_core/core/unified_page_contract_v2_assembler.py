@@ -12,6 +12,7 @@ _logger = logging.getLogger(__name__)
 
 from .native_relation_domain import compile_relation_domain
 from .native_action_contract import build_native_action_contract
+from .native_view_occurrence import build_native_occurrence_identity
 from .native_modifier_comparison import compare_python_modifier
 from .native_modifier_context import evaluate_context_modifier, native_modifier_values, native_field_value
 
@@ -40,7 +41,7 @@ from .unified_page_contract_v2_runtime_actions import normalize_runtime_business
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
 
-CONTRACT_VERSION = "2.3.0"
+CONTRACT_VERSION = "2.4.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
 SOURCE_AUTHORITIES = ("ui_contract", "page_orchestration", "scene_contract", "unified_page_contract_v2_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -57,7 +58,7 @@ def source_authority_contract() -> dict[str, Any]:
         runtime_carrier="unified_page_contract_v2_assembler",
     )
 
-PATCH_VERSION = "2.3.0"
+PATCH_VERSION = "2.4.0"
 STABLE_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
 
 
@@ -826,6 +827,183 @@ def _suppress_notice_owned_body_fields(contract: dict[str, Any]) -> None:
     walk(roots)
 
 
+def _native_view_identity_for(source: dict[str, Any], view_type: str) -> dict[str, Any]:
+    key = "tree" if _text(view_type).lower() in {"tree", "list"} else _text(view_type).lower()
+    views = _dict(_dict(source.get("ui")).get("views")) or _dict(source.get("views"))
+    view = _dict(views.get(key))
+    identity = _dict(view.get("viewIdentity") or view.get("view_identity"))
+    if identity and _text(identity.get("viewType")) != key:
+        raise ValueError("native View identity type mismatch")
+    return identity
+
+
+def _bind_native_occurrence_identities(contract: dict[str, Any], source: dict[str, Any]) -> None:
+    """Bind one deterministic identity shape to native Form/List/button nodes."""
+    page_info = _dict(contract.get("pageInfo"))
+    view_type = _text(page_info.get("viewType") or page_info.get("layoutType")).lower()
+    view_identity = _native_view_identity_for(source, view_type)
+    if not view_identity:
+        return
+
+    def occurrence(
+        *,
+        kind: str,
+        name: Any,
+        locator: Any,
+        index: Any,
+        source_position: Any = None,
+        native_attributes: Any = None,
+    ) -> dict[str, Any]:
+        return build_native_occurrence_identity(
+            view_identity,
+            kind=kind,
+            name=name,
+            native_locator=locator,
+            occurrence_index=index,
+            source_position=source_position,
+            native_attributes=native_attributes,
+        )
+
+    def bind_layout_nodes(nodes: list[Any]) -> None:
+        for node in nodes:
+            if not isinstance(node, dict):
+                continue
+            locator = _text(node.get("nativeLocator") or node.get("native_locator"))
+            occurrence_index = _positive_int(
+                node.get("occurrenceIndex") or node.get("occurrence_index"),
+                0,
+            )
+            if locator and occurrence_index:
+                node_type = _text(node.get("type") or node.get("containerType")).lower()
+                identity_kind = "field" if node_type == "field" else "container"
+                identity_name = _text(
+                    node.get("name")
+                    or node.get("fieldCode")
+                    or node.get("containerId")
+                    or node_type
+                )
+                native_identity = occurrence(
+                    kind=identity_kind,
+                    name=identity_name,
+                    locator=locator,
+                    index=occurrence_index,
+                    source_position=node.get("sourcePosition", node.get("source_position")),
+                    native_attributes=node.get("attributes"),
+                )
+                node["nativeIdentity"] = native_identity
+                for widget in _list(node.get("widgetList")):
+                    if isinstance(widget, dict):
+                        widget["nativeIdentity"] = deepcopy(native_identity)
+            bind_layout_nodes(_list(node.get("children")))
+
+    bind_layout_nodes(_list(_dict(contract.get("layoutContract")).get("containerTree")))
+
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict):
+            continue
+        native_identity = _dict(rule.get("nativeIdentity"))
+        locator = _text(
+            native_identity.get("nativeLocator")
+            or native_identity.get("native_locator")
+        )
+        occurrence_index = _positive_int(
+            native_identity.get("occurrenceIndex")
+            or native_identity.get("occurrence_index"),
+            0,
+        )
+        if not locator or not occurrence_index:
+            continue
+        normalized_native_identity = occurrence(
+            kind="button",
+            name=(
+                native_identity.get("name")
+                or rule.get("actionKey")
+                or rule.get("actionId")
+            ),
+            locator=locator,
+            index=occurrence_index,
+            source_position=native_identity.get(
+                "sourcePosition",
+                native_identity.get("source_position"),
+            ),
+            native_attributes={
+                "context": native_identity.get("contextRaw") or native_identity.get("context_raw"),
+                "domain": native_identity.get("domainRaw") or native_identity.get("domain_raw"),
+                "options": native_identity.get("optionsRaw") or native_identity.get("options_raw"),
+            },
+        )
+        normalized_native_identity.update({
+            key: deepcopy(native_identity.get(key))
+            for key in (
+                "type", "id", "string", "title", "help", "special", "icon",
+            )
+            if native_identity.get(key) not in (None, "")
+        })
+        normalized_native_identity.update({
+            canonical: deepcopy(native_identity.get(source))
+            for source, canonical in (
+                ("data_hotkey", "dataHotkey"),
+                ("canonical_region", "canonicalRegion"),
+                ("projection_region", "projectionRegion"),
+                ("confirm_raw", "confirmRaw"),
+            )
+            if native_identity.get(source) not in (None, "")
+        })
+        normalized_native_identity["authoritative"] = (
+            native_identity.get("authoritative") is not False
+        )
+        rule["nativeIdentity"] = normalized_native_identity
+
+    collection_key = "tree" if view_type in {"tree", "list"} else view_type
+    views = _dict(_dict(source.get("ui")).get("views")) or _dict(source.get("views"))
+    collection_view = _dict(views.get(collection_key))
+    if collection_key != "tree":
+        return
+    column_occurrences: list[dict[str, Any]] = []
+    seen_keys: set[str] = set()
+    for row in _list(collection_view.get("column_occurrences")):
+        if not isinstance(row, dict):
+            continue
+        field_code = _text(row.get("name"))
+        attributes = _dict(row.get("attributes"))
+        native_identity = occurrence(
+            kind="column",
+            name=field_code,
+            locator=row.get("native_locator"),
+            index=row.get("occurrence_index"),
+            source_position=row.get("source_position"),
+            native_attributes=attributes,
+        )
+        occurrence_key = _text(native_identity.get("occurrenceKey"))
+        if not occurrence_key or occurrence_key in seen_keys:
+            raise ValueError("duplicate or missing List column occurrence identity")
+        seen_keys.add(occurrence_key)
+        column_occurrences.append({
+            "occurrenceKey": occurrence_key,
+            "fieldCode": field_code,
+            "nativeIdentity": native_identity,
+            "label": _text(attributes.get("string") or row.get("label") or field_code),
+            "widget": _text(attributes.get("widget") or row.get("widget")),
+            "optional": _text(attributes.get("optional")),
+            "sum": _text(attributes.get("sum")),
+            "modifiers": deepcopy(_dict(row.get("modifiers"))),
+            "domainRaw": _text(attributes.get("domain")),
+            "contextRaw": _text(attributes.get("context")),
+            "optionsRaw": _text(attributes.get("options")),
+        })
+    if column_occurrences:
+        profile = _dict(_dict(contract.get("layoutContract")).get("listProfile"))
+        profile["columnOccurrences"] = column_occurrences
+        profile["sourceAuthority"] = {
+            "kind": "native_tree_view_occurrences",
+            "authorities": ["ir.ui.view", "ir.model.fields", "ir.actions.act_window"],
+            "projectionOnly": True,
+            "noBusinessFactAuthority": True,
+            "runtimeCarrier": "ui.contract.v2.layoutContract.listProfile",
+        }
+        contract["layoutContract"]["listProfile"] = profile
+
+
 def _page_composition_field_codes(contract: dict[str, Any]) -> set[str]:
     codes: set[str] = set()
 
@@ -1009,6 +1187,7 @@ def _assemble_unified_page_contract_v2(
     else:
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
+    _bind_native_occurrence_identities(contract, source)
     _merge_action_rules_by_backend_identity(contract)
     _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
@@ -1231,7 +1410,12 @@ def _assemble_ui_contract(
     # model holds several views, and `pageInfo` is an enumerated single page.
     # Resolve the active view first so the joined string never reaches the
     # closed enums; `list` normalizes to `tree` as in the native toolbar resolver.
-    raw_view_type = _text(source.get("view_type") or ui.get("view_type"), "form").split(",")[0].strip()
+    raw_view_type = _text(
+        source.get("view_type")
+        or ui.get("view_type")
+        or _dict(source.get("head") or ui.get("head")).get("view_type"),
+        "form",
+    ).split(",")[0].strip()
     view_type = "tree" if raw_view_type == "list" else (raw_view_type or "form")
     record_id = _positive_int(source.get("record_id") or source.get("recordId") or ui.get("record_id") or ui.get("recordId"), 0)
     collection_layout_types = {
@@ -2068,9 +2252,12 @@ def _field_widget(field: dict[str, Any], *, layout_type: str) -> dict[str, Any]:
         field["domain_expression"] = compile_relation_domain(field["domain"])
     assert_field_body_usage(field, str(field.get("name") or "field"), hidden=statically_hidden(field))
     field_name = _stable_id(field.get("name"), "field")
-    native_locator = _text(field.get("native_locator"))
-    occurrence_index = _positive_int(field.get("occurrence_index"), 0)
-    source_position = field.get("source_position")
+    native_locator = _text(field.get("native_locator") or field.get("nativeLocator"))
+    occurrence_index = _positive_int(
+        field.get("occurrence_index") or field.get("occurrenceIndex"),
+        0,
+    )
+    source_position = field.get("source_position", field.get("sourcePosition"))
     widget_id = f"field.{field_name}"
     if layout_type == "form" and native_locator:
         widget_id = f"field.{field_name}.occ.{_fingerprint({'locator': native_locator, 'occurrence': occurrence_index})}"
@@ -2151,12 +2338,19 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     if statically_hidden(node):
         field_source["invisible"] = True
     field_source["name"] = field_name
-    for key in (
-        "native_locator", "occurrence_index", "source_position", "modifiers", "relation_entry",
-        "relation_active_actions",
+    for source_key, target_key in (
+        ("native_locator", "native_locator"),
+        ("nativeLocator", "native_locator"),
+        ("occurrence_index", "occurrence_index"),
+        ("occurrenceIndex", "occurrence_index"),
+        ("source_position", "source_position"),
+        ("sourcePosition", "source_position"),
+        ("modifiers", "modifiers"),
+        ("relation_entry", "relation_entry"),
+        ("relation_active_actions", "relation_active_actions"),
     ):
-        if key in node:
-            field_source[key] = deepcopy(node.get(key))
+        if source_key in node:
+            field_source[target_key] = deepcopy(node.get(source_key))
     field_source.setdefault("string", label)
     field_source.setdefault("label", label)
     if _text(node.get("widget")):
@@ -2353,13 +2547,23 @@ def _normalize_native_layout_nodes(
         for alias, canonical in alias_pairs:
             if alias in node and canonical not in node:
                 node[canonical] = deepcopy(node.get(alias))
+        for alias, canonical in (
+            ("native_locator", "nativeLocator"),
+            ("occurrence_index", "occurrenceIndex"),
+            ("source_position", "sourcePosition"),
+        ):
+            if alias in node and canonical not in node:
+                node[canonical] = deepcopy(node.get(alias))
         node_type = _text(node.get("type") or node.get("kind"), "group").lower()
         node["type"] = node_type
         native_attributes = _dict(node.get("attributes") or node.get("attrs"))
         node_name = _text(node.get("name") or node.get("field") or native_attributes.get("name"))
         if node_name:
             node["name"] = node_name
-        for alias in ("kind", "field", *(pair[0] for pair in alias_pairs)):
+        for alias in (
+            "kind", "field", "native_locator", "occurrence_index", "source_position",
+            *(pair[0] for pair in alias_pairs),
+        ):
             node.pop(alias, None)
         label = _text(node.get("string") or node.get("label") or node.get("title"))
         if label:
@@ -3417,6 +3621,9 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
             "reasonCode": reason_code,
             **({"reasonMessage": reason_message} if reason_message else {}),
         }
+        native_identity = deepcopy(_dict(
+            row.get("native_identity") or row.get("nativeIdentity")
+        ))
         action_rule = {
                 "actionId": action_id,
                 "actionKey": key,
@@ -3425,7 +3632,6 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                 "intent": intent,
                 "target": deepcopy(_dict(row.get("target"))),
                 "button": deepcopy(_dict(row.get("button"))),
-                "nativeIdentity": deepcopy(_dict(row.get("native_identity") or row.get("nativeIdentity"))),
                 "triggerType": normalize_trigger_type(row.get("trigger") or row.get("display_mode")),
                 "sourceWidgetId": source_id,
                 "targetIds": [],
@@ -3447,6 +3653,8 @@ def _append_actions(contract: dict[str, Any], rows: Any, *, source_widget_id: st
                     "entitlementEvaluated": bool(row.get("entitlement_evaluated")),
                 }],
             }
+        if native_identity:
+            action_rule["nativeIdentity"] = native_identity
         if disabled or authorization_hidden:
             action_rule.update(reason_payload)
         # Native visibility/safety remains declarative.  Preserve it so the

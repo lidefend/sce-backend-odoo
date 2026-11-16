@@ -98,8 +98,8 @@ def check_definition() -> dict[str, Any]:
     registry = load_json(REGISTRY_PATH)
     if schema_digest != lifecycle.UNIFIED_PAGE_SCHEMA_SHA256:
         raise AssertionError("schema SHA-256 is not bound to runtime lifecycle constant")
-    if registry.get("registryVersion") != "2.3.0" or registry.get("normativeStatus") != "stable":
-        raise AssertionError("enum registry is not the stable 2.3.0 authority")
+    if registry.get("registryVersion") != "2.4.0" or registry.get("normativeStatus") != "stable":
+        raise AssertionError("enum registry is not the stable 2.4.0 authority")
     schema = load_json(SCHEMA_PATH)
     lifecycle_ref = schema.get("$defs", {}).get("meta", {}).get("properties", {}).get("lifecycle", {}).get("$ref")
     if lifecycle_ref != "#/$defs/contractLifecycle":
@@ -128,7 +128,7 @@ def check_generation() -> dict[str, Any]:
     if not valid:
         raise AssertionError(f"assembled contract integrity failed: {reason}")
     evidence = contract.get("meta", {}).get("lifecycle", {})
-    if evidence.get("stage") != "assembly" or evidence.get("definition", {}).get("contractVersion") != "2.3.0":
+    if evidence.get("stage") != "assembly" or evidence.get("definition", {}).get("contractVersion") != "2.4.0":
         raise AssertionError("assembler lifecycle evidence is incomplete")
     return {"contractSha256": evidence["integrity"]["contractSha256"], "traceId": evidence["runtime"]["traceId"]}
 

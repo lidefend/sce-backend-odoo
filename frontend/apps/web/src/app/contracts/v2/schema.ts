@@ -42,11 +42,17 @@ import type {
   ContractV2LayoutType,
   ContractV2LayoutContract,
   ContractV2Lifecycle,
+  ContractV2LegacyNativeIdentity,
+  ContractV2ListColumnOccurrence,
+  ContractV2ListProfile,
   ContractV2Meta,
   ContractV2NativeActionContract,
   ContractV2NativeActionReadinessAxis,
   ContractV2NativeActionView,
   ContractV2NativeActionViewType,
+  ContractV2NativeOccurrenceBehavior,
+  ContractV2NativeOccurrenceIdentity,
+  ContractV2NativeOccurrenceKind,
   ContractV2NoticeContract,
   ContractV2SubmissionReadinessNotice,
   ContractV2PageRenderMode,
@@ -601,8 +607,8 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.(0|1|2|3)\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, 2.2, or 2.3 version' });
+  if (!/^2\.(0|1|2|3|4)\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, 2.2, 2.3, or 2.4 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -620,6 +626,157 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
   };
 }
 
+function decodeNativeOccurrenceBehavior(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2NativeOccurrenceBehavior | undefined {
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, ['domainRaw', 'contextRaw', 'optionsRaw'], path, issues);
+  const values = {} as ContractV2NativeOccurrenceBehavior;
+  (['domainRaw', 'contextRaw', 'optionsRaw'] as const).forEach((key) => {
+    if (typeof raw[key] !== 'string') {
+      issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+      return;
+    }
+    values[key] = raw[key] as string;
+  });
+  return values;
+}
+
+function decodeNativeOccurrenceIdentity(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+  allowedKinds: ReadonlySet<ContractV2NativeOccurrenceKind>,
+): ContractV2NativeOccurrenceIdentity | undefined {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, [
+    'schemaVersion', 'model', 'viewType', 'viewId', 'viewXmlId', 'viewContentHash',
+    'viewStructureKey', 'crossEnvironmentStable', 'kind', 'name', 'nativeLocator',
+    'occurrenceIndex', 'sourcePosition', 'occurrenceKey', 'authoritative', 'sourceAuthority',
+    'nativeBehavior', 'type', 'id', 'string', 'title', 'help', 'dataHotkey', 'confirmRaw', 'special',
+    'icon', 'canonicalRegion', 'projectionRegion',
+  ], path, issues);
+  const schemaVersion = requiredString(raw, 'schemaVersion', path, issues);
+  if (schemaVersion && schemaVersion !== '1.0.0') {
+    issues.push({ path: `${path}.schemaVersion`, message: 'must be 1.0.0' });
+  }
+  const kind = requiredString(raw, 'kind', path, issues) as ContractV2NativeOccurrenceKind;
+  if (kind && !allowedKinds.has(kind)) {
+    issues.push({ path: `${path}.kind`, message: `must be one of ${[...allowedKinds].join(', ')}` });
+  }
+  const viewId = raw.viewId;
+  if (typeof viewId !== 'number' || !Number.isInteger(viewId) || viewId < 1) {
+    issues.push({ path: `${path}.viewId`, message: 'must be a positive integer' });
+  }
+  const occurrenceIndex = raw.occurrenceIndex;
+  if (typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) {
+    issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
+  }
+  const sourcePosition = raw.sourcePosition;
+  if (sourcePosition !== undefined && (
+    typeof sourcePosition !== 'number' || !Number.isInteger(sourcePosition) || sourcePosition < 0
+  )) {
+    issues.push({ path: `${path}.sourcePosition`, message: 'must be a non-negative integer' });
+  }
+  const viewXmlId = raw.viewXmlId;
+  if (typeof viewXmlId !== 'string') {
+    issues.push({ path: `${path}.viewXmlId`, message: 'must be a string' });
+  }
+  const crossEnvironmentStable = requiredBoolean(raw, 'crossEnvironmentStable', path, issues, false);
+  if (crossEnvironmentStable !== Boolean(asString(viewXmlId))) {
+    issues.push({
+      path: `${path}.crossEnvironmentStable`,
+      message: 'must be true exactly when a View XMLID is declared',
+    });
+  }
+  const viewContentHash = requiredString(raw, 'viewContentHash', path, issues);
+  if (viewContentHash && !/^[0-9a-f]{64}$/.test(viewContentHash)) {
+    issues.push({ path: `${path}.viewContentHash`, message: 'must be a sha256 digest' });
+  }
+  const viewStructureKey = requiredString(raw, 'viewStructureKey', path, issues);
+  if (viewStructureKey && !/^struct\.v1\.[0-9a-f]{24}$/.test(viewStructureKey)) {
+    issues.push({ path: `${path}.viewStructureKey`, message: 'must be struct.v1.<24 hex>' });
+  }
+  const occurrenceKey = requiredString(raw, 'occurrenceKey', path, issues);
+  if (occurrenceKey && !/^occ\.v1\.[0-9a-f]{24}$/.test(occurrenceKey)) {
+    issues.push({ path: `${path}.occurrenceKey`, message: 'must be occ.v1.<24 hex>' });
+  }
+  const sourceAuthorityRaw = requiredRecord(raw, 'sourceAuthority', path, issues);
+  rejectUnknownKeys(
+    sourceAuthorityRaw,
+    ['kind', 'projectionOnly', 'noBusinessFactAuthority'],
+    `${path}.sourceAuthority`,
+    issues,
+  );
+  if (sourceAuthorityRaw.kind !== 'ir.ui.view') {
+    issues.push({ path: `${path}.sourceAuthority.kind`, message: 'must be ir.ui.view' });
+  }
+  if (sourceAuthorityRaw.projectionOnly !== true) {
+    issues.push({ path: `${path}.sourceAuthority.projectionOnly`, message: 'must be true' });
+  }
+  if (sourceAuthorityRaw.noBusinessFactAuthority !== true) {
+    issues.push({ path: `${path}.sourceAuthority.noBusinessFactAuthority`, message: 'must be true' });
+  }
+  const nativeBehavior = decodeNativeOccurrenceBehavior(raw.nativeBehavior, `${path}.nativeBehavior`, issues);
+  const evidence: Record<string, string> = {};
+  (['type', 'id', 'string', 'title', 'help', 'dataHotkey', 'confirmRaw', 'special', 'icon',
+    'canonicalRegion', 'projectionRegion'] as const).forEach((key) => {
+    if (raw[key] === undefined) return;
+    if (typeof raw[key] !== 'string') {
+      issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+      return;
+    }
+    evidence[key] = raw[key] as string;
+  });
+  return {
+    schemaVersion: '1.0.0',
+    model: requiredString(raw, 'model', path, issues),
+    viewType: requiredString(raw, 'viewType', path, issues),
+    viewId: typeof viewId === 'number' && Number.isInteger(viewId) ? viewId : 0,
+    viewXmlId: typeof viewXmlId === 'string' ? viewXmlId : '',
+    viewContentHash,
+    viewStructureKey,
+    crossEnvironmentStable,
+    kind,
+    name: requiredString(raw, 'name', path, issues),
+    nativeLocator: requiredString(raw, 'nativeLocator', path, issues),
+    occurrenceIndex: typeof occurrenceIndex === 'number' && Number.isInteger(occurrenceIndex)
+      ? occurrenceIndex
+      : 0,
+    ...(typeof sourcePosition === 'number' && Number.isInteger(sourcePosition)
+      ? { sourcePosition }
+      : {}),
+    occurrenceKey,
+    authoritative: requiredBoolean(raw, 'authoritative', path, issues, false),
+    sourceAuthority: {
+      kind: 'ir.ui.view',
+      projectionOnly: true,
+      noBusinessFactAuthority: true,
+    },
+    ...(nativeBehavior ? { nativeBehavior } : {}),
+    ...(evidence.type !== undefined ? { type: evidence.type } : {}),
+    ...(evidence.id !== undefined ? { id: evidence.id } : {}),
+    ...(evidence.string !== undefined ? { string: evidence.string } : {}),
+    ...(evidence.title !== undefined ? { title: evidence.title } : {}),
+    ...(evidence.help !== undefined ? { help: evidence.help } : {}),
+    ...(evidence.dataHotkey !== undefined ? { dataHotkey: evidence.dataHotkey } : {}),
+    ...(evidence.confirmRaw !== undefined ? { confirmRaw: evidence.confirmRaw } : {}),
+    ...(evidence.special !== undefined ? { special: evidence.special } : {}),
+    ...(evidence.icon !== undefined ? { icon: evidence.icon } : {}),
+    ...(evidence.canonicalRegion !== undefined ? { canonicalRegion: evidence.canonicalRegion } : {}),
+    ...(evidence.projectionRegion !== undefined ? { projectionRegion: evidence.projectionRegion } : {}),
+  };
+}
+
 function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2Widget | null {
   if (!isRecord(raw)) {
     issues.push({ path, message: 'widget must be an object' });
@@ -628,7 +785,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   rejectUnknownKeys(raw, [
     'widgetId', 'widgetType', 'fieldCode', 'label', 'span', 'componentKey', 'capabilities',
     'componentConfig', 'fieldDescriptor', 'formStructureRole',
-    'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
+    'ownerContainerId', 'nativeLocator', 'occurrenceIndex', 'sourcePosition', 'nativeIdentity',
   ], path, issues);
   const componentConfig = requiredRecord(raw, 'componentConfig', path, issues);
   const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor', path, issues);
@@ -655,6 +812,14 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   if (Boolean(nativeLocator) !== (occurrenceIndex !== undefined)) {
     issues.push({ path, message: 'nativeLocator and occurrenceIndex must be supplied together' });
   }
+  const nativeIdentity = raw.nativeIdentity === undefined
+    ? undefined
+    : decodeNativeOccurrenceIdentity(
+      raw.nativeIdentity,
+      `${path}.nativeIdentity`,
+      issues,
+      new Set<ContractV2NativeOccurrenceKind>(['field']),
+    );
   if (!widgetId || !fieldCode || !ownerContainerId) return null;
   return {
     widgetId,
@@ -669,6 +834,7 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
     ...(nativeLocator ? { nativeLocator } : {}),
     ...(typeof occurrenceIndex === 'number' && Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(typeof sourcePosition === 'number' && Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
+    ...(nativeIdentity ? { nativeIdentity } : {}),
     ...(fieldDescriptor ? { fieldDescriptor } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
   };
@@ -700,7 +866,7 @@ function decodeContainer(
   rejectUnknownKeys(raw, [
     'containerId', 'containerType', 'type', 'name', 'string', 'label', 'nolabel', 'text', 'title',
     'displayLabel', 'semanticTitle', 'semanticAnchor', 'span', 'styleToken', 'zone', 'cols', 'columns',
-    'widget', 'widgetId', 'fieldCode', 'nativeLocator', 'occurrenceIndex', 'sourcePosition',
+    'widget', 'widgetId', 'fieldCode', 'nativeLocator', 'occurrenceIndex', 'sourcePosition', 'nativeIdentity',
     'componentKey', 'componentConfig', 'attributes', 'fieldInfo', 'filename', 'buttonType',
     'action', 'badge', 'modifiers', 'invisible', 'readonly', 'required', 'column_invisible',
     'domain', 'context', 'options', 'visible', 'col', 'class', 'className', 'fieldSize', 'size',
@@ -751,6 +917,12 @@ function decodeContainer(
   const nativeLocator = asString(raw.nativeLocator);
   const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
   const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
+  const identityKinds = new Set<ContractV2NativeOccurrenceKind>(
+    containerType.toLowerCase() === 'field' ? ['field'] : ['container'],
+  );
+  const nativeIdentity = raw.nativeIdentity === undefined
+    ? undefined
+    : decodeNativeOccurrenceIdentity(raw.nativeIdentity, `${path}.nativeIdentity`, issues, identityKinds);
   if (nestedNativeNode && containerType.toLowerCase() === 'field' && widgetId.includes('.occ.')) {
     if (!nativeLocator) issues.push({ path: `${path}.nativeLocator`, message: 'form field occurrence requires nativeLocator' });
     if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
@@ -787,6 +959,7 @@ function decodeContainer(
     ...(nativeLocator ? { nativeLocator } : {}),
     ...(Number.isInteger(occurrenceIndex) ? { occurrenceIndex } : {}),
     ...(Number.isInteger(sourcePosition) ? { sourcePosition } : {}),
+    ...(nativeIdentity ? { nativeIdentity } : {}),
     ...(asString(raw.componentKey) ? { componentKey: asString(raw.componentKey) } : {}),
     ...(componentConfig && Object.keys(componentConfig).length ? { componentConfig } : {}),
     ...(attributes && Object.keys(attributes).length ? { attributes } : {}),
@@ -1123,6 +1296,83 @@ function decodeComponentRegistry(
   return out;
 }
 
+function decodeListColumnOccurrence(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2ListColumnOccurrence | undefined {
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, [
+    'occurrenceKey', 'fieldCode', 'nativeIdentity', 'label', 'widget', 'optional',
+    'sum', 'modifiers', 'domainRaw', 'contextRaw', 'optionsRaw',
+  ], path, issues);
+  const occurrenceKey = requiredString(raw, 'occurrenceKey', path, issues);
+  if (occurrenceKey && !/^occ\.v1\.[0-9a-f]{24}$/.test(occurrenceKey)) {
+    issues.push({ path: `${path}.occurrenceKey`, message: 'must be occ.v1.<24 hex>' });
+  }
+  const nativeIdentity = decodeNativeOccurrenceIdentity(
+    raw.nativeIdentity,
+    `${path}.nativeIdentity`,
+    issues,
+    new Set<ContractV2NativeOccurrenceKind>(['column']),
+  );
+  if (nativeIdentity && occurrenceKey !== nativeIdentity.occurrenceKey) {
+    issues.push({
+      path: `${path}.occurrenceKey`,
+      message: 'must equal nativeIdentity.occurrenceKey',
+    });
+  }
+  const stringValue = (key: string): string => {
+    if (typeof raw[key] !== 'string') {
+      issues.push({ path: `${path}.${key}`, message: 'must be a string' });
+      return '';
+    }
+    return raw[key] as string;
+  };
+  return {
+    occurrenceKey,
+    fieldCode: requiredString(raw, 'fieldCode', path, issues),
+    nativeIdentity: nativeIdentity as ContractV2NativeOccurrenceIdentity,
+    label: stringValue('label'),
+    widget: stringValue('widget'),
+    optional: stringValue('optional'),
+    sum: stringValue('sum'),
+    modifiers: requiredRecord(raw, 'modifiers', path, issues),
+    domainRaw: stringValue('domainRaw'),
+    contextRaw: stringValue('contextRaw'),
+    optionsRaw: stringValue('optionsRaw'),
+  };
+}
+
+function decodeListProfile(
+  raw: unknown,
+  issues: DecodeIssue[],
+): ContractV2ListProfile | undefined {
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path: 'layoutContract.listProfile', message: 'must be an object' });
+    return undefined;
+  }
+  const profile = { ...raw } as ContractV2ListProfile;
+  if (raw.columnOccurrences !== undefined) {
+    if (!Array.isArray(raw.columnOccurrences)) {
+      issues.push({ path: 'layoutContract.listProfile.columnOccurrences', message: 'must be an array' });
+      return profile;
+    }
+    profile.columnOccurrences = raw.columnOccurrences
+      .map((item, index) => decodeListColumnOccurrence(
+        item,
+        `layoutContract.listProfile.columnOccurrences[${index}]`,
+        issues,
+      ))
+      .filter((item): item is ContractV2ListColumnOccurrence => Boolean(item));
+  }
+  return profile;
+}
+
 function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2LayoutContract {
   rejectUnknownKeys(source, [
     'pageId', 'layoutType', 'adaptMode', 'containerTree', 'layoutHints', 'componentRegistry', 'listProfile', 'activityProfile',
@@ -1135,7 +1385,7 @@ function decodeLayoutContract(source: ContractV2Dictionary, issues: DecodeIssue[
   const containerTree = containerTreeRaw
     .map((item, index) => decodeContainer(item, `layoutContract.containerTree[${index}]`, issues))
     .filter((item): item is ContractV2Container => Boolean(item));
-  const listProfile = optionalRecord(source, 'listProfile', 'layoutContract', issues);
+  const listProfile = decodeListProfile(source.listProfile, issues);
   return {
     pageId: requiredString(source, 'pageId', 'layoutContract', issues),
     layoutType: decodeLayoutType(requiredString(source, 'layoutType', 'layoutContract', issues), 'layoutContract.layoutType', issues),
@@ -1793,7 +2043,12 @@ function decodeFormStructureContract(
   };
 }
 
-function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2ActionRule | null {
+function decodeActionRule(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+  strictNativeIdentity = true,
+): ContractV2ActionRule | null {
   if (!isRecord(raw)) {
     issues.push({ path, message: 'action rule must be an object' });
     return null;
@@ -1810,7 +2065,16 @@ function decodeActionRule(raw: unknown, path: string, issues: DecodeIssue[]): Co
   const tracePolicy = optionalRecord(raw, 'tracePolicy', path, issues);
   const sourceTrace = optionalRecordArray(raw, 'sourceTrace', path, issues);
   const permissionConstraints = optionalRecord(raw, 'permissionConstraints', path, issues);
-  const nativeIdentity = optionalRecord(raw, 'nativeIdentity', path, issues);
+  const nativeIdentity = raw.nativeIdentity === undefined
+    ? undefined
+    : strictNativeIdentity
+      ? decodeNativeOccurrenceIdentity(
+        raw.nativeIdentity,
+        `${path}.nativeIdentity`,
+        issues,
+        new Set<ContractV2NativeOccurrenceKind>(['button']),
+      )
+      : optionalRecord(raw, 'nativeIdentity', path, issues) as ContractV2LegacyNativeIdentity | undefined;
   const allowed = optionalBooleanField(raw, 'allowed', path, issues);
   const enabled = optionalBooleanField(raw, 'enabled', path, issues);
   const disabled = optionalBooleanField(raw, 'disabled', path, issues);
@@ -1882,7 +2146,11 @@ export function decodeContractV2ActionRule(value: unknown): ContractV2ActionRule
   return decoded;
 }
 
-function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[]): ContractV2ActionContract {
+function decodeActionContract(
+  source: ContractV2Dictionary,
+  issues: DecodeIssue[],
+  strictNativeIdentity = true,
+): ContractV2ActionContract {
   rejectUnknownKeys(source, [
     'actionRuleList', 'dependencyGraph', 'deletePolicy', 'surfacePolicies', 'identityPolicy', 'primaryResolution',
   ], 'actionContract', issues);
@@ -1891,7 +2159,12 @@ function decodeActionContract(source: ContractV2Dictionary, issues: DecodeIssue[
     issues.push({ path: 'actionContract.actionRuleList', message: 'must be an array' });
   }
   const actionRuleList = actionRuleListRaw
-    .map((item, index) => decodeActionRule(item, `actionContract.actionRuleList[${index}]`, issues))
+    .map((item, index) => decodeActionRule(
+      item,
+      `actionContract.actionRuleList[${index}]`,
+      issues,
+      strictNativeIdentity,
+    ))
     .filter((item): item is ContractV2ActionRule => Boolean(item));
   const dependencyGraphRaw = requiredRecord(source, 'dependencyGraph', 'actionContract', issues);
   const dependencyGraph = Object.entries(dependencyGraphRaw).reduce<Record<string, string[]>>((acc, [key, value]) => {
@@ -2369,6 +2642,201 @@ function validateFormOccurrenceAuthority(
   });
   statusCounts.forEach((count, widgetId) => {
     if (count > 1) issues.push({ path: 'statusContract.widgetStatus', message: `duplicate form occurrence status ${widgetId}` });
+  });
+}
+
+function validateNativeOccurrenceAuthority(
+  layoutContract: ContractV2LayoutContract,
+  actionContract: ContractV2ActionContract,
+  nativeActionContract: ContractV2NativeActionContract | undefined,
+  pageInfo: ContractV2PageInfo,
+  issues: DecodeIssue[],
+): void {
+  const supportsStrictOccurrences = /^2\.4\./.test(pageInfo.contractVersion);
+  const occurrenceKeys = new Map<string, string>();
+  let pageViewIdentity: ContractV2NativeOccurrenceIdentity | undefined;
+  const canonicalViewType = (value: string) => {
+    const normalized = asString(value).toLowerCase();
+    return normalized === 'list' ? 'tree' : normalized;
+  };
+  const expectedViewType = canonicalViewType(pageInfo.viewType);
+  const register = (
+    identity: ContractV2NativeOccurrenceIdentity | undefined,
+    path: string,
+    { countAsOccurrence }: { countAsOccurrence: boolean },
+  ): void => {
+    if (!identity) return;
+    if (canonicalViewType(identity.viewType) !== expectedViewType) {
+      issues.push({ path: `${path}.viewType`, message: `must identify the active ${expectedViewType} View` });
+    }
+    if (identity.model !== pageInfo.model) {
+      issues.push({ path: `${path}.model`, message: 'must match pageInfo.model' });
+    }
+    if (pageViewIdentity) {
+      const fields = [
+        'model', 'viewType', 'viewId', 'viewXmlId', 'viewContentHash', 'viewStructureKey',
+      ] as const;
+      fields.forEach((field) => {
+        if (identity[field] !== pageViewIdentity?.[field]) {
+          issues.push({ path: `${path}.${field}`, message: 'must match the page native View identity' });
+        }
+      });
+    } else {
+      pageViewIdentity = identity;
+    }
+    if (!countAsOccurrence) return;
+    const prior = occurrenceKeys.get(identity.occurrenceKey);
+    if (prior) {
+      issues.push({
+        path: `${path}.occurrenceKey`,
+        message: `duplicates occurrence already declared at ${prior}`,
+      });
+    } else {
+      occurrenceKeys.set(identity.occurrenceKey, path);
+    }
+  };
+  const compareAttributeBehavior = (
+    attributes: ContractV2Dictionary | undefined,
+    identity: ContractV2NativeOccurrenceIdentity,
+    path: string,
+  ): void => {
+    if (!attributes) return;
+    const behavior = identity.nativeBehavior;
+    ([
+      ['domain', 'domainRaw'],
+      ['context', 'contextRaw'],
+      ['options', 'optionsRaw'],
+    ] as const).forEach(([sourceKey, behaviorKey]) => {
+      const expected = asString(attributes[sourceKey]);
+      const actual = behavior ? behavior[behaviorKey] : '';
+      if (expected !== actual) {
+        issues.push({
+          path: `${path}.nativeIdentity.nativeBehavior.${behaviorKey}`,
+          message: `must preserve native ${sourceKey} evidence`,
+        });
+      }
+    });
+  };
+  const rowKindIsField = (row: ContractV2Container): boolean => (
+    asString(row.type || row.containerType).toLowerCase() === 'field'
+  );
+  const walk = (rows: ContractV2Container[], path: string): void => {
+    rows.forEach((row, index) => {
+      const rowPath = `${path}[${index}]`;
+      const hasNativeOccurrence = Boolean(row.nativeLocator)
+        || Number.isInteger(row.occurrenceIndex)
+        || Boolean(row.nativeIdentity);
+      const identity = row.nativeIdentity;
+      if (supportsStrictOccurrences && hasNativeOccurrence && !identity) {
+        issues.push({ path: rowPath, message: 'native layout occurrence requires nativeIdentity' });
+      }
+      if (identity) {
+        if (!row.nativeLocator || row.nativeLocator !== identity.nativeLocator) {
+          issues.push({ path: `${rowPath}.nativeLocator`, message: 'must match nativeIdentity.nativeLocator' });
+        }
+        if (row.occurrenceIndex !== identity.occurrenceIndex) {
+          issues.push({ path: `${rowPath}.occurrenceIndex`, message: 'must match nativeIdentity.occurrenceIndex' });
+        }
+        const rowKind = rowKindIsField(row) ? 'field' : 'container';
+        if (identity.kind !== rowKind) {
+          issues.push({ path: `${rowPath}.nativeIdentity.kind`, message: 'must match the native node kind' });
+        }
+        const rowName = asString(row.fieldCode || row.name);
+        if (rowName && identity.name !== rowName) {
+          issues.push({ path: `${rowPath}.nativeIdentity.name`, message: 'must match the native node identity' });
+        }
+        compareAttributeBehavior(row.attributes, identity, rowPath);
+        register(identity, rowPath, { countAsOccurrence: true });
+      }
+      row.widgetList.forEach((widget, widgetIndex) => {
+        const widgetPath = `${rowPath}.widgetList[${widgetIndex}]`;
+        const widgetIdentity = widget.nativeIdentity;
+        const widgetHasOccurrence = Boolean(widget.nativeLocator) || Number.isInteger(widget.occurrenceIndex);
+        if (supportsStrictOccurrences && widgetHasOccurrence && !widgetIdentity) {
+          issues.push({ path: widgetPath, message: 'native widget occurrence requires nativeIdentity' });
+        }
+        if (identity && rowKindIsField(row) && !widgetIdentity) {
+          issues.push({ path: widgetPath, message: 'field occurrence carrier identity is required' });
+        }
+        if (identity && widgetIdentity && widgetIdentity.occurrenceKey !== identity.occurrenceKey) {
+          issues.push({
+            path: `${widgetPath}.nativeIdentity.occurrenceKey`,
+            message: 'must match the owning field occurrence',
+          });
+        }
+      });
+      walk(row.children, `${rowPath}.children`);
+    });
+  };
+  walk(layoutContract.containerTree, 'layoutContract.containerTree');
+
+  const activeViewIds = new Set(
+    (nativeActionContract?.viewSet.orderedViews || [])
+      .filter((row) => canonicalViewType(row.viewType)
+        === canonicalViewType(nativeActionContract?.viewSet.activeViewType || ''))
+      .map((row) => row.viewId),
+  );
+  if (pageViewIdentity && activeViewIds.size && !activeViewIds.has(pageViewIdentity.viewId)) {
+    issues.push({
+      path: 'layoutContract.containerTree',
+      message: 'native View identity must reference an Action-bound active View',
+    });
+  }
+
+  (actionContract.actionRuleList || []).forEach((rule, index) => {
+    const identity = rule.nativeIdentity;
+    if (identity && 'occurrenceKey' in identity) {
+      register(
+        identity as ContractV2NativeOccurrenceIdentity,
+        `actionContract.actionRuleList[${index}].nativeIdentity`,
+        { countAsOccurrence: true },
+      );
+    }
+  });
+
+  const columns = Array.isArray(layoutContract.listProfile?.columnOccurrences)
+    ? layoutContract.listProfile?.columnOccurrences || []
+    : [];
+  if (
+    supportsStrictOccurrences
+    && nativeActionContract
+    && expectedViewType === 'tree'
+    && layoutContract.listProfile
+    && Array.isArray(layoutContract.listProfile.columns)
+    && layoutContract.listProfile.columns.length
+    && !columns.length
+  ) {
+    issues.push({
+      path: 'layoutContract.listProfile.columnOccurrences',
+      message: 'native Action list columns require occurrence identity',
+    });
+  }
+  columns.forEach((column, index) => {
+    const columnPath = `layoutContract.listProfile.columnOccurrences[${index}]`;
+    const identity = column.nativeIdentity;
+    if (!identity) {
+      issues.push({ path: columnPath, message: 'List column occurrence requires nativeIdentity' });
+      return;
+    }
+    if (identity.kind !== 'column') {
+      issues.push({ path: `${columnPath}.nativeIdentity.kind`, message: 'must be column' });
+    }
+    if (identity.name !== column.fieldCode) {
+      issues.push({ path: `${columnPath}.nativeIdentity.name`, message: 'must match fieldCode' });
+    }
+    if (identity.occurrenceKey !== column.occurrenceKey) {
+      issues.push({ path: `${columnPath}.occurrenceKey`, message: 'must match nativeIdentity.occurrenceKey' });
+    }
+    const behavior = identity.nativeBehavior;
+    if ((behavior?.domainRaw || '') !== column.domainRaw
+        || (behavior?.contextRaw || '') !== column.contextRaw
+        || (behavior?.optionsRaw || '') !== column.optionsRaw) {
+      issues.push({
+        path: `${columnPath}.nativeIdentity.nativeBehavior`,
+        message: 'must preserve the List column native behavior evidence',
+      });
+    }
+    register(identity, columnPath, { countAsOccurrence: true });
   });
 }
 
@@ -2951,7 +3419,11 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const pageInfo = decodePageInfo(readAliasedObject(root, 'pageInfo', [], '$', issues), issues);
   const layoutContract = decodeLayoutContract(readAliasedObject(root, 'layoutContract', [], '$', issues), issues);
   const statusContract = decodeStatusContract(readAliasedObject(root, 'statusContract', [], '$', issues), issues);
-  const actionContract = decodeActionContract(readAliasedObject(root, 'actionContract', [], '$', issues), issues);
+  const actionContract = decodeActionContract(
+    readAliasedObject(root, 'actionContract', [], '$', issues),
+    issues,
+    /^2\.4\./.test(pageInfo.contractVersion),
+  );
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);
   const meta = decodeMeta(readAliasedObject(root, 'meta', [], '$', issues), issues);
@@ -2968,6 +3440,13 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const pageComposition = decodePageComposition(root.pageComposition, issues);
   const noticeContract = decodeNoticeContract(root.noticeContract, issues);
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
+  validateNativeOccurrenceAuthority(
+    layoutContract,
+    actionContract,
+    nativeActionContract,
+    pageInfo,
+    issues,
+  );
   validateNativeActionContract(nativeActionContract, pageInfo, searchContract, issues);
   validateDeliveryIdentity(pageInfo, runtimeContract, meta, issues);
   if (!issues.length) projectNodeComponents({layoutContract, statusContract, dataContract});

@@ -277,6 +277,77 @@ export interface ContractV2NativeActionContract {
   };
 }
 
+export type ContractV2NativeOccurrenceKind = 'field' | 'container' | 'button' | 'column';
+
+export interface ContractV2NativeOccurrenceSourceAuthority {
+  kind: 'ir.ui.view';
+  projectionOnly: true;
+  noBusinessFactAuthority: true;
+}
+
+export interface ContractV2NativeOccurrenceBehavior {
+  domainRaw: string;
+  contextRaw: string;
+  optionsRaw: string;
+}
+
+export interface ContractV2NativeOccurrenceIdentity {
+  schemaVersion: '1.0.0';
+  model: string;
+  viewType: string;
+  viewId: number;
+  viewXmlId: string;
+  viewContentHash: string;
+  viewStructureKey: string;
+  crossEnvironmentStable: boolean;
+  kind: ContractV2NativeOccurrenceKind;
+  name: string;
+  nativeLocator: string;
+  occurrenceIndex: number;
+  sourcePosition?: number;
+  occurrenceKey: string;
+  authoritative: boolean;
+  sourceAuthority: ContractV2NativeOccurrenceSourceAuthority;
+  nativeBehavior?: ContractV2NativeOccurrenceBehavior;
+  type?: string;
+  id?: string;
+  string?: string;
+  title?: string;
+  help?: string;
+  dataHotkey?: string;
+  confirmRaw?: string;
+  special?: string;
+  icon?: string;
+  canonicalRegion?: string;
+  projectionRegion?: string;
+}
+
+export interface ContractV2LegacyNativeIdentity extends ContractV2Dictionary {
+  authoritative?: boolean;
+  name?: string;
+  type?: string;
+  native_locator?: string;
+  occurrence_index?: number;
+}
+
+export interface ContractV2ListColumnOccurrence {
+  occurrenceKey: string;
+  fieldCode: string;
+  nativeIdentity: ContractV2NativeOccurrenceIdentity;
+  label: string;
+  widget: string;
+  optional: string;
+  sum: string;
+  modifiers: ContractV2Dictionary;
+  domainRaw: string;
+  contextRaw: string;
+  optionsRaw: string;
+}
+
+export interface ContractV2ListProfile extends ContractV2Dictionary {
+  columnOccurrences?: ContractV2ListColumnOccurrence[];
+}
+
 export interface ContractV2Widget {
   widgetId: string;
   widgetType: ContractV2WidgetType;
@@ -290,6 +361,7 @@ export interface ContractV2Widget {
   nativeLocator?: string;
   occurrenceIndex?: number;
   sourcePosition?: number;
+  nativeIdentity?: ContractV2NativeOccurrenceIdentity;
   fieldDescriptor?: ContractV2Dictionary;
   formStructureRole?: ContractV2FormStructureRole;
 }
@@ -363,6 +435,7 @@ export interface ContractV2Container {
   nativeLocator?: string;
   occurrenceIndex?: number;
   sourcePosition?: number;
+  nativeIdentity?: ContractV2NativeOccurrenceIdentity;
   componentKey?: string;
   componentConfig?: ContractV2Dictionary;
   attributes?: ContractV2Dictionary;
@@ -487,7 +560,7 @@ export interface ContractV2LayoutContract {
   containerTree: ContractV2Container[];
   layoutHints: ContractV2Dictionary;
   componentRegistry: Record<string, ContractV2ComponentRegistryEntry>;
-  listProfile?: ContractV2Dictionary;
+  listProfile?: ContractV2ListProfile;
   activityProfile?: ContractV2ActivityProfile;
   pivotProfile?: ContractV2AnalysisProfile;
   graphProfile?: ContractV2AnalysisProfile;
@@ -498,7 +571,7 @@ export interface ContractV2ActionRule {
   actionSemanticsInvalid?: boolean;
   actionId: string;
   backendIdentity?: string;
-  nativeIdentity?: ContractV2Dictionary;
+  nativeIdentity?: ContractV2NativeOccurrenceIdentity | ContractV2LegacyNativeIdentity;
   triggerType: ContractV2TriggerType;
   sourceWidgetId: string;
   targetIds: string[];

@@ -20,6 +20,7 @@ from odoo.addons.smart_core.core.native_action_search_view import (
     MODEL_SEARCH_VIEW_AUTHORITY,
     build_search_native_identity,
 )
+from odoo.addons.smart_core.core.native_view_occurrence import build_native_view_identity
 from odoo import _
 from odoo.exceptions import AccessError
 from odoo.http import request
@@ -750,6 +751,20 @@ class PageAssembler:
                 v_contract = {"type": vt}
 
             v_contract = self._coerce_view_contract_semantics(vt, v_contract)
+            resolved_view_arch = (
+                view_data.get("arch")
+                if isinstance(view_data, dict)
+                else ""
+            )
+            if resolved_view_id and resolved_view_arch:
+                v_contract["viewIdentity"] = build_native_view_identity(
+                    model=model,
+                    view_type=canonical_vt,
+                    view_id=resolved_view_id,
+                    view_xmlid=self._view_xmlid(env, resolved_view_id),
+                    arch=resolved_view_arch,
+                    root=view_data.get("_arch_root") if isinstance(view_data, dict) else None,
+                )
 
             data["views"][vt] = v_contract
         data["view_field_requirements"] = view_field_requirements

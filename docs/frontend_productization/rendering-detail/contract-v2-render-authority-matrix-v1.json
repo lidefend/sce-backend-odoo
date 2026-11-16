@@ -44,9 +44,9 @@
     "deliveryLimitRecord"
   ],
   "summary": {
-    "schemaFieldCount": 361,
+    "schemaFieldCount": 363,
     "renderedOrInteractionAuthorityCount": 224,
-    "validatedNonVisualAuthorityCount": 137,
+    "validatedNonVisualAuthorityCount": 139,
     "decodedRuntimeAuthorityGapCount": 0,
     "unclassifiedCount": 0
   },
@@ -1372,6 +1372,12 @@
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
     },
     {
+      "path": "nativeLayoutNode.nativeIdentity",
+      "classification": "validated_non_visual_authority",
+      "reason": "deterministic native View and occurrence identity",
+      "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
+    },
+    {
       "path": "nativeLayoutNode.nativeLocator",
       "classification": "rendered_or_interaction_authority",
       "consumer": "contractFormPresenter / canonicalNativeFormBridge / NativeFormTreeRenderer"
@@ -1911,6 +1917,12 @@
     {
       "path": "widget.label",
       "classification": "rendered_or_interaction_authority",
+      "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
+    },
+    {
+      "path": "widget.nativeIdentity",
+      "classification": "validated_non_visual_authority",
+      "reason": "deterministic native View and occurrence identity",
       "consumer": "contractFormPresenter.fieldFromWidget / canonicalFormRenderer"
     },
     {
