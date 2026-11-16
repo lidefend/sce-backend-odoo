@@ -1,5 +1,6 @@
 """Offline category/identity tests; production registry contains no node fixtures."""
 import copy
+import re
 import sys
 import tempfile
 import unittest
@@ -88,8 +89,28 @@ class NodeRegistryTests(unittest.TestCase):
         industry = generator.render_industry_manifest(self.component, version=self.version)
         self.assertIn("'form.relation.one2many': 'FormSection.relationAdapter'", frontend)
         self.assertIn("rendererVersion: '1.0.0'", industry)
-        self.assertIn("supportedContractVersion: '>=2.0.0 <2.4.0'", industry)
+        self.assertIn("supportedContractVersion: '>=2.0.0 <2.5.0'", industry)
         self.assertIn("requiredCapabilities: ['form.relation.one2many']", industry)
+
+    def test_component_capability_range_covers_current_page_contract(self):
+        schema_path = (
+            ROOT
+            / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
+        )
+        schema_text = schema_path.read_text(encoding="utf-8")
+        page_versions = {
+            tuple(int(part) for part in match.split("."))
+            for match in re.findall(r'"const": "(\d+\.\d+\.\d+)"', schema_text)
+        }
+        self.assertTrue(page_versions)
+        current = max(page_versions)
+        capability_range = str(self.component["defaults"]["contract_version"])
+        match = re.fullmatch(r">=(\d+\.\d+\.\d+) <(\d+\.\d+\.\d+)", capability_range)
+        self.assertIsNotNone(match, capability_range)
+        minimum = tuple(int(part) for part in match.group(1).split("."))
+        maximum_exclusive = tuple(int(part) for part in match.group(2).split("."))
+        self.assertGreaterEqual(current, minimum)
+        self.assertLess(current, maximum_exclusive)
 
     def test_requiring_an_undeclared_capability_is_rejected(self):
         self.component['components']['sc.payment.settlement_detail_collection']['capabilities'] = [
