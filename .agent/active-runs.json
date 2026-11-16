@@ -3,6 +3,7 @@
   "branches": {
     "audit/capability-explorer-05-b02-r1-20261116": ".agent/runs/CAPABILITY-EXPLORER-05-B02-R1/run.json",
     "audit/capability-explorer-05-r1-20261115-v2": ".agent/runs/CAPABILITY-EXPLORER-05/run.json",
+    "audit/cp00-20261116": ".agent/runs/CP-00/run.json",
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",

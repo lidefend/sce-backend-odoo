@@ -1,0 +1,191 @@
+{
+  "schema": "cp00.gap_inventory.v1",
+  "baseline_sha": "1bfe1f500320a35d59bef156db3c5ba746735668",
+  "scope": "source_read_only",
+  "severity_definition": {
+    "S1": "blocks a truthful end-to-end capability product claim",
+    "S2": "material governance or operational gap before production use",
+    "S3": "non-blocking clarity or maintainability gap"
+  },
+  "gaps": [
+    {
+      "id": "CP00-G01",
+      "severity": "S1",
+      "status": "confirmed",
+      "title": "One stable capability identity contract is missing",
+      "summary": "Semantic business capability, Scene tile capability, release entry alias and Explorer native entry use different identity semantics. They are related but not joined by an accepted canonical contract.",
+      "evidence": [
+        "addons/smart_construction_core/services/capability_registry.py:34",
+        "addons/smart_construction_core/models/support/scene_orchestration.py:39",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py:227",
+        "addons/smart_core/delivery/runtime_capability_catalog.py:85"
+      ],
+      "consequence": "The platform cannot currently prove that a Scene tile, product release alias and business capability provider refer to the same approved capability asset.",
+      "next_gate": "CP-01 identity ADR approved by owner"
+    },
+    {
+      "id": "CP00-G02",
+      "severity": "S1",
+      "status": "confirmed",
+      "title": "Scene version publication and product Scene snapshot consumption are disconnected",
+      "summary": "sc.scene.action_publish creates sc.scene.version. Product delivery resolves sc.scene.snapshot. No production caller currently maps a published sc.scene.version into the sc.scene.snapshot used by DeliveryEngine.",
+      "evidence": [
+        "addons/smart_construction_core/models/support/scene_orchestration.py:719",
+        "addons/smart_core/delivery/scene_service.py:74",
+        "addons/smart_core/delivery/scene_snapshot_service.py:77"
+      ],
+      "consequence": "A Scene can be published as an orchestration snapshot without becoming a consumable product Scene artifact.",
+      "next_gate": "CP-03 lifecycle design after CP-00 owner review"
+    },
+    {
+      "id": "CP00-G03",
+      "severity": "S2",
+      "status": "confirmed",
+      "title": "Scene snapshot compatibility service is stale or unwired",
+      "summary": "SceneSnapshotService writes and reads fields that are not present on the current sc.scene.snapshot model. The affected freeze/clone/mark methods also have no current production callers.",
+      "evidence": [
+        "addons/smart_core/delivery/scene_snapshot_service.py:121",
+        "addons/smart_core/delivery/scene_snapshot_service.py:267",
+        "addons/smart_core/delivery/scene_snapshot_service.py:400",
+        "addons/smart_core/models/release_management.py:214"
+      ],
+      "consequence": "This code cannot be treated as proof of a working Scene release pipeline.",
+      "next_gate": "Confirm ownership and retirement/repair scope in CP-03"
+    },
+    {
+      "id": "CP00-G04",
+      "severity": "S1",
+      "status": "confirmed",
+      "title": "Preview and Standard qualification evidence is not connected to release",
+      "summary": "An evidence-bound maturity evaluator and eight acceptance contracts exist, but there are zero committed evidence bundles and no integration into sc.capability, sc.scene.version or sc.edition.release.snapshot.",
+      "evidence": [
+        "addons/smart_core/core/capability_maturity.py:40",
+        "scripts/verify/capability_maturity_evidence.py:20",
+        "addons/smart_construction_core/data/capability_acceptance_contracts_v1.json",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:258",
+        "addons/smart_core/delivery/platform_capability_explorer.py:1151"
+      ],
+      "consequence": "The system cannot currently claim an evidence-backed Preview or Standard capability qualification.",
+      "next_gate": "CP-04 after identity and lifecycle ownership are accepted"
+    },
+    {
+      "id": "CP00-G05",
+      "severity": "S1",
+      "status": "confirmed",
+      "title": "Product Release does not freeze the complete capability product dependency graph",
+      "summary": "The product snapshot freezes the maintained policy and release-page projection, but Scene bindings contain only version/channel and the referenced Scene contract bytes, capability maturity evidence and full dependency closure are not embedded or hashed.",
+      "evidence": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py:240",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py:246",
+        "addons/smart_core/delivery/product_policy_service.py:424",
+        "addons/smart_core/delivery/scene_snapshot_service.py:216"
+      ],
+      "consequence": "A product release cannot be independently reconstructed and qualified from its own frozen bytes.",
+      "next_gate": "CP-05 snapshot completeness design"
+    },
+    {
+      "id": "CP00-G06",
+      "severity": "S1",
+      "status": "confirmed",
+      "title": "Release approval is not independent and has two control paths",
+      "summary": "The release policy allows self-approval, no enforcement compares requester and approver, and native release form buttons call the promotion service without the Release Operator approval policy.",
+      "evidence": [
+        "addons/smart_core/delivery/release_approval_policy_service.py:86",
+        "addons/smart_core/delivery/release_approval_policy_service.py:157",
+        "addons/smart_core/views/platform_company_access_views.xml:519",
+        "addons/smart_core/models/release_management.py:317",
+        "addons/smart_core/handlers/release_operator.py:174"
+      ],
+      "consequence": "Current release control is effectively single-principal on both paths, with different preconditions.",
+      "next_gate": "Owner decision on approval model and native-form disposition"
+    },
+    {
+      "id": "CP00-G07",
+      "severity": "S1",
+      "status": "source_gap_runtime_not_verified",
+      "title": "Native release ACL is weaker than the Release Operator permission boundary",
+      "summary": "Release Operator requires verified platform-control authority. Direct release model ACLs require only smart_core.group_smart_core_admin, which is also the tenant-configuration admin group on a tenant database.",
+      "evidence": [
+        "addons/smart_core/handlers/release_operator.py:89",
+        "addons/smart_core/security/platform_admin.py:142",
+        "addons/smart_core/security/platform_admin.py:199",
+        "addons/smart_core/security/ir.model.access.csv:14",
+        "addons/smart_core/views/platform_company_access_views.xml:571"
+      ],
+      "consequence": "The source-level authorization policies disagree. Reachability of the native form in the target tenant runtime requires separate read-only verification.",
+      "next_gate": "Runtime reachability evidence plus owner authority decision"
+    },
+    {
+      "id": "CP00-G08",
+      "severity": "S2",
+      "status": "confirmed",
+      "title": "Tenant enablement has a split write/read carrier",
+      "summary": "Runtime writes use company-scoped ir.config_parameter; sc.scene.company.enablement remains a compatibility read and has a database uniqueness/record-rule contract that does not govern the active write.",
+      "evidence": [
+        "addons/smart_construction_scene/services/tenant_scene_activation.py:24",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py:46",
+        "addons/smart_construction_scene/models/scene_company_enablement.py:17",
+        "addons/smart_construction_scene/security/sc_scene_company_enablement_rules.xml:4"
+      ],
+      "consequence": "There is no single database constraint or reconciliation rule across both carriers.",
+      "next_gate": "CP-06 migration and carrier decision"
+    },
+    {
+      "id": "CP00-G09",
+      "severity": "S2",
+      "status": "confirmed",
+      "title": "Business Scenario release can be satisfied by one released member",
+      "summary": "The business catalog marks a Scenario released when at least one referenced menu is released. It does not require all declared members or a qualified subset.",
+      "evidence": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py:21"
+      ],
+      "consequence": "Tenant enablement may treat a partially published Scenario as product-released.",
+      "next_gate": "Owner defines Scenario release completeness in CP-03/CP-05"
+    },
+    {
+      "id": "CP00-G10",
+      "severity": "S2",
+      "status": "confirmed",
+      "title": "No governed cross-principal product delivery record exists",
+      "summary": "Platform release, tenant enablement, role assignment and user verification are performed through different authorities and screens. No persisted handoff binds the exact Release to tenant acceptance and delivery verification.",
+      "evidence": [
+        "addons/smart_core/handlers/release_operator.py:224",
+        "addons/smart_construction_scene/handlers/scenario_activation.py:74",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue:1",
+        "frontend/apps/web/src/router/index.ts:343"
+      ],
+      "consequence": "A successful release does not produce a single auditable product-delivery chain.",
+      "next_gate": "CP-07 workflow design without merging authorization"
+    },
+    {
+      "id": "CP00-G11",
+      "severity": "S2",
+      "status": "confirmed",
+      "title": "Most product asset semantics rely on Python or JSON conventions",
+      "summary": "Capability native identity, dependencies, policy rows, release completeness and Scene bindings lack normalized database constraints. Only a subset of keys and relations are database-enforced.",
+      "evidence": [
+        "addons/smart_construction_core/models/support/scene_orchestration.py:69",
+        "addons/smart_construction_core/models/support/product_scenario.py:296",
+        "addons/smart_core/models/release_management.py:43",
+        "addons/smart_core/models/release_management.py:254",
+        "addons/smart_construction_scene/models/scene_company_enablement.py:17"
+      ],
+      "consequence": "Import, direct JSON edits or future features can create states that satisfy Python linters but are not structurally equivalent.",
+      "next_gate": "CP-01/CP-02 constraint proposal and migration analysis"
+    },
+    {
+      "id": "CP00-G12",
+      "severity": "S2",
+      "status": "not_verified",
+      "title": "Current runtime product-release and qualification state is not revalidated",
+      "summary": "CP-00 is a source audit. It did not read the current sc_dev_demo database or execute a release/qualification journey.",
+      "evidence": [
+        ".agent/runs/CP-00/run.json",
+        "docs/architecture/platform_capability_studio_audit_v1.md",
+        "docs/architecture/platform_capability_studio_inventory_v1.json"
+      ],
+      "consequence": "Historical 282/75/207 and prior snapshot observations remain historical evidence only.",
+      "next_gate": "Separately authorized read-only runtime audit or CP-08 pilot"
+    }
+  ]
+}
