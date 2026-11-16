@@ -65,8 +65,71 @@ but it is not a registered Make target. This is a command-name error, not a
 product or validation failure; the registered static release audit already ran
 the release CI guard.
 
-No push, PR, merge, deployment, database write, or service mutation was
-performed by this batch.
+At local-batch validation time, no push, PR, merge, deployment, database write,
+or service mutation had occurred.
+
+## Integration and Post-Merge Verification
+
+The exact reviewed candidate was published as PR #900 and merged through the
+protected PR lane:
+
+- Candidate head: `0a6224829f1e22454e0c0aeee21bd1ac6da30a15`
+- Mainline merge: `44cfed924b44b690dbb9f833ca9fcb605e8196cc`
+- Required `public_guard`, `merge_policy_gate`,
+  `professional_quality_gate`, and `frontend_release_gate`: success on the
+  candidate head.
+
+A full-lane `frontend_release_gate` was then dispatched manually on merged main:
+
+- Run: https://github.com/lidefend/sce-backend-odoo/actions/runs/43793607673
+- Event/ref/head: `workflow_dispatch`, `main`, `44cfed924b44b690dbb9f833ca9fcb605e8196cc`
+- Result: success in 23m27s
+- Authoritative frontend release command: PASS
+- Managed ORM regressions: PASS
+- Static audit: PASS, all ten checks
+- Navigation, role projection, delivery hardening, accessibility, performance,
+  responsive, and error-recovery sections: PASS
+- Evidence artifact digest:
+  `sha256:95aa678b0bef7cc4dff33793a3607db70efff3c387215e9d97bdd030e111d7b4`
+
+The manual full lane confirms the repaired workflow on the merged mainline. The
+next natural cron `schedule` event remains an additional scheduled observation;
+it is not required to reinterpret the already successful exact-main run.
+
+## Ledger Closure
+
+The recovery goal and run are marked `completed`. The merged topic branch was
+removed from the active-run index. Offline ledger closure checks passed:
+
+- `make verify.agent.ledger.unit`: PASS, 18 tests.
+- `make verify.agent.resume.unit`: PASS, 58 tests.
+
+The closeout branch is the only active-run binding for this bookkeeping update;
+it carries no product, workflow, database, or runtime change.
+
+## Remote CI Correction
+
+PR #901 initially failed the exact-head `public_guard` history scan at blob
+`a3c4172d2a877b6a7a01da04056bba72d2c474ca`. The detector classified two
+GitHub Actions artifact numeric identifiers in the recovery run record as a
+mobile-phone pattern; the CI log explicitly reported
+`sensitive_values_recorded=false`. This is a P4 baseline/evidence false
+positive, not a product or credential leak.
+
+The current run record now carries immutable artifact names instead of numeric
+IDs. Because the public guard scans every candidate-introduced blob, the earlier
+revision remains reachable until the branch is rewritten. The existing governed
+false-positive mechanism therefore registers only the exact rule, path, full
+blob ID, classification, and reviewed public-artifact reason. No directory,
+branch, wildcard, future blob, or mutable history is exempted.
+
+The failed run is
+[43798116160](https://github.com/lidefend/sce-backend-odoo/actions/runs/43798116160).
+`merge_policy_gate` failed only as a downstream consumer of that exact-head
+`public_guard` failure. The correction is validated by the same local
+`repository.clean_history.scan` and then by a new exact remote candidate; the
+failed SHA `03cc579ebf3136f1ef7da88f86f6141595e48753` is never treated as
+passing.
 
 ## Rollback
 

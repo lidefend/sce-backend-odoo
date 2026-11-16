@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SCHEDULED-CI-LINT-RECOVERY-20261116
   title: restore the scheduled frontend release lint lane
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: scheduled_frontend_release_lint
   module:
@@ -46,5 +46,6 @@ goal:
   rollback:
     - revert_the_single_test_script_change
   next_exact_step: >-
-    Remove the unused waitForScheduledFlush declaration, then run frontend lint
-    and the affected session persistence tests.
+    Closed. PR #900 restored the scheduled frontend release lint lane and the
+    manual full-lane run passed on merged main. No further work remains in this
+    recovery goal.

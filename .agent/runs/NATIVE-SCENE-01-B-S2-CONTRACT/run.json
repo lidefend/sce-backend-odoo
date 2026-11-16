@@ -4,8 +4,14 @@
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01-B-S2-CONTRACT.yaml",
+    ".agent/goals/SCHEDULED-CI-LINT-CLOSEOUT-20261116.yaml",
+    ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
     ".agent/runs/NATIVE-SCENE-01-B-S2-CONTRACT/run.json",
-    "docs/audit/native-scene-01/b-s2-contract/"
+    ".agent/runs/SCHEDULED-CI-LINT-CLOSEOUT-20261116/run.json",
+    ".agent/runs/SCHEDULED-CI-LINT-RECOVERY-20261116/run.json",
+    "docs/audit/native-scene-01/b-s2-contract/",
+    "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md",
+    "scripts/ci/personal_data_false_positives.json"
   ],
   "environment": {
     "kind": "offline",
@@ -35,7 +41,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the two implementation-spec clarifications, update PR #904, then start P0-1 from the approved design HEAD.",
+  "next_exact_step": "Record the synced #904 receipts, publish the new exact head, and complete required CI before protected integration; then retarget P0-1 to main.",
   "id": "NATIVE-SCENE-01-B-S2-CONTRACT",
   "branch": "audit/native-scene-01-b-s2-contract-20261116",
   "status": "verification_pending",

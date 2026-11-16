@@ -1370,22 +1370,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "329d8fffce4dc38b70aac5314ffaf69c4640ab2063295e15e23f96ce7507ed93"
+      "sha256": "7ac6c61c8a2cf5dcb62288431b07dc5b47544c403d84d68dec565711a80e735b"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "6a873765751fa7806ae63c7080ee8e74eeb856f65ff6ba8a78a4ad3cac5b0f72"
+      "sha256": "1265e461d10fd1553357f70fe269aa67e2cf3f5c9233c6122390764fc81906ee"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "a15f65af295848161eec7a1dae8fa9da2cdeca604553fc3f7d0029c89922a02f"
+      "sha256": "e567f2c9823712c00d63ff3a35df1577836db0a3238dc610fb6ed3469ac11498"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "3dc92a136bb6397584f66bd832573a37a0de4fdd6b42c4b75f21317433783d9c"
+      "sha256": "a5fa994aefab426ebb0e687f19dec11d5c69f8e9c962e34b40e12539fcaffb4c"
     }
   },
   "runtime_evidence": {
@@ -1454,14 +1454,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T14:52:13+08:00",
-    "dirty_paths": [
-      "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
-      "addons/smart_core/handlers/ui_contract_v2.py"
-    ],
-    "revision": "17e6bb0671a4745a5d9c87f5e470ae2baae374fc",
+    "commit_time": "2026-11-16T15:20:40+08:00",
+    "dirty_paths": [],
+    "revision": "a83bd016177e7c6b9417dd3f911448a66b1eea93",
     "root": ".",
-    "tree": "8ab6b2c8042f772f87d586abf9c13d6b707febeb"
+    "tree": "e422c2444e5b8f1c0422c5187098c510f6a012c4"
   },
   "statistics": {
     "actions": {
