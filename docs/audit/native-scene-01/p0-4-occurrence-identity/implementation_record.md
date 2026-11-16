@@ -128,6 +128,10 @@ as historical failure/repair evidence rather than being overwritten.
   attempted to resolve Form/List occurrence identities. The producer now reads
   both camelCase and legacy locator/index fields, and occurrence binding is
   explicitly limited to Form/List views.
+- `validation_tool_defect`: a subsequent admin-visibility shard exposed legacy
+  `viewIdentity` metadata that has no P0-4 `viewType`. The assembler now skips
+  that legacy carrier instead of claiming it as a native occurrence identity;
+  a focused regression test binds this distinction.
 
 The repair was verified with:
 
@@ -135,8 +139,11 @@ The repair was verified with:
   — 2 tests passed;
 - `make local.test.test MODULE=smart_construction_core TEST_TAGS=p1_payment_request`
   — 63 tests passed;
+- `make local.test.test MODULE=smart_construction_core TEST_TAGS=payment_settlement_component_profile`
+  — 7 tests passed;
 - the focused native occurrence ORM test now also asserts the stable
-  `native_button:...` backend identity.
+  `native_button:...` backend identity and ignores a legacy identity carrier
+  without `viewType`.
 
 ## 7. Coverage Limits and Next Step
 

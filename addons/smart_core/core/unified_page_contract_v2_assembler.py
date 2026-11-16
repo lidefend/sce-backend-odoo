@@ -832,8 +832,15 @@ def _native_view_identity_for(source: dict[str, Any], view_type: str) -> dict[st
     views = _dict(_dict(source.get("ui")).get("views")) or _dict(source.get("views"))
     view = _dict(views.get(key))
     identity = _dict(view.get("viewIdentity") or view.get("view_identity"))
-    if identity and _text(identity.get("viewType")) != key:
-        raise ValueError("native View identity type mismatch")
+    actual_type = _text(identity.get("viewType"))
+    if identity and not actual_type:
+        # A legacy view identity carrier is not a P0-4 occurrence identity.
+        return {}
+    if identity and actual_type != key:
+        raise ValueError(
+            "native View identity type mismatch: expected=%s actual=%s"
+            % (key, actual_type)
+        )
     return identity
 
 

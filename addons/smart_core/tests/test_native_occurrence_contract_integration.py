@@ -4,6 +4,7 @@ from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispatcher import ActionDispatcher
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+    _native_view_identity_for,
     assemble_unified_page_contract_v2,
 )
 
@@ -167,4 +168,13 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             buttons[0]["backendIdentity"].startswith(
                 "native_button:object:action_archive:"
             )
+        )
+
+    def test_legacy_view_identity_without_view_type_is_not_claimed(self):
+        self.assertEqual(
+            _native_view_identity_for(
+                {"views": {"tree": {"viewIdentity": {"viewId": 17}}}},
+                "tree",
+            ),
+            {},
         )
