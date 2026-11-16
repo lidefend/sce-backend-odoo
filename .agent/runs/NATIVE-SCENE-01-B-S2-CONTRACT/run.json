@@ -35,7 +35,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the completed B-S2 design checkpoint and publish a stacked review PR; do not implement the contract changes.",
+  "next_exact_step": "Commit the six amendment revisions and update PR #904; do not implement the contract changes.",
   "id": "NATIVE-SCENE-01-B-S2-CONTRACT",
   "branch": "audit/native-scene-01-b-s2-contract-20261116",
   "status": "verification_pending",

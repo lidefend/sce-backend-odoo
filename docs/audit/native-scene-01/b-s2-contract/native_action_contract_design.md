@@ -6,6 +6,10 @@ Date: 2026-11-16
 
 Baseline: `89ce5325085c89513c83773787ff353e0ba2f5ce`
 
+Review revision: owner amendments applied to View ordering, Action/menu/scene
+separation, requested View constraints, deterministic occurrence identity,
+three-axis readiness and authorization references.
+
 Prerequisite research:
 
 - NATIVE-SCENE-01 / A01-A04 capability inventory.
@@ -172,11 +176,13 @@ nativeActionContract
       "actionXmlId": "module.action_xmlid",
       "model": "payment.request"
     },
-    "routeRef": {
-      "menuId": 456,
-      "menuXmlId": "module.menu_xmlid",
-      "sceneKey": "finance.payment_requests"
-    },
+    "entryRefs": [
+      {
+        "kind": "menu",
+        "menuId": 456,
+        "menuXmlId": "module.menu_xmlid"
+      }
+    ],
     "actionScope": {
       "domainRaw": "[('business_category_id.code', '=', '...')]",
       "domain": [],
@@ -186,10 +192,10 @@ nativeActionContract
         "kind": "ir.actions.act_window"
       }
     },
-    "authorization": {
-      "allowed": true,
+    "projectionAvailability": {
+      "status": "available",
       "reasonCode": "",
-      "authority": "existing_route_or_action_policy"
+      "authorityRef": "existing_route_or_action_access_projection"
     },
     "search": {
       "viewId": 234,
@@ -198,6 +204,7 @@ nativeActionContract
       "profileRef": "searchContract"
     },
     "viewSet": {
+      "orderAuthority": "ir.actions.act_window.views",
       "defaultViewType": "tree",
       "activeViewType": "tree",
       "orderedViews": [
@@ -205,10 +212,10 @@ nativeActionContract
           "viewType": "tree",
           "viewId": 345,
           "viewXmlId": "module.view_tree_xmlid",
-          "sequence": 10,
+          "actionViewSequence": 10,
           "surfaceRole": "collection",
           "selectable": true,
-          "nativeAvailable": true,
+          "projectionStatus": "ready",
           "rendererStatus": "ready",
           "reasonCode": "",
           "profile": "list"
@@ -217,19 +224,29 @@ nativeActionContract
           "viewType": "form",
           "viewId": 346,
           "viewXmlId": "module.view_form_xmlid",
-          "sequence": 20,
+          "actionViewSequence": 20,
           "surfaceRole": "record_detail",
           "selectable": false,
-          "nativeAvailable": true,
+          "projectionStatus": "ready",
           "rendererStatus": "ready",
           "reasonCode": "",
           "profile": "form"
         }
       ]
     },
-    "automaticTakeover": {
-      "eligible": true,
-      "reasonCodes": []
+    "readiness": {
+      "backendContract": {
+        "status": "ready",
+        "reasonCodes": []
+      },
+      "clientRenderer": {
+        "status": "ready",
+        "reasonCodes": []
+      },
+      "businessExecution": {
+        "status": "not_applicable",
+        "reasonCodes": []
+      }
     },
     "sourceAuthority": {
       "kind": "native_action_contract_projection",
@@ -247,12 +264,12 @@ nativeActionContract
 | `actionType` | B-S2 v1 只完整定义 `ir.actions.act_window` |
 | `actionId/actionXmlId` | 同一 Action 切换视图时保持不变 |
 | `model` | 必须与 `pageInfo.model` 和每个 View 的模型一致 |
-| `routeRef` | 可选；菜单不是 Action 本体，不能反向改写 Action |
+| `entryRefs` | 可选且可为多项；Menu 是外层入口身份，不是 Action 本体 |
 | `actionScope` | 发布 Action 自身的 Domain/Context；页面 dataSource 继续承载当前请求有效参数 |
-| `authorization` | 只引用现有路由/发布/权限决定，不新增前端 group evaluator |
+| `projectionAvailability` | 只引用本次投影的现有准入结果和原因，不复制权限事实 |
 | `search` | 表达 Action-bound Search View 身份，有效 Search Profile 仍在顶层 |
 | `viewSet` | 有序视图、默认视图、活动视图和每个视图状态 |
-| `automaticTakeover` | 聚合 provenance；含兼容默认或 unresolved 时不得为 eligible |
+| `readiness` | 分别表达后端契约、客户端 Renderer、业务执行三个维度，不压成单一资格位 |
 
 ### 6.2 `surfaceRole`
 
@@ -271,7 +288,7 @@ record_detail
 
 `selectable` 必须由后端明确发布，前端不得仅按 view type 猜测。
 
-### 6.3 `rendererStatus`
+### 6.3 `projectionStatus` 与 `rendererStatus`
 
 现有 Registry 已定义：
 
@@ -287,14 +304,41 @@ record_detail
 
 建议区分：
 
-- `nativeAvailable`：后端能否解析、授权并形成该视图契约。
+- `projectionStatus`：后端能否从现有 Action/get_view/权限权威形成该 View 投影。
+  - `ready`
+  - `blocked`
+  - `unresolved`
 - `rendererStatus`：当前终端是否存在正式、fallback 或 unsupported 实现。
+  - `ready`
+  - `fallback`
+  - `unsupported`
+  - `unknown`
 
 两者不能合成一个 `enabled`：
 
-- 原生视图存在但 Renderer 未实现：`nativeAvailable=true`、`rendererStatus=unsupported`。
-- 原生视图无权或不存在：`nativeAvailable=false`、稳定 `reasonCode`。
+- 原生视图存在但 Renderer 未实现：`projectionStatus=ready`、
+  `rendererStatus=unsupported`。
+- 原生视图无权或不存在：`projectionStatus=blocked|unresolved`、稳定 `reasonCode`。
 - 兼容默认：不得标为 `native_explicit`。
+
+### 6.4 Action、Menu 与 Product Scenario 身份分离
+
+三者不是同一个对象：
+
+| 身份 | 回答的问题 | 权威 |
+| --- | --- | --- |
+| Action | 执行什么原生 Window Action、使用哪个 View Set | `ir.actions.act_window` + resolved views |
+| Menu | 用户从哪个导航入口进入 | `ir.ui.menu` + published route authority |
+| Product Scenario | 该入口属于哪个产品发布/场景归属 | 外层产品发布与场景关系 |
+
+约束：
+
+- 同一 Action 可以被多个 Menu 引用。
+- 同一 Action 也可以被多个 Product Scenario 引用。
+- `sceneKey` 不得成为 Action 身份的一部分。
+- Native Action Contract 不得用单个 `menuId` 或 `sceneKey` 决定 View、Domain、Context 或权限。
+- 如确需发布来源关系，只能使用可重复的 `entryRefs[]`，并标记为非权威诊断信息。
+- 当前请求实际使用的菜单/上下文仍由现有路由链持有，不复制为 Action 授权事实。
 
 ## 7. Action View Set 投影规则
 
@@ -302,11 +346,12 @@ record_detail
 
 建议 canonical order：
 
-1. 以 `action.view_mode` 的声明顺序为主。
-2. 以 `action.views` / `ir.actions.act_window.view.sequence` 绑定 view ID。
-3. `view_mode` 中缺失显式 View ID 的项保留位置，并记录解析来源。
-4. 配置新增的 Profile 只能以显式 `origin=business_config` 追加，不能悄悄插到原生顺序前面。
-5. `list` 统一归一为 `tree`，保留原 spelling 仅用于诊断。
+1. 以 Odoo 已经计算出的有效 `action.views` 序列为主。
+2. 保留每一行的 Odoo 顺序作为 `actionViewSequence`，并绑定其 View ID/type。
+3. `view_mode` 只补足有效 `action.views` 中没有出现的声明类型。
+4. 补足项按 `view_mode` 顺序追加，不得插到有效 `action.views` 前面。
+5. 配置新增的 Profile 只能以显式 `origin=business_config` 追加。
+6. `list` 统一归一为 `tree`，保留原 spelling 仅用于诊断。
 
 源码基础：
 
@@ -315,30 +360,48 @@ record_detail
 - `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py:2157-2205`
 - `addons/smart_core/app_config_engine/models/app_view_config.py:148-172`
 
-不能使用 dict 遍历顺序代替原生 View 顺序。
+不能使用 Smart Core 自己重排的 `view_mode` 序列，也不能使用
+`view_ids_by_type` 的 dict 遍历顺序代替 Odoo 有效 `action.views` 顺序。
+
+若同一 view type 在有效 `action.views` 中保留多个候选，View Set 必须保留为多个
+独立数组项；不能先压成 `{type: view_id}` 后再尝试恢复顺序。
 
 ### 7.2 View ID 解析优先级
 
 每个 view entry：
 
-1. 请求显式 `view_id`：只能用于匹配 view type。
-2. Action `views` 中同 view type 的绑定 ID。
-3. Action `view_id`，且其类型与当前 view type 一致。
-4. `model.get_view(view_type=...)` 的模型默认解析 ID。
+1. 先从有效 `action.views` 解析该 view type 的候选 View ID。
+2. 请求显式 `view_id` 只能在候选集合内选择；不得任意替换 Action 绑定。
+3. 只有在已登记、受权预览或配置覆盖中，请求 View ID 才可超出 Action 候选。
+4. Action 没有显式同类型绑定时，才使用 `action.view_id`。
+5. 仍无 View ID 时，才使用 `model.get_view(view_type=...)` 的模型默认解析 ID。
 
-这与 `_projection_identity()` 当前规则一致，应被提升为共享纯投影函数。
+未满足 2/3 的请求必须返回：
+
+```text
+ACTION_VIEW_REQUEST_OVERRIDE_DENIED
+```
+
+不能把“请求传入了一个合法存在的 View ID”误认为“这个 View 属于当前 Action”。
+
+现状差异：
+
+- `addons/smart_core/app_config_engine/models/app_view_config.py:120-143`
+  当前优先接受请求显式 View ID，只校验模型/类型。
+- 后续实现必须在该入口前增加 Action candidate 校验，或由共享 View Set resolver
+  先校验再把已核验 View 传给 `_projection_identity()`。
 
 Provenance：
 
-- 1-3：`native_explicit`
-- 4：`model_metadata_derived`
+- 1-4：`native_explicit`，其中 3 额外标记授权覆盖来源
+- 5：`model_metadata_derived`
 - 解析失败：`unresolved`
 
 ### 7.3 默认视图
 
 定义两个不同身份：
 
-- `nativeDefault`：Action 原生 `view_mode` 的第一项及对应 View。
+- `nativeDefault`：有效 `action.views` 的第一项；只有缺项时才由 `view_mode` 补足序列。
 - `active`：当前请求实际打开的 View。
 
 当路由明确请求 `view_mode=kanban`：
@@ -396,6 +459,29 @@ DataSource 参数。两者不能互相冒充：
 
 - `nativeActionContract.actionScope`：Action 声明。
 - `dataContract.dataSource.primary`：当前页面执行参数。
+
+权限不得在 Action Contract 中形成第二份事实：
+
+| 权限问题 | 保持的现有权威 |
+| --- | --- |
+| 用户能否进入该产品入口 | 现有 route/publication authority |
+| 当前用户能否形成该 View | `get_view()` + 现有 view access projection |
+| 当前记录是否可读/写/删 | 页面 V2 的 ACL、Record Rule、field status |
+| 某个按钮是否可执行 | 页面 V2 actionContract + 后端业务方法复核 |
+
+Native Action Contract 只允许：
+
+- `projectionAvailability.status`：本次 Action Contract 投影的
+  `available|blocked|unresolved`；
+- `projectionAvailability.reasonCode`；
+- `projectionAvailability.authorityRef`：引用产生该结果的现有权威。
+
+禁止：
+
+- 复制 `allowed` 并把它当作通用 Action 权限；
+- 复制 groups/ACL/Record Rule 供前端重新求值；
+- 将某一角色的 route 结果缓存成长期 Action 权限；
+- 用 `projectionStatus=ready` 替代记录权限或按钮执行权限。
 
 ### 7.6 不支持原因
 
@@ -492,11 +578,15 @@ Action 明确声明：
   "nativeIdentity": {
     "viewType": "form",
     "viewId": 346,
+    "viewXmlId": "module.view_form_xmlid",
+    "viewArchSha256": "<sha256>",
+    "viewIdentityKey": "module.view_form_xmlid@<arch-prefix>",
     "kind": "field",
     "name": "amount",
     "nativeLocator": "/form[1]/sheet[1]/group[3]/field[4]",
     "occurrenceIndex": 1,
     "sourcePosition": 27,
+    "occurrenceKey": "occ.v1.<deterministic-sha256-prefix>",
     "authoritative": true
   }
 }
@@ -504,12 +594,54 @@ Action 明确声明：
 
 约束：
 
-- `nativeLocator + occurrenceIndex + viewId + kind` 构成结构身份。
+- `occurrenceKey` 必须确定性生成；禁止使用随机 UUID、时间戳、数组遍历顺序或仅字段名。
+- 同一原生 View 内容、同一 locator 和 occurrence index 必须得到同一 key。
+- `nativeLocator + occurrenceIndex + viewIdentityKey + kind` 构成结构身份输入。
+- 数字 `viewId` 只是当前数据库运行引用，不能单独承担跨环境稳定身份。
 - `sourcePosition` 是证据/顺序，不是身份。
 - `name` 是字段/动作名称，不是唯一 occurrence key。
 - display label、widget、文案均不得进入稳定身份。
 - 容器不得只用 `name` 作为唯一身份；同一具名 group 重复时必须依赖 locator。
 - 前端不得使用数组位置重新生成发生身份。
+
+### 9.1.1 三个身份范围
+
+| 范围 | 建议字段 | 稳定性 |
+| --- | --- | --- |
+| 当前 View 内 occurrence | `occurrenceKey` | 确定性；View 结构变化时换 key |
+| 当前数据库 View 引用 | `viewId + nativeLocator + occurrenceIndex` | 运行态可追溯 |
+| 跨环境 View/occurrence 引用 | `viewXmlId + viewArchSha256 + locator/occurrence` | 有 XMLID 时可迁移 |
+
+建议确定性输入：
+
+```text
+viewIdentityKey =
+  viewXmlId + "@" + viewArchSha256
+
+occurrenceKey =
+  "occ.v1." + sha256(canonical_json({
+    viewIdentityKey,
+    kind,
+    name,
+    nativeLocator,
+    occurrenceIndex
+  }))[:24]
+```
+
+规则：
+
+- 有 XMLID：`viewIdentityKey` 使用 XMLID + 架构摘要。
+- 无 XMLID：允许使用当前数据库 View ID 作为 `viewIdentityKey`，但必须标记
+  `crossEnvironmentStable=false`。
+- View arch、继承结果或 locator 改变时，`viewArchSha256` 或 `occurrenceKey` 改变；
+  不得静默把旧 key 按 name 迁移到新节点。
+- 如未来需要自动迁移，必须由显式 identity rebase/迁移记录完成，不能由前端猜测。
+
+现有 `_fingerprint()` 已使用确定性 JSON SHA256 截断：
+
+- `addons/smart_core/core/unified_page_contract_v2_assembler.py:238-239`
+
+但其输入必须固定为上述 canonical identity，不得把 ephemeral IDs 或数组位置混入。
 
 ### 9.2 Form
 
@@ -549,15 +681,19 @@ Form 已有最强基础：
 {
   "columnOccurrences": [
     {
-      "occurrenceKey": "column.amount.5f4d...",
+      "occurrenceKey": "occ.v1.<deterministic-sha256-prefix>",
       "fieldCode": "amount",
       "nativeIdentity": {
         "viewType": "tree",
         "viewId": 345,
+        "viewXmlId": "module.view_tree_xmlid",
+        "viewArchSha256": "<sha256>",
+        "viewIdentityKey": "module.view_tree_xmlid@<arch-prefix>",
         "kind": "field",
         "nativeLocator": "/tree[1]/field[18]",
         "occurrenceIndex": 1,
         "sourcePosition": 17,
+        "occurrenceKey": "occ.v1.<deterministic-sha256-prefix>",
         "authoritative": true
       },
       "label": "申请金额",
@@ -577,6 +713,9 @@ Form 已有最强基础：
   ]
 }
 ```
+
+列级 `occurrenceKey` 与 `nativeIdentity.occurrenceKey` 必须相同；外层只是消费位置，
+不是第二套身份。
 
 保留现有 `columns`/`columns_schema` 作为兼容投影，但不能作为重复 occurrence 的唯一真相。
 
@@ -683,28 +822,60 @@ Odoo `get_view()` 已按当前用户裁剪继承节点和 group 受限节点。
 - 1 和 2 可以进入契约。
 - 3 必须显式原因，不能静默丢弃后宣称原生已接管。
 
-## 11. 四类来源与自动接管资格
+## 11. 四类来源与三轴就绪状态
 
-| 来源 | 典型例子 | 正式自动接管 |
+| 来源 | 典型例子 | Formal Contract Ready |
 | --- | --- | --- |
-| `native_explicit` | Action View ID、XML domain、field widget、Search View ID | 允许 |
-| `model_metadata_derived` | `fields_get()` 类型/关系、模型默认 `get_view()` | 允许，但必须标记 |
-| `compatibility_default` | parser fallback 推断列、默认 stage/date/progress | 不允许 |
-| `unresolved` | 无法解析 View、权限、Domain/Context/option | 不允许，fail closed |
+| `native_explicit` | Action View ID、XML domain、field widget、Search View ID | 可参与 |
+| `model_metadata_derived` | `fields_get()` 类型/关系、模型默认 `get_view()` | 可参与，但必须标记 |
+| `compatibility_default` | parser fallback 推断列、默认 stage/date/progress | 阻断 |
+| `unresolved` | 无法解析 View、权限、Domain/Context/option | 阻断，fail closed |
 
-建议 `automaticTakeover.eligible` 是聚合结论：
+不得使用一个 `automaticTakeover.eligible` 压缩所有风险。建议发布三个独立维度：
+
+| 维度 | 回答的问题 | 权威来源 |
+| --- | --- | --- |
+| Backend Contract Ready | Action/View/Search/Occurrence 是否完整形成 | 本次 Action + V2 契约验证 |
+| Client Renderer Ready | 当前终端是否有正式、fallback 或 unsupported Renderer | 现有 Action Surface Renderer Registry |
+| Business Execution Ready | 当前场景要求写操作时，业务执行契约是否完整 | 现有 execute/action contract + 业务后端 |
+
+建议结构：
 
 ```json
 {
-  "eligible": false,
-  "reasonCodes": [
-    "ACTION_SEARCH_VIEW_UNRESOLVED",
-    "LIST_OCCURRENCE_COMPATIBILITY_DEFAULT"
-  ]
+  "readiness": {
+    "backendContract": {
+      "status": "blocked",
+      "reasonCodes": [
+        "ACTION_SEARCH_VIEW_UNRESOLVED"
+      ]
+    },
+    "clientRenderer": {
+      "status": "fallback",
+      "reasonCodes": [
+        "RENDERER_GANTT_PLANNED"
+      ]
+    },
+    "businessExecution": {
+      "status": "not_applicable",
+      "reasonCodes": []
+    }
+  }
 }
 ```
 
-不得只靠“页面能加载”判定 eligible。
+示例解释：
+
+- Gantt 后端 Profile 已就绪、客户端只有 readable-records fallback、只读场景无需业务执行：
+  `backend=ready`、`renderer=fallback`、`businessExecution=not_applicable`。
+- 未来 Gantt 支持拖动修改时，`businessExecution` 才从 `not_applicable` 转为独立评审对象。
+
+防止形成新治理系统：
+
+- 不新增持久化 eligibility 模型、资格台账或第二套权限系统。
+- 三轴状态分别引用现有契约、Renderer Registry 和业务执行权威。
+- 自动接入流程可以判断“三轴均满足产品要求”，但该判断是流程结果，不是新的长期事实源。
+- 不得把单一布尔值写入菜单、场景或业务模型作为授权。
 
 ## 12. 跨契约不变量
 
@@ -720,8 +891,14 @@ Odoo `get_view()` 已按当前用户裁剪继承节点和 group 受限节点。
 8. Form widget 的 `nativeIdentity.viewId == activeViewId`。
 9. List column occurrence 的 `nativeIdentity.viewId == activeViewId`。
 10. 按钮 native identity 与 action rule backend identity 不可冲突。
-11. `automaticTakeover.eligible=true` 时不得含 compatibility default 或 unresolved。
-12. 页面切换 Action ID 不得变化；Model 变化必须来自 Action 权威，不能由前端重定向。
+11. `readiness.backendContract.status=ready` 时不得含 compatibility default 或 unresolved。
+12. `readiness.clientRenderer` 必须与当前终端 Registry 状态和原因码一致。
+13. `readiness.businessExecution=ready` 时必须有当前业务执行契约证据；只读场景可为
+    `not_applicable`。
+14. Native Action Contract 不得发布可由前端重新判断的 groups、ACL、Record Rule 副本。
+15. `projectionAvailability` 只表达本次投影结果，必须带现有 authority 引用和原因；
+    不得成为记录权限或按钮权限的长期缓存。
+16. 页面切换 Action ID 不得变化；Model 变化必须来自 Action 权威，不能由前端重定向。
 
 ## 13. 契约版本与兼容策略
 
@@ -748,9 +925,10 @@ Odoo `get_view()` 已按当前用户裁剪继承节点和 group 受限节点。
 
 复用 `ActionResolver`，补充：
 
-- `views`
+- Odoo 有效 `views` 序列
 - `view_ids`
 - `view_id`
+- `view_mode`（只作缺项补足）
 - `search_view_id`
 - action XMLID
 
@@ -758,7 +936,9 @@ Odoo `get_view()` 已按当前用户裁剪继承节点和 group 受限节点。
 
 ### 14.2 View Set
 
-复用 `PageAssembler` 的 view type 展开和 `_projection_identity()` 的 View ID 解析。
+复用 `PageAssembler` 的视图装配能力和 `_projection_identity()` 内可复用的
+Action/View identity 校验。纯投影函数必须先按有效 `action.views` 建候选，
+再把已核验请求 View 传给现有装配链。
 
 建议抽出纯投影函数：
 
@@ -767,6 +947,8 @@ resolve_native_action_view_set(action, model, current_user_env, requested_view)
 ```
 
 输入仍由现有环境提供；输出仅 Action Contract 结构，不读数据库新表。
+
+该函数不得重新实现 Odoo 的 View 排序；它只消费 Odoo 已计算的有效 `action.views`。
 
 ### 14.3 Search
 
@@ -858,7 +1040,9 @@ available modes
 
 ### P0-1：Action identity 完整化
 
-- `ActionResolver` 保留 views/search/view ID。
+- `ActionResolver` 保留有效 `action.views` 顺序、view ID、`search_view_id` 和 XMLID。
+- Menu/Product Scenario 关系保持在外层导航；Action 不使用单一 `sceneKey`。
+- 请求 View ID 必须与 Action 候选或受权预览覆盖匹配。
 - 增加纯单测和样本 Action。
 - 不改 UCP schema。
 
@@ -873,11 +1057,14 @@ available modes
 - 设计 schema 2.3.0。
 - 增加受控根节点和能力协商。
 - 生成 View Set 描述，但页面内容仍由当前 V2 表达。
+- 发布 Backend/Renderer/Execution 三轴 readiness，不生成单一资格授权位。
+- `projectionAvailability` 只引用现有准入结果，不复制权限。
 
 ### P0-4：Occurrence 统一
 
 - Form widget/container 补统一 native identity。
 - List 增加 columnOccurrences。
+- 固定 deterministic occurrence key 输入，并区分运行态 view ID 与跨环境 XMLID/arch identity。
 - Domain/Context/options provenance 完整化。
 
 ### P0-5：前端消费
@@ -901,7 +1088,9 @@ Widget、交互执行、Calendar/Gantt/Dashboard 和行业专业视图仍留在�
 - 每个 view entry 都能形成唯一 View Profile。
 - active/default/supporting view 身份一致。
 - Search Contract 绑定正确 Search View。
-- occurrence 在相同 View ID 下稳定，不被 label/name 去重。
+- 有效 `action.views` 顺序不依赖 Smart Core 二次排序。
+- 请求 View ID 无法选择 Action 候选之外的非授权 View。
+- occurrence 在同一 View 内容和版本下确定性稳定，不被 label/name 去重。
 
 ### L3
 
@@ -922,8 +1111,9 @@ Widget、交互执行、Calendar/Gantt/Dashboard 和行业专业视图仍留在�
 
 ### 18.1 Action View Set 如何成为一等契约
 
-新增受控 `nativeActionContract.viewSet`，只发布有序 View 身份、默认/活动 View、
-能力、来源和原因。每个活动 View 的完整页面仍由现有 V2 表达。
+新增受控 `nativeActionContract.viewSet`，只发布 Odoo 有效 `action.views` 顺序、
+默认/活动 View、能力、来源和原因。Action 不绑定单一 Menu/Scene；请求 View ID
+只能选择 Action 候选或受权预览覆盖。每个活动 View 的完整页面仍由现有 V2 表达。
 
 ### 18.2 Search View 身份如何保真
 
@@ -933,7 +1123,9 @@ Search Config；SearchContract 必须发布自己的 native identity。Action �
 
 ### 18.3 Occurrence 如何统一
 
-统一使用 `viewType + viewId + nativeLocator + occurrenceIndex + kind`。
+使用确定性输入 `viewIdentityKey + nativeLocator + occurrenceIndex + kind` 生成
+`occurrenceKey`；`viewId` 只作为当前运行态引用。View 架构变化时 key 必须变化或经过
+显式 identity rebase，不能按 name 静默迁移。
 Form 复用现有 widget occurrence；List 把 `column_occurrences` 提升为正式
 `columnOccurrences`；按钮复用 native/backend identity；容器补同一 shape。
 Domain/Context、groups、widget options 和 relation entry 各归显式出口。
@@ -945,8 +1137,13 @@ Domain/Context、groups、widget options 和 relation entry 各归显式出口�
 - 继续使用现有 Unified Page Contract V2。
 - 在其上增加一个受控 Native Action Contract，而不是另建页面系统。
 - View Set 只做身份和控制面，不嵌套复制所有页面。
+- View 顺序以 Odoo 有效 `action.views` 为准，`view_mode` 只补足缺项。
+- Action 身份与多个 Menu/Product Scenario 引用分离。
+- 请求 View ID 不得绕过 Action 绑定，除非属于受权预览/配置覆盖。
 - Search 身份由 Action 明确下传，不再依赖模型默认视图。
-- Occurrence 统一原生身份，禁止按 name/label 合并不同语义。
+- Occurrence key 确定性生成，并区分当前 View、数据库 View 与跨环境身份。
+- 就绪状态拆成 Backend Contract、Client Renderer、Business Execution 三轴。
+- Action Contract 只引用本次投影可用性，不复制 authorization 事实。
 - 兼容 fallback 只能作为非正式交付，不能伪装成原生事实。
 - 本轮不实施、不新增模型、不改 Renderer。
 

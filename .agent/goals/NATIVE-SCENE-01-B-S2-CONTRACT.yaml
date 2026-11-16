@@ -32,11 +32,15 @@ goal:
     - docs/audit/native-scene-01/b-s2-contract/native_action_contract_design.md
   acceptance:
     - define the minimal Native Action Contract by reusing ui.contract.v2
-    - prove ordered Action View Set and active-view identity from source
+    - prove ordered Action View Set and active-view identity from Odoo effective action.views
+    - keep Action identity separate from multiple menu and product-scene references
+    - deny request view ids that do not select an Action-bound candidate or authorized preview override
     - define Action-bound search view precedence and identity propagation
-    - define field, button and container occurrence identity by view type
+    - define deterministic field, button and container occurrence identity by view type and view version
     - classify domain, context, groups and options into explicit contract locations
     - separate native explicit, model-derived, compatibility default and unresolved provenance
+    - separate backend contract, client renderer and business execution readiness
+    - reference existing authorization projections without creating a second permission decision
     - provide an implementation sequence that changes no product code in this checkpoint
   exclusions:
     - product source, contract schema, database, configuration or business-data changes
