@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "ff6587d833f85469e1075c8ec3fcac09b9063462",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION.yaml",
+    ".agent/runs/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION/run.json",
+    "docs/audit/native-scene-01/b-semantic-conversion/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only source and existing contract-snapshot inspection; no database, service, credential, fixture, publication or remote mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION.yaml",
+        ".agent/runs/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the completed B-S1 audit checkpoint and publish it as an independent review PR; do not start B-S2 or product changes.",
+  "id": "NATIVE-SCENE-01-B-SEMANTIC-CONVERSION",
+  "branch": "audit/native-scene-01-b-semantic-conversion-20261116",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION.yaml",
+  "record": "docs/audit/native-scene-01/b-semantic-conversion/native_semantic_conversion_audit.md"
+}
