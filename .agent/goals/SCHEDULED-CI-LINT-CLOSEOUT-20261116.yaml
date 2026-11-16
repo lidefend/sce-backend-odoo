@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-LINT-CLOSEOUT-20261116
+  title: close the scheduled CI lint recovery ledger
+  status: active
+  formal_product_layer: P4
+  layer_target: governed post-merge integration closeout
+  module:
+    - .agent
+    - docs/ops
+  objective: >-
+    Record the merge identity and post-merge full-lane result for the scheduled
+    frontend release lint recovery, close its source goal and run, and remove the
+    merged topic branch from the active-run index.
+  baseline:
+    branch: main
+    full_sha: 44cfed924b44b690dbb9f833ca9fcb605e8196cc
+    source: clean_main_after_pr_900
+  product_boundary:
+    standard_vs_user_specific: ops_delivery_ci_verification_tool
+    why_here: >-
+      Merge identity, run lifecycle, and active-run index closure are delivery
+      control metadata rather than product semantics.
+    why_not_elsewhere:
+      - no_frontend_runtime_change
+      - no_backend_contract_or_permission_change
+      - no_workflow_or_required_check_change
+      - no_database_or_runtime_environment_change
+    blast_radius:
+      - the scheduled CI lint recovery goal and run
+      - the closeout goal and run
+      - the governed active-run index
+      - the existing living batch record
+      - one exact immutable public-history false-positive registration
+  acceptance_criteria:
+    - source run and goal report completed
+    - PR and merge identity are recorded by exact SHA
+    - post-merge manual full-lane success and artifacts are recorded
+    - active-run index no longer binds the merged topic branch
+    - agent ledger and resume unit tests pass
+    - public history treats reviewed artifact identifiers as non-personal data
+  exclusions:
+    - no_product_source_or_test_change
+    - no_workflow_trigger_or_assertion_change
+    - no_directory_or_mutable-history_scan_exemption
+    - no_deployment
+    - no_database_or_runtime_mutation
+  rollback:
+    - revert the closeout commit and restore the active-run binding only if follow-up work resumes
+  next_exact_step: >-
+    Run the offline agent ledger and resume checks, publish the bookkeeping-only
+    closeout through the protected PR lane, and remove the closeout branch from
+    the active index in the final closeout state.
