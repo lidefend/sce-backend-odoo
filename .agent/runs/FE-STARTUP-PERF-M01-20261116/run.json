@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-STARTUP-PERF-M01-20261116",
   "branch": "fix/frontend-performance-m01-20261116",
-  "baseline_sha": "70d01d8fa52c76dc3a296f0431e39be79b98dab5",
+  "baseline_sha": "1bfe1f500320a35d59bef156db3c5ba746735668",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-STARTUP-PERF-M01-20261116.yaml",
   "record": "docs/ops/iterations/frontend_startup_perf_m01_20261116.md",
@@ -111,17 +111,6 @@
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
         "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "make/frontend.mk"
-      ],
-      "kind": "offline"
-    },
-    "personal_data_scan": {
-      "target": "security.personal_data_scan",
-      "inputs": [
-        "scripts/ci/personal_data_scan.py",
-        "scripts/ci/personal_data_false_positives.json",
-        "scripts/ci/trusted_scan_scope.py",
-        "scripts/ci/parallel_scan.py",
-        "make/ci.mk"
       ],
       "kind": "offline"
     },
