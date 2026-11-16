@@ -2758,7 +2758,12 @@ function validateNativeOccurrenceAuthority(
         if (identity && rowKindIsField(row) && !widgetIdentity) {
           issues.push({ path: widgetPath, message: 'field occurrence carrier identity is required' });
         }
-        if (identity && widgetIdentity && widgetIdentity.occurrenceKey !== identity.occurrenceKey) {
+        if (
+          identity
+          && rowKindIsField(row)
+          && widgetIdentity
+          && widgetIdentity.occurrenceKey !== identity.occurrenceKey
+        ) {
           issues.push({
             path: `${widgetPath}.nativeIdentity.occurrenceKey`,
             message: 'must match the owning field occurrence',

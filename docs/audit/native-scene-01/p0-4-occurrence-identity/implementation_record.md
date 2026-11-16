@@ -137,6 +137,11 @@ as historical failure/repair evidence rather than being overwritten.
   occurrence. The generic assembler now resolves each widget through
   `ownerContainerId`, publishes only its field identity, and omits the carrier
   when no owning field identity exists. The assembled cache advances to `v64`.
+- `product_defect`: the strict frontend Decoder compared every widget identity
+  with its current row identity. For direct field widgets carried by a native
+  container this rejected the valid field occurrence because it differed from
+  the container occurrence. Widget equality is now enforced only on field-owned
+  rows; container-carried direct widgets retain their own field identity.
 
 The repair was verified with:
 
