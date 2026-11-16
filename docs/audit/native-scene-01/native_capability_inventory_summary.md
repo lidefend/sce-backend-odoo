@@ -20,6 +20,7 @@
 - [菜单机器清单](inventories/native_menu_inventory.json)
 - [Action 机器清单](inventories/native_action_inventory.json)
 - [View 机器清单](inventories/native_view_inventory.json)
+- [原始证据索引](evidence/README.md)
 
 PR #902 独立审查 R1 已按六项补齐：
 
