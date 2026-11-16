@@ -10,6 +10,10 @@ Review revision: owner amendments applied to View ordering, Action/menu/scene
 separation, requested View constraints, deterministic occurrence identity,
 three-axis readiness and authorization references.
 
+Implementation-spec revision: full content hash, structural fingerprint and
+node occurrence identity are separated; per-request projection availability and
+contract-structure readiness are non-overlapping.
+
 Prerequisite research:
 
 - NATIVE-SCENE-01 / A01-A04 capability inventory.
@@ -266,7 +270,7 @@ nativeActionContract
 | `model` | 必须与 `pageInfo.model` 和每个 View 的模型一致 |
 | `entryRefs` | 可选且可为多项；Menu 是外层入口身份，不是 Action 本体 |
 | `actionScope` | 发布 Action 自身的 Domain/Context；页面 dataSource 继续承载当前请求有效参数 |
-| `projectionAvailability` | 只引用本次投影的现有准入结果和原因，不复制权限事实 |
+| `projectionAvailability` | 本次请求能否形成投影；只引用现有准入结果和原因，不复制权限事实 |
 | `search` | 表达 Action-bound Search View 身份，有效 Search Profile 仍在顶层 |
 | `viewSet` | 有序视图、默认视图、活动视图和每个视图状态 |
 | `readiness` | 分别表达后端契约、客户端 Renderer、业务执行三个维度，不压成单一资格位 |
@@ -579,8 +583,8 @@ Action 明确声明：
     "viewType": "form",
     "viewId": 346,
     "viewXmlId": "module.view_form_xmlid",
-    "viewArchSha256": "<sha256>",
-    "viewIdentityKey": "module.view_form_xmlid@<arch-prefix>",
+    "viewContentHash": "<full-content-sha256>",
+    "viewStructureKey": "struct.v1.<structural-sha256-prefix>",
     "kind": "field",
     "name": "amount",
     "nativeLocator": "/form[1]/sheet[1]/group[3]/field[4]",
@@ -596,7 +600,7 @@ Action 明确声明：
 
 - `occurrenceKey` 必须确定性生成；禁止使用随机 UUID、时间戳、数组遍历顺序或仅字段名。
 - 同一原生 View 内容、同一 locator 和 occurrence index 必须得到同一 key。
-- `nativeLocator + occurrenceIndex + viewIdentityKey + kind` 构成结构身份输入。
+- `nativeLocator + occurrenceIndex + view base identity + kind/name` 构成结构身份输入。
 - 数字 `viewId` 只是当前数据库运行引用，不能单独承担跨环境稳定身份。
 - `sourcePosition` 是证据/顺序，不是身份。
 - `name` 是字段/动作名称，不是唯一 occurrence key。
@@ -604,23 +608,29 @@ Action 明确声明：
 - 容器不得只用 `name` 作为唯一身份；同一具名 group 重复时必须依赖 locator。
 - 前端不得使用数组位置重新生成发生身份。
 
-### 9.1.1 三个身份范围
+### 9.1.1 三个身份层次
 
-| 范围 | 建议字段 | 稳定性 |
-| --- | --- | --- |
-| 当前 View 内 occurrence | `occurrenceKey` | 确定性；View 结构变化时换 key |
-| 当前数据库 View 引用 | `viewId + nativeLocator + occurrenceIndex` | 运行态可追溯 |
-| 跨环境 View/occurrence 引用 | `viewXmlId + viewArchSha256 + locator/occurrence` | 有 XMLID 时可迁移 |
+完整 Arch 哈希不能直接作为所有 occurrence key 的前缀。否则只改一个 label、help
+或展示 class，也会让整张表单全部 occurrence 身份失效。
 
-建议确定性输入：
+| 层次 | 建议字段 | 包含什么 | 不包含什么 |
+| --- | --- | --- | --- |
+| 内容完整性 | `viewContentHash` | 完整有效 View 内容 | 不用于 occurrence 身份 |
+| 结构指纹 | `viewStructureKey` | 字段/容器/按钮的规范结构 | 文案、help、颜色、CSS 等纯展示值 |
+| 节点身份 | `occurrenceKey` | 单个节点的结构身份输入 | 完整 View hash、ephemeral viewId |
+
+建议定义：
 
 ```text
-viewIdentityKey =
-  viewXmlId + "@" + viewArchSha256
+viewContentHash =
+  sha256(canonical_json(full resolved view content))
+
+viewStructureKey =
+  "struct.v1." + sha256(canonical_json(structural skeleton))[:24]
 
 occurrenceKey =
   "occ.v1." + sha256(canonical_json({
-    viewIdentityKey,
+    viewBaseIdentity,
     kind,
     name,
     nativeLocator,
@@ -628,14 +638,36 @@ occurrenceKey =
   }))[:24]
 ```
 
+`viewBaseIdentity`：
+
+- 有 XMLID：`viewXmlId + model + viewType`。
+- 无 XMLID：当前数据库 `viewId + model + viewType`，并标记
+  `crossEnvironmentStable=false`。
+
+`structural skeleton` 至少包含：
+
+- 节点 tag/type；
+- field name；
+- container name/type；
+- button type/name；
+- 父子层级；
+- 同 tag/name sibling occurrence。
+
+`structural skeleton` 不包含：
+
+- string/title/help/placeholder；
+- CSS/class/icon；
+- domain/context/groups/modifier expressions；
+- sourcePosition、label 或展示 options。
+
 规则：
 
-- 有 XMLID：`viewIdentityKey` 使用 XMLID + 架构摘要。
-- 无 XMLID：允许使用当前数据库 View ID 作为 `viewIdentityKey`，但必须标记
-  `crossEnvironmentStable=false`。
-- View arch、继承结果或 locator 改变时，`viewArchSha256` 或 `occurrenceKey` 改变；
-  不得静默把旧 key 按 name 迁移到新节点。
-- 如未来需要自动迁移，必须由显式 identity rebase/迁移记录完成，不能由前端猜测。
+- 只改展示文案：`viewContentHash` 变化，`viewStructureKey` 和 `occurrenceKey` 不变。
+- 改字段/容器/按钮结构：`viewStructureKey` 变化；只改变受影响节点的
+  `occurrenceKey`，或由正式 identity rebase 处理迁移。
+- `occurrenceKey` 不直接包含 `viewContentHash` 或整棵树的 `viewStructureKey`，
+  避免局部展示变化导致整页 key 批量失效。
+- View locator/结构改变后的旧 key 不得按 name 静默迁移；必须有显式迁移记录或重新发布。
 
 现有 `_fingerprint()` 已使用确定性 JSON SHA256 截断：
 
@@ -687,8 +719,8 @@ Form 已有最强基础：
         "viewType": "tree",
         "viewId": 345,
         "viewXmlId": "module.view_tree_xmlid",
-        "viewArchSha256": "<sha256>",
-        "viewIdentityKey": "module.view_tree_xmlid@<arch-prefix>",
+        "viewContentHash": "<full-content-sha256>",
+        "viewStructureKey": "struct.v1.<structural-sha256-prefix>",
         "kind": "field",
         "nativeLocator": "/tree[1]/field[18]",
         "occurrenceIndex": 1,
@@ -876,6 +908,31 @@ Odoo `get_view()` 已按当前用户裁剪继承节点和 group 受限节点。
 - 三轴状态分别引用现有契约、Renderer Registry 和业务执行权威。
 - 自动接入流程可以判断“三轴均满足产品要求”，但该判断是流程结果，不是新的长期事实源。
 - 不得把单一布尔值写入菜单、场景或业务模型作为授权。
+
+### 11.1 `projectionAvailability` 与 `backendContract` 不得重复
+
+两者回答不同问题：
+
+| 字段 | 回答的问题 | 生命周期 |
+| --- | --- | --- |
+| `projectionAvailability` | 本次请求是否成功形成 Action 投影 | 当前请求 |
+| `readiness.backendContract` | Action Contract/View Set 的结构是否完整可交付 | 当前候选契约版本 |
+
+判断矩阵：
+
+| 场景 | `projectionAvailability` | `backendContract` |
+| --- | --- | --- |
+| 路由拒绝当前用户 | `blocked` | `not_evaluated` |
+| 请求了非授权 View ID | `blocked` | 可保持 `ready`，只拒绝该请求 |
+| 合法 View 自身解析失败 | `blocked` | `blocked` |
+| 当前 View 可用，但同 Action 另一 View unresolved | `available` | `blocked` |
+| 兼容 Default 形成页面 | `available` | `blocked`/`incomplete` |
+
+约束：
+
+- `projectionAvailability` 不判断结构完整性。
+- `backendContract` 不授予路由、记录、字段或按钮权限。
+- 不得将两者合并成一个 `ready`，也不得把任一结果缓存成长期授权。
 
 ## 12. 跨契约不变量
 
@@ -1123,9 +1180,10 @@ Search Config；SearchContract 必须发布自己的 native identity。Action �
 
 ### 18.3 Occurrence 如何统一
 
-使用确定性输入 `viewIdentityKey + nativeLocator + occurrenceIndex + kind` 生成
-`occurrenceKey`；`viewId` 只作为当前运行态引用。View 架构变化时 key 必须变化或经过
-显式 identity rebase，不能按 name 静默迁移。
+分别发布完整内容完整性 `viewContentHash`、结构指纹 `viewStructureKey` 和节点级
+`occurrenceKey`。`occurrenceKey` 不包含完整 content hash，避免文案/样式变化导致整页
+身份失效；结构变化时只重算受影响节点，或经过显式 identity rebase，不能按 name
+静默迁移。
 Form 复用现有 widget occurrence；List 把 `column_occurrences` 提升为正式
 `columnOccurrences`；按钮复用 native/backend identity；容器补同一 shape。
 Domain/Context、groups、widget options 和 relation entry 各归显式出口。
@@ -1144,6 +1202,8 @@ Domain/Context、groups、widget options 和 relation entry 各归显式出口�
 - Occurrence key 确定性生成，并区分当前 View、数据库 View 与跨环境身份。
 - 就绪状态拆成 Backend Contract、Client Renderer、Business Execution 三轴。
 - Action Contract 只引用本次投影可用性，不复制 authorization 事实。
+- `viewContentHash`、`viewStructureKey`、`occurrenceKey` 分层；展示变化不批量失效 occurrence。
+- `projectionAvailability` 只判断本次请求，`backendContract` 只判断契约结构完整性。
 - 兼容 fallback 只能作为非正式交付，不能伪装成原生事实。
 - 本轮不实施、不新增模型、不改 Renderer。
 

@@ -37,9 +37,11 @@ goal:
     - deny request view ids that do not select an Action-bound candidate or authorized preview override
     - define Action-bound search view precedence and identity propagation
     - define deterministic field, button and container occurrence identity by view type and view version
+    - separate full View content hash, structural fingerprint and node occurrence identity
     - classify domain, context, groups and options into explicit contract locations
     - separate native explicit, model-derived, compatibility default and unresolved provenance
     - separate backend contract, client renderer and business execution readiness
+    - keep per-request projection availability distinct from backend contract structural readiness
     - reference existing authorization projections without creating a second permission decision
     - provide an implementation sequence that changes no product code in this checkpoint
   exclusions:
