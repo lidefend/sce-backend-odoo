@@ -126,6 +126,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.daily_dev.acceptance_fixture.unit"],
         )
 
+    def test_candidate_runtime_identity_tools_select_their_unit(self) -> None:
+        for path in (
+            "scripts/dev/candidate_runtime_identity.py",
+            "scripts/verify/test_candidate_runtime_identity.py",
+            "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.candidate.profile.unit"],
+                )
+
     def test_delivery_plan_inputs_select_the_delivery_unit(self) -> None:
         for path in (
             "scripts/ops/validation_delivery_plan.py",

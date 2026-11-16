@@ -1456,7 +1456,7 @@ SC_ACCEPTANCE_RELATION_LOGIN ?= fixture_role_config_admin
 verify.frontend.list_surface_search_contract.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_list_surface_search_contract
 	@node scripts/verify/acceptance_contract_receipt_test.mjs
-.PHONY: acceptance.runtime.integration.prepare acceptance.runtime.contract_receipt verify.frontend.acceptance.integration verify.frontend.relation_roundtrip.browser
+.PHONY: acceptance.runtime.integration.prepare acceptance.runtime.contract_receipt acceptance.evidence.record.integration verify.frontend.acceptance.integration verify.frontend.relation_roundtrip.browser
 # Explicit acceptance preparation follows the merge-evidence Runbook. Keeping
 # these mutators in one front-door prevents an ordinary browser target invoked
 # by another iteration from replacing the shared backend as a hidden side effect.
@@ -1484,6 +1484,19 @@ verify.frontend.acceptance.integration: guard.prod.forbid
 	@$(MAKE) --no-print-directory verify.frontend.list_surface_search_contract.unit
 	@$(MAKE) --no-print-directory verify.frontend.list_surface_structure.browser.internal
 	@$(MAKE) --no-print-directory verify.frontend.relation_roundtrip.browser
+	@$(MAKE) --no-print-directory acceptance.evidence.record.integration
+
+acceptance.evidence.record.integration: guard.prod.forbid
+	@set -euo pipefail; \
+	head="$$(git rev-parse HEAD)"; \
+	relation="$$(find .runtime/acceptance -type f -path "*/$$head/relation-roundtrip/*/summary.json" -print 2>/dev/null | LC_ALL=C sort | tail -n 1)"; \
+	test -n "$$relation" || { echo "DENY: relation-roundtrip evidence missing for $$head" >&2; exit 2; }; \
+	python3 scripts/ops/acceptance_evolution_record.py \
+		--stage merge \
+		--output "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" \
+		--suite frontend_presentation=.runtime/final-acceptance/frontend-presentation/header.json \
+		--suite list_surface_structure=.runtime/final-acceptance/list-surface-structure.json \
+		--suite relation_roundtrip="$$relation"
 
 # The list browser consumes the resolver receipt. Make that prerequisite
 # explicit so a current frontend preview can never be paired with a receipt

@@ -37,6 +37,10 @@ load_profile() {
     printf -v "$key" '%s' "$value"
     export "$key"
   done < <(python3 "$PROFILE_RESOLVER" --profile "$PROFILE")
+  if [[ "$PROFILE" == candidate && "${SC_ACCEPTANCE_FIXTURE_PASSWORD_ORIGIN:-undefined}" == undefined ]]; then
+    echo "DENY: candidate fixture password must be supplied explicitly through SC_ACCEPTANCE_FIXTURE_PASSWORD" >&2
+    exit 2
+  fi
   if [[ -z "$requested_fixture_scope" ]]; then
     case "$PROFILE" in
       local) requested_fixture_scope=acceptance ;;
@@ -410,6 +414,23 @@ candidate_identity_guard() {
   return 0
 }
 
+record_candidate_runtime_identity() {
+  local profile source_sha
+  profile="$(standard_profile_name)" || return 2
+  [[ "$profile" == candidate ]] || return 0
+  source_sha="$(container_env_value "$BACKEND_ACCEPTANCE_NAME" SC_SOURCE_REVISION)"
+  [[ "$source_sha" =~ ^[0-9a-f]{40}$ ]] || {
+    echo "DENY: candidate runtime identity requires a full source revision" >&2
+    return 2
+  }
+  python3 "$ROOT_DIR/scripts/dev/candidate_runtime_identity.py" record \
+    --source-sha "$source_sha" \
+    --database "$DB_NAME" \
+    --compose-project "$COMPOSE_PROJECT_NAME" \
+    --db-user "$DB_USER" \
+    --output "${CANDIDATE_RUNTIME_IDENTITY_RECEIPT:-.runtime/candidate-acceptance/candidate-runtime-identity.json}"
+}
+
 # Candidate-only: live database namespace UUID must equal the recorded runtime
 # identity receipt, so a rebuilt candidate database cannot be silently accepted.
 candidate_db_uuid_guard() {
@@ -418,9 +439,11 @@ candidate_db_uuid_guard() {
   [[ "$profile" == candidate ]] || return 0
   local receipt expected_ns actual_ns
   receipt="${CANDIDATE_RUNTIME_IDENTITY_RECEIPT:-.runtime/candidate-acceptance/candidate-runtime-identity.json}"
-  [[ -f "$receipt" ]] || { echo "DENY: candidate runtime identity receipt missing: $receipt" >&2; return 2; }
-  expected_ns="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["namespace_id"])' "$receipt" 2>/dev/null)" || {
-    echo "DENY: candidate runtime identity receipt is unreadable" >&2; return 2; }
+  expected_ns="$(python3 "$ROOT_DIR/scripts/dev/candidate_runtime_identity.py" verify \
+    --receipt "$receipt" \
+    --source-sha "$(git -C "$ROOT_DIR" rev-parse HEAD)" \
+    --database "$DB_NAME" \
+    --compose-project "$COMPOSE_PROJECT_NAME")" || return 2
   actual_ns="$(docker exec "${COMPOSE_PROJECT_NAME}-db-1" psql -U "$DB_USER" -d "$DB_NAME" -Atc \
     "select namespace_id from sc_platform_namespace where database_name = '$DB_NAME' order by id limit 1" 2>/dev/null)" || {
     echo "DENY: unable to read candidate database namespace identity" >&2; return 2; }
@@ -800,12 +823,14 @@ PYPROJECTDOM
       python3 "$ROOT_DIR/scripts/dev/frontend_acceptance_module_upgrade.py" --check-pending
     fi
     if validate_backend_identity && [[ "$(docker inspect "$BACKEND_ACCEPTANCE_NAME" --format '{{.State.Running}}')" == true ]]; then
+      record_candidate_runtime_identity
       echo "[backend.acceptance.up] REUSED exact healthy artifact carrier"
       exit 0
     fi
     echo "[backend.acceptance.up] replacing stale backend identity with rollback custody"
     bash "$ROOT_DIR/scripts/dev/backend_acceptance_up.sh"
     validate_backend_runtime
+    record_candidate_runtime_identity
     ;;
   backend-down)
     preflight

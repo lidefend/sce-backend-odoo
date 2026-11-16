@@ -1059,6 +1059,13 @@ RULES = (
         "verify.baseline.iteration.execution.policy",
     )),
     Rule((
+        "scripts/dev/candidate_runtime_identity.py",
+        "scripts/verify/test_candidate_runtime_identity.py",
+        "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+    ), (
+        "verify.candidate.profile.unit",
+    )),
+    Rule((
         "make/runtime_ops.mk",
         "scripts/dev/frontend_cached_dependencies_restore.sh",
         "scripts/dev/frontend_standard_preview.py",

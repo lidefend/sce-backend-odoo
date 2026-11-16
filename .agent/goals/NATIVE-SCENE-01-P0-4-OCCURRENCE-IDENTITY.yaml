@@ -22,6 +22,8 @@ goal:
     structure fingerprints and explicit Domain/Context/options provenance.
   product_boundary:
     standard_vs_user_specific: platform-neutral Odoo native View semantics
+    supporting_layers:
+      - P4 validation impact routing, candidate runtime identity and merge-evidence recording
     why_here: >-
       View identity, locator interpretation and deterministic occurrence keys
       are generic contract concerns shared by every Odoo module.
@@ -60,6 +62,17 @@ goal:
     - scripts/verify/test_frontend_dev_incremental.py
     - scripts/verify/test_acceptance_evolution_binding_guard.py
     - scripts/verify/test_coverage_registry.yaml
+    - config/ci/path_ownership_v1.json
+    - make/dev.mk
+    - make/frontend.mk
+    - scripts/ci/test_backend_impact_plan.py
+    - scripts/ci/test_ci_path_ownership.py
+    - scripts/dev/candidate_runtime_identity.py
+    - scripts/dev/frontend_acceptance_runtime.sh
+    - scripts/verify/test_candidate_runtime_identity.py
+    - scripts/verify/test_frontend_acceptance_candidate_guards.py
+    - scripts/verify/test_frontend_acceptance_runtime_profile.py
+    - scripts/verify/test_frontend_release_local_entry.py
     - make/guards.mk
     - make/ci.mk
     - docs/audit/native-scene-01/p0-4-occurrence-identity/
@@ -78,6 +91,9 @@ goal:
     - frontend Decoder rejects malformed native identity and does not generate occurrence keys
     - real Odoo Form/List Action integration produces non-zero passing tests
     - contract version, schema hash and assembled cache version are synchronized
+    - unknown validation inputs still fail closed while exact contract inputs route only to declared checks
+    - candidate runtime identity is produced from authoritative DB readback and rejects stale identity
+    - the integration entry records all affected merge evidence without manual path discovery
   exclusions:
     - Parser/AST rewrite
     - Renderer or component interaction redesign

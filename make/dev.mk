@@ -971,8 +971,9 @@ SC_ACCEPTANCE_RUNTIME_PROFILE ?= local
 # intentionally simple value keeps repeated verification reproducible instead
 # of rotating a secret on every run. Override explicitly when a distinct value
 # is required: `make <target> SC_ACCEPTANCE_FIXTURE_PASSWORD=<value>`.
+SC_ACCEPTANCE_FIXTURE_PASSWORD_ORIGIN := $(origin SC_ACCEPTANCE_FIXTURE_PASSWORD)
 SC_ACCEPTANCE_FIXTURE_PASSWORD ?= scdevpass
-export SC_ACCEPTANCE_FIXTURE_PASSWORD
+export SC_ACCEPTANCE_FIXTURE_PASSWORD SC_ACCEPTANCE_FIXTURE_PASSWORD_ORIGIN
 
 acceptance.runtime.preflight: guard.prod.forbid
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh preflight
@@ -997,8 +998,8 @@ verify.acceptance.runtime.baseline_rebuild.unit: guard.prod.forbid verify.candid
 
 .PHONY: verify.candidate.profile.unit
 verify.candidate.profile.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/ops/candidate_acceptance_profile.py scripts/verify/test_candidate_acceptance_profile.py
-	@python3 -m unittest scripts.verify.test_candidate_acceptance_profile
+	@python3 -m py_compile scripts/ops/candidate_acceptance_profile.py scripts/dev/candidate_runtime_identity.py scripts/verify/test_candidate_acceptance_profile.py scripts/verify/test_candidate_runtime_identity.py scripts/verify/test_frontend_acceptance_candidate_guards.py scripts/verify/test_frontend_acceptance_runtime_profile.py
+	@python3 -m unittest scripts.verify.test_candidate_acceptance_profile scripts.verify.test_candidate_runtime_identity scripts.verify.test_frontend_acceptance_candidate_guards scripts.verify.test_frontend_acceptance_runtime_profile
 
 # P4 environment entries for the managed local acceptance carrier
 # (project sc-fe-r2-p1-01). discard removes only the three declared volumes;

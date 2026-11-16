@@ -33,6 +33,17 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
+    "config/ci/path_ownership_v1.json",
+    "make/dev.mk",
+    "make/frontend.mk",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/dev/candidate_runtime_identity.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/verify/test_candidate_runtime_identity.py",
+    "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+    "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+    "scripts/verify/test_frontend_release_local_entry.py",
     "make/guards.mk",
     "make/ci.mk",
     "docs/audit/native-scene-01/p0-4-occurrence-identity/",
@@ -183,10 +194,38 @@
         "docs/audit/native-scene-01/inventories/"
       ],
       "kind": "offline"
+    },
+    "candidate_runtime_identity": {
+      "target": "verify.candidate.profile.unit",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/candidate_runtime_identity.py",
+        "scripts/verify/test_candidate_runtime_identity.py"
+      ],
+      "kind": "offline"
+    },
+    "candidate_acceptance_path_ownership": {
+      "target": "verify.ci.path_ownership.unit",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_ci_path_ownership.py"
+      ],
+      "kind": "offline"
+    },
+    "candidate_acceptance_runtime": {
+      "target": "verify.candidate.profile.unit",
+      "inputs": [
+        "make/dev.mk",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Run exact-head remote checks and obtain independent review for the documentation-corrected P0-4 candidate.",
+  "next_exact_step": "Commit the P4 validation-governance fixes, regenerate candidate acceptance evidence, and rerun exact-head merge admission.",
   "id": "NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY",
   "branch": "feature/native-scene-01-p0-4-occurrence-identity-20261117",
   "status": "verification_pending",

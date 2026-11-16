@@ -155,9 +155,18 @@ load_profile
             "verify.frontend.list_surface_search_contract.unit",
             "verify.frontend.list_surface_structure.browser.internal",
             "verify.frontend.relation_roundtrip.browser",
+            "acceptance.evidence.record.integration",
         ]
         positions = [integration.index(step) for step in evidence_steps]
         self.assertEqual(positions, sorted(positions))
+        recording = source.split(
+            "acceptance.evidence.record.integration:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("acceptance_evolution_record.py", recording)
+        self.assertIn("relation-roundtrip/*/summary.json", recording)
+        self.assertIn("--suite frontend_presentation=", recording)
+        self.assertIn("--suite list_surface_structure=", recording)
+        self.assertIn("--suite relation_roundtrip=", recording)
 
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(
             encoding="utf-8"

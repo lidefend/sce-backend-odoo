@@ -16,6 +16,67 @@
       ]
     },
     {
+      "id": "acceptance_contract_instance_config",
+      "patterns": [
+        "config/acceptance/backend_contract_instance_v1.json"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.frontend.list_surface_search_contract.unit"
+      ]
+    },
+    {
+      "id": "daily_acceptance_contract_instance_config",
+      "patterns": [
+        "config/acceptance/backend_contract_instance_daily_v1.json"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.daily_dev.acceptance_fixture.unit"
+      ]
+    },
+    {
+      "id": "contract_retirement_manifest_config",
+      "patterns": [
+        "config/contract/page_contract_v1_retirement_manifest.json"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.contract.page_v1_zero_residue.guard"
+      ]
+    },
+    {
+      "id": "candidate_acceptance_tooling",
+      "patterns": [
+        "make/dev.mk",
+        "scripts/dev/candidate_runtime_identity.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_candidate_runtime_identity.py",
+        "scripts/verify/test_frontend_acceptance_candidate_guards.py",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py"
+      ],
+      "risk": "standard",
+      "frontend": false,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.candidate.profile.unit"
+      ]
+    },
+    {
       "id": "security_scan_exception_config",
       "patterns": [
         "config/security/secret_scan_false_positives.v1.json"
