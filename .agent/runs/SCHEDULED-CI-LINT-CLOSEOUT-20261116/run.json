@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "44cfed924b44b690dbb9f833ca9fcb605e8196cc",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
+    ".agent/goals/SCHEDULED-CI-LINT-CLOSEOUT-20261116.yaml",
+    ".agent/runs/SCHEDULED-CI-LINT-RECOVERY-20261116/run.json",
+    ".agent/runs/SCHEDULED-CI-LINT-CLOSEOUT-20261116/run.json",
+    "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline agent ledger and resume guards; no database, service, credential, or remote mutation during validation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCHEDULED-CI-LINT-RECOVERY-20261116.yaml",
+        ".agent/goals/SCHEDULED-CI-LINT-CLOSEOUT-20261116.yaml",
+        ".agent/runs/SCHEDULED-CI-LINT-RECOVERY-20261116/run.json",
+        ".agent/runs/SCHEDULED-CI-LINT-CLOSEOUT-20261116/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/SCHEDULED-CI-LINT-CLOSEOUT-20261116/run.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the agent ledger and resume unit checks, then publish the closeout through the protected GitHub PR lane.",
+  "id": "SCHEDULED-CI-LINT-CLOSEOUT-20261116",
+  "branch": "codex/scheduled-ci-lint-closeout-20261116",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-CI-LINT-CLOSEOUT-20261116.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_lint_recovery_20261116.md"
+}

@@ -65,8 +65,47 @@ but it is not a registered Make target. This is a command-name error, not a
 product or validation failure; the registered static release audit already ran
 the release CI guard.
 
-No push, PR, merge, deployment, database write, or service mutation was
-performed by this batch.
+At local-batch validation time, no push, PR, merge, deployment, database write,
+or service mutation had occurred.
+
+## Integration and Post-Merge Verification
+
+The exact reviewed candidate was published as PR #900 and merged through the
+protected PR lane:
+
+- Candidate head: `0a6224829f1e22454e0c0aeee21bd1ac6da30a15`
+- Mainline merge: `44cfed924b44b690dbb9f833ca9fcb605e8196cc`
+- Required `public_guard`, `merge_policy_gate`,
+  `professional_quality_gate`, and `frontend_release_gate`: success on the
+  candidate head.
+
+A full-lane `frontend_release_gate` was then dispatched manually on merged main:
+
+- Run: https://github.com/lidefend/sce-backend-odoo/actions/runs/43793607673
+- Event/ref/head: `workflow_dispatch`, `main`, `44cfed924b44b690dbb9f833ca9fcb605e8196cc`
+- Result: success in 23m27s
+- Authoritative frontend release command: PASS
+- Managed ORM regressions: PASS
+- Static audit: PASS, all ten checks
+- Navigation, role projection, delivery hardening, accessibility, performance,
+  responsive, and error-recovery sections: PASS
+- Evidence artifact digest:
+  `sha256:95aa678b0bef7cc4dff33793a3607db70efff3c387215e9d97bdd030e111d7b4`
+
+The manual full lane confirms the repaired workflow on the merged mainline. The
+next natural cron `schedule` event remains an additional scheduled observation;
+it is not required to reinterpret the already successful exact-main run.
+
+## Ledger Closure
+
+The recovery goal and run are marked `completed`. The merged topic branch was
+removed from the active-run index. Offline ledger closure checks passed:
+
+- `make verify.agent.ledger.unit`: PASS, 18 tests.
+- `make verify.agent.resume.unit`: PASS, 58 tests.
+
+The closeout branch is the only active-run binding for this bookkeeping update;
+it carries no product, workflow, database, or runtime change.
 
 ## Rollback
 
