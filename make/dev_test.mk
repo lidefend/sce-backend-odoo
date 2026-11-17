@@ -2617,6 +2617,7 @@ verify.docs.inventory: guard.prod.forbid
 	@python3 scripts/verify/docs_inventory.py
 
 verify.docs.links: guard.prod.forbid
+	@python3 -m unittest scripts.verify.test_docs_links
 	@python3 scripts/verify/docs_links.py
 
 verify.docs.temp_guard: guard.prod.forbid

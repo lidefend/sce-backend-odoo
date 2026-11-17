@@ -187,9 +187,9 @@ check(() => {
 });
 
 for (const [label, mutate] of [
-  ['viewId', (contract: Record<string, any>) => { contract.search.viewId = 22; }],
-  ['viewXmlId', (contract: Record<string, any>) => { contract.search.viewXmlId = 'demo.other_search'; }],
-  ['authority', (contract: Record<string, any>) => { contract.search.authority = 'model_default_search_view'; }],
+  ['viewId', (contract: unknown) => { (contract as { search: Record<string, unknown> }).search.viewId = 22; }],
+  ['viewXmlId', (contract: unknown) => { (contract as { search: Record<string, unknown> }).search.viewXmlId = 'demo.other_search'; }],
+  ['authority', (contract: unknown) => { (contract as { search: Record<string, unknown> }).search.authority = 'model_default_search_view'; }],
 ] as const) {
   check(() => {
     const payload = actionContractPayload();

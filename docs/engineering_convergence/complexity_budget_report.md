@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5261`
+- Scanned files: `5262`
 - Files requiring split plan: `80`
 - Files above warning threshold: `154`
 
@@ -36,7 +36,7 @@ Generated from repository source files. This report is informational during the 
 | 3119 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2841 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2850 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -46,7 +46,7 @@ Generated from repository source files. This report is informational during the 
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2131 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2135 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
@@ -72,8 +72,8 @@ Generated from repository source files. This report is informational during the 
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1699 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1693 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1676 | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
-| 1674 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
 | 1649 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
@@ -280,7 +280,7 @@ Generated from repository source files. This report is informational during the 
 | 3119 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2841 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2850 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -290,7 +290,7 @@ Generated from repository source files. This report is informational during the 
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2199 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
-| 2131 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2135 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
 | 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
@@ -316,8 +316,8 @@ Generated from repository source files. This report is informational during the 
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1719 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1699 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1676 | split_plan_required | Python source | `addons/smart_core/core/scene_ready_contract_builder.py` |
-| 1674 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
 | 1668 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
