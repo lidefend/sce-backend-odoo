@@ -14,7 +14,7 @@
 - 上述历史运行的前端 SHA256：`33a88db417ed29b0b5e54a1becfa5e17cbe45ec14c9d246c0f11fab5ebd024bb`。
 - 本地 HEAD：`55896e6edcd5a5ef078406d31d5c109388dff39f`。相关产品目录与服务源版本无差异；不将此视为运行 XML/契约逐项验证。
 - 采用既有浏览器入口与受管 Playwright 依赖；`make fe.install.cached` 离线恢复通过，未修改验收工具。主要观察桌面 1440×960，本轮无新移动端矩阵。
-- [复用双 duty 身份证据](../../../../.runtime/final-acceptance/daily-deployed/entry-verify-tool-closure.json)、[复用角色身份](../../../../.runtime/final-acceptance/fe-daily-closeout/role-http-observation.json)、[本轮入口检查](../../../../.runtime/fe-ux-walkthrough-01/role-entry/backend/user_entry_delivery_browser_acceptance.json)、[逐页观察与请求事件](../../../../.runtime/fe-ux-walkthrough-01/observations.json)、[会话记录](../../../../.runtime/fe-ux-walkthrough-01/session-summary.json)。
+- 复用双 duty 身份证据（`../../../../.runtime/final-acceptance/daily-deployed/entry-verify-tool-closure.json`）、复用角色身份（`../../../../.runtime/final-acceptance/fe-daily-closeout/role-http-observation.json`）、本轮入口检查（`../../../../.runtime/fe-ux-walkthrough-01/role-entry/backend/user_entry_delivery_browser_acceptance.json`）、逐页观察与请求事件（`../../../../.runtime/fe-ux-walkthrough-01/observations.json`）、会话记录（`../../../../.runtime/fe-ux-walkthrough-01/session-summary.json`）。
 
 ## 实际角色旅程
 

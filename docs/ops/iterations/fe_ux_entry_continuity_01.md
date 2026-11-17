@@ -17,7 +17,7 @@ UX-02 的正向合法入口是 `construction.contract.income`，**不冒充当�
 - 本地：`http://127.0.0.1:18081/t/demo`；Compose `sc-local-dev`；数据库 `sc_dev_demo`；登记 DB/Redis/Odoo 卷。alias demo、namespace ns_000000000002 已通过实际入口回读。**相同端口/别名不代表 daily；本轮未调用远端部署。**
 - `.env.dev` 的历史归档恢复后，通过 2026-10-19 成功执行原始回执补回 local.dev 专用两项入口配置；没有使用 daily/acceptance 密钥。0600、UID1000、Git ignored，值不写报告或提交。
 - 源码：`fix/fe-ux-entry-continuity-01@55896e6edcd5a5ef078406d31d5c109388dff39f` 加显式 dirty 候选；不是不可变提交 SHA。实现文件清单摘要：`866b488e3ea2a32b0767a1b3a55f8f6ffa0830a1a3f8275b26f1342fac850cb2`。
-- [逐文件候选身份](../../../.runtime/fe-ux-entry-continuity-01/rt-reviewed-candidate-identity.json)、[服务中源码与静态入口绑定](../../../.runtime/fe-ux-entry-continuity-01/rt-served-candidate-binding.json)、[前端构建清单](../../../.runtime/fe-ux-entry-continuity-01/rt-frontend-artifact-manifest.json)。后端挂载的5个关键文件与候选摘要一致，Nginx index 与本地构建一致。
+- 逐文件候选身份（`../../../.runtime/fe-ux-entry-continuity-01/rt-reviewed-candidate-identity.json`）、服务中源码与静态入口绑定（`../../../.runtime/fe-ux-entry-continuity-01/rt-served-candidate-binding.json`）、前端构建清单（`../../../.runtime/fe-ux-entry-continuity-01/rt-frontend-artifact-manifest.json`）。后端挂载的5个关键文件与候选摘要一致，Nginx index 与本地构建一致。
 - 实际身份：PM uid46/pm；管理层 uid49/executive；财务 uid47/finance；全功能 uid40/business_full。项目成员仅用于寻找负例身份，未重跑五角色完整矩阵。
 
 ### 性能与终态证据
@@ -35,7 +35,7 @@ UX-02 的正向合法入口是 `construction.contract.income`，**不冒充当�
 - 额外 provider-shapes 两项中一项因 ops.summary 为空失败；同一测试替换为 HEAD 原始 builder 仍同样失败，已证明是本轮之前存在的测试/基线问题。保留 `rt-provider-baseline.log`，不伪装该测试通过、不扩展修复范围。
 - `ci.generated_evidence.preflight` 最终 PASS。按现有生成器仅刷新被源码变化影响的复杂度/拆分清单及前端组件清单摘要；没有改检查规则。原始过期日志与最终通过日志均保留。
 
-[最终逐项结果](../../../.runtime/fe-ux-entry-continuity-01/rt-final-results.json)包含角色、请求大小、场景数量、覆盖限制和状态；[最终生成证据检查](../../../.runtime/fe-ux-entry-continuity-01/rt-generated-preflight-verified.log)。对应截图与原始网络证据位于同目录 `rt-*`，包括失败前后，而非仅保留成功页。
+最终逐项结果（`../../../.runtime/fe-ux-entry-continuity-01/rt-final-results.json`）包含角色、请求大小、场景数量、覆盖限制和状态；最终生成证据检查（`../../../.runtime/fe-ux-entry-continuity-01/rt-generated-preflight-verified.log`）。对应截图与原始网络证据位于同目录 `rt-*`，包括失败前后，而非仅保留成功页。
 
 ### 审阅与后续交付边界
 
@@ -55,7 +55,7 @@ Stage 0/1 定向诊断完成；Stage 2 最小候选已实现；Stage 3 离线验
 
 候选分支 `fix/fe-ux-entry-continuity-01`，HEAD `55896e6edcd5a5ef078406d31d5c109388dff39f` 加显式 dirty scope；完整路径和既有走查排除项见 [run](../../../.agent/runs/FE-UX-ENTRY-CONTINUITY-01/run.json)。既有走查报告及证据保留，未重新执行五角色矩阵。本轮唯一写者，无新建工作树或运行环境。
 
-Daily 只读核验与走查一致：后端 `96c860d0fb041c556b687afaad6dc689528785e5`，前端 `33a88db417ed29b0b5e54a1becfa5e17cbe45ec14c9d246c0f11fab5ebd024bb`，数据库 `sc_demo`、namespace demo，角色 `demo_role_pm`（uid46）、`demo_role_executive`（uid49）。复用已有双 duty 证据。[身份原件](../../../.runtime/fe-ux-entry-continuity-01/daily-identity.json)。
+Daily 只读核验与走查一致：后端 `96c860d0fb041c556b687afaad6dc689528785e5`，前端 `33a88db417ed29b0b5e54a1becfa5e17cbe45ec14c9d246c0f11fab5ebd024bb`，数据库 `sc_demo`、namespace demo，角色 `demo_role_pm`（uid46）、`demo_role_executive`（uid49）。复用已有双 duty 证据。身份原件（`../../../.runtime/fe-ux-entry-continuity-01/daily-identity.json`）。
 
 范围仅三个入口。无权限扩张、导航守卫绕过、业务数据修改或 daily 代码试验。资金台账保留为唯一备选，首页重排、demo 整备和视觉优化不启动。
 
@@ -112,7 +112,7 @@ P1 修改位于 `smart_construction_core` 风险行、项目财务导航方法/�
 | 候选真实浏览器/升级与回读 | 未运行：隔离环境阻塞 |
 | freeze、独立复核、远端 CI、daily 发布和验收 | 未执行，不能借用旧版本或离线结果标 PASS |
 
-原始验证日志见 [证据目录](../../../.runtime/fe-ux-entry-continuity-01/)，主要为 `iteration-final.log`、`scene-final-tests.log`、`intent-tests.log`、`typecheck-final.log`、`lint-final.log`、`model-declaration.log`。结构与控制流单测通过不证明 Odoo 当前安装视图或真实浏览器交互已通过。
+原始验证日志见 证据目录（`../../../.runtime/fe-ux-entry-continuity-01/`），主要为 `iteration-final.log`、`scene-final-tests.log`、`intent-tests.log`、`typecheck-final.log`、`lint-final.log`、`model-declaration.log`。结构与控制流单测通过不证明 Odoo 当前安装视图或真实浏览器交互已通过。
 
 新增 ORM 用例覆盖真实风险目标、当前项目范围与原生搜索上下文、无发布入口、错误模型、额外上下文要求、无权用户；这些用例必须在受管环境运行后才能计为证据。
 
@@ -139,7 +139,7 @@ P1 修改位于 `smart_construction_core` 风险行、项目财务导航方法/�
 
 DB/JWT/bootstrap 等必要旧配置存在，值未输出日志。后续 `local.dev.test` 的既有前置入口 `local.dev.demo_credentials.prepare` 将归档中的 demo 登录密码规范化为已登记固定模式；数据库/JWT凭据不变。因此“归档摘要一致”描述恢复时刻，不误称规范化后的文件仍与旧归档完全一致。
 
-[恢复回执](../../../.runtime/fe-ux-entry-continuity-01/rt-environment-recovery.json)。
+恢复回执（`../../../.runtime/fe-ux-entry-continuity-01/rt-environment-recovery.json`）。
 
 ### 实际执行及新阻塞
 
@@ -161,7 +161,7 @@ DB/JWT/bootstrap 等必要旧配置存在，值未输出日志。后续 `local.d
 | UX-02 实际关联合同旅程 | BLOCKED | ORM当前项目domain/context与拒绝断言通过；真实角色可见性/合法入口/返回未执行 |
 | UX-03 实际付款入口旅程 | BLOCKED | ORM发布规则通过；正常、慢响应、超时、失败、未授权目标浏览器路径未执行；未测候选响应大小或耗时改善 |
 
-原始日志均保留，含失败而非仅成功摘录：`rt-health.log`、`rt-health-after-build.log`、`rt-health-after-up.log`、`rt-frontend-build.log`、`rt-local-up.log`、`rt-orm.log`、`rt-pre-upgrade-snapshot.log`。最新汇总见 [RT结果](../../../.runtime/fe-ux-entry-continuity-01/rt-result.json)；前端构建文件清单见 [构建身份](../../../.runtime/fe-ux-entry-continuity-01/rt-frontend-artifact-manifest.json)，源码身份仍为上述 HEAD 加本轮已登记 dirty 候选，不能冒充 clean SHA。
+原始日志均保留，含失败而非仅成功摘录：`rt-health.log`、`rt-health-after-build.log`、`rt-health-after-up.log`、`rt-frontend-build.log`、`rt-local-up.log`、`rt-orm.log`、`rt-pre-upgrade-snapshot.log`。最新汇总见 RT结果（`../../../.runtime/fe-ux-entry-continuity-01/rt-result.json`）；前端构建文件清单见 构建身份（`../../../.runtime/fe-ux-entry-continuity-01/rt-frontend-artifact-manifest.json`），源码身份仍为上述 HEAD 加本轮已登记 dirty 候选，不能冒充 clean SHA。
 
 需要补充的唯一当前配置来源是 **sc-local-dev 的 SC_ENTRY_ROUTE_VERSION 和 SC_ENTRY_SHARED_SECRET 的受管现行文件/备份位置**；无需在聊天提供秘密值。取得后核验来源及匹配关系，再恢复配置并执行受管健康检查，随后才升级候选和继续三条浏览器旅程。不能用历史配置恢复或15项 ORM通过宣称三个旅程 PASS。
 
@@ -183,14 +183,14 @@ Owner 指示继续查找后，定位到 2026-10-19 08:47 原始本地执行记�
 
 | 阶段 | 北京时间（2026-10-24） | 结果与原件 |
 | --- | --- | --- |
-| 模块升级 | 19:41:12 registry 完成，随后权威回读通过 | 原工具 session39942 exit0；[完整升级日志](../../../.runtime/fe-ux-entry-continuity-01/rt-upgrade-declared.log)。smart_core 17.0.1.1.19、smart_construction_core 17.0.0.172 均 installed；当前两个原生项目视图均包含可用性字段和 action_open_project_contracts。 |
-| UX-01 | 19:43:01–19:44:53 | 正确风险详情→返回→无效目标→管理层无权，均有截图及原始请求；[修复后详情](../../../.runtime/fe-ux-entry-continuity-01/rt-pm-risk-fixed.json)、[无权结果](../../../.runtime/fe-ux-entry-continuity-01/rt-exec-risk-denied.json)。 |
-| UX-02 | 19:44:08–19:48:25 | PM隐藏原因、合法角色收入合同入口、PM权限拒绝、单项目搜索及返回保留；[隐藏与原因](../../../.runtime/fe-ux-entry-continuity-01/rt-pm-project-overview.json)、[返回搜索结果](../../../.runtime/fe-ux-entry-continuity-01/rt-pm-project-search-return.json)。 |
-| UX-03 | 19:44:41–19:46:59 | 管理层入口、财务成功列表、慢响应/503/超时/重试/返回均完成；[超时结果](../../../.runtime/fe-ux-entry-continuity-01/rt-exec-payment-timeout.json)、[财务列表](../../../.runtime/fe-ux-entry-continuity-01/rt-finance-payment-list.json)。 |
+| 模块升级 | 19:41:12 registry 完成，随后权威回读通过 | 原工具 session39942 exit0；完整升级日志（`../../../.runtime/fe-ux-entry-continuity-01/rt-upgrade-declared.log`）。smart_core 17.0.1.1.19、smart_construction_core 17.0.0.172 均 installed；当前两个原生项目视图均包含可用性字段和 action_open_project_contracts。 |
+| UX-01 | 19:43:01–19:44:53 | 正确风险详情→返回→无效目标→管理层无权，均有截图及原始请求；修复后详情（`../../../.runtime/fe-ux-entry-continuity-01/rt-pm-risk-fixed.json`）、无权结果（`../../../.runtime/fe-ux-entry-continuity-01/rt-exec-risk-denied.json`）。 |
+| UX-02 | 19:44:08–19:48:25 | PM隐藏原因、合法角色收入合同入口、PM权限拒绝、单项目搜索及返回保留；隐藏与原因（`../../../.runtime/fe-ux-entry-continuity-01/rt-pm-project-overview.json`）、返回搜索结果（`../../../.runtime/fe-ux-entry-continuity-01/rt-pm-project-search-return.json`）。 |
+| UX-03 | 19:44:41–19:46:59 | 管理层入口、财务成功列表、慢响应/503/超时/重试/返回均完成；超时结果（`../../../.runtime/fe-ux-entry-continuity-01/rt-exec-payment-timeout.json`）、财务列表（`../../../.runtime/fe-ux-entry-continuity-01/rt-finance-payment-list.json`）。 |
 
 此次仅复核候选文件摘要、截图/JSON时间与摘要、已安装模块与实际视图，并再次只读验证服务健康和入口数据库；没有重建环境、重跑升级或重复浏览器旅程。候选实现摘要未变化，所以既有恢复后的浏览器结果继续有效。
 
-[本次对齐回执（含逐项截图摘要、时间及实际视图回读）](../../../.runtime/fe-ux-entry-continuity-01/rt-state-reconciliation.json)；[当前健康与入口身份](../../../.runtime/fe-ux-entry-continuity-01/rt-state-reconciliation-health.log)。原失败日志全部保留。UX-02仍按本文顶部的当前发布范围裁决，不扩大为所有合同入口或完整角色矩阵通过。
+本次对齐回执（含逐项截图摘要、时间及实际视图回读）（`../../../.runtime/fe-ux-entry-continuity-01/rt-state-reconciliation.json`）；当前健康与入口身份（`../../../.runtime/fe-ux-entry-continuity-01/rt-state-reconciliation-health.log`）。原失败日志全部保留。UX-02仍按本文顶部的当前发布范围裁决，不扩大为所有合同入口或完整角色矩阵通过。
 
 
 ## 本地候选冻结交接
@@ -199,7 +199,7 @@ Owner 指示继续查找后，定位到 2026-10-19 08:47 原始本地执行记�
 
 此前未跟踪的六份走查产物原样作为独立本地文档提交 `2ac16cd94` 保存，未编辑其内容。本轮产品、回归、必要派生报告及本记录随后单独提交。验证时的 HEAD+dirty 与提交后的产品内容逐文件比较，复用内容未变化的运行证据；不为 Git 提交重复跑浏览器或无关测试。
 
-完整 clean HEAD、tracked/untracked 指纹及交接状态写入 [本地冻结回执](../../../.runtime/fe-ux-entry-continuity-01/local-freeze-receipt.json) 和 [完整工作树指纹](../../../.runtime/fe-ux-entry-continuity-01/local-frozen-fingerprint.json)，以回执实际 SHA 为准，不将旧验证基线 SHA 当作冻结 SHA。忽略的 `.env.dev` 不在提交内容中，原始截图与网络证据继续存于既有运行目录。
+完整 clean HEAD、tracked/untracked 指纹及交接状态写入 本地冻结回执（`../../../.runtime/fe-ux-entry-continuity-01/local-freeze-receipt.json`） 和 完整工作树指纹（`../../../.runtime/fe-ux-entry-continuity-01/local-frozen-fingerprint.json`），以回执实际 SHA 为准，不将旧验证基线 SHA 当作冻结 SHA。忽略的 `.env.dev` 不在提交内容中，原始截图与网络证据继续存于既有运行目录。
 
 当前交接只到本地候选冻结及定向运行证据。未执行远端 CI、独立审查或对外发布，未声称具备正式合并/发布资格；Owner审阅后继续既有流程。未经单独批准不推送、更新PR、合并或部署。Daily 用户验收仍须在获准部署后执行。
 
