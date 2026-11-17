@@ -150,6 +150,19 @@ export type One2ManyInlineRow = {
   dirtyFields: string[];
   values: Record<string, unknown>;
   modifierPatches?: Record<string, Record<string, unknown>>;
+  warnings?: One2manyInteractionWarning[];
+};
+
+export type One2manyInteractionWarning = {
+  title?: string;
+  message?: string;
+  reason_code?: string;
+};
+
+export type One2manyChildInteraction = {
+  values: Record<string, unknown>;
+  modifiersPatch: Record<string, Record<string, unknown>>;
+  warnings: One2manyInteractionWarning[];
 };
 
 export type One2ManyColumn = {

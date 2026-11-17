@@ -238,6 +238,53 @@ assert.equal(child.visibleRows('lines')[0]!.values.state, 'draft');
 assert.equal(changes, 4, 'only accepted rows and explicit edits dirty the parent');
 console.log('[create-default-hydration] PASS cases=55');
 
+const interactionColumns = [
+  { name: 'name', label: 'Name', ttype: 'char' },
+  { name: 'quantity', label: 'Quantity', ttype: 'float' },
+];
+const interactionRuntime = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 10, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => interactionColumns,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: async () => ({
+    values: { name: 'Server default', quantity: 2 },
+    modifiersPatch: { name: { readonly: true } },
+    warnings: [{ message: 'Server default hint', reason_code: 'VALIDATION_ERROR' }],
+  }),
+  loadRowChange: async () => ({
+    values: { name: 'Server changed', quantity: 5 },
+    modifiersPatch: { quantity: { readonly: true } },
+    warnings: [{ message: 'Server change hint' }],
+  }),
+});
+await interactionRuntime.addRow('lines');
+const interactionRow = interactionRuntime.visibleRows('lines')[0]!;
+assert.equal(interactionRow.values.name, 'Server default');
+assert.equal(interactionRuntime.effectiveColumn('lines', interactionRow, interactionColumns[0]!).readonly, true,
+  'new-row modifiers_patch is applied to the row overlay');
+assert.deepEqual(interactionRuntime.rowHints('lines', interactionRow), ['Server default hint', '处理原因：校验未通过'],
+  'new-row warnings use the existing row hint presentation');
+await interactionRuntime.setRowField('lines', interactionRow.key, interactionColumns[1]!, 5);
+const changedInteractionRow = interactionRuntime.visibleRows('lines')[0]!;
+assert.equal(changedInteractionRow.values.name, 'Server changed');
+assert.equal(changedInteractionRow.values.quantity, 5);
+assert.equal(interactionRuntime.effectiveColumn('lines', changedInteractionRow, interactionColumns[1]!).readonly, true,
+  'row-onchange modifiers_patch replaces the row overlay');
+assert.deepEqual(interactionRuntime.rowHints('lines', changedInteractionRow), ['Server change hint'],
+  'row-onchange warnings replace stale child hints');
+let invalidInteractionErrors = 0;
+const invalidInteractionRuntime = useOne2manyRuntime({
+  model: () => 'x.parent', recordId: () => 10, originalValues: () => ({}), parentValues: () => ({}),
+  onchangeLinePatches: () => [], resolveColumns: () => interactionColumns,
+  resolvePrimaryColumn: () => 'name', resolveRelationOptions: () => [], markFieldChanged: () => {},
+  loadDefaults: async () => ({ values: 'invalid' }) as unknown as Record<string, unknown>,
+  onCreateError: () => { invalidInteractionErrors += 1; },
+});
+await invalidInteractionRuntime.addRow('lines');
+assert.equal(invalidInteractionRuntime.visibleRows('lines').length, 0, 'invalid child interaction cannot append an empty row');
+assert.equal(invalidInteractionErrors, 1, 'invalid child interaction reaches the explicit create error channel');
+console.log('child initialization/onchange modifiers and warnings: passed');
+
 // One authoritative frame feeds actual child rendering, edits, validation and writes.
 const { bindNativeContext, bindNativeRowParentContext } = await import('../src/app/nativeModifierContext');
 let parentDraft = false;

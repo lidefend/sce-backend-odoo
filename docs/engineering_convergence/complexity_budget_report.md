@@ -81,7 +81,7 @@ Generated from repository source files. This report is informational during the 
 | 1612 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1579 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 1583 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
@@ -173,7 +173,7 @@ Generated from repository source files. This report is informational during the 
 | 1024 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1018 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
-| 1006 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
+| 1008 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
@@ -326,7 +326,7 @@ Generated from repository source files. This report is informational during the 
 | 1612 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1579 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
+| 1583 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1538 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |

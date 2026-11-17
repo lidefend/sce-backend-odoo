@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "FE-RELATION-INTERACTION-01-20261117",
+  "branch": "feature/frontend-presentation-interaction-system-20261117",
+  "baseline_sha": "96141e0e02819f198d042515277e7e87eebe2ba1",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RELATION-INTERACTION-01-20261117.yaml",
+  "record": "docs/ops/iterations/fe_relation_interaction_01_20261117.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RELATION-INTERACTION-01-20261117.yaml",
+    ".agent/runs/FE-RELATION-INTERACTION-01-20261117/run.json",
+    "docs/ops/iterations/fe_relation_interaction_01_20261117.md",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+    "frontend/apps/web/scripts/create_default_hydration_test.ts",
+    "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing frontend relation lifecycle and create-default hydration test entries"
+  },
+  "checks": {
+    "relation_lifecycle": {
+      "target": "verify.frontend.professional_relation_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "create_default_hydration": {
+      "target": "verify.frontend.create_default_hydration.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "relation_field": {
+      "target": "verify.frontend.professional_relation_field.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/scripts/professional_relation_field_model_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "acceptance_staging": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review the final diff, commit the clean frontend candidate, publish the exact HEAD, and merge after current-head required CI."
+}

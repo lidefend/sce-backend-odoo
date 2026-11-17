@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "feature/frontend-presentation-interaction-system-20261117": ".agent/runs/FE-RELATION-INTERACTION-01-20261117/run.json",
     "fix/cleanup-merged-run-bindings-20261117": ".agent/runs/MERGED-RUN-BINDING-CLEANUP-20261117/run.json",
     "feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117": ".agent/runs/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT/run.json",
     "feature/native-scene-01-project-ledger-detail-20261117": ".agent/runs/NATIVE-SCENE-01-PROJECT-LEDGER-DETAIL-CLOSURE-20261117/run.json",
