@@ -14,25 +14,27 @@ from scripts.verify.product_view_structure_contract_guard import validate_manife
 
 
 class ProductViewStructureContractTests(unittest.TestCase):
-    def test_formal_project_views_do_not_publish_unsupported_embedded_widgets(self):
+    def test_formal_backend_views_only_publish_client_supported_embedded_widgets(self):
         root = Path(__file__).resolve().parents[2]
-        unsupported = {
-            "sc_insight_banner",
-            "sc_stage_requirements",
-            "sc_next_actions",
-        }
-        for relative in (
-            "addons/smart_construction_core/views/core/project_views.xml",
-            "addons/smart_construction_core/views/core/project_overview_views.xml",
-        ):
-            with self.subTest(path=relative):
-                tree = ElementTree.parse(root / relative)
-                published = {
-                    element.get("name")
-                    for element in tree.iter("widget")
-                    if element.get("name")
-                }
-                self.assertEqual(published & unsupported, set())
+        supported = {"web_ribbon"}
+        published = {}
+        for base in (root / "addons", root / "customer_addons"):
+            for path in base.rglob("*.xml"):
+                if path.stat().st_size == 0:
+                    # dashboard_views.xml is an intentionally empty carrier;
+                    # it cannot publish a Widget declaration.
+                    continue
+                tree = ElementTree.parse(path)
+                for element in tree.iter("widget"):
+                    name = element.get("name")
+                    if name:
+                        published.setdefault(name, []).append(
+                            str(path.relative_to(root))
+                        )
+        self.assertEqual(
+            {name: paths for name, paths in published.items() if name not in supported},
+            {},
+        )
 
     def test_schema_uses_semantic_version_and_has_no_v1_alias(self):
         from scripts.contract.product_view_structure_common import SCHEMA

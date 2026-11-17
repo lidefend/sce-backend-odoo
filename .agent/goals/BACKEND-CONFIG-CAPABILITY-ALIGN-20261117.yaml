@@ -1,0 +1,20 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONFIG-CAPABILITY-ALIGN-20261117
+  status: active
+  formal_product_layer: P0
+  objective: Inventory every formal backend XML view declaration, remove reviewed unsupported embedded Widget declarations, and project inherited optional Widget nodes out per client capability so they cannot fail an otherwise usable page.
+  product_result: No reviewed formal backend XML view publishes an unsupported embedded Widget, and inherited or runtime-contributed optional nodes degrade per request without blocking fields, permissions, actions or record use.
+  scope:
+    - complete formal backend XML embedded Widget inventory
+    - P0 request-local optional embedded Widget capability projection
+    - P1 project Form and Overview view data
+    - P1/P2/customer backend view data where unsupported embedded Widgets are found
+    - P1 project positive presentation acceptance target
+    - bounded run records
+  exclusions:
+    - code rollback or daily runtime reset
+    - capability negotiation implementation
+    - new contract, component, model, database, port, Compose project or credential authority
+    - Renderer, parser or AST changes
+    - production deployment

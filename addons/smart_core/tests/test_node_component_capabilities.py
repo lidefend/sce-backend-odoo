@@ -4,7 +4,11 @@ import unittest
 from unittest.mock import patch
 from types import SimpleNamespace
 import test_node_component_validation as fixtures
-from core.node_component_capabilities import validate_component_capabilities, NODE_CAPABILITIES
+from core.node_component_capabilities import (
+    validate_component_capabilities,
+    NODE_CAPABILITIES,
+    OPTIONAL_NODE_CAPABILITIES,
+)
 from core.form_configuration_compiler import FormConfigurationError
 
 CAPS = list(NODE_CAPABILITIES.values())
@@ -90,6 +94,40 @@ class CapabilityTests(unittest.TestCase):
                 'form.feedback.draft.v1',
             ],
         })
+
+    def test_unsupported_optional_nodes_do_not_fail_the_page(self):
+        c = contract([
+            'sc.feedback.message',
+            'sc.insight.summary',
+            'sc.action.list',
+        ])
+        c['layoutContract']['containerTree'][1]['children'] = [{
+            'containerId': 'nested-optional',
+            'componentKey': 'sc.action.list',
+        }]
+        c['statusContract'] = {'containerStatus': [
+            {'containerId': '0'},
+            {'containerId': '1'},
+            {'containerId': 'nested-optional'},
+        ]}
+        validate_component_capabilities(c, {
+            'client_contract_capabilities': ['form.feedback.message.v1'],
+        })
+        self.assertEqual(
+            [node['componentKey'] for node in c['layoutContract']['containerTree']],
+            ['sc.feedback.message'],
+        )
+        self.assertEqual(c['statusContract']['containerStatus'], [{'containerId': '0'}])
+
+    def test_supported_optional_nodes_remain_when_the_client_declares_them(self):
+        c = contract(['sc.insight.summary', 'sc.action.list'])
+        validate_component_capabilities(c, {
+            'client_contract_capabilities': list(OPTIONAL_NODE_CAPABILITIES.values()),
+        })
+        self.assertEqual(
+            [node['componentKey'] for node in c['layoutContract']['containerTree']],
+            ['sc.insight.summary', 'sc.action.list'],
+        )
 
 
 class DeliveryTests(unittest.TestCase):

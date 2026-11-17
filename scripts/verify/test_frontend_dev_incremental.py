@@ -129,6 +129,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "addons/smart_construction_core/views/core/project_views.xml",
             "addons/smart_construction_core/views/core/project_overview_views.xml",
+            "scripts/verify/test_product_view_structure_contract.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
