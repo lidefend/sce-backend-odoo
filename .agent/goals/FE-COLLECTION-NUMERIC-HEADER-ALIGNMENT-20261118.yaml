@@ -1,0 +1,18 @@
+schema_version: 1
+goal:
+  id: FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118
+  status: active
+  formal_product_layer: P0
+  layer_target: public collection table presentation
+  module: frontend/apps/web shared collection renderer
+  standard_vs_user_specific: platform_mechanism_presentation
+  objective: Align numeric and monetary collection headers with their right-aligned values across desktop and compact collection surfaces.
+  product_result: Users can scan numeric columns without a visual axis shift between the header, body cells and aggregate footer.
+  why_here: Column alignment and table presentation are generic renderer/design-system responsibilities shared by all contract-driven collections.
+  why_not_elsewhere: No business contract, model, field, permission, action or status semantics change is required or permitted.
+  blast_radius: All collection tables that expose numeric or monetary columns through the shared ScTable appearance.
+  exclusions:
+    - backend, contract, model, field or permission changes
+    - per-model/page alignment branches
+    - column visibility, ordering, width or sorting semantics
+    - deployment or user acceptance claims

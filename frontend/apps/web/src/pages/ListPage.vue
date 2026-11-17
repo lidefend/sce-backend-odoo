@@ -1714,6 +1714,7 @@ function collectionTableColumns(groupKey = '') {
       : {},
     width: resolvedColumnWidth(field),
     className: (_context: unknown) => columnDensityClass(field),
+    align: columnLayoutRole(field) === 'money' || isNumericColumn(field) ? 'right' : undefined,
     cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => collectionCell(row, field),
   }));
   return columns;
