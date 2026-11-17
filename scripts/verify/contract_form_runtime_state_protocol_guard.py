@@ -27,6 +27,22 @@ def _read(path: Path) -> str:
     return path.read_text(encoding="utf-8", errors="ignore") if path.is_file() else ""
 
 
+def _has_named_import(source: str, module: str, names: tuple[str, ...]) -> bool:
+    pattern = re.compile(
+        rf"import\s*\{{(?P<members>[^}}]*)\}}\s*from\s*['\"]{re.escape(module)}['\"]\s*;",
+        re.DOTALL,
+    )
+    for match in pattern.finditer(source):
+        imported = {
+            re.split(r"\s+as\s+", member.strip(), maxsplit=1)[0]
+            for member in match.group("members").split(",")
+            if member.strip()
+        }
+        if set(names).issubset(imported):
+            return True
+    return False
+
+
 def main() -> int:
     errors: list[str] = []
     protocol = _read(PROTOCOL)
@@ -189,9 +205,7 @@ def main() -> int:
         (page_state, "import type { BusyKind, SubmissionFeedback, UiStatus } from './types';", "useContractFormPageState.ts"),
         (page, "import { applyFormRuntimeStatusEvent } from './contractForm/runtimeStateApplier';", "ContractFormPage.vue"),
         (save_helper, "import type { LayoutNode, SubmissionFeedback } from './types';", "saveRecordHelpers.ts"),
-        (action_runtime, "import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';", "useFormActionRuntime.ts"),
         (action_runtime, "import type { BusyKind, ContractAction, SubmissionFeedback, UiStatus } from './types';", "useFormActionRuntime.ts"),
-        (primary_runtime, "import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';", "usePrimaryFormActionRuntime.ts"),
         (primary_runtime, "import type { BusyKind, ContractAction, SubmissionFeedback, UiStatus } from './types';", "usePrimaryFormActionRuntime.ts"),
         (form_config_runtime, "import { applyFormRuntimeBusyEvent, applyFormRuntimeStatusEvent } from './runtimeStateApplier';", "useFormConfigSaveRuntime.ts"),
         (form_config_runtime, "UiStatus", "useFormConfigSaveRuntime.ts"),
@@ -203,6 +217,22 @@ def main() -> int:
     for source, token, label in required_consumers:
         if token not in source:
             errors.append(f"{label} missing runtime protocol consumer token: {token}")
+
+    required_applier_imports = [
+        (
+            action_runtime,
+            "useFormActionRuntime.ts",
+            ("applyFormRuntimeStatusEvent", "beginFormRuntimeBusy", "endFormRuntimeBusy"),
+        ),
+        (
+            primary_runtime,
+            "usePrimaryFormActionRuntime.ts",
+            ("applyFormRuntimeStatusEvent", "beginFormRuntimeBusy", "endFormRuntimeBusy"),
+        ),
+    ]
+    for source, label, names in required_applier_imports:
+        if not _has_named_import(source, "./runtimeStateApplier", names):
+            errors.append(f"{label} missing runtime protocol applier imports: {', '.join(names)}")
 
     required_action_applier_tokens = [
         "applyFormRuntimeStatusEvent(params, {",

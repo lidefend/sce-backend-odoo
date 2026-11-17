@@ -2,7 +2,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 
-import { permitsContractV2SnapshotReuse } from '../src/app/contracts/v2/runtime';
+import {
+  permitsContractV2SnapshotReuse,
+  requiresContractV2EtagRevalidation,
+} from '../src/app/contracts/v2/runtime';
 import { resolveContractV2RuntimePolicy } from '../src/app/contracts/v2/store';
 import type { ContractV2RuntimeContract } from '../src/app/contracts/v2/types';
 import { resolveContractFormReadContext } from '../src/pages/contractForm/contractRuntimeVm';
@@ -21,12 +24,19 @@ function runtime(cachePolicy: ContractV2RuntimeContract['cachePolicy']): Contrac
 assert.equal(permitsContractV2SnapshotReuse(runtime('snapshot')), true);
 assert.equal(permitsContractV2SnapshotReuse(runtime('etag')), false);
 assert.equal(permitsContractV2SnapshotReuse(runtime('none')), false);
+assert.equal(requiresContractV2EtagRevalidation(runtime('snapshot')), false);
+assert.equal(requiresContractV2EtagRevalidation(runtime('etag')), true);
+assert.equal(requiresContractV2EtagRevalidation(runtime('none')), false);
 const clientSource = fs.readFileSync(
   path.resolve('frontend/apps/web/src/app/contracts/v2/client.ts'),
   'utf8',
 );
-assert.match(clientSource, /import \{ permitsContractV2SnapshotReuse \} from '\.\/runtime';/);
+assert.match(clientSource, /permitsContractV2SnapshotReuse/);
+assert.match(clientSource, /requiresContractV2EtagRevalidation/);
 assert.match(clientSource, /permitsContractV2SnapshotReuse\(result\.snapshot\.runtimeContract\)/);
+assert.match(clientSource, /requiresContractV2EtagRevalidation\(result\.snapshot\.runtimeContract\)/);
+assert.match(clientSource, /headers: \{ 'If-None-Match': ifNoneMatch \}/);
+assert.match(clientSource, /if \(response\.notModified\) return null;/);
 assert.doesNotMatch(clientSource, /cachePolicy === 'etag'/);
 
 const runtimePayload = {

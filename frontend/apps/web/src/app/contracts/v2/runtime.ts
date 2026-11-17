@@ -25,6 +25,10 @@ export function permitsContractV2SnapshotReuse(runtime: ContractV2RuntimeContrac
   return runtime.cachePolicy === 'snapshot';
 }
 
+export function requiresContractV2EtagRevalidation(runtime: ContractV2RuntimeContract): boolean {
+  return runtime.cachePolicy === 'etag';
+}
+
 export function resolveContractV2ActionPlan(
   store: ContractV2NormalizedStore,
   actionId: string,

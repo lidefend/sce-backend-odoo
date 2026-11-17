@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v84"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v90"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -89,13 +89,14 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "70dabdaa8b54102428760d9229142cba7150065cb55cbc11b157cef0e8b4c3a4"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "5dc7827d0c827f95a4db4d3de9323e56d4594ee5b6696764ddd9f26185ee2342"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
 #     entitlement;
 #   * the process-local hot cache may keep the record-independent source and,
-#     only for record-free requests, the assembled contract;
+#     only for record-free requests, the assembled contract; create requests
+#     use the isolated deep-copy read rather than the loaned shared read;
 #   * the persistent asset stores the source projection only;
 #   * the browser may cache only a record-free create contract.
 # The checks below fail closed if a future change lets a record-bound contract
@@ -209,7 +210,7 @@ def check_cache_layer_boundaries(errors: list[str]) -> None:
             f"{leaked} in {ASSEMBLED_CACHE_HANDLER}; compute record and permission "
             "state per request and reuse static structure only",
         )
-    expected_gate = "not runtime_record_id and (not is_create_request) and cache_key and source_token"
+    expected_gate = "not runtime_record_id and cache_key and source_token"
     store_nodes = [
         node
         for node in ast.walk(tree)
@@ -236,7 +237,10 @@ def check_cache_layer_boundaries(errors: list[str]) -> None:
     ]
     if not shared_read_nodes:
         fail(errors, "the handler no longer performs the shared assembled-cache read")
-    expected_read_gate = "not runtime_record_id and (not is_create_request)"
+    expected_read_gate = (
+        "not runtime_record_id and (not is_create_request or "
+        "bool(str((base_params or {}).get('_create_defaults_fingerprint') or '').strip()))"
+    )
     for node in shared_read_nodes:
         gate = _enclosing_if_test(node, parents)
         if gate != expected_read_gate:
@@ -292,6 +296,16 @@ def check_cache_layer_boundaries(errors: list[str]) -> None:
             fail(errors, "the assembled hit must re-seal the request identity before returning")
         if not any(isinstance(node, ast.Return) for node in ast.walk(hit_branch)):
             fail(errors, "the assembled hit branch must terminate the request with a return")
+        hit_gate = ast.unparse(hit_branch.test)
+        if (
+            "is_create_request or" not in hit_gate
+            or "not _node_snapshot_requires_assembly" not in hit_gate
+        ):
+            fail(
+                errors,
+                "component-bearing assembled hits must remain limited to validated "
+                "record-free create requests",
+            )
         enclosing = next(
             (
                 node

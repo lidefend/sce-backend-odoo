@@ -7,6 +7,10 @@
   "goal": ".agent/goals/FE-RELATION-INTERACTION-01-20261117.yaml",
   "record": "docs/ops/iterations/fe_relation_interaction_01_20261117.md",
   "scope": [
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/utils/load_contract_response_cache.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_core/tests/test_load_contract_response_cache.py",
     ".agent/active-runs.json",
     ".agent/goals/FE-RELATION-INTERACTION-01-20261117.yaml",
     ".agent/runs/FE-RELATION-INTERACTION-01-20261117/run.json",
@@ -38,7 +42,10 @@
     "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/api/client.ts",
+    "frontend/apps/web/src/api/intents.ts",
     "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "frontend/apps/web/src/app/contracts/v2/runtime.ts",
     "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
     "frontend/apps/web/scripts/professional_workflow_model_test.ts",
@@ -56,7 +63,12 @@
     "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
     "scripts/verify/frontend_professional_workflow_guard.py",
     "scripts/verify/test_frontend_professional_workflow_guard.py",
-    "scripts/verify/test_acceptance_evolution_binding_guard.py"
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/contract_form_runtime_state_protocol_guard.py",
+    "scripts/verify/contract_form_side_effect_regression_guard.py",
+    "scripts/verify/test_frontend_standard_preview.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs"
   ],
   "environment": {
     "kind": "offline",
@@ -190,10 +202,47 @@
       "target": "verify.frontend.contract_v2_runtime_policy.unit",
       "kind": "offline",
       "inputs": [
+        "frontend/apps/web/src/api/client.ts",
+        "frontend/apps/web/src/api/intents.ts",
         "frontend/apps/web/src/app/contracts/v2/client.ts",
         "frontend/apps/web/src/app/contracts/v2/runtime.ts",
         "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
         "make/frontend.mk"
+      ]
+    },
+    "ui_contract_etag_transport": {
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/utils/load_contract_response_cache.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "make/contract.mk"
+      ]
+    },
+    "runtime_protocol_guard": {
+      "target": "verify.contract.architecture.suite",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/contract_form_runtime_state_protocol_guard.py",
+        "scripts/verify/contract_form_side_effect_regression_guard.py",
+        "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "make/ci.mk"
+      ]
+    },
+    "performance_probe_tool": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_performance_budget.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "make/runtime_ops.mk"
       ]
     },
     "native_action_contract_consumption": {
@@ -218,5 +267,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Review the final diff, commit the clean frontend candidate, publish the exact HEAD, and merge after current-head required CI."
+  "next_exact_step": "Review and commit the current v90 runtime-ETag candidate, freeze its full SHA, then run the governed performance probe and confirm form_open stays within budget."
 }

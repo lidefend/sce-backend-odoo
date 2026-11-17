@@ -3,8 +3,8 @@
 ## Boundary
 
 - Formal Product Layer: P0
-- Layer Target: generic Contract V2 one2many child initialization and row-onchange consumption
-- Module: `frontend/apps/web`
+- Layer Target: generic Contract V2 relation/action interaction plus P0 conditional-delivery and assembled-cache revalidation
+- Module: `frontend/apps/web`, `addons/smart_core`
 - Standard vs User-Specific: platform standard
 
 The backend child-onchange contract already declares `patch`, `modifiers_patch`, `line_patches` and `warnings`. The current relationship loader rejects any modifier or warning effect, making a valid row interaction fail before the shared one2many runtime can consume it.
@@ -13,7 +13,8 @@ This batch keeps the declaration authority unchanged. It moves declared child mo
 
 ## Exclusions
 
-- no backend schema, model, action or business-rule change;
+- no backend schema, model, action or business-rule change; the owner-authorized
+  `smart_core` work is limited to generic Contract V2 transport and cache behavior;
 - no model-specific branches for project, contract, payment or another industry form;
 - no new component system;
 - no claim of nested child line-patch support;
@@ -130,3 +131,120 @@ A surface change during validation now clears both the generic save busy kind
 and its `form.save` action identity. The shipped save-chain test verifies that a
 superseded save cannot erase the newer save's identity and that leaving the
 surface does not retain a stale action marker.
+
+## CI remediation: conditional Contract V2 revalidation
+
+The candidate release gate measured `form_open` at 2091 ms against the governed
+1600 ms median budget after the create-contract change stopped treating `etag`
+as a local TTL cache. Restoring the removed TTL behavior would violate the
+declared cache policy, while allowing the performance failure would make the
+candidate non-mergeable.
+
+`ui.contract.v2` now compares a request's `If-None-Match` validator with the
+delivered contract ETag and returns a bodyless 304 on equality. The frontend
+keeps the existing ETag validator in its create-contract cache, sends the
+conditional request, and restores the cached decoded snapshot only after the
+server confirms it is current. A changed contract, a missing validator, or
+`cachePolicy: none` still produces the existing full delivery.
+
+This is a P0 delivery-transport mechanism and introduces no model, business
+contract, action, permission or industry behavior. The runtime protocol guard
+was also changed to parse named imports instead of matching one formatting of a
+multi-line `runtimeStateApplier` import. The side-effect regression guard now
+recognizes the shared `beginFormRuntimeBusy` / `endFormRuntimeBusy` applier
+mechanism for save and action transaction owners while still rejecting direct
+`busyKind.value` writes. Its falsification test now mutates the applier-based
+release so the same finally-block ownership boundary remains proven.
+
+Because the handler code changed, the assembled-contract cache version advanced
+from `v84` to `v89` and its complete input digest was re-pinned. This prevents a
+process that upgrades the code from serving a contract assembled under the
+previous handler.
+
+The first clean performance probe showed that returning 304 after rebuilding
+the create contract does not reduce assembly latency; `form_open` rose to
+2507 ms. Record-free create requests now also use the assembled-contract cache,
+but through the isolated deep-copy read rather than the loaned shared read used
+by list/edit requests. The cache identity continues to include the semantic
+request parameters, acting user/groups, company, allowed companies, locale,
+context epoch and source token (native views, fields, action, menu, ACL/rule,
+configuration versions and code fingerprint). A create request therefore cannot
+cross a role, company or configuration boundary, and sealing still runs on its
+own copied contract before ETag comparison. Component-bearing create contracts
+enter the hit only after the cached final nodes and component capabilities have
+been validated against the current request; record-bound and non-create
+component contracts retain their prior assembly path.
+
+The handler computes a bounded SHA-256 identity from the live create
+`default_get` values, including many2one identity/display/write date, and adds
+that identity to the projection cache key. A create hit is therefore possible
+only when the current default facts exactly match the cached assembly; any
+default, relation, route context or configuration change selects a different
+entry and rebuilds. Without that fingerprint, create remains a dynamic request.
+Create hot reads may use the shared read-only source graph because their cache
+key includes that exact defaults identity and the returned contract is copied
+before sealing; all response-sensitive state remains request-scoped.
+
+The release performance probe now records bounded form-open request diagnostics:
+intent, operation, model, render profile, conditional-request presence, HTTP
+status and duration. It stores no response body or business values. This is
+diagnostic evidence for locating the remaining latency; it does not change the
+performance budgets or accepted outcomes.
+
+Verification for this source slice:
+
+| Check | Result |
+| --- | --- |
+| `verify.frontend.contract_v2_runtime_policy.unit` | PASS; 23 cache-policy and source-parity assertions |
+| `verify.node_component_validation.unit` | PASS; 268 tests, including matching and non-matching `If-None-Match` |
+| `verify.contract.entry_equivalence.guard` | PASS; one shared fetch/decode authority remains |
+| `verify.contract.architecture.suite` | PASS; 1781 tests |
+| `verify.frontend.standard_preview.unit` | PASS; 139 tests |
+| `verify.unified_page_contract.v2.assembler` | PASS; cache version and full input digest are current |
+| `ci.local.iteration` | PASS; 26 affected targets executed with non-zero collection |
+| `ci.delivery.freeze.prepare` | PASS; generated content-bound evidence is current |
+
+The governed release performance probe and remote exact-head CI remain pending;
+no deployment or user acceptance is claimed here.
+
+## Runtime ETag fast path for exact assembled identities
+
+Returning 304 after rebuilding and sealing the create contract still paid almost
+all of the hot-path cost. The cache now records the delivered runtime ETag beside
+the assembled contract. On a later request it can answer a bodyless 304 before
+copying validation graphs, sealing or trimming only when all of the following
+still match:
+
+- the projection cache key and source token;
+- source type, cache version, client type, delivery profile and limit parameters;
+- the client `If-None-Match` validator and the ETag recorded for a successful
+  delivery of that exact assembled identity.
+
+Record-bound requests are explicitly excluded from this path because their cache
+key is intentionally record-independent. A non-fast assembled hit returns the
+stored ETag slot by reference, allowing the handler to populate it from the
+properly sealed contract after the first full delivery. The outer handler returns
+an early 304 directly without running component validation against a null body.
+
+The assembled cache version advanced from `v89` to `v90` and its complete input
+digest was re-pinned. This remains P0 delivery transport and cache behavior; it
+does not declare or alter any model, field, action, permission, default or
+industry rule.
+
+Verification for the fast path:
+
+| Check | Result |
+| --- | --- |
+| `addons/smart_core/tests/test_load_contract_response_cache.py` | PASS; 56 tests, including exact ETag identity, exclusion, shared-slot and isolation cases |
+| `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` | PASS; 178 tests, including bodyless 304 handling |
+| `verify.node_component_validation.unit` | PASS; 273 tests |
+| `verify.frontend.contract_v2_runtime_policy.unit` | PASS; create cache policy and source parity |
+| `verify.contract.entry_equivalence.guard` | PASS; 10 tests and one shared request/decode authority |
+| `verify.contract.architecture.suite` | PASS; 1781 tests |
+| `verify.unified_page_contract.v2.assembler` | PASS; `v90`, sources=4, input digest `5dc7827d0c827f95a4db4d3de9323e56d4594ee5b6696764ddd9f26185ee2342` |
+| `verify.frontend.standard_preview.unit` | PASS; 139 tests |
+| `ci.local.iteration` | PASS; 27 affected targets executed with non-zero collection |
+| `ci.delivery.freeze.prepare` | PASS; generated content-bound evidence is current |
+
+The governed performance probe and exact-head publication remain pending. No
+clean identity or delivery result is claimed before those checks complete.

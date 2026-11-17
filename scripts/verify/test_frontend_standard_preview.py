@@ -1483,10 +1483,18 @@ class SaveFinallyGuardTest(unittest.TestCase):
         namespace = main.__globals__
         original_read = namespace['_read']
         original = original_read(namespace['SAVE_RUNTIME'])
-        release = "if (busyOwnerOperationId === operation.id) {\n          busyKind.value = null;\n          busyOwnerOperationId = 0;\n        }"
+        release = (
+            "if (busyOwnerOperationId === operation.id) {\n"
+            "          endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');\n"
+            "          busyOwnerOperationId = 0;\n"
+            "        }"
+        )
         self.assertIn(release, original)
         variants = {'valid': original, 'missing': original.replace(release, ''),
-            'unconditional': original.replace(release, 'busyKind.value = null;'),
+            'unconditional': original.replace(
+                release,
+                "endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');",
+            ),
             'before': original.replace(release, '').replace('    } finally {', release + '\n    } finally {', 1),
             'after': original.replace(release, '').replace('    return false;\n  }\n  // Collapse', release + '\n    return false;\n  }\n  // Collapse', 1)}
         for name, source in variants.items():

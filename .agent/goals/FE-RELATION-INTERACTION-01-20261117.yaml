@@ -3,17 +3,18 @@ goal:
   id: FE-RELATION-INTERACTION-01-20261117
   status: active
   formal_product_layer: P0
-  layer_target: generic Contract V2 relation, action execution-state and create-cache interaction convergence
-  module: frontend/apps/web
+  layer_target: generic Contract V2 relation, action execution-state, create-cache interaction and exact assembled-identity ETag convergence
+  module: frontend/apps/web + smart_core
   standard_vs_user_specific: platform_standard
-  reason: Declared child modifiers/warnings are rejected by the relationship loader, inline canonical actions expose only a raw reason code through title, action loading is not shared across header/body/overflow surfaces, and create-contract caching treats etag as reusable despite the shared runtime requiring server revalidation.
-  why_here: Relation interaction lifecycle, row hint presentation, action execution presentation and contract cache policy are generic frontend mechanisms shared by all models.
-  why_not_elsewhere: No schema, model, backend action, industry rule, page special case or new component authority is required; the executing action identity is ephemeral frontend state, not a business contract fact.
-  blast_radius: All Contract V2 one2many Add Row/row-onchange paths, canonical header/body/overflow actions during execution, and record-free create contract loads.
+  reason: Declared child modifiers/warnings are rejected by the relationship loader, inline canonical actions expose only a raw reason code through title, action loading is not shared across header/body/overflow surfaces, create-contract caching treats etag as reusable despite the shared runtime requiring server revalidation, and ui.contract.v2 rebuilds an exact assembled identity before answering a matching If-None-Match validator.
+  why_here: Relation interaction lifecycle, row hint presentation, action execution presentation and response validation are generic P0 mechanisms shared by all models.
+  why_not_elsewhere: The frontend must issue a conditional request instead of restoring a TTL cache, and ui.contract.v2 owns delivery ETag comparison, exact assembled-cache identity and the 304 response. No schema, model, business action, industry rule, page special case or new component authority is required.
+  blast_radius: All Contract V2 one2many Add Row/row-onchange paths, canonical header/body/overflow actions during execution, ui.contract.v2 conditional reads, and record-free create contract loads.
   exclusions:
-    - backend contract or model changes
+    - backend business contract or model changes
+    - backend business semantics or action behavior changes
     - nested child one2many line_patches execution
     - model-specific project, contract or payment branches
     - new design-system component tree
     - deployment or L4 user acceptance before source checks pass
-  product_result: One2many rows consume declared modifier/warning effects, denied reasons and executing-action loading are consistent across canonical action surfaces, and only snapshot-declared create contracts use local reuse.
+  product_result: One2many rows consume declared modifier/warning effects, denied reasons and executing-action loading are consistent across canonical action surfaces, snapshot-declared create contracts reuse locally, and etag contracts revalidate through ui.contract.v2 with an exact assembled identity returning bodyless 304.

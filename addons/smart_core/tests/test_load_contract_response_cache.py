@@ -42,6 +42,13 @@ class TestLoadContractResponseCache(unittest.TestCase):
                            ("record_id", "new"), ("recordId", "new"), ("res_id", "new"), ("resId", "new")):
             with self.subTest(key=key):
                 self.assertIsNone(TARGET.projection_base_params({"model": "x.document", key: value}))
+        create_base = TARGET.projection_base_params({
+            "model": "x.document",
+            "render_profile": "create",
+            "_create_defaults_fingerprint": "a" * 64,
+        })
+        self.assertEqual(create_base["_create_defaults_fingerprint"], "a" * 64)
+        self.assertEqual(create_base["render_profile"], "create")
 
     def test_saved_records_and_lists_keep_record_independent_projection_cache(self):
         for request in ({"model": "x.document", "view_type": "tree"},
@@ -108,6 +115,7 @@ class TestLoadContractResponseCache(unittest.TestCase):
             "limit_params": {"limit": 20}, "contract_v2": contract_v2,
             "source_contract": source_contract, "deepcopy": copy.deepcopy,
             "source_snapshot_memo": {}, "assembled_digest_slot": {},
+            "runtime_etag_slot": {},
             "node_validation_contract": copy.deepcopy(contract_v2),
             "node_validation_native_tree": [{"containerId": "native-proof"}],
             "ASSEMBLED_SEMANTIC_DIGESTS_KEY": "assembled_semantic_digests",
@@ -615,6 +623,7 @@ class TestAssembledSharedRead(unittest.TestCase):
                 "contract": {"columns": list(shared_columns), "model": "x.document", "meta": {}},
                 "source_contract": {"columns": shared_columns, "model": "x.document"},
                 "assembled_semantic_digests": {"contractSha256": "a" * 64, "sourceSha256": "b" * 64},
+                "runtime_etag": {"value": "upc-v2-sha256-test"},
             },
         }
 
@@ -649,6 +658,55 @@ class TestAssembledSharedRead(unittest.TestCase):
         self.assertEqual(assembled["contract"], entry["_assembled_v2"]["contract"])
         self.assertIsNot(result["ui_meta"], entry["ui_meta"])
         self.assertEqual(result["ui_meta"], entry["ui_meta"])
+        self.assertIs(
+            assembled["runtime_etag"],
+            entry["_assembled_v2"]["runtime_etag"],
+        )
+
+    def test_shared_read_updates_the_runtime_etag_slot_in_the_entry(self):
+        entry = self._store()
+
+        result = self._hit()
+        result["_assembled_v2"]["runtime_etag"]["value"] = "upc-v2-sha256-next"
+
+        self.assertEqual(
+            entry["_assembled_v2"]["runtime_etag"]["value"],
+            "upc-v2-sha256-next",
+        )
+
+    def test_runtime_etag_lookup_requires_an_exact_live_assembled_identity(self):
+        self._store()
+
+        self.assertEqual(
+            self.cache.get_assembled_runtime_etag(
+                "page",
+                "source",
+                source_type="runtime_intent",
+                **self.GATE,
+            ),
+            "upc-v2-sha256-test",
+        )
+        for kwargs in (
+            {"cache_key": "other-page"},
+            {"source_token": "source-v2"},
+            {"source_type": "other"},
+            {"cache_version": "other"},
+            {"client_type": "web_mobile"},
+            {"delivery_profile": "compact"},
+            {"limit_params": {"limit": 5}},
+        ):
+            arguments = {
+                "cache_key": "page",
+                "source_token": "source",
+                "source_type": "runtime_intent",
+                **self.GATE,
+            }
+            arguments.update(kwargs)
+            with self.subTest(**kwargs):
+                self.assertEqual(
+                    self.cache.get_assembled_runtime_etag(**arguments),
+                    "",
+                )
 
     def test_shared_read_copies_the_bound_digests_instead_of_lending_them(self):
         entry = self._store()
@@ -967,7 +1025,8 @@ class TestSharedReadConsumerGuards(unittest.TestCase):
             and node.func.attr == "get_assembled"
         ]
         self.assertEqual(len(shared_calls), 1)
-        # ...and it is reached only for a request that cannot mutate the graph
+        # ...and create requests are eligible only through an exact defaults
+        # fingerprint.
         candidates = [
             node for node in ast.walk(handler)
             if isinstance(node, ast.If) and "get_assembled" in ast.unparse(node)
@@ -978,6 +1037,7 @@ class TestSharedReadConsumerGuards(unittest.TestCase):
         guard = ast.unparse(innermost.test)
         self.assertIn("not runtime_record_id", guard)
         self.assertIn("not is_create_request", guard)
+        self.assertIn("_create_defaults_fingerprint", guard)
         # ...with the fully isolated read kept as the fallback
         fallback = [
             node for node in ast.walk(handler)
@@ -986,6 +1046,17 @@ class TestSharedReadConsumerGuards(unittest.TestCase):
             and node.func.attr == "get"
         ]
         self.assertTrue(fallback, "the isolated get() fallback was removed")
+
+    def test_the_early_runtime_etag_hit_excludes_record_bound_requests(self):
+        handler = self._handler()
+        assignments = [
+            node for node in ast.walk(handler)
+            if isinstance(node, ast.Assign)
+            and "get_assembled_runtime_etag" in ast.unparse(node)
+        ]
+        self.assertEqual(len(assignments), 1)
+        guard = ast.unparse(assignments[0])
+        self.assertIn("not runtime_record_id", guard)
 
     def test_the_assembled_branch_and_the_accessor_share_one_gate(self):
         branch = self._assembled_branch()

@@ -5,7 +5,10 @@ import { useSessionStore } from '../../../stores/session';
 import { decodeContractV2Snapshot } from './schema';
 import { createContractV2Store } from './store';
 import { CONTRACT_V2_CLIENT_CAPABILITIES } from './clientCapabilities';
-import { permitsContractV2SnapshotReuse } from './runtime';
+import {
+  permitsContractV2SnapshotReuse,
+  requiresContractV2EtagRevalidation,
+} from './runtime';
 import type { ContractV2Dictionary, ContractV2NormalizedStore, ContractV2Snapshot } from './types';
 
 export interface ContractV2LoadOptions {
@@ -32,10 +35,13 @@ export interface ContractV2LoadResult {
 }
 
 type CachedContractV2LoadResult = Omit<ContractV2LoadResult, 'store'>;
+type CreateContractCacheEntry =
+  | { policy: 'snapshot'; expiresAt: number; result: CachedContractV2LoadResult }
+  | { policy: 'etag'; etag: string; result: CachedContractV2LoadResult };
 
 const CREATE_CONTRACT_CACHE_TTL_MS = 30_000;
 const CREATE_CONTRACT_CACHE_MAX_ENTRIES = 16;
-const createContractCache = new Map<string, { expiresAt: number; result: CachedContractV2LoadResult }>();
+const createContractCache = new Map<string, CreateContractCacheEntry>();
 
 function cloneJson<T>(value: T): T {
   if (value === undefined || value === null) return value;
@@ -64,7 +70,7 @@ function createContractCacheKey(params: ContractV2Dictionary): string {
 
 function pruneCreateContractCache(now: number): void {
   for (const [key, entry] of createContractCache) {
-    if (entry.expiresAt <= now) createContractCache.delete(key);
+    if (entry.policy === 'snapshot' && entry.expiresAt <= now) createContractCache.delete(key);
   }
   while (createContractCache.size >= CREATE_CONTRACT_CACHE_MAX_ENTRIES) {
     const oldestKey = createContractCache.keys().next().value;
@@ -101,11 +107,17 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
   return params;
 }
 
-async function loadContractV2(params: ContractV2Dictionary): Promise<ContractV2LoadResult> {
+async function loadContractV2(
+  params: ContractV2Dictionary,
+  ifNoneMatch = '',
+): Promise<ContractV2LoadResult | null> {
   const response = await intentRequestRaw<ContractV2Dictionary>({
     intent: 'ui.contract.v2',
     params,
-  });
+  }, ifNoneMatch ? {
+    headers: { 'If-None-Match': ifNoneMatch },
+  } : {});
+  if (response.notModified) return null;
   const snapshot = decodeContractV2Snapshot(response.data);
   return {
     snapshot,
@@ -115,11 +127,47 @@ async function loadContractV2(params: ContractV2Dictionary): Promise<ContractV2L
   };
 }
 
+async function requireContractV2Load(params: ContractV2Dictionary): Promise<ContractV2LoadResult> {
+  const result = await loadContractV2(params);
+  if (!result) throw new Error('ui.contract.v2 returned 304 without a conditional cache candidate');
+  return result;
+}
+
+function cacheCreateContractResult(
+  key: string,
+  result: ContractV2LoadResult,
+  now: number,
+): void {
+  const cachedResult: CachedContractV2LoadResult = {
+    snapshot: cloneJson(result.snapshot),
+    traceId: result.traceId,
+    rawBody: cloneJson(result.rawBody),
+  };
+  if (permitsContractV2SnapshotReuse(result.snapshot.runtimeContract)) {
+    createContractCache.set(key, {
+      policy: 'snapshot',
+      expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
+      result: cachedResult,
+    });
+    return;
+  }
+  const etag = String(result.snapshot.meta.etag || '').trim();
+  if (requiresContractV2EtagRevalidation(result.snapshot.runtimeContract) && etag) {
+    createContractCache.set(key, { policy: 'etag', etag, result: cachedResult });
+    return;
+  }
+  createContractCache.delete(key);
+}
+
 export function loadActionContractV2(actionId: number, options: ContractV2LoadOptions = {}): Promise<ContractV2LoadResult> {
-  return loadContractV2(applyCommonOptions({
+  const params = applyCommonOptions({
     op: 'action_open',
     action_id: normalizedRecordId(actionId),
-  }, options));
+  }, options);
+  return loadContractV2(params).then((result) => {
+    if (!result) throw new Error('ui.contract.v2 returned 304 without a conditional cache candidate');
+    return result;
+  });
 }
 
 export function loadModelContractV2(model: string, options: ContractV2LoadOptions = {}): Promise<ContractV2LoadResult> {
@@ -138,30 +186,29 @@ export function loadModelContractV2(model: string, options: ContractV2LoadOption
   const cacheable = renderProfile === 'create'
     && !normalizedRecordId(options.recordId)
     && !String(options.previewToken || '').trim();
-  if (!cacheable) return loadContractV2(params);
+  if (!cacheable) return requireContractV2Load(params);
 
   const now = Date.now();
   pruneCreateContractCache(now);
   const key = createContractCacheKey(params);
   const cached = createContractCache.get(key);
-  if (cached && cached.expiresAt > now) return Promise.resolve(restoreCachedResult(cached.result));
+  if (cached?.policy === 'snapshot' && cached.expiresAt > now) {
+    return Promise.resolve(restoreCachedResult(cached.result));
+  }
 
-  return loadContractV2(params).then((result) => {
-    const cachedResult: CachedContractV2LoadResult = {
-      snapshot: cloneJson(result.snapshot),
-      traceId: result.traceId,
-      rawBody: cloneJson(result.rawBody),
-    };
-    if (permitsContractV2SnapshotReuse(result.snapshot.runtimeContract)) {
-      createContractCache.set(key, {
-        expiresAt: now + CREATE_CONTRACT_CACHE_TTL_MS,
-        result: cachedResult,
-      });
-    } else {
-      createContractCache.delete(key);
+  const load = async () => {
+    if (cached?.policy === 'etag') {
+      const revalidated = await loadContractV2(params, cached.etag);
+      if (!revalidated) return restoreCachedResult(cached.result);
+      cacheCreateContractResult(key, revalidated, Date.now());
+      return revalidated;
     }
-    return restoreCachedResult(cachedResult);
-  }).catch((error: unknown) => {
+    const result = await requireContractV2Load(params);
+    cacheCreateContractResult(key, result, Date.now());
+    return result;
+  };
+
+  return load().catch((error: unknown) => {
     createContractCache.delete(key);
     throw error;
   });

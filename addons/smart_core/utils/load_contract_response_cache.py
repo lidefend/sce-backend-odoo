@@ -188,9 +188,48 @@ class LoadContractResponseCache:
                     "contract": _DEEPCOPY(assembled["contract"]),
                     "source_contract": assembled["source_contract"],
                     digests_key: dict(digests) if isinstance(digests, dict) else digests,
+                    # This mutable slot is the one shared assembled-section value:
+                    # a non-fast hit writes the sealed ETag back for the next
+                    # exact-identity revalidation. It is never part of the
+                    # source graph handed to the request.
+                    "runtime_etag": assembled.get("runtime_etag"),
                     **node_validation,
                 },
             }
+
+    def get_assembled_runtime_etag(
+        self,
+        cache_key,
+        source_token,
+        *,
+        source_type,
+        cache_version,
+        client_type,
+        delivery_profile,
+        limit_params,
+    ):
+        """Return the delivered ETag for an exact, still-live cache identity."""
+        if not cache_key or not source_token or self.ttl_seconds <= 0:
+            return ""
+        now = self._clock()
+        with self._lock:
+            entry = self._entries.get(cache_key)
+            if entry is None:
+                return ""
+            created_at, stored_token, response = entry
+            if stored_token != source_token or now - created_at > self.ttl_seconds:
+                self._entries.pop(cache_key, None)
+                return ""
+            if response.get("source_type") != source_type or not assembled_snapshot_gate_matches(
+                response,
+                cache_version=cache_version,
+                client_type=client_type,
+                delivery_profile=delivery_profile,
+                limit_params=limit_params,
+            ):
+                return ""
+            slot = response["_assembled_v2"].get("runtime_etag")
+            return str(slot.get("value") or "") if isinstance(slot, dict) else ""
 
     def put(self, cache_key, source_token, response):
         if not cache_key or not source_token or not isinstance(response, dict):
@@ -527,11 +566,15 @@ def static_projection_request(params):
 def projection_base_params(params):
     """Return the record-independent request used to build a reusable base."""
     source = dict(params or {})
+    create_defaults_fingerprint = str(source.pop("_create_defaults_fingerprint", "") or "").strip()
     # A create source contains default_get facts (including live configuration
-    # and related values), not only reusable view structure. Rebuild it through
-    # the existing dynamic path; source tokens do not describe those facts.
+    # and related values), not only reusable view structure. It may share an
+    # assembled base only when the caller supplies the exact dynamic defaults
+    # identity that produced the source.
     if str(source.get("render_profile") or source.get("renderProfile") or "").strip().lower() == "create":
-        return None
+        if not create_defaults_fingerprint:
+            return None
+        source["_create_defaults_fingerprint"] = create_defaults_fingerprint
     if any(str(source.get(key) or "").strip().lower() == "new" for key in ("record_id", "recordId", "res_id", "resId")):
         return None
     hard_dynamic_keys = {

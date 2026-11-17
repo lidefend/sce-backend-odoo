@@ -103,7 +103,7 @@
       "literal": "ui.contract.v2",
       "path": "frontend/apps/web/src/app/contracts/v2/client.ts",
       "lines": [
-        106
+        115
       ],
       "occurrences": 1,
       "classification": "contract-derived",

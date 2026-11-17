@@ -1164,20 +1164,59 @@ async function main() {
         performanceReport.scenarios[name] = { ...stats(samples), request_samples: requestSamples };
       }
       const formSamples = [];
+      const formOpenRequests = [];
+      const formOpenRequestRows = new WeakMap();
+      let captureFormOpenRequests = false;
+      const onFormOpenRequest = (request) => {
+        if (!captureFormOpenRequests || !request.url().includes('/api/v1/intent')) return;
+        let payload = {};
+        try {
+          payload = JSON.parse(request.postData() || '{}');
+        } catch {}
+        const row = {
+          intent: payload.intent || '',
+          op: payload.params?.op || '',
+          model: payload.params?.model || '',
+          render_profile: payload.params?.render_profile || payload.params?.renderProfile || '',
+          conditional: Boolean(request.headers()['if-none-match']),
+          started_at: Date.now(),
+        };
+        formOpenRequestRows.set(request, row);
+        formOpenRequests.push(row);
+      };
+      const onFormOpenResponse = (response) => {
+        const row = formOpenRequestRows.get(response.request());
+        if (!row || !captureFormOpenRequests) return;
+        row.status = response.status();
+        row.duration_ms = Date.now() - row.started_at;
+      };
+      page.on('request', onFormOpenRequest);
+      page.on('response', onFormOpenResponse);
+      captureFormOpenRequests = true;
       await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
+      const formWarmupOffset = formOpenRequests.length;
       const formWarmup = await openPaymentCreateFromList(page, TARGETS.payment_request, 'form_open_warmup');
+      performanceReport.form_open_requests = {
+        warmup: formOpenRequests.slice(formWarmupOffset),
+        samples: [],
+      };
       if (formWarmup.status === 'skipped_create_disabled') {
         performanceReport.skipped_scenarios = performanceReport.skipped_scenarios || {};
         performanceReport.skipped_scenarios.form_open = 'effective create capability is false';
       } else {
         for (let i = 0; i < PERF_RUNS; i += 1) {
           await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
+          const requestOffset = formOpenRequests.length;
           formSamples.push(await time(async () => {
             await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
           }));
+          performanceReport.form_open_requests.samples.push(formOpenRequests.slice(requestOffset));
         }
         performanceReport.scenarios.form_open = stats(formSamples);
       }
+      captureFormOpenRequests = false;
+      page.off('request', onFormOpenRequest);
+      page.off('response', onFormOpenResponse);
       const switchSamples = [];
       const companySwitchWarmupRuns = Number(performanceBudgets.company_switch_warmup_runs);
       check(
