@@ -1366,6 +1366,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_core/tests/test_native_advisory.py",
             "addons/smart_core/tests/test_node_component_validation.py",
             "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+            "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
         ):
             with self.subTest(path=path):
                 targets = select_targets([path])

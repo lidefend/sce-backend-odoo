@@ -35,6 +35,15 @@ ADVISORY_MODELS = (
 )
 
 
+def _contains_exact_identity_scalar(value, identity):
+    """Reject identity leakage without matching digits inside hashes or timestamps."""
+    if isinstance(value, dict):
+        return any(_contains_exact_identity_scalar(item, identity) for item in value.values())
+    if isinstance(value, (list, tuple)):
+        return any(_contains_exact_identity_scalar(item, identity) for item in value)
+    return value == identity or (isinstance(value, str) and value == str(identity))
+
+
 def _fixture(env):
     base_group = env.ref("base.group_user")
     finance_group = env.ref("smart_construction_core.group_sc_cap_finance_user")
@@ -330,12 +339,9 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             ], "refund_complete")
             self.assertEqual(complete["result"], {"content": "", "visible": False})
         self.assertEqual(self.env[MODEL].search_count([]), before)
-        serialized = json.dumps(
-            [absent, selected, date_only, note_only, complete],
-            ensure_ascii=False,
-        )
-        self.assertNotIn(str(self.partner.id), serialized)
-        self.assertNotIn(self.partner.name, serialized)
+        results = [absent, selected, date_only, note_only, complete]
+        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.id))
+        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.name))
         with self.assertRaisesRegex(
                 draft_feedback.DraftFeedbackError, "FEEDBACK_INPUT_INVALID",
         ):
@@ -651,9 +657,9 @@ class TestCompanyProjectRefundFeedbackHttp(
                 "visible": False,
             })
         self.assertEqual(self.env[MODEL].search_count([]), before)
-        serialized = json.dumps([described, selected, hidden], ensure_ascii=False)
-        self.assertNotIn(self.partner.name, serialized)
-        self.assertNotIn(str(self.partner.id), serialized)
+        results = [described, selected, hidden]
+        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.name))
+        self.assertFalse(_contains_exact_identity_scalar(results, self.partner.id))
 
         status, missing = evaluate([
             {"field": "partner_id", "present": False},

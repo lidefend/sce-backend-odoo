@@ -14,6 +14,7 @@
       v-if="surfaceDisplayState === 'render-error'"
       title="页面渲染失败"
       :message="renderErrorMessage"
+      :contract-defect="renderErrorDefect"
       variant="error"
       :on-retry="reload"
     />
@@ -801,6 +802,7 @@ import CollectionFilterChip from '../components/product-list/CollectionFilterChi
 import ProductLoadingSkeleton from '../components/product-list/ProductLoadingSkeleton.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { contractContentLayoutMode, resolveContentLayoutMode } from '../components/design-system/pageWidth';
+import { isContractGapError, type ContractDefectRef } from '../app/contract/contractGap';
 import { getUserViewPreference, setUserViewPreference, type ListColumnPreference } from '../api/preferences';
 import { readStoredListPreference, projectStoredListPreference } from '../app/runtime/listPreferenceProjection';
 import { resolveListColumnPreferenceScope } from '../app/runtime/listPreferenceScope';
@@ -1167,6 +1169,7 @@ const instanceRouteQueryMap = ref<Record<string, unknown>>(normalizeActionViewRo
 const routeQueryMap = computed<Record<string, unknown>>(() => instanceRouteQueryMap.value);
 const retainedRouteFullPath = ref('');
 const renderErrorMessage = ref('');
+const renderErrorDefect = ref<ContractDefectRef | null>(null);
 const traceId = ref('');
 const lastTraceId = ref('');
 const records = ref<Array<Record<string, unknown>>>([]);
@@ -3361,6 +3364,7 @@ onBeforeUnmount(() => {
 
 onErrorCaptured((err) => {
   const message = err instanceof Error ? err.message : String(err || 'unknown render error');
+  renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
   renderErrorMessage.value = `ActionView render error: ${message}`;
   logger.error('[ActionView] render failed', err);
   return false;

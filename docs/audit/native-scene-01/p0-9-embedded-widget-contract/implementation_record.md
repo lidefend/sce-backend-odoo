@@ -86,6 +86,10 @@ contains two same-name `web_ribbon` occurrences and one
   `native_view_widget.NATIVE_VIEW_WIDGET_UNSUPPORTED` as an expected alert
   outcome instead of misclassifying the explicit fail-closed page as a normal
   presentation regression.
+- Contract-gap evidence is retained by both `ActionView` and the record form
+  error surface, without changing visible error behavior.
+- The conditioned feedback ORM assertion now checks exact identity scalars
+  instead of searching for record IDs inside hashes and timestamps.
 
 ## Unsupported Contract
 
@@ -108,7 +112,7 @@ approved. No business UI, data service or action binding is implemented here.
 
 | Check | Result |
 | --- | --- |
-| `make ci.local.iteration` | PASS, 40 required targets, all 40 executed |
+| `make ci.local.iteration` | PASS, 45 required targets, all 45 executed |
 | `make verify.native_occurrence.contract.orm` | PASS, 8 disposable ORM tests |
 | `make verify.frontend.native_embedded_widget.browser` | PASS, both render paths, self/parent hidden cases, unsupported fail-closed, 0 business requests |
 | `make verify.frontend.node_component.unit` | PASS, 48 cases |
