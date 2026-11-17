@@ -682,6 +682,29 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(form["fieldInfo"]["widget"], "percentage")
         self.assertEqual(form["fieldInfo"]["widget_source"], "native_explicit")
 
+    def test_native_view_domain_is_preserved_in_field_descriptors(self):
+        raw = "[('project_id', '=', project_id)]"
+        fields_info = {
+            "contract_id": {
+                "type": "many2one",
+                "string": "合同",
+                "relation": "x.contract",
+            }
+        }
+        tree = self.tree_form_parser._parse_tree_view(
+            f'<tree><field name="contract_id" domain="{raw}"/></tree>',
+            fields_info,
+        )
+        self.assertEqual(tree["modifiers"]["contract_id"]["domain"], raw)
+
+        form_element = _parse_test_xml(f'<field name="contract_id" domain="{raw}"/>')
+        form = self.tree_form_parser._node_to_layout_from_dom(
+            form_element,
+            fields_info,
+            list(form_element.iter()),
+        )
+        self.assertEqual(form["fieldInfo"]["domain"], raw)
+
     def test_reference_field_type_is_not_declared_as_a_widget_spelling(self):
         # A field type is not a widget alias. ``many2one_reference`` used to be
         # passed through as if the view had declared it, so the contract bound a

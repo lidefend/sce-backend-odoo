@@ -14,7 +14,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6542 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5771 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5777 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5651 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -60,8 +60,8 @@ Generated from repository source files. This report is informational during the 
 | 1906 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1873 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1870 | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1867 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1864 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
@@ -161,8 +161,8 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
+| 1089 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1086 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
-| 1066 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -256,7 +256,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6542 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5771 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5777 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5651 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -302,8 +302,8 @@ Generated from repository source files. This report is informational during the 
 | 1906 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
 | 1885 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1873 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1870 | split_plan_required | Python source | `scripts/verify/industry_module_product_boundary_guard.py` |
-| 1867 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1864 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |

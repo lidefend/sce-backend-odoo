@@ -35,7 +35,8 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
                 '</header><sheet>'
                 '<group name="identity"><field name="name" string="Name"/>'
                 '<field name="name" string="Display name"/></group>'
-                '<group name="secondary"><field name="email"/></group>'
+                '<group name="secondary"><field name="email"/>'
+                '<field name="parent_id" domain="[(\'is_company\', \'=\', True)]"/></group>'
                 '</sheet></form>'
             ),
         })
@@ -198,6 +199,20 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             ),
             {},
         )
+
+    def test_form_field_domain_projection_uses_explicit_view_expression(self):
+        contract = self._contract("form")
+        widgets = [
+            widget
+            for node in self._walk(contract["layoutContract"]["containerTree"])
+            for widget in node.get("widgetList") or []
+            if widget.get("fieldCode") == "parent_id"
+        ]
+        self.assertEqual(len(widgets), 1)
+        widget = widgets[0]
+        raw = "[('is_company', '=', True)]"
+        self.assertEqual(widget["fieldDescriptor"]["domain"], raw)
+        self.assertEqual(widget["fieldDescriptor"]["domain_expression"]["raw"], raw)
 
     def test_final_handler_boundary_restores_occurrences_after_mutation(self):
         source = self._source("tree")
