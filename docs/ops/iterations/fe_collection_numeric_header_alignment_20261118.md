@@ -44,6 +44,11 @@ This is a `baseline_evidence_defect`; the acceptance declaration is updated to
 the already implemented client negotiation list, with no business-contract
 change.
 
+The environment guard itself also hard-coded the old capability count. That
+assertion is now derived from the shipped canonical list, and both local and
+daily acceptance declarations are checked against it without duplicating a
+count that must be manually updated on every protocol addition.
+
 ## Exclusions
 
 - no backend or contract change;

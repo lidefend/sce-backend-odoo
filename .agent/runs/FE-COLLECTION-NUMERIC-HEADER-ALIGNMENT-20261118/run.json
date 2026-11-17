@@ -11,12 +11,14 @@
     ".agent/goals/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118.yaml",
     ".agent/runs/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118/run.json",
     "config/acceptance/backend_contract_instance_v1.json",
+    "config/acceptance/backend_contract_instance_daily_v1.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/fe_collection_numeric_header_alignment_20261118.md",
     "frontend/apps/web/src/pages/ListPage.vue",
-    "scripts/verify/frontend_list_surface_structure_browser.mjs"
+    "scripts/verify/frontend_list_surface_structure_browser.mjs",
+    "scripts/verify/test_dev_acceptance_release_identity.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -41,6 +43,17 @@
         "scripts/verify/test_frontend_list_surface_search_contract.py",
         "scripts/verify/acceptance_contract_receipt_test.mjs",
         "make/frontend.mk"
+      ]
+    },
+    "acceptance_environment": {
+      "target": "verify.frontend.acceptance.environment.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/backend_contract_instance_v1.json",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+        "scripts/verify/test_dev_acceptance_release_identity.py",
+        "make/guards.mk"
       ]
     },
     "list_surface_runtime": {
