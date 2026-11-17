@@ -1252,6 +1252,7 @@ def _assemble_unified_page_contract_v2(
     _bind_native_occurrence_identities(contract, source)
     _project_native_view_widget_payloads(contract, node_actor_env)
     _merge_action_rules_by_backend_identity(contract)
+    _validate_action_view_scope(contract)
     _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
@@ -1376,6 +1377,41 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
             status["disabled"] = True
             status["reasonCode"] = "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE"
     _dict(contract.get("layoutContract"))["componentRegistry"] = registry
+
+
+def _validate_action_view_scope(contract: dict[str, Any]) -> None:
+    """Keep native action identity on the active page View.
+
+    Form header/stat/layout actions are meaningful only on a Form surface.
+    Publishing them in a Kanban/List contract creates a self-contradictory
+    payload and forces the strict client decoder to reject the whole page.
+    """
+    page = _dict(contract.get("pageInfo"))
+    active_view_type = _text(page.get("viewType")).lower()
+    active_view_type = "tree" if active_view_type in {"list", "tree"} else active_view_type
+    form_channels = {
+        "native_form_header",
+        "native_form_stat",
+        "native_form_layout_button",
+    }
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict):
+            continue
+        source_channel = _text(rule.get("sourceChannel"))
+        if active_view_type != "form" and source_channel in form_channels:
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+        identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
+        identity_view_type = _text(
+            identity.get("viewType") or identity.get("view_type")
+        ).lower()
+        identity_view_type = (
+            "tree" if identity_view_type in {"list", "tree"} else identity_view_type
+        )
+        if identity_view_type and identity_view_type != active_view_type:
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+        identity_model = _text(identity.get("model"))
+        if identity_model and identity_model != _text(page.get("model")):
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
 
 
 def assemble_unified_page_patch_v2(

@@ -150,6 +150,18 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertIn("kanban_toolbar_action", keys)
         self.assertNotIn("form_only_action", keys)
 
+    def test_assembler_rejects_form_action_sources_on_kanban(self):
+        contract = {
+            "pageInfo": {"model": "project.project", "viewType": "kanban"},
+            "actionContract": {"actionRuleList": [{
+                "actionKey": "form_only_action",
+                "sourceChannel": "native_form_header",
+                "nativeIdentity": {"model": "project.project", "viewType": "kanban"},
+            }]},
+        }
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):
+            self.assembler._validate_action_view_scope(contract)
+
     def test_business_value_component_keys_follow_field_metadata(self):
         cases = (
             ({"type": "monetary"}, "number", "sc.value.money"),
