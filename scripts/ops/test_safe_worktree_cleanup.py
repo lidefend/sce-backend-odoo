@@ -4,6 +4,7 @@ from __future__ import annotations
 import hashlib
 import json
 import base64
+import os
 import subprocess
 import sys
 import tempfile
@@ -930,6 +931,161 @@ class GovernedBranchCleanupScriptTest(unittest.TestCase):
         result = self.run_script("fix/landed-topic", sha=sha, main="HEAD")
         self.assertNotEqual(result.returncode, 0)
         self.assertIn("EXPECTED_MAIN_SHA must be the full SHA", result.stderr)
+
+
+class GovernedBranchCleanupBookkeepingRetirementTest(unittest.TestCase):
+    """A bookkeeping-only cleanup PR may retire its own exact merged binding."""
+
+    SCRIPT = Path(__file__).resolve().parent / "branch_cleanup_safe.sh"
+    BRANCH = "fix/self-retiring-bookkeeping"
+    RUN_ID = "BOOKKEEPING-CLEANUP"
+    BOOKKEEPING_FILES = (
+        ".agent/active-runs.json",
+        f".agent/runs/{RUN_ID}/run.json",
+        ".agent/goals/BOOKKEEPING-CLEANUP.yaml",
+        "docs/ops/iterations/bookkeeping_cleanup.md",
+        "scripts/ops/cleanup-authority.txt",
+        "scripts/verify/cleanup-planner.py",
+    )
+
+    def setUp(self) -> None:
+        self.temp = tempfile.TemporaryDirectory()
+        base = Path(self.temp.name)
+        self.remote = base / "origin.git"
+        self.root = base / "repo"
+        self.root.mkdir()
+        git(base, "init", "--bare", str(self.remote))
+        git(self.root, "init", "-b", "main")
+        git(self.root, "config", "user.email", "test@example.invalid")
+        git(self.root, "config", "user.name", "Test")
+        (self.root / "README").write_text("base\n", encoding="utf-8")
+        git(self.root, "add", "README")
+        git(self.root, "commit", "-m", "base")
+        git(self.root, "remote", "add", "origin", str(self.remote))
+        git(self.root, "push", "-u", "origin", "main")
+
+    def tearDown(self) -> None:
+        self.temp.cleanup()
+
+    def write_bookkeeping(self, *, status: str) -> None:
+        files = {
+            ".agent/active-runs.json": json.dumps({
+                "schema_version": 1,
+                "branches": {self.BRANCH: f".agent/runs/{self.RUN_ID}/run.json"},
+            }, indent=2) + "\n",
+            f".agent/runs/{self.RUN_ID}/run.json": json.dumps({
+                "schema_version": 1,
+                "id": self.RUN_ID,
+                "branch": self.BRANCH,
+                "status": status,
+                "goal": ".agent/goals/BOOKKEEPING-CLEANUP.yaml",
+                "record": "docs/ops/iterations/bookkeeping_cleanup.md",
+                "scope": list(self.BOOKKEEPING_FILES),
+            }, indent=2) + "\n",
+            ".agent/goals/BOOKKEEPING-CLEANUP.yaml": (
+                "schema_version: 1\n"
+                "goal:\n"
+                "  id: BOOKKEEPING-CLEANUP\n"
+                "  formal_product_layer: P4\n"
+            ),
+            "docs/ops/iterations/bookkeeping_cleanup.md": "# cleanup\n",
+            "scripts/ops/cleanup-authority.txt": "governed\n",
+            "scripts/verify/cleanup-planner.py": "VALUE = 1\n",
+        }
+        for relative, content in files.items():
+            path = self.root / relative
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(content, encoding="utf-8")
+
+    def fake_gh(self, *, head: str, files: tuple[str, ...]) -> Path:
+        directory = Path(self.temp.name) / "bin"
+        directory.mkdir(exist_ok=True)
+        executable = directory / "gh"
+        executable.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os, sys\n"
+            "args = sys.argv[1:]\n"
+            "if args[:2] == ['pr', 'list']:\n"
+            "    print(json.dumps([{'headRefOid': os.environ['FAKE_GH_HEAD'], 'number': 77}]))\n"
+            "elif args[:3] == ['pr', 'view', '77']:\n"
+            "    files = [value for value in os.environ.get('FAKE_GH_FILES', '').splitlines() if value]\n"
+            "    print(json.dumps({'headRefOid': os.environ['FAKE_GH_HEAD'], 'files': [{'path': path} for path in files]}))\n"
+            "else:\n"
+            "    sys.exit(2)\n",
+            encoding="utf-8",
+        )
+        executable.chmod(0o755)
+        (directory / "pr-files").write_text("\n".join(files) + "\n", encoding="utf-8")
+        return directory
+
+    def prepare(self, *, status: str = "pending_merge_decision", files=None):
+        git(self.root, "switch", "-c", self.BRANCH, "main")
+        self.write_bookkeeping(status=status)
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", "bookkeeping cleanup")
+        head = git(self.root, "rev-parse", "HEAD")
+        git(self.root, "push", "origin", self.BRANCH)
+
+        # Squash integration: the exact source head is merged by content, but is
+        # intentionally not an ancestor of main.
+        git(self.root, "switch", "main")
+        self.write_bookkeeping(status=status)
+        git(self.root, "add", ".")
+        git(self.root, "commit", "-m", "squash bookkeeping cleanup")
+        git(self.root, "push", "origin", "main")
+        main = git(self.root, "rev-parse", "HEAD")
+        fake_bin = self.fake_gh(head=head, files=tuple(files or self.BOOKKEEPING_FILES))
+        return head, main, fake_bin
+
+    def run_script(self, *, sha: str, main: str, fake_bin: Path, files: tuple[str, ...]):
+        env = {
+            **os.environ,
+            "PATH": f"{fake_bin}:{os.environ['PATH']}",
+            "CLEAN_BRANCH_ROOT": str(self.root),
+            "CLEAN_BRANCH_REMOTE": "origin",
+            "EXPECTED_BRANCH_SHA": sha,
+            "EXPECTED_MAIN_SHA": main,
+            "FAKE_GH_HEAD": sha,
+            "FAKE_GH_FILES": "\n".join(files),
+        }
+        return subprocess.run(
+            ["bash", str(self.SCRIPT), self.BRANCH],
+            cwd=self.root,
+            text=True,
+            capture_output=True,
+            env=env,
+        )
+
+    def test_bookkeeping_pr_may_retire_its_own_binding(self) -> None:
+        head, main, fake_bin = self.prepare()
+        result = self.run_script(
+            sha=head,
+            main=main,
+            fake_bin=fake_bin,
+            files=self.BOOKKEEPING_FILES,
+        )
+        self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+        self.assertIn("may retire its own run", result.stdout)
+        self.assertIn("DRY-RUN ok", result.stdout)
+
+    def test_product_diff_cannot_use_bookkeeping_self_retirement(self) -> None:
+        product_file = "frontend/apps/web/src/product.ts"
+        files = (*self.BOOKKEEPING_FILES, product_file)
+        head, main, fake_bin = self.prepare(files=files)
+        result = self.run_script(sha=head, main=main, fake_bin=fake_bin, files=files)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not a bookkeeping-only cleanup", result.stderr)
+
+    def test_active_run_cannot_use_bookkeeping_self_retirement(self) -> None:
+        head, main, fake_bin = self.prepare(status="active")
+        result = self.run_script(
+            sha=head,
+            main=main,
+            fake_bin=fake_bin,
+            files=self.BOOKKEEPING_FILES,
+        )
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("not eligible for bookkeeping self-retirement", result.stderr)
 
 
 class SupersededRetirementTest(SafeWorktreeCleanupTest):

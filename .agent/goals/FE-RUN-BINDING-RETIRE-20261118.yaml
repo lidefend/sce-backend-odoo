@@ -1,0 +1,19 @@
+schema_version: 1
+goal:
+  id: FE-RUN-BINDING-RETIRE-20261118
+  status: active
+  formal_product_layer: P4
+  objective: Retire exact merged frontend and cleanup branches without leaving dangling active-run bindings or requiring recursive bookkeeping pull requests.
+  product_result: The merged feature and cleanup topics can be removed through the governed branch cleanup entry after their active-run bindings are retired, including the cleanup branch that performs its own retirement.
+  scope:
+    - exact merged active-run bindings
+    - self-retiring bookkeeping branch cleanup authority
+    - bounded cleanup run metadata and verification
+  exclusions:
+    - frontend, smart_core or business contract changes
+    - unmerged or protected branch deletion
+    - worktree deletion
+    - runtime, database, release or deployment changes
+  why_here: Branch-retirement authority and active-run indexing are P4 delivery lifecycle mechanisms.
+  why_not_elsewhere: Product modules and frontend surfaces must not absorb repository lifecycle bookkeeping.
+  blast_radius: Only exact branches with verified merged PRs, bookkeeping-only diffs and matching run records may use self-retirement; all other active bindings remain fail-closed.
