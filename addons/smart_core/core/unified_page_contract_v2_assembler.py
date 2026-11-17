@@ -1425,6 +1425,9 @@ def _validate_action_view_scope(contract: dict[str, Any]) -> None:
 
 def requested_view_type_matches(contract: dict[str, Any], requested_view_type: str) -> bool:
     """Whether the delivered contract is the View the client requested."""
+    if not _dict(contract.get("nativeActionContract")):
+        # Legacy/model-only contracts do not negotiate an Action View Set.
+        return True
     requested = _text(requested_view_type).split(",")[0].strip().lower()
     if not requested:
         return True
