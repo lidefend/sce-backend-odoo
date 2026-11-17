@@ -57,10 +57,6 @@
                                 /
                                 <field name="sc_stage_required_total" readonly="1" nolabel="1"/>
                             </div>
-                            <div class="sc-project-stage__req" invisible="lifecycle_state != 'draft'">
-                                <div class="text-muted mb-1">要进入下一阶段，你还差：</div>
-                                <widget name="sc_stage_requirements" options="{'limit': 3}"/>
-                            </div>
                             <div class="sc-project-stage__desc text-muted mt-2" invisible="lifecycle_state != 'in_progress'">
                                 施工推进中，优先处理待办与关键风险。
                             </div>
@@ -79,10 +75,6 @@
                             <div class="sc-project-stage__desc text-muted mt-2" invisible="lifecycle_state != 'closed'">
                                 项目已归档，历史数据只读。
                             </div>
-                        </div>
-                        <div class="sc-project-next mb-4">
-                            <div class="sc-project-next__title">你现在最该做的事</div>
-                            <widget name="sc_next_actions" options="{'limit': 3}"/>
                         </div>
                         <div class="sc-project-cards">
                             <div class="sc-project-cards__title">项目当前状态（概览）</div>

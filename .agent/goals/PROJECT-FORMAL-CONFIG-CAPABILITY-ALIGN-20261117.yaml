@@ -1,0 +1,17 @@
+schema_version: 1
+goal:
+  id: PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117
+  status: active
+  formal_product_layer: P1
+  objective: Remove unsupported embedded Widget declarations from the formal project view data so the current contract-capable client can use the project ledger without a 409 or expected ContractGap.
+  product_result: The current daily candidate opens the formal project ledger, preserves supported fields, stage information, overview cards and actions, permits a reversible authorized edit with server readback, and returns to the project list.
+  scope:
+    - P1 formal project Form and Overview view data
+    - P1 project positive presentation acceptance target
+    - bounded run records
+  exclusions:
+    - code rollback or daily runtime reset
+    - capability negotiation implementation
+    - new contract, component, model, database, port, Compose project or credential authority
+    - Renderer, parser or AST changes
+    - production deployment

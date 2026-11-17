@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from copy import deepcopy
 import unittest
+from pathlib import Path
+from xml.etree import ElementTree
 
 from scripts.contract.complete_worktree_fingerprint import EXCLUDED_PATHS, validate_fingerprint
 from scripts.contract.product_view_structure_common import (
@@ -12,6 +14,26 @@ from scripts.verify.product_view_structure_contract_guard import validate_manife
 
 
 class ProductViewStructureContractTests(unittest.TestCase):
+    def test_formal_project_views_do_not_publish_unsupported_embedded_widgets(self):
+        root = Path(__file__).resolve().parents[2]
+        unsupported = {
+            "sc_insight_banner",
+            "sc_stage_requirements",
+            "sc_next_actions",
+        }
+        for relative in (
+            "addons/smart_construction_core/views/core/project_views.xml",
+            "addons/smart_construction_core/views/core/project_overview_views.xml",
+        ):
+            with self.subTest(path=relative):
+                tree = ElementTree.parse(root / relative)
+                published = {
+                    element.get("name")
+                    for element in tree.iter("widget")
+                    if element.get("name")
+                }
+                self.assertEqual(published & unsupported, set())
+
     def test_schema_uses_semantic_version_and_has_no_v1_alias(self):
         from scripts.contract.product_view_structure_common import SCHEMA
 

@@ -165,6 +165,12 @@ RULES = (
         "verify.contract.structure_lock",
     )),
     Rule((
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+    ), (
+        "verify.product_view_structure.contract.unit",
+    )),
+    Rule((
         ".agent/",
     ), (
         "verify.agent.ledger.unit",

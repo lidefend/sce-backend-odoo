@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "id": "PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117",
+  "branch": "fix/project-fact-contract-alignment-20261117",
+  "baseline_sha": "a19bf2d976cbda9d99bdc24deab7903143a21cb7",
+  "status": "active",
+  "goal": ".agent/goals/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+  "record": "docs/ops/iterations/project_formal_config_capability_alignment_20261117.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+    ".agent/runs/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
+    "docs/ops/iterations/project_formal_config_capability_alignment_20261117.md",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "config/acceptance/frontend_presentation_targets.v1.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_product_view_structure_contract.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed product-view and frontend presentation checks; runtime verification uses the existing daily profile"
+  },
+  "checks": {
+    "product_view_structure": {
+      "target": "verify.product_view_structure.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "scripts/contract/product_view_structure_common.py",
+        "scripts/verify/product_view_structure_contract_guard.py",
+        "scripts/verify/test_product_view_structure_contract.py",
+        "make/guards.mk"
+      ]
+    },
+    "presentation_targets": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_integration.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ]
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/README.md",
+        ".agent/active-runs.json",
+        ".agent/goals/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+        ".agent/runs/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Remove sc_insight_banner, sc_stage_requirements and sc_next_actions from the formal project view data while preserving supported fields and actions."
+}
