@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "id": "FE-RUN-BINDING-INVARIANT-REPAIR-20261118",
+  "branch": "fix/clear-dangling-run-binding-20261118",
+  "baseline_sha": "9b87cf0e4e59261689a5d9ab107444aa1220ea94",
+  "status": "pending_merge_decision",
+  "goal": ".agent/goals/FE-RUN-BINDING-INVARIANT-REPAIR-20261118.yaml",
+  "record": "docs/ops/iterations/fe_run_binding_invariant_repair_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RUN-BINDING-INVARIANT-REPAIR-20261118.yaml",
+    ".agent/runs/FE-RUN-BINDING-INVARIANT-REPAIR-20261118/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/fe_run_binding_invariant_repair_20261118.md",
+    "scripts/ops/branch_cleanup_safe.sh",
+    "scripts/ops/test_safe_worktree_cleanup.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing active-run ledger and governed branch cleanup guard"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FE-RUN-BINDING-INVARIANT-REPAIR-20261118.yaml",
+        ".agent/runs/FE-RUN-BINDING-INVARIANT-REPAIR-20261118/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    },
+    "branch_cleanup_guard": {
+      "target": "verify.workspace.worktree.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/safe_worktree_create.py",
+        "make/codex.mk"
+      ]
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "kind": "offline",
+      "inputs": [
+        "docs/ops/iterations/fe_run_binding_invariant_repair_20261118.md",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "make/dev_test.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run focused cleanup and ledger guards, freeze and publish the repair candidate, merge it, then leave the final cleanup branch bound because it still exists."
+}
