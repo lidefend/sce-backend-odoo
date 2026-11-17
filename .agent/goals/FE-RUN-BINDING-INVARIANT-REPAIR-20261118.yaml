@@ -1,0 +1,19 @@
+schema_version: 1
+goal:
+  id: FE-RUN-BINDING-INVARIANT-REPAIR-20261118
+  status: active
+  formal_product_layer: P4
+  objective: Restore the active-run invariant after a cleanup branch was deleted while main still bound its run, and remove the unsafe self-retirement exception.
+  product_result: Every active-run branch binding points to an existing branch, and branch cleanup again refuses to delete any bound branch rather than creating dangling run state.
+  scope:
+    - dangling active-run binding removal
+    - branch cleanup fail-closed restoration
+    - bounded repair run metadata and verification
+  exclusions:
+    - product, frontend, smart_core or contract changes
+    - deleting the final cleanup branch
+    - unmerged or protected branch changes
+    - runtime, database, release or deployment changes
+  why_here: Active-run integrity and branch-retirement behavior are P4 delivery lifecycle mechanisms.
+  why_not_elsewhere: Product layers must not carry repository lifecycle recovery.
+  blast_radius: The repair removes one dangling mapping and restores the existing binding refusal; all product and unrelated branch state remains untouched.

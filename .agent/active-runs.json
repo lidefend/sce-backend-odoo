@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/retire-frontend-run-bindings-20261118": ".agent/runs/FE-RUN-BINDING-RETIRE-20261118/run.json",
+    "fix/clear-dangling-run-binding-20261118": ".agent/runs/FE-RUN-BINDING-INVARIANT-REPAIR-20261118/run.json",
     "feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117": ".agent/runs/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT/run.json",
     "feature/native-scene-01-project-ledger-detail-20261117": ".agent/runs/NATIVE-SCENE-01-PROJECT-LEDGER-DETAIL-CLOSURE-20261117/run.json",
     "audit/native-scene-01-b-semantic-conversion-20261116": ".agent/runs/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION/run.json",
