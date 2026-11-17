@@ -1260,7 +1260,10 @@ def _assemble_unified_page_contract_v2(
     _bind_native_occurrence_identities(contract, source)
     _project_native_view_widget_payloads(contract, node_actor_env)
     _merge_action_rules_by_backend_identity(contract)
-    _validate_action_view_scope(contract)
+    _validate_action_view_scope(
+        contract,
+        action_bound=bool(source.get("action_identity") and source.get("action_view_set")),
+    )
     _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
@@ -1387,13 +1390,21 @@ def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> 
     _dict(contract.get("layoutContract"))["componentRegistry"] = registry
 
 
-def _validate_action_view_scope(contract: dict[str, Any]) -> None:
+def _validate_action_view_scope(
+    contract: dict[str, Any],
+    *,
+    action_bound: bool = True,
+) -> None:
     """Keep native action identity on the active page View.
 
     Form header/stat/layout actions are meaningful only on a Form surface.
     Publishing them in a Kanban/List contract creates a self-contradictory
     payload and forces the strict client decoder to reject the whole page.
     """
+    if not action_bound:
+        # Model-only pages have no Action View Set whose ownership can be
+        # reconciled; their existing action projection remains unchanged.
+        return
     page = _dict(contract.get("pageInfo"))
     active_view_type = _text(page.get("viewType")).lower()
     active_view_type = "tree" if active_view_type in {"list", "tree"} else active_view_type

@@ -1027,8 +1027,10 @@ class PageAssembler:
             for row in action_view_set.get("orderedViews") or []:
                 if not isinstance(row, dict):
                     continue
-                row_view_type = canonical_view_type(row.get("viewType"))
-                row_view_id = int(row.get("viewId") or 0)
+                row_view_type = canonical_view_type(
+                    row.get("viewType") or row.get("view_type")
+                )
+                row_view_id = int(row.get("viewId") or row.get("view_id") or 0)
                 if row_view_id:
                     row["viewXmlId"] = self._view_xmlid(env, row_view_id)
                 row["projectionStatus"] = (

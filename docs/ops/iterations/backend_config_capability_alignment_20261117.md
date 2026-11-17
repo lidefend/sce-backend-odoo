@@ -133,3 +133,47 @@ DAILY_RUNTIME_PUBLISHED_FACE_UPGRADE_MODULES=smart_core,smart_construction_core
 ## 下一步
 
 提交基于 `a19bf2d9` 的干净候选；日常发布显式升级 `smart_core,smart_construction_core`，随后完成全后端继承链回读、项目列表、详情、编辑回读和返回验证。
+
+## 动态 View 协商与验证分段收口
+
+运行态回读发现 Action View Set 行使用 `view_type` / `view_id`，PageAssembler
+的动态渲染能力判断却只读取 `viewType` / `viewId`，导致客户端已声明
+`view.tree.v1`、`view.kanban.v1`、`view.form.v1` 时仍返回
+`rendererStatus=unknown`。现已同时读取两种既有字段形态，保持 Action 原生顺序和
+View ID 不变，由当前用户/公司可见的 View Set 与客户端能力共同决定每个 View 的
+`rendererStatus`、`selectable` 和 `reasonCode`。
+
+没有 Action View Set 来源事实的合法 model-only 页面继续沿用原有投影；但带 Action
+身份的页面仍必须通过活动 View 和动作来源一致性校验。验证入口不再用可选契约字段是否
+存在来猜页面类型，而是由装配来源中的 `action_identity` / `action_view_set` 证明是否为
+Action-bound 页面。回归同时覆盖 model-only 正例和缺少 `nativeActionContract` 的跨 View
+动作反例，避免用“缺字段”掩盖真正错配。
+
+`frontend_presentation` 现只在 `deployment` 阶段要求真实页面证据；merge 阶段仍要求
+前端契约单测，但不以运行态页面证据耦合后端契约迭代。最终用户是否可用在部署后的
+产品验收中单独报告。
+
+完成本批通用机制后，后续 90% 以上的页面能力优先通过正式配置事实交付：
+
+- 原生 View/Action/Search、字段属性、Domain、Context、Widget 可映射项和权限事实；
+- 已登记组件与当前客户端能力；
+- 后端发布前的结构/能力校验；
+- 前端只消费最终契约中的可选性、原因码和组件描述。
+
+不再为普通业务页面重复增加逐页面前端实现。只有出现新的通用组件能力、契约结构或
+运行时交互机制时，才另开 P0 专题。
+
+### 本轮定向验证
+
+| 验证 | 结果 |
+| --- | --- |
+| `make verify.native_action.contract.orm` | PASS，5 项 |
+| `make verify.native_action.view_set.orm` | PASS，13 项 |
+| `make verify.unified_page_contract.v2.assembler` | PASS |
+| `make verify.frontend.presentation.lane.unit` | PASS，7 + 74 项 |
+| `make verify.validation.delivery.unit` | PASS，92 项 |
+| `make verify.semantic.registry.lint` | PASS，含 23 项跨 View 动作反例 |
+| `make verify.native_action.contract.unit` | PASS，7 项 |
+| `make verify.native_action.view_set.unit` | PASS，9 项 |
+
+运行态、日常部署和最终用户验收尚未由这些源码检查替代。

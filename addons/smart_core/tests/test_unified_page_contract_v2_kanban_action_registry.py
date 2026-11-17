@@ -209,10 +209,28 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertNotIn("kanban_toolbar_action", keys)
 
     def test_requested_view_type_must_match_the_delivered_contract(self):
-        contract = {"pageInfo": {"viewType": "list", "model": "project.project"}}
+        contract = {
+            "pageInfo": {"viewType": "list", "model": "project.project"},
+            "nativeActionContract": {"viewSet": {"activeViewType": "tree"}},
+        }
         self.assertTrue(self.assembler.requested_view_type_matches(contract, "tree"))
         self.assertTrue(self.assembler.requested_view_type_matches(contract, "list"))
         self.assertFalse(self.assembler.requested_view_type_matches(contract, "kanban"))
+
+    def test_model_only_page_does_not_negotiate_an_action_view_set(self):
+        contract = {"pageInfo": {"viewType": "form", "model": "project.project"}}
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "form"))
+        self.assembler._validate_action_view_scope(
+            {
+                **contract,
+                "actionContract": {"actionRuleList": [{
+                    "actionKey": "model_action",
+                    "sourceChannel": "native_tree_row_action",
+                    "nativeIdentity": {"model": "project.project", "viewType": "tree"},
+                }]},
+            },
+            action_bound=False,
+        )
 
     def test_requested_view_renderer_must_be_supported(self):
         contract = {
