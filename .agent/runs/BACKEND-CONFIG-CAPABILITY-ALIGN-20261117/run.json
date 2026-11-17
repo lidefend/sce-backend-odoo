@@ -18,6 +18,9 @@
     "addons/smart_construction_core/views/core/project_overview_views.xml",
     "addons/smart_core/core/node_component_capabilities.py",
     "addons/smart_core/tests/test_node_component_capabilities.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    "contracts/registry/semantic.yaml",
+    "scripts/verify/test_native_widget_provenance.py",
     "config/acceptance/frontend_presentation_targets.v1.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
@@ -47,6 +50,35 @@
         "addons/smart_core/core/node_component_capabilities.py",
         "addons/smart_core/tests/test_node_component_capabilities.py",
         "addons/smart_core/tests/test_node_component_validation.py",
+        "make/contract.mk"
+      ]
+    },
+    "native_widget_provenance": {
+      "target": "verify.native_widget.provenance.unit",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry/semantic.yaml",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "addons/smart_core/core/native_widget_profile.py",
+        "scripts/verify/test_native_widget_provenance.py",
+        "make/guards.mk"
+      ]
+    },
+    "semantic_registry": {
+      "target": "verify.semantic.registry.lint",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry.yaml",
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "contracts/registry/registry.schema.json",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "scripts/verify/test_node_component_registry.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
         "make/contract.mk"
       ]
     },
@@ -106,5 +138,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Replace the project-only guard with a complete backend XML embedded Widget inventory, commit the clean candidate, and deploy it with a smart_construction_core upgrade and recovery point."
+  "next_exact_step": "Commit the field-widget registry alignment, deploy it with smart_core and smart_construction_core upgraded, then rerun the project contract and 1440/390 browser journey."
 }

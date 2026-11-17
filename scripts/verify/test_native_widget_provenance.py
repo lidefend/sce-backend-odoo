@@ -114,6 +114,24 @@ class NativeWidgetProvenanceTest(unittest.TestCase):
         )
         self.assertNotEqual(resolution["componentKey"], "sc.unsupported.native_widget")
 
+    def test_common_base_odoo_field_widgets_use_registered_generic_controls(self):
+        for widget, field_type, resolved_type, component in (
+            ("boolean_favorite", "boolean", "boolean", "sc.input.boolean"),
+            ("text", "char", "input", "sc.input.text"),
+        ):
+            with self.subTest(widget=widget):
+                resolution = resolve_widget_contract(
+                    {
+                        "widget": widget,
+                        "widget_source": WIDGET_SOURCE_NATIVE_EXPLICIT,
+                        "type": field_type,
+                    },
+                    resolved_widget_type=resolved_type,
+                    semantic_widget_type=resolved_type,
+                )
+                self.assertEqual(resolution["provenance"]["resolutionStatus"], "ready")
+                self.assertEqual(resolution["componentKey"], component)
+
     def test_every_observed_repository_widget_has_a_declared_status(self):
         inventory = json.loads(
             (ROOT / "docs/audit/native-scene-01/inventories/native_view_inventory.json").read_text(

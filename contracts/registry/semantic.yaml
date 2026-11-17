@@ -46,6 +46,7 @@ native_widgets:
   one2many: {status: ready}
   one2many_list: {status: ready}
   boolean: {status: ready}
+  boolean_favorite: {status: ready}
   boolean_toggle:
     status: fallback
     reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
@@ -59,6 +60,7 @@ native_widgets:
     status: fallback
     reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
   html: {status: ready}
+  text: {status: ready}
   handle:
     status: fallback
     reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
@@ -124,6 +126,8 @@ derivation:
       when: {widgets: [float_time]}
     - semantic: status
       when: {widgets: [statusbar, badge]}
+    - semantic: boolean
+      when: {field_types: [boolean]}
     - semantic: readable_value
       when: {widgets: [account-tax-totals-field, payment, statinfo]}
       reason: 会计只读摘要/统计载体（tax_totals、支付挂件、statinfo）是可读展示，不是可编辑的二进制或数字控件。

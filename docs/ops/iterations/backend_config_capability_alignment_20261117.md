@@ -37,6 +37,12 @@
 相同节点继续完整交付并接受既有 payload 校验。这样继承与运行时配置都不会把项目页
 变成 HTTP 409 或全页 `ContractGap`。
 
+运行态浏览器进一步发现 Odoo 基础视图 `project.edit_project` 继承字段
+`is_favorite`/`boolean_favorite` 与 `name`/`text`。它们不是嵌入节点，也不应删除
+基础视图，而是字段自身的 Widget 属性。语义 registry 现将其登记为 `ready`，并按
+字段类型使用已有 `sc.input.boolean` 与 `sc.input.text` 组件，同时对 `boolean`
+字段类型增加通用派生规则。未知字段 Widget 仍保持 fail-closed。
+
 ## 当前故障
 
 - 日常运行候选：`a19bf2d976cbda9d99bdc24deab7903143a21cb7`。
@@ -70,10 +76,12 @@
 | 正向验收目标修正 | 已完成 | `project-form` 不再允许预期 ContractGap |
 | 全后端静态验证 | 已通过 | 314 个 XML 产品视图结构 26 项 |
 | 继承能力兜底 | 已通过 | 能力投影 18 项；节点验证 266 项 |
+| 字段 Widget 属性对齐 | 已通过 | `boolean_favorite`、`text` → 通用布尔/文本控件；8 项 provenance、116 项语义 registry |
 | presentation 目标 | 已通过 | 81 项 |
 | 增量与台账 | 已通过 | 增量映射 168 项；Agent 台账 18 项；续跑入口 58 项 |
-| 候选发布到日常环境 | 未执行 | 保留 `a19bf2d9` 为代码基线 |
-| 项目台账真实流程 | 未执行 | 发布后验证 |
+| 候选 `af9a096b` 发布 | 已通过 | 恢复点、模块升级、构建和发布面均 PASS；契约回读 HTTP 200 |
+| 字段 Widget 修正候选 | 待发布 | 需再次升级 `smart_core,smart_construction_core` |
+| 项目台账真实流程 | 待完成 | 等待字段 Widget 修正上线后验证 |
 
 ## 配置数据升级边界
 
