@@ -643,6 +643,41 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             "NATIVE_VIEW_WIDGET_IDENTITY_MISSING",
         )
 
+    def test_widget_projection_does_not_shadow_sibling_field_status(self):
+        component_keys = set()
+        container_status = []
+        widget_status = []
+        nodes = self.assembler._normalize_native_layout_nodes(
+            [
+                {
+                    "type": "widget",
+                    "name": "web_ribbon",
+                    "widget": "web_ribbon",
+                    "attributes": {"name": "web_ribbon", "title": "Paid"},
+                    "native_locator": "/form[1]/widget[1]",
+                    "occurrence_index": 1,
+                    "children": [],
+                },
+                {
+                    "type": "field",
+                    "name": "name",
+                    "label": "Name",
+                    "children": [],
+                    "widgetList": [],
+                },
+            ],
+            {"name": {"name": "name", "type": "char", "string": "Name"}},
+            layout_type="form",
+            component_keys=component_keys,
+            container_status=container_status,
+            widget_status=widget_status,
+        )
+
+        self.assertEqual(nodes[0]["componentConfig"]["widgetStatus"], "ready")
+        self.assertEqual(nodes[1]["type"], "field")
+        self.assertEqual(len(widget_status), 1)
+        self.assertIn("sc.display.ribbon", component_keys)
+
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
             {

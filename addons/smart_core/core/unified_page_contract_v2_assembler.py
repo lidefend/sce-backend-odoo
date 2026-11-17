@@ -2748,7 +2748,7 @@ def _normalize_native_layout_nodes(
                 and resolution.get("status") == "ready"
                 and bool(resolution.get("component"))
             )
-            widget_status = "ready" if supported else "unsupported"
+            projected_widget_status = "ready" if supported else "unsupported"
             component_key = (
                 resolution.get("component")
                 if supported
@@ -2780,7 +2780,7 @@ def _normalize_native_layout_nodes(
             node["componentKey"] = component_key
             component_config: dict[str, Any] = {
                 "nativeWidget": widget_name,
-                "widgetStatus": widget_status,
+                "widgetStatus": projected_widget_status,
                 "identityComplete": identity_complete,
             }
             options_raw = node.get("options_raw", attributes.get("options"))

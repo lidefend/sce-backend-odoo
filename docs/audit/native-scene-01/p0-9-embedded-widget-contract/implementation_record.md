@@ -47,8 +47,8 @@ contract-gap path with an explicit reason. Recognition is separate from support.
   `sc.unsupported.native_node` with `NATIVE_VIEW_WIDGET_UNSUPPORTED`.
 - Contract V2 advances to `2.5.0`. The schema accepts `widget` occurrence
   identity and the frontend decoder consumes versions through `2.5.x`.
-- The assembler cache advances to `v78`; its complete input SHA256 is
-  `1875c4ddf4f1dfa5b7759d6268762a37245a70690f032caf43ff3a3a825cf6aa`.
+- The assembler cache advances to `v79`; its complete input SHA256 is
+  `e1e542231086cabf12cc305a11c65410df38742dcbcf39f6dd6de5ba7a88e8dd`.
 
 ## Positive Contract
 
@@ -78,6 +78,9 @@ contains two same-name `web_ribbon` occurrences and one
 - A registered widget lacking native occurrence identity is projected as
   unsupported with `NATIVE_VIEW_WIDGET_IDENTITY_MISSING`, never as a contradictory
   ready-unsupported combination.
+- Widget projection keeps its readiness value separate from the shared status
+  collection, so sibling fields after a widget continue to publish field status
+  instead of failing on a shadowed variable.
 
 ## Unsupported Contract
 
