@@ -422,6 +422,47 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 self.assertEqual(formal_provenance["nativeWidget"], case["native"])
                 self.assertEqual(formal_widget["componentKey"], case["component"])
 
+    def test_form_node_assembly_preserves_native_domain_in_existing_descriptor(self):
+        raw = "[('project_id', '=', project_id)]"
+        node = self.assembler._native_field_node(
+            {
+                "type": "field",
+                "name": "contract_id",
+                "attributes": {"domain": raw},
+                "fieldInfo": {
+                    "type": "many2one",
+                    "relation": "x.contract",
+                    "domain": raw,
+                },
+            },
+            {},
+            layout_type="form",
+        )
+        formal_source = self.assembler._field_source_with_node_info(
+            node,
+            {},
+            fallback_name="contract_id",
+        )
+        formal = self.assembler._field_widget(formal_source, layout_type="form")
+        self.assertEqual(formal["fieldDescriptor"]["domain"], raw)
+        self.assertEqual(
+            formal["fieldDescriptor"]["domain_expression"]["dependencies"],
+            ["project_id"],
+        )
+        self.assertNotIn("domainProjection", formal["componentConfig"])
+
+        unsupported_raw = "[('x', '=', unsupported_call())]"
+        unsupported = self.assembler._field_widget(
+            {
+                "name": "contract_id",
+                "type": "many2one",
+                "relation": "x.contract",
+                "domain": unsupported_raw,
+            },
+            layout_type="form",
+        )
+        self.assertEqual(unsupported["fieldDescriptor"]["domain_expression"]["kind"], "unsupported")
+
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
             {

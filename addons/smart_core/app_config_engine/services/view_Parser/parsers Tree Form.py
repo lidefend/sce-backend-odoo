@@ -585,6 +585,8 @@ class _TreeFormParserMixin:
                     if el.get('widget'):
                         mods['widget'] = el.get('widget')
                         mods['widget_source'] = 'native_explicit'
+                    if el.get('domain'):
+                        mods['domain'] = el.get('domain')
                     if el.get('sum'):
                         mods['sum'] = el.get('sum')
 
@@ -1191,6 +1193,8 @@ class _TreeFormParserMixin:
             if el.get('widget'):
                 meta['widget'] = el.get('widget')
                 meta['widget_source'] = 'native_explicit'
+            if el.get('domain'):
+                meta['domain'] = el.get('domain')
             # Label presentation is a native view atom. Keep it explicit so
             # downstream renderers never infer it from container shape.
             node['label'] = meta.get('label') or fname
@@ -1763,6 +1767,8 @@ class _TreeFormParserMixin:
             if attrs.get('widget'):
                 meta['widget'] = attrs.get('widget')
                 meta['widget_source'] = 'native_explicit'
+            if attrs.get('domain'):
+                meta['domain'] = attrs.get('domain')
             if attrs.get('options'):
                 options_val = self._safe_eval_expr(attrs.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}

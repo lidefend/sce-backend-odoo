@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE
   title: Native Widget provenance and fail-closed resolution
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: Native View Widget source classification and Contract V2 component resolution
   module:
