@@ -242,12 +242,13 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
         if widget_name != "<default>":
             native_view_widget_rows.append(
                 "    {name!r}: {{'component': {component!r}, 'status': {status!r}, "
-                "'reasonCode': {reason!r}}},"
+                "'reasonCode': {reason!r}, 'payloadRequired': {payload_required!r}}},"
                 .format(
                     name=widget_name,
                     component=component_key,
                     status=status,
                     reason=str(entry.get("reason_code") or ""),
+                    payload_required=bool(entry.get("payload_required")),
                 )
             )
     default_widget_component = str(native_view_widget_default["component"])
@@ -469,12 +470,13 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
     native_view_widgets = semantic.get("native_view_widgets") or {}
     native_view_widget_default = semantic.get("native_view_widget_default") or {}
     native_view_widget_lines = "\n".join(
-        "  {name!r}: {{component: {component!r}, status: {status!r}, reasonCode: {reason!r}}},"
+        "  {name!r}: {{component: {component!r}, status: {status!r}, reasonCode: {reason!r}, payloadRequired: {payload_required}}},"
         .format(
             name=name,
             component=str((entry or {}).get("component") or ""),
             status=str((entry or {}).get("status") or ""),
             reason=str((entry or {}).get("reason_code") or ""),
+            payload_required=str(bool((entry or {}).get("payload_required"))).lower(),
         )
         for name, entry in sorted(native_view_widgets.items())
     )
@@ -492,7 +494,7 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         )
         + "\n});\n"
         + "\nexport const NATIVE_VIEW_WIDGET_COMPONENTS: Readonly<Record<string, "
-        + "{component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string}>> "
+        + "{component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string; payloadRequired: boolean}>> "
         + "= Object.freeze({\n"
         + native_view_widget_lines
         + "\n});\n"

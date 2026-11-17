@@ -17,4 +17,7 @@ export const CONTRACT_V2_CLIENT_CAPABILITIES = [
   'form.feedback.draft.v1',
   'form.navigation.anchor.v1',
   'form.display.ribbon.v1',
+  'view.tree.v1',
+  'view.kanban.v1',
+  'view.form.v1',
 ] as const;

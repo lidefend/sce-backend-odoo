@@ -125,6 +125,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.presentation.lane.unit"],
                 )
 
+    def test_formal_project_views_select_the_product_structure_lock(self) -> None:
+        for path in (
+            "addons/smart_construction_core/views/core/project_views.xml",
+            "addons/smart_construction_core/views/core/project_overview_views.xml",
+            "scripts/verify/test_product_view_structure_contract.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.product_view_structure.contract.unit"],
+                )
+
     def test_backend_contract_instance_selects_list_surface_receipt(self) -> None:
         self.assertEqual(
             select_targets(["config/acceptance/backend_contract_instance_v1.json"]),

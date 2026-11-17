@@ -165,6 +165,13 @@ RULES = (
         "verify.contract.structure_lock",
     )),
     Rule((
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "scripts/verify/test_product_view_structure_contract.py",
+    ), (
+        "verify.product_view_structure.contract.unit",
+    )),
+    Rule((
         ".agent/",
     ), (
         "verify.agent.ledger.unit",
@@ -973,6 +980,13 @@ RULES = (
     ), (
         "verify.page.finalize.authority.orm",
         "verify.page.project_finalize.authority.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/services/project_native_view_widget_payload_service.py",
+        "addons/smart_construction_core/tests/test_project_native_view_widget_payload_service.py",
+    ), (
+        "verify.frontend.node_component.unit",
+        "verify.frontend.node_component.component",
     )),
     Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",

@@ -819,9 +819,9 @@ verify.frontend.pr.unit: verify.frontend.official_icon.unit verify.frontend.glob
 
 verify.frontend.release.unit: verify.frontend.official_icon.unit verify.frontend.global_component_capability.unit verify.frontend.component_driver_takeover.unit verify.frontend.scene_component_bridge.unit verify.frontend.scene_component_bridge.guard verify.frontend.primitive_adapter.unit verify.frontend.navigation_shell.unit verify.frontend.product_page_header.unit verify.frontend.product_page_pattern.unit verify.frontend.professional_component_registry.unit verify.frontend.native_widget_provenance.unit verify.frontend.professional_base_field.unit verify.frontend.professional_business_value.unit verify.frontend.professional_relation_field.unit verify.frontend.professional_detail_collection.unit verify.frontend.professional_workflow.unit verify.frontend.professional_audit.unit verify.frontend.professional_collaboration.unit verify.frontend.professional_relation_lifecycle.unit verify.frontend.contract_prompt_action_presentation.unit verify.frontend.low_code_field_create_dialog.unit verify.frontend.form_header_action_primitives.unit verify.frontend.action_view_page_actions.unit verify.frontend.relational_action_primitives.unit verify.frontend.state_dashboard.unit verify.frontend.professional.extensions.unit verify.frontend.boq_import_preview.unit verify.frontend.chart_dataset.unit verify.frontend.mobile_viewport.unit verify.frontend.intent_request_identity.unit verify.frontend.intent_request_coalescing.unit verify.frontend.collection_row_action_identity.unit verify.frontend.action_view_page_size_runtime.unit verify.frontend.action_view_surface_gate_runtime.unit verify.menu_config_tree_editor.behavior verify.contract_form_runtime_state.behavior verify.action_view_runtime_smoke.behavior verify.frontend.platform_capability_explorer.unit verify.platform.duty.contract.unit verify.frontend.dev_acceptance_remediation.unit verify.frontend.startup_performance.unit
 
-verify.frontend.quick.gate: verify.frontend.contract_consumption_verdicts.unit
-verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
-verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit
+verify.frontend.quick.gate: verify.frontend.contract_consumption_verdicts.unit verify.frontend.native_action_contract_consumption.unit
+verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.frontend.native_action_contract_consumption.unit
+verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.frontend.native_action_contract_consumption.unit
 
 verify.frontend.ui.lint: guard.prod.forbid
 	@cd frontend/apps/web && node_modules/.bin/eslint --no-eslintrc --config .eslintrc.cjs ../../packages/ui/src --ext .ts,.tsx,.vue
@@ -833,7 +833,7 @@ verify.frontend.lint.src: guard.prod.forbid verify.frontend.ui.lint
 verify.frontend.lint: guard.prod.forbid
 	@scripts/dev/pnpm_exec.sh -C frontend/apps/web lint
 
-.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard verify.frontend.all_list_visual.audit verify.frontend.density.baseline verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard verify.frontend.industry_agnostic.audit.unit
+.PHONY: verify.frontend.page_width_contract.guard verify.frontend.workspace_content_alignment.guard verify.frontend.workspace_layout_contract.unit verify.frontend.form_canvas_layout.guard verify.frontend.form_canvas_layout.unit verify.frontend.form_grid_span.browser verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.native_action_contract_consumption.unit verify.frontend.action_surface_renderer_registry.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard verify.frontend.all_list_visual.audit verify.frontend.density.baseline verify.frontend.runtime_environment.unit audit.frontend.industry_agnostic verify.frontend.industry_agnostic.guard verify.frontend.industry_agnostic.audit.unit
 
 verify.frontend.auth_credential.guard: guard.prod.forbid
 	@python3 scripts/verify/auth_credential_frontend_guard.py
@@ -869,6 +869,13 @@ verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@node /tmp/collection-view-semantics-test.mjs
 	@python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
 	@python3 scripts/verify/collection_view_semantics_guard.py
+
+# Native Action Contract 的前端消费边界：Decoder 必须拒绝 Search identity 的
+# 局部/冲突声明，且已发布的 View Set 必须提供有序视图；客户端渲染能力由各
+# View 的 rendererStatus 消费，不从 Action 级 readiness 重新推导产品语义。
+verify.frontend.native_action_contract_consumption.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/native_action_contract_consumption_test.ts --bundle --platform=node --format=esm --outfile=/tmp/native-action-contract-consumption-test.mjs >/dev/null
+	@node /tmp/native-action-contract-consumption-test.mjs
 
 verify.frontend.action_surface_renderer_registry.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_surface_renderer_registry_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-surface-renderer-registry-test.mjs >/dev/null
@@ -1760,9 +1767,10 @@ verify.daily_dev.menu_config_entry.readonly.browser: guard.prod.forbid verify.da
 
 .PHONY: verify.frontend.node_component.unit verify.frontend.node_component.component
 verify.frontend.node_component.unit: guard.prod.forbid
+	@python3 addons/smart_construction_core/tests/test_project_native_view_widget_payload_service.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/node_component_consumption_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/fe-gate-03a-nodes.mjs >/dev/null
 	@node /tmp/fe-gate-03a-nodes.mjs
-verify.frontend.node_component.component: guard.prod.forbid verify.frontend.native_embedded_widget.browser
+verify.frontend.node_component.component: guard.prod.forbid verify.frontend.node_component.unit verify.frontend.native_embedded_widget.browser
 	@node frontend/apps/web/scripts/node_component_consumption_component_test.mjs
 	@node frontend/apps/web/scripts/weighted_relation_component_test.mjs
 

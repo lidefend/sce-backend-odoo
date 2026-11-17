@@ -522,6 +522,14 @@ class TestGlobAndPlan(unittest.TestCase):
                 ["frontend_contract", "frontend_presentation"],
             )
             self.assertEqual(plan["required_evidence_suites"], ["frontend_presentation"])
+            self.assertEqual(
+                guard.plan_for_stage(self.registry, plan, "merge")["required_evidence_suites"],
+                [],
+            )
+            self.assertEqual(
+                guard.plan_for_stage(self.registry, plan, "deployment")["required_evidence_suites"],
+                ["frontend_presentation"],
+            )
 
         runtime_path = "frontend/apps/web/src/api/businessConfig.ts"
         plan = guard.build_plan(self.registry, [runtime_path], "base", HEAD)

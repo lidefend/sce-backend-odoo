@@ -12,8 +12,10 @@ from .record_error_proof import validate_record_errors, _context
 FEEDBACK = "sc.feedback.message"
 ANCHOR = "sc.navigation.anchor"
 RIBBON = "sc.display.ribbon"
+INSIGHT_SUMMARY = "sc.insight.summary"
+ACTION_LIST = "sc.action.list"
 UNSUPPORTED_NATIVE_NODE = "sc.unsupported.native_node"
-KEYS = frozenset({FEEDBACK, ANCHOR, RIBBON, UNSUPPORTED_NATIVE_NODE})
+KEYS = frozenset({FEEDBACK, ANCHOR, RIBBON, INSIGHT_SUMMARY, ACTION_LIST, UNSUPPORTED_NATIVE_NODE})
 SCALARS = frozenset({"char", "text", "boolean", "integer", "float", "monetary", "selection", "date", "datetime"})
 NODE_VALIDATION_PROOF_SCHEMA = "node-component-validation-proof/v1"
 _NODE_PROOF_KEYS = (
@@ -45,6 +47,64 @@ _SOURCE_PROOF_KEYS = (
 
 def fail(code, path):
     raise FormConfigurationError(code, path)
+
+
+def _valid_payload_source(value):
+    return bool(
+        isinstance(value, dict)
+        and set(value) == {"kind", "module", "projectionOnly", "noBusinessFactAuthority"}
+        and isinstance(value.get("kind"), str) and value["kind"]
+        and isinstance(value.get("module"), str) and value["module"]
+        and value.get("projectionOnly") is False
+        and value.get("noBusinessFactAuthority") is False
+    )
+
+
+def _valid_action_row(value):
+    return bool(
+        isinstance(value, dict)
+        and set(value) == {
+            "id", "title", "description", "state", "tone", "actionType",
+            "actionRef", "actionLabel", "actionPayload", "enabled",
+        }
+        and all(isinstance(value.get(key), str) for key in ("id", "title", "description", "state", "tone", "actionType", "actionRef", "actionLabel"))
+        and value.get("id")
+        and value.get("title")
+        and value.get("state") in {"done", "required", "available"}
+        and value.get("tone") in {"success", "warning", "info"}
+        and value.get("actionType") in {"", "act_window_xmlid", "object_method"}
+        and isinstance(value.get("actionPayload"), dict)
+        and isinstance(value.get("enabled"), bool)
+        and (not value["enabled"] or bool(value.get("actionRef")))
+    )
+
+
+def _valid_node_payload(component_key, config):
+    payload = config.get("payload")
+    if not isinstance(payload, dict) or not _valid_payload_source(config.get("payloadSourceAuthority")):
+        return False
+    if component_key == INSIGHT_SUMMARY:
+        return bool(
+            config.get("payloadSchema") == "insight_summary.v1"
+            and set(payload) == {"tone", "title", "message", "detail"}
+            and payload.get("tone") in {"success", "warning", "info"}
+            and isinstance(payload.get("title"), str) and payload["title"]
+            and isinstance(payload.get("message"), str)
+            and isinstance(payload.get("detail"), str)
+        )
+    if component_key == ACTION_LIST:
+        items = payload.get("items")
+        return bool(
+            config.get("payloadSchema") == "action_list.v1"
+            and set(payload) == {"title", "emptyText", "items"}
+            and isinstance(payload.get("title"), str)
+            and isinstance(payload.get("emptyText"), str)
+            and isinstance(items, list)
+            and len(items) <= 20
+            and all(_valid_action_row(item) for item in items)
+            and len({item["id"] for item in items}) == len(items)
+        )
+    return False
 
 
 def walk(nodes, path="layoutContract.containerTree"):
@@ -500,7 +560,7 @@ def validate_final_nodes(
         key, config = node["componentKey"], node.get("componentConfig")
         unique(rows, node.get("containerId"), path)
         component_registration(key)
-        if key in {RIBBON, UNSUPPORTED_NATIVE_NODE}:
+        if key in {RIBBON, INSIGHT_SUMMARY, ACTION_LIST, UNSUPPORTED_NATIVE_NODE}:
             required = {
                 "nativeWidget",
                 "widgetStatus",
@@ -509,6 +569,8 @@ def validate_final_nodes(
             }
             if key == UNSUPPORTED_NATIVE_NODE:
                 required.add("reasonCode")
+            if key in {INSIGHT_SUMMARY, ACTION_LIST}:
+                required |= {"payloadSchema", "payload", "payloadSourceAuthority"}
             allowed = required | {"optionsRaw", "options"}
             if (
                 type(config) is not dict
@@ -539,6 +601,11 @@ def validate_final_nodes(
                     config.get("nativeWidget") != "web_ribbon"
                     or config.get("widgetStatus") != "ready"
                     or config.get("identityComplete") is not True
+                ))
+                or (key in {INSIGHT_SUMMARY, ACTION_LIST} and (
+                    config.get("widgetStatus") != "ready"
+                    or config.get("identityComplete") is not True
+                    or not _valid_node_payload(key, config)
                 ))
             ):
                 fail("NATIVE_NODE_CONFIG_INVALID", path + ".componentConfig")

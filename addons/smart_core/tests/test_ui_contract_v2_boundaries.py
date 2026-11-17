@@ -150,6 +150,8 @@ def _load_handler():
         project_runtime_business_actions=_project_runtime_business_actions,
         project_workflow_action_semantics=lambda contract: contract,
         rebind_native_occurrence_identities=real_assembler.rebind_native_occurrence_identities,
+        requested_view_type_matches=real_assembler.requested_view_type_matches,
+        requested_view_renderer_supported=real_assembler.requested_view_renderer_supported,
         declare_container_columns=real_assembler.declare_container_columns,
         declared_container_columns=real_assembler.declared_container_columns,
     )

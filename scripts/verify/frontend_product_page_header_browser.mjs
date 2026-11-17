@@ -26,6 +26,7 @@ fs.mkdirSync(path.dirname(output), { recursive: true });
 const browser = await launchChromium({ headless: true });
 const context = await browser.newContext({ viewport: { width: 1440, height: 900 } });
 const page = await context.newPage();
+const observedContracts = [];
 const evidence = {
   schema: 'frontend_product_page_header_browser.v1',
   passed: false,
@@ -45,6 +46,42 @@ const evidence = {
 page.on('console', (message) => { if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) evidence.console.push(message.text()); });
 page.on('pageerror', (error) => evidence.pageerror.push(error.message));
 page.on('response', (response) => { if (response.status() >= 500) evidence.http.push({ status: response.status(), url: response.url() }); });
+page.on('response', async (response) => {
+  const request = response.request();
+  if (response.status() >= 400) return;
+  let requestBody = {};
+  try { requestBody = request.postDataJSON() || {}; } catch { return; }
+  if (String(requestBody.intent || '') !== 'ui.contract.v2') return;
+  try {
+    const body = await response.json();
+    const data = body.data || body.result?.data || body.result || {};
+    const nodes = [];
+    const visit = (rows) => (Array.isArray(rows) ? rows : []).forEach((node) => {
+      nodes.push(node);
+      visit(node?.children);
+    });
+    visit(data.layoutContract?.containerTree);
+    observedContracts.push({
+      requestModel: String(requestBody.params?.model || requestBody.model || ''),
+      pageInfo: data.pageInfo || {},
+      nativeActionContract: data.nativeActionContract || null,
+      widgets: nodes
+        .filter((node) => node?.type === 'widget' || node?.containerType === 'widget')
+        .map((node) => ({
+          containerId: node.containerId,
+          nativeWidget: node.nativeIdentity?.name || node.widget || node.name || '',
+          componentKey: node.componentKey || '',
+          widgetStatus: node.componentConfig?.widgetStatus || '',
+          reasonCode: node.componentConfig?.reasonCode || '',
+          optionsResolution: node.componentConfig?.optionsResolution || '',
+          nativeLocator: node.nativeLocator || '',
+          occurrenceKey: node.nativeIdentity?.occurrenceKey || '',
+        })),
+    });
+  } catch {
+    // A malformed response is not evidence of a valid contract.
+  }
+});
 await page.route('**/*', async (route) => {
   if (isMutation(route.request())) {
     evidence.mutations.push({ url: route.request().url(), body: requestBody(route.request()) });
@@ -112,9 +149,14 @@ for (const target of targets) {
     const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
     check(!mobileOverflow, `${target.key}: 390px contract-gap overflow`);
     await page.setViewportSize({ width: 1440, height: 900 });
+    const contract = [...observedContracts].reverse().find((row) => (
+      row.requestModel === target.entryObjectModel
+      || row.pageInfo?.model === target.entryObjectModel
+    )) || null;
     evidence.targets.push({
       key: target.key,
       outcome: 'expected_contract_gap',
+      route: page.url(),
       headerCount: 0,
       unresolvedComponentCount: 0,
       contractGapMissing: observed.missing,
@@ -122,6 +164,7 @@ for (const target of targets) {
       contractGapLayer: observed.requiredDeclarationLayer,
       contractGapRole: observed.role,
       mobileOverflow,
+      contract,
     });
     continue;
   }

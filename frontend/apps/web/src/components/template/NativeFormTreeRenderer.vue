@@ -7,6 +7,7 @@
           :presentation="node.nodeComponent"
           :container-id="node.containerId"
           @navigate="navigateExplicit(node, $event)"
+          @action="handleNodeComponentAction"
         />
         <NativeFormTreeRenderer
           v-if="node.nodeComponent.kind === 'feedback' && (node.children || []).length"
@@ -304,6 +305,7 @@
               :presentation="widgetNode.nodeComponent"
               :container-id="widgetNode.containerId"
               @navigate="navigateExplicit(widgetNode, $event)"
+              @action="handleNodeComponentAction"
             />
           </template>
           <p
@@ -1150,6 +1152,14 @@ function emitNativeAction(node: NativeFormLayoutNode) {
     return;
   }
   emit('native-action', action);
+}
+
+function handleNodeComponentAction(payload: Record<string, unknown>) {
+  if (props.nativeActionHandler) {
+    void props.nativeActionHandler(payload);
+    return;
+  }
+  emit('native-action', payload);
 }
 
 </script>

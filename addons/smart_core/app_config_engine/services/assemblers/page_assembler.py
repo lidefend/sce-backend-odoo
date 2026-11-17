@@ -11,6 +11,7 @@ import time
 from copy import deepcopy
 from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
 from odoo.addons.smart_core.core.native_action_view_set import (
+    ACTION_VIEW_RENDERER_CAPABILITIES,
     canonical_view_type,
     has_authorized_action_view_override,
     resolve_requested_action_view,
@@ -1013,20 +1014,45 @@ class PageAssembler:
                 "search_view_xmlid": action.get("search_view_xmlid"),
             }
             action_view_set = deepcopy(action["view_set"])
+            supplied_capabilities = p.get("client_contract_capabilities")
+            client_capabilities = (
+                {
+                    str(item).strip()
+                    for item in supplied_capabilities
+                    if isinstance(item, str) and str(item).strip()
+                }
+                if isinstance(supplied_capabilities, list)
+                else None
+            )
             for row in action_view_set.get("orderedViews") or []:
                 if not isinstance(row, dict):
                     continue
-                row_view_type = canonical_view_type(row.get("viewType"))
-                row_view_id = int(row.get("viewId") or 0)
+                row_view_type = canonical_view_type(
+                    row.get("viewType") or row.get("view_type")
+                )
+                row_view_id = int(row.get("viewId") or row.get("view_id") or 0)
                 if row_view_id:
                     row["viewXmlId"] = self._view_xmlid(env, row_view_id)
                 row["projectionStatus"] = (
                     "ready" if row_view_type in view_projection_contracts else "unresolved"
                 )
-                row["rendererStatus"] = "unknown"
+                if client_capabilities is None:
+                    row["rendererStatus"] = "unknown"
+                else:
+                    renderer_capability = ACTION_VIEW_RENDERER_CAPABILITIES.get(row_view_type)
+                    row["rendererStatus"] = (
+                        "ready"
+                        if renderer_capability and renderer_capability in client_capabilities
+                        else "unsupported"
+                    )
+                    if row["rendererStatus"] == "unsupported":
+                        row["selectable"] = False
                 row["reasonCode"] = (
-                    "" if row["projectionStatus"] == "ready"
-                    else "ACTION_VIEW_PROJECTION_UNRESOLVED"
+                    "ACTION_VIEW_PROJECTION_UNRESOLVED"
+                    if row["projectionStatus"] != "ready"
+                    else "CLIENT_VIEW_CAPABILITY_MISSING"
+                    if row["rendererStatus"] == "unsupported"
+                    else ""
                 )
             data["action_view_set"] = action_view_set
             menu_id = int(p.get("menu_id") or p.get("menuId") or 0)

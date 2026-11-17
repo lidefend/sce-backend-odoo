@@ -4,7 +4,7 @@ import { isRegisteredComponentKey } from './professionalComponentRegistry';
 import type { ContractV2Container, ContractV2Snapshot } from '../contracts/v2/types';
 
 export type NodeComponentPresentation = {
-  kind: 'feedback' | 'anchor' | 'ribbon';
+  kind: 'feedback' | 'anchor' | 'ribbon' | 'insight_summary' | 'action_list';
   purpose?: 'advisory' | 'error' | 'warning' | 'explanation';
   content: string;
   visible: boolean;
@@ -13,6 +13,28 @@ export type NodeComponentPresentation = {
   styleClass?: string;
   visibilityOwner?: 'feedback_evaluation';
   parentVisible?: boolean;
+  insight?: Readonly<{
+    tone: 'success' | 'warning' | 'info';
+    title: string;
+    message: string;
+    detail: string;
+  }>;
+  actionList?: Readonly<{
+    title: string;
+    emptyText: string;
+    items: ReadonlyArray<Readonly<{
+      id: string;
+      title: string;
+      description: string;
+      state: 'done' | 'required' | 'available';
+      tone: 'success' | 'warning' | 'info';
+      actionType: '' | 'act_window_xmlid' | 'object_method';
+      actionRef: string;
+      actionLabel: string;
+      actionPayload: Readonly<Record<string, unknown>>;
+      enabled: boolean;
+    }>>;
+  }>;
 };
 function reject(path: string): never {
   throw contractGapError({ kind: 'contract_defect', missing: path,
@@ -28,6 +50,59 @@ function keys(value: unknown, expected: string[]): Record<string, unknown> {
   const row = object(value);
   if (Object.keys(row).length !== expected.length || expected.some((key) => !Object.hasOwn(row, key))) reject('componentConfig');
   return row;
+}
+
+function nodePayloadSource(value: unknown): boolean {
+  const row = object(value);
+  return Object.keys(row).length === 4
+    && row.kind === 'smart_construction_core_native_view_widget_payload'
+    && row.module === 'smart_construction_core'
+    && row.projectionOnly === false
+    && row.noBusinessFactAuthority === false;
+}
+
+function nodeActionList(value: unknown) {
+  const payload = keys(value, ['title', 'emptyText', 'items']);
+  if (typeof payload.title !== 'string' || typeof payload.emptyText !== 'string' || !Array.isArray(payload.items)) {
+    reject('action_list payload');
+  }
+  const items = payload.items.map((item) => {
+    const row = keys(item, [
+      'id', 'title', 'description', 'state', 'tone', 'actionType',
+      'actionRef', 'actionLabel', 'actionPayload', 'enabled',
+    ]);
+    if (
+      typeof row.id !== 'string' || !row.id
+      || typeof row.title !== 'string' || !row.title
+      || typeof row.description !== 'string'
+      || !['done', 'required', 'available'].includes(String(row.state))
+      || !['success', 'warning', 'info'].includes(String(row.tone))
+      || !['', 'act_window_xmlid', 'object_method'].includes(String(row.actionType))
+      || typeof row.actionRef !== 'string'
+      || typeof row.actionLabel !== 'string'
+      || !row.actionPayload || typeof row.actionPayload !== 'object' || Array.isArray(row.actionPayload)
+      || typeof row.enabled !== 'boolean'
+      || (row.enabled && !row.actionRef)
+    ) reject('action_list item');
+    return Object.freeze({
+      id: row.id,
+      title: row.title,
+      description: row.description,
+      state: row.state as 'done' | 'required' | 'available',
+      tone: row.tone as 'success' | 'warning' | 'info',
+      actionType: row.actionType as '' | 'act_window_xmlid' | 'object_method',
+      actionRef: row.actionRef,
+      actionLabel: row.actionLabel,
+      actionPayload: Object.freeze({ ...row.actionPayload as Record<string, unknown> }),
+      enabled: row.enabled,
+    });
+  });
+  if (new Set(items.map((item) => item.id)).size !== items.length) reject('action_list duplicate id');
+  return Object.freeze({
+    title: payload.title,
+    emptyText: payload.emptyText,
+    items: Object.freeze(items),
+  });
 }
 
 function compiledCondition(value: unknown, dynamic: boolean): boolean {
@@ -106,6 +181,60 @@ export function projectNodeComponents(
         missing: `native_view_widget.${reasonCode}`,
         requiredDeclarationLayer: 'P0: registered embedded native widget component',
       }, `Native embedded widget is not supported: ${reasonCode}`);
+    }
+    if (key === 'sc.insight.summary' || key === 'sc.action.list') {
+      const required = [
+        'nativeWidget', 'widgetStatus', 'identityComplete', 'optionsResolution',
+        'payloadSchema', 'payload', 'payloadSourceAuthority',
+      ];
+      const rawConfig = object(node.componentConfig);
+      if (
+        required.some((field) => !Object.hasOwn(rawConfig, field))
+        || !Object.keys(rawConfig).every((field) => required.includes(field) || ['optionsRaw', 'options'].includes(field))
+        || rawConfig.widgetStatus !== 'ready'
+        || rawConfig.identityComplete !== true
+        || !['none', 'parsed', 'unsupported'].includes(String(rawConfig.optionsResolution))
+        || node.type !== 'widget'
+        || node.containerType !== 'widget'
+        || node.children?.length
+        || !nativeIdentity(node)
+        || node.nativeIdentity?.kind !== 'widget'
+        || node.nativeIdentity.name !== rawConfig.nativeWidget
+        || node.nativeIdentity.nativeLocator !== node.nativeLocator
+        || node.nativeIdentity.occurrenceIndex !== node.occurrenceIndex
+        || !nodePayloadSource(rawConfig.payloadSourceAuthority)
+      ) reject(`${node.containerId}.native payload`);
+      if (key === 'sc.insight.summary') {
+        if (rawConfig.payloadSchema !== 'insight_summary.v1') reject(`${node.containerId}.payloadSchema`);
+        const payload = keys(rawConfig.payload, ['tone', 'title', 'message', 'detail']);
+        if (
+          !['success', 'warning', 'info'].includes(String(payload.tone))
+          || typeof payload.title !== 'string' || !payload.title
+          || typeof payload.message !== 'string'
+          || typeof payload.detail !== 'string'
+        ) reject(`${node.containerId}.payload`);
+        presentations.set(node.containerId, {
+          kind: 'insight_summary',
+          content: payload.title,
+          visible,
+          insight: Object.freeze({
+            tone: payload.tone as 'success' | 'warning' | 'info',
+            title: payload.title,
+            message: payload.message,
+            detail: payload.detail,
+          }),
+        });
+        continue;
+      }
+      if (rawConfig.payloadSchema !== 'action_list.v1') reject(`${node.containerId}.payloadSchema`);
+      const actionList = nodeActionList(rawConfig.payload);
+      presentations.set(node.containerId, {
+        kind: 'action_list',
+        content: actionList.title,
+        visible,
+        actionList,
+      });
+      continue;
     }
     if (key === 'sc.display.ribbon') {
       const required = ['nativeWidget', 'widgetStatus', 'identityComplete', 'optionsResolution'];

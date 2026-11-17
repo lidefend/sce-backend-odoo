@@ -159,6 +159,7 @@ def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
         "component": _text(entry.get("component")),
         "status": _text(entry.get("status")).lower(),
         "reasonCode": _text(entry.get("reasonCode")),
+        "payloadRequired": entry.get("payloadRequired") is True,
     }
 
 

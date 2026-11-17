@@ -50,6 +50,18 @@ NO_BUSINESS_FACT_AUTHORITY = True
 TRACE_FIELD_TOKENS = ("legacy", "source", "origin", "external", "import", "migration", "trace", "old_")
 NOTE_FIELD_TOKENS = ("note", "remark", "description", "memo", "comment", "说明", "备注")
 _KANBAN_ROW_ACTION_REGISTRY: dict[tuple[str, str], dict[str, Any]] = {}
+_ACTION_SOURCE_VIEW_TYPES = {
+    "native_form_header": "form",
+    "native_form_stat": "form",
+    "native_form_layout_button": "form",
+    "native_tree_row_action": "tree",
+    "native_list_row_action": "tree",
+    "native_kanban_row_action": "kanban",
+}
+_NATIVE_NODE_PAYLOAD_SCHEMAS = {
+    "sc.insight.summary": "insight_summary.v1",
+    "sc.action.list": "action_list.v1",
+}
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -1246,7 +1258,12 @@ def _assemble_unified_page_contract_v2(
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
     _bind_native_occurrence_identities(contract, source)
+    _project_native_view_widget_payloads(contract, node_actor_env)
     _merge_action_rules_by_backend_identity(contract)
+    _validate_action_view_scope(
+        contract,
+        action_bound=bool(source.get("action_identity") and source.get("action_view_set")),
+    )
     _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
     _bind_native_layout_action_references(contract)
@@ -1274,6 +1291,180 @@ def _assemble_unified_page_contract_v2(
             "v2_seal": int((time.monotonic() - actions_bound_at) * 1000),
         })
     return sealed
+
+
+def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> None:
+    """Ask the owning product layer for declared embedded-widget payloads.
+
+    The kernel owns only transport and validation. A product extension returns
+    data keyed by the already-stable occurrence identity; it never supplies a
+    field read set, ACL decision or component key.
+    """
+    nodes: list[dict[str, Any]] = []
+
+    def visit(rows: Any) -> None:
+        for row in _list(rows):
+            if not isinstance(row, dict):
+                continue
+            if row.get("type") == "widget" and row.get("componentKey") in _NATIVE_NODE_PAYLOAD_SCHEMAS:
+                nodes.append(row)
+            visit(row.get("children"))
+
+    visit(_dict(contract.get("layoutContract")).get("containerTree"))
+    if not nodes:
+        return
+    main_data = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    request = {
+        "model": _text(_dict(contract.get("pageInfo")).get("model")),
+        "recordId": _positive_int(main_data.get("id"), 0),
+        "viewType": _text(_dict(contract.get("pageInfo")).get("viewType")),
+        "widgets": [
+            {
+                "occurrenceKey": _text(_dict(node.get("nativeIdentity")).get("occurrenceKey")),
+                "nativeWidget": _text(node.get("widget") or node.get("name")),
+                "componentKey": _text(node.get("componentKey")),
+                "title": _text(node.get("title") or node.get("label")),
+                "options": deepcopy(_dict(node.get("componentConfig")).get("options")),
+                "payloadSchema": _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))],
+            }
+            for node in nodes
+        ],
+    }
+    response: dict[str, Any] = {}
+    if env is not None:
+        try:
+            from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+            payload = call_extension_hook_first(
+                env, "smart_core_native_view_widget_payload", env, request,
+            )
+            response = _dict(payload.get("widgets")) if isinstance(payload, dict) else {}
+        except Exception as error:
+            _logger.warning("[native_view_widget_payload] provider failed: %s", error)
+
+    registry = _dict(_dict(contract.get("layoutContract")).get("componentRegistry"))
+    status_rows = {
+        _text(row.get("containerId")): row
+        for row in _list(_dict(contract.get("statusContract")).get("containerStatus"))
+        if isinstance(row, dict)
+    }
+    for node in nodes:
+        container_id = _text(node.get("containerId"))
+        occurrence_key = _text(_dict(node.get("nativeIdentity")).get("occurrenceKey"))
+        expected_schema = _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))]
+        row = _dict(response.get(occurrence_key))
+        valid = bool(
+            occurrence_key
+            and _text(row.get("payloadSchema")) == expected_schema
+            and isinstance(row.get("payload"), dict)
+            and isinstance(row.get("sourceAuthority"), dict)
+            and row.get("sourceAuthority")
+        )
+        config = _dict(node.get("componentConfig"))
+        status = status_rows.get(container_id)
+        if valid:
+            config.update({
+                "payloadSchema": expected_schema,
+                "payload": deepcopy(row["payload"]),
+                "payloadSourceAuthority": deepcopy(row["sourceAuthority"]),
+            })
+            node["componentConfig"] = config
+            if status is not None:
+                status["disabled"] = False
+                status.pop("reasonCode", None)
+            continue
+        unsupported = _resolve_native_view_widget("")
+        node["componentKey"] = unsupported["component"]
+        config.update({
+            "widgetStatus": "unsupported",
+            "reasonCode": "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+        })
+        for key in ("payloadSchema", "payload", "payloadSourceAuthority"):
+            config.pop(key, None)
+        node["componentConfig"] = config
+        registry[unsupported["component"]] = _component_registry_of({unsupported["component"]})[
+            unsupported["component"]
+        ]
+        if status is not None:
+            status["disabled"] = True
+            status["reasonCode"] = "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE"
+    _dict(contract.get("layoutContract"))["componentRegistry"] = registry
+
+
+def _validate_action_view_scope(
+    contract: dict[str, Any],
+    *,
+    action_bound: bool = True,
+) -> None:
+    """Keep native action identity on the active page View.
+
+    Form header/stat/layout actions are meaningful only on a Form surface.
+    Publishing them in a Kanban/List contract creates a self-contradictory
+    payload and forces the strict client decoder to reject the whole page.
+    """
+    if not action_bound:
+        # Model-only pages have no Action View Set whose ownership can be
+        # reconciled; their existing action projection remains unchanged.
+        return
+    page = _dict(contract.get("pageInfo"))
+    active_view_type = _text(page.get("viewType")).lower()
+    active_view_type = "tree" if active_view_type in {"list", "tree"} else active_view_type
+    for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
+        if not isinstance(rule, dict):
+            continue
+        source_channel = _text(rule.get("sourceChannel"))
+        source_view_type = _ACTION_SOURCE_VIEW_TYPES.get(source_channel)
+        if not source_view_type:
+            matched = re.match(r"^native_(form|tree|list|kanban)_", source_channel)
+            if matched:
+                source_view_type = matched.group(1)
+                source_view_type = "tree" if source_view_type == "list" else source_view_type
+        if source_view_type and active_view_type != source_view_type:
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+        identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
+        identity_view_type = _text(
+            identity.get("viewType") or identity.get("view_type")
+        ).lower()
+        identity_view_type = (
+            "tree" if identity_view_type in {"list", "tree"} else identity_view_type
+        )
+        if identity_view_type and identity_view_type != active_view_type:
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+        identity_model = _text(identity.get("model"))
+        if identity_model and identity_model != _text(page.get("model")):
+            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+
+
+def requested_view_type_matches(contract: dict[str, Any], requested_view_type: str) -> bool:
+    """Whether the delivered contract is the View the client requested."""
+    if not _dict(contract.get("nativeActionContract")):
+        # Legacy/model-only contracts do not negotiate an Action View Set.
+        return True
+    requested = _text(requested_view_type).split(",")[0].strip().lower()
+    if not requested:
+        return True
+    requested = "tree" if requested in {"tree", "list"} else requested
+    delivered = _text(_dict(contract.get("pageInfo")).get("viewType")).lower()
+    delivered = "tree" if delivered in {"tree", "list"} else delivered
+    return requested == delivered
+
+
+def requested_view_renderer_supported(contract: dict[str, Any]) -> bool:
+    """Whether the active native Action View is renderable by the client."""
+    native_action = _dict(contract.get("nativeActionContract"))
+    if not native_action:
+        return True
+    view_set = _dict(native_action.get("viewSet"))
+    active = _text(view_set.get("activeViewType")).lower()
+    active = "tree" if active in {"tree", "list"} else active
+    row = next(
+        (
+            item for item in _list(view_set.get("orderedViews"))
+            if isinstance(item, dict)
+            and _text(item.get("viewType")).lower() == active
+        ),
+        None,
+    )
+    return not row or _text(row.get("rendererStatus")).lower() != "unsupported"
 
 
 def assemble_unified_page_patch_v2(
@@ -5305,10 +5496,17 @@ def _append_ui_contract_actions(
     main_data: dict[str, Any] | None = None,
 ) -> None:
     rows: list[dict[str, Any]] = []
-    form_view = _dict(_dict(ui.get("views")).get("form"))
+    active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
+    if active_view_type == "list":
+        active_view_type = "tree"
+    active_view = _dict(_dict(ui.get("views")).get(active_view_type))
+    form_view = _dict(_dict(ui.get("views")).get("form")) if active_view_type == "form" else {}
     form_meta = _dict(form_view.get("meta"))
     projection_identity = _dict(form_meta.get("projection_identity"))
-    explicit_form_view = _positive_int(projection_identity.get("source_view_id"), 0) > 0
+    explicit_form_view = (
+        active_view_type == "form"
+        and _positive_int(projection_identity.get("source_view_id"), 0) > 0
+    )
 
     def collect_native_layout_buttons(value: Any, *, parent_type: str = "") -> None:
         if isinstance(value, list):
@@ -5331,36 +5529,58 @@ def _append_ui_contract_actions(
         for child_key in ("children", "pages", "tabs", "nodes", "items"):
             collect_native_layout_buttons(value.get(child_key), parent_type=node_type)
 
-    collect_native_layout_buttons(_dict(contract.get("layoutContract")).get("containerTree"))
-    for source_channel, header_button_source in (
-        ("native_form_header", form_view.get("header_buttons")),
-        ("contract_header", ui.get("header_buttons")),
-    ):
-        for row in _list(header_button_source):
+    if active_view_type == "form":
+        collect_native_layout_buttons(_dict(contract.get("layoutContract")).get("containerTree"))
+        for source_channel, header_button_source in (
+            ("native_form_header", form_view.get("header_buttons")),
+            ("contract_header", ui.get("header_buttons")),
+        ):
+            for row in _list(header_button_source):
+                if isinstance(row, dict):
+                    rows.append({
+                        **row,
+                        "level": _text(row.get("level"), "header"),
+                        "target_scope": _text(row.get("target_scope"), "header"),
+                        "_source_channel": source_channel,
+                    })
+        for row in _list(form_view.get("stat_buttons")):
             if isinstance(row, dict):
                 rows.append({
                     **row,
-                    "level": _text(row.get("level"), "header"),
-                    "target_scope": _text(row.get("target_scope"), "header"),
-                    "_source_channel": source_channel,
+                    "level": _text(row.get("level"), "smart"),
+                    "target_scope": _text(row.get("target_scope"), "page"),
+                    "_source_channel": "native_form_stat",
                 })
-    for row in _list(form_view.get("stat_buttons")):
-        if isinstance(row, dict):
-            rows.append({
-                **row,
-                "level": _text(row.get("level"), "smart"),
-                "target_scope": _text(row.get("target_scope"), "page"),
-                "_source_channel": "native_form_stat",
-            })
-    active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
-    if active_view_type == "list":
-        active_view_type = "tree"
-    active_view = _dict(_dict(ui.get("views")).get(active_view_type))
+    for key, priority, authority in (
+        ("buttons", 100, "native_contract"),
+        ("business_actions", 300, "product_contract"),
+        ("actions", 100, "native_contract"),
+    ):
+        for row in _list(active_view.get(key)):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_{key}",
+                    "_presentation_priority": priority,
+                    "_presentation_authority": authority,
+                })
+    for group in _list(active_view.get("action_groups")):
+        for row in _list(_dict(group).get("actions")):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_action_group",
+                    "_presentation_priority": 250,
+                    "_presentation_authority": "product_contract",
+                })
     active_view_toolbar = _dict(active_view.get("toolbar"))
     for slot in ("header", "sidebar", "footer"):
         for row in _list(active_view_toolbar.get(slot)):
             if isinstance(row, dict):
-                rows.append({**row, "_source_channel": f"native_view_toolbar.{slot}"})
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_toolbar.{slot}",
+                })
     if not explicit_form_view:
         # Without an effective native form carrier these top-level contract
         # rows are the only action source and retain their existing semantics.
@@ -5705,11 +5925,12 @@ def _row_declared_action_semantics(
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:
     views = _dict(ui.get("views"))
     rows: list[dict[str, Any]] = []
-    for view_key in ("kanban", "tree", "list"):
-        view = _dict(views.get(view_key))
-        for row in _list(view.get("row_actions")):
-            if isinstance(row, dict):
-                rows.append({**row, "_source_channel": f"native_{view_key}_row_action"})
+    active_view_type = _text(_dict(contract.get("pageInfo")).get("viewType")).lower()
+    active_view_type = "tree" if active_view_type in {"tree", "list"} else active_view_type
+    view = _dict(views.get(active_view_type))
+    for row in _list(view.get("row_actions")):
+        if isinstance(row, dict):
+            rows.append({**row, "_source_channel": f"native_{active_view_type}_row_action"})
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:

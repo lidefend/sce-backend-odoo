@@ -265,6 +265,64 @@ export function unsupportedNativeNodeFixture(name = 'sc_stage_requirements') {
   s.statusContract.containerStatus = [{ containerId: node.containerId, visible: true, disabled: true, reasonCode: 'NATIVE_VIEW_WIDGET_UNSUPPORTED' }];
   return s;
 }
+function payloadNodeFixture(componentKey: 'sc.insight.summary' | 'sc.action.list', nativeWidget: string, payloadSchema: string, payload: Record<string, unknown>) {
+  const s = ribbonFixture();
+  const node = s.layoutContract.containerTree[0];
+  node.containerId = `widget.${nativeWidget}.1`;
+  node.name = nativeWidget;
+  node.widget = nativeWidget;
+  node.title = nativeWidget;
+  node.label = nativeWidget;
+  node.nativeIdentity = nativeWidgetOccurrence(nativeWidget, '/form[1]/sheet[1]/widget[1]', 1);
+  node.nativeLocator = '/form[1]/sheet[1]/widget[1]';
+  node.occurrenceIndex = 1;
+  node.componentKey = componentKey;
+  node.componentConfig = {
+    nativeWidget,
+    widgetStatus: 'ready',
+    identityComplete: true,
+    optionsResolution: 'parsed',
+    optionsRaw: "{}",
+    options: {},
+    payloadSchema,
+    payload,
+    payloadSourceAuthority: {
+      kind: 'smart_construction_core_native_view_widget_payload',
+      module: 'smart_construction_core',
+      projectionOnly: false,
+      noBusinessFactAuthority: false,
+    },
+  };
+  s.layoutContract.componentRegistry = { [componentKey]: { version: '1.0.0' } };
+  s.statusContract.containerStatus = [{ containerId: node.containerId, visible: true, disabled: false }];
+  return s;
+}
+export function insightSummaryFixture() {
+  return payloadNodeFixture('sc.insight.summary', 'sc_insight_banner', 'insight_summary.v1', {
+    tone: 'warning',
+    title: '项目已创建，可以继续推进。',
+    message: '建议先补全项目地点。',
+    detail: '否则后续办理会受阻。',
+  });
+}
+export function actionListFixture(nativeWidget = 'sc_stage_requirements') {
+  return payloadNodeFixture('sc.action.list', nativeWidget, 'action_list.v1', {
+    title: nativeWidget === 'sc_next_actions' ? '下一步动作' : '阶段要求',
+    emptyText: '当前没有需要处理的事项',
+    items: [{
+      id: 'item-1',
+      title: '项目地点',
+      description: '完成即可进入下一阶段',
+      state: 'required',
+      tone: 'warning',
+      actionType: 'act_window_xmlid',
+      actionRef: 'smart_construction_core.action_sc_project_manage',
+      actionLabel: '去处理',
+      actionPayload: { project_id: 7 },
+      enabled: true,
+    }],
+  });
+}
 for(const mutation of ['valid','missing','duplicate','hidden','url','empty']) test('navigation '+mutation,()=>{
   const s=navigationFixture();const [link,target]=s.layoutContract.containerTree;
   if(mutation==='missing') s.layoutContract.containerTree.pop();
@@ -287,6 +345,29 @@ test('native ribbon presentation and canonical consumption',()=>{
   assert.deepEqual(node.nativeWidgetComponent?.componentConfig.options, { bg_color: 'text-bg-success' });
   assert.equal((node.nativePresentation.nodeComponent as { kind?: string } | undefined)?.kind, 'ribbon');
 });
+test('insight summary consumes the declared project payload', () => {
+  const s = insightSummaryFixture();
+  const presentation = projectNodeComponents(s).presentations.get('widget.sc_insight_banner.1');
+  assert.equal(presentation?.kind, 'insight_summary');
+  assert.deepEqual(presentation?.insight, {
+    tone: 'warning',
+    title: '项目已创建，可以继续推进。',
+    message: '建议先补全项目地点。',
+    detail: '否则后续办理会受阻。',
+  });
+  const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(s)), 'readonly');
+  assert.equal((model.zones.primary[0].nativePresentation.nodeComponent as { kind?: string }).kind, 'insight_summary');
+});
+for (const nativeWidget of ['sc_stage_requirements', 'sc_next_actions']) {
+  test(`action list consumes ${nativeWidget}`, () => {
+    const s = actionListFixture(nativeWidget);
+    const presentation = projectNodeComponents(s).presentations.get(`widget.${nativeWidget}.1`);
+    assert.equal(presentation?.kind, 'action_list');
+    assert.equal(presentation?.actionList?.items[0].title, '项目地点');
+    assert.equal(presentation?.actionList?.items[0].actionType, 'act_window_xmlid');
+    assert.equal(presentation?.actionList?.items[0].enabled, true);
+  });
+}
 test('real producer fixture flows through decoder and both consumption paths', () => {
   const producer = JSON.parse(readFileSync(
     'frontend/apps/web/scripts/fixtures/native_embedded_widget_contract_v2.json',
@@ -348,7 +429,7 @@ test('real producer fixture flows through decoder and both consumption paths', (
   ).zones.primary[0];
   assert.equal(hiddenNode.visible, false);
 });
-for (const name of ['sc_stage_requirements', 'sc_next_actions', 'unknown_widget']) {
+for (const name of ['unknown_widget']) {
   test(`unsupported native widget ${name}`, () => {
     assert.throws(
       () => projectNodeComponents(unsupportedNativeNodeFixture(name)),

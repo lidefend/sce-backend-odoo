@@ -18,6 +18,7 @@
         :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
+        @native-action="emit('native-action', $event)"
       />
     </main>
     <section v-if="nativeBridge?.subordinateNodes.length" class="sc-native-contract-subordinate" data-canonical-zone="subordinate">
@@ -32,6 +33,7 @@
         :authoritative-business-section-mode="nativeBridge.authoritativeBusinessSectionMode"
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
+        @native-action="emit('native-action', $event)"
       />
     </section>
     <component
@@ -108,11 +110,13 @@ const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
   'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
+  'native-action': [payload: Record<string, unknown>];
 }>();
 
 function runNativeCanonicalAction(payload: Record<string, unknown>) {
   const action = props.nativeBridge?.actionForPayload(payload);
   if (action) emit('action-ref', action);
+  else emit('native-action', payload);
 }
 </script>
 

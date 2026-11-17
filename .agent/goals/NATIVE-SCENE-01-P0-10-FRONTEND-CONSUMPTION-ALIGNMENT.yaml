@@ -1,0 +1,51 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT
+  title: Native contract frontend consumption alignment
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Unified Page Contract V2 decoder and Action View surface consumption
+  module:
+    - frontend/apps/web
+  baseline:
+    branch: main
+    full_sha: e890568b9c75bcf8059c5ea67030992492dbd440
+    prerequisites:
+      - NATIVE-SCENE-01-P0-3-P0-5-NATIVE-ACTION-CONTRACT
+      - NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY
+      - NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT
+  objective: >-
+    Align the custom web consumer with the native contracts already published by
+    the backend: reject partial or contradictory Native Action Search identity,
+    and register the Native Action View Set, native occurrence identity and
+    embedded native Widget surfaces as explicit declaration-to-consumer bindings
+    instead of leaving them as decoder-only knowledge.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral contract consumption
+    why_here: >-
+      Contract V2 decoding and generic Action/Form consumption are P0 platform
+      responsibilities shared by every Odoo module and product.
+    why_not_elsewhere:
+      - no industry or customer business semantics are introduced
+      - no backend Action/View ordering or permission fact is re-derived by the frontend
+      - no professional Renderer, persistent model or runtime configuration is added
+      - missing declarations fail closed and are not backfilled with frontend defaults
+  deliverables:
+    - cross-check Native Action Search viewId, viewXmlId and authority against searchContract.nativeIdentity
+    - reject Search identity when the Native Action Contract omits its Search reference
+    - register Native Action View Set, occurrence identity and embedded Widget consumption in the frontend contract-basis ledger
+    - focused non-zero decoder and consumer regression tests
+    - P0-10 iteration record
+  acceptance:
+    - matching Search identity is accepted
+    - any viewId, viewXmlId or authority mismatch fails decoding
+    - searchContract identity without nativeActionContract.search fails decoding
+    - Native Action View Set consumption remains constrained to orderedViews
+    - native occurrence and embedded Widget consumers remain fail-closed and registered
+    - strict frontend typecheck and contract-basis enforcement pass
+  exclusions:
+    - backend ActionResolver or PageAssembler changes
+    - same-type multiple View selection UX
+    - professional Renderer or Widget business implementation
+    - database, deployment, product acceptance or production mutation
+  rollback: Revert the P0-10 frontend decoder, tests, Make wiring, contract-basis ledger and run records together.

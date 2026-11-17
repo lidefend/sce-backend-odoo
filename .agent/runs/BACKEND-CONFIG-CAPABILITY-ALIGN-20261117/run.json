@@ -1,0 +1,239 @@
+{
+  "schema_version": 1,
+  "id": "BACKEND-CONFIG-CAPABILITY-ALIGN-20261117",
+  "branch": "fix/backend-config-capability-alignment-20261117",
+  "baseline_sha": "a19bf2d976cbda9d99bdc24deab7903143a21cb7",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+  "record": "docs/ops/iterations/backend_config_capability_alignment_20261117.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+    ".agent/runs/PROJECT-FORMAL-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
+    ".agent/goals/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+    ".agent/runs/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
+    "docs/ops/iterations/project_formal_config_capability_alignment_20261117.md",
+    "docs/ops/iterations/backend_config_capability_alignment_20261117.md",
+    "addons/smart_construction_core/views/core/project_views.xml",
+    "addons/smart_construction_core/views/core/project_overview_views.xml",
+    "addons/smart_core/core/node_component_capabilities.py",
+    "addons/smart_core/tests/test_node_component_capabilities.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "contracts/registry/semantic.yaml",
+    "scripts/verify/test_native_widget_provenance.py",
+    "frontend/apps/web/src/app/nativeModifierContext.ts",
+    "frontend/apps/web/scripts/create_default_hydration_test.ts",
+    "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+    "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "addons/smart_core/core/native_action_view_set.py",
+    "addons/smart_core/core/native_action_contract.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/tests/test_native_action_contract_integration.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "config/acceptance/frontend_presentation_targets.v1.json",
+    "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_acceptance_evolution_binding_guard.py",
+    "scripts/verify/test_product_view_structure_contract.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing governed product-view and frontend presentation checks; runtime verification uses the existing daily profile"
+  },
+  "checks": {
+    "product_view_structure": {
+      "target": "verify.product_view_structure.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/views/core/project_views.xml",
+        "addons/smart_construction_core/views/core/project_overview_views.xml",
+        "scripts/contract/product_view_structure_common.py",
+        "scripts/verify/product_view_structure_contract_guard.py",
+        "scripts/verify/test_product_view_structure_contract.py",
+        "make/guards.mk"
+      ]
+    },
+    "capability_projection": {
+      "target": "verify.node_component_capabilities.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "make/contract.mk"
+      ]
+    },
+    "native_widget_provenance": {
+      "target": "verify.native_widget.provenance.unit",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry/semantic.yaml",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "addons/smart_core/core/native_widget_profile.py",
+        "scripts/verify/test_native_widget_provenance.py",
+        "make/guards.mk"
+      ]
+    },
+    "semantic_registry": {
+      "target": "verify.semantic.registry.lint",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry.yaml",
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "contracts/registry/registry.schema.json",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "scripts/verify/test_node_component_registry.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "make/contract.mk"
+      ]
+    },
+    "frontend_hydration_context": {
+      "target": "verify.frontend.create_default_hydration.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/nativeModifierContext.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "native_action_view_set": {
+      "target": "verify.native_action.view_set.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/native_action_view_set.py",
+        "scripts/verify/test_native_action_view_set.py",
+        "make/guards.mk"
+      ]
+    },
+    "native_action_contract": {
+      "target": "verify.native_action.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/native_action_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "scripts/verify/test_native_action_contract.py",
+        "make/guards.mk"
+      ]
+    },
+    "frontend_native_action_contract": {
+      "target": "verify.frontend.native_action_contract_consumption.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_collection_views": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "scripts/verify/collection_view_semantics_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "kanban_action_surface": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/ci.mk"
+      ]
+    },
+    "node_validation": {
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/node_component_capabilities.py",
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/tests/test_node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_validation.py",
+        "make/contract.mk"
+      ]
+    },
+    "presentation_targets": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "kind": "offline",
+      "inputs": [
+        "config/acceptance/evolution_binding.v1.json",
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py",
+        "scripts/verify/test_acceptance_evolution_integration.py",
+        "make/frontend.mk"
+      ]
+    },
+    "validation_delivery": {
+      "target": "verify.validation.delivery.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/validation_delivery_plan.py",
+        "scripts/verify/test_validation_delivery_plan.py",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "config/acceptance/evolution_binding.v1.json",
+        "make/guards.mk"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ]
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/README.md",
+        ".agent/active-runs.json",
+        ".agent/goals/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
+        ".agent/runs/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish candidate 4c373015c07bc3f86c109b77fe298cb613136b6f, wait for current-head required CI, merge through the protected PR, then deploy the exact daily runtime and read back the served revision."
+}

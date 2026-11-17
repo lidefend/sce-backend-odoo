@@ -260,6 +260,21 @@ class NodeValidationTests(unittest.TestCase):
         self.contract['layoutContract']['containerTree'] = [node]
         self.contract['layoutContract']['componentRegistry'] = {}
 
+    def payload_widget(self, key, native_widget, schema, payload):
+        self.embedded_widget(native_widget, supported=True)
+        node = self.contract['layoutContract']['containerTree'][0]
+        node['componentKey'] = key
+        node['componentConfig'].update({
+            'payloadSchema': schema,
+            'payload': payload,
+            'payloadSourceAuthority': {
+                'kind': 'smart_construction_core_native_view_widget_payload',
+                'module': 'smart_construction_core',
+                'projectionOnly': False,
+                'noBusinessFactAuthority': False,
+            },
+        })
+
     def test_embedded_ribbon_and_unsupported_node_are_whitelisted_semantically(self):
         self.embedded_widget()
         self.validate()
@@ -298,6 +313,46 @@ class NodeValidationTests(unittest.TestCase):
         self.reject('NATIVE_NODE_CONFIG_INVALID')
         self.embedded_widget()
         self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsRaw'] = "{'limit': 4}"
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+
+    def test_project_payload_nodes_are_validated_and_fail_closed(self):
+        self.payload_widget(
+            'sc.insight.summary',
+            'sc_insight_banner',
+            'insight_summary.v1',
+            {
+                'tone': 'warning',
+                'title': '项目已创建',
+                'message': '建议先补全项目地点。',
+                'detail': '否则后续办理会受阻。',
+            },
+        )
+        self.validate()
+        self.payload_widget(
+            'sc.action.list',
+            'sc_stage_requirements',
+            'action_list.v1',
+            {
+                'title': '阶段要求',
+                'emptyText': '暂无要求',
+                'items': [{
+                    'id': 'item-1',
+                    'title': '项目地点',
+                    'description': '完成即可继续',
+                    'state': 'required',
+                    'tone': 'warning',
+                    'actionType': 'act_window_xmlid',
+                    'actionRef': 'smart_construction_core.action_sc_project_manage',
+                    'actionLabel': '去处理',
+                    'actionPayload': {'project_id': 7},
+                    'enabled': True,
+                }],
+            },
+        )
+        self.validate()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['payload']['items'][0]['enabled'] = 'yes'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['payloadSourceAuthority']['projectionOnly'] = True
         self.reject('NATIVE_NODE_CONFIG_INVALID')
 
     def test_navigation_valid(self):

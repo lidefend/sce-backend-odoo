@@ -164,6 +164,10 @@ def build_native_action_contract(
         active = _text(normalized_view_set.get("defaultViewType")) or ordered_views[0]["viewType"]
     active = _canonical_view_type(active)
     active_in_set = active in available_types
+    active_row = next(
+        (row for row in ordered_views if row["viewType"] == active),
+        {},
+    )
 
     policy = _dict(access_policy)
     policy_mode = _text(policy.get("mode")).lower()
@@ -171,6 +175,9 @@ def build_native_action_contract(
     if policy_mode == "block":
         projection_status = "blocked"
         reason_code = _text(policy.get("reason_code")) or "ACTION_PROJECTION_BLOCKED"
+    elif active_row.get("rendererStatus") == "unsupported":
+        projection_status = "blocked"
+        reason_code = _text(active_row.get("reasonCode")) or "CLIENT_VIEW_CAPABILITY_MISSING"
     elif not complete or not active_in_set:
         projection_status = "unresolved"
         reason_code = "ACTION_VIEW_SET_UNRESOLVED"
@@ -220,8 +227,16 @@ def build_native_action_contract(
                 "reasonCodes": backend_reasons,
             },
             "clientRenderer": {
-                "status": "unknown",
-                "reasonCodes": [],
+                "status": (
+                    "ready" if active_row.get("rendererStatus") == "ready"
+                    else "blocked" if active_row.get("rendererStatus") == "unsupported"
+                    else "unknown"
+                ),
+                "reasonCodes": (
+                    [_text(active_row.get("reasonCode")) or "CLIENT_VIEW_CAPABILITY_MISSING"]
+                    if active_row.get("rendererStatus") == "unsupported"
+                    else []
+                ),
             },
             "businessExecution": {
                 "status": "not_applicable",

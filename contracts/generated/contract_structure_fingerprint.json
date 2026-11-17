@@ -855,12 +855,12 @@
   ],
   "schemas": [
     {
-      "content_hash": "33b90520d97a6fb2",
+      "content_hash": "7dc7e4bc79207c7c",
       "path": "registry/component.yaml",
       "version": 2
     },
     {
-      "content_hash": "10f65773047f532c",
+      "content_hash": "1a6694910ab65ea0",
       "path": "registry/semantic.yaml",
       "version": 2
     },

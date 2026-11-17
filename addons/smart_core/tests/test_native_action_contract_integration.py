@@ -47,7 +47,7 @@ class TestNativeActionContractIntegration(TransactionCase):
             ],
         })
 
-    def _source(self, view_type):
+    def _source(self, view_type, client_capabilities=None):
         source, _versions = ActionDispatcher(
             self.env,
             self.env["ir.model"].sudo().env,
@@ -55,12 +55,13 @@ class TestNativeActionContractIntegration(TransactionCase):
             "subject": "action",
             "action_id": self.action.id,
             "view_type": view_type,
+            **({"client_contract_capabilities": client_capabilities} if client_capabilities is not None else {}),
         })
         return source
 
-    def _contract(self, view_type):
+    def _contract(self, view_type, client_capabilities=None):
         return assemble_unified_page_contract_v2(
-            self._source(view_type),
+            self._source(view_type, client_capabilities=client_capabilities),
             source_type="ui.contract",
             request_id="native.action.contract.%s" % view_type,
             node_actor_env=self.env,
@@ -98,6 +99,31 @@ class TestNativeActionContractIntegration(TransactionCase):
         self.assertEqual(native_action["readiness"]["backendContract"]["status"], "ready")
         self.assertEqual(native_action["readiness"]["clientRenderer"]["status"], "unknown")
         self.assertEqual(native_action["readiness"]["businessExecution"]["status"], "not_applicable")
+
+    def test_action_view_set_negotiates_client_renderer_capabilities(self):
+        capabilities = ["view.tree.v1", "view.form.v1"]
+        contract = self._contract("tree", client_capabilities=capabilities)
+        native_action = contract["nativeActionContract"]
+        rows = native_action["viewSet"]["orderedViews"]
+
+        self.assertEqual({row["viewType"]: row["rendererStatus"] for row in rows}, {
+            "tree": "ready",
+            "form": "ready",
+        })
+        self.assertEqual(native_action["readiness"]["clientRenderer"]["status"], "ready")
+        self.assertEqual(native_action["viewSet"]["activeViewType"], "tree")
+
+    def test_action_view_set_blocks_active_view_missing_renderer_capability(self):
+        contract = self._contract("tree", client_capabilities=["view.form.v1"])
+        native_action = contract["nativeActionContract"]
+        rows = native_action["viewSet"]["orderedViews"]
+        tree = next(row for row in rows if row["viewType"] == "tree")
+
+        self.assertEqual(tree["rendererStatus"], "unsupported")
+        self.assertFalse(tree["selectable"])
+        self.assertEqual(tree["reasonCode"], "CLIENT_VIEW_CAPABILITY_MISSING")
+        self.assertEqual(native_action["projectionAvailability"]["status"], "blocked")
+        self.assertEqual(native_action["readiness"]["clientRenderer"]["status"], "blocked")
 
     def test_active_view_follows_the_requested_action_view(self):
         contract = self._contract("form")

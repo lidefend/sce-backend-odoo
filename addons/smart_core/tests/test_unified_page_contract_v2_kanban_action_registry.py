@@ -111,6 +111,169 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(actions[0]["sourceWidgetId"], "page.row")
         self.assertEqual(actions[0]["triggerType"], "click")
 
+    def test_kanban_surface_excludes_form_header_action_rules(self):
+        source = _kanban_source()
+        source["views"]["form"] = {
+            "header_buttons": [{
+                "key": "form_only_action",
+                "name": "form_only_action",
+                "label": "仅表单动作",
+                "intent": "object_method",
+                "native_identity": {
+                    "authoritative": True,
+                    "name": "form_only_action",
+                    "native_locator": "/form[1]/header[1]/button[1]",
+                    "occurrence_index": 1,
+                    "type": "object",
+                },
+            }],
+        }
+        source["views"]["kanban"]["toolbar"] = {
+            "header": [{
+                "key": "kanban_toolbar_action",
+                "name": "kanban_toolbar_action",
+                "label": "看板动作",
+                "intent": "open_scene",
+                "target": {"scene_key": "project.project"},
+            }],
+        }
+        source["views"]["kanban"]["row_actions"] = [{
+            "key": "kanban_row_action",
+            "name": "kanban_row_action",
+            "kind": "object",
+            "payload": {"method": "kanban_row_action"},
+        }]
+        source["views"]["tree"] = {
+            "row_actions": [{
+                "key": "tree_only_row_action",
+                "name": "tree_only_row_action",
+                "kind": "object",
+                "payload": {"method": "tree_only_row_action"},
+            }],
+        }
+
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.kanban.form-actions-excluded",
+        )
+
+        actions = (contract.get("actionContract") or {}).get("actionRuleList") or []
+        keys = [row.get("actionKey") for row in actions]
+        self.assertIn("kanban_toolbar_action", keys)
+        self.assertIn("kanban_row_action", keys)
+        self.assertNotIn("form_only_action", keys)
+        self.assertNotIn("tree_only_row_action", keys)
+
+    def test_active_tree_surface_excludes_kanban_toolbar_actions(self):
+        source = _kanban_source()
+        source["view_type"] = "tree"
+        source["views"]["tree"] = {
+            "toolbar": {
+                "header": [{
+                    "key": "tree_toolbar_action",
+                    "name": "tree_toolbar_action",
+                    "label": "树视图动作",
+                    "intent": "open_scene",
+                    "target": {"scene_key": "project.project"},
+                }],
+            },
+            "row_actions": [],
+        }
+        source["views"]["kanban"] = {
+            "toolbar": {
+                "header": [{
+                    "key": "kanban_toolbar_action",
+                    "name": "kanban_toolbar_action",
+                    "label": "看板动作",
+                    "intent": "open_scene",
+                    "target": {"scene_key": "project.project"},
+                }],
+            },
+            "row_actions": [],
+        }
+
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.tree.kanban-actions-excluded",
+        )
+
+        keys = [
+            row.get("actionKey")
+            for row in ((contract.get("actionContract") or {}).get("actionRuleList") or [])
+        ]
+        self.assertIn("tree_toolbar_action", keys)
+        self.assertNotIn("kanban_toolbar_action", keys)
+
+    def test_requested_view_type_must_match_the_delivered_contract(self):
+        contract = {
+            "pageInfo": {"viewType": "list", "model": "project.project"},
+            "nativeActionContract": {"viewSet": {"activeViewType": "tree"}},
+        }
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "tree"))
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "list"))
+        self.assertFalse(self.assembler.requested_view_type_matches(contract, "kanban"))
+
+    def test_model_only_page_does_not_negotiate_an_action_view_set(self):
+        contract = {"pageInfo": {"viewType": "form", "model": "project.project"}}
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "form"))
+        self.assembler._validate_action_view_scope(
+            {
+                **contract,
+                "actionContract": {"actionRuleList": [{
+                    "actionKey": "model_action",
+                    "sourceChannel": "native_tree_row_action",
+                    "nativeIdentity": {"model": "project.project", "viewType": "tree"},
+                }]},
+            },
+            action_bound=False,
+        )
+
+    def test_requested_view_renderer_must_be_supported(self):
+        contract = {
+            "nativeActionContract": {
+                "viewSet": {
+                    "activeViewType": "kanban",
+                    "orderedViews": [{
+                        "viewType": "kanban",
+                        "rendererStatus": "unsupported",
+                    }],
+                },
+            },
+        }
+        self.assertFalse(self.assembler.requested_view_renderer_supported(contract))
+        contract["nativeActionContract"]["viewSet"]["orderedViews"][0]["rendererStatus"] = "ready"
+        self.assertTrue(self.assembler.requested_view_renderer_supported(contract))
+
+    def test_assembler_rejects_action_sources_from_other_views(self):
+        for source_channel in ("native_form_header", "native_tree_row_action"):
+            with self.subTest(source_channel=source_channel):
+                contract = {
+                    "pageInfo": {"model": "project.project", "viewType": "kanban"},
+                    "actionContract": {"actionRuleList": [{
+                        "actionKey": "foreign_action",
+                        "sourceChannel": source_channel,
+                        "nativeIdentity": {"model": "project.project", "viewType": "kanban"},
+                    }]},
+                }
+                with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):
+                    self.assembler._validate_action_view_scope(contract)
+
+    def test_assembler_rejects_native_identity_from_another_view(self):
+        contract = {
+            "pageInfo": {"model": "project.project", "viewType": "kanban"},
+            "actionContract": {"actionRuleList": [{
+                "actionKey": "foreign_identity",
+                "sourceChannel": "contract_action",
+                "nativeIdentity": {"model": "project.project", "viewType": "form"},
+            }]},
+        }
+        with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):
+            self.assembler._validate_action_view_scope(contract)
+
     def test_business_value_component_keys_follow_field_metadata(self):
         cases = (
             ({"type": "monetary"}, "number", "sc.value.money"),
@@ -567,7 +730,10 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertNotEqual(nodes[0]["nativeIdentity"]["occurrenceKey"], nodes[1]["nativeIdentity"]["occurrenceKey"])
         self.assertEqual(nodes[0]["componentConfig"]["options"], {"bg_color": "text-bg-success"})
         self.assertIs(nodes[1]["componentConfig"]["options"], False)
-        self.assertEqual(nodes[2]["componentConfig"]["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertEqual(
+            nodes[2]["componentConfig"]["reasonCode"],
+            "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+        )
         self.assertEqual(nodes[2]["componentConfig"]["nativeWidget"], "sc_stage_requirements")
         self.assertTrue(all("fieldCode" not in node and "fieldDescriptor" not in node for node in nodes))
         self.assertEqual(contract["layoutContract"]["componentRegistry"]["sc.display.ribbon"], {"version": "1.0.0"})
@@ -708,6 +874,102 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(action["button"], {"name": "action_apply", "type": "object"})
         self.assertEqual(action["sourceWidgetId"], "page.root")
         self.assertEqual(action["targetScope"], "page")
+
+    def test_embedded_widget_payload_projection_is_generic_and_fail_closed(self):
+        occurrence = "occ.v1.aaaaaaaaaaaaaaaaaaaaaaaa"
+
+        def contract():
+            return {
+                "pageInfo": {"model": "project.project", "viewType": "form"},
+                "layoutContract": {
+                    "containerTree": [{
+                        "containerId": "widget.stage",
+                        "type": "widget",
+                        "containerType": "widget",
+                        "name": "sc_stage_requirements",
+                        "widget": "sc_stage_requirements",
+                        "componentKey": "sc.action.list",
+                        "componentConfig": {
+                            "nativeWidget": "sc_stage_requirements",
+                            "widgetStatus": "ready",
+                            "identityComplete": True,
+                            "optionsResolution": "parsed",
+                            "options": {"limit": 3},
+                        },
+                        "nativeIdentity": {"occurrenceKey": occurrence},
+                        "nativeLocator": "/form[1]/widget[1]",
+                        "occurrenceIndex": 1,
+                        "children": [],
+                    }],
+                    "componentRegistry": {"sc.action.list": {"version": "1.0.0"}},
+                },
+                "statusContract": {
+                    "containerStatus": [{"containerId": "widget.stage", "visible": True, "disabled": False}],
+                },
+                "dataContract": {"mainData": {"id": 7}},
+            }
+
+        hooks = types.ModuleType("odoo.addons.smart_core.utils.extension_hooks")
+
+        def provider(_env, hook_name, _hook_env, request):
+            self.assertEqual(hook_name, "smart_core_native_view_widget_payload")
+            self.assertEqual(request["recordId"], 7)
+            return {
+                "widgets": {
+                    occurrence: {
+                        "payloadSchema": "action_list.v1",
+                        "payload": {
+                            "title": "阶段要求",
+                            "emptyText": "暂无要求",
+                            "items": [{
+                                "id": "stage-1",
+                                "title": "项目地点",
+                                "description": "完成即可继续",
+                                "state": "required",
+                                "tone": "warning",
+                                "actionType": "act_window_xmlid",
+                                "actionRef": "smart_core.action_missing",
+                                "actionLabel": "去处理",
+                                "actionPayload": {"project_id": 7},
+                                "enabled": True,
+                            }],
+                        },
+                        "sourceAuthority": {
+                            "kind": "smart_construction_core_native_view_widget_payload",
+                            "module": "smart_construction_core",
+                            "projectionOnly": False,
+                            "noBusinessFactAuthority": False,
+                        },
+                    },
+                },
+            }
+
+        hooks.call_extension_hook_first = provider
+        previous = sys.modules.get("odoo.addons.smart_core.utils.extension_hooks")
+        sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = hooks
+        try:
+            projected = contract()
+            self.assembler._project_native_view_widget_payloads(projected, object())
+            node = projected["layoutContract"]["containerTree"][0]
+            self.assertEqual(node["componentConfig"]["payloadSchema"], "action_list.v1")
+            self.assertEqual(node["componentConfig"]["payload"]["items"][0]["title"], "项目地点")
+            self.assertFalse(projected["statusContract"]["containerStatus"][0]["disabled"])
+
+            missing = contract()
+            hooks.call_extension_hook_first = lambda *_args, **_kwargs: {"widgets": {}}
+            self.assembler._project_native_view_widget_payloads(missing, object())
+            node = missing["layoutContract"]["containerTree"][0]
+            self.assertEqual(node["componentKey"], "sc.unsupported.native_node")
+            self.assertEqual(
+                node["componentConfig"]["reasonCode"],
+                "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+            )
+            self.assertTrue(missing["statusContract"]["containerStatus"][0]["disabled"])
+        finally:
+            if previous is None:
+                sys.modules.pop("odoo.addons.smart_core.utils.extension_hooks", None)
+            else:
+                sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = previous
 
 
 if __name__ == "__main__":

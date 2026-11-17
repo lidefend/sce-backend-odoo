@@ -123,9 +123,6 @@
                 <field name="message_needaction" invisible="1" />
                 <field name="display_name" invisible="1" />
             </xpath>
-            <xpath expr="//sheet/div[@name='button_box']" position="after">
-                <widget name="sc_insight_banner" options="{'scene': 'project.entry'}" invisible="lifecycle_state == 'draft'" />
-            </xpath>
             <xpath expr="//sheet/notebook/page[1]" position="before">
                 <page string="投标管理" name="sc_tender" data-tab="sc_tender" groups="smart_construction_core.group_sc_cap_project_user">
                     <field name="tender_bid_ids" context="{'default_project_id': id, 'default_state': 'prepare'}">

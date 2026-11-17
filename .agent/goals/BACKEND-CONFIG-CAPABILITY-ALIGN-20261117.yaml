@@ -1,0 +1,22 @@
+schema_version: 1
+goal:
+  id: BACKEND-CONFIG-CAPABILITY-ALIGN-20261117
+  status: active
+  formal_product_layer: P0
+  objective: Align formal backend XML facts with delivered contract capability, publish the supported Action View Set per request, and keep merge-time contract validation separate from deployment-time user presentation evidence.
+  product_result: Pages declare only supported embedded Widgets; clients receive dynamic View availability without cross-view action leakage; legacy model-only pages remain usable; remaining business delivery is expressed through configuration facts rather than new per-page frontend implementations.
+  scope:
+    - complete formal backend XML embedded Widget inventory
+    - P0 request-local optional embedded Widget capability projection
+    - P0 dynamic Action View Set negotiation and active-view action ownership
+    - P4 stage-scoped contract versus presentation validation
+    - P1 project Form and Overview view data
+    - P1/P2/customer backend view data where unsupported embedded Widgets are found
+    - P1 project positive presentation acceptance target
+    - bounded run records
+  exclusions:
+    - code rollback or daily runtime reset
+    - new per-view or per-model frontend implementations after the generic runtime mechanism is closed
+    - new contract, component, model, database, port, Compose project or credential authority
+    - Renderer, parser or AST changes
+    - production deployment

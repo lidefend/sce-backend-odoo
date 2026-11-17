@@ -25,6 +25,7 @@ DERIVATION_RULES = (
     {"semantic": 'percentage', "widgets": ('percentage', 'percentpie',)},
     {"semantic": 'duration', "widgets": ('float_time',)},
     {"semantic": 'status', "widgets": ('statusbar', 'badge',)},
+    {"semantic": 'boolean', "field_types": ('boolean',)},
     {"semantic": 'readable_value', "widgets": ('account-tax-totals-field', 'payment', 'statinfo',), "reason": '会计只读摘要/统计载体（tax_totals、支付挂件、statinfo）是可读展示，不是可编辑的二进制或数字控件。'},
     {"semantic": 'relation', "field_types": ('many2one',)},
     {"semantic": 'relation', "widget_suffix": 'many2one'},
@@ -88,6 +89,7 @@ NATIVE_WIDGET_STATUS = {
     'badge': {'status': 'ready', 'reasonCode': ''},
     'binary': {'status': 'ready', 'reasonCode': ''},
     'boolean': {'status': 'ready', 'reasonCode': ''},
+    'boolean_favorite': {'status': 'ready', 'reasonCode': ''},
     'boolean_toggle': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'button': {'status': 'ready', 'reasonCode': ''},
     'checkbox': {'status': 'ready', 'reasonCode': ''},
@@ -124,6 +126,7 @@ NATIVE_WIDGET_STATUS = {
     'statinfo': {'status': 'ready', 'reasonCode': ''},
     'statusbar': {'status': 'ready', 'reasonCode': ''},
     'table': {'status': 'ready', 'reasonCode': ''},
+    'text': {'status': 'ready', 'reasonCode': ''},
     'textarea': {'status': 'ready', 'reasonCode': ''},
     'tier_validation': {'status': 'unsupported', 'reasonCode': 'NATIVE_WIDGET_QWEB_RENDERER_UNSUPPORTED'},
     'tree': {'status': 'ready', 'reasonCode': ''},
@@ -133,7 +136,10 @@ NATIVE_WIDGET_STATUS = {
 
 # Embedded Form <widget name="..."/> nodes -> node component identity.
 NATIVE_VIEW_WIDGET_COMPONENTS = {
-    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': ''},
+    'sc_insight_banner': {'component': 'sc.insight.summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'sc_next_actions': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'sc_stage_requirements': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False},
 }
 NATIVE_VIEW_WIDGET_DEFAULT = {
     'component': 'sc.unsupported.native_node',
@@ -144,6 +150,7 @@ NATIVE_VIEW_WIDGET_DEFAULT = {
 # Backend registration identity only; no client support is implied.
 FIELD_CONTRACT_VERSION = '1.0'
 COMPONENT_REGISTRATIONS = {
+    'sc.action.list': {'kind': 'node', 'version': '1.0.0'},
     'sc.auth.challenge_status': {'kind': 'field', 'version': '1.0'},
     'sc.auth.credential_entry': {'kind': 'field', 'version': '1.0'},
     'sc.auth.one_time_secret': {'kind': 'field', 'version': '1.0'},
@@ -161,6 +168,7 @@ COMPONENT_REGISTRATIONS = {
     'sc.input.number': {'kind': 'field', 'version': '1.0'},
     'sc.input.text': {'kind': 'field', 'version': '1.0'},
     'sc.input.textarea': {'kind': 'field', 'version': '1.0'},
+    'sc.insight.summary': {'kind': 'node', 'version': '1.0.0'},
     'sc.navigation.anchor': {'kind': 'node', 'version': '1.0.0'},
     'sc.payment.settlement_detail_collection': {'kind': 'field', 'version': '1.0'},
     'sc.relation.many2many': {'kind': 'field', 'version': '1.0'},

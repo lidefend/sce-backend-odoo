@@ -263,7 +263,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 473,
+      "productionConsumerCount": 474,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -303,7 +303,7 @@
         "TDesignCard"
       ],
       "officialComponent": "card",
-      "productionConsumerCount": 91,
+      "productionConsumerCount": 92,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -551,7 +551,7 @@
         "TDesignEmpty"
       ],
       "officialComponent": "empty",
-      "productionConsumerCount": 36,
+      "productionConsumerCount": 37,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "7806950c60029e4f5cd55b2b0c7bd105b98d5d16ad7db137e167e754507767c6",
+  "inputDigest": "f0d04a9a2d53c2057a420f90e0416f0bd0ae08ecdf2cf7cc71a11ee62fb3d490",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",

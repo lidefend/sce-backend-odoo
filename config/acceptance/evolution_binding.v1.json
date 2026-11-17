@@ -96,7 +96,6 @@
         ]
       },
       "stages": [
-        "merge",
         "deployment"
       ]
     },

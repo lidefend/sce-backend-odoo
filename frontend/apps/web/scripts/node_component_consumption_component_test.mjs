@@ -20,7 +20,7 @@ import { createSSRApp, h } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import Renderer from ${JSON.stringify(entry)};
 import CanonicalRenderer from ${JSON.stringify(`${root}/frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue`)};
-import { bridge,fixture,navigationFixture,ribbonFixture } from '${root}/frontend/apps/web/scripts/node_component_consumption_test.ts';
+import { actionListFixture,bridge,fixture,insightSummaryFixture,navigationFixture,ribbonFixture } from '${root}/frontend/apps/web/scripts/node_component_consumption_test.ts';
 import { decodeContractV2Snapshot } from '${root}/frontend/apps/web/src/app/contracts/v2/schema.ts';
 import { createContractV2Store } from '${root}/frontend/apps/web/src/app/contracts/v2/store.ts';
 import { presentContractV2Form } from '${root}/frontend/apps/web/src/app/presentation/contractFormPresenter.ts';
@@ -39,6 +39,16 @@ export async function renderCanonicalRibbon() {
  const model=presentContractV2Form(store,'readonly');
  return renderToString(createSSRApp({render:()=>h(CanonicalRenderer,{node:model.zones.primary[0],preferReadonlyFacts:true})}));
 }
+export async function renderProjectNode(fixtureFactory) {
+ const s=fixtureFactory();const b=bridge(s);
+ return renderToString(createSSRApp({render:()=>h(Renderer,{nodes:b.primaryNodes,fieldSchemasForNodes:b.fieldSchemasForNodes,isNodeVisible:b.nodeVisible})}));
+}
+export async function renderInsight() {
+ return renderProjectNode(insightSummaryFixture);
+}
+export async function renderActionList(nativeWidget) {
+ return renderProjectNode(()=>actionListFixture(nativeWidget));
+}
 export async function renderLegacy(styleToken,{text='legacy text',child=false,hidden=false,explicit=false,anchor=false,role}={}) {
  const node = anchor
    ? {containerId:'legacy-node',type:'div',styleToken,span:24,text:'Legacy link',children:[],
@@ -54,7 +64,7 @@ await build({ define:{'import.meta.env':'{}'}, stdin:{contents:harness,resolveDi
   banner:{js: "import { createRequire as nodeRequire } from 'node:module'; const require = nodeRequire(import.meta.url);"},
   loader:{'.css':'empty'},alias:{'vue/server-renderer':require.resolve('vue/server-renderer'),vue:`${root}/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js`,'tdesign-vue-next':`${root}/frontend/packages/ui/node_modules/tdesign-vue-next`},
   plugins:[{name:'actual-vue-sfc',setup(builder){builder.onLoad({filter:/\.vue$/},args=>{const {descriptor}=parse(fs.readFileSync(args.path,'utf8'),{filename:args.path});const compiled=compileScript(descriptor,{id:args.path,inlineTemplate:true});return {contents:compiled.content,loader:'ts',resolveDir:args.path.slice(0,args.path.lastIndexOf('/'))};});}}],logLevel:'error' });
-const { render, renderLegacy, renderRibbon, renderCanonicalRibbon } = await import(output);
+const { render, renderLegacy, renderRibbon, renderCanonicalRibbon, renderInsight, renderActionList } = await import(output);
 let checks=0;
 for(const purpose of ['advisory','warning','error','explanation']) {
  const html=await render(purpose);assert.equal((html.match(/Read this/g)||[]).length,1);checks++;
@@ -73,6 +83,18 @@ for (const html of [await renderRibbon(), await renderCanonicalRibbon()]) {
   assert.ok(html.includes('text-bg-success'));
   assert.ok(html.includes('data-native-widget="web_ribbon"'));
   checks += 4;
+}
+const insightHtml = await renderInsight();
+assert.ok(insightHtml.includes('项目已创建，可以继续推进。'));
+assert.ok(insightHtml.includes('建议先补全项目地点。'));
+assert.ok(insightHtml.includes('t-alert'));
+checks += 3;
+for (const nativeWidget of ['sc_stage_requirements', 'sc_next_actions']) {
+  const html = await renderActionList(nativeWidget);
+  assert.ok(html.includes('项目地点'));
+  assert.ok(html.includes('去处理'));
+  assert.ok(html.includes('data-action-ref="smart_construction_core.action_sc_project_manage"'));
+  checks += 3;
 }
 const expectedWarnings=[];const originalWarn=console.warn;console.warn=(...args)=>expectedWarnings.push(args.map(String).join(' '));
 for(const token of ['alert','alert-info','alert-warning','alert-danger','alert-link']) {

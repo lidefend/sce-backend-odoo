@@ -6,12 +6,63 @@ from .form_configuration_compiler import FormConfigurationError
 from .node_component_validation import walk
 
 # Protocol names, not a second registry/version authority.
+OPTIONAL_NODE_CAPABILITIES = {
+    'sc.insight.summary': 'form.insight.summary.v1',
+    'sc.action.list': 'form.action.list.v1',
+}
 NODE_CAPABILITIES = {
     'sc.feedback.message': 'form.feedback.message.v1',
     'sc.navigation.anchor': 'form.navigation.anchor.v1',
     'sc.display.ribbon': 'form.display.ribbon.v1',
+    **OPTIONAL_NODE_CAPABILITIES,
 }
 DRAFT_FEEDBACK_CAPABILITY = 'form.feedback.draft.v1'
+
+
+def _project_optional_nodes(contract, capabilities):
+    """Remove optional enhancements the current client cannot consume.
+
+    Inherited views and runtime configuration can contribute embedded nodes
+    after the formal source was reviewed. Optional business enhancements must
+    not turn an otherwise usable record page into a request-wide failure.
+    """
+    layout = contract.get('layoutContract') or {}
+    removed_ids = set()
+
+    def collect_ids(node, target):
+        if not isinstance(node, dict):
+            return
+        container_id = node.get('containerId')
+        if isinstance(container_id, str) and container_id:
+            target.add(container_id)
+        for child in node.get('children') or []:
+            collect_ids(child, target)
+
+    def project(rows):
+        if not isinstance(rows, list):
+            return rows
+        kept = []
+        for node in rows:
+            if not isinstance(node, dict):
+                kept.append(node)
+                continue
+            capability = OPTIONAL_NODE_CAPABILITIES.get(node.get('componentKey'))
+            if capability is not None and capability not in capabilities:
+                collect_ids(node, removed_ids)
+                continue
+            children = node.get('children')
+            if isinstance(children, list):
+                node['children'] = project(children)
+            kept.append(node)
+        return kept
+
+    layout['containerTree'] = project(layout.get('containerTree', []))
+    if removed_ids:
+        status = contract.get('statusContract') or {}
+        status['containerStatus'] = [
+            row for row in status.get('containerStatus', [])
+            if not isinstance(row, dict) or row.get('containerId') not in removed_ids
+        ]
 
 
 def validate_component_capabilities(contract, params):
@@ -19,6 +70,7 @@ def validate_component_capabilities(contract, params):
     registry = layout.get('componentRegistry') or {}
     supplied = params.get('client_contract_capabilities')
     capabilities = set(supplied) if isinstance(supplied, list) and all(type(v) is str for v in supplied) else set()
+    _project_optional_nodes(contract, capabilities)
     required = []
     for node, path in walk(layout.get('containerTree', [])):
         key = node.get('componentKey')

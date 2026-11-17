@@ -27,6 +27,7 @@
       :presentation="nodeComponent"
       :container-id="node.nodeId"
       @navigate="navigateNodeComponent"
+      @action="emit('native-action', $event)"
     />
     <ScButton
       v-else-if="node.action"
@@ -108,6 +109,7 @@ const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
   'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
+  'native-action': [payload: Record<string, unknown>];
 }>();
 
 const nodeKind = computed(() => String(props.node.kind || 'container').trim().toLowerCase());
