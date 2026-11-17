@@ -1781,6 +1781,14 @@ def smart_core_get_project_insight(env, record, scene):
     return _service_builders.get_project_insight(env, record, scene)
 
 
+def smart_core_native_view_widget_payload(env, request):
+    from .services.project_native_view_widget_payload_service import (
+        ProjectNativeViewWidgetPayloadService,
+    )
+
+    return ProjectNativeViewWidgetPayloadService(env).build(request)
+
+
 def smart_core_build_portal_execute_button_contract(env, model, res_id, method):
     return _service_builders.build_portal_execute_button_contract(env, model, res_id, method)
 

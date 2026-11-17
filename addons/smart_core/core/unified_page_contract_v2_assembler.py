@@ -50,6 +50,10 @@ NO_BUSINESS_FACT_AUTHORITY = True
 TRACE_FIELD_TOKENS = ("legacy", "source", "origin", "external", "import", "migration", "trace", "old_")
 NOTE_FIELD_TOKENS = ("note", "remark", "description", "memo", "comment", "说明", "备注")
 _KANBAN_ROW_ACTION_REGISTRY: dict[tuple[str, str], dict[str, Any]] = {}
+_NATIVE_NODE_PAYLOAD_SCHEMAS = {
+    "sc.insight.summary": "insight_summary.v1",
+    "sc.action.list": "action_list.v1",
+}
 
 
 def source_authority_contract() -> dict[str, Any]:
@@ -1246,6 +1250,7 @@ def _assemble_unified_page_contract_v2(
         contract = _assemble_unknown(source, client_type=client_type, request_id=request_id)
     assembled_at = time.monotonic()
     _bind_native_occurrence_identities(contract, source)
+    _project_native_view_widget_payloads(contract, node_actor_env)
     _merge_action_rules_by_backend_identity(contract)
     _demote_native_inherited_actions_to_overflow(contract)
     actions_merged_at = time.monotonic()
@@ -1274,6 +1279,103 @@ def _assemble_unified_page_contract_v2(
             "v2_seal": int((time.monotonic() - actions_bound_at) * 1000),
         })
     return sealed
+
+
+def _project_native_view_widget_payloads(contract: dict[str, Any], env: Any) -> None:
+    """Ask the owning product layer for declared embedded-widget payloads.
+
+    The kernel owns only transport and validation. A product extension returns
+    data keyed by the already-stable occurrence identity; it never supplies a
+    field read set, ACL decision or component key.
+    """
+    nodes: list[dict[str, Any]] = []
+
+    def visit(rows: Any) -> None:
+        for row in _list(rows):
+            if not isinstance(row, dict):
+                continue
+            if row.get("type") == "widget" and row.get("componentKey") in _NATIVE_NODE_PAYLOAD_SCHEMAS:
+                nodes.append(row)
+            visit(row.get("children"))
+
+    visit(_dict(contract.get("layoutContract")).get("containerTree"))
+    if not nodes:
+        return
+    main_data = _dict(_dict(contract.get("dataContract")).get("mainData"))
+    request = {
+        "model": _text(_dict(contract.get("pageInfo")).get("model")),
+        "recordId": _positive_int(main_data.get("id"), 0),
+        "viewType": _text(_dict(contract.get("pageInfo")).get("viewType")),
+        "widgets": [
+            {
+                "occurrenceKey": _text(_dict(node.get("nativeIdentity")).get("occurrenceKey")),
+                "nativeWidget": _text(node.get("widget") or node.get("name")),
+                "componentKey": _text(node.get("componentKey")),
+                "title": _text(node.get("title") or node.get("label")),
+                "options": deepcopy(_dict(node.get("componentConfig")).get("options")),
+                "payloadSchema": _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))],
+            }
+            for node in nodes
+        ],
+    }
+    response: dict[str, Any] = {}
+    if env is not None:
+        try:
+            from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
+            payload = call_extension_hook_first(
+                env, "smart_core_native_view_widget_payload", env, request,
+            )
+            response = _dict(payload.get("widgets")) if isinstance(payload, dict) else {}
+        except Exception as error:
+            _logger.warning("[native_view_widget_payload] provider failed: %s", error)
+
+    registry = _dict(_dict(contract.get("layoutContract")).get("componentRegistry"))
+    status_rows = {
+        _text(row.get("containerId")): row
+        for row in _list(_dict(contract.get("statusContract")).get("containerStatus"))
+        if isinstance(row, dict)
+    }
+    for node in nodes:
+        container_id = _text(node.get("containerId"))
+        occurrence_key = _text(_dict(node.get("nativeIdentity")).get("occurrenceKey"))
+        expected_schema = _NATIVE_NODE_PAYLOAD_SCHEMAS[_text(node.get("componentKey"))]
+        row = _dict(response.get(occurrence_key))
+        valid = bool(
+            occurrence_key
+            and _text(row.get("payloadSchema")) == expected_schema
+            and isinstance(row.get("payload"), dict)
+            and isinstance(row.get("sourceAuthority"), dict)
+            and row.get("sourceAuthority")
+        )
+        config = _dict(node.get("componentConfig"))
+        status = status_rows.get(container_id)
+        if valid:
+            config.update({
+                "payloadSchema": expected_schema,
+                "payload": deepcopy(row["payload"]),
+                "payloadSourceAuthority": deepcopy(row["sourceAuthority"]),
+            })
+            node["componentConfig"] = config
+            if status is not None:
+                status["disabled"] = False
+                status.pop("reasonCode", None)
+            continue
+        unsupported = _resolve_native_view_widget("")
+        node["componentKey"] = unsupported["component"]
+        config.update({
+            "widgetStatus": "unsupported",
+            "reasonCode": "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+        })
+        for key in ("payloadSchema", "payload", "payloadSourceAuthority"):
+            config.pop(key, None)
+        node["componentConfig"] = config
+        registry[unsupported["component"]] = _component_registry_of({unsupported["component"]})[
+            unsupported["component"]
+        ]
+        if status is not None:
+            status["disabled"] = True
+            status["reasonCode"] = "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE"
+    _dict(contract.get("layoutContract"))["componentRegistry"] = registry
 
 
 def assemble_unified_page_patch_v2(

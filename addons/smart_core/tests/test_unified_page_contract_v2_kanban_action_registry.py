@@ -567,7 +567,10 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertNotEqual(nodes[0]["nativeIdentity"]["occurrenceKey"], nodes[1]["nativeIdentity"]["occurrenceKey"])
         self.assertEqual(nodes[0]["componentConfig"]["options"], {"bg_color": "text-bg-success"})
         self.assertIs(nodes[1]["componentConfig"]["options"], False)
-        self.assertEqual(nodes[2]["componentConfig"]["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertEqual(
+            nodes[2]["componentConfig"]["reasonCode"],
+            "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+        )
         self.assertEqual(nodes[2]["componentConfig"]["nativeWidget"], "sc_stage_requirements")
         self.assertTrue(all("fieldCode" not in node and "fieldDescriptor" not in node for node in nodes))
         self.assertEqual(contract["layoutContract"]["componentRegistry"]["sc.display.ribbon"], {"version": "1.0.0"})
@@ -708,6 +711,102 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(action["button"], {"name": "action_apply", "type": "object"})
         self.assertEqual(action["sourceWidgetId"], "page.root")
         self.assertEqual(action["targetScope"], "page")
+
+    def test_embedded_widget_payload_projection_is_generic_and_fail_closed(self):
+        occurrence = "occ.v1.aaaaaaaaaaaaaaaaaaaaaaaa"
+
+        def contract():
+            return {
+                "pageInfo": {"model": "project.project", "viewType": "form"},
+                "layoutContract": {
+                    "containerTree": [{
+                        "containerId": "widget.stage",
+                        "type": "widget",
+                        "containerType": "widget",
+                        "name": "sc_stage_requirements",
+                        "widget": "sc_stage_requirements",
+                        "componentKey": "sc.action.list",
+                        "componentConfig": {
+                            "nativeWidget": "sc_stage_requirements",
+                            "widgetStatus": "ready",
+                            "identityComplete": True,
+                            "optionsResolution": "parsed",
+                            "options": {"limit": 3},
+                        },
+                        "nativeIdentity": {"occurrenceKey": occurrence},
+                        "nativeLocator": "/form[1]/widget[1]",
+                        "occurrenceIndex": 1,
+                        "children": [],
+                    }],
+                    "componentRegistry": {"sc.action.list": {"version": "1.0.0"}},
+                },
+                "statusContract": {
+                    "containerStatus": [{"containerId": "widget.stage", "visible": True, "disabled": False}],
+                },
+                "dataContract": {"mainData": {"id": 7}},
+            }
+
+        hooks = types.ModuleType("odoo.addons.smart_core.utils.extension_hooks")
+
+        def provider(_env, hook_name, _hook_env, request):
+            self.assertEqual(hook_name, "smart_core_native_view_widget_payload")
+            self.assertEqual(request["recordId"], 7)
+            return {
+                "widgets": {
+                    occurrence: {
+                        "payloadSchema": "action_list.v1",
+                        "payload": {
+                            "title": "阶段要求",
+                            "emptyText": "暂无要求",
+                            "items": [{
+                                "id": "stage-1",
+                                "title": "项目地点",
+                                "description": "完成即可继续",
+                                "state": "required",
+                                "tone": "warning",
+                                "actionType": "act_window_xmlid",
+                                "actionRef": "smart_core.action_missing",
+                                "actionLabel": "去处理",
+                                "actionPayload": {"project_id": 7},
+                                "enabled": True,
+                            }],
+                        },
+                        "sourceAuthority": {
+                            "kind": "smart_construction_core_native_view_widget_payload",
+                            "module": "smart_construction_core",
+                            "projectionOnly": False,
+                            "noBusinessFactAuthority": False,
+                        },
+                    },
+                },
+            }
+
+        hooks.call_extension_hook_first = provider
+        previous = sys.modules.get("odoo.addons.smart_core.utils.extension_hooks")
+        sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = hooks
+        try:
+            projected = contract()
+            self.assembler._project_native_view_widget_payloads(projected, object())
+            node = projected["layoutContract"]["containerTree"][0]
+            self.assertEqual(node["componentConfig"]["payloadSchema"], "action_list.v1")
+            self.assertEqual(node["componentConfig"]["payload"]["items"][0]["title"], "项目地点")
+            self.assertFalse(projected["statusContract"]["containerStatus"][0]["disabled"])
+
+            missing = contract()
+            hooks.call_extension_hook_first = lambda *_args, **_kwargs: {"widgets": {}}
+            self.assembler._project_native_view_widget_payloads(missing, object())
+            node = missing["layoutContract"]["containerTree"][0]
+            self.assertEqual(node["componentKey"], "sc.unsupported.native_node")
+            self.assertEqual(
+                node["componentConfig"]["reasonCode"],
+                "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+            )
+            self.assertTrue(missing["statusContract"]["containerStatus"][0]["disabled"])
+        finally:
+            if previous is None:
+                sys.modules.pop("odoo.addons.smart_core.utils.extension_hooks", None)
+            else:
+                sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = previous
 
 
 if __name__ == "__main__":

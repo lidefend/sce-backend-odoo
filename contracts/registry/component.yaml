@@ -42,6 +42,8 @@ components:
   sc.feedback.message: {kind: node, version: "1.0.0"}
   sc.navigation.anchor: {kind: node, version: "1.0.0"}
   sc.display.ribbon: {kind: node, version: "1.0.0"}
+  sc.insight.summary: {kind: node, version: "1.0.0"}
+  sc.action.list: {kind: node, version: "1.0.0"}
   sc.unsupported.native_node: {kind: node, version: "1.0.0"}
   sc.input.text: {semantic: text, field_types: [char], renderer: FormSectionField}
   sc.input.binary: {semantic: binary, field_types: [binary], renderer: FormSectionField}

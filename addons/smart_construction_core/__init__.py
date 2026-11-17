@@ -67,6 +67,7 @@ from .core_extension import (  # noqa: F401
     smart_core_build_portal_dashboard,
     smart_core_build_capability_matrix,
     smart_core_get_project_insight,
+    smart_core_native_view_widget_payload,
     smart_core_build_portal_execute_button_contract,
     smart_core_build_project_execution_service,
     smart_core_build_project_dashboard_service,

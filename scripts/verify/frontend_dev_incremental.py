@@ -975,6 +975,13 @@ RULES = (
         "verify.page.project_finalize.authority.orm",
     )),
     Rule((
+        "addons/smart_construction_core/services/project_native_view_widget_payload_service.py",
+        "addons/smart_construction_core/tests/test_project_native_view_widget_payload_service.py",
+    ), (
+        "verify.frontend.node_component.unit",
+        "verify.frontend.node_component.component",
+    )),
+    Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (

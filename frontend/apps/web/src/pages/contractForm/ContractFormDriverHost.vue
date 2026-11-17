@@ -100,6 +100,7 @@
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
         @action-ref="emit('action-ref', $event)"
+        @native-action="emit('native-action', $event)"
       />
       </TaskFormPattern>
       <WorkspaceFormPattern v-else :render-profile="renderModel.identity.mode">
@@ -121,6 +122,7 @@
         @field-change="emit('field-change', $event)"
         @field-action="emit('field-action', $event)"
         @action-ref="emit('action-ref', $event)"
+        @native-action="emit('native-action', $event)"
       />
       </WorkspaceFormPattern>
     </SceneUiProvider>
@@ -196,6 +198,7 @@ const emit = defineEmits<{
   'field-change': [payload: FormSectionFieldChange];
   'field-action': [payload: FormSectionFieldActionPayload];
   'action-ref': [action: ContractV2ActionRule];
+  'native-action': [payload: Record<string, unknown>];
   save: [];
 }>();
 

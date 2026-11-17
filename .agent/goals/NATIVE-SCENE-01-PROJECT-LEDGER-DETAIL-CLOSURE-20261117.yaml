@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-PROJECT-LEDGER-DETAIL-CLOSURE-20261117
+  title: Formal project ledger to project detail business closure
+  status: active
+  formal_product_layer: P1 construction industry standard product
+  layer_target: Formal project ledger entry, project detail presentation, declared actions and reversible project-field save
+  module:
+    - smart_construction_core
+    - frontend/apps/web
+  baseline:
+    branch: feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117
+    full_sha: 3b440bcdfbb23e14b3e613dca2ac6e8cdabfbc0a
+    prerequisites:
+      - NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT
+      - NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT
+  objective: >-
+    From the formal project ledger entry, open and verify draft and in-progress
+    projects, render the declared business content and actions, perform one
+    reversible edit and server readback, prove a restricted-role denial, then
+    return to the source list with record/filter/pagination identity restored.
+  product_boundary:
+    standard_vs_user_specific: construction industry standard project semantics
+    why_here: >-
+      Project stages, requirements, insight and next-action content are
+      construction product facts owned by smart_construction_core and consumed by
+      the generic project pages.
+    why_not_elsewhere:
+      - platform P0 owns only generic node/action/feedback consumption mechanisms
+      - customer-specific project customization is not required for this standard page
+      - the frontend must not infer stage requirements or next actions from widget names
+      - no production, customer data repair or database redesign is in scope
+  deliverables:
+    - deployed runtime and exact contract identity for draft and in-progress project records
+    - root-cause classification for sc_insight_banner, sc_stage_requirements and sc_next_actions
+    - real project detail presentation with declared business content and actions
+    - reversible project field edit with server readback
+    - restricted-role read-only/denial evidence
+    - list return identity, filter and pagination restoration
+    - 1440px and 390px page behavior evidence
+    - corrected positive project acceptance target with separate unsupported negative case
+  acceptance:
+    - formal project ledger opens both declared project records
+    - unsupported embedded widgets are replaced by normal business presentation or an explicitly accepted non-blocking declaration
+    - permitted navigation action reaches its declared target with context
+    - a reversible edit writes the intended project record and field value
+    - server readback and page state agree after save
+    - restricted role receives declared read-only or denial behavior
+    - return navigation restores the source record/filter/pagination identity
+    - no horizontal overflow or blocking browser error at 1440px and 390px
+  exclusions:
+    - unrelated contract, payment or cache iterations
+    - professional Renderer redesign
+    - OWL/iframe hosting or native JavaScript execution
+    - production deployment or customer data changes
+    - weakening unsupported-contract negative coverage
+  rollback: Revert the P1 project widget declarations, minimal P0 consumer changes if any, acceptance-target changes, tests and run records together; restore edited project values through the governed browser/fixture path.

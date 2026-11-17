@@ -60,11 +60,16 @@ export const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'
   'sc.feedback.message': {kind: 'node', version: '1.0.0'},
   'sc.navigation.anchor': {kind: 'node', version: '1.0.0'},
   'sc.display.ribbon': {kind: 'node', version: '1.0.0'},
+  'sc.insight.summary': {kind: 'node', version: '1.0.0'},
+  'sc.action.list': {kind: 'node', version: '1.0.0'},
   'sc.unsupported.native_node': {kind: 'node', version: '1.0.0'},
 });
 
-export const NATIVE_VIEW_WIDGET_COMPONENTS: Readonly<Record<string, {component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string}>> = Object.freeze({
-  'web_ribbon': {component: 'sc.display.ribbon', status: 'ready', reasonCode: ''},
+export const NATIVE_VIEW_WIDGET_COMPONENTS: Readonly<Record<string, {component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string; payloadRequired: boolean}>> = Object.freeze({
+  'sc_insight_banner': {component: 'sc.insight.summary', status: 'ready', reasonCode: '', payloadRequired: true},
+  'sc_next_actions': {component: 'sc.action.list', status: 'ready', reasonCode: '', payloadRequired: true},
+  'sc_stage_requirements': {component: 'sc.action.list', status: 'ready', reasonCode: '', payloadRequired: true},
+  'web_ribbon': {component: 'sc.display.ribbon', status: 'ready', reasonCode: '', payloadRequired: false},
 });
 
 export const NATIVE_VIEW_WIDGET_DEFAULT = Object.freeze({

@@ -115,7 +115,12 @@ class NodeRegistryTests(unittest.TestCase):
     def test_native_view_widget_mapping_and_default_are_projected(self):
         data = self.render()
         self.assertEqual(
-            {"component": "sc.display.ribbon", "status": "ready", "reasonCode": ""},
+            {
+                "component": "sc.display.ribbon",
+                "status": "ready",
+                "reasonCode": "",
+                "payloadRequired": False,
+            },
             data["NATIVE_VIEW_WIDGET_COMPONENTS"]["web_ribbon"],
         )
         self.assertEqual(
@@ -134,12 +139,18 @@ class NodeRegistryTests(unittest.TestCase):
                 "component": "sc.display.ribbon",
                 "status": "ready",
                 "reasonCode": "",
+                "payloadRequired": False,
             },
             resolver.resolve_native_view_widget("web_ribbon"),
         )
         self.assertEqual(
-            "sc.unsupported.native_node",
-            resolver.resolve_native_view_widget("sc_stage_requirements")["component"],
+            {
+                "component": "sc.action.list",
+                "status": "ready",
+                "reasonCode": "",
+                "payloadRequired": True,
+            },
+            resolver.resolve_native_view_widget("sc_stage_requirements"),
         )
 
     def test_native_view_widget_default_and_targets_fail_closed(self):

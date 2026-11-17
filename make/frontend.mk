@@ -1767,9 +1767,10 @@ verify.daily_dev.menu_config_entry.readonly.browser: guard.prod.forbid verify.da
 
 .PHONY: verify.frontend.node_component.unit verify.frontend.node_component.component
 verify.frontend.node_component.unit: guard.prod.forbid
+	@python3 addons/smart_construction_core/tests/test_project_native_view_widget_payload_service.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/node_component_consumption_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/fe-gate-03a-nodes.mjs >/dev/null
 	@node /tmp/fe-gate-03a-nodes.mjs
-verify.frontend.node_component.component: guard.prod.forbid verify.frontend.native_embedded_widget.browser
+verify.frontend.node_component.component: guard.prod.forbid verify.frontend.node_component.unit verify.frontend.native_embedded_widget.browser
 	@node frontend/apps/web/scripts/node_component_consumption_component_test.mjs
 	@node frontend/apps/web/scripts/weighted_relation_component_test.mjs
 

@@ -3,6 +3,7 @@
   "branches": {
     "feature/native-scene-01-p0-9-embedded-widget-contract-20261117": ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
     "feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117": ".agent/runs/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT/run.json",
+    "feature/native-scene-01-project-ledger-detail-20261117": ".agent/runs/NATIVE-SCENE-01-PROJECT-LEDGER-DETAIL-CLOSURE-20261117/run.json",
     "fix/mainline-ci-release-gate-20261117": ".agent/runs/MAINLINE-CI-RELEASE-GATE-20261117/run.json",
     "feature/native-scene-01-p0-4-occurrence-identity-20261117": ".agent/runs/NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY/run.json",
     "feature/native-scene-01-p0-3-p0-5-native-action-contract-20261116": ".agent/runs/NATIVE-SCENE-01-P0-3-P0-5-NATIVE-ACTION-CONTRACT/run.json",

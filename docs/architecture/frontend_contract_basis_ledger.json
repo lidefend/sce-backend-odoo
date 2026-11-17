@@ -268,6 +268,20 @@
       "regressionGuard": "verify.frontend.native_widget_provenance.unit",
       "behaviourTest": "frontend/apps/web/scripts/native_widget_provenance_test.ts",
       "stopDetail": "原生来源只能由 native_explicit 证明；推导或兼容来源不得被提升为原生，未知显式 Widget 必须进入 unsupported 哨兵，非法 provenance 由 Decoder 拒绝。"
+    },
+    {
+      "surface": "Project native View widget payload",
+      "declared": "embedded Widget componentConfig.payloadSchema/payload/payloadSourceAuthority",
+      "declaredBy": "addons/smart_construction_core/core_extension.py",
+      "declaredMethod": "smart_core_native_view_widget_payload",
+      "declaredSymbol": "ProjectNativeViewWidgetPayloadService(env).build(request)",
+      "consumedBy": "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+      "consumedSymbol": "kind: 'insight_summary'",
+      "onMissing": "stop",
+      "stopSymbol": "contractGapError",
+      "regressionGuard": "verify.frontend.node_component.component",
+      "behaviourTest": "frontend/apps/web/scripts/node_component_consumption_component_test.mjs",
+      "stopDetail": "项目洞察和动作列表必须由 P1 现有项目服务发布严格 payload；前端只消费标题、状态、动作目标和上下文。payload 缺失、来源冲突或动作字段非法时，投影必须停机，不得按 Widget 名称推断业务。"
     }
   ],
   "registeredMechanismExemptions": [

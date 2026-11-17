@@ -94,6 +94,18 @@ native_view_widgets:
   web_ribbon:
     status: ready
     component: sc.display.ribbon
+  sc_insight_banner:
+    status: ready
+    component: sc.insight.summary
+    payload_required: true
+  sc_stage_requirements:
+    status: ready
+    component: sc.action.list
+    payload_required: true
+  sc_next_actions:
+    status: ready
+    component: sc.action.list
+    payload_required: true
 
 # 推导规则：有序，首个匹配生效；全部未命中时使用 default。
 derivation:

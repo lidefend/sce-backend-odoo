@@ -133,7 +133,10 @@ NATIVE_WIDGET_STATUS = {
 
 # Embedded Form <widget name="..."/> nodes -> node component identity.
 NATIVE_VIEW_WIDGET_COMPONENTS = {
-    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': ''},
+    'sc_insight_banner': {'component': 'sc.insight.summary', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'sc_next_actions': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'sc_stage_requirements': {'component': 'sc.action.list', 'status': 'ready', 'reasonCode': '', 'payloadRequired': True},
+    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': '', 'payloadRequired': False},
 }
 NATIVE_VIEW_WIDGET_DEFAULT = {
     'component': 'sc.unsupported.native_node',
@@ -144,6 +147,7 @@ NATIVE_VIEW_WIDGET_DEFAULT = {
 # Backend registration identity only; no client support is implied.
 FIELD_CONTRACT_VERSION = '1.0'
 COMPONENT_REGISTRATIONS = {
+    'sc.action.list': {'kind': 'node', 'version': '1.0.0'},
     'sc.auth.challenge_status': {'kind': 'field', 'version': '1.0'},
     'sc.auth.credential_entry': {'kind': 'field', 'version': '1.0'},
     'sc.auth.one_time_secret': {'kind': 'field', 'version': '1.0'},
@@ -161,6 +165,7 @@ COMPONENT_REGISTRATIONS = {
     'sc.input.number': {'kind': 'field', 'version': '1.0'},
     'sc.input.text': {'kind': 'field', 'version': '1.0'},
     'sc.input.textarea': {'kind': 'field', 'version': '1.0'},
+    'sc.insight.summary': {'kind': 'node', 'version': '1.0.0'},
     'sc.navigation.anchor': {'kind': 'node', 'version': '1.0.0'},
     'sc.payment.settlement_detail_collection': {'kind': 'field', 'version': '1.0'},
     'sc.relation.many2many': {'kind': 'field', 'version': '1.0'},

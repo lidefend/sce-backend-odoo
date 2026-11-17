@@ -3418,7 +3418,7 @@ function validateNativeActionContract(
   }
   if (contract.search && hasSearchIdentity && (
     Number(searchIdentity.viewId) !== contract.search.viewId
-    || asString(searchIdentity.viewXmlId || searchIdentity.view_xmlid) !== contract.search.viewXmlId
+    || asString(searchIdentity.viewXmlId) !== contract.search.viewXmlId
     || asString(searchIdentity.authority) !== contract.search.authority
   )) {
     issues.push({ path: '$.nativeActionContract.search', message: 'must agree with searchContract.nativeIdentity' });

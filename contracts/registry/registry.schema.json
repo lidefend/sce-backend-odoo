@@ -87,7 +87,8 @@
         "reason_code": {
           "type": "string",
           "pattern": "^[A-Z][A-Z0-9_]*$"
-        }
+        },
+        "payload_required": { "type": "boolean" }
       },
       "additionalProperties": false
     },

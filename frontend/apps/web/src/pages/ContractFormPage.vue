@@ -187,6 +187,7 @@
           @field-change="onTemplateFieldChange"
           @field-action="onContractFieldAction"
           @action-ref="runCanonicalFormAction"
+          @native-action="runNativeLayoutAction"
           @save="saveRecord()"
         />
         <ContractFormNativeCanvas v-else-if="!boundFormDesignerSnapshot"
