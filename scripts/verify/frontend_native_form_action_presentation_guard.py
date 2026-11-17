@@ -5,12 +5,13 @@ from html.parser import HTMLParser
 
 ROOT = Path(__file__).resolve().parents[2]
 RENDERER = ROOT / "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+NODE_COMPONENT = ROOT / "frontend/apps/web/src/components/template/NativeNodeComponent.vue"
 SMART_ACTION = ROOT / "frontend/apps/web/src/components/template/NativeSmartAction.vue"
 OVERFLOW_MENU = ROOT / "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue"
 VISUAL_SMOKE = ROOT / "scripts/verify/local_dev_candidate_visual_smoke.mjs"
 
 
-def native_button_ownership_errors(source: str) -> list[str]:
+def parsed_sc_buttons(source: str) -> tuple[list[dict[str, str]], list[list[str]]]:
     template = re.sub(r"<!--[\s\S]*?-->", "", source.split("<script", 1)[0])
     class Buttons(HTMLParser):
         def __init__(self):
@@ -27,27 +28,22 @@ def native_button_ownership_errors(source: str) -> list[str]:
 
     parser = Buttons()
     parser.feed(template)
-    attrs = parser.calls
+    return parser.calls, parser.duplicate_attributes
+
+
+def native_button_ownership_errors(source: str) -> list[str]:
+    attrs, duplicate_attributes = parsed_sc_buttons(source)
     actions = [item for item in attrs if item.get("class") == "native-action-btn"]
     toggles = [item for item in attrs if item.get("v-else-if") == "isCollapsibleContainer(node)"]
-    anchors = [item for item in attrs if item.get("v-else-if") == "node.nodeComponent?.kind === 'anchor'"]
     failures = []
-    if parser.duplicate_attributes:
+    if duplicate_attributes:
         failures.append("native button/anchor has duplicate attributes")
     if len(actions) != 2:
         failures.append("native form expected two ordinary action branches and one container disclosure")
     # Classify every control; do not just raise the global count from 3 to 4.
     # The declared anchor is navigation, not an ordinary business action.
-    if any(sum((item in actions, item in toggles, item in anchors)) != 1 for item in attrs):
+    if any(sum((item in actions, item in toggles)) != 1 for item in attrs):
         failures.append("native form has an unclassified or multiply classified button")
-    anchor_expected = {
-        "v-else-if": "node.nodeComponent?.kind === 'anchor'",
-        "type": "button", "variant": "ghost",
-        ":data-contract-container-id": "node.containerId",
-        "@click": "navigateExplicit(node, $event)",
-    }
-    if len(anchors) != 1 or anchors[0] != anchor_expected:
-        failures.append("declared anchor must only navigate within the current form")
     for node in ("buttonNode", "node"):
         expected = {"v-if": f"!isSmartButtonNode({node})", "v-bind": f"nativeActionEvidenceAttributes({node})",
                     "type": "button", ":disabled": f"nativeActionDisabled({node})", ":title": f"nativeActionTitle({node})",
@@ -63,8 +59,35 @@ def native_button_ownership_errors(source: str) -> list[str]:
     return failures
 
 
-def validate(source: str | None = None, smart_action: str | None = None, overflow_menu: str | None = None, visual_smoke: str | None = None) -> list[str]:
+def declared_anchor_errors(node_component: str) -> list[str]:
+    attrs, duplicate_attributes = parsed_sc_buttons(node_component)
+    anchors = [item for item in attrs if item.get("v-else-if") == "presentation.kind === 'anchor'"]
+    expected = {
+        "type": "button",
+        "variant": "ghost",
+        ":data-contract-container-id": "containerId",
+        "@click": "$emit('navigate', $event)",
+    }
+    if duplicate_attributes:
+        return ["native button/anchor has duplicate attributes"]
+    if (
+        len(anchors) != 1
+        or set(anchors[0]) != {*expected, "v-else-if"}
+        or any(anchors[0].get(key) != value for key, value in expected.items())
+    ):
+        return ["declared anchor must only navigate within the current form"]
+    return []
+
+
+def validate(
+    source: str | None = None,
+    smart_action: str | None = None,
+    overflow_menu: str | None = None,
+    visual_smoke: str | None = None,
+    node_component: str | None = None,
+) -> list[str]:
     text = source if source is not None else RENDERER.read_text(encoding="utf-8")
+    component = node_component if node_component is not None else NODE_COMPONENT.read_text(encoding="utf-8")
     smart = smart_action if smart_action is not None else SMART_ACTION.read_text(encoding="utf-8")
     overflow = overflow_menu if overflow_menu is not None else OVERFLOW_MENU.read_text(encoding="utf-8")
     smoke = visual_smoke if visual_smoke is not None else VISUAL_SMOKE.read_text(encoding="utf-8")
@@ -84,6 +107,8 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
         '@click.stop.prevent="emitNativeAction(node)"',
         '<ScTabs',
         ':items="notebookTabItems(node)"',
+        "import NativeNodeComponent from './NativeNodeComponent.vue'",
+        '<NativeNodeComponent',
     )
     for marker in required:
         if marker not in text:
@@ -102,6 +127,7 @@ def validate(source: str | None = None, smart_action: str | None = None, overflo
     if any(marker in text for marker in private_appearance):
         failures.append("native ordinary actions must not override ScButton appearance or states")
     failures.extend(native_button_ownership_errors(text))
+    failures.extend(declared_anchor_errors(component))
     for event in ('@click.stop.prevent="emitNativeAction(buttonNode)"', '@click.stop.prevent="emitNativeAction(node)"'):
         if text.count(event) != 2:
             failures.append(f"native form changed action event authority: {event}")

@@ -19,7 +19,10 @@
     >
       <SceneButton
         :tier="action.key === effectivePrimaryKey ? 'primary' : 'secondary'"
-        :disabled="!action.enabled"
+        :disabled="actionControlState(action).disabled"
+        :loading="actionControlState(action).loading"
+        :loading-label="`${action.label}处理中`"
+        :aria-busy="actionControlState(action).loading || undefined"
         :data-action-ref="action.actionRef.actionId"
         :data-action-key="action.actionRef.actionKey || ''"
         :data-action-method="action.actionRef.button?.name || action.actionRef.button?.method || ''"
@@ -27,11 +30,12 @@
         :data-action-tier="action.key === effectivePrimaryKey ? 'primary' : action.tier"
         :data-normalized-action-tier="action.tier"
         :data-action-enabled="String(action.enabled)"
+        :data-action-loading="actionControlState(action).loading || undefined"
         :data-disabled-reason="workflowDisabledReason(action) || undefined"
         :title="workflowDisabledReason(action) || undefined"
         :data-action-allowed="String(action.actionRef.allowed === true)"
         :data-visible-profiles="action.visibleProfiles.join(',')"
-        @activate="action.enabled && emit('action-ref', action.actionRef)"
+        @activate="!actionControlState(action).disabled && emit('action-ref', action.actionRef)"
       >
         <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
         <span>{{ action.label }}</span>
@@ -44,7 +48,8 @@
       :items="overflowActions.map((action) => ({
         value: action.key,
         label: action.label,
-        disabled: !action.enabled,
+        disabled: actionControlState(action).disabled,
+        loading: actionControlState(action).loading,
         reasonMessage: workflowDisabledReason(action),
       }))"
       @select="selectOverflowAction"
@@ -65,6 +70,7 @@ import ScDropdown, { type ScDropdownItem } from '../../components/design-system/
 import ActionReasonTrigger from './ActionReasonTrigger.vue';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import { resolveWorkflowActionBarAuthority, workflowDisabledReason } from './professionalWorkflowModel';
+import { resolveActionInteractionState, useActionExecutionIdentity } from './actionInteractionState';
 
 const props = defineProps<{
   directActions: CanonicalFormAction[];
@@ -77,9 +83,13 @@ const authority = computed(() => resolveWorkflowActionBarAuthority(
   props.effectivePrimaryKey,
 ));
 const emit = defineEmits<{ 'action-ref': [action: ContractV2ActionRule] }>();
+const actionExecutionIdentity = useActionExecutionIdentity();
+function actionControlState(action: CanonicalFormAction) {
+  return resolveActionInteractionState(action, actionExecutionIdentity.value);
+}
 function selectOverflowAction(item: ScDropdownItem) {
   const action = props.overflowActions.find((candidate) => candidate.key === String(item.value));
-  if (action?.enabled) emit('action-ref', action.actionRef);
+  if (action && !actionControlState(action).disabled) emit('action-ref', action.actionRef);
 }
 </script>
 

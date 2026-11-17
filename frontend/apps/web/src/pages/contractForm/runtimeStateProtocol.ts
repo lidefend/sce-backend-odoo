@@ -15,6 +15,7 @@ export type FormRuntimeStatusRefs = {
 
 export type FormRuntimeBusyRefs = {
   busyKind: Ref<FormRuntimeBusyKind>;
+  busyActionIdentity?: Ref<string>;
 };
 
 export type FormRuntimeFeedbackRefs = {
@@ -39,8 +40,13 @@ export type FormRuntimeTransactionName =
   | 'contractMode';
 
 export type FormRuntimeStateEvent =
-  | { kind: 'begin'; transaction: FormRuntimeTransactionName; busyKind: Exclude<FormRuntimeBusyKind, null> }
-  | { kind: 'end'; transaction: FormRuntimeTransactionName }
+  | {
+    kind: 'begin';
+    transaction: FormRuntimeTransactionName;
+    busyKind: Exclude<FormRuntimeBusyKind, null>;
+    actionIdentity?: string;
+  }
+  | { kind: 'end'; transaction: FormRuntimeTransactionName; actionIdentity?: string }
   | { kind: 'status'; transaction: FormRuntimeTransactionName; status: FormRuntimeStatus; errorMessage?: string }
   | { kind: 'validation'; transaction: FormRuntimeTransactionName; errors: string[]; showOne2manyErrors?: boolean }
   | { kind: 'feedback'; transaction: FormRuntimeTransactionName; feedback: FormSubmissionFeedback };

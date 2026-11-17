@@ -60,6 +60,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     header = read_text("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     confirm = read_text("frontend/apps/web/src/components/business/IntentConfirmationDialog.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts")
+    interaction = read_text("frontend/apps/web/src/pages/contractForm/actionInteractionState.ts")
+    native_renderer = read_text("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    scene_button = read_text("frontend/packages/ui/src/components/primitives/SceneButton.vue")
+    dropdown = read_text("frontend/apps/web/src/components/design-system/ScDropdown.vue")
+    primitive_adapter = read_text("frontend/apps/web/src/components/design-system/primitiveAdapter.ts")
     for marker in (
         'data-professional-workflow-component="action-bar"',
         ':data-disabled-reason',
@@ -83,6 +88,37 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
             failures.append(f"{component} bypasses shared disabled-reason trigger")
         if '<ActionReasonTrigger' not in source:
             failures.append(f"{component} does not render the shared disabled-reason trigger")
+    for marker in (
+        'actionExecutionCandidates',
+        'resolveActionInteractionState',
+        'provideActionExecutionIdentity',
+        'useActionExecutionIdentity',
+    ):
+        if marker not in interaction:
+            failures.append(f"shared action interaction state missing {marker}")
+    for source, component in (
+        (action_bar, "action bar"),
+        (node_renderer, "canonical node action"),
+        (header, "header"),
+    ):
+        if "resolveActionInteractionState" not in source:
+            failures.append(f"{component} bypasses shared loading/disabled interaction state")
+    if ':loading="actionControlState(action).loading"' not in action_bar:
+        failures.append("action bar does not present the executing action as loading")
+    if ':loading="actionControlState(node.action).loading"' not in node_renderer:
+        failures.append("canonical node action does not present the executing action as loading")
+    for marker in ("loading?: boolean", "loadingLabel?: string", ":loading=\"loading\"", ":disabled=\"disabled || loading\""):
+        if marker not in scene_button:
+            failures.append(f"shared scene button does not consume loading state: {marker}")
+    for marker in ("function nativeActionLoading", ":loading=\"nativeActionLoading(", "state.loading === true"):
+        if marker not in native_renderer:
+            failures.append(f"native form actions bypass loading state: {marker}")
+    for marker in ("loading?: boolean", "item.loading"):
+        if marker not in primitive_adapter:
+            failures.append(f"overflow menu input cannot carry loading state: {marker}")
+    for marker in ("data-action-loading", "item.loading"):
+        if marker not in dropdown:
+            failures.append(f"overflow menu cannot present loading state: {marker}")
     failures.extend(shared_action_bar_errors(driver, surface))
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
     for marker in ('<ScStatusBadge', '<ScSelect', 'aria-label="编辑业务状态"', ':disabled="busy"', ':readonly="statusbar.readonly"', '@change="activateStatus(String($event))"'):

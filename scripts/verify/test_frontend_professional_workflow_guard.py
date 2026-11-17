@@ -79,6 +79,21 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
                     return value.replace("import ActionReasonTrigger from './ActionReasonTrigger.vue';", "") if path.endswith(filename) else value
                 self.assertTrue(any(reason in item for item in validate(read_text)))
 
+    def test_action_loading_must_use_shared_interaction_state(self):
+        cases = (
+            ("CanonicalActionBar.vue", ':loading="actionControlState(action).loading"', "", "executing action as loading"),
+            ("CanonicalFormNodeRenderer.vue", ':loading="actionControlState(node.action).loading"', "", "executing action as loading"),
+            ("actionInteractionState.ts", "resolveActionInteractionState", "", "shared action interaction state missing"),
+            ("NativeFormTreeRenderer.vue", 'function nativeActionLoading', "", "native form actions bypass loading state"),
+            ("ScDropdown.vue", "data-action-loading", "", "overflow menu cannot present loading state"),
+        )
+        for filename, before, after, reason in cases:
+            with self.subTest(filename=filename, marker=before):
+                def read_text(path):
+                    value = (ROOT / path).read_text(encoding="utf-8")
+                    return value.replace(before, after) if path.endswith(filename) else value
+                self.assertTrue(any(reason in item for item in validate(read_text)))
+
     def test_header_local_reason_handler_cannot_return(self):
         def read_text(path):
             value = (ROOT / path).read_text(encoding="utf-8")

@@ -1,41 +1,51 @@
 import unittest
 import re
 
-from scripts.verify.frontend_native_form_action_presentation_guard import OVERFLOW_MENU, RENDERER, SMART_ACTION, VISUAL_SMOKE, validate
+from scripts.verify.frontend_native_form_action_presentation_guard import (
+    NODE_COMPONENT,
+    OVERFLOW_MENU,
+    RENDERER,
+    SMART_ACTION,
+    VISUAL_SMOKE,
+    validate,
+)
 
 
 class NativeFormActionPresentationGuardTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.source = RENDERER.read_text(encoding="utf-8")
+        cls.node_component = NODE_COMPONENT.read_text(encoding="utf-8")
         cls.smart_action = SMART_ACTION.read_text(encoding="utf-8")
         cls.overflow_menu = OVERFLOW_MENU.read_text(encoding="utf-8")
         cls.visual_smoke = VISUAL_SMOKE.read_text(encoding="utf-8")
 
     def test_repository_contract_passes(self):
-        self.assertEqual(validate(self.source, self.smart_action, self.overflow_menu, self.visual_smoke), [])
+        self.assertEqual(validate(
+            self.source, self.smart_action, self.overflow_menu, self.visual_smoke, self.node_component,
+        ), [])
 
     def test_declared_anchor_keeps_navigation_only_authority(self):
-        anchor = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.source)
-                      if "node.nodeComponent?.kind === 'anchor'" in button)
+        anchor = next(button for button in re.findall(r"<ScButton\b[\s\S]*?</ScButton>", self.node_component)
+                      if "presentation.kind === 'anchor'" in button)
         mutations = {
             "missing": "",
             "duplicate": anchor + anchor,
-            "business_action": anchor.replace('navigateExplicit(node, $event)', 'emitNativeAction(node)'),
+            "business_action": anchor.replace("$emit('navigate', $event)", "$emit('action', payload)"),
             "extra_event": anchor.replace('type="button"', 'type="button" @dblclick="writeRecord"'),
             "dynamic_event": anchor.replace('type="button"', 'type="button" @[eventName]="writeRecord"'),
             "spread": anchor.replace('type="button"', 'type="button" v-bind="untrusted"'),
             "inline_handler": anchor.replace('type="button"', 'type="button" onclick="writeRecord()"'),
             "submit": anchor.replace('type="button"', 'type="submit"'),
-            "wrong_identity": anchor.replace('node.containerId', 'other.containerId'),
-            "unconditional": anchor.replace('v-else-if="node.nodeComponent?.kind === \'anchor\'"', ''),
+            "wrong_identity": anchor.replace('containerId', 'other.containerId'),
+            "unconditional": anchor.replace('v-else-if="presentation.kind === \'anchor\'"', ''),
             "duplicate_click": anchor.replace('type="button"', 'type="button" @click="writeRecord"'),
         }
         for name, replacement in mutations.items():
             with self.subTest(mutation=name):
                 self.assertTrue(any('anchor' in error for error in validate(
-                    self.source.replace(anchor, replacement, 1), self.smart_action,
-                    self.overflow_menu, self.visual_smoke,
+                    self.source, self.smart_action, self.overflow_menu, self.visual_smoke,
+                    self.node_component.replace(anchor, replacement, 1),
                 )))
 
     def test_unclassified_button_is_rejected(self):

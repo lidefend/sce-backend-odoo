@@ -69,3 +69,58 @@ Verification:
 | --- | --- |
 | `verify.frontend.contract_v2_runtime_policy.unit` | PASS; cache-policy and client-source parity checks |
 | `ci.local.iteration` | PASS; 11 affected frontend targets including strict TypeScript |
+
+## Fourth slice: one action execution identity across presentation surfaces
+
+The form runtime previously carried only a generic `busyKind`. A save could be
+identified as loading, but an executing business action had no stable frontend
+identity that header, body and overflow presentations could consume together.
+
+The frontend now stores the declared action identity while its request owns the
+busy state. `actionInteractionState.ts` resolves loading and disabled from that
+one identity. Canonical header/body actions, native form buttons, smart actions,
+scene buttons and dropdown items all consume the same result. A stale request
+cannot clear a newer action's loading state, and an executing action cannot
+dispatch a second business request.
+
+This remains ephemeral frontend interaction state. It introduces no contract
+field, backend behavior, model branch, industry rule or second component system.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `verify.frontend.professional_workflow.unit` | PASS; 19 model cases, 4 keyboard cases, 12 Python guard tests and 61 real-browser assertions across 1440/390 |
+| `verify.frontend.node_component.component` | PASS; 49 consumption checks, 73 SSR checks, embedded Widget browser checks and mounted relation checks |
+| `verify.frontend.native_form_action_presentation.unit` | PASS; 15 guard tests |
+| `verify.frontend.primitive_adapter.unit` | PASS; 46 component contracts, 11 event cases and 41 Python tests |
+| `verify.frontend.form_header_action_primitives.unit` | PASS; 9 tests |
+| `verify.frontend.typecheck.strict` | PASS |
+| `verify.frontend.lint` | PASS; full app and package lint, zero errors |
+| `verify.frontend.native_action_contract_consumption.unit` | PASS; 7 cases |
+| `verify.docs.links` | PASS; wired 5 link-tool tests plus repository link audit |
+| `verify.guard.registry` | PASS; 1633 scripts, 168/168 unwired dispositions and 18/18 required gates enforced |
+| `ci.delivery.freeze.prepare` | PASS; generated component-driver inventory and content-bound evidence refreshed |
+| `ci.local.iteration` | PASS; 20 affected targets, including lint, strict TypeScript, approval closure, presenter parity, local ORM and professional workflow |
+
+The native-form guard still looked for the declared anchor inside
+`NativeFormTreeRenderer`, although the anchor had already moved to the shared
+`NativeNodeComponent`. That was classified as a validation-tool defect and the
+guard now follows the existing shared component while preserving the
+anchor-navigation-only negative cases.
+
+The frontend incremental planner also lacked a route from those native-action
+guard files to their owning target. The rule was added so a future change cannot
+fall through as an unmapped frontend path; no product behavior was compensated
+in the planner.
+
+The previous candidate's remote full lint exposed an unrelated but real test
+typing defect in `native_action_contract_consumption_test.ts`: three mutation
+callbacks used `any`. They now use `unknown` plus an explicit checked shape
+cast, preserving the same mutation assertions while satisfying the repository
+lint policy.
+
+The remote professional gate also exposed that `test_docs_links.py` was present
+but not wired. `verify.docs.links` now executes those five focused tests before
+the repository link audit, so the registry guard has an actual enforcing
+target instead of a documentation-only disposition.

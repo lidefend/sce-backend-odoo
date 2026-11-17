@@ -11,20 +11,48 @@
     ".agent/goals/FE-RELATION-INTERACTION-01-20261117.yaml",
     ".agent/runs/FE-RELATION-INTERACTION-01-20261117/run.json",
     "docs/ops/iterations/fe_relation_interaction_01_20261117.md",
+    "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+    "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+    "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+    "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/contractForm/types.ts",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
     "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+    "frontend/apps/web/src/pages/contractForm/actionInteractionState.ts",
     "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
     "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
     "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+    "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+    "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts",
+    "frontend/apps/web/src/pages/contractForm/runtimeStateApplier.ts",
+    "frontend/apps/web/src/pages/contractForm/runtimeStateProtocol.ts",
+    "frontend/apps/web/src/pages/contractForm/runtimeStateReducer.ts",
+    "frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts",
+    "frontend/apps/web/src/pages/contractForm/useFormActionRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/usePrimaryFormActionRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
     "frontend/apps/web/src/app/contracts/v2/client.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
+    "frontend/apps/web/scripts/professional_workflow_model_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
     "frontend/apps/web/scripts/node_component_consumption_component_test.mjs",
+    "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
     "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+    "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
+    "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+    "make/dev_test.mk",
     "docs/architecture/contract_runtime_cache_layers_v1.md",
     "config/acceptance/evolution_binding.v1.json",
+    "scripts/verify/frontend_native_form_action_presentation_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
     "scripts/verify/frontend_professional_workflow_guard.py",
     "scripts/verify/test_frontend_professional_workflow_guard.py",
     "scripts/verify/test_acceptance_evolution_binding_guard.py"
@@ -80,21 +108,78 @@
       "target": "verify.frontend.node_component.component",
       "kind": "offline",
       "inputs": [
+        "frontend/apps/web/src/pages/contractForm/actionInteractionState.ts",
         "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
         "frontend/apps/web/scripts/node_component_consumption_component_test.mjs",
         "make/frontend.mk"
+      ]
+    },
+    "native_action_presentation": {
+      "target": "verify.frontend.native_form_action_presentation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+        "scripts/verify/frontend_native_form_action_presentation_guard.py",
+        "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "primitive_interaction": {
+      "target": "verify.frontend.primitive_adapter.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "make/frontend.mk"
+      ]
+    },
+    "incremental_frontend_plan": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ]
+    },
+    "docs_link_tooling": {
+      "target": "verify.docs.links",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "make/dev_test.mk"
       ]
     },
     "workflow_presentation": {
       "target": "verify.frontend.professional_workflow.unit",
       "kind": "offline",
       "inputs": [
+        "frontend/apps/web/src/pages/contractForm/actionInteractionState.ts",
         "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
         "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue",
+        "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+        "frontend/apps/web/src/pages/contractForm/contractFormHeaderCanonicalActions.ts",
+        "frontend/apps/web/src/pages/contractForm/runtimeStateReducer.ts",
         "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
         "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
+        "frontend/apps/web/src/components/design-system/ScDropdown.vue",
+        "frontend/apps/web/src/components/design-system/primitiveAdapter.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/packages/ui/src/components/primitives/SceneButton.vue",
+        "frontend/apps/web/scripts/professional_workflow_model_test.ts",
+        "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs",
         "scripts/verify/frontend_professional_workflow_guard.py",
         "scripts/verify/test_frontend_professional_workflow_guard.py",
         "make/frontend.mk"
@@ -107,6 +192,16 @@
         "frontend/apps/web/src/app/contracts/v2/client.ts",
         "frontend/apps/web/src/app/contracts/v2/runtime.ts",
         "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "native_action_contract_consumption": {
+      "target": "verify.frontend.native_action_contract_consumption.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
         "make/frontend.mk"
       ]
     }

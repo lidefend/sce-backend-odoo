@@ -8,6 +8,7 @@ import type {
 export type FormRuntimeStateSnapshot = {
   status: FormRuntimeStatus;
   busyKind: FormRuntimeBusyKind;
+  busyActionIdentity: string;
   errorMessage: string;
   validationErrors: string[];
   showOne2manyErrors: boolean;
@@ -17,6 +18,7 @@ export type FormRuntimeStateSnapshot = {
 export const INITIAL_FORM_RUNTIME_STATE: FormRuntimeStateSnapshot = {
   status: 'loading',
   busyKind: null,
+  busyActionIdentity: '',
   errorMessage: '',
   validationErrors: [],
   showOne2manyErrors: false,
@@ -28,10 +30,18 @@ export function reduceFormRuntimeState(
   event: FormRuntimeStateEvent,
 ): FormRuntimeStateSnapshot {
   if (event.kind === 'begin') {
-    return { ...state, busyKind: event.busyKind };
+    return {
+      ...state,
+      busyKind: event.busyKind,
+      busyActionIdentity: String(event.actionIdentity || '').trim(),
+    };
   }
   if (event.kind === 'end') {
-    return { ...state, busyKind: null };
+    const endingIdentity = String(event.actionIdentity || '').trim();
+    if (endingIdentity && state.busyActionIdentity && endingIdentity !== state.busyActionIdentity) {
+      return state;
+    }
+    return { ...state, busyKind: null, busyActionIdentity: '' };
   }
   if (event.kind === 'status') {
     return {

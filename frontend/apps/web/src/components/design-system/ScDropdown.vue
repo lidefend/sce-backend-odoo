@@ -26,7 +26,12 @@ const props = withDefaults(defineProps<{ items: ScDropdownItem[]; disabled?: boo
 });
 const options = computed(() => tdesignDropdownOptions(props.items).map(option => ({
   ...option,
-  ...(option.disabled && option.reasonMessage ? { content: () => h(ScPopover, { trigger: 'click' }, {
+  ...(option.loading ? {
+    content: () => h('span', {
+      'data-action-loading': 'true',
+      'aria-busy': 'true',
+    }, `${option.content} · 处理中`),
+  } : option.disabled && option.reasonMessage ? { content: () => h(ScPopover, { trigger: 'click' }, {
     default: () => option.reasonMessage,
     trigger: () => h('span', {
       tabindex: 0, role: 'button', 'aria-label': `${option.content}: ${option.reasonMessage}`,
@@ -42,6 +47,6 @@ const options = computed(() => tdesignDropdownOptions(props.items).map(option =>
 const emit = defineEmits<{ select: [item: ScDropdownItem, context: unknown] }>();
 function onSelect(option: { value?: unknown }, context: unknown) {
   const item = props.items.find((candidate) => candidate.value === option.value);
-  if (item && !item.disabled) emit('select', item, context);
+  if (item && !item.disabled && !item.loading) emit('select', item, context);
 }
 </script>

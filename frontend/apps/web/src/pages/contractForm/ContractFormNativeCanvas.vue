@@ -171,7 +171,11 @@ const props = defineProps<{
   isNodeVisible: (node: NativeFormLayoutNode) => boolean;
   buttonLabelResolver: (node: NativeFormLayoutNode) => string | undefined;
   nativeActionHandler: (payload: Record<string, unknown>) => void | Promise<void>;
-  nativeActionStateResolver: (payload: Record<string, unknown>) => { disabled?: boolean; title?: string } | null | undefined;
+  nativeActionStateResolver: (payload: Record<string, unknown>) => {
+    disabled?: boolean;
+    loading?: boolean;
+    title?: string;
+  } | null | undefined;
   relationAdapter: RelationFieldAdapter;
   fieldActions: (field: FormSectionFieldSchema) => FormSectionFieldAction[];
   fieldOrderEditable: boolean;

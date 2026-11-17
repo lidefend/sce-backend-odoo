@@ -16,10 +16,11 @@ const root = process.cwd();
 const entry = `${root}/frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue`;
 const output = '/tmp/fe-gate-03a-node-component-ssr.mjs';
 const harness = `
-import { createSSRApp, h } from 'vue';
+import { createSSRApp, h, ref } from 'vue';
 import { renderToString } from 'vue/server-renderer';
 import Renderer from ${JSON.stringify(entry)};
 import CanonicalRenderer from ${JSON.stringify(`${root}/frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue`)};
+import { provideActionExecutionIdentity } from ${JSON.stringify(`${root}/frontend/apps/web/src/pages/contractForm/actionInteractionState.ts`)};
 import { actionListFixture,bridge,fixture,insightSummaryFixture,navigationFixture,ribbonFixture } from '${root}/frontend/apps/web/scripts/node_component_consumption_test.ts';
 import { decodeContractV2Snapshot } from '${root}/frontend/apps/web/src/app/contracts/v2/schema.ts';
 import { createContractV2Store } from '${root}/frontend/apps/web/src/app/contracts/v2/store.ts';
@@ -39,13 +40,25 @@ export async function renderCanonicalRibbon() {
  const model=presentContractV2Form(store,'readonly');
  return renderToString(createSSRApp({render:()=>h(CanonicalRenderer,{node:model.zones.primary[0],preferReadonlyFacts:true})}));
 }
-export async function renderCanonicalAction(reasonMessage='', enabled=false) {
+export async function renderCanonicalAction(reasonMessage='', enabled=false, busyActionIdentity='') {
  const actionRef={actionId:'backend.inline_action',actionKey:'inline_action',backendIdentity:'object:inline_action',allowed:enabled,button:{name:'inline_action'}};
  const action={key:'inline_action',label:'办理',icon:'',tier:'secondary',visible:true,enabled,
    reasonCode:enabled?'':'STATE_BLOCKED',...(reasonMessage?{reasonMessage}:{}),visibleProfiles:['edit'],safety:{},actionRef};
  const node={nodeId:'inline-action',kind:'container',visible:true,title:'',text:'',fields:[],children:[],action,
    nativePresentation:{nodeComponent:null},attributes:{},columns:24,span:24,zoneRole:null,styleToken:''};
- return renderToString(createSSRApp({render:()=>h(CanonicalRenderer,{node})}));
+ return renderToString(createSSRApp({
+   setup(){ if(busyActionIdentity) provideActionExecutionIdentity(ref(busyActionIdentity)); return ()=>h(CanonicalRenderer,{node}); },
+ }));
+}
+export async function renderNativeActionLoading() {
+ const node={containerId:'native-action',type:'button',name:'approve',string:'审批',buttonType:'object',action:{
+   actionId:'backend.approve',actionKey:'approve',backendIdentity:'object:approve',
+   displayLabel:'审批',label:'审批',icon:'',tier:'secondary',payload:{backendIdentity:'object:approve'},
+ },children:[]};
+ return renderToString(createSSRApp({render:()=>h(Renderer,{
+   nodes:[node],fieldSchemasForNodes:()=>[],isNodeVisible:()=>true,
+   nativeActionStateResolver:()=>({disabled:false,loading:true,title:''}),
+ })}));
 }
 export async function renderProjectNode(fixtureFactory) {
  const s=fixtureFactory();const b=bridge(s);
@@ -72,7 +85,7 @@ await build({ define:{'import.meta.env':'{}'}, stdin:{contents:harness,resolveDi
   banner:{js: "import { createRequire as nodeRequire } from 'node:module'; const require = nodeRequire(import.meta.url);"},
   loader:{'.css':'empty'},alias:{'vue/server-renderer':require.resolve('vue/server-renderer'),vue:`${root}/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js`,'tdesign-vue-next':`${root}/frontend/packages/ui/node_modules/tdesign-vue-next`},
   plugins:[{name:'actual-vue-sfc',setup(builder){builder.onLoad({filter:/\.vue$/},args=>{const {descriptor}=parse(fs.readFileSync(args.path,'utf8'),{filename:args.path});const compiled=compileScript(descriptor,{id:args.path,inlineTemplate:true});return {contents:compiled.content,loader:'ts',resolveDir:args.path.slice(0,args.path.lastIndexOf('/'))};});}}],logLevel:'error' });
-const { render, renderLegacy, renderRibbon, renderCanonicalRibbon, renderCanonicalAction, renderInsight, renderActionList } = await import(output);
+const { render, renderLegacy, renderRibbon, renderCanonicalRibbon, renderCanonicalAction, renderNativeActionLoading, renderInsight, renderActionList } = await import(output);
 let checks=0;
 for(const purpose of ['advisory','warning','error','explanation']) {
  const html=await render(purpose);assert.equal((html.match(/Read this/g)||[]).length,1);checks++;
@@ -104,7 +117,18 @@ checks += 1;
 const enabledInlineAction = await renderCanonicalAction('', true);
 assert.ok(!enabledInlineAction.includes('data-workflow-reason-trigger'));
 assert.ok(!enabledInlineAction.includes('data-disabled-reason'));
-checks += 2;
+assert.ok(!enabledInlineAction.includes('data-action-loading'));
+checks += 3;
+const loadingInlineAction = await renderCanonicalAction('', true, 'object:inline_action');
+assert.ok(loadingInlineAction.includes('data-action-loading="true"'));
+assert.ok(loadingInlineAction.includes('aria-busy="true"'));
+assert.ok(loadingInlineAction.includes('disabled'));
+checks += 3;
+const loadingNativeAction = await renderNativeActionLoading();
+assert.ok(loadingNativeAction.includes('data-action-loading="true"'));
+assert.ok(loadingNativeAction.includes('aria-busy="true"'));
+assert.ok(loadingNativeAction.includes('disabled'));
+checks += 3;
 const insightHtml = await renderInsight();
 assert.ok(insightHtml.includes('项目已创建，可以继续推进。'));
 assert.ok(insightHtml.includes('建议先补全项目地点。'));

@@ -6,7 +6,11 @@ import type { Router, LocationQueryRaw } from 'vue-router';
 import { executeButton } from '../../api/executeButton';
 import { pickContractNavQuery } from '../../app/navigationContext';
 import { buildFormActionExecutionPlan } from './actionExecutionPlan';
-import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';
+import {
+  applyFormRuntimeStatusEvent,
+  beginFormRuntimeBusy,
+  endFormRuntimeBusy,
+} from './runtimeStateApplier';
 import type { BusyKind, ContractAction, SubmissionFeedback, UiStatus } from './types';
 
 type SceneMutationInput = {
@@ -24,6 +28,7 @@ export function useFormActionRuntime(params: {
   applyClientMode: (mode: string, toggle?: boolean) => boolean | void;
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
   busyKind: Ref<BusyKind>;
+  busyActionIdentity?: Ref<string>;
   collectActionParams: (action: ContractAction) => Promise<Record<string, unknown> | null>;
   confirmActionSafety: (action: ContractAction) => Promise<boolean>;
   currentQuery: () => LocationQueryRaw;
@@ -44,6 +49,9 @@ export function useFormActionRuntime(params: {
   validateSubmissionRequirements?: (action: ContractAction) => boolean;
 }) {
   const executeRecordButton = params.executeRecordButton ?? executeButton;
+  const activityIdentity = (action: ContractAction) => (
+    String(action.backendIdentity || action.key || '').trim()
+  );
 
   async function runAction(action: ContractAction) {
     if (!action.enabled) return;
@@ -110,7 +118,8 @@ export function useFormActionRuntime(params: {
     if (plan.kind === 'scene_mutation') {
       const actionParams = await params.collectActionParams(action);
       if (actionParams === null) return;
-      params.busyKind.value = 'action';
+      const actionIdentity = activityIdentity(action);
+      beginFormRuntimeBusy(params, 'runAction', 'action', actionIdentity);
       try {
         const response = await params.executeSceneMutation({
           mutation: plan.mutation,
@@ -134,14 +143,15 @@ export function useFormActionRuntime(params: {
         });
         return;
       } finally {
-        if (!owner || owner.owns()) params.busyKind.value = null;
+        if (!owner || owner.owns()) endFormRuntimeBusy(params, 'runAction', actionIdentity);
       }
     }
     if (plan.kind === 'record_button') {
       if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;
       const actionParams = await params.collectActionParams(action);
       if (actionParams === null || (owner && !owner.owns())) return;
-      params.busyKind.value = 'action';
+      const actionIdentity = activityIdentity(action);
+      beginFormRuntimeBusy(params, 'runAction', 'action', actionIdentity);
       try {
         const response = await executeRecordButton({
           model: plan.model,
@@ -196,7 +206,7 @@ export function useFormActionRuntime(params: {
           errorMessage: err instanceof Error ? err.message : '操作执行失败',
         });
       } finally {
-        if (!owner || owner.owns()) params.busyKind.value = null;
+        if (!owner || owner.owns()) endFormRuntimeBusy(params, 'runAction', actionIdentity);
       }
     }
   }

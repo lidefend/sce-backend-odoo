@@ -13,6 +13,7 @@ import {
   workspaceSectionNavigationItems,
   type WorkspaceSectionNavigationItem,
 } from './nativeSectionNavigation';
+import { resolveActionInteractionState } from './actionInteractionState';
 
 export type CanonicalNativeLayoutNode = {
   containerId?: string;
@@ -58,7 +59,11 @@ export type CanonicalNativeFormBridge = {
   authoritativeBusinessSectionMode: boolean;
   fieldSchemasForNodes: (nodes: CanonicalNativeLayoutNode[]) => FormSectionFieldSchema[];
   actionForPayload: (payload: Record<string, unknown>) => ContractV2ActionRule | null;
-  actionStateForNode: (payload: Record<string, unknown>) => { disabled: boolean; title: string };
+  actionStateForNode: (payload: Record<string, unknown>) => {
+    disabled: boolean;
+    loading?: boolean;
+    title: string;
+  };
   nodeVisible: (node: CanonicalNativeLayoutNode) => boolean;
 };
 
@@ -173,6 +178,7 @@ export function buildCanonicalNativeFormBridge(
   relationProjection?: CanonicalRelationProjection,
   claimedStatusbarNodeIdentity = '',
   claimedStatusbarFieldCode = '',
+  busyActionIdentity = '',
 ): CanonicalNativeFormBridge {
   const canonicalFieldsByCode = new Map<string, CanonicalFormField>();
   function indexCanonicalFields(node: CanonicalFormNode) {
@@ -296,8 +302,12 @@ export function buildCanonicalNativeFormBridge(
     },
     actionStateForNode(payload) {
       const action = actionsByIdentity.get(actionIdentity(payload));
+      const interaction = action
+        ? resolveActionInteractionState(action, busyActionIdentity)
+        : { disabled: true, loading: false };
       return {
-        disabled: !action?.enabled,
+        disabled: interaction.disabled,
+        ...(interaction.loading ? { loading: true } : {}),
         title: action?.reasonMessage || action?.reasonCode || '',
       };
     },
