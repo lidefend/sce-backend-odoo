@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "id": "ACTION-VIEW-CAPABILITY-TRANSPORT-20261117",
-  "branch": "fix/action-view-capability-transport-20261117",
-  "baseline_sha": "2e74a4f062214c662bee41713248ba712decc71f",
+  "branch": "fix/action-open-capability-forwarding-20261117",
+  "baseline_sha": "b390ef597456ff812125a1d15c6d53d1b9e41f75",
   "status": "active",
   "goal": ".agent/goals/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
   "record": "docs/ops/iterations/action_view_capability_transport_20261117.md",
@@ -10,6 +10,8 @@
     ".agent/active-runs.json",
     ".agent/runs/ACTION-VIEW-CAPABILITY-TRANSPORT-20261117/run.json",
     "addons/smart_core/app_config_engine/utils/payload.py",
+    "addons/smart_core/handlers/ui_contract.py",
+    "addons/smart_core/tests/test_native_action_contract_integration.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_native_action_contract.py",
@@ -25,6 +27,8 @@
       "kind": "offline",
       "inputs": [
         "addons/smart_core/app_config_engine/utils/payload.py",
+        "addons/smart_core/handlers/ui_contract.py",
+        "addons/smart_core/tests/test_native_action_contract_integration.py",
         "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
         "addons/smart_core/core/native_action_contract.py",
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",

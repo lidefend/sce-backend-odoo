@@ -301,6 +301,7 @@ class UiContractHandler(BaseIntentHandler):
         menu_xmlid="",
         record_id=None,
         render_profile="",
+        client_contract_capabilities=None,
     ):
         payload = {
             "subject": "model",
@@ -319,6 +320,8 @@ class UiContractHandler(BaseIntentHandler):
             payload["record_id"] = record_id
         if render_profile in {"create", "edit", "readonly"}:
             payload["render_profile"] = render_profile
+        if client_contract_capabilities is not None:
+            payload["client_contract_capabilities"] = client_contract_capabilities
         return self._build_dispatcher(ctx).dispatch(payload)
 
     def _finalize_projected_contract(
@@ -522,6 +525,11 @@ class UiContractHandler(BaseIntentHandler):
         record_id, record_error = parse_positive_int(raw_record, allow_empty=True)
         if record_error:
             return self._err(400, "非法的 record_id")
+        client_contract_capabilities = self._get_param(
+            p,
+            "client_contract_capabilities",
+            "clientContractCapabilities",
+        )
 
         data, versions = self._dispatch_model_contract(
             model=model,
@@ -532,6 +540,7 @@ class UiContractHandler(BaseIntentHandler):
             menu_xmlid=menu_xmlid,
             record_id=record_id,
             render_profile=render_profile,
+            client_contract_capabilities=client_contract_capabilities,
             ctx=ctx,
         )
         if isinstance(data, dict):
@@ -574,7 +583,17 @@ class UiContractHandler(BaseIntentHandler):
         view_type = (self._get_param(p, "view_type", "viewType") or "form").strip().lower()
         view_id = self._get_param(p, "view_id", "viewId")
 
-        data, versions = self._dispatch_model_contract(model=model, view_type=view_type, view_id=view_id, ctx=ctx)
+        data, versions = self._dispatch_model_contract(
+            model=model,
+            view_type=view_type,
+            view_id=view_id,
+            client_contract_capabilities=self._get_param(
+                p,
+                "client_contract_capabilities",
+                "clientContractCapabilities",
+            ),
+            ctx=ctx,
+        )
         return self._finalize_projected_contract(
             data=data,
             view_type=view_type,
@@ -604,6 +623,11 @@ class UiContractHandler(BaseIntentHandler):
             render_profile = "readonly"
         if render_profile not in {"create", "edit", "readonly"}:
             render_profile = ""
+        client_contract_capabilities = self._get_param(
+            p,
+            "client_contract_capabilities",
+            "clientContractCapabilities",
+        )
 
         # Detail/intake scene should prefer complete form contract surface.
         prefer_form_contract = bool(
@@ -624,6 +648,7 @@ class UiContractHandler(BaseIntentHandler):
                     action_id=action_id,
                     record_id=record_id,
                     render_profile=render_profile,
+                    client_contract_capabilities=client_contract_capabilities,
                     ctx=action_ctx,
                 )
                 if isinstance(data, dict):
@@ -651,6 +676,8 @@ class UiContractHandler(BaseIntentHandler):
             p2["view_id"] = view_id
         if requested_view_type:
             p2["view_type"] = requested_view_type
+        if client_contract_capabilities is not None:
+            p2["client_contract_capabilities"] = client_contract_capabilities
         menu_id = self._get_param(p, "menu_id", "menuId")
         if menu_id:
             p2["menu_id"] = menu_id

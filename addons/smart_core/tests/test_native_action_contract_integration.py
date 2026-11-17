@@ -6,6 +6,7 @@ from odoo.addons.smart_core.app_config_engine.services.dispatchers.action_dispat
 from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
     assemble_unified_page_contract_v2,
 )
+from odoo.addons.smart_core.handlers.ui_contract import UiContractHandler
 
 
 @tagged("post_install", "-at_install", "smart_core", "native_action_contract")
@@ -132,6 +133,27 @@ class TestNativeActionContractIntegration(TransactionCase):
         self.assertEqual(native_action["viewSet"]["defaultViewType"], "form")
         self.assertEqual(native_action["viewSet"]["activeViewType"], "form")
         self.assertEqual(contract["pageInfo"]["viewType"], "form")
+
+    def test_action_open_preserves_client_view_capabilities(self):
+        result = UiContractHandler(
+            self.env,
+            su_env=self.env["ir.model"].sudo().env,
+        ).handle({
+            "op": "action_open",
+            "action_id": self.action.id,
+            "view_type": "tree",
+            "client_contract_capabilities": ["view.tree.v1", "view.form.v1"],
+        })
+        data = result.data if hasattr(result, "data") else result.get("data")
+        rows = ((data or {}).get("action_view_set") or {}).get("orderedViews") or []
+
+        self.assertEqual(
+            {
+                row.get("viewType") or row.get("view_type"): row.get("rendererStatus")
+                for row in rows
+            },
+            {"tree": "ready", "form": "ready"},
+        )
 
     def test_model_only_page_does_not_invent_native_action_contract(self):
         source, _versions = ActionDispatcher(

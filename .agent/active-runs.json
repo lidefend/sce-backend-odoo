@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
-    "fix/action-view-capability-transport-20261117": ".agent/runs/ACTION-VIEW-CAPABILITY-TRANSPORT-20261117/run.json",
+    "fix/action-open-capability-forwarding-20261117": ".agent/runs/ACTION-VIEW-CAPABILITY-TRANSPORT-20261117/run.json",
     "fix/backend-config-capability-alignment-20261117": ".agent/runs/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117/run.json",
     "feature/native-scene-01-p0-9-embedded-widget-contract-20261117": ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
     "feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117": ".agent/runs/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT/run.json",
