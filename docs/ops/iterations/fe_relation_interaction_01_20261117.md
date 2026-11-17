@@ -98,6 +98,7 @@ Verification:
 | `verify.frontend.typecheck.strict` | PASS |
 | `verify.frontend.lint` | PASS; full app and package lint, zero errors |
 | `verify.frontend.native_action_contract_consumption.unit` | PASS; 7 cases |
+| `verify.frontend.adopted_form_validation_identity.unit` | PASS; 98 shipped save-chain cases, including action identity cleanup and stale-finally isolation |
 | `verify.docs.links` | PASS; wired 5 link-tool tests plus repository link audit |
 | `verify.guard.registry` | PASS; 1633 scripts, 168/168 unwired dispositions and 18/18 required gates enforced |
 | `ci.delivery.freeze.prepare` | PASS; generated component-driver inventory and content-bound evidence refreshed |
@@ -124,3 +125,8 @@ The remote professional gate also exposed that `test_docs_links.py` was present
 but not wired. `verify.docs.links` now executes those five focused tests before
 the repository link audit, so the registry guard has an actual enforcing
 target instead of a documentation-only disposition.
+
+A surface change during validation now clears both the generic save busy kind
+and its `form.save` action identity. The shipped save-chain test verifies that a
+superseded save cannot erase the newer save's identity and that leaving the
+surface does not retain a stale action marker.

@@ -151,7 +151,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     observedSurfaceKey = next;
     surfaceEpoch.value += 1;
     submissionFeedback.value = null;
-    if (busyOwnerOperationId) { busyOwnerOperationId = 0; busyKind.value = null; }
+    if (busyOwnerOperationId) {
+      busyOwnerOperationId = 0;
+      endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');
+    }
   }, { flush: 'sync' });
 
   // Save authority is not surface identity, so it is deliberately absent from

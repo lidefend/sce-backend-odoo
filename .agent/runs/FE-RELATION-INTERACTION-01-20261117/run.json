@@ -39,6 +39,7 @@
     "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
     "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
     "frontend/apps/web/scripts/professional_workflow_model_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
@@ -202,6 +203,16 @@
         "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
         "frontend/apps/web/src/app/contracts/v2/schema.ts",
         "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "save_surface_identity": {
+      "target": "verify.frontend.adopted_form_validation_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/adopted_form_validation_identity_test.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/pages/contractForm/runtimeStateApplier.ts",
         "make/frontend.mk"
       ]
     }
