@@ -56,3 +56,16 @@ Verification for this slice:
 | `ci.delivery.freeze.prepare` | PASS after regenerated frontend inventories |
 
 The browser assertions cover mouse, Enter, Space, focus visibility and zero dispatch for denied actions. Full business-page acceptance remains a deployment-stage concern.
+
+## Third slice: one create-contract cache authority
+
+The generic runtime already declares snapshot-only local reuse: `snapshot` may reuse, while `etag` requires server revalidation and `none` forbids reuse. The create-form client still treated `etag` as reusable for 30 seconds, creating a second cache policy.
+
+`loadModelContractV2()` now calls the existing `permitsContractV2SnapshotReuse()` authority. Only a create contract explicitly declaring `snapshot` enters `createContractCache`; `etag` and `none` always perform the real contract load. No fake conditional-request capability or TTL-based revalidation is introduced.
+
+Verification:
+
+| Check | Result |
+| --- | --- |
+| `verify.frontend.contract_v2_runtime_policy.unit` | PASS; cache-policy and client-source parity checks |
+| `ci.local.iteration` | PASS; 11 affected frontend targets including strict TypeScript |

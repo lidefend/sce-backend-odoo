@@ -3,17 +3,17 @@ goal:
   id: FE-RELATION-INTERACTION-01-20261117
   status: active
   formal_product_layer: P0
-  layer_target: generic Contract V2 relation and action interaction convergence
+  layer_target: generic Contract V2 relation, action and create-cache interaction convergence
   module: frontend/apps/web
   standard_vs_user_specific: platform_standard
-  reason: Declared child modifiers/warnings are rejected by the relationship loader, and inline canonical actions expose only a raw reason code through title while header actions already provide accessible reason interaction.
-  why_here: Relation interaction lifecycle, row hint presentation and disabled-action reason presentation are generic frontend mechanisms shared by all models.
+  reason: Declared child modifiers/warnings are rejected by the relationship loader, inline canonical actions expose only a raw reason code through title, and create-contract caching treats etag as reusable despite the shared runtime requiring server revalidation.
+  why_here: Relation interaction lifecycle, row hint presentation, disabled-action reasons and contract cache policy are generic frontend mechanisms shared by all models.
   why_not_elsewhere: No schema, model, backend action, industry rule, page special case or new component authority is required.
-  blast_radius: All Contract V2 one2many Add Row/row-onchange paths and canonical form inline actions with denied reasons.
+  blast_radius: All Contract V2 one2many Add Row/row-onchange paths, canonical actions with denied reasons and record-free create contract loads.
   exclusions:
     - backend contract or model changes
     - nested child one2many line_patches execution
     - model-specific project, contract or payment branches
     - new design-system component tree
     - deployment or L4 user acceptance before source checks pass
-  product_result: One2many rows consume declared modifier/warning effects, nested line patches remain explicit, and inline actions expose the same accessible disabled reason interaction as the action bar.
+  product_result: One2many rows consume declared modifier/warning effects, inline actions expose the action-bar disabled reason interaction, and only snapshot-declared create contracts use local reuse.

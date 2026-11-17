@@ -18,9 +18,12 @@
     "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
     "frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue",
     "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+    "frontend/apps/web/src/app/contracts/v2/client.ts",
     "frontend/apps/web/scripts/create_default_hydration_test.ts",
     "frontend/apps/web/scripts/professional_relation_lifecycle_model_test.ts",
     "frontend/apps/web/scripts/node_component_consumption_component_test.mjs",
+    "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+    "docs/architecture/contract_runtime_cache_layers_v1.md",
     "config/acceptance/evolution_binding.v1.json",
     "scripts/verify/frontend_professional_workflow_guard.py",
     "scripts/verify/test_frontend_professional_workflow_guard.py",
@@ -94,6 +97,16 @@
         "frontend/apps/web/src/pages/contractForm/workflowReasonTrigger.ts",
         "scripts/verify/frontend_professional_workflow_guard.py",
         "scripts/verify/test_frontend_professional_workflow_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "create_contract_cache": {
+      "target": "verify.frontend.contract_v2_runtime_policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/client.ts",
+        "frontend/apps/web/src/app/contracts/v2/runtime.ts",
+        "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
         "make/frontend.mk"
       ]
     }

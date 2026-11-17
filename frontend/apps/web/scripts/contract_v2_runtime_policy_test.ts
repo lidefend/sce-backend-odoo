@@ -1,4 +1,6 @@
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { permitsContractV2SnapshotReuse } from '../src/app/contracts/v2/runtime';
 import { resolveContractV2RuntimePolicy } from '../src/app/contracts/v2/store';
@@ -19,6 +21,13 @@ function runtime(cachePolicy: ContractV2RuntimeContract['cachePolicy']): Contrac
 assert.equal(permitsContractV2SnapshotReuse(runtime('snapshot')), true);
 assert.equal(permitsContractV2SnapshotReuse(runtime('etag')), false);
 assert.equal(permitsContractV2SnapshotReuse(runtime('none')), false);
+const clientSource = fs.readFileSync(
+  path.resolve('frontend/apps/web/src/app/contracts/v2/client.ts'),
+  'utf8',
+);
+assert.match(clientSource, /import \{ permitsContractV2SnapshotReuse \} from '\.\/runtime';/);
+assert.match(clientSource, /permitsContractV2SnapshotReuse\(result\.snapshot\.runtimeContract\)/);
+assert.doesNotMatch(clientSource, /cachePolicy === 'etag'/);
 
 const runtimePayload = {
   ...runtime('snapshot'),
