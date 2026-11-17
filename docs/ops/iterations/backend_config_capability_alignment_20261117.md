@@ -55,6 +55,11 @@ toolbar、header、buttons、actions、action groups 与 row actions；同时校
 来源 View、`nativeIdentity.viewType` 和 model 必须等于活动页面。Form 布局节点按钮
 仅在 Form 页面附加发布。该规则覆盖 Form、Tree/List、Kanban，不做模型或页面特判。
 
+活动 View 的来源由前端 `view_mode` / 意图参数 `view_type` 明确传入；Handler 保持该
+参数进入 `ui.contract.v2`，装配后用 `requested_view_type_matches()` 校验交付
+`pageInfo.viewType`。前端请求 Kanban 而 Backend 交付 Form，或请求 Tree 而交付
+Kanban，均以 `REQUESTED_VIEW_TYPE_MISMATCH` 拒绝，不再静默换视图。
+
 ## 当前故障
 
 - 日常运行候选：`a19bf2d976cbda9d99bdc24deab7903143a21cb7`。

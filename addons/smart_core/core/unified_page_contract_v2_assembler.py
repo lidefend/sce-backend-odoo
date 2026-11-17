@@ -1423,6 +1423,17 @@ def _validate_action_view_scope(contract: dict[str, Any]) -> None:
             raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
 
 
+def requested_view_type_matches(contract: dict[str, Any], requested_view_type: str) -> bool:
+    """Whether the delivered contract is the View the client requested."""
+    requested = _text(requested_view_type).split(",")[0].strip().lower()
+    if not requested:
+        return True
+    requested = "tree" if requested in {"tree", "list"} else requested
+    delivered = _text(_dict(contract.get("pageInfo")).get("viewType")).lower()
+    delivered = "tree" if delivered in {"tree", "list"} else delivered
+    return requested == delivered
+
+
 def assemble_unified_page_patch_v2(
     onchange_payload: dict[str, Any],
     *,

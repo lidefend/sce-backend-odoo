@@ -208,6 +208,12 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertIn("tree_toolbar_action", keys)
         self.assertNotIn("kanban_toolbar_action", keys)
 
+    def test_requested_view_type_must_match_the_delivered_contract(self):
+        contract = {"pageInfo": {"viewType": "list", "model": "project.project"}}
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "tree"))
+        self.assertTrue(self.assembler.requested_view_type_matches(contract, "list"))
+        self.assertFalse(self.assembler.requested_view_type_matches(contract, "kanban"))
+
     def test_assembler_rejects_action_sources_from_other_views(self):
         for source_channel in ("native_form_header", "native_tree_row_action"):
             with self.subTest(source_channel=source_channel):

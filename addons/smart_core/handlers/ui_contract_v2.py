@@ -21,6 +21,7 @@ from ..core.unified_page_contract_v2_assembler import (
     project_runtime_business_actions,
     project_workflow_action_semantics,
     rebind_native_occurrence_identities,
+    requested_view_type_matches,
 )
 from ..core.unified_page_contract_v2_client import (
     resolve_client_type,
@@ -739,6 +740,13 @@ class UiContractV2Handler(BaseIntentHandler):
             or ui_params.get("renderProfile")
             or ""
         ).strip().lower()
+        requested_view_type = str(
+            params.get("view_type")
+            or params.get("viewType")
+            or ui_params.get("view_type")
+            or ui_params.get("viewType")
+            or ""
+        ).strip()
         requested_record_id = str(
             params.get("record_id")
             or params.get("recordId")
@@ -1017,6 +1025,8 @@ class UiContractV2Handler(BaseIntentHandler):
             # on loan to the cache entry and is never written.
             source_contract = assembled_cached["source_contract"]
             contract_v2 = assembled_cached["contract"]
+            if not requested_view_type_matches(contract_v2, requested_view_type):
+                raise FormConfigurationError("REQUESTED_VIEW_TYPE_MISMATCH", "pageInfo.viewType")
             contract_v2 = _authority.seal_runtime_contract(
                 self,
                 contract_v2,
@@ -1251,6 +1261,8 @@ class UiContractV2Handler(BaseIntentHandler):
             trace_id=trace_id,
             stage_timings=assembler_stages,
         )
+        if not requested_view_type_matches(contract_v2, requested_view_type):
+            raise FormConfigurationError("REQUESTED_VIEW_TYPE_MISMATCH", "pageInfo.viewType")
         post_assembler_at = time.monotonic()
         node_validation_native_tree = deepcopy(contract_v2.get("layoutContract", {}).get("containerTree", []))
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)
