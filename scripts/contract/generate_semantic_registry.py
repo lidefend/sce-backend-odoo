@@ -148,6 +148,7 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
     derivation = semantic.get("derivation") or {}
     rules = derivation.get("rules") or []
     semantics = semantic.get("semantics") or {}
+    native_widgets = semantic.get("native_widgets") or {}
     components = component.get("components") or {}
 
     default = derivation.get("default")
@@ -180,6 +181,23 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
             raise SystemExit(f"field semantic {key!r} cannot reference node component {component_key!r}")
         mapping.append(f"    {key!r}: {component_key!r},")
 
+    native_widget_rows: list[str] = []
+    for key in sorted(native_widgets):
+        entry = native_widgets[key] or {}
+        status = str(entry.get("status") or "")
+        if status not in {"ready", "fallback", "unsupported"}:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native widget {key!r} has invalid status {status!r}"
+            )
+        native_widget_rows.append(
+            "    {key!r}: {{'status': {status!r}, 'reasonCode': {reason!r}}},"
+            .format(
+                key=key,
+                status=status,
+                reason=str(entry.get("reason_code") or ""),
+            )
+        )
+
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
     body = HEADER.format(
         sources=" -> ".join(sources),
@@ -197,6 +215,10 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
         + "\n# semantic -> the component key the frontend renders.\n"
         "SEMANTIC_COMPONENTS = {\n"
         + "\n".join(mapping)
+        + "\n}\n"
+        + "\n# explicit native View Widget token -> declared support status.\n"
+        "NATIVE_WIDGET_STATUS = {\n"
+        + "\n".join(native_widget_rows)
         + "\n}\n"
         + "\n# Backend registration identity only; no client support is implied.\n"
         + f"FIELD_CONTRACT_VERSION = {component['defaults']['field_contract_version']!r}\n"

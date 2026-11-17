@@ -885,7 +885,7 @@ verify.scene.fact_data.boundary.unit: guard.prod.forbid
 	@python3 scripts/verify/scene_fact_data_boundary_guard.py
 
 ci.delivery.freeze.prepare: guard.prod.forbid verify.g1.acceptance.baseline contract.semantic.registry.generate verify.frontend.contract_basis.enforce verify.agent.ledger.unit verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.daily.runtime.release_orchestration.unit verify.scene.fact_data.boundary.unit
-	@$(MAKE) --no-print-directory ci.delivery.plan
+	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@$(MAKE) --no-print-directory refresh.generated_evidence
 	@$(MAKE) --no-print-directory ci.generated_evidence.preflight
 	@echo "[ci.delivery.freeze.prepare] PASS candidate=unfrozen next=review_generated_changes_commit_freeze_then_run_quick_once"
@@ -1078,7 +1078,7 @@ verify.platform.duty.contract.unit: guard.prod.forbid
 
 ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit verify.frontend.systemic.convergence.static
 	@python3 scripts/ops/agent_run_context.py
-	@$(MAKE) --no-print-directory ci.delivery.plan
+	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@git diff --check
 	@python3 scripts/ops/local_quick_evidence.py preflight
 	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
@@ -1211,7 +1211,7 @@ verify.contract.list_preference.single_application: guard.prod.forbid
 	@python3 scripts/verify/list_preference_single_application_guard.py --output artifacts/backend/list_preference_single_application_guard.json
 
 .PHONY: verify.contract.architecture.suite
-verify.contract.architecture.suite: verify.construction.policy_maps.unit verify.native_advisory.unit verify.native_action.view_set.unit verify.native_action.search_view.unit verify.native_action.contract.unit verify.native_occurrence.contract.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
+verify.contract.architecture.suite: verify.construction.policy_maps.unit verify.native_advisory.unit verify.native_action.view_set.unit verify.native_action.search_view.unit verify.native_action.contract.unit verify.native_occurrence.contract.unit verify.native_widget.provenance.unit verify.node_component_capabilities.unit verify.node_component_validation.unit verify.onchange.feedback_evaluation.unit verify.record_error_proof.unit \
 	verify.workspace.branch.sync-github.unit \
 	guard.prod.forbid \
 	verify.backend.authority_closure.unit \

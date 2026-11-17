@@ -264,8 +264,10 @@ class _BaseViewParserMixin:
     def _field_info_for_layout(self, field_name, fields_info):
         meta = (fields_info or {}).get(field_name, {}) or {}
         from odoo.addons.smart_core.utils.native_field_descriptor import project_native_field_descriptor
-        return project_native_field_descriptor(
+        descriptor = project_native_field_descriptor(
             field_name,
             meta,
             widget=self._widget_for_field(meta),
         )
+        descriptor["widget_source"] = "model_metadata_derived"
+        return descriptor

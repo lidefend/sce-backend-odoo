@@ -53,6 +53,7 @@ export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
   {componentKey: 'sc.display.status', semanticType: 'status', supportedFieldTypes: ['selection', 'char'], readiness: 'ready', renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},
   {componentKey: 'sc.value.duration', semanticType: 'duration', supportedFieldTypes: ['float', 'integer'], readiness: 'ready', renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},
   {componentKey: 'sc.display.text', semanticType: 'readable_value', supportedFieldTypes: ['*'], readiness: 'ready', renderer: 'FormSectionField', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},
+  {componentKey: 'sc.unsupported.native_widget', semanticType: 'unsupported_native_widget', supportedFieldTypes: ['*'], readiness: 'fail_closed', renderer: 'FormSectionField', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},
 ];
 
 export const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({

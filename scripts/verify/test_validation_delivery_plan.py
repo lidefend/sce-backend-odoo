@@ -112,6 +112,11 @@ class PrIdentityTests(unittest.TestCase):
         dependencies = text[start:].split('\n\n', 1)[0]
         self.assertIn('verify.validation.delivery.unit', dependencies)
 
+    def test_local_iteration_and_freeze_use_merge_stage_plan(self):
+        text = (delivery.ROOT / 'make/ci.mk').read_text()
+        self.assertIn('ci.delivery.plan.merge', text)
+        self.assertNotIn('@$(MAKE) --no-print-directory ci.delivery.plan\n', text)
+
     def identity(self):
         return {'number': 7, 'state': 'OPEN', 'isCrossRepository': False, 'headRefOid': 'a' * 40,
                 'baseRefOid': 'b' * 40, 'baseRefName': 'main', 'url': 'https://example.invalid/7'}

@@ -67,3 +67,4 @@ components:
   sc.display.status: {semantic: status, field_types: [selection, char], renderer: ProfessionalBusinessValueControl}
   sc.value.duration: {semantic: duration, field_types: [float, integer], renderer: ProfessionalBusinessValueControl}
   sc.display.text: {semantic: readable_value, field_types: ["*"], renderer: FormSectionField}
+  sc.unsupported.native_widget: {semantic: unsupported_native_widget, field_types: ["*"], renderer: FormSectionField, readiness: fail_closed}

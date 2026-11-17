@@ -50,9 +50,11 @@
     "batch": "verification_pending",
     "mainline": "not_merged",
     "deployment": "not_deployed",
-    "user_acceptance": "not_run"
+    "user_acceptance": "not_run",
+    "mainline_commit": "bb63c755238b27c39844701411de4c4dddd8c17e",
+    "pull_request": 911
   },
-  "next_exact_step": "Publish the clean B-S3 audit commit through the governed exact-head PR review lane, monitor all required checks, and do not start Widget implementation before independent review.",
+  "next_exact_step": "Completed and merged as PR #911; implementation continued under NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.",
   "statements": [
     "The audit is read-only with respect to product source, contract schema, parser, Renderer and runtime configuration.",
     "The refreshed native-scene inventories are generated audit evidence, not product capability claims.",
@@ -60,7 +62,7 @@
   ],
   "id": "NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION",
   "branch": "audit/native-scene-01-b-s3-widget-conversion-20261117",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
   "record": "docs/audit/native-scene-01/b-s3-widget-conversion/native_widget_takeover_audit.md"
 }

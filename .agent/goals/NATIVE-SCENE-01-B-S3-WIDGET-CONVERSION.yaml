@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
   title: Odoo native Widget semantics to reusable frontend components
-  status: active
+  status: completed
   formal_product_layer: P4 read-only audit supporting P0
   layer_target: Native View Widget and modifier semantics to unified Widget contract and component identity
   module:

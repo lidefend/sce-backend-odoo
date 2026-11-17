@@ -369,9 +369,11 @@ verify.g1.acceptance.baseline: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_g1_acceptance_baseline_guard.py
 
 # ------- Acceptance evolution binding (code change -> acceptance impact) -------
-.PHONY: ci.delivery.plan verify.validation.delivery.unit
+.PHONY: ci.delivery.plan ci.delivery.plan.merge verify.validation.delivery.unit
 ci.delivery.plan: guard.prod.forbid
 	@python3 scripts/ops/validation_delivery_plan.py
+ci.delivery.plan.merge: guard.prod.forbid
+	@python3 scripts/ops/validation_delivery_plan.py --stage merge
 
 verify.validation.delivery.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/verify python3 -m unittest scripts.verify.test_validation_delivery_plan scripts.verify.test_agent_run_context scripts.verify.test_local_development_lifecycle.FloorplanEvidenceRecordingTest scripts.verify.test_branch_governance_consistency_guard.ControlledMergeExpectedHeadTests
@@ -497,6 +499,17 @@ verify.native_occurrence.contract.unit: guard.prod.forbid
 	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
 	  scripts/verify/test_native_occurrence_contract.py
 	@python3 -m unittest scripts.verify.test_native_occurrence_contract
+
+.PHONY: verify.native_widget.provenance.unit
+verify.native_widget.provenance.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/core/native_widget_profile.py \
+	  addons/smart_core/core/contract_runtime/semantic_resolver.py \
+	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
+	  addons/smart_core/app_config_engine/services/view_Parser/base.py \
+	  "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py" \
+	  scripts/verify/test_native_widget_provenance.py
+	@python3 -m unittest scripts.verify.test_native_widget_provenance
 
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid

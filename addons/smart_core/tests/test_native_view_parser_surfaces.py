@@ -665,6 +665,23 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(base_info["currency_field"], "company_currency_id")
         self.assertEqual(base_info["digits"], [16, 2])
 
+    def test_widget_source_distinguishes_xml_from_type_derivation(self):
+        derived = self.base_parser._field_info_for_layout(
+            "amount_total",
+            {"amount_total": {"type": "monetary", "string": "Total"}},
+        )
+        self.assertEqual(derived["widget"], "monetary")
+        self.assertEqual(derived["widget_source"], "model_metadata_derived")
+
+        element = _parse_test_xml('<field name="amount_total" widget="percentage"/>')
+        form = self.tree_form_parser._node_to_layout_from_dom(
+            element,
+            {"amount_total": {"type": "float", "string": "Rate"}},
+            list(element.iter()),
+        )
+        self.assertEqual(form["fieldInfo"]["widget"], "percentage")
+        self.assertEqual(form["fieldInfo"]["widget_source"], "native_explicit")
+
     def test_reference_field_type_is_not_declared_as_a_widget_spelling(self):
         # A field type is not a widget alias. ``many2one_reference`` used to be
         # passed through as if the view had declared it, so the contract bound a

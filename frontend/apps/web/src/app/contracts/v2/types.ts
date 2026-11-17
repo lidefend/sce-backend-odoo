@@ -366,6 +366,27 @@ export interface ContractV2Widget {
   formStructureRole?: ContractV2FormStructureRole;
 }
 
+export type ContractV2NativeWidgetSource =
+  | 'native_explicit'
+  | 'model_metadata_derived'
+  | 'compatibility_default';
+
+export type ContractV2NativeWidgetResolutionStatus =
+  | 'not_applicable'
+  | 'ready'
+  | 'fallback'
+  | 'unsupported';
+
+export interface ContractV2NativeWidgetProvenance {
+  nativeWidget: string;
+  widgetSource: ContractV2NativeWidgetSource;
+  declaredWidget: string;
+  derivedWidgetType: string;
+  resolvedWidgetType: string;
+  resolutionStatus: ContractV2NativeWidgetResolutionStatus;
+  reasonCode: string;
+}
+
 export interface ContractV2FieldDescriptor {
   fieldCode: string;
   label: string;

@@ -1959,6 +1959,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_native_widget_sources_select_provenance_and_registry_checks(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/core/native_widget_profile.py"]),
+            [
+                "verify.native_widget.provenance.unit",
+                "verify.semantic.registry.lint",
+            ],
+        )
+
     def test_semantic_registry_tools_keep_their_generator_and_node_locks(self) -> None:
         self.assertEqual(
             select_targets([

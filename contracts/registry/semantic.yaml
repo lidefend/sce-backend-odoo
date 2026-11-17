@@ -19,6 +19,70 @@
 # - 不声明状态机：状态与转移的归属见 docs/contract-runtime-state-ownership.md。
 registry: semantic
 
+# Native View Widget support classification. This does not select a component;
+# it records whether the explicit XML token has a real native takeover path.
+# `unsupported` must never fall back to the field-type control because that
+# would turn an unknown editor into a seemingly valid input.
+native_widgets:
+  input: {status: ready}
+  select: {status: ready}
+  date: {status: ready}
+  datetime: {status: ready}
+  number: {status: ready}
+  table: {status: ready}
+  upload: {status: ready}
+  button: {status: ready}
+  textarea: {status: ready}
+  checkbox: {status: ready}
+  radio: {status: ready}
+  tree: {status: ready}
+  relation: {status: ready}
+  display: {status: ready}
+  binary: {status: ready}
+  many2many_tags: {status: ready}
+  selection: {status: ready}
+  many2one: {status: ready}
+  many2many: {status: ready}
+  one2many: {status: ready}
+  one2many_list: {status: ready}
+  boolean: {status: ready}
+  boolean_toggle:
+    status: fallback
+    reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
+  monetary: {status: ready}
+  float_time: {status: ready}
+  percentage: {status: ready}
+  percentpie: {status: ready}
+  statusbar: {status: ready}
+  badge: {status: ready}
+  image:
+    status: fallback
+    reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
+  html: {status: ready}
+  handle:
+    status: fallback
+    reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
+  phone: {status: ready}
+  url: {status: ready}
+  email: {status: ready}
+  json: {status: ready}
+  daterange: {status: ready}
+  analytic_distribution: {status: ready}
+  many2many_binary: {status: ready}
+  many2one_avatar_user: {status: ready}
+  res_partner_many2one:
+    status: fallback
+    reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
+  domain:
+    status: unsupported
+    reason_code: NATIVE_WIDGET_DOMAIN_EDITOR_UNSUPPORTED
+  tier_validation:
+    status: unsupported
+    reason_code: NATIVE_WIDGET_QWEB_RENDERER_UNSUPPORTED
+  account-tax-totals-field: {status: ready}
+  payment: {status: ready}
+  statinfo: {status: ready}
+
 # 推导规则：有序，首个匹配生效；全部未命中时使用 default。
 derivation:
   default: readable_value
@@ -115,3 +179,4 @@ semantics:
   one_time_secret: {category: auth, component: sc.auth.one_time_secret}
   support_action: {category: auth, component: sc.auth.support_action}
   payment_settlement_detail_collection: {category: industry, component: sc.payment.settlement_detail_collection}
+  unsupported_native_widget: {category: behavioral, component: sc.unsupported.native_widget}

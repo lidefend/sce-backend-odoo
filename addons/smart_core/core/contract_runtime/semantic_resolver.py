@@ -37,6 +37,7 @@ from .semantic_registry_generated import (
     SEMANTIC_COMPONENTS,
     FIELD_CONTRACT_VERSION,
     COMPONENT_REGISTRATIONS,
+    NATIVE_WIDGET_STATUS,
 )
 
 _logger = logging.getLogger(__name__)
@@ -124,6 +125,28 @@ def semantic_widget_type(native_widget: str = "", canonical_widget_type: str = "
     if native in SEMANTIC_WIDGET_HINTS:
         return native
     return _text(canonical_widget_type).lower()
+
+
+def resolve_native_widget(native_widget: str = "") -> dict[str, str]:
+    """Return the declared support state for an explicit Odoo XML Widget.
+
+    This lookup is deliberately distinct from semantic derivation: an unknown
+    explicit Widget must stay unsupported even though a field type could derive
+    a valid generic control.
+    """
+    normalized = _text(native_widget).lower()
+    if not normalized:
+        return {"status": "not_applicable", "reasonCode": ""}
+    declared = NATIVE_WIDGET_STATUS.get(normalized)
+    if not isinstance(declared, dict):
+        return {
+            "status": "unsupported",
+            "reasonCode": "NATIVE_WIDGET_UNRECOGNIZED",
+        }
+    return {
+        "status": _text(declared.get("status")).lower(),
+        "reasonCode": _text(declared.get("reasonCode")),
+    }
 
 
 def resolve(field: Any = None, widget_type: str = "") -> dict[str, str]:
