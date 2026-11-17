@@ -22,8 +22,9 @@ This batch:
 - removes the two stale exact merge bindings;
 - registers its own bounded cleanup run;
 - permits self-retirement only when the active binding belongs to a bookkeeping
-  run whose PR changed only `.agent/` or `docs/` paths and whose exact source
-  head is already merged.
+  run whose PR changed only governed `.agent/`, `docs/`, `scripts/ops/`,
+  `scripts/verify/` or `make/` paths and whose exact source head is already
+  merged.
 
 The cleanup entry still refuses unmerged branches, protected branches,
 non-bookkeeping product bindings, source/remote/main drift and occupied

@@ -218,7 +218,7 @@ if not isinstance(scope, list) or not scope or not all(isinstance(path, str) for
 body = goal.get("goal") if isinstance(goal, dict) else None
 if not isinstance(body, dict) or body.get("formal_product_layer") != "P4":
     sys.exit(7)
-allowed = (".agent/", "docs/", "scripts/ops/", "make/")
+allowed = (".agent/", "docs/", "scripts/ops/", "scripts/verify/", "make/")
 if not all(path.startswith(allowed) for path in scope):
     sys.exit(8)
 if run_path != ".agent/runs/" + str(run.get("id") or "") + "/run.json":
@@ -239,6 +239,7 @@ if run_path != ".agent/runs/" + str(run.get("id") or "") + "/run.json":
         startswith(".agent/")
         or startswith("docs/")
         or startswith("scripts/ops/")
+        or startswith("scripts/verify/")
         or startswith("make/"))
     ' <<<"$merged_pr_files" >/dev/null; then
       echo "❌ merged PR #${merged_pr_number} is not a bookkeeping-only cleanup" >&2

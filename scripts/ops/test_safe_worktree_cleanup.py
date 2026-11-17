@@ -945,6 +945,7 @@ class GovernedBranchCleanupBookkeepingRetirementTest(unittest.TestCase):
         ".agent/goals/BOOKKEEPING-CLEANUP.yaml",
         "docs/ops/iterations/bookkeeping_cleanup.md",
         "scripts/ops/cleanup-authority.txt",
+        "scripts/verify/cleanup-planner.py",
     )
 
     def setUp(self) -> None:
@@ -989,6 +990,7 @@ class GovernedBranchCleanupBookkeepingRetirementTest(unittest.TestCase):
             ),
             "docs/ops/iterations/bookkeeping_cleanup.md": "# cleanup\n",
             "scripts/ops/cleanup-authority.txt": "governed\n",
+            "scripts/verify/cleanup-planner.py": "VALUE = 1\n",
         }
         for relative, content in files.items():
             path = self.root / relative

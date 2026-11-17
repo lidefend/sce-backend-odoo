@@ -89,7 +89,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1514 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1516 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1089 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 692 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -250,7 +250,7 @@ Generated from repository source files. This report is informational during the 
 | 278 | Shell script | `scripts/verify/local_dev_payment_request_floorplan_readonly.sh` |
 | 271 | Shell script | `scripts/contract/gate_contract.sh` |
 | 271 | Shell script | `scripts/verify/production_blocker_image.sh` |
-| 268 | Shell script | `scripts/ops/branch_cleanup_safe.sh` |
+| 269 | Shell script | `scripts/ops/branch_cleanup_safe.sh` |
 | 252 | Shell script | `scripts/dev/frontend_acceptance_operation_entry.sh` |
 
 ## Largest Files
@@ -336,7 +336,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1514 | split_plan_required | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1516 | split_plan_required | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 
 ## Interpretation
 
