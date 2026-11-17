@@ -143,16 +143,20 @@ function projectRowAttributes(attributes: Record<string, unknown> | undefined): 
     /^on[A-Z]/.test(name) && typeof value === 'function' ? value : String(value ?? ''),
   ]));
 }
-const scrollProjection = computed(() => ({
-  selector: '.t-table__content' as const,
-  attributes: {
-    tabindex: props.tableContentWidth ? 0 : undefined,
-    role: props.tableContentWidth ? 'region' : undefined,
-    'aria-label': props.tableContentWidth ? `${props.label}，可横向滚动` : undefined,
-    'aria-description': props.tableContentWidth ? '聚焦表格区域后，可使用左右方向键查看其余列。' : undefined,
-    'data-table-scroll-region': props.tableContentWidth ? 'true' : undefined,
-  },
-}));
+const scrollProjection = computed(() => {
+  const hasHorizontalOverflow = canScrollLeft.value || canScrollRight.value;
+  const scrollRegion = Boolean(props.tableContentWidth && hasHorizontalOverflow);
+  return {
+    selector: '.t-table__content' as const,
+    attributes: {
+      tabindex: scrollRegion ? 0 : undefined,
+      role: scrollRegion ? 'region' : undefined,
+      'aria-label': scrollRegion ? `${props.label}，可横向滚动` : undefined,
+      'aria-description': scrollRegion ? '聚焦表格区域后，可使用左右方向键查看其余列。' : undefined,
+      'data-table-scroll-region': scrollRegion ? 'true' : undefined,
+    },
+  };
+});
 const tdesignRowAttributes = computed(() => typeof props.rowAttributes === 'function'
   ? (context: unknown) => projectRowAttributes(props.rowAttributes instanceof Function ? props.rowAttributes(context) : undefined)
   : projectRowAttributes(props.rowAttributes)) as unknown as ComputedRef<TDesignTableRowAttributes<TDesignTableRowData>>;
