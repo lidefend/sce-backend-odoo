@@ -348,6 +348,23 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       .filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
     const numericColumnAlignment = mobileMode
       || (numericHeaderMisaligned === 0 && numericBodyMisaligned === 0);
+    const visibleTableContents = Array.from(document.querySelectorAll('.t-table__content')).filter(visible);
+    const overflowingTableContents = visibleTableContents.filter((content) => {
+      const table = content.querySelector('table');
+      return Boolean(table && table.getBoundingClientRect().width > content.clientWidth + 1);
+    });
+    const scrollRegions = Array.from(document.querySelectorAll('[data-table-scroll-region="true"]')).filter(visible);
+    const scrollTools = Array.from(document.querySelectorAll('.sc-table-scroll-tools')).filter(visible);
+    const scrollSemanticsMatchOverflow = mobileMode || Boolean(
+      scrollRegions.length === overflowingTableContents.length
+      && scrollTools.length === overflowingTableContents.length
+      && scrollRegions.every((region) => (
+        region.getAttribute('tabindex') === '0'
+        && region.getAttribute('role') === 'region'
+        && String(region.getAttribute('aria-label') || '').includes('可横向滚动')
+        && Boolean(region.getAttribute('aria-description'))
+      ))
+    );
     const visibleMobileSelectionControls = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-selection-control[data-selection-scope="row"]')).filter(visible);
     const mobileSelectionTargetSizes = visibleMobileSelectionControls.map((target) => {
       const rect = target.getBoundingClientRect();
@@ -483,6 +500,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           decision_trace_complete: expectedState === 'empty' || traceComplete,
           table_headers_single_line: tableHeadersSingleLine,
           numeric_column_alignment: numericColumnAlignment,
+          collection_scroll_semantics: scrollSemanticsMatchOverflow,
           primary_identity_integrity: primaryIdentityIntegrity,
         },
         metrics: {
@@ -501,6 +519,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           numeric_body_count: numericBodyCells.length,
           numeric_header_misaligned: numericHeaderMisaligned,
           numeric_body_misaligned: numericBodyMisaligned,
+          visible_table_content_count: visibleTableContents.length,
+          overflowing_table_content_count: overflowingTableContents.length,
+          scroll_region_count: scrollRegions.length,
+          scroll_tool_count: scrollTools.length,
           primary_identity: primaryIdentity,
         },
       };
@@ -641,6 +663,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       search_input_usable: Boolean(searchInputRect && searchInputRect.width >= 72 && searchInputRect.height >= 28),
       table_headers_single_line: tableHeadersSingleLine,
       numeric_column_alignment: numericColumnAlignment,
+      collection_scroll_semantics: scrollSemanticsMatchOverflow,
       primary_identity_integrity: primaryIdentityIntegrity,
     };
     return {
@@ -672,6 +695,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         numeric_body_count: numericBodyCells.length,
         numeric_header_misaligned: numericHeaderMisaligned,
         numeric_body_misaligned: numericBodyMisaligned,
+        visible_table_content_count: visibleTableContents.length,
+        overflowing_table_content_count: overflowingTableContents.length,
+        scroll_region_count: scrollRegions.length,
+        scroll_tool_count: scrollTools.length,
         primary_identity: primaryIdentity,
       },
       observations: {

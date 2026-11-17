@@ -73,8 +73,8 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1818 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1801 | Construction backend owner | `addons/smart_construction_core/models/support/workflow_contract_service.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P2 | 1783 | Frontend owner | `frontend/apps/web/src/components/template/FormSection.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
+| P2 | 1766 | DevOps owner | `scripts/verify/frontend_list_surface_structure_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1743 | DevOps owner | `scripts/verify/test_coverage_registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1739 | DevOps owner | `scripts/verify/frontend_list_surface_structure_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1735 | Frontend owner | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1730 | DevOps owner | `scripts/verify/system_performance_baseline.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1699 | Architecture owner | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |

@@ -1,0 +1,18 @@
+schema_version: 1
+goal:
+  id: FE-COLLECTION-SCROLL-ACCESSIBILITY-20261118
+  status: active
+  formal_product_layer: P0
+  layer_target: public collection table horizontal-scroll accessibility
+  module: frontend/apps/web shared table renderer
+  standard_vs_user_specific: platform_mechanism_presentation
+  objective: Expose the table scroll region and its keyboard instructions only when the rendered columns actually overflow.
+  product_result: Keyboard and assistive-technology users are not sent to a non-scrollable focus stop, while genuinely overflowing tables retain explicit scroll controls and instructions.
+  why_here: Overflow detection, focusability and accessible naming belong to the shared ScTable renderer and do not carry business semantics.
+  why_not_elsewhere: No contract field, model, permission or action behavior needs to change.
+  blast_radius: Every collection or worksheet table rendered through ScTable across desktop and compact viewports.
+  exclusions:
+    - backend or contract changes
+    - column visibility, width, ordering or page-specific rules
+    - row open semantics
+    - deployment or user acceptance claims
