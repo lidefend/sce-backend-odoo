@@ -10,7 +10,7 @@ goal:
     - frontend/apps/web
   baseline:
     branch: main
-    full_sha: bec4a38da10f15d6f4008af355db3bcc4332e13d
+    full_sha: 7567bbf41762df1dc5f284298c0da30d80083e39
     prerequisites:
       - NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY
       - NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
@@ -35,6 +35,7 @@ goal:
     - semantic/component registry declarations for embedded nodes
     - Contract V2 schema, decoder, presenter and minimal web_ribbon consumption
     - unsupported native-node fail-closed handling and capability checks
+    - structured ContractGapError acceptance semantics for explicitly unsupported native widgets
     - focused parser, assembler, ORM, frontend and browser evidence
     - P0-9 implementation record and corrected P0-8 closure record
   acceptance:
@@ -42,6 +43,7 @@ goal:
     - widget name, raw attributes, parsed options and modifiers survive the final contract
     - web_ribbon is rendered once through a registered node component
     - unsupported industry and unknown widgets fail explicitly with a reason
+    - the expected project-form contract gap is verified as a structured alert without accepting other gaps
     - widget nodes never enter field ownership, required-field or ORM field-read sets
     - existing field, feedback, anchor, button and container behavior remains valid
   exclusions:

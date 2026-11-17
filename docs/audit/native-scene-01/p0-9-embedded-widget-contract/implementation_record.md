@@ -81,6 +81,11 @@ contains two same-name `web_ribbon` occurrences and one
 - Widget projection keeps its readiness value separate from the shared status
   collection, so sibling fields after a widget continue to publish field status
   instead of failing on a shadowed variable.
+- The generic form error surface retains the structured `ContractGapError`
+  defect. The `project-form` acceptance target therefore verifies
+  `native_view_widget.NATIVE_VIEW_WIDGET_UNSUPPORTED` as an expected alert
+  outcome instead of misclassifying the explicit fail-closed page as a normal
+  presentation regression.
 
 ## Unsupported Contract
 
@@ -103,7 +108,7 @@ approved. No business UI, data service or action binding is implemented here.
 
 | Check | Result |
 | --- | --- |
-| `make ci.local.iteration` | PASS, 38 required targets, 23 executed and 15 content-identical prefixes reused |
+| `make ci.local.iteration` | PASS, 40 required targets, all 40 executed |
 | `make verify.native_occurrence.contract.orm` | PASS, 8 disposable ORM tests |
 | `make verify.frontend.native_embedded_widget.browser` | PASS, both render paths, self/parent hidden cases, unsupported fail-closed, 0 business requests |
 | `make verify.frontend.node_component.unit` | PASS, 48 cases |
@@ -116,7 +121,8 @@ approved. No business UI, data service or action binding is implemented here.
 | `make verify.local.dev.conditioned.feedback.orm` | PASS, 0 failed of 26 tests |
 | `make verify.frontend.lint.src` | PASS, warnings only in pre-existing files |
 | `make verify.frontend.typecheck.strict` | PASS |
-| `make verify.docs.all` | FAIL, pre-existing `baseline_evidence_defect`: 72 repository-wide links remain unresolved |
+| `make verify.docs.all` | PASS after integrating the #918 documentation-link baseline |
+| `make verify.frontend.presentation.lane.unit` | PASS, including structured expected-contract-gap acceptance |
 
 Not run: deployment, L4 role/business acceptance, real consumption of
 `sc_insight_banner`, `sc_stage_requirements` or `sc_next_actions`.

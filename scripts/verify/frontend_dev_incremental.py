@@ -197,6 +197,12 @@ RULES = (
         "verify.acceptance.evolution.binding",
     )),
     Rule((
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+    ), (
+        "verify.frontend.presentation.lane.unit",
+    )),
+    Rule((
         "config/acceptance/backend_contract_instance_v1.json",
     ), (
         "verify.frontend.acceptance.environment.guard",

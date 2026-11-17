@@ -13,6 +13,7 @@ import {
   canonicalizeSubmissionValues,
   createSingleFlightSave,
 } from './saveRecordHelpers';
+import { isContractGapError, type ContractDefectRef } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
@@ -20,6 +21,7 @@ type ActionDependencies = Record<string, any> & FormDesignerActionDependencies;
 
 /** Owns save, conflict recovery and projection refresh; delegates designer interactions. */
 export function useRecordFormActions(dependencies: ActionDependencies) {
+  const renderErrorDefect = ref<ContractDefectRef | null>(null);
   const {
     ApiError,
     BUSINESS_CONFIG_ACTION_KEYS,
@@ -205,6 +207,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
   onErrorCaptured((err) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
+    renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
     renderErrorMessage.value = `表单页面打开失败：${message}`;
     return false;
   });
@@ -629,6 +632,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   });
 
   return {
+    renderErrorDefect,
     discardChanges,
     confirmActionSafety,
     ensureSavedBeforeRecordAction,

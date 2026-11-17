@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: MAINLINE-DOCS-LINKS-20261117
   title: Restore mainline documentation link integrity
-  status: active
+  status: completed
   formal_product_layer: P4 ops delivery tool
   layer_target: documentation evidence links and inventory governance
   module:

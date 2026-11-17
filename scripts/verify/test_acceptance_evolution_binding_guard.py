@@ -957,6 +957,32 @@ class TestAdapters(unittest.TestCase):
         broken["targets"][0]["mobileOverflow"] = True
         with self.assertRaisesRegex(guard.BindingError, "mobile overflow"):
             guard._adapter_presentation_header(broken, HEAD)
+        expected_gap = _presentation()
+        expected_gap["targets"] = [{
+            "key": "project-form",
+            "outcome": "expected_contract_gap",
+            "headerCount": 0,
+            "unresolvedComponentCount": 0,
+            "contractGapKind": "contract_defect",
+            "contractGapMissing": "native_view_widget.NATIVE_VIEW_WIDGET_UNSUPPORTED",
+            "contractGapLayer": "P0: registered embedded native widget component",
+            "contractGapRole": "alert",
+            "mobileOverflow": False,
+        }]
+        self.assertEqual(
+            guard._adapter_presentation_header(expected_gap, HEAD)["counts"]["targets"],
+            1,
+        )
+        broken = _presentation()
+        broken["targets"] = expected_gap["targets"]
+        broken["targets"][0]["contractGapMissing"] = "unknown"
+        with self.assertRaisesRegex(guard.BindingError, "unexpected contract gap"):
+            guard._adapter_presentation_header(broken, HEAD)
+        broken = _presentation()
+        broken["targets"] = expected_gap["targets"]
+        broken["targets"][0]["headerCount"] = 1
+        with self.assertRaisesRegex(guard.BindingError, "rendered a page header"):
+            guard._adapter_presentation_header(broken, HEAD)
         with self.assertRaises(guard.BindingError):
             guard._adapter_list_surface(_list_surface(OTHER), HEAD)
         broken = _list_surface()

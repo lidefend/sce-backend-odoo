@@ -2,8 +2,6 @@
   "schema_version": 1,
   "branches": {
     "feature/native-scene-01-p0-9-embedded-widget-contract-20261117": ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
-    "fix/mainline-docs-links-20261117": ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
-    "feature/native-scene-01-p0-8-native-field-behavior-passthrough-20261117": ".agent/runs/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH/run.json",
     "fix/mainline-ci-release-gate-20261117": ".agent/runs/MAINLINE-CI-RELEASE-GATE-20261117/run.json",
     "feature/native-scene-01-p0-4-occurrence-identity-20261117": ".agent/runs/NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY/run.json",
     "feature/native-scene-01-p0-3-p0-5-native-action-contract-20261116": ".agent/runs/NATIVE-SCENE-01-P0-3-P0-5-NATIVE-ACTION-CONTRACT/run.json",

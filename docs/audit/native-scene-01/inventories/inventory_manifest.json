@@ -1362,7 +1362,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "cd08e71e132df93b9464e818a9f4f902686e2cfba78ab9ecc73a5616cab2ea91"
+    "sha256": "3e39d839fd51d5c7222e6a40f21f7d08be38212375f7149a40920f13f88da9df"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1374,22 +1374,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "9e4d61159a4579e3d2e667be71cc65f034b6f3d5a7dd7cb866e7a70e1487a4b0"
+      "sha256": "a789b35a24e97a0bd974e9e716f81b3a7da06c4302a7c508ca91e137fb56644c"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "0b781fad0842896f9dc25b7d1784a8b84a732899ca5da1bb4f57573909f62066"
+      "sha256": "75abb0b69cabae9de958c29884abf516796ed219b9b458558d90119b8565a7a1"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "437123f18e45611d677150bb7f6b632e5787a3bdf0900e74b28f05e6b9928b42"
+      "sha256": "b91d325de99f42657364203c8ab49d52971885dde63a59d4bf959b951599b106"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "9805c5f61dbc45c642ee4d298eaa10d7e3558f2ffe3e4acd1635162764626483"
+      "sha256": "b1cdfb0816badd1670c67009c47a9d514256d8551762ea6c79a9fb5e25d1f92a"
     }
   },
   "runtime_evidence": {
@@ -1458,15 +1458,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-16T19:27:08-08:00",
-    "dirty_paths": [
-      "addons/smart_core/core/node_component_validation.py",
-      "addons/smart_core/core/unified_page_contract_v2_assembler.py",
-      "addons/smart_core/handlers/ui_contract_v2.py"
-    ],
-    "revision": "bec4a38da10f15d6f4008af355db3bcc4332e13d",
+    "commit_time": "2026-11-17T15:48:10+08:00",
+    "dirty_paths": [],
+    "revision": "7070c86a40465c34576f0084f03886c97297df7b",
     "root": ".",
-    "tree": "6afff97376e3b0d2ad823da73eba890946d63303"
+    "tree": "58024170b9567aa291047ee881875f0aa53fc837"
   },
   "statistics": {
     "actions": {

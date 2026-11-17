@@ -114,6 +114,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.acceptance.evolution.binding"],
                 )
 
+    def test_presentation_targets_select_the_acceptance_semantics_lock(self) -> None:
+        for path in (
+            "config/acceptance/frontend_presentation_targets.v1.json",
+            "scripts/verify/frontend_product_page_header_browser.mjs",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.presentation.lane.unit"],
+                )
+
     def test_backend_contract_instance_selects_list_surface_receipt(self) -> None:
         self.assertEqual(
             select_targets(["config/acceptance/backend_contract_instance_v1.json"]),

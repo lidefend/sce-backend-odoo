@@ -1,10 +1,12 @@
 {
   "schema_version": 1,
-  "baseline_sha": "bec4a38da10f15d6f4008af355db3bcc4332e13d",
+  "baseline_sha": "7567bbf41762df1dc5f284298c0da30d80083e39",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
     ".agent/goals/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH.yaml",
     ".agent/goals/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.yaml",
+    ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
     ".agent/runs/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH/run.json",
     ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
     "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
@@ -30,6 +32,8 @@
     "docs/frontend_productization/",
     "frontend/apps/web/src/app/contracts/v2/",
     "frontend/apps/web/src/app/presentation/",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/contractForm/",
     "frontend/apps/web/src/components/template/",
     "frontend/apps/web/scripts/",
@@ -136,6 +140,19 @@
       ],
       "kind": "offline"
     },
+    "acceptance_contract_gap": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "inputs": [
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py"
+      ],
+      "kind": "offline"
+    },
     "documentation": {
       "target": "verify.docs.all",
       "inputs": [
@@ -159,7 +176,9 @@
       "target": "verify.agent.ledger.unit",
       "inputs": [
         ".agent/active-runs.json",
+        ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
         ".agent/goals/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.yaml",
+        ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
         ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
         "scripts/verify/agent_ledger_consistency_guard.py"
       ],

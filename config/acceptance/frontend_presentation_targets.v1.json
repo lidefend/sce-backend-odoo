@@ -9,7 +9,11 @@
       "presentationMode": "workspace",
       "renderProfile": "readonly",
       "pagePattern": "workspace-form",
-      "requireProfessionalBaseField": false
+      "requireProfessionalBaseField": false,
+      "expectedContractGap": {
+        "missing": "native_view_widget.NATIVE_VIEW_WIDGET_UNSUPPORTED",
+        "requiredDeclarationLayer": "P0: registered embedded native widget component"
+      }
     },
     {
       "key": "contract-form",
