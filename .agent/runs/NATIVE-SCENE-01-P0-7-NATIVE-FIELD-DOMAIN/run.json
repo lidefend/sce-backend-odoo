@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "b9909e8e103001a8e598c3575d77bcc58f1e8314",
+  "baseline_sha": "c36f3a1d3e9231097388b970421dbe13cdb7281d",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",

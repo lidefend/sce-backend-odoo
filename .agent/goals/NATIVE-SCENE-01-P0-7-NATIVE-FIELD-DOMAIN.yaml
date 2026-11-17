@@ -9,7 +9,7 @@ goal:
     - addons/smart_core
   baseline:
     branch: main
-    full_sha: b9909e8e103001a8e598c3575d77bcc58f1e8314
+    full_sha: c36f3a1d3e9231097388b970421dbe13cdb7281d
     prerequisites:
       - NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
       - NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY

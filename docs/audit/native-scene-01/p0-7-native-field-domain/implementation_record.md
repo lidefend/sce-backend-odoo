@@ -1,10 +1,10 @@
 # NATIVE-SCENE-01 / P0-7 · Native Field Domain Passthrough
 
 Status: native Domain passthrough and focused backend/frontend contract tests
-pass on exact head `21241fea59894622a2711a86d6d260caf4752834`; PR publication
+pass on exact head `9f82643e9438cc648e375c261fb9c9fcb04a70b9`; PR publication
 and remote CI remain pending.
 
-Baseline main: `b9909e8e103001a8e598c3575d77bcc58f1e8314`
+Baseline main: `c36f3a1d3e9231097388b970421dbe13cdb7281d`
 
 ## Boundary
 
@@ -79,7 +79,7 @@ Domain now reaches that existing path instead of creating a second one.
 | `make verify.frontend.dev.incremental.unit` | PASS, 166 tests |
 | `make verify.frontend.contract_record_action_state.unit` | PASS, 38 cases |
 | `make verify.form_structure_authority_unification.unit` | PASS, 264 tests |
-| `make ci.local.iteration` | PASS on `21241fea5`, 12 affected targets |
+| `make ci.local.iteration` | PASS on `9f82643e9`, 12 affected targets |
 
 ## Deliberate Limits
 
