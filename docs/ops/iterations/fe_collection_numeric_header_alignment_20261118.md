@@ -37,6 +37,13 @@ state changes.
 The real list-surface browser probe remains pending and must verify the new
 header/value alignment at all governed viewports.
 
+The first probe attempt was stopped before DOM measurement by a stale acceptance
+contract instance: the approved request list lacked the client's existing
+`view.tree.v1`, `view.kanban.v1` and `view.form.v1` transport capabilities.
+This is a `baseline_evidence_defect`; the acceptance declaration is updated to
+the already implemented client negotiation list, with no business-contract
+change.
+
 ## Exclusions
 
 - no backend or contract change;

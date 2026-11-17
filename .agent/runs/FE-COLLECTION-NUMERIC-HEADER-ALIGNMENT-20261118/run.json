@@ -10,6 +10,7 @@
     ".agent/active-runs.json",
     ".agent/goals/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118.yaml",
     ".agent/runs/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118/run.json",
+    "config/acceptance/backend_contract_instance_v1.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
