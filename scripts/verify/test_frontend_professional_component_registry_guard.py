@@ -2250,7 +2250,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                     "semanticType: 'payment_settlement_detail_collection', "
                     "supportedFieldTypes: ['one2many'], readiness: 'ready', "
                     "renderer: 'PaymentSettlementDetailCollectionControl', "
-                    "rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.5.0', "
+                    "rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', "
                     "requiredCapabilities: ['form.relation.one2many']},\n];\n",
                     1,
                 )
@@ -2270,7 +2270,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
                     "  {componentKey: 'sc.value.money', semanticType: 'money', "
                     "supportedFieldTypes: ['monetary'], readiness: 'ready', "
                     "renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', "
-                    "supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},\n];\n",
+                    "supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},\n];\n",
                     1,
                 )
             return value
@@ -2381,9 +2381,9 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             if path.endswith("semantic_registry.generated.ts"):
                 return value.replace(
                     "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
-                    "supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []",
+                    "supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []",
                     "renderer: 'FormSectionField', rendererVersion: '1.0.0', "
-                    "supportedContractVersion: '>=2.0.0 <2.5.0', "
+                    "supportedContractVersion: '>=2.0.0 <2.6.0', "
                     "requiredCapabilities: ['form.relation.one2many']",
                     1,
                 )
@@ -2409,7 +2409,7 @@ class ProfessionalComponentRegistryGuardTest(unittest.TestCase):
             value = (ROOT / path).read_text(encoding="utf-8")
             if path.endswith("industry_renderer_manifest.generated.ts"):
                 return value.replace(
-                    "supportedContractVersion: '>=2.0.0 <2.5.0'",
+                    "supportedContractVersion: '>=2.0.0 <2.6.0'",
                     "supportedContractVersion: '^2'",
                     1,
                 )

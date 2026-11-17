@@ -13,7 +13,7 @@ Drift between this carrier and the declaration is a lint failure
 from __future__ import annotations
 
 GENERATED_FROM = ('contracts/registry/semantic.yaml', 'contracts/registry/component.yaml')
-REGISTRY_DOCUMENT_VERSION = 1
+REGISTRY_DOCUMENT_VERSION = 2
 DERIVATION_DEFAULT = 'readable_value'
 
 # Ordered: the first rule whose conditions all hold decides.  Derived from the
@@ -131,6 +131,16 @@ NATIVE_WIDGET_STATUS = {
     'url': {'status': 'ready', 'reasonCode': ''},
 }
 
+# Embedded Form <widget name="..."/> nodes -> node component identity.
+NATIVE_VIEW_WIDGET_COMPONENTS = {
+    'web_ribbon': {'component': 'sc.display.ribbon', 'status': 'ready', 'reasonCode': ''},
+}
+NATIVE_VIEW_WIDGET_DEFAULT = {
+    'component': 'sc.unsupported.native_node',
+    'status': 'unsupported',
+    'reasonCode': 'NATIVE_VIEW_WIDGET_UNSUPPORTED',
+}
+
 # Backend registration identity only; no client support is implied.
 FIELD_CONTRACT_VERSION = '1.0'
 COMPONENT_REGISTRATIONS = {
@@ -140,6 +150,7 @@ COMPONENT_REGISTRATIONS = {
     'sc.auth.secret_confirmation': {'kind': 'field', 'version': '1.0'},
     'sc.auth.support_action': {'kind': 'field', 'version': '1.0'},
     'sc.button.action': {'kind': 'field', 'version': '1.0'},
+    'sc.display.ribbon': {'kind': 'node', 'version': '1.0.0'},
     'sc.display.status': {'kind': 'field', 'version': '1.0'},
     'sc.display.text': {'kind': 'field', 'version': '1.0'},
     'sc.feedback.message': {'kind': 'node', 'version': '1.0.0'},
@@ -159,6 +170,7 @@ COMPONENT_REGISTRATIONS = {
     'sc.select.tags': {'kind': 'field', 'version': '1.0'},
     'sc.table.data': {'kind': 'field', 'version': '1.0'},
     'sc.tree.data': {'kind': 'field', 'version': '1.0'},
+    'sc.unsupported.native_node': {'kind': 'node', 'version': '1.0.0'},
     'sc.unsupported.native_widget': {'kind': 'field', 'version': '1.0'},
     'sc.value.duration': {'kind': 'field', 'version': '1.0'},
     'sc.value.money': {'kind': 'field', 'version': '1.0'},

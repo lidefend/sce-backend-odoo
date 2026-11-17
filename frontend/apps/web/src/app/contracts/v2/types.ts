@@ -277,7 +277,7 @@ export interface ContractV2NativeActionContract {
   };
 }
 
-export type ContractV2NativeOccurrenceKind = 'field' | 'container' | 'button' | 'column';
+export type ContractV2NativeOccurrenceKind = 'field' | 'container' | 'button' | 'column' | 'widget';
 
 export interface ContractV2NativeOccurrenceSourceAuthority {
   kind: 'ir.ui.view';

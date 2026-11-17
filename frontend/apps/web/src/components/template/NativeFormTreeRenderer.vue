@@ -2,24 +2,29 @@
 <template>
   <div class="native-form-tree" data-semantic-component="NativeFormTreeRenderer" :data-state="visibleNodes.length ? 'ready' : 'empty'">
     <template v-for="(node, index) in visibleNodes" :key="nodeKey(node, index)">
-      <div v-if="node.nodeComponent?.kind === 'feedback'" class="native-explicit-feedback"
-        :data-purpose="node.nodeComponent.purpose"
-        :data-contract-container-id="node.containerId" tabindex="-1">
-        <TDesignAlert v-if="node.nodeComponent.purpose !== 'explanation'"
-          :theme="node.nodeComponent.purpose === 'error' ? 'error' : node.nodeComponent.purpose === 'warning' ? 'warning' : 'info'"
-          :role="node.nodeComponent.role" :aria-live="node.nodeComponent.purpose === 'error' ? 'assertive' : 'polite'">{{ node.nodeComponent.content }}</TDesignAlert>
-        <p v-else>{{ node.nodeComponent.content }}</p>
-        <NativeFormTreeRenderer :nodes="node.children || []" :field-schemas-for-nodes="fieldSchemasForNodes"
-          :is-node-visible="isNodeVisible" :native-action-handler="nativeActionHandler"
-          :native-action-state-resolver="nativeActionStateResolver" :relation-adapter="relationAdapter"
-          :field-actions="fieldActions" :columns="nodeColumns(node)"
+      <div v-if="node.nodeComponent" class="native-node-component-host">
+        <NativeNodeComponent
+          :presentation="node.nodeComponent"
+          :container-id="node.containerId"
+          @navigate="navigateExplicit(node, $event)"
+        />
+        <NativeFormTreeRenderer
+          v-if="node.nodeComponent.kind === 'feedback' && (node.children || []).length"
+          :nodes="node.children || []"
+          :field-schemas-for-nodes="fieldSchemasForNodes"
+          :is-node-visible="isNodeVisible"
+          :native-action-handler="nativeActionHandler"
+          :native-action-state-resolver="nativeActionStateResolver"
+          :relation-adapter="relationAdapter"
+          :field-actions="fieldActions"
+          :columns="nodeColumns(node)"
           :authoritative-business-section-mode="authoritativeBusinessSectionMode"
-          :prefer-readonly-facts="preferReadonlyFacts" @field-change="emit('field-change', $event)"
-          @field-action="emit('field-action', $event)" @native-action="emit('native-action', $event)" />
+          :prefer-readonly-facts="preferReadonlyFacts"
+          @field-change="emit('field-change', $event)"
+          @field-action="emit('field-action', $event)"
+          @native-action="emit('native-action', $event)"
+        />
       </div>
-      <ScButton v-else-if="node.nodeComponent?.kind === 'anchor'" type="button" variant="ghost"
-        :data-contract-container-id="node.containerId"
-        @click="navigateExplicit(node, $event)">{{ node.nodeComponent.content }}</ScButton>
       <component
         :is="isDetailCard(node) ? ScCard : 'section'"
         v-else-if="isContainerNode(node)"
@@ -294,9 +299,12 @@
             </template>
           </div>
           <template v-for="(widgetNode, widgetIndex) in (segment.kind === 'widget' ? segment.nodes : [])" :key="nodeKey(widgetNode, widgetIndex)">
-            <div v-if="widgetName(widgetNode) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(widgetNode)">
-              {{ widgetTitle(widgetNode) }}
-            </div>
+            <NativeNodeComponent
+              v-if="widgetNode.nodeComponent"
+              :presentation="widgetNode.nodeComponent"
+              :container-id="widgetNode.containerId"
+              @navigate="navigateExplicit(widgetNode, $event)"
+            />
           </template>
           <p
             v-if="segment.kind === 'text'"
@@ -426,10 +434,6 @@
         />
       </div>
 
-      <div v-else-if="nodeType(node) === 'widget' && widgetName(node) === 'web_ribbon'" class="native-ribbon" :class="widgetClass(node)">
-        {{ widgetTitle(node) }}
-      </div>
-
       <slot v-else-if="nodeType(node) === 'chatter'" name="chatter" :node="node" />
     </template>
   </div>
@@ -440,13 +444,13 @@ import { computed, ref } from 'vue';
 import { navigateToDeclaredNode, type NodeComponentPresentation } from '../../app/presentation/nodeComponentPresentation';
 import { contractGapError } from '../../app/contract/contractGap';
 import FormSection from './FormSection.vue';
+import NativeNodeComponent from './NativeNodeComponent.vue';
 import { declaredLayoutChildSegments, isDeclaredLayoutContainerToken, nativeChildSegments } from './nativeChildSequence';
 import { layoutGridUnits, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from './layoutSpan';
 import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
-import { TDesignAlert } from '../design-system/tdesignPrimitiveBridge';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';
@@ -628,6 +632,14 @@ function isNodeRenderable(node: NativeFormLayoutNode): boolean {
   if (node?.componentKey?.startsWith('sc.feedback.') || node?.componentKey?.startsWith('sc.navigation.')) {
     if (!node.nodeComponent) throw contractGapError({kind: 'contract_defect', missing: 'validated node presentation',
       requiredDeclarationLayer: 'P0: node component projection'}, 'Node component projection missing');
+    return node.nodeComponent.visible && props.isNodeVisible(node);
+  }
+  if (nodeType(node) === 'widget') {
+    if (!node.nodeComponent) throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'embedded_native_widget.component_projection',
+      requiredDeclarationLayer: 'P0: embedded native widget component',
+    }, 'Embedded native widget component projection missing');
     return node.nodeComponent.visible && props.isNodeVisible(node);
   }
 
@@ -856,7 +868,15 @@ function buttonChildren(node: NativeFormLayoutNode) {
 }
 
 function widgetChildren(node: NativeFormLayoutNode) {
-  return rawChildren(node).filter((child) => nodeType(child) === 'widget' && isNodeRenderable(child));
+  const rows = rawChildren(node).filter((child) => nodeType(child) === 'widget' && isNodeRenderable(child));
+  rows.forEach((child) => {
+    if (!child.nodeComponent) throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'embedded_native_widget.component_projection',
+      requiredDeclarationLayer: 'P0: embedded native widget component',
+    }, 'Embedded native widget component projection missing');
+  });
+  return rows;
 }
 
 function containerChildren(node: NativeFormLayoutNode) {
@@ -1090,21 +1110,6 @@ function nativeActionEvidenceAttributes(node: NativeFormLayoutNode) {
   };
 }
 
-function widgetName(node: NativeFormLayoutNode) {
-  const attrs = nodeAttributes(node);
-  return String(node?.widget || node?.name || attrs.name || '').trim();
-}
-
-function widgetTitle(node: NativeFormLayoutNode) {
-  const attrs = nodeAttributes(node);
-  return String(node?.label || node?.string || attrs.title || widgetName(node)).trim();
-}
-
-function widgetClass(node: NativeFormLayoutNode) {
-  const attrs = nodeAttributes(node);
-  return String(attrs.bg_color || '').trim();
-}
-
 function buttonLabel(node: NativeFormLayoutNode) {
   const action = node.action && typeof node.action === 'object' ? node.action as Record<string, unknown> : {};
   const resolved = props.buttonLabelResolver?.(node);
@@ -1306,22 +1311,6 @@ function emitNativeAction(node: NativeFormLayoutNode) {
 .native-static-text--callout.native-static-text--success {
   border-color: var(--sc-app-success-border);
   background: var(--sc-app-success-bg);
-}
-
-.native-ribbon {
-  font: var(--sc-font-mark-small);
-  justify-self: end;
-  max-width: 100%;
-  border-radius: 4px;
-  background: var(--sc-app-danger-text);
-  color: var(--sc-semantic-text-on-interactive);
-  padding: 4px 10px;
-
-  overflow-wrap: anywhere;
-}
-
-.native-ribbon.text-bg-danger {
-  background: var(--sc-app-danger-text);
 }
 
 .native-tabs {

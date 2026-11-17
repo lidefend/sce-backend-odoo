@@ -86,6 +86,45 @@ for (const target of targets) {
     check(typeof target.route === 'string' && target.route.startsWith('/'), 'target route is invalid');
     await page.goto(`${acceptance.baseUrl}${target.route}`, { waitUntil: 'domcontentloaded', timeout: 45_000 });
   }
+  if (target.expectedContractGap) {
+    const expected = target.expectedContractGap;
+    check(typeof expected.missing === 'string' && expected.missing, `${target.key}: expected contract gap missing path is undeclared`);
+    check(
+      typeof expected.requiredDeclarationLayer === 'string' && expected.requiredDeclarationLayer,
+      `${target.key}: expected contract gap declaration layer is undeclared`,
+    );
+    const gap = page.locator('[data-contract-gap]').first();
+    await gap.waitFor({ state: 'visible', timeout: 45_000 });
+    const observed = await gap.evaluate((node) => ({
+      missing: node.getAttribute('data-contract-gap') || '',
+      kind: node.getAttribute('data-contract-gap-kind') || '',
+      requiredDeclarationLayer: node.getAttribute('data-contract-gap-layer') || '',
+      role: node.getAttribute('role') || '',
+    }));
+    check(observed.kind === 'contract_defect', `${target.key}: contract gap kind ${observed.kind}`);
+    check(observed.missing === expected.missing, `${target.key}: contract gap missing ${observed.missing}`);
+    check(
+      observed.requiredDeclarationLayer === expected.requiredDeclarationLayer,
+      `${target.key}: contract gap layer ${observed.requiredDeclarationLayer}`,
+    );
+    check(observed.role === 'alert', `${target.key}: contract gap role ${observed.role}`);
+    await page.setViewportSize({ width: 390, height: 844 });
+    const mobileOverflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth + 1);
+    check(!mobileOverflow, `${target.key}: 390px contract-gap overflow`);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    evidence.targets.push({
+      key: target.key,
+      outcome: 'expected_contract_gap',
+      headerCount: 0,
+      unresolvedComponentCount: 0,
+      contractGapMissing: observed.missing,
+      contractGapKind: observed.kind,
+      contractGapLayer: observed.requiredDeclarationLayer,
+      contractGapRole: observed.role,
+      mobileOverflow,
+    });
+    continue;
+  }
   const header = page.locator('[data-product-page-header]');
   await header.waitFor({ state: 'visible', timeout: 45_000 });
   await page.waitForFunction(() => !/正在载入|正在加载|正在初始化/.test(document.body.innerText || ''), null, { timeout: 45_000 });

@@ -1,8 +1,14 @@
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import type { ContractV2Snapshot, ContractV2Container } from '../src/app/contracts/v2/types';
 import { projectNodeComponents, navigateToDeclaredNode } from '../src/app/presentation/nodeComponentPresentation';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store } from '../src/app/contracts/v2/store';
+import {
+  createContractV2Store,
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FormFieldMap,
+  resolveContractV2RequiredFieldCodes,
+} from '../src/app/contracts/v2/store';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
 function baseSnapshot(): ContractV2Snapshot {
@@ -179,6 +185,86 @@ export function navigationFixture() {
     {containerId:'target',nativeLocator:'/form/target',occurrenceIndex:1,sourceAuthority:{kind:'native_view'},type:'group',containerType:'group',span:24,columns:1,title:'Details',text:'Target',children:[],widgetList:[]}];
   return s;
 }
+function nativeWidgetOccurrence(name: string, locator: string, index: number) {
+  return {
+    schemaVersion: '1.0.0' as const,
+    model: 'x.document',
+    viewType: 'form',
+    viewId: 71,
+    viewXmlId: 'x.document_form',
+    viewContentHash: 'a'.repeat(64),
+    viewStructureKey: `struct.v1.${'b'.repeat(24)}`,
+    crossEnvironmentStable: true,
+    kind: 'widget' as const,
+    name,
+    nativeLocator: locator,
+    occurrenceIndex: index,
+    sourcePosition: index,
+    occurrenceKey: `occ.v1.${String(index).padStart(24, 'c')}`,
+    authoritative: true,
+    sourceAuthority: { kind: 'ir.ui.view' as const, projectionOnly: true as const, noBusinessFactAuthority: true as const },
+  };
+}
+export function ribbonFixture() {
+  const s = baseSnapshot();
+  s.pageInfo.contractVersion = '2.5.0';
+  s.statusContract.widgetStatus = [];
+  s.statusContract.buttonStatus = [];
+  s.actionContract.actionRuleList = [];
+  s.layoutContract.componentRegistry['sc.display.ribbon'] = { version: '1.0.0' };
+  s.layoutContract.containerTree = [{
+    containerId: 'widget.web_ribbon.1',
+    containerType: 'widget',
+    type: 'widget',
+    name: 'web_ribbon',
+    widget: 'web_ribbon',
+    title: 'Paid',
+    label: 'Paid',
+    span: 24,
+    children: [],
+    widgetList: [],
+    nativeLocator: '/form[1]/widget[1]',
+    occurrenceIndex: 1,
+    sourcePosition: 1,
+    nativeIdentity: nativeWidgetOccurrence('web_ribbon', '/form[1]/widget[1]', 1),
+    sourceAuthority: { kind: 'native_view', projectionOnly: true, noBusinessFactAuthority: true },
+    componentKey: 'sc.display.ribbon',
+    componentConfig: {
+      nativeWidget: 'web_ribbon',
+      widgetStatus: 'ready',
+      identityComplete: true,
+      optionsResolution: 'parsed',
+      optionsRaw: "{'bg_color': 'text-bg-success'}",
+      options: { bg_color: 'text-bg-success' },
+    },
+    attributes: { name: 'web_ribbon', title: 'Paid', bg_color: 'text-bg-success' },
+  }];
+  s.statusContract.containerStatus = [{ containerId: 'widget.web_ribbon.1', visible: true, disabled: false }];
+  return s;
+}
+export function unsupportedNativeNodeFixture(name = 'sc_stage_requirements') {
+  const s = ribbonFixture();
+  const node = s.layoutContract.containerTree[0];
+  node.containerId = `widget.${name}.1`;
+  node.name = name;
+  node.widget = name;
+  node.title = 'Stages';
+  node.label = 'Stages';
+  node.nativeIdentity = nativeWidgetOccurrence(name, `/form[1]/widget[1]`, 1);
+  node.componentKey = 'sc.unsupported.native_node';
+  node.componentConfig = {
+    nativeWidget: name,
+    widgetStatus: 'unsupported',
+    identityComplete: true,
+    optionsResolution: 'parsed',
+    optionsRaw: "{'limit': 3}",
+    options: { limit: 3 },
+    reasonCode: 'NATIVE_VIEW_WIDGET_UNSUPPORTED',
+  };
+  s.layoutContract.componentRegistry['sc.unsupported.native_node'] = { version: '1.0.0' };
+  s.statusContract.containerStatus = [{ containerId: node.containerId, visible: true, disabled: true, reasonCode: 'NATIVE_VIEW_WIDGET_UNSUPPORTED' }];
+  return s;
+}
 for(const mutation of ['valid','missing','duplicate','hidden','url','empty']) test('navigation '+mutation,()=>{
   const s=navigationFixture();const [link,target]=s.layoutContract.containerTree;
   if(mutation==='missing') s.layoutContract.containerTree.pop();
@@ -188,6 +274,116 @@ for(const mutation of ['valid','missing','duplicate','hidden','url','empty']) te
   if(mutation==='empty') link.text='';
   if(mutation==='valid') assert.equal(projectNodeComponents(s).presentations.get('link')?.targetContainerId,'target');
   else assert.throws(()=>projectNodeComponents(s),{name:'ContractGapError'});
+});
+test('native ribbon presentation and canonical consumption',()=>{
+  const s = ribbonFixture();
+  const presentation = projectNodeComponents(s).presentations.get('widget.web_ribbon.1');
+  assert.equal(presentation?.kind, 'ribbon');
+  assert.equal(presentation?.content, 'Paid');
+  assert.equal(presentation?.styleClass, 'text-bg-success');
+  const model = presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(s)), 'readonly');
+  const node = model.zones.primary[0];
+  assert.equal(node.nativeWidgetComponent?.componentKey, 'sc.display.ribbon');
+  assert.deepEqual(node.nativeWidgetComponent?.componentConfig.options, { bg_color: 'text-bg-success' });
+  assert.equal((node.nativePresentation.nodeComponent as { kind?: string } | undefined)?.kind, 'ribbon');
+});
+test('real producer fixture flows through decoder and both consumption paths', () => {
+  const producer = JSON.parse(readFileSync(
+    'frontend/apps/web/scripts/fixtures/native_embedded_widget_contract_v2.json',
+    'utf8',
+  )) as ContractV2Snapshot;
+  const supported = structuredClone(producer);
+  supported.layoutContract.containerTree = supported.layoutContract.containerTree.slice(0, 2);
+  supported.statusContract.containerStatus = supported.statusContract.containerStatus.slice(0, 2);
+  delete supported.layoutContract.componentRegistry['sc.unsupported.native_node'];
+
+  const decoded = decodeContractV2Snapshot(supported);
+  const store = createContractV2Store(decoded);
+  decoded.layoutContract.containerTree.slice(0, 2).forEach((node) => {
+    assert.equal(node.fieldCode, undefined);
+    assert.equal(node.fieldInfo, undefined);
+  });
+  assert.equal(resolveContractV2FieldDescriptorMap(store).web_ribbon, undefined);
+  assert.equal(resolveContractV2FormFieldMap(store).web_ribbon, undefined);
+  assert.equal(store.widgetsByFieldCode.has('web_ribbon'), false);
+  assert.equal(resolveContractV2RequiredFieldCodes(store).includes('web_ribbon'), false);
+  const model = presentContractV2Form(store, 'readonly');
+  const nodes = model.zones.primary;
+  assert.deepEqual(nodes.map((node) => node.nativeWidgetComponent?.componentKey), [
+    'sc.display.ribbon',
+    'sc.display.ribbon',
+  ]);
+  assert.deepEqual(nodes.map((node) => node.title), ['Paid', 'Draft']);
+  assert.deepEqual(
+    nodes.map((node) => (node.nativePresentation.nodeComponent as { styleClass?: string } | undefined)?.styleClass),
+    ['text-bg-success', ''],
+  );
+  assert.throws(
+    () => decodeContractV2Snapshot(producer),
+    /NATIVE_VIEW_WIDGET_UNSUPPORTED/,
+  );
+  const fieldCodeCollision = structuredClone(supported);
+  fieldCodeCollision.layoutContract.containerTree[0].fieldCode = 'web_ribbon';
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldCodeCollision),
+    /embedded widget nodes cannot carry a field identity/,
+  );
+  const fieldInfoCollision = structuredClone(supported);
+  fieldInfoCollision.layoutContract.containerTree[0].fieldInfo = { type: 'char' };
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldInfoCollision),
+    /embedded widget nodes cannot carry field metadata/,
+  );
+  const fieldsCollision = structuredClone(supported);
+  fieldsCollision.layoutContract.containerTree[0].fields = ['web_ribbon'];
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldsCollision),
+    /embedded widget nodes cannot own fields/,
+  );
+  const hidden = structuredClone(supported);
+  hidden.statusContract.containerStatus[0].visible = false;
+  const hiddenNode = presentContractV2Form(
+    createContractV2Store(decodeContractV2Snapshot(hidden)),
+    'readonly',
+  ).zones.primary[0];
+  assert.equal(hiddenNode.visible, false);
+});
+for (const name of ['sc_stage_requirements', 'sc_next_actions', 'unknown_widget']) {
+  test(`unsupported native widget ${name}`, () => {
+    assert.throws(
+      () => projectNodeComponents(unsupportedNativeNodeFixture(name)),
+      /NATIVE_VIEW_WIDGET_UNSUPPORTED/,
+    );
+  });
+}
+for (const mutation of [
+  'widget',
+  'identity',
+  'options',
+  'options-raw-type',
+  'parsed-missing-options',
+  'missing-reason',
+  'version',
+]) test('ribbon '+mutation,()=>{
+  const s = ribbonFixture();
+  const node = s.layoutContract.containerTree[0];
+  if (mutation === 'widget') node.componentConfig!.nativeWidget = 'other';
+  if (mutation === 'identity') node.nativeIdentity = nativeWidgetOccurrence('web_ribbon', '/form[1]/widget[2]', 2);
+  if (mutation === 'options') node.componentConfig!.optionsResolution = 'broken';
+  if (mutation === 'options-raw-type') node.componentConfig!.optionsRaw = { limit: 3 };
+  if (mutation === 'parsed-missing-options') delete node.componentConfig!.options;
+  if (mutation === 'missing-reason') {
+    node.componentKey = 'sc.unsupported.native_node';
+    s.layoutContract.componentRegistry['sc.unsupported.native_node'] = { version: '1.0.0' };
+    node.componentConfig = {
+      nativeWidget: 'unknown_widget',
+      widgetStatus: 'unsupported',
+      identityComplete: true,
+      optionsResolution: 'none',
+    };
+  }
+  if (mutation === 'version') s.layoutContract.componentRegistry['sc.display.ribbon'] = { version: '9.0.0' };
+  assert.throws(() => projectNodeComponents(s), { name: 'ContractGapError' }, mutation);
 });
 test('DOM target checked again on activation',()=>{
   let scroll=0,focus=0;const e={dataset:{contractContainerId:'target'},hidden:false,closest:()=>null,getAttribute:()=>null,getClientRects:()=>[{}],scrollIntoView:()=>scroll++,focus:()=>focus++};

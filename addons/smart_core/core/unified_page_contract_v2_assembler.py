@@ -32,6 +32,7 @@ from .contract_runtime.semantic_resolver import (
     component_key as _resolve_component_key,
     component_key_for_semantic as _component_key_for_semantic,
     legacy_component_key as _legacy_component_key,
+    resolve_native_view_widget as _resolve_native_view_widget,
     semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
@@ -42,7 +43,7 @@ from .unified_page_contract_v2_runtime_actions import normalize_runtime_business
 from .unified_page_contract_v2_action import normalize_target_scope, normalize_trigger_type
 from .unified_page_contract_v2_form_structure import normalize_form_structure_contract_roles
 
-CONTRACT_VERSION = "2.4.0"
+CONTRACT_VERSION = "2.5.0"
 SOURCE_KIND = "unified_page_contract_v2_assembler_projection"
 SOURCE_AUTHORITIES = ("ui_contract", "page_orchestration", "scene_contract", "unified_page_contract_v2_schema")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -59,7 +60,7 @@ def source_authority_contract() -> dict[str, Any]:
         runtime_carrier="unified_page_contract_v2_assembler",
     )
 
-PATCH_VERSION = "2.4.0"
+PATCH_VERSION = "2.5.0"
 STABLE_CLIENT_TYPES = {"web_pc", "wx_mini", "harmony_h5"}
 
 
@@ -893,7 +894,9 @@ def _bind_native_occurrence_identities(
             )
             if locator and occurrence_index:
                 node_type = _text(node.get("type") or node.get("containerType")).lower()
-                identity_kind = "field" if node_type == "field" else "container"
+                identity_kind = (
+                    node_type if node_type in {"field", "widget"} else "container"
+                )
                 identity_name = _text(
                     node.get("name")
                     or node.get("fieldCode")
@@ -2725,6 +2728,100 @@ def _normalize_native_layout_nodes(
                 ),
             ))
             out.append(normalized)
+            continue
+        if node_type == "widget":
+            attributes = _dict(node.get("attributes"))
+            native_widget_name = _text(attributes.get("name"))
+            projected_widget_name = _text(node.get("widget") or node_name)
+            if native_widget_name and any(
+                candidate and candidate != native_widget_name
+                for candidate in (node_name, _text(node.get("widget")))
+            ):
+                raise ValueError("embedded native widget name conflicts with native attributes")
+            widget_name = native_widget_name or projected_widget_name
+            native_locator = _text(node.get("nativeLocator"))
+            occurrence_index = _positive_int(node.get("occurrenceIndex"), 0)
+            resolution = _resolve_native_view_widget(widget_name)
+            identity_complete = bool(native_locator and occurrence_index)
+            supported = (
+                identity_complete
+                and resolution.get("status") == "ready"
+                and bool(resolution.get("component"))
+            )
+            projected_widget_status = "ready" if supported else "unsupported"
+            component_key = (
+                resolution.get("component")
+                if supported
+                else _resolve_native_view_widget("")["component"]
+            )
+            unsupported_reason = (
+                ""
+                if supported
+                else (
+                    "NATIVE_VIEW_WIDGET_IDENTITY_MISSING"
+                    if not identity_complete
+                    else (resolution.get("reasonCode") or "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+                )
+            )
+            structural_id = f"widget.{node_path}"
+            identity_seed = ".".join(
+                part for part in (
+                    widget_name,
+                    native_locator,
+                    str(occurrence_index or ""),
+                ) if part
+            )
+            container_id = _stable_id(identity_seed, structural_id)
+            if container_id in used_container_ids:
+                container_id = f"{container_id}.{node_path}"
+            used_container_ids.add(container_id)
+            node["containerId"] = container_id
+            node["containerType"] = "widget"
+            node["componentKey"] = component_key
+            component_config: dict[str, Any] = {
+                "nativeWidget": widget_name,
+                "widgetStatus": projected_widget_status,
+                "identityComplete": identity_complete,
+            }
+            options_raw = node.get("options_raw", attributes.get("options"))
+            options_resolution = _text(node.get("options_resolution")).lower()
+            native_options_raw = attributes.get("options")
+            if (
+                native_options_raw is not None
+                and node.get("options_raw") is not None
+                and str(node.get("options_raw")) != str(native_options_raw)
+            ):
+                raise ValueError("embedded native widget options conflict with native attributes")
+            if options_raw is not None or "options" in node:
+                if options_resolution not in {"parsed", "unsupported"}:
+                    options_resolution = "unsupported"
+                component_config["optionsRaw"] = deepcopy(options_raw)
+                component_config["optionsResolution"] = options_resolution
+                if "options" in node:
+                    component_config["options"] = deepcopy(node.get("options"))
+            else:
+                component_config["optionsResolution"] = "none"
+            if not supported:
+                component_config["reasonCode"] = unsupported_reason
+            node["componentConfig"] = component_config
+            node.setdefault("span", 24)
+            node.pop("options_raw", None)
+            node.pop("options_resolution", None)
+            node.setdefault("title", label)
+            node.setdefault("label", label)
+            node.setdefault("sourceAuthority", {
+                "kind": "native_view",
+                "projectionOnly": True,
+                "noBusinessFactAuthority": True,
+            })
+            component_keys.add(component_key)
+            container_status.append({
+                "containerId": container_id,
+                "visible": not bool(invisible),
+                "disabled": not supported,
+                **({"reasonCode": unsupported_reason} if unsupported_reason else {}),
+            })
+            out.append(node)
             continue
         # Stable container identity is structural metadata, never display copy.
         # A label-only native group keeps its caption in string/label/title and

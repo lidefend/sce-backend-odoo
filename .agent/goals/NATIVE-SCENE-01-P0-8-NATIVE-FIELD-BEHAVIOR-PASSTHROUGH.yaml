@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH
   title: Native field context and options passthrough closure
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: Odoo View field Context and options passthrough into existing Contract V2 descriptor fields
   module:

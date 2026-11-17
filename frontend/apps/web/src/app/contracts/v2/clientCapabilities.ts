@@ -16,4 +16,5 @@ export const CONTRACT_V2_CLIENT_CAPABILITIES = [
   'form.feedback.message.v1',
   'form.feedback.draft.v1',
   'form.navigation.anchor.v1',
+  'form.display.ribbon.v1',
 ] as const;

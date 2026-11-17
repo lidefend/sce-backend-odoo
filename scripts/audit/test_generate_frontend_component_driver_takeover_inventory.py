@@ -88,7 +88,7 @@ class ComponentDriverTakeoverInventoryTest(unittest.TestCase):
         pairs = {(row["officialComponent"], row["source"]) for row in report["bridgeBehaviorBypasses"]}
         self.assertIn((
             "alert",
-            "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+            "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
         ), pairs)
         self.assertIn((
             "select",

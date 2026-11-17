@@ -6,6 +6,9 @@
     data-semantic-state-surface="page"
     :data-error-kind="productState?.kind"
     :data-state="busy ? 'loading' : variant === 'error' ? 'error' : productState?.kind"
+    :data-contract-gap="contractDefect?.missing || undefined"
+    :data-contract-gap-kind="contractDefect?.kind || undefined"
+    :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
     :role="variant === 'error' ? 'alert' : 'status'"
     :aria-live="variant === 'error' ? 'assertive' : 'polite'"
     :aria-busy="busy || undefined"
@@ -46,6 +49,7 @@
 import { computed, ref, watch } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { contractGapError } from '../app/contract/contractGap';
+import type { ContractDefectRef } from '../app/contract/contractGap';
 import { useSessionStore } from '../stores/session';
 import { useSuggestedAction } from '../composables/useSuggestedAction';
 import { isHudEnabled } from '../config/debug';
@@ -60,6 +64,7 @@ const props = defineProps<{
   reasonCode?: string;
   errorCategory?: string;
   errorDetails?: Record<string, unknown>;
+  contractDefect?: ContractDefectRef | null;
   retryable?: boolean;
   hint?: string;
   suggestedAction?: string;

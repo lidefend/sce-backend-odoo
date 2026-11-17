@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import copy
 import importlib.util
 import sys
 import types
@@ -472,6 +473,210 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             layout_type="form",
         )
         self.assertEqual(unsupported["fieldDescriptor"]["domain_expression"]["kind"], "unsupported")
+
+    def test_embedded_native_widgets_publish_node_components_identity_and_field_isolation(self):
+        view_identity = {
+            "schemaVersion": "1.0.0",
+            "model": "project.project",
+            "viewType": "form",
+            "viewId": 91,
+            "viewXmlId": "smart_core.native_embedded_widget_form",
+            "viewContentHash": "a" * 64,
+            "viewStructureKey": "struct.v1." + "b" * 24,
+            "crossEnvironmentStable": True,
+            "sourceAuthority": {
+                "kind": "ir.ui.view",
+                "projectionOnly": True,
+                "noBusinessFactAuthority": True,
+            },
+        }
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            {
+                "model": "project.project",
+                "view_type": "form",
+                "fields": {},
+                "views": {
+                    "form": {
+                        "viewIdentity": view_identity,
+                        "layout": [
+                            {
+                                "type": "widget",
+                                "name": "web_ribbon",
+                                "widget": "web_ribbon",
+                                "label": "Paid",
+                                "native_locator": "/form[1]/widget[1]",
+                                "occurrence_index": 1,
+                                "source_position": 1,
+                                "attributes": {
+                                    "name": "web_ribbon",
+                                    "title": "Paid",
+                                    "options": "{'bg_color': 'text-bg-success'}",
+                                },
+                                "options_raw": "{'bg_color': 'text-bg-success'}",
+                                "options": {"bg_color": "text-bg-success"},
+                                "options_resolution": "parsed",
+                                "children": [],
+                            },
+                            {
+                                "type": "widget",
+                                "name": "web_ribbon",
+                                "widget": "web_ribbon",
+                                "label": "Draft",
+                                "native_locator": "/form[1]/widget[2]",
+                                "occurrence_index": 2,
+                                "source_position": 2,
+                                "attributes": {"name": "web_ribbon", "title": "Draft", "options": "False"},
+                                "options_raw": "False",
+                                "options": False,
+                                "options_resolution": "parsed",
+                                "children": [],
+                            },
+                            {
+                                "type": "widget",
+                                "name": "sc_stage_requirements",
+                                "widget": "sc_stage_requirements",
+                                "label": "Stages",
+                                "native_locator": "/form[1]/widget[3]",
+                                "occurrence_index": 1,
+                                "source_position": 3,
+                                "attributes": {
+                                    "name": "sc_stage_requirements",
+                                    "options": "{'limit': 3}",
+                                },
+                                "options_raw": "{'limit': 3}",
+                                "options": {"limit": 3},
+                                "options_resolution": "parsed",
+                                "children": [],
+                            },
+                        ],
+                    }
+                },
+            },
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.form.embedded.native.widgets",
+        )
+
+        nodes = contract["layoutContract"]["containerTree"]
+        self.assertEqual([node["componentKey"] for node in nodes], [
+            "sc.display.ribbon",
+            "sc.display.ribbon",
+            "sc.unsupported.native_node",
+        ])
+        self.assertEqual([node["nativeIdentity"]["kind"] for node in nodes], ["widget", "widget", "widget"])
+        self.assertNotEqual(nodes[0]["nativeIdentity"]["occurrenceKey"], nodes[1]["nativeIdentity"]["occurrenceKey"])
+        self.assertEqual(nodes[0]["componentConfig"]["options"], {"bg_color": "text-bg-success"})
+        self.assertIs(nodes[1]["componentConfig"]["options"], False)
+        self.assertEqual(nodes[2]["componentConfig"]["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertEqual(nodes[2]["componentConfig"]["nativeWidget"], "sc_stage_requirements")
+        self.assertTrue(all("fieldCode" not in node and "fieldDescriptor" not in node for node in nodes))
+        self.assertEqual(contract["layoutContract"]["componentRegistry"]["sc.display.ribbon"], {"version": "1.0.0"})
+        self.assertEqual(
+            contract["layoutContract"]["componentRegistry"]["sc.unsupported.native_node"],
+            {"version": "1.0.0"},
+        )
+
+        conflict_name = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {},
+            "views": {
+                "form": {
+                    "viewIdentity": view_identity,
+                    "layout": [{
+                        "type": "widget",
+                        "name": "web_ribbon",
+                        "widget": "web_ribbon",
+                        "attributes": {"name": "sc_next_actions"},
+                        "native_locator": "/form[1]/widget[1]",
+                        "occurrence_index": 1,
+                        "children": [],
+                    }],
+                }
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "name conflicts"):
+            self.assembler.assemble_unified_page_contract_v2(
+                conflict_name,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.form.embedded.widget.name_conflict",
+            )
+
+        conflict_options = copy.deepcopy(conflict_name)
+        conflict_options["views"]["form"]["layout"][0].update({
+            "name": "sc_stage_requirements",
+            "widget": "sc_stage_requirements",
+            "attributes": {"name": "sc_stage_requirements", "options": "{'limit': 3}"},
+            "options_raw": "{'limit': 4}",
+            "options": {"limit": 4},
+            "options_resolution": "parsed",
+        })
+        with self.assertRaisesRegex(ValueError, "options conflict"):
+            self.assembler.assemble_unified_page_contract_v2(
+                conflict_options,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.form.embedded.widget.options_conflict",
+            )
+
+        missing_identity = copy.deepcopy(conflict_name)
+        missing_node = missing_identity["views"]["form"]["layout"][0]
+        missing_node.update({
+            "name": "web_ribbon",
+            "widget": "web_ribbon",
+            "attributes": {"name": "web_ribbon"},
+            "native_locator": "",
+            "occurrence_index": 0,
+        })
+        missing_contract = self.assembler.assemble_unified_page_contract_v2(
+            missing_identity,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.form.embedded.widget.missing_identity",
+        )
+        missing_widget = missing_contract["layoutContract"]["containerTree"][0]
+        self.assertEqual(missing_widget["componentKey"], "sc.unsupported.native_node")
+        self.assertEqual(missing_widget["componentConfig"]["widgetStatus"], "unsupported")
+        self.assertEqual(
+            missing_widget["componentConfig"]["reasonCode"],
+            "NATIVE_VIEW_WIDGET_IDENTITY_MISSING",
+        )
+
+    def test_widget_projection_does_not_shadow_sibling_field_status(self):
+        component_keys = set()
+        container_status = []
+        widget_status = []
+        nodes = self.assembler._normalize_native_layout_nodes(
+            [
+                {
+                    "type": "widget",
+                    "name": "web_ribbon",
+                    "widget": "web_ribbon",
+                    "attributes": {"name": "web_ribbon", "title": "Paid"},
+                    "native_locator": "/form[1]/widget[1]",
+                    "occurrence_index": 1,
+                    "children": [],
+                },
+                {
+                    "type": "field",
+                    "name": "name",
+                    "label": "Name",
+                    "children": [],
+                    "widgetList": [],
+                },
+            ],
+            {"name": {"name": "name", "type": "char", "string": "Name"}},
+            layout_type="form",
+            component_keys=component_keys,
+            container_status=container_status,
+            widget_status=widget_status,
+        )
+
+        self.assertEqual(nodes[0]["componentConfig"]["widgetStatus"], "ready")
+        self.assertEqual(nodes[1]["type"], "field")
+        self.assertEqual(len(widget_status), 1)
+        self.assertIn("sc.display.ribbon", component_keys)
 
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(

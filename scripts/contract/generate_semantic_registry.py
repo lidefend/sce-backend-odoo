@@ -149,6 +149,8 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
     rules = derivation.get("rules") or []
     semantics = semantic.get("semantics") or {}
     native_widgets = semantic.get("native_widgets") or {}
+    native_view_widgets = semantic.get("native_view_widgets") or {}
+    native_view_widget_default = semantic.get("native_view_widget_default") or {}
     components = component.get("components") or {}
 
     default = derivation.get("default")
@@ -198,6 +200,58 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
             )
         )
 
+    native_view_widget_rows: list[str] = []
+    if not native_view_widget_default:
+        raise SystemExit(
+            "[generate-semantic-registry] FAIL: native_view_widget_default is required"
+        )
+    for widget_name, entry in [
+        ("<default>", native_view_widget_default),
+        *sorted(native_view_widgets.items()),
+    ]:
+        if not isinstance(entry, dict):
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} is malformed"
+            )
+        status = str(entry.get("status") or "")
+        component_key = str(entry.get("component") or "")
+        if status not in {"ready", "fallback", "unsupported"}:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
+                f"has invalid status {status!r}"
+            )
+        if component_key not in components:
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
+                f"points at unregistered component {component_key!r}"
+            )
+        if components[component_key].get("kind") != "node":
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
+                f"must reference a node component, got {component_key!r}"
+            )
+        if status == "ready" and widget_name == "<default>":
+            raise SystemExit(
+                "[generate-semantic-registry] FAIL: the native View widget default cannot be ready"
+            )
+        if status != "ready" and not str(entry.get("reason_code") or "").strip():
+            raise SystemExit(
+                f"[generate-semantic-registry] FAIL: native View widget {widget_name!r} "
+                "requires reason_code"
+            )
+        if widget_name != "<default>":
+            native_view_widget_rows.append(
+                "    {name!r}: {{'component': {component!r}, 'status': {status!r}, "
+                "'reasonCode': {reason!r}}},"
+                .format(
+                    name=widget_name,
+                    component=component_key,
+                    status=status,
+                    reason=str(entry.get("reason_code") or ""),
+                )
+            )
+    default_widget_component = str(native_view_widget_default["component"])
+
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
     body = HEADER.format(
         sources=" -> ".join(sources),
@@ -220,6 +274,15 @@ def render(semantic: dict, component: dict, *, version: int) -> str:
         "NATIVE_WIDGET_STATUS = {\n"
         + "\n".join(native_widget_rows)
         + "\n}\n"
+        + "\n# Embedded Form <widget name=\"...\"/> nodes -> node component identity.\n"
+        + "NATIVE_VIEW_WIDGET_COMPONENTS = {\n"
+        + "\n".join(native_view_widget_rows)
+        + "\n}\n"
+        + "NATIVE_VIEW_WIDGET_DEFAULT = {\n"
+        + f"    'component': {default_widget_component!r},\n"
+        + f"    'status': {str(native_view_widget_default.get('status') or '')!r},\n"
+        + f"    'reasonCode': {str(native_view_widget_default.get('reason_code') or '')!r},\n"
+        + "}\n"
         + "\n# Backend registration identity only; no client support is implied.\n"
         + f"FIELD_CONTRACT_VERSION = {component['defaults']['field_contract_version']!r}\n"
         + "COMPONENT_REGISTRATIONS = {\n"
@@ -402,6 +465,19 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         f"  {provider!r}: {str(owner)!r},"
         for provider, owner in sorted(capability_providers.items())
     )
+    semantic = load(root / SEMANTIC_REL)
+    native_view_widgets = semantic.get("native_view_widgets") or {}
+    native_view_widget_default = semantic.get("native_view_widget_default") or {}
+    native_view_widget_lines = "\n".join(
+        "  {name!r}: {{component: {component!r}, status: {status!r}, reasonCode: {reason!r}}},"
+        .format(
+            name=name,
+            component=str((entry or {}).get("component") or ""),
+            status=str((entry or {}).get("status") or ""),
+            reason=str((entry or {}).get("reason_code") or ""),
+        )
+        for name, entry in sorted(native_view_widgets.items())
+    )
     return (
         FRONTEND_HEADER.replace("__SOURCES__", " -> ".join(sources)).replace(
             "__VERSION__", str(version)
@@ -415,6 +491,16 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
             if entry.get("kind") == "node"
         )
         + "\n});\n"
+        + "\nexport const NATIVE_VIEW_WIDGET_COMPONENTS: Readonly<Record<string, "
+        + "{component: string; status: 'ready' | 'fallback' | 'unsupported'; reasonCode: string}>> "
+        + "= Object.freeze({\n"
+        + native_view_widget_lines
+        + "\n});\n"
+        + "\nexport const NATIVE_VIEW_WIDGET_DEFAULT = Object.freeze({\n"
+        + f"  component: {str(native_view_widget_default.get('component') or '')!r},\n"
+        + f"  status: {str(native_view_widget_default.get('status') or '')!r} as const,\n"
+        + f"  reasonCode: {str(native_view_widget_default.get('reason_code') or '')!r},\n"
+        + "});\n"
     )
 
 

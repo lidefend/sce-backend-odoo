@@ -79,10 +79,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run ci.local.iteration and freeze preparation, then publish the exact documentation-link repair through the protected PR lane.",
+  "next_exact_step": "Mainline integration completed in merge commit 7567bbf41762df1dc5f284298c0da30d80083e39.",
   "id": "MAINLINE-DOCS-LINKS-20261117",
   "branch": "fix/mainline-docs-links-20261117",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
   "record": "docs/ops/iterations/mainline_docs_links_20261117.md"
 }

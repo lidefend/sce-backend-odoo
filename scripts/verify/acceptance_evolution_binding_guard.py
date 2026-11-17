@@ -1090,6 +1090,26 @@ def _adapter_presentation_header(data: dict, head: str, contract: dict | None = 
     for target in targets:
         _require(isinstance(target, dict) and bool(target.get("key")), "presentation target is invalid")
         _require(target.get("mobileOverflow") is not True, f"{target['key']}: mobile overflow")
+        if target.get("outcome") == "expected_contract_gap":
+            _require(
+                int(target.get("headerCount") or 0) == 0,
+                f"{target['key']}: expected contract gap rendered a page header",
+            )
+            _require(
+                target.get("contractGapKind") == "contract_defect",
+                f"{target['key']}: contract gap kind is invalid",
+            )
+            _require(
+                isinstance(target.get("contractGapMissing"), str)
+                and target.get("contractGapMissing") == "native_view_widget.NATIVE_VIEW_WIDGET_UNSUPPORTED",
+                f"{target['key']}: unexpected contract gap",
+            )
+            _require(
+                target.get("contractGapLayer") == "P0: registered embedded native widget component",
+                f"{target['key']}: contract gap declaration layer is invalid",
+            )
+            _require(target.get("contractGapRole") == "alert", f"{target['key']}: contract gap is not an alert")
+            continue
         _require(int(target.get("headerCount") or 0) == 1, f"{target['key']}: header count is not one")
         _require(int(target.get("h1Count") or 0) == 1, f"{target['key']}: h1 count is not one")
         _require(

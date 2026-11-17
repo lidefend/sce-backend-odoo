@@ -29,7 +29,7 @@
       "tz": "Asia/Shanghai"
     },
     "params_context_from": "system.init.record_context.request_context",
-    "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x"],
+    "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x", "2.5.x"],
     "client_contract_capabilities": [
       "container_tree.v2",
       "data_source.v2",
@@ -39,7 +39,8 @@
       "form_layout.children_owner.v1",
       "form.feedback.message.v1",
       "form.feedback.draft.v1",
-      "form.navigation.anchor.v1"
+      "form.navigation.anchor.v1",
+      "form.display.ribbon.v1"
     ]
   },
   "schema_asset": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",

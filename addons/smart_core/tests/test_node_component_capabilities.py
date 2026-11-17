@@ -54,6 +54,22 @@ class CapabilityTests(unittest.TestCase):
     def test_registered_field_behavior_unchanged(self):
         validate_component_capabilities(contract(['sc.display.text']), {})
 
+    def test_ribbon_requires_capability_but_unsupported_node_is_published_for_client_rejection(self):
+        with self.assertRaises(FormConfigurationError) as exc:
+            validate_component_capabilities(
+                contract(['sc.display.ribbon']),
+                {'client_contract_capabilities': []},
+            )
+        self.assertEqual(exc.exception.code, 'COMPONENT_CAPABILITY_REQUIRED')
+        validate_component_capabilities(
+            contract(['sc.display.ribbon']),
+            {'client_contract_capabilities': ['form.display.ribbon.v1']},
+        )
+        validate_component_capabilities(
+            contract(['sc.unsupported.native_node']),
+            {'client_contract_capabilities': []},
+        )
+
     def test_draft_feedback_requires_independent_capability(self):
         c = contract(['sc.feedback.message'])
         c['layoutContract']['containerTree'][0]['componentConfig'] = {

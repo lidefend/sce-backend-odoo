@@ -763,7 +763,7 @@
         },
         "contractVersion": {
           "type": "string",
-          "pattern": "^2\\.(0|1|2|3|4)\\.[0-9]+$"
+          "pattern": "^2\\.(0|1|2|3|4|5)\\.[0-9]+$"
         },
         "clientType": {
           "enum": [
@@ -1407,7 +1407,8 @@
             "field",
             "container",
             "button",
-            "column"
+            "column",
+            "widget"
           ]
         },
         "name": {
@@ -3368,14 +3369,14 @@
           "const": "smart_core.unified_page_contract_v2"
         },
         "schemaVersion": {
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "schemaSha256": {
           "type": "string",
           "pattern": "^[0-9a-f]{64}$"
         },
         "contractVersion": {
-          "const": "2.4.0"
+          "const": "2.5.0"
         },
         "normativeStatus": {
           "const": "stable"

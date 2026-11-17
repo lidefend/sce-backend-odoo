@@ -519,6 +519,88 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(anchor["attributes"]["href"], "#outstanding")
         self.assertEqual(tail["text"], "尾注")
 
+    def test_embedded_widgets_preserve_identity_options_and_modifiers(self):
+        root = _parse_test_xml(
+            '<form>'
+            '<widget name="web_ribbon" title="Paid" options="{\'bg_color\': \'text-bg-success\'}" '
+            'invisible="state == \'done\'"/>'
+            '<widget name="web_ribbon" title="Draft" options="False"/>'
+            '<widget name="sc_stage_requirements" options="deferred_options()"/>'
+            '</form>'
+        )
+        source_nodes = list(root.iter())
+        first, second, unsupported = [
+            self.tree_form_parser._node_to_layout_from_dom(child, {}, source_nodes)
+            for child in list(root)
+        ]
+
+        self.assertEqual([first["occurrence_index"], second["occurrence_index"]], [1, 2])
+        self.assertNotEqual(first["native_locator"], second["native_locator"])
+        self.assertEqual(first["name"], "web_ribbon")
+        self.assertEqual(first["label"], "Paid")
+        self.assertEqual(first["options"], {"bg_color": "text-bg-success"})
+        self.assertEqual(first["options_resolution"], "parsed")
+        self.assertIn("invisible", first["modifiers"])
+        self.assertIs(second["options"], False)
+        self.assertEqual(second["options_resolution"], "parsed")
+        self.assertEqual(unsupported["name"], "sc_stage_requirements")
+        self.assertEqual(unsupported["options_raw"], "deferred_options()")
+        self.assertIsNone(unsupported["options"])
+        self.assertEqual(unsupported["options_resolution"], "unsupported")
+        self.assertEqual([first["source_position"], second["source_position"], unsupported["source_position"]], [1, 2, 3])
+
+    def test_compatibility_widget_path_preserves_existing_identity_without_manufacturing_one(self):
+        parser = self.tree_form_parser
+        identified = parser._convert_node_to_layout({
+            "tag": "widget",
+            "attributes": {
+                "name": "web_ribbon",
+                "title": "Archived",
+                "options": "{}",
+                "invisible": "state == 'archived'",
+            },
+            "native_locator": "/form[1]/widget[1]",
+            "occurrence_index": 1,
+            "source_position": 4,
+            "children": [],
+        }, {})
+        missing = parser._convert_node_to_layout({
+            "tag": "widget",
+            "attributes": {"name": "sc_next_actions"},
+            "children": [],
+        }, {})
+
+        self.assertEqual(identified["native_locator"], "/form[1]/widget[1]")
+        self.assertEqual(identified["occurrence_index"], 1)
+        self.assertEqual(identified["source_position"], 4)
+        self.assertEqual(identified["options"], {})
+        self.assertIn("invisible", identified["modifiers"])
+        self.assertNotIn("native_locator", missing)
+        self.assertNotIn("occurrence_index", missing)
+
+    def test_embedded_widget_options_preserve_false_zero_and_empty_mapping(self):
+        for raw, expected in (("False", False), ("0", 0), ("{}", {})):
+            with self.subTest(raw=raw):
+                node = self.tree_form_parser._native_widget_options(raw)
+                self.assertIs(type(node["options"]), type(expected))
+                self.assertEqual(node["options"], expected)
+                self.assertEqual(node["options_resolution"], "parsed")
+
+    def test_native_behavior_mapping_accepts_non_dict_mapping_carriers(self):
+        modifiers, relation = self.tree_form_parser._native_behavior_from_mapping(
+            types.MappingProxyType({
+                "invisible": "not active",
+                "can_create": "0",
+            }),
+            {"type": "many2one"},
+        )
+        self.assertEqual(modifiers["invisible"], {
+            "kind": "not",
+            "expr": {"kind": "field_truthy", "field": "active"},
+            "raw": "not active",
+        })
+        self.assertIs(relation["create"], False)
+
     def test_native_button_static_body_label_and_explicit_precedence(self):
         parser = self.tree_form_parser
         resolve = super(_TreeFormParserProbe, parser)._resolve_action_label

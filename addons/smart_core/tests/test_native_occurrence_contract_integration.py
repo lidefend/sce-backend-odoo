@@ -33,6 +33,10 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
                 '<form><header><button name="action_archive" type="object" '
                 'id="native_occurrence_archive" string="Confirm" title="Archive partner"/>'
                 '</header><sheet>'
+                '<widget name="web_ribbon" title="Paid" '
+                'options="{\'bg_color\': \'text-bg-success\'}"/>'
+                '<widget name="web_ribbon" title="Draft" options="False"/>'
+                '<widget name="sc_stage_requirements" options="{\'limit\': 3}"/>'
                 '<group name="identity"><field name="name" string="Name"/>'
                 '<field name="name" string="Display name"/></group>'
                 '<group name="secondary"><field name="email"/>'
@@ -144,7 +148,7 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
             self.assertNotIn("occurrence_index", node)
             self.assertNotIn("source_position", node)
             self.assertEqual(identity["viewXmlId"], "smart_core.native_occurrence_form")
-            self.assertIn(identity["kind"], {"field", "container"})
+            self.assertIn(identity["kind"], {"field", "container", "widget"})
             self.assertTrue(identity["occurrenceKey"].startswith("occ.v1."))
 
         field_by_container = {
@@ -217,6 +221,28 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertEqual(widget["fieldDescriptor"]["domain_expression"]["raw"], raw)
         self.assertEqual(widget["fieldDescriptor"]["context"], context)
         self.assertEqual(widget["fieldDescriptor"]["widget_options"], {"no_create": True})
+
+    def test_form_embedded_widget_contract_preserves_identity_options_and_support(self):
+        contract = self._contract("form")
+        widgets = [
+            node
+            for node in self._walk(contract["layoutContract"]["containerTree"])
+            if node.get("type") == "widget"
+        ]
+
+        self.assertEqual([node["componentKey"] for node in widgets], [
+            "sc.display.ribbon",
+            "sc.display.ribbon",
+            "sc.unsupported.native_node",
+        ])
+        self.assertEqual([node["nativeIdentity"]["kind"] for node in widgets], ["widget", "widget", "widget"])
+        self.assertEqual(len({node["nativeIdentity"]["occurrenceKey"] for node in widgets[:2]}), 2)
+        self.assertEqual(widgets[0]["componentConfig"]["nativeWidget"], "web_ribbon")
+        self.assertEqual(widgets[0]["componentConfig"]["options"], {"bg_color": "text-bg-success"})
+        self.assertIs(widgets[1]["componentConfig"]["options"], False)
+        self.assertEqual(widgets[2]["componentConfig"]["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertTrue(all("fieldCode" not in node for node in widgets))
+        self.assertTrue(all("fieldDescriptor" not in node for node in widgets))
 
     def test_final_handler_boundary_restores_occurrences_after_mutation(self):
         source = self._source("tree")

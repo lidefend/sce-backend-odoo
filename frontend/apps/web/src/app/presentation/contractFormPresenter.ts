@@ -505,6 +505,13 @@ function presentNode(
       || actionsByNativeOccurrence.get(nativeActionKey)
       || null,
     nativeWidget: nodeKind === 'widget' ? text(container.widget || container.name) : '',
+    nativeWidgetComponent: nodeKind === 'widget'
+      ? Object.freeze({
+          componentKey: text(container.componentKey),
+          componentConfig: Object.freeze({ ...(container.componentConfig || {}) }),
+          nativeWidget: text(container.widget || container.name),
+        })
+      : null,
     fields: widgets,
     children: container.children.map((child, childIndex) => (
       presentNode(

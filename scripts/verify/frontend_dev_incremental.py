@@ -197,6 +197,12 @@ RULES = (
         "verify.acceptance.evolution.binding",
     )),
     Rule((
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+    ), (
+        "verify.frontend.presentation.lane.unit",
+    )),
+    Rule((
         "config/acceptance/backend_contract_instance_v1.json",
     ), (
         "verify.frontend.acceptance.environment.guard",
@@ -321,6 +327,7 @@ RULES = (
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
     Rule((
+        "contracts/registry.yaml",
         "contracts/registry/component.yaml",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
@@ -334,6 +341,12 @@ RULES = (
     ), (
         "verify.frontend.professional_component_registry.unit",
         "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "addons/smart_core/core/node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_capabilities.py",
+    ), (
+        "verify.node_component_capabilities.unit",
     )),
     Rule((
         "addons/smart_core/core/native_widget_profile.py",
@@ -1489,6 +1502,7 @@ RULES = (
         "addons/smart_core/tests/test_native_advisory.py",
         "addons/smart_core/tests/test_node_component_validation.py",
         "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+        "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
     ), (
         "verify.native_advisory.unit",
         "verify.node_component_validation.unit",

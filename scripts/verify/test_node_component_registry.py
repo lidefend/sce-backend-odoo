@@ -89,7 +89,7 @@ class NodeRegistryTests(unittest.TestCase):
         industry = generator.render_industry_manifest(self.component, version=self.version)
         self.assertIn("'form.relation.one2many': 'FormSection.relationAdapter'", frontend)
         self.assertIn("rendererVersion: '1.0.0'", industry)
-        self.assertIn("supportedContractVersion: '>=2.0.0 <2.5.0'", industry)
+        self.assertIn("supportedContractVersion: '>=2.0.0 <2.6.0'", industry)
         self.assertIn("requiredCapabilities: ['form.relation.one2many']", industry)
 
     def test_component_capability_range_covers_current_page_contract(self):
@@ -111,6 +111,45 @@ class NodeRegistryTests(unittest.TestCase):
         maximum_exclusive = tuple(int(part) for part in match.group(2).split("."))
         self.assertGreaterEqual(current, minimum)
         self.assertLess(current, maximum_exclusive)
+
+    def test_native_view_widget_mapping_and_default_are_projected(self):
+        data = self.render()
+        self.assertEqual(
+            {"component": "sc.display.ribbon", "status": "ready", "reasonCode": ""},
+            data["NATIVE_VIEW_WIDGET_COMPONENTS"]["web_ribbon"],
+        )
+        self.assertEqual(
+            {
+                "component": "sc.unsupported.native_node",
+                "status": "unsupported",
+                "reasonCode": "NATIVE_VIEW_WIDGET_UNSUPPORTED",
+            },
+            data["NATIVE_VIEW_WIDGET_DEFAULT"],
+        )
+        frontend = generator.render_frontend_registry(self.component, version=self.version)
+        self.assertIn("'web_ribbon': {component: 'sc.display.ribbon'", frontend)
+        self.assertIn("component: 'sc.unsupported.native_node'", frontend)
+        self.assertEqual(
+            {
+                "component": "sc.display.ribbon",
+                "status": "ready",
+                "reasonCode": "",
+            },
+            resolver.resolve_native_view_widget("web_ribbon"),
+        )
+        self.assertEqual(
+            "sc.unsupported.native_node",
+            resolver.resolve_native_view_widget("sc_stage_requirements")["component"],
+        )
+
+    def test_native_view_widget_default_and_targets_fail_closed(self):
+        self.semantic["native_view_widget_default"]["status"] = "ready"
+        with self.assertRaisesRegex(SystemExit, "default cannot be ready"):
+            self.render()
+        self.semantic["native_view_widget_default"]["status"] = "unsupported"
+        self.semantic["native_view_widgets"]["web_ribbon"]["component"] = "sc.input.text"
+        with self.assertRaisesRegex(SystemExit, "must reference a node component"):
+            self.render()
 
     def test_requiring_an_undeclared_capability_is_rejected(self):
         self.component['components']['sc.payment.settlement_detail_collection']['capabilities'] = [

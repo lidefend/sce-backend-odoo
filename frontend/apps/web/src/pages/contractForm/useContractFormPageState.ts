@@ -1,4 +1,5 @@
 import { reactive, ref } from 'vue';
+import type { ContractDefectRef } from '../../app/contract/contractGap';
 import type { ContractV2Snapshot } from '../../app/contracts/v2';
 import type { BusinessFieldError } from '../../app/businessValidationError';
 import type { BusyKind, SubmissionFeedback, UiStatus } from './types';
@@ -9,6 +10,7 @@ export function useContractFormPageState() {
     isComponentActive: ref(true),
     instanceRouteIdentity: ref(''),
     retainedRouteIdentity: ref(''),
+    renderErrorDefect: ref<ContractDefectRef | null>(null),
     renderErrorMessage: ref(''),
     recordMissing: ref(false),
     errorMessage: ref(''),

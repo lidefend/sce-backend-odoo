@@ -1,0 +1,200 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "7567bbf41762df1dc5f284298c0da30d80083e39",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
+    ".agent/goals/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH.yaml",
+    ".agent/goals/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.yaml",
+    ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
+    ".agent/runs/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH/run.json",
+    ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+    "addons/smart_core/core/contract_lifecycle.py",
+    "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+    "addons/smart_core/core/native_view_occurrence.py",
+    "addons/smart_core/core/native_widget_profile.py",
+    "addons/smart_core/core/node_component_capabilities.py",
+    "addons/smart_core/core/node_component_validation.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+    "config/acceptance/",
+    "config/contract/page_contract_v1_retirement_manifest.json",
+    "contracts/generated/",
+    "contracts/registry.yaml",
+    "contracts/registry/",
+    "docs/architecture/unified_page_contract_v2/",
+    "docs/audit/native-scene-01/inventories/",
+    "docs/audit/native-scene-01/p0-8-native-field-behavior-passthrough/",
+    "docs/audit/native-scene-01/p0-9-embedded-widget-contract/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "frontend/apps/web/src/app/contracts/v2/",
+    "frontend/apps/web/src/app/presentation/",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/components/template/",
+    "frontend/apps/web/scripts/",
+    "make/frontend.mk",
+    "scripts/audit/",
+    "scripts/contract/generate_semantic_registry.py",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed source, pure contract tests, disposable sc_test ORM verification and the registered local/dev browser profile only; no persistent business-data mutation"
+  },
+  "checks": {
+    "embedded_widget_parser": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py"
+      ],
+      "kind": "offline"
+    },
+    "embedded_widget_orm": {
+      "target": "verify.native_occurrence.contract.orm",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/",
+        "addons/smart_core/core/native_view_occurrence.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "contract_registry": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry/",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "node_component_capabilities": {
+      "target": "verify.node_component_capabilities.unit",
+      "inputs": [
+        "addons/smart_core/core/node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_capabilities.py"
+      ],
+      "kind": "offline"
+    },
+    "node_component_validation": {
+      "target": "verify.node_component_validation.unit",
+      "inputs": [
+        "addons/smart_core/core/node_component_validation.py",
+        "addons/smart_core/tests/test_node_component_validation.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/src/components/template/",
+        "frontend/apps/web/scripts/"
+      ],
+      "kind": "offline"
+    },
+    "frontend_node_component": {
+      "target": "verify.frontend.node_component.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/scripts/node_component_consumption_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "frontend_embedded_widget_browser": {
+      "target": "verify.frontend.native_embedded_widget.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/native_embedded_widget_browser_check.mjs",
+        "frontend/apps/web/scripts/fixtures/native_embedded_widget_contract_v2.json",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+        "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_contract_gap": {
+      "target": "verify.frontend.presentation.lane.unit",
+      "inputs": [
+        "config/acceptance/frontend_presentation_targets.v1.json",
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "scripts/verify/acceptance_evolution_binding_guard.py",
+        "scripts/verify/frontend_product_page_header_browser.mjs",
+        "scripts/verify/test_acceptance_evolution_binding_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "documentation": {
+      "target": "verify.docs.all",
+      "inputs": [
+        "docs/audit/native-scene-01/p0-9-embedded-widget-contract/"
+      ],
+      "kind": "offline"
+    },
+    "conditioned_feedback_regression": {
+      "target": "verify.local.dev.conditioned.feedback.orm",
+      "inputs": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/core/native_advisory.py",
+        "addons/smart_construction_core/tests/test_conditioned_processing_feedback.py",
+        "addons/smart_construction_core/tests/test_cost_processing_feedback.py",
+        "addons/smart_construction_core/tests/test_workspace_processing_feedback.py",
+        "addons/smart_construction_core/tests/test_company_project_refund_feedback.py"
+      ],
+      "kind": "runtime"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
+        ".agent/goals/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.yaml",
+        ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
+        ".agent/runs/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate, publish one exact-head PR, and run all required remote gates.",
+  "id": "NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT",
+  "branch": "feature/native-scene-01-p0-9-embedded-widget-contract-20261117",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.yaml",
+  "record": "docs/audit/native-scene-01/p0-9-embedded-widget-contract/implementation_record.md"
+}

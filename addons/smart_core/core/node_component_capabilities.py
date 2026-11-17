@@ -9,6 +9,7 @@ from .node_component_validation import walk
 NODE_CAPABILITIES = {
     'sc.feedback.message': 'form.feedback.message.v1',
     'sc.navigation.anchor': 'form.navigation.anchor.v1',
+    'sc.display.ribbon': 'form.display.ribbon.v1',
 }
 DRAFT_FEEDBACK_CAPABILITY = 'form.feedback.draft.v1'
 
@@ -36,6 +37,10 @@ def validate_component_capabilities(contract, params):
         if (not re.fullmatch(r'1\.[0-9]+\.[0-9]+', version)
                 or not isinstance(delivered, dict) or delivered.get('version') != version):
             raise FormConfigurationError('COMPONENT_VERSION_UNSUPPORTED', path + '.componentKey')
+        if key == 'sc.unsupported.native_node':
+            # The unsupported node is deliberately published so the client can
+            # reject it through the same contract-gap path with its own reason.
+            continue
         capability = NODE_CAPABILITIES.get(key)
         if capability is None or capability not in capabilities:
             required.append(path + '.componentKey')

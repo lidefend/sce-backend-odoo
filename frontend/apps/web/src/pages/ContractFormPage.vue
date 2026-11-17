@@ -73,8 +73,8 @@
       <a :href="configurationDesignerUrl">返回设计器</a>
     </ScInlineState>
     <ProductFormLoadingSkeleton v-if="initialFormLoading" :loading-label="`正在载入${pageDisplayTitle || '表单'}`" />
-    <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" variant="error" :on-retry="reload" />
-    <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" variant="error" :on-retry="reload" />
+    <StatusPanel v-else-if="renderErrorMessage" :title="pageDisplayTitle" :message="renderErrorMessage" :contract-defect="renderErrorDefect" variant="error" :on-retry="reload" />
+    <StatusPanel v-else-if="status === 'error'" :title="pageDisplayTitle" :message="errorMessage" :error-code="loadError.status" :reason-code="loadError.reason" :trace-id="loadError.trace" :contract-defect="renderErrorDefect" variant="error" :on-retry="reload" />
     <StatusPanel v-else-if="recordMissing" :title="pageDisplayTitle" message="该记录不存在，可能已被删除或当前链接已经失效。" :error-code="404" variant="error" retry-label="返回安全页面" :on-retry="() => router.push('/')" />
     <ScCard v-else :class="['card', 'sc-product-main-surface', { 'card--flow': isIntakeCreateMode, 'card--detail': standardDetailComposition.adopted.value, 'is-refreshing': status === 'loading' }]"
       :appearance="isIntakeCreateMode || standardDetailComposition.adopted.value ? 'flow' : 'main-surface'" :bordered="!isIntakeCreateMode && !standardDetailComposition.adopted.value"
@@ -764,7 +764,7 @@ const {
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const {
-  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
+  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorDefect, renderErrorMessage,
   recordMissing, errorMessage, loadError, validationErrors, validationFieldErrors, submissionFeedback, formConflict,
   showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
   contract, contractMeta,
@@ -1889,6 +1889,7 @@ const canonicalFormDriverError = computed(() => (
 async function runCanonicalFormAction(actionRef: ContractV2ActionRule) {
   const resolution = resolveCanonicalFormActionExecution(actionRef, contractActions.value);
   if (resolution.kind === 'error') {
+    renderErrorDefect.value = null;
     renderErrorMessage.value = resolution.reasonCode;
     return;
   }
@@ -2010,7 +2011,7 @@ const {
   pickContractNavQuery, defaultContractFormRecord, readContractFormRecord, recordId,
   recordIdDisplay, recordMissing, recordVersionPolicy,
   recordVersionToken, relationKeywords, relationOptions,
-  renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
+  renderErrorDefect, renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
   requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState,
   resolveNavigationUrlFromOrigin,
   restoreIntakeAutosave, retainedRouteIdentity, rights,
@@ -2063,7 +2064,7 @@ const {
   onFieldOrderWindowDragStop, onRelationDialogDocumentKeydown, one2manyValidation,
   originalValues, parseMaybeJsonRecord, policyContext,
   recordId, recordVersionPolicy, recordVersionToken,
-  reload, rememberFormConfigFieldLabel, renderErrorMessage,
+  reload, rememberFormConfigFieldLabel, renderErrorDefect, renderErrorMessage,
   resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity,
   route, routeQueryText: designerRouteQueryText, router, runContractRuleAction,
   sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface,

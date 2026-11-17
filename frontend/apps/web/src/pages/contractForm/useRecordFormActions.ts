@@ -13,6 +13,7 @@ import {
   canonicalizeSubmissionValues,
   createSingleFlightSave,
 } from './saveRecordHelpers';
+import { isContractGapError } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
@@ -88,6 +89,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     recordVersionPolicy,
     recordVersionToken,
     reload,
+    renderErrorDefect,
     renderErrorMessage,
     resolvePendingInlineRelationCreates,
     resolvePendingMany2manyTagCreates,
@@ -205,6 +207,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
   onErrorCaptured((err) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
+    renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
     renderErrorMessage.value = `表单页面打开失败：${message}`;
     return false;
   });

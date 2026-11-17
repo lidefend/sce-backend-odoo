@@ -1,8 +1,9 @@
 # NATIVE-SCENE-01 / P0-8 · Native Field Context and Options Passthrough
 
-Status: implementation and exact-head verification pass on
-`787a1846f30e95caf19dd3ff40eba49a7a387ffa`; publication and remote CI remain
-pending.
+Status: merged through PR #916 at
+`bec4a38da10f15d6f4008af355db3bcc4332e13d`. Exact-head source verification was
+performed on the product-equivalent tree; required remote gates passed on PR head
+`72037e0b5f198640c9c2e10275d604f60b975462`.
 
 Baseline main: `91056172b8cb1244ffa0378b3b9626c900e4d530`
 

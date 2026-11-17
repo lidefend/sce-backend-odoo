@@ -222,6 +222,84 @@ class NodeValidationTests(unittest.TestCase):
                   'occurrenceIndex': 1, 'sourceAuthority': {'kind': 'native_view'}, 'modifiers': {'invisible': False}}
         self.native = copy.deepcopy([label, target]); self.contract['layoutContract']['containerTree'] = [label, target]
 
+    def embedded_widget(self, widget='web_ribbon', supported=True):
+        key = 'sc.display.ribbon' if supported else 'sc.unsupported.native_node'
+        config = {
+            'nativeWidget': widget,
+            'widgetStatus': 'ready' if supported else 'unsupported',
+            'identityComplete': True,
+            'optionsResolution': 'parsed',
+            'optionsRaw': "{'limit': 3}",
+            'options': {'limit': 3},
+            **({} if supported else {'reasonCode': 'NATIVE_VIEW_WIDGET_UNSUPPORTED'}),
+        }
+        node = {
+            'containerId': f'widget.{widget}',
+            'type': 'widget',
+            'containerType': 'widget',
+            'name': widget,
+            'widget': widget,
+            'title': 'Paid' if supported else 'Industry widget',
+            'attributes': {'name': widget, 'options': "{'limit': 3}"},
+            'children': [],
+            'widgetList': [],
+            'nativeLocator': '/form/widget[1]',
+            'occurrenceIndex': 1,
+            'sourcePosition': 1,
+            'sourceAuthority': {'kind': 'native_view'},
+            'nativeIdentity': {
+                'kind': 'widget',
+                'name': widget,
+                'nativeLocator': '/form/widget[1]',
+                'occurrenceIndex': 1,
+            },
+            'componentKey': key,
+            'componentConfig': config,
+        }
+        self.native = copy.deepcopy([node])
+        self.contract['layoutContract']['containerTree'] = [node]
+        self.contract['layoutContract']['componentRegistry'] = {}
+
+    def test_embedded_ribbon_and_unsupported_node_are_whitelisted_semantically(self):
+        self.embedded_widget()
+        self.validate()
+        self.assertEqual(
+            self.contract['layoutContract']['componentRegistry']['sc.display.ribbon'],
+            {'version': '1.0.0'},
+        )
+        self.embedded_widget('sc_stage_requirements', supported=False)
+        self.validate()
+        self.assertEqual(
+            self.contract['layoutContract']['componentRegistry']['sc.unsupported.native_node'],
+            {'version': '1.0.0'},
+        )
+
+    def test_embedded_widget_structural_validation_fails_closed(self):
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['fieldCode'] = 'invented'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget('sc_stage_requirements', supported=False)
+        del self.contract['layoutContract']['containerTree'][0]['componentConfig']['reasonCode']
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['nativeIdentity']['kind'] = 'container'
+        self.reject('NATIVE_NODE_IDENTITY_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsRaw'] = {'limit': 3}
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        del self.contract['layoutContract']['containerTree'][0]['componentConfig']['options']
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsResolution'] = 'none'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['nativeWidget'] = 'sc_next_actions'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsRaw'] = "{'limit': 4}"
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+
     def test_navigation_valid(self):
         self.navigation(); self.validate()
 

@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, nextTick } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { dispatchSceneBlockAction } from './sceneBlockAction';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
+import { isContractGapError, type ContractDefectRef } from '../../app/contract/contractGap';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { canPublishRecordReady, markStartupPhase } from '../../app/performance/startupTiming';
 import {
@@ -113,6 +114,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     validationFieldErrors,
     writableFieldCount,
   } = dependencies;
+  const renderErrorDefect = dependencies.renderErrorDefect || ref<ContractDefectRef | null>(null);
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;
@@ -447,6 +449,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         && formRouteIdentity() === reloadIdentity;
       dependencies.clearRelationRuntime();
       if (dependencies.submissionFeedback) dependencies.submissionFeedback.value = null;
+      renderErrorDefect.value = null;
       renderErrorMessage.value = '';
       Object.assign(loadError, { status: null, reason: '', trace: '' });
       recordMissing.value = false;
@@ -475,6 +478,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
         if (!reloadIsCurrent()) return;
+        renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
         if (err instanceof ApiError) {
           Object.assign(loadError, {
             status: err.status,
@@ -492,6 +496,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         }
         if (err instanceof ApiError && err.status === 404) {
           recordMissing.value = true;
+          renderErrorDefect.value = null;
           renderErrorMessage.value = '';
           // The status protocol clears any prior loading error without a direct ref write.
           applyPageStatusEvent({ kind: 'status', transaction: 'formReload', status: 'ok' });

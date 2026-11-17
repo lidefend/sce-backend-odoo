@@ -4,18 +4,22 @@ import { isRegisteredComponentKey } from './professionalComponentRegistry';
 import type { ContractV2Container, ContractV2Snapshot } from '../contracts/v2/types';
 
 export type NodeComponentPresentation = {
-  kind: 'feedback' | 'anchor';
+  kind: 'feedback' | 'anchor' | 'ribbon';
   purpose?: 'advisory' | 'error' | 'warning' | 'explanation';
   content: string;
   visible: boolean;
   role?: 'alert' | 'status';
   targetContainerId?: string;
+  styleClass?: string;
   visibilityOwner?: 'feedback_evaluation';
   parentVisible?: boolean;
 };
 function reject(path: string): never {
   throw contractGapError({ kind: 'contract_defect', missing: path,
     requiredDeclarationLayer: 'P0: verified node component contract' }, 'Invalid explicit node component');
+}
+function text(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
 }
 function object(value: unknown): Record<string, unknown> {
   return value && typeof value === 'object' && !Array.isArray(value) ? value as Record<string, unknown> : {};
@@ -92,6 +96,55 @@ export function projectNodeComponents(
         || ['href', 'onclick', 'target'].some((attr) => node.attributes?.[attr])) reject(`${node.containerId}.navigation`);
       presentations.set(node.containerId, {kind: 'anchor', content: node.text.trim(), visible,
         targetContainerId: target.node.containerId});
+      continue;
+    }
+    if (key === 'sc.unsupported.native_node') {
+      const reasonCode = text(object(node.componentConfig).reasonCode);
+      if (!reasonCode) reject(`${node.containerId}.componentConfig.reasonCode`);
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `native_view_widget.${reasonCode}`,
+        requiredDeclarationLayer: 'P0: registered embedded native widget component',
+      }, `Native embedded widget is not supported: ${reasonCode}`);
+    }
+    if (key === 'sc.display.ribbon') {
+      const required = ['nativeWidget', 'widgetStatus', 'identityComplete', 'optionsResolution'];
+      const rawConfig = object(node.componentConfig);
+      if (
+        required.some((field) => !Object.hasOwn(rawConfig, field))
+        || !Object.keys(rawConfig).every((field) => required.includes(field) || ['optionsRaw', 'options'].includes(field))
+        || rawConfig.nativeWidget !== 'web_ribbon'
+        || rawConfig.widgetStatus !== 'ready'
+        || rawConfig.identityComplete !== true
+        || !['none', 'parsed', 'unsupported'].includes(String(rawConfig.optionsResolution))
+        || (
+          Object.hasOwn(rawConfig, 'optionsRaw')
+          && (
+            typeof rawConfig.optionsRaw !== 'string'
+            || rawConfig.optionsResolution === 'none'
+          )
+        )
+        || (
+          rawConfig.optionsResolution === 'parsed'
+          && !Object.hasOwn(rawConfig, 'options')
+        )
+        || node.type !== 'widget'
+        || node.containerType !== 'widget'
+        || node.children?.length
+        || !nativeIdentity(node)
+        || node.nativeIdentity?.kind !== 'widget'
+        || node.nativeIdentity.name !== 'web_ribbon'
+        || node.nativeIdentity.nativeLocator !== node.nativeLocator
+        || node.nativeIdentity.occurrenceIndex !== node.occurrenceIndex
+      ) reject(`${node.containerId}.ribbon`);
+      const content = text(node.title || node.label || node.string);
+      if (!content) reject(`${node.containerId}.title`);
+      presentations.set(node.containerId, {
+        kind: 'ribbon',
+        content,
+        visible,
+        styleClass: text(node.attributes?.bg_color),
+      });
       continue;
     }
     if (key !== 'sc.feedback.message') reject(`${node.containerId}.unsupported component`);
