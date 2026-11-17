@@ -3403,8 +3403,22 @@ function validateNativeActionContract(
     issues.push({ path: '$.nativeActionContract.viewSet.activeViewType', message: 'must name an ordered view' });
   }
   const searchIdentity = asRecord(searchContract?.nativeIdentity);
-  if (contract.search && (
+  const hasSearchIdentity = Object.keys(searchIdentity).length > 0;
+  if (hasSearchIdentity && !contract.search) {
+    issues.push({
+      path: '$.nativeActionContract.search',
+      message: 'is required when searchContract.nativeIdentity is present',
+    });
+  }
+  if (contract.search && !hasSearchIdentity) {
+    issues.push({
+      path: '$.nativeActionContract.search',
+      message: 'requires searchContract.nativeIdentity as its profile',
+    });
+  }
+  if (contract.search && hasSearchIdentity && (
     Number(searchIdentity.viewId) !== contract.search.viewId
+    || asString(searchIdentity.viewXmlId || searchIdentity.view_xmlid) !== contract.search.viewXmlId
     || asString(searchIdentity.authority) !== contract.search.authority
   )) {
     issues.push({ path: '$.nativeActionContract.search', message: 'must agree with searchContract.nativeIdentity' });

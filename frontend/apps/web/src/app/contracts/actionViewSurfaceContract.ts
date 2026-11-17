@@ -1,5 +1,6 @@
 import { resolveContractV2ListProfile } from './v2/store';
 import type { ContractV2NormalizedStore } from './v2/types';
+import { contractGapError } from '../contract/contractGap';
 
 type Dict = Record<string, unknown>;
 
@@ -67,6 +68,20 @@ function collectContractViewModes(contract: ContractV2NormalizedStore | null): s
 
   addModes(contract?.snapshot?.pageInfo?.viewType);
   return out;
+}
+
+function declaredNativeActionViews(contract: ContractV2NormalizedStore | null) {
+  const nativeActionContract = contract?.snapshot.nativeActionContract;
+  if (!nativeActionContract) return null;
+  const orderedViews = nativeActionContract.viewSet?.orderedViews;
+  if (!Array.isArray(orderedViews) || !orderedViews.length) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'nativeActionContract.viewSet.orderedViews',
+      requiredDeclarationLayer: 'P0: smart_core native Action View Set projection',
+    }, 'Native Action Contract requires an ordered View Set');
+  }
+  return orderedViews;
 }
 
 export function normalizeActionViewMode(raw: unknown): string {
@@ -166,9 +181,9 @@ export function resolveActionViewAvailableModes(options: {
   const addModes = (raw: unknown) => {
     parseViewModes(raw).forEach((mode) => addMode(mode));
   };
-  const nativeActionContract = options.contract?.snapshot.nativeActionContract;
-  if (nativeActionContract) {
-    nativeActionContract.viewSet.orderedViews.forEach((view) => {
+  const nativeActionViews = declaredNativeActionViews(options.contract);
+  if (nativeActionViews) {
+    nativeActionViews.forEach((view) => {
       if (!view.selectable || view.projectionStatus !== 'ready' || view.rendererStatus === 'unsupported') return;
       if (view.surfaceRole !== 'collection') return;
       addMode(view.viewType);
@@ -183,7 +198,10 @@ export function resolveActionViewAvailableModes(options: {
 }
 
 export function resolveActionViewDefaultMode(contract: ContractV2NormalizedStore | null): string {
-  const mode = normalizeActionViewMode(contract?.snapshot.nativeActionContract?.viewSet.defaultViewType);
+  const nativeActionViews = declaredNativeActionViews(contract);
+  const mode = normalizeActionViewMode(
+    nativeActionViews ? contract?.snapshot.nativeActionContract?.viewSet.defaultViewType : '',
+  );
   return mode === 'list' ? 'tree' : mode;
 }
 

@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "e890568b9c75bcf8059c5ea67030992492dbd440",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT.yaml",
+    ".agent/runs/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT/run.json",
+    "docs/architecture/frontend_contract_basis_ledger.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/native_scene_01_p0_10_frontend_consumption_alignment_20261117.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+    "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed frontend source, frontend dependency tree and pure contract tests; no database, service or deployment access"
+  },
+  "checks": {
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/src/app/presentation/",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_action_consumption": {
+      "target": "verify.frontend.native_action_contract_consumption.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis_enforce": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_widget_provenance": {
+      "target": "verify.frontend.native_widget_provenance.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/",
+        "frontend/apps/web/scripts/native_widget_provenance_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "node_component": {
+      "target": "verify.frontend.node_component.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
+        "frontend/apps/web/scripts/node_component_consumption_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review the dirty P0-10 diff, commit the clean candidate, and publish one exact-head PR when requested.",
+  "id": "NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT",
+  "branch": "feature/native-scene-01-p0-10-frontend-consumption-alignment-20261117",
+  "status": "verification_pending",
+  "goal": ".agent/goals/NATIVE-SCENE-01-P0-10-FRONTEND-CONSUMPTION-ALIGNMENT.yaml",
+  "record": "docs/ops/iterations/native_scene_01_p0_10_frontend_consumption_alignment_20261117.md"
+}
