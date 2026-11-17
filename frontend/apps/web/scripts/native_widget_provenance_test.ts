@@ -124,6 +124,8 @@ assert.equal(
 );
 
 const explicit = decodeContractV2Snapshot(snapshot(widget({
+  widgetType: 'date',
+  componentKey: 'sc.input.date',
   componentConfig: {
     fieldType: 'date',
     nativeWidget: 'daterange',
@@ -142,6 +144,8 @@ assert.equal(
   explicit.layoutContract.containerTree[0].widgetList[0].componentConfig.widgetProvenance.nativeWidget,
   'daterange',
 );
+assert.equal(explicit.layoutContract.containerTree[0].widgetList[0].widgetType, 'date');
+assert.equal(explicit.layoutContract.containerTree[0].widgetList[0].componentKey, 'sc.input.date');
 
 const unsupported = decodeContractV2Snapshot(snapshot(widget({
   componentKey: 'sc.unsupported.native_widget',

@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "bb63c755238b27c39844701411de4c4dddd8c17e",
+  "baseline_sha": "15d8e83923943e784b4364114d0b07c2a62bee79",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",
@@ -288,6 +288,7 @@
     "parser_metadata_derivation": "no_longer_published_as_nativeWidget",
     "frontend_decoder": "synchronized",
     "validation_governance": "local and freeze plans now use merge-stage evidence; deployment-only evidence remains deferred",
+    "independent_review_repair": "Form node canonical widget no longer promotes or overwrites native/metadata provenance; assembly-chain regression coverage passed",
     "product_database_modified": false
   },
   "completion_status_dimensions": {
@@ -296,9 +297,9 @@
     "deployment": "not_deployed",
     "user_acceptance": "not_run"
   },
-  "next_exact_step": "Run freeze preparation, review generated changes, commit the clean P0-6 candidate, then run exact-head validation and publish for independent review.",
+  "next_exact_step": "Repair the Form node Widget source override identified by independent review, add assembly-chain regression coverage, then validate and publish the exact-head hotfix.",
   "id": "NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE",
-  "branch": "feature/native-scene-01-p0-6-widget-provenance-20261117",
+  "branch": "fix/native-widget-provenance-form-override-20261117",
   "status": "verification_pending",
   "goal": ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",
   "record": "docs/audit/native-scene-01/p0-6-widget-provenance/implementation_record.md"

@@ -1,9 +1,13 @@
 # NATIVE-SCENE-01 / P0-6 · Native Widget Provenance and Fail-Closed Resolution
 
-Status: implementation and exact-head local verification complete; PR publication,
-exact-head remote CI and independent review pending.
+Status: the merged implementation had one independent-review source-authority
+defect in the Form node assembly path. The bounded repair and its assembly-chain
+regression coverage pass on exact head `8baf4773c1ace0f69f73d507229118a42f0d7f65`;
+PR publication, remote CI and final review remain pending.
 
 Baseline main: `bb63c755238b27c39844701411de4c4dddd8c17e`
+
+Review-repair baseline main: `15d8e83923943e784b4364114d0b07c2a62bee79`
 
 ## 1. Boundary
 
@@ -161,7 +165,49 @@ Widget provenance shape.
 The existing professional component registry therefore refuses to bind a
 working input control to an unsupported native Widget.
 
-## 6. Validation Governance Closure
+## 6. Independent Review Repair
+
+Independent review found an S2 defect at the Form node assembly boundary:
+`_native_field_node()` treated a canonical top-level `node.widget` as fresh
+native XML evidence. That could:
+
+- promote a `model_metadata_derived` or `compatibility_default` Widget to
+  `native_explicit`;
+- overwrite a parser-declared native token with a canonical type such as
+  `input` or `date`;
+- make the intermediate node/component evidence disagree with the final formal
+  Widget descriptor.
+
+The repair makes the authority order explicit:
+
+1. XML `attributes.widget` is native evidence;
+2. an occurrence-level `fieldInfo.widget_source` remains authoritative;
+3. an explicit source carried by the occurrence field preserves its native
+   token;
+4. a bare canonical `node.widget` is only a compatibility value and cannot
+   promote or overwrite a stronger source.
+
+Because the Form node output changes, the assembled contract cache advances
+from `v72` to `v74` and its input fingerprint is re-pinned to
+`70c83ba9e99757ce570f70db30d97e038d1d8947085cd933cdb1a1ea178a791b`.
+
+`test_unified_page_contract_v2_kanban_action_registry.py` now exercises four
+cases through `_native_field_node()` and the formal
+`_field_source_with_node_info()` → `_field_widget()` path:
+
+- model-derived plus canonical node Widget;
+- unmarked legacy plus bare Widget;
+- unknown explicit native token plus canonical node Widget;
+- supported explicit `daterange` plus canonical node Widget.
+
+The frontend `daterange` positive fixture was also corrected to use the real
+Producer shape (`widgetType=date`, `componentKey=sc.input.date`) instead of
+claiming date provenance while retaining a text-input fixture.
+
+The review-repair inventory run binds 1,354 source files with inputs SHA256
+`b617f91a862f148ecadfcceed9ff5c9b8db2644bb1158322d774af68561a6f99`.
+
+## 7. Validation Governance Closure
 
 The implementation exposed two validation-system issues unrelated to product
 semantics:
@@ -186,7 +232,7 @@ Corrections:
 Deployment-only daily runtime evidence remains deferred to deployment, not lost
 or waived.
 
-## 7. Verification
+## 8. Verification
 
 Passed during the dirty candidate and rechecked on the clean exact head:
 
@@ -200,16 +246,23 @@ Passed during the dirty candidate and rechecked on the clean exact head:
 | `make verify.frontend.professional_component_registry.unit` | PASS |
 | `make verify.form_structure_authority_unification.unit` | PASS, 264 tests |
 | `make verify.frontend.dev.incremental.unit` | PASS, 165 tests |
+| `python3 addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` | PASS, 12 tests after review repair |
+| `make verify.native_widget.provenance.unit` | PASS, 7 tests after review repair |
+| `make verify.frontend.native_widget_provenance.unit` | PASS after review repair |
 | `make audit.verification.lane_coverage.check` | PASS |
 | `make ci.local.iteration` | PASS on dirty candidate |
 | `make ci.local.iteration` | PASS on `7af300c1e`, 23 required targets |
+| `make ci.local.iteration` | PASS on review-repair dirty candidate, 11 required targets |
+| `make ci.local.iteration` | PASS on `8baf4773c`, 11 required targets |
 | `python3 scripts/audit/native_scene_inventory.py --check` | PASS after clean-head regeneration |
 
 The exact-head iteration executed all 23 required targets, including frontend
 lint, strict typecheck and semantic-registry generation checks, after the
-validation routing corrections.
+validation routing corrections. The independent-review repair then re-ran the
+affected 11-target set, including strict typecheck and all Unified Page
+Contract action/assembler/runtime/status guards.
 
-## 8. Deliberate Limits
+## 9. Deliberate Limits
 
 This batch does not implement:
 
@@ -224,7 +277,7 @@ This batch does not implement:
 
 Those remain separate, reviewable follow-up checkpoints.
 
-## 9. Rollback
+## 10. Rollback
 
 Revert the P0-6 registry, parser marker, Widget profile, Contract V2 Decoder,
 focused tests, validation-routing and this record together. No database,

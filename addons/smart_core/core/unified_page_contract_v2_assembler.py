@@ -2395,6 +2395,13 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     )
     field_source = deepcopy(field)
     field_info = _dict(node.get("fieldInfo") or node.get("field_info"))
+    field_info_source = _text(field_info.get("widget_source") or field_info.get("widgetSource")).lower()
+    field_widget_source = _text(field.get("widget_source") or field.get("widgetSource")).lower()
+    field_native_widget = (
+        _text(field.get("native_widget") or field.get("nativeWidget") or field.get("widget"))
+        if field_widget_source == "native_explicit"
+        else ""
+    )
     field_source.update({k: deepcopy(v) for k, v in field_info.items() if k not in {"label", "string"}})
     field_source["sc_ui_usage"] = field.get("sc_ui_usage", "fact")
     if statically_hidden(node):
@@ -2415,9 +2422,33 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
             field_source[target_key] = deepcopy(node.get(source_key))
     field_source.setdefault("string", label)
     field_source.setdefault("label", label)
-    if _text(node.get("widget")):
-        field_source["widget"] = _text(node.get("widget"))
+    attributes = _dict(node.get("attributes") or node.get("attrs"))
+    xml_widget = _text(attributes.get("widget"))
+    node_widget = _text(node.get("widget"))
+    if xml_widget:
+        field_source["widget"] = xml_widget
         field_source["widget_source"] = "native_explicit"
+    elif field_info_source:
+        # fieldInfo is the occurrence-level parser result. Its source marker is
+        # authoritative over the canonical node/widget projection.
+        field_source["widget_source"] = field_info_source
+        field_source["widget"] = _text(
+            field_info.get("native_widget")
+            or field_info.get("nativeWidget")
+            or field_info.get("widget")
+        )
+    elif field_native_widget:
+        # Legacy occurrence callers may carry the marker on the field source
+        # while fieldInfo only repeats the canonical component type.
+        field_source["widget"] = field_native_widget
+        field_source["widget_source"] = "native_explicit"
+    elif node_widget and not _text(field_source.get("widget")):
+        # The canonical node value is a rendering result, not evidence that the
+        # original View XML declared a Widget. Preserve it for compatibility,
+        # but never let it override an existing native or metadata-derived
+        # source.
+        field_source["widget"] = node_widget
+        field_source.setdefault("widget_source", "compatibility_default")
     widget = _field_widget(field_source, layout_type=layout_type)
     component_config = deepcopy(widget.get("componentConfig") or {})
     field_info["name"] = field_name
