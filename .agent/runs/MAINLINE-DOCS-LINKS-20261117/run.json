@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "bec4a38da10f15d6f4008af355db3bcc4332e13d",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
+    ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
+    "docs/audit/native-scene-01/native_view_inventory.md",
+    "docs/ops/iterations/fe_ux_entry_continuity_01.md",
+    "docs/ops/iterations/fe_ux_walkthrough_01/evidence.md",
+    "docs/ops/iterations/fe_ux_walkthrough_01/journeys.md",
+    "docs/ops/iterations/mainline_docs_links_20261117.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/verify/docs_links.py",
+    "scripts/verify/test_docs_links.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing offline documentation and inventory Make targets; no database, service, credential, deployment, or runtime evidence mutation"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
+        ".agent/runs/MAINLINE-DOCS-LINKS-20261117/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "scripts/ops/incremental_execution.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "native_scene_inventory": {
+      "target": "verify.native_scene.inventory.unit",
+      "inputs": [
+        "docs/audit/native-scene-01",
+        "scripts/verify/native_scene_inventory_guard.py",
+        "scripts/verify/test_native_scene_inventory_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "inputs": [
+        "docs",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "addons/smart_core/app_config_engine/services/view_Parser"
+      ],
+      "kind": "offline"
+    },
+    "docs_all": {
+      "target": "verify.docs.all",
+      "inputs": [
+        "docs",
+        "addons/smart_core",
+        "scripts/verify",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.local.iteration and freeze preparation, then publish the exact documentation-link repair through the protected PR lane.",
+  "id": "MAINLINE-DOCS-LINKS-20261117",
+  "branch": "fix/mainline-docs-links-20261117",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAINLINE-DOCS-LINKS-20261117.yaml",
+  "record": "docs/ops/iterations/mainline_docs_links_20261117.md"
+}

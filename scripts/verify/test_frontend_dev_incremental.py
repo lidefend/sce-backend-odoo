@@ -466,6 +466,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.native_scene.inventory.unit"],
                 )
 
+    def test_docs_link_tooling_selects_docs_links(self) -> None:
+        for path in (
+            "scripts/verify/docs_links.py",
+            "scripts/verify/test_docs_links.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.docs.links"],
+                )
+
     def test_platform_capability_explorer_frontend_selects_its_consumer_unit(self) -> None:
         for path in (
             "frontend/apps/web/src/api/platformCapabilityExplorer.ts",

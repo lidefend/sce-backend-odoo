@@ -4,7 +4,7 @@
 
 分类 P1–P7 是用户任务卡的体验分类；优先级 P0–P2 是影响等级；责任层 P0–P4 是仓库架构归属，三者不可混用。
 
-原始证据：[页面/请求观察 JSON](../../../../.runtime/fe-ux-walkthrough-01/observations.json)、[结构化问题索引](../../../../.runtime/fe-ux-walkthrough-01/issues.json)、[会话结束记录](../../../../.runtime/fe-ux-walkthrough-01/session-summary.json)。每张截图的 URL、角色、时间、文字及请求事件可由同名 key 在 JSON 中找到。
+原始证据：页面/请求观察 JSON（`../../../../.runtime/fe-ux-walkthrough-01/observations.json`）、结构化问题索引（`../../../../.runtime/fe-ux-walkthrough-01/issues.json`）、会话结束记录（`../../../../.runtime/fe-ux-walkthrough-01/session-summary.json`）。每张截图的 URL、角色、时间、文字及请求事件可由同名 key 在 JSON 中找到。
 
 ## UX-01 · 项目经理首页风险详情进入失败页
 
@@ -21,7 +21,7 @@
 | 实际表现 | 首页风险卡可见“看详情”，最终进入风险提醒工作台加载失败页；ui.contract.v2 action_open 周期观察到 HTTP 500。并非仅有短暂加载态。 |
 | 预期表现 | 有权限时打开对应风险/获准风险工作台，保留对象上下文；无权限或入口未发布时，在入口处给出准确原因，不提供失败的办理承诺。 |
 | 复现步骤 | 登录 → 首页“风险处置 · 进度严重滞后风险升级” → 看详情 → 等待场景加载完成。 |
-| 证据 | [pm-01-home](../../../../.runtime/fe-ux-walkthrough-01/pm-01-home.png)、[pm-07-risk-ready](../../../../.runtime/fe-ux-walkthrough-01/pm-07-risk-ready.png) |
+| 证据 | pm-01-home（`../../../../.runtime/fe-ux-walkthrough-01/pm-01-home.png`）、pm-07-risk-ready（`../../../../.runtime/fe-ux-walkthrough-01/pm-07-risk-ready.png`） |
 | 影响与范围 | 该风险跟进路径阻断。仅对 PM 实测成立；其他角色的同名卡不外推为同一结果。 |
 | 初步责任 | 待定位：P1 风险入口/场景声明与 P0 场景、action_open 契约组装；非 CSS 结论。 |
 | 替代操作 | 返回安全页面已可用，但本轮未找到同一风险的有效替代办理入口。 |
@@ -44,7 +44,7 @@
 | 实际表现 | 项目 1 的“查看合同”返回 action 677，最终进入 access-denied，reason=NAVIGATION_AUTHORITY_DENIED。菜单“日常合同”可打开 action 756，但它是 sc.general.contract 的 3 条公司合同，不是当前项目 construction.contract 的同一集合。 |
 | 预期表现 | 摘要数字与点击目标一致；授权可达时保留当前项目范围，否则按钮说明不可用原因。 |
 | 复现步骤 | 首页常用入口→项目台账→搜索东环路→打开项目→查看合同。随后返回安全页→日常合同，验证替代路径。 |
-| 证据 | [pm-09-search](../../../../.runtime/fe-ux-walkthrough-01/pm-09-search.png)、[pm-11-project-ready](../../../../.runtime/fe-ux-walkthrough-01/pm-11-project-ready.png)、[pm-13-related-contract-read-action](../../../../.runtime/fe-ux-walkthrough-01/pm-13-related-contract-read-action.png)、[pm-14-contract-menu-alternative](../../../../.runtime/fe-ux-walkthrough-01/pm-14-contract-menu-alternative.png) |
+| 证据 | pm-09-search（`../../../../.runtime/fe-ux-walkthrough-01/pm-09-search.png`）、pm-11-project-ready（`../../../../.runtime/fe-ux-walkthrough-01/pm-11-project-ready.png`）、pm-13-related-contract-read-action（`../../../../.runtime/fe-ux-walkthrough-01/pm-13-related-contract-read-action.png`）、pm-14-contract-menu-alternative（`../../../../.runtime/fe-ux-walkthrough-01/pm-14-contract-menu-alternative.png`） |
 | 影响与范围 | 项目→关联业务的连续工作被打断。拒绝机制本身不等于权限故障或越权；问题是页面暴露的操作与允许入口不一致。 |
 | 初步责任 | P1 原生 project_overview_views.xml / contract_views.xml 入口，联查 P0 动作结果到导航权威的绑定。禁止前端豁免导航守卫或扩大角色权限。 |
 | 替代操作 | 可另查一般合同，但不能当作当前项目合同的有效替代。 |
@@ -67,7 +67,7 @@
 | 实际表现 | 点击“付款申请 / 查看全部付款申请”进入 /s/finance.payment_requests，显式等待 45 秒后仍为“正在加载场景...”。未得到列表、权限说明或可重试错误态。 |
 | 预期表现 | 在明确响应预算内给出内容或可恢复终态；如果该角色不具备该入口，首页应说明而不是无限等待。 |
 | 复现步骤 | 登录 → 首页常用入口付款申请 → 等待；对照项目卡→项目详情能正常打开。 |
-| 证据 | [exec-01-home](../../../../.runtime/fe-ux-walkthrough-01/exec-01-home.png)、[exec-03-project-ready](../../../../.runtime/fe-ux-walkthrough-01/exec-03-project-ready.png)、[exec-08-payment-shortcut](../../../../.runtime/fe-ux-walkthrough-01/exec-08-payment-shortcut.png)、[exec-10-payment-observed](../../../../.runtime/fe-ux-walkthrough-01/exec-10-payment-observed.png) |
+| 证据 | exec-01-home（`../../../../.runtime/fe-ux-walkthrough-01/exec-01-home.png`）、exec-03-project-ready（`../../../../.runtime/fe-ux-walkthrough-01/exec-03-project-ready.png`）、exec-08-payment-shortcut（`../../../../.runtime/fe-ux-walkthrough-01/exec-08-payment-shortcut.png`）、exec-10-payment-observed（`../../../../.runtime/fe-ux-walkthrough-01/exec-10-payment-observed.png`） |
 | 影响与范围 | 这次审批入口访问不能完成。单次观察，不推定所有用户、所有场景都慢。 |
 | 初步责任 | P0 场景启动/请求生命周期，联查 P1 场景发布与该角色表面；还须排除环境请求慢。 |
 | 替代操作 | 本角色项目卡详情可用；本轮未验证同一审批集合的替代入口。 |
@@ -90,7 +90,7 @@
 | 实际表现 | 台账共 17 条，流水号均为“新建”；当前可见列没有项目、方向、往来单位和申请单号，主要显示内部来源记录 ID。详情能找到来源 PRQ2600088，165 万金额和项目相符；来源为收款/已完成，却同时显示付款执行尚未生成、已付款 0、未付款 165 万。返回台账详情后“正在处理…”及禁用返回持续出现在 11:07:31–11:07:52 UTC 的观察中；活动页签最终可回列表。 |
 | 预期表现 | 列表可按业务身份区分流水；收入与支出状态使用适用的语义，不能让“未付款”冒充收款未完成；只读回看后返回可用且保留上下文。 |
 | 复现步骤 | 搜索菜单“资金”→资金台账→第一条“新建”（ledger/17）→打开申请（payment.request/91）→返回→观察按钮状态→切换资金台账活动页签。 |
-| 证据 | [full-09-funds-ledger](../../../../.runtime/fe-ux-walkthrough-01/full-09-funds-ledger.png)、[full-10-ledger-detail](../../../../.runtime/fe-ux-walkthrough-01/full-10-ledger-detail.png)、[full-12-ledger-source-ready](../../../../.runtime/fe-ux-walkthrough-01/full-12-ledger-source-ready.png)、[full-13-return-observed](../../../../.runtime/fe-ux-walkthrough-01/full-13-return-observed.png)、[full-16-final-state](../../../../.runtime/fe-ux-walkthrough-01/full-16-final-state.png)、[full-18-tab-return-outcome](../../../../.runtime/fe-ux-walkthrough-01/full-18-tab-return-outcome.png) |
+| 证据 | full-09-funds-ledger（`../../../../.runtime/fe-ux-walkthrough-01/full-09-funds-ledger.png`）、full-10-ledger-detail（`../../../../.runtime/fe-ux-walkthrough-01/full-10-ledger-detail.png`）、full-12-ledger-source-ready（`../../../../.runtime/fe-ux-walkthrough-01/full-12-ledger-source-ready.png`）、full-13-return-observed（`../../../../.runtime/fe-ux-walkthrough-01/full-13-return-observed.png`）、full-16-final-state（`../../../../.runtime/fe-ux-walkthrough-01/full-16-final-state.png`）、full-18-tab-return-outcome（`../../../../.runtime/fe-ux-walkthrough-01/full-18-tab-return-outcome.png`） |
 | 影响与范围 | 高频核账需要逐条进入详情；收/付款术语混用降低判断把握。本轮未证明实际账务金额错误。影响范围仅证实该全功能账号。 |
 | 初步责任 | P1 treasury_ledger 编号/事实展示与 payment.request 收支语义，P0 契约投影、列表消费及返回状态；历史数据修复若需要归 P4，另行精确设计。 |
 | 替代操作 | 逐条详情读取项目/申请单号，打开来源核对；活动页签最终能回列表。没有改列偏好或写流水。 |
@@ -113,7 +113,7 @@
 | 实际表现 | PM/成员我的工作明确为空，但仅有刷新/查找/排序，无去项目或计划的下一步。管理层首页主体仍是零待办和混合对象卡，经营概况需进入项目并滚动到关联业务页签。多角色显示“当前账号没有声明登录首屏能力区块”；风险状态有 escalated/claimed。 |
 | 预期表现 | 空态说明范围并提供该角色已授权的下一步；经营角色优先看经营关注项；业务状态使用用户可理解的名称。 |
 | 复现步骤 | 各角色登录→查看全部；管理层打开项目→经营概况；阅读首页底部及风险卡。 |
-| 证据 | [pm-03-my-work-ready](../../../../.runtime/fe-ux-walkthrough-01/pm-03-my-work-ready.png)、[member-02-my-work](../../../../.runtime/fe-ux-walkthrough-01/member-02-my-work.png)、[exec-01-home](../../../../.runtime/fe-ux-walkthrough-01/exec-01-home.png)、[exec-04-operating-overview](../../../../.runtime/fe-ux-walkthrough-01/exec-04-operating-overview.png)、[finance-01-home](../../../../.runtime/fe-ux-walkthrough-01/finance-01-home.png) |
+| 证据 | pm-03-my-work-ready（`../../../../.runtime/fe-ux-walkthrough-01/pm-03-my-work-ready.png`）、member-02-my-work（`../../../../.runtime/fe-ux-walkthrough-01/member-02-my-work.png`）、exec-01-home（`../../../../.runtime/fe-ux-walkthrough-01/exec-01-home.png`）、exec-04-operating-overview（`../../../../.runtime/fe-ux-walkthrough-01/exec-04-operating-overview.png`）、finance-01-home（`../../../../.runtime/fe-ux-walkthrough-01/finance-01-home.png`） |
 | 影响与范围 | 多个高频入口需要用户自己知道菜单词汇。空待办本身不构成缺陷，不要求造待办。 |
 | 初步责任 | P1 角色工作入口与业务状态标签声明；P0 workspace/home 契约消费与通用空态。无证据支持直接重做 CSS 或新建组件体系。 |
 | 替代操作 | 菜单搜索可定位项目台账/计划管理；项目详情经营页签可读。 |
@@ -136,7 +136,7 @@
 | 实际表现 | 菜单直接进入新建上下文，初始只见“记录办理上下文”，无退款类型按钮。搜索并选择项目后才显示扣款/投标保证金/合同保证金退回与关联台账，未保存时为禁用。初始正文没有说明“选项目→记录上下文→正式退款单”。原生 XML note 占位说明提到金额/账户在正式单填写，页面只显示通用“请输入办理说明”。 |
 | 预期表现 | 清楚区分准备上下文与发起退款，说明为什么下一步不可用，并消费已声明的业务说明。 |
 | 复现步骤 | 菜单搜索退款→公司&项目退款→搜索项目东环→选择→查看动作和未保存标识→返回→确认离开。 |
-| 证据 | [finance-04-refund-ready](../../../../.runtime/fe-ux-walkthrough-01/finance-04-refund-ready.png)、[finance-07-project-search](../../../../.runtime/fe-ux-walkthrough-01/finance-07-project-search.png)、[finance-08-refund-context-selected](../../../../.runtime/fe-ux-walkthrough-01/finance-08-refund-context-selected.png)、[finance-09-refund-leave](../../../../.runtime/fe-ux-walkthrough-01/finance-09-refund-leave.png) |
+| 证据 | finance-04-refund-ready（`../../../../.runtime/fe-ux-walkthrough-01/finance-04-refund-ready.png`）、finance-07-project-search（`../../../../.runtime/fe-ux-walkthrough-01/finance-07-project-search.png`）、finance-08-refund-context-selected（`../../../../.runtime/fe-ux-walkthrough-01/finance-08-refund-context-selected.png`）、finance-09-refund-leave（`../../../../.runtime/fe-ux-walkthrough-01/finance-09-refund-leave.png`） |
 | 影响与范围 | 财务初次使用需要试探。未保存状态及离开确认是已验证的优点；不宣称退款业务链不可完成。 |
 | 初步责任 | P1 原生 company_project_refund_workspace_views.xml 与工作台语义；P0 字段占位、动作原因、反馈契约消费。 |
 | 替代操作 | 选择项目后可发现下一阶段动作；本轮未保存上下文，正式退款未执行。 |
@@ -159,7 +159,7 @@
 | 实际表现 | 东环路项目名称注明“在建阶段”，列表和详情状态均为草稿；计划 1 的日期为 2025-04、实际开始为 2026-10-22，节点逾期 554 天，责任人为 OdooBot；采购申请同样为 2025 年业务日期、OdooBot 申请人。历史可以合法存在，但这些样本没有清楚区分历史展示与当前角色任务。 |
 | 预期表现 | 演示案例明确历史/当前定位；阶段命名与权威状态不相互暗示矛盾，责任人能解释业务归属。 |
 | 复现步骤 | PM 搜索东环路→查看项目状态；成员进入计划管理→计划1；全功能进入采购申请1。 |
-| 证据 | [pm-08-project-list](../../../../.runtime/fe-ux-walkthrough-01/pm-08-project-list.png)、[pm-11-project-ready](../../../../.runtime/fe-ux-walkthrough-01/pm-11-project-ready.png)、[member-04-task-list](../../../../.runtime/fe-ux-walkthrough-01/member-04-task-list.png)、[member-06-plan-ready](../../../../.runtime/fe-ux-walkthrough-01/member-06-plan-ready.png)、[full-04-procurement-list](../../../../.runtime/fe-ux-walkthrough-01/full-04-procurement-list.png) |
+| 证据 | pm-08-project-list（`../../../../.runtime/fe-ux-walkthrough-01/pm-08-project-list.png`）、pm-11-project-ready（`../../../../.runtime/fe-ux-walkthrough-01/pm-11-project-ready.png`）、member-04-task-list（`../../../../.runtime/fe-ux-walkthrough-01/member-04-task-list.png`）、member-06-plan-ready（`../../../../.runtime/fe-ux-walkthrough-01/member-06-plan-ready.png`）、full-04-procurement-list（`../../../../.runtime/fe-ux-walkthrough-01/full-04-procurement-list.png`） |
 | 影响与范围 | 用户难判断自己的下一步及指标是否代表现在；不等同于计算错误或权限漏洞。 |
 | 初步责任 | Demo 数据载体/叙事规则与 P1 状态展示。一次性存量修复属 P4，需有来源与重放规则；本轮不直接改状态/日期。 |
 | 替代操作 | 以结构化状态为准，结合审计记录；不能把历史样本假作当前待办。 |
@@ -182,7 +182,7 @@
 | 实际表现 | 未尝试删除时，计划/采购/流水详情顶部先显示“不可删除”；多处重复标题、金额标签及技术追溯字段占据阅读空间。 |
 | 预期表现 | 当前状态、责任与合法下一步优先，限制原因在用户需要时可发现；技术追溯信息放到合适层级。 |
 | 复现步骤 | 打开计划1、采购申请1、台账17，观察首屏。 |
-| 证据 | [member-06-plan-ready](../../../../.runtime/fe-ux-walkthrough-01/member-06-plan-ready.png)、[full-05-procurement-detail](../../../../.runtime/fe-ux-walkthrough-01/full-05-procurement-detail.png)、[full-10-ledger-detail](../../../../.runtime/fe-ux-walkthrough-01/full-10-ledger-detail.png) |
+| 证据 | member-06-plan-ready（`../../../../.runtime/fe-ux-walkthrough-01/member-06-plan-ready.png`）、full-05-procurement-detail（`../../../../.runtime/fe-ux-walkthrough-01/full-05-procurement-detail.png`）、full-10-ledger-detail（`../../../../.runtime/fe-ux-walkthrough-01/full-10-ledger-detail.png`） |
 | 影响与范围 | 降低扫描效率，尚未单独阻断查询；不值得拆成多个样式修补任务。 |
 | 初步责任 | 先核对 P1 原生视图与 P0 契约/通用页面反馈组合；不预设 CSS 为责任层。 |
 | 替代操作 | 继续阅读下方业务字段，核心查询仍可完成。 |

@@ -139,11 +139,11 @@ unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态�
 | Form | [`contract_Parser.py:141`](../../../addons/smart_core/app_config_engine/services/view_Parser/contract_Parser.py#L141) | Form contract / canonical form renderer | 已解析；B05 验布局、modifier、onchange、关系子视图和按钮 |
 | Kanban | [`contract_Parser.py:156`](../../../addons/smart_core/app_config_engine/services/view_Parser/contract_Parser.py#L156) | KanbanPage / `core.standard_collection` | 已解析、已注册；B07 验卡片、分组和状态 |
 | Search | [`contract_Parser.py:111`](../../../addons/smart_core/app_config_engine/services/view_Parser/contract_Parser.py#L111) | Action toolbar | 已解析；B04 验默认搜索、筛选、收藏、上下文 |
-| Pivot | [`parsers Kanban Pivot Graph.py:127`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers%20Kanban%20Pivot%20Graph.py#L127) | AnalysisPage Pivot | 解析和专用 Renderer 已存在；统计口径不完整 |
-| Graph | [`parsers Kanban Pivot Graph.py:158`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers%20Kanban%20Pivot%20Graph.py#L158) | AnalysisPage Graph | 解析和专用 Renderer 已存在；图表类型/多度量和 read_group 语义不完整 |
-| Calendar | [`parsers_Calendar_Gantt Activity.py:36`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L36) | `core.readable_records` | 有解析，无专用 Renderer |
-| Gantt | [`parsers_Calendar_Gantt Activity.py:79`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L79) | `core.readable_records` | 有解析，无专用 Renderer |
-| Activity | [`parsers_Calendar_Gantt Activity.py:134`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L134) | ActivityPage / `core.activity` | 解析和专用 Renderer 已存在；当前正式产品未激活 |
+| Pivot | [`parsers Kanban Pivot Graph.py:127`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py#L127>) | AnalysisPage Pivot | 解析和专用 Renderer 已存在；统计口径不完整 |
+| Graph | [`parsers Kanban Pivot Graph.py:158`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py#L158>) | AnalysisPage Graph | 解析和专用 Renderer 已存在；图表类型/多度量和 read_group 语义不完整 |
+| Calendar | [`parsers_Calendar_Gantt Activity.py:36`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L36>) | `core.readable_records` | 有解析，无专用 Renderer |
+| Gantt | [`parsers_Calendar_Gantt Activity.py:79`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L79>) | `core.readable_records` | 有解析，无专用 Renderer |
+| Activity | [`parsers_Calendar_Gantt Activity.py:134`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L134>) | ActivityPage / `core.activity` | 解析和专用 Renderer 已存在；当前正式产品未激活 |
 | Dashboard | `contract_Parser` 无独立 `_parse_dashboard` 分支；normalizer 仅规范 `cards/kpis` | `core.readable_records` | 没有统一原生 Dashboard 接管；行业 Dashboard 走已有自定义 Scene/Intent |
 | Hierarchy | 原生 tree `js_class` 派生语义 | HierarchyBrowser/Planner/Worksheet | 不是独立 Odoo view type；自定义专业 Renderer 已注册 |
 
@@ -154,7 +154,7 @@ unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态�
 事实：
 
 - 后端保存 measure、dimension、axis、interval、aggregate：
-  [`parsers Kanban Pivot Graph.py:127`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers%20Kanban%20Pivot%20Graph.py#L127)。
+  [`parsers Kanban Pivot Graph.py:127`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py#L127>)。
 - V2 输出 `pivotProfile`：
   [`unified_page_contract_v2_assembler.py:1498`](../../../addons/smart_core/core/unified_page_contract_v2_assembler.py#L1498)。
 - 前端注册 `core.pivot=ready`：
@@ -176,7 +176,7 @@ unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态�
 事实：
 
 - 后端提取 graph type、measure、dimension 和 interval：
-  [`parsers Kanban Pivot Graph.py:158`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers%20Kanban%20Pivot%20Graph.py#L158)。
+  [`parsers Kanban Pivot Graph.py:158`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers Kanban Pivot Graph.py#L158>)。
 - 前端注册 `core.graph=ready`。
 - AnalysisPage 当前只绘制第一条 measure 的横向条形：
   [`AnalysisPage.vue:56`](../../../frontend/apps/web/src/pages/AnalysisPage.vue#L56)。
@@ -191,9 +191,9 @@ unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态�
 事实：
 
 - 后端 parser 已提取 calendar 起止日期、颜色、scale、quick-add、字段：
-  [`parsers_Calendar_Gantt Activity.py:36`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L36)。
+  [`parsers_Calendar_Gantt Activity.py:36`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L36>)。
 - Gantt parser 已提取起止日期、progress、resource/dependency/scale/decoration：
-  [`parsers_Calendar_Gantt Activity.py:79`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L79)。
+  [`parsers_Calendar_Gantt Activity.py:79`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L79>)。
 - 前端 registry 明确为 fallback，reason code 为 `RENDERER_CALENDAR_PLANNED` /
   `RENDERER_GANTT_PLANNED`：
   [`actionSurfaceRendererRegistry.ts:42`](../../../frontend/apps/web/src/app/renderers/actionSurfaceRendererRegistry.ts#L42)。
@@ -206,7 +206,7 @@ unique XMLID 计一次。父 View 在本仓库不存在时只标“待运行态�
 事实：
 
 - Activity parser 保留 QWeb template、field/node occurrence、actions、deadline/assignee/type slots：
-  [`parsers_Calendar_Gantt Activity.py:134`](../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt%20Activity.py#L134)。
+  [`parsers_Calendar_Gantt Activity.py:134`](<../../../addons/smart_core/app_config_engine/services/view_Parser/parsers_Calendar_Gantt Activity.py#L134>)。
 - V2 输出 `activityProfile`：
   [`unified_page_contract_v2_assembler.py:1477`](../../../addons/smart_core/core/unified_page_contract_v2_assembler.py#L1477)。
 - 前端 decoder 和 ActivityPage 存在：

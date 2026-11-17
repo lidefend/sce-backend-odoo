@@ -8,6 +8,7 @@ import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parents[2]
 DOCS_ROOT = ROOT / "docs"
@@ -26,9 +27,11 @@ MANDATORY_FILES = [
 
 def resolve_link(src: Path, link: str) -> Path | None:
     value = link.strip()
+    if value.startswith("<") and value.endswith(">"):
+        value = value[1:-1].strip()
     if not value or value.startswith("http://") or value.startswith("https://") or value.startswith("mailto:"):
         return None
-    value = value.split("#", 1)[0].strip()
+    value = unquote(value.split("#", 1)[0].strip())
     if not value:
         return None
     if value.startswith("/"):
