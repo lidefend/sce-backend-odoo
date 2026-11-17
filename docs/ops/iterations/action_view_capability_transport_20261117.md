@@ -25,7 +25,9 @@ The downstream PageAssembler read was already correct. The field was removed ear
 
 `parse_payload()` now preserves `client_contract_capabilities` and its camel-case alias. Capability absence remains absent (`unknown`), while an explicit empty list remains an empty negotiated set (`unsupported` for registered renderers). This preserves legacy-client behavior and makes client negotiation effective.
 
-Regression coverage exercises the actual payload normalizer, including snake case, camel case, absence and explicit empty input.
+The legacy `ui.contract` action dispatcher also rebuilt its downstream Action payload without the capability field. That second allowlist is now fixed for model, view and action-open paths, including the collection Action dispatch used by Tree/Kanban.
+
+Regression coverage exercises the actual payload normalizer, including snake case, camel case, absence and explicit empty input, plus the `UiContractHandler` action-open path. The ORM test proves the handler forwards capabilities and Action View rows become renderer-ready.
 
 ## Verification
 

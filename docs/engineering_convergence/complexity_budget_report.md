@@ -33,10 +33,10 @@ Generated from repository source files. This report is informational during the 
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3118 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3119 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2840 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2841 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -197,13 +197,13 @@ Generated from repository source files. This report is informational during the 
 | 908 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
+| 889 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 889 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 882 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 875 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
-| 862 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 3118 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3119 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2840 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2841 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
