@@ -39,6 +39,14 @@ export async function renderCanonicalRibbon() {
  const model=presentContractV2Form(store,'readonly');
  return renderToString(createSSRApp({render:()=>h(CanonicalRenderer,{node:model.zones.primary[0],preferReadonlyFacts:true})}));
 }
+export async function renderCanonicalAction(reasonMessage='', enabled=false) {
+ const actionRef={actionId:'backend.inline_action',actionKey:'inline_action',backendIdentity:'object:inline_action',allowed:enabled,button:{name:'inline_action'}};
+ const action={key:'inline_action',label:'办理',icon:'',tier:'secondary',visible:true,enabled,
+   reasonCode:enabled?'':'STATE_BLOCKED',...(reasonMessage?{reasonMessage}:{}),visibleProfiles:['edit'],safety:{},actionRef};
+ const node={nodeId:'inline-action',kind:'container',visible:true,title:'',text:'',fields:[],children:[],action,
+   nativePresentation:{nodeComponent:null},attributes:{},columns:24,span:24,zoneRole:null,styleToken:''};
+ return renderToString(createSSRApp({render:()=>h(CanonicalRenderer,{node})}));
+}
 export async function renderProjectNode(fixtureFactory) {
  const s=fixtureFactory();const b=bridge(s);
  return renderToString(createSSRApp({render:()=>h(Renderer,{nodes:b.primaryNodes,fieldSchemasForNodes:b.fieldSchemasForNodes,isNodeVisible:b.nodeVisible})}));
@@ -64,7 +72,7 @@ await build({ define:{'import.meta.env':'{}'}, stdin:{contents:harness,resolveDi
   banner:{js: "import { createRequire as nodeRequire } from 'node:module'; const require = nodeRequire(import.meta.url);"},
   loader:{'.css':'empty'},alias:{'vue/server-renderer':require.resolve('vue/server-renderer'),vue:`${root}/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js`,'tdesign-vue-next':`${root}/frontend/packages/ui/node_modules/tdesign-vue-next`},
   plugins:[{name:'actual-vue-sfc',setup(builder){builder.onLoad({filter:/\.vue$/},args=>{const {descriptor}=parse(fs.readFileSync(args.path,'utf8'),{filename:args.path});const compiled=compileScript(descriptor,{id:args.path,inlineTemplate:true});return {contents:compiled.content,loader:'ts',resolveDir:args.path.slice(0,args.path.lastIndexOf('/'))};});}}],logLevel:'error' });
-const { render, renderLegacy, renderRibbon, renderCanonicalRibbon, renderInsight, renderActionList } = await import(output);
+const { render, renderLegacy, renderRibbon, renderCanonicalRibbon, renderCanonicalAction, renderInsight, renderActionList } = await import(output);
 let checks=0;
 for(const purpose of ['advisory','warning','error','explanation']) {
  const html=await render(purpose);assert.equal((html.match(/Read this/g)||[]).length,1);checks++;
@@ -84,6 +92,19 @@ for (const html of [await renderRibbon(), await renderCanonicalRibbon()]) {
   assert.ok(html.includes('data-native-widget="web_ribbon"'));
   checks += 4;
 }
+const deniedInlineAction = await renderCanonicalAction('先补齐办理依据', false);
+assert.ok(deniedInlineAction.includes('data-workflow-reason-trigger="inline_action"'));
+assert.ok(deniedInlineAction.includes('aria-label="先补齐办理依据"'));
+assert.ok(deniedInlineAction.includes('data-disabled-reason="先补齐办理依据"'));
+assert.ok(deniedInlineAction.includes('disabled'));
+checks += 4;
+const codedInlineAction = await renderCanonicalAction('', false);
+assert.ok(codedInlineAction.includes('aria-label="STATE_BLOCKED"'));
+checks += 1;
+const enabledInlineAction = await renderCanonicalAction('', true);
+assert.ok(!enabledInlineAction.includes('data-workflow-reason-trigger'));
+assert.ok(!enabledInlineAction.includes('data-disabled-reason'));
+checks += 2;
 const insightHtml = await renderInsight();
 assert.ok(insightHtml.includes('项目已创建，可以继续推进。'));
 assert.ok(insightHtml.includes('建议先补全项目地点。'));

@@ -3,17 +3,17 @@ goal:
   id: FE-RELATION-INTERACTION-01-20261117
   status: active
   formal_product_layer: P0
-  layer_target: generic Contract V2 one2many child initialization and row-onchange interaction
+  layer_target: generic Contract V2 relation and action interaction convergence
   module: frontend/apps/web
   standard_vs_user_specific: platform_standard
-  reason: The backend already returns declared child modifiers and warnings, but the generic relationship loader rejects them before the shared one2many runtime can consume them.
-  why_here: Relation interaction lifecycle, row modifier state and warning presentation are generic frontend mechanisms shared by all models.
+  reason: Declared child modifiers/warnings are rejected by the relationship loader, and inline canonical actions expose only a raw reason code through title while header actions already provide accessible reason interaction.
+  why_here: Relation interaction lifecycle, row hint presentation and disabled-action reason presentation are generic frontend mechanisms shared by all models.
   why_not_elsewhere: No schema, model, backend action, industry rule, page special case or new component authority is required.
-  blast_radius: All Contract V2 one2many Add Row and row-onchange paths that receive modifiers_patch or warnings.
+  blast_radius: All Contract V2 one2many Add Row/row-onchange paths and canonical form inline actions with denied reasons.
   exclusions:
     - backend contract or model changes
     - nested child one2many line_patches execution
     - model-specific project, contract or payment branches
     - new design-system component tree
     - deployment or L4 user acceptance before source checks pass
-  product_result: Adding or changing an inline one2many row consumes server-declared modifier and warning effects, while unsupported nested line patches remain explicit and fail closed.
+  product_result: One2many rows consume declared modifier/warning effects, nested line patches remain explicit, and inline actions expose the same accessible disabled reason interaction as the action bar.

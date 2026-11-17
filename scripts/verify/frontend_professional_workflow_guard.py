@@ -50,6 +50,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("strict missing declaration must remain an explicit stop surface")
 
     action_bar = read_text("frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue")
+    action_reason_trigger = read_text("frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue")
+    node_renderer = read_text("frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue")
     driver = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     task_page = read_text("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
     if 'blockedActionMessage' in driver or 'blockedActionMessage' in task_page:
@@ -62,13 +64,25 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         'data-professional-workflow-component="action-bar"',
         ':data-disabled-reason',
         ':data-workflow-primary-key',
-        '<ScPopover',
-        'data-workflow-reason-trigger',
-        'canonical-action-bar__denial-trigger',
-        '@keydown="activateWorkflowReasonTrigger"',
+        '<ActionReasonTrigger',
+        ':reason="workflowDisabledReason(action)"',
         'reasonMessage: workflowDisabledReason(action)',
     ):
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
+    for marker in (
+        '<ScPopover',
+        'data-workflow-reason-trigger',
+        'action-reason-trigger--denied',
+        '@keydown="activateWorkflowReasonTrigger"',
+        "activateWorkflowReasonTrigger",
+    ):
+        if marker not in action_reason_trigger:
+            failures.append(f"shared disabled-reason trigger missing {marker}")
+    for source, component in ((action_bar, "action bar"), (node_renderer, "canonical node action")):
+        if "import ActionReasonTrigger from './ActionReasonTrigger.vue';" not in source:
+            failures.append(f"{component} bypasses shared disabled-reason trigger")
+        if '<ActionReasonTrigger' not in source:
+            failures.append(f"{component} does not render the shared disabled-reason trigger")
     failures.extend(shared_action_bar_errors(driver, surface))
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
     for marker in ('<ScStatusBadge', '<ScSelect', 'aria-label="编辑业务状态"', ':disabled="busy"', ':readonly="statusbar.readonly"', '@change="activateStatus(String($event))"'):
@@ -83,7 +97,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")
     shared_import = "import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';"
-    for source, component in ((action_bar, "action bar"), (header, "header")):
+    for source, component in ((action_reason_trigger, "reason trigger"), (header, "header")):
         if shared_import not in source:
             failures.append(f"{component} bypasses shared disabled-reason keyboard activation")
     if re.search(r"\bfunction\s+activateReasonTrigger\s*\(", header):
@@ -92,7 +106,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if 'data-dialog-purpose="intent-confirmation"' not in confirm: failures.append("workflow confirmation lacks a non-conflicting dialog purpose")
     if "当前操作不可用" not in model: failures.append("disabled workflow action lacks a fail-closed reason")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
-        if forbidden in model or forbidden in action_bar: failures.append(f"workflow components contain forbidden product special case {forbidden}")
+        if forbidden in model or forbidden in action_bar or forbidden in action_reason_trigger or forbidden in node_renderer:
+            failures.append(f"workflow components contain forbidden product special case {forbidden}")
     return failures
 
 def main() -> int:

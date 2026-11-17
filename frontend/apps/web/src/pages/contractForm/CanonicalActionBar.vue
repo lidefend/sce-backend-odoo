@@ -11,45 +11,32 @@
     :data-workflow-disabled-count="authority.disabledCount"
     :data-workflow-primary-key="authority.primaryKey"
   >
-    <ScPopover
+    <ActionReasonTrigger
       v-for="action in directActions"
       :key="action.key"
-      trigger="click"
-      :disabled="!workflowDisabledReason(action)"
+      :reason="workflowDisabledReason(action)"
+      :trigger-key="action.key"
     >
-      <template #trigger>
-        <span
-          class="canonical-action-bar__action-trigger"
-          :class="{ 'canonical-action-bar__denial-trigger': Boolean(workflowDisabledReason(action)) }"
-          :tabindex="workflowDisabledReason(action) ? 0 : undefined"
-          :role="workflowDisabledReason(action) ? 'button' : undefined"
-          :aria-label="workflowDisabledReason(action) || undefined"
-          :data-workflow-reason-trigger="workflowDisabledReason(action) ? action.key : undefined"
-          @keydown="activateWorkflowReasonTrigger"
-        >
-          <SceneButton
-            :tier="action.key === effectivePrimaryKey ? 'primary' : 'secondary'"
-            :disabled="!action.enabled"
-            :data-action-ref="action.actionRef.actionId"
-            :data-action-key="action.actionRef.actionKey || ''"
-            :data-action-method="action.actionRef.button?.name || action.actionRef.button?.method || ''"
-            :data-backend-identity="action.actionRef.backendIdentity"
-            :data-action-tier="action.key === effectivePrimaryKey ? 'primary' : action.tier"
-            :data-normalized-action-tier="action.tier"
-            :data-action-enabled="String(action.enabled)"
-            :data-disabled-reason="workflowDisabledReason(action) || undefined"
-            :title="workflowDisabledReason(action) || undefined"
-            :data-action-allowed="String(action.actionRef.allowed === true)"
-            :data-visible-profiles="action.visibleProfiles.join(',')"
-            @activate="action.enabled && emit('action-ref', action.actionRef)"
-          >
-            <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
-            <span>{{ action.label }}</span>
-          </SceneButton>
-        </span>
-      </template>
-      {{ workflowDisabledReason(action) }}
-    </ScPopover>
+      <SceneButton
+        :tier="action.key === effectivePrimaryKey ? 'primary' : 'secondary'"
+        :disabled="!action.enabled"
+        :data-action-ref="action.actionRef.actionId"
+        :data-action-key="action.actionRef.actionKey || ''"
+        :data-action-method="action.actionRef.button?.name || action.actionRef.button?.method || ''"
+        :data-backend-identity="action.actionRef.backendIdentity"
+        :data-action-tier="action.key === effectivePrimaryKey ? 'primary' : action.tier"
+        :data-normalized-action-tier="action.tier"
+        :data-action-enabled="String(action.enabled)"
+        :data-disabled-reason="workflowDisabledReason(action) || undefined"
+        :title="workflowDisabledReason(action) || undefined"
+        :data-action-allowed="String(action.actionRef.allowed === true)"
+        :data-visible-profiles="action.visibleProfiles.join(',')"
+        @activate="action.enabled && emit('action-ref', action.actionRef)"
+      >
+        <ScIcon v-if="canonicalFormActionIconClass(action.icon)" class="canonical-action-bar__icon" :name="canonicalFormActionIconClass(action.icon) || 'check'" :size="16" />
+        <span>{{ action.label }}</span>
+      </SceneButton>
+    </ActionReasonTrigger>
     <ScDropdown
       v-if="overflowActions.length"
       class="canonical-action-bar__overflow"
@@ -75,10 +62,9 @@ import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRe
 import ScIcon from '../../components/design-system/ScIcon.vue';
 import ScButton from '../../components/design-system/ScButton.vue';
 import ScDropdown, { type ScDropdownItem } from '../../components/design-system/ScDropdown.vue';
-import ScPopover from '../../components/design-system/ScPopover.vue';
+import ActionReasonTrigger from './ActionReasonTrigger.vue';
 import { canonicalFormActionIconClass } from './canonicalFormActionIcon';
 import { resolveWorkflowActionBarAuthority, workflowDisabledReason } from './professionalWorkflowModel';
-import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';
 
 const props = defineProps<{
   directActions: CanonicalFormAction[];
@@ -107,12 +93,6 @@ function selectOverflowAction(item: ScDropdownItem) {
 }
 .canonical-action-bar__icon { inline-size: 1em; margin-inline-end: 6px; text-align: center; }
 .canonical-action-bar__overflow { align-self: center; }
-.canonical-action-bar__action-trigger { display: inline-flex; min-width: 0; }
-.canonical-action-bar__denial-trigger:focus-visible {
-  outline: var(--sc-component-button-focus-ring-width) solid var(--sc-semantic-focus-ring);
-  outline-offset: var(--sc-component-button-focus-inset-offset);
-}
-.canonical-action-bar__denial-trigger :deep(button:disabled) { pointer-events: none; }
 @media (max-width: 560px) {
   .canonical-action-bar {
     display: flex;

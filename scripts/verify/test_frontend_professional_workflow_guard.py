@@ -56,15 +56,27 @@ class ProfessionalWorkflowGuardTests(unittest.TestCase):
 
     def test_action_bar_disabled_reason_trigger_cannot_be_removed(self):
         for marker, reason in (
-            ('data-workflow-reason-trigger', "action bar missing data-workflow-reason-trigger"),
-            ('@keydown="activateWorkflowReasonTrigger"', "action bar missing @keydown=\"activateWorkflowReasonTrigger\""),
-            ("import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';", "action bar bypasses shared disabled-reason keyboard activation"),
+            ('data-workflow-reason-trigger', "shared disabled-reason trigger missing data-workflow-reason-trigger"),
+            ('@keydown="activateWorkflowReasonTrigger"', "shared disabled-reason trigger missing @keydown=\"activateWorkflowReasonTrigger\""),
+            ("import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';", "reason trigger bypasses shared disabled-reason keyboard activation"),
             ("reasonMessage: workflowDisabledReason(action),", "action bar missing reasonMessage: workflowDisabledReason(action)"),
         ):
             with self.subTest(marker=marker):
                 def read_text(path):
                     value = (ROOT / path).read_text(encoding="utf-8")
-                    return value.replace(marker, "") if path.endswith("CanonicalActionBar.vue") else value
+                    filename = "ActionReasonTrigger.vue" if marker != "reasonMessage: workflowDisabledReason(action)," else "CanonicalActionBar.vue"
+                    return value.replace(marker, "") if path.endswith(filename) else value
+                self.assertTrue(any(reason in item for item in validate(read_text)))
+
+    def test_both_action_surfaces_must_use_shared_reason_trigger(self):
+        for filename, reason in (
+            ("CanonicalActionBar.vue", "action bar bypasses shared disabled-reason trigger"),
+            ("CanonicalFormNodeRenderer.vue", "canonical node action bypasses shared disabled-reason trigger"),
+        ):
+            with self.subTest(filename=filename):
+                def read_text(path):
+                    value = (ROOT / path).read_text(encoding="utf-8")
+                    return value.replace("import ActionReasonTrigger from './ActionReasonTrigger.vue';", "") if path.endswith(filename) else value
                 self.assertTrue(any(reason in item for item in validate(read_text)))
 
     def test_header_local_reason_handler_cannot_return(self):

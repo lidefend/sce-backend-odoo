@@ -40,3 +40,19 @@ All checks below passed on the pre-commit dirty scope:
 | `ci.local.iteration` | PASS; 10 affected frontend targets including lint, strict TypeScript and component-driver inventory |
 
 The source batch does not claim deployed browser acceptance or real contract/payment user journeys. Those remain deployment-stage evidence.
+
+## Second slice: shared denied-action reason interaction
+
+The action bar already exposes denied reasons through a focusable trigger, click popover, keyboard activation, accessible name and zero action dispatch. Canonical inline body actions only placed `reasonCode` into `title`.
+
+`ActionReasonTrigger.vue` now owns that interaction for both header and body actions. `CanonicalActionBar.vue` and `CanonicalFormNodeRenderer.vue` pass their declared `reasonMessage` fallback through the same wrapper. The node renderer therefore consumes the same declared reason and interaction mechanics without model-specific logic.
+
+Verification for this slice:
+
+| Check | Result |
+| --- | --- |
+| `verify.frontend.node_component.component` | PASS; 49 consumption checks, 66 SSR checks, embedded Widget browser checks and mounted weighted-relation checks |
+| `verify.frontend.professional_workflow.unit` | PASS; 11 tests and 45 real-component browser assertions across 1440/390 |
+| `ci.delivery.freeze.prepare` | PASS after regenerated frontend inventories |
+
+The browser assertions cover mouse, Enter, Space, focus visibility and zero dispatch for denied actions. Full business-page acceptance remains a deployment-stage concern.
