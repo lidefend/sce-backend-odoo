@@ -89,6 +89,11 @@ export type CanonicalFormNode = {
   semanticGroup: string;
   action: CanonicalFormAction | null;
   nativeWidget: string;
+  nativeWidgetComponent?: Readonly<{
+    componentKey: string;
+    componentConfig: Readonly<Record<string, unknown>>;
+    nativeWidget: string;
+  }> | null;
   fields: CanonicalFormField[];
   children: CanonicalFormNode[];
 };

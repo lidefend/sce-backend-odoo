@@ -1362,7 +1362,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "ea4168533172b3f894a0f766582089273efdd63bab51261efabe6d2b4054725d"
+    "sha256": "a63f381514dd30919b4082004019a35ffb2fad6c445fe58da080bf86935d8816"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1374,22 +1374,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "83f726be759f325db35afaa4adb626b9c85ba25a847655d72ae4c69d924788b9"
+      "sha256": "9e4d61159a4579e3d2e667be71cc65f034b6f3d5a7dd7cb866e7a70e1487a4b0"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "729ec85d108132f89c95cb7430e5926c92bd6a9332f07a50daac2ff5dac6cdd9"
+      "sha256": "0b781fad0842896f9dc25b7d1784a8b84a732899ca5da1bb4f57573909f62066"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "b85f03f84991ede01c16898e228411ac26016e144a2c81c3bfe517b9a81dde6b"
+      "sha256": "437123f18e45611d677150bb7f6b632e5787a3bdf0900e74b28f05e6b9928b42"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "7ed6cb6ac20ff4b1474dcba6a6dc78e9abb84ea96be596ce61e5fdbf0ae9d7a7"
+      "sha256": "9805c5f61dbc45c642ee4d298eaa10d7e3558f2ffe3e4acd1635162764626483"
     }
   },
   "runtime_evidence": {
@@ -1458,11 +1458,20 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-17T11:07:07+08:00",
-    "dirty_paths": [],
-    "revision": "af29b5f5f973d4bdac18579680d788c7270ab0a2",
+    "commit_time": "2026-11-16T19:27:08-08:00",
+    "dirty_paths": [
+      "addons/smart_core/core/contract_lifecycle.py",
+      "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+      "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+      "addons/smart_core/core/native_view_occurrence.py",
+      "addons/smart_core/core/node_component_capabilities.py",
+      "addons/smart_core/core/node_component_validation.py",
+      "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+      "addons/smart_core/handlers/ui_contract_v2.py"
+    ],
+    "revision": "bec4a38da10f15d6f4008af355db3bcc4332e13d",
     "root": ".",
-    "tree": "af276fc8f648d454e4afe8c1ea2dd318130e7e01"
+    "tree": "6afff97376e3b0d2ad823da73eba890946d63303"
   },
   "statistics": {
     "actions": {

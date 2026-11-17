@@ -461,18 +461,38 @@ class _TreeFormParserMixin:
 
     def _native_behavior_from_element(self, el, field_info=None):
         """Project occurrence-level native behavior without name-based merging."""
+        return self._native_behavior_from_mapping(
+            dict(el.attrib or {}) if hasattr(el, "attrib") else {},
+            field_info,
+        )
+
+    def _native_widget_options(self, raw):
+        """Preserve raw embedded-widget options and expose unresolved values."""
+        if raw is None:
+            return {}
+        parsed = self._safe_eval_expr(raw)
+        unresolved = isinstance(parsed, str) or (parsed is None and str(raw).strip() != "None")
+        return {
+            "options_raw": raw,
+            "options": parsed,
+            "options_resolution": "unsupported" if unresolved else "parsed",
+        }
+
+    def _native_behavior_from_mapping(self, attributes, field_info=None):
+        """Normalize native modifier/relation attributes from a View node."""
+        source = attributes if isinstance(attributes, dict) else {}
         modifiers = {}
         for key in ('readonly', 'required', 'invisible', 'column_invisible'):
-            value = el.get(key)
+            value = source.get(key)
             if value is not None:
                 modifiers[key] = self._normalize_modifier_value(value)
 
-        for key, value in (el.attrib or {}).items():
+        for key, value in source.items():
             if key.startswith('decoration-') and value is not None:
                 modifiers[key] = self._normalize_modifier_value(value)
 
         for source_key in ('attrs', 'modifiers'):
-            raw_value = el.get(source_key)
+            raw_value = source.get(source_key)
             if not raw_value:
                 continue
             parsed = self._safe_eval_expr(raw_value)
@@ -484,14 +504,14 @@ class _TreeFormParserMixin:
         relation_active_actions = {}
         info = field_info if isinstance(field_info, dict) else {}
         field_type = str(info.get('type') or '').strip().lower()
-        widget = str(el.get('widget') or info.get('widget') or '').strip().lower()
+        widget = str(source.get('widget') or info.get('widget') or '').strip().lower()
         supported_attrs = ()
         if field_type == 'many2one':
             supported_attrs = (('can_create', 'create'), ('can_write', 'write'))
         elif field_type == 'many2many' and widget == 'many2many_tags':
             supported_attrs = (('can_create', 'create'),)
         for source_attr, action_name in supported_attrs:
-            value = el.get(source_attr)
+            value = source.get(source_attr)
             if value is not None:
                 relation_active_actions[action_name] = self._normalize_modifier_value(value)
 
@@ -1249,19 +1269,29 @@ class _TreeFormParserMixin:
             return node
 
         if tag == 'widget':
+            if source_nodes is None:
+                raise ValueError('form widget source position authority is missing')
             node = {
                 'type': 'widget',
                 'name': el.get('name', ''),
                 'widget': el.get('name', ''),
                 'label': el.get('title', ''),
-                'attributes': _attrs(el),
+                'attributes': dict(el.attrib or {}),
                 'children': [],
+                **self._native_element_identity(el),
             }
-            mods = {}
-            if el.get('invisible'):
-                mods['invisible'] = self._normalize_modifier_value(el.get('invisible'))
+            try:
+                node['source_position'] = source_nodes.index(el)
+            except ValueError as exc:
+                raise ValueError('form widget source position is unresolved') from exc
+            options_raw = el.get('options')
+            if options_raw is not None:
+                node.update(self._native_widget_options(options_raw))
+            mods, relation_active_actions = self._native_behavior_from_element(el)
             if mods:
                 node['modifiers'] = mods
+            if relation_active_actions:
+                node['relation_active_actions'] = relation_active_actions
             return node
 
         # 其他未知节点：以 container 兜底
@@ -1815,6 +1845,22 @@ class _TreeFormParserMixin:
                 layout_node['action'] = self._button_to_action(fake, level='body')
             except Exception:
                 layout_node['action'] = None
+        elif tag == 'widget':
+            node_name = attrs.get('name', '')
+            layout_node['name'] = node_name
+            layout_node['widget'] = node_name
+            layout_node['label'] = attrs.get('title', '')
+            for source_key in ('native_locator', 'occurrence_index', 'source_position'):
+                if source_key in node:
+                    layout_node[source_key] = node.get(source_key)
+            options_raw = attrs.get('options')
+            if options_raw is not None:
+                layout_node.update(self._native_widget_options(options_raw))
+            mods, relation_active_actions = self._native_behavior_from_mapping(attrs)
+            if mods:
+                layout_node['modifiers'] = mods
+            if relation_active_actions:
+                layout_node['relation_active_actions'] = relation_active_actions
 
         ch_list = []
         for ch in children:

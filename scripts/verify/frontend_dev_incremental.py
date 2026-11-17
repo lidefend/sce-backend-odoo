@@ -321,6 +321,7 @@ RULES = (
     # carrier, registry, extension entry point and their focused locks. A
     # registry change must never fall through to a generic typecheck only.
     Rule((
+        "contracts/registry.yaml",
         "contracts/registry/component.yaml",
         "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
         "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
@@ -334,6 +335,12 @@ RULES = (
     ), (
         "verify.frontend.professional_component_registry.unit",
         "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "addons/smart_core/core/node_component_capabilities.py",
+        "addons/smart_core/tests/test_node_component_capabilities.py",
+    ), (
+        "verify.node_component_capabilities.unit",
     )),
     Rule((
         "addons/smart_core/core/native_widget_profile.py",

@@ -598,7 +598,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1850
+        1855
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -611,7 +611,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1850
+        1855
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -624,7 +624,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1850
+        1855
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -637,7 +637,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1850
+        1855
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -882,7 +882,7 @@
       "literal": "ready",
       "path": "frontend/apps/web/src/app/presentation/nodeComponentPresentation.ts",
       "lines": [
-        138
+        180
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

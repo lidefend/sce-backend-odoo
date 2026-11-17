@@ -83,6 +83,18 @@ native_widgets:
   payment: {status: ready}
   statinfo: {status: ready}
 
+# Embedded Form <widget name="..."/> nodes are layout nodes, not field editor
+# widgets. The default channel preserves every unrecognized node for explicit
+# fail-closed consumption and diagnostics.
+native_view_widget_default:
+  status: unsupported
+  component: sc.unsupported.native_node
+  reason_code: NATIVE_VIEW_WIDGET_UNSUPPORTED
+native_view_widgets:
+  web_ribbon:
+    status: ready
+    component: sc.display.ribbon
+
 # 推导规则：有序，首个匹配生效；全部未命中时使用 default。
 derivation:
   default: readable_value

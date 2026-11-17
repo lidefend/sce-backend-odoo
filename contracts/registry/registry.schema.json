@@ -78,9 +78,29 @@
       },
       "additionalProperties": false
     },
+    "nativeViewWidget": {
+      "type": "object",
+      "required": ["status", "component"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ready", "fallback", "unsupported"] },
+        "component": { "$ref": "#/$defs/componentKey" },
+        "reason_code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        }
+      },
+      "additionalProperties": false
+    },
     "semanticRegistry": {
       "type": "object",
-      "required": ["registry", "native_widgets", "derivation", "semantics"],
+      "required": [
+        "registry",
+        "native_widgets",
+        "native_view_widget_default",
+        "native_view_widgets",
+        "derivation",
+        "semantics"
+      ],
       "properties": {
         "registry": { "const": "semantic" },
         "native_widgets": {
@@ -88,6 +108,14 @@
           "minProperties": 1,
           "propertyNames": { "pattern": "^[a-z][a-z0-9_.-]*$" },
           "additionalProperties": { "$ref": "#/$defs/nativeWidgetStatus" }
+        },
+        "native_view_widget_default": {
+          "$ref": "#/$defs/nativeViewWidget"
+        },
+        "native_view_widgets": {
+          "type": "object",
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_.-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/nativeViewWidget" }
         },
         "derivation": {
           "type": "object",

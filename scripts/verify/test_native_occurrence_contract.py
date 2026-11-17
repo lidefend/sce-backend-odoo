@@ -162,6 +162,47 @@ class NativeViewOccurrenceIdentityTest(unittest.TestCase):
         self.assertNotEqual(first["nativeBehavior"], second["nativeBehavior"])
         self.assertEqual(first["sourceAuthority"]["kind"], "ir.ui.view")
 
+    def test_embedded_widget_occurrence_is_distinct_and_display_copy_neutral(self):
+        first_view = view_identity(
+            '<form><widget name="web_ribbon" title="Draft"/>'
+            '<widget name="web_ribbon" title="Draft"/></form>'
+        )
+        second_view = view_identity(
+            '<form><widget name="web_ribbon" title="Paid"/>'
+            '<widget name="web_ribbon" title="Paid"/></form>'
+        )
+        first = MODULE.build_native_occurrence_identity(
+            first_view,
+            kind="widget",
+            name="web_ribbon",
+            native_locator="/form[1]/widget[1]",
+            occurrence_index=1,
+            source_position=1,
+            native_attributes={"options": "{'bg_color': 'text-bg-success'}"},
+        )
+        second = MODULE.build_native_occurrence_identity(
+            first_view,
+            kind="widget",
+            name="web_ribbon",
+            native_locator="/form[1]/widget[2]",
+            occurrence_index=2,
+            source_position=2,
+        )
+        renamed = MODULE.build_native_occurrence_identity(
+            second_view,
+            kind="widget",
+            name="web_ribbon",
+            native_locator="/form[1]/widget[1]",
+            occurrence_index=1,
+            source_position=1,
+            native_attributes={"options": "{'bg_color': 'text-bg-success'}"},
+        )
+
+        self.assertEqual(first["kind"], "widget")
+        self.assertNotEqual(first["occurrenceKey"], second["occurrenceKey"])
+        self.assertEqual(first["occurrenceKey"], renamed["occurrenceKey"])
+        self._validate_definition("nativeOccurrenceIdentity", first)
+
     def test_published_occurrence_shape_matches_strict_schema(self):
         identity = view_identity()
         occurrence = MODULE.build_native_occurrence_identity(

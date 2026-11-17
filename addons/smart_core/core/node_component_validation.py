@@ -11,7 +11,9 @@ from .record_error_proof import validate_record_errors, _context
 
 FEEDBACK = "sc.feedback.message"
 ANCHOR = "sc.navigation.anchor"
-KEYS = frozenset({FEEDBACK, ANCHOR})
+RIBBON = "sc.display.ribbon"
+UNSUPPORTED_NATIVE_NODE = "sc.unsupported.native_node"
+KEYS = frozenset({FEEDBACK, ANCHOR, RIBBON, UNSUPPORTED_NATIVE_NODE})
 SCALARS = frozenset({"char", "text", "boolean", "integer", "float", "monetary", "selection", "date", "datetime"})
 NODE_VALIDATION_PROOF_SCHEMA = "node-component-validation-proof/v1"
 _NODE_PROOF_KEYS = (
@@ -498,6 +500,57 @@ def validate_final_nodes(
         key, config = node["componentKey"], node.get("componentConfig")
         unique(rows, node.get("containerId"), path)
         component_registration(key)
+        if key in {RIBBON, UNSUPPORTED_NATIVE_NODE}:
+            required = {
+                "nativeWidget",
+                "widgetStatus",
+                "identityComplete",
+                "optionsResolution",
+            }
+            if key == UNSUPPORTED_NATIVE_NODE:
+                required.add("reasonCode")
+            allowed = required | {"optionsRaw", "options"}
+            if (
+                type(config) is not dict
+                or not required.issubset(config)
+                or not set(config).issubset(allowed)
+                or type(config.get("nativeWidget")) is not str
+                or not config["nativeWidget"]
+                or type(config.get("widgetStatus")) is not str
+                or type(config.get("identityComplete")) is not bool
+                or config.get("optionsResolution") not in {"none", "parsed", "unsupported"}
+                or (key == UNSUPPORTED_NATIVE_NODE and (
+                    config.get("widgetStatus") != "unsupported"
+                    or type(config.get("reasonCode")) is not str
+                    or not config["reasonCode"]
+                ))
+                or (key == RIBBON and (
+                    config.get("nativeWidget") != "web_ribbon"
+                    or config.get("widgetStatus") != "ready"
+                    or config.get("identityComplete") is not True
+                ))
+            ):
+                fail("NATIVE_NODE_CONFIG_INVALID", path + ".componentConfig")
+            if (
+                node.get("type") != "widget"
+                or node.get("containerType") != "widget"
+                or node.get("children")
+                or node.get("fieldCode")
+                or node.get("fieldDescriptor")
+            ):
+                fail("NATIVE_NODE_CONFIG_INVALID", path)
+            if config["identityComplete"]:
+                native_source(node, originals, path, "NATIVE_NODE_IDENTITY_INVALID")
+                identity = node.get("nativeIdentity") or {}
+                if (
+                    identity.get("kind") != "widget"
+                    or identity.get("name") != config["nativeWidget"]
+                ):
+                    fail("NATIVE_NODE_IDENTITY_INVALID", path + ".nativeIdentity")
+            if key == RIBBON and not str(node.get("title") or node.get("label") or "").strip():
+                fail("NATIVE_NODE_CONFIG_INVALID", path + ".title")
+            plans.append((node, "native_node", None, None, None, path))
+            continue
         if key == ANCHOR:
             code = "NAVIGATION_TARGET_INVALID"
             if type(config) is not dict or set(config) != {"targetContainerId"}:
@@ -659,7 +712,7 @@ def validate_final_nodes(
         action_rules=(contract.get("actionContract") or {}).get("actionRuleList", [])) if any(p[1] == "error" for p in plans) else ()
     visibility = {}
     for node, purpose, source, name, invisible, path in plans:
-        if purpose == ANCHOR:
+        if purpose in {ANCHOR, "native_node"}:
             continue
         if purpose == "error":
             # The reviewed proof reads activation and content together; never

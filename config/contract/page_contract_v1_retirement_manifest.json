@@ -144,7 +144,7 @@
     "docs/contract/snapshots/ui_contract_v2_intent_admin.json"
   ],
   "requiredArchitectureSnapshots": [
-    {"path": "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.4.0"},
+    {"path": "docs/architecture/unified_page_contract_v2/snapshots/assembler_mapping_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.5.0"},
     {"path": "docs/architecture/unified_page_contract_v2/snapshots/status_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
     {"path": "docs/architecture/unified_page_contract_v2/snapshots/action_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},
     {"path": "docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json", "snapshotVersion": "v2", "contractVersion": "2.1.0"},

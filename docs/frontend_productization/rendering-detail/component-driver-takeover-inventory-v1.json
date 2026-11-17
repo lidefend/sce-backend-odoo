@@ -7,7 +7,7 @@
   "bridgeBehaviorBypasses": [
     {
       "officialComponent": "alert",
-      "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+      "source": "frontend/apps/web/src/components/template/NativeNodeComponent.vue"
     },
     {
       "officialComponent": "select",
@@ -126,11 +126,11 @@
         },
         {
           "semanticAdapters": [],
-          "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+          "source": "frontend/apps/web/src/components/template/NativeNodeComponent.vue"
         }
       ],
       "bridgeBehaviorBypasses": [
-        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+        "frontend/apps/web/src/components/template/NativeNodeComponent.vue"
       ],
       "bridgeExports": [
         "TDesignAlert"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "793794530d258b60488c3c17781293b274ca00936ea968549eaa16e862d325a0",
+  "inputDigest": "e2141cd88330b0d680cb41c5075bdf14cd7b19eaaa3f5206b4a83482aa57f2e2",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",

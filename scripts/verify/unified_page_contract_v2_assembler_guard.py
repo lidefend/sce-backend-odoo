@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v76"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v77"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -64,6 +64,9 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/app_config_engine/models/app_view_config.py",
     "addons/smart_core/core/native_action_contract.py",
     "addons/smart_core/core/native_action_search_view.py",
+    "addons/smart_core/core/native_view_occurrence.py",
+    "addons/smart_core/core/node_component_validation.py",
+    "addons/smart_core/core/node_component_capabilities.py",
     # The assembler resolves component keys through the contract registry, so the
     # resolver and its generated carrier决定 assembled contract 的组件键。它们是运行时
     # 输入，必须一并纳入指纹；否则声明改动会留下被缓存的旧装配。
@@ -86,7 +89,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "643e7cb563b1f5a3b87a4d235ea4598bdfd66b3506408962b760b30a2cea939f"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "efe2373a2f1f0ea0407e107f900ea90753f67ad9f0aa7e6154ad0e3f6d24c6be"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
@@ -554,8 +557,8 @@ def validate_contract(
     payload_keys = set(payload.keys())
     if not required <= payload_keys or payload_keys - required - optional:
         fail(errors, f"contract top-level mismatch: {sorted(payload.keys())}")
-    if payload.get("pageInfo", {}).get("contractVersion") != "2.4.0":
-        fail(errors, "contractVersion must be 2.4.0")
+    if payload.get("pageInfo", {}).get("contractVersion") != "2.5.0":
+        fail(errors, "contractVersion must be 2.5.0")
     meta = payload.get("meta", {}) if isinstance(payload.get("meta"), dict) else {}
     if meta.get("sourceType") != expected_source_type:
         fail(errors, f"meta.sourceType must be {expected_source_type}")
@@ -671,8 +674,8 @@ def validate_patch(payload: dict[str, Any], snapshot: dict[str, Any], errors: li
         if key not in payload:
             fail(errors, f"patch missing {key}")
     meta = payload.get("meta", {})
-    if meta.get("contractVersion") != "2.4.0":
-        fail(errors, "patch contractVersion must be 2.4.0")
+    if meta.get("contractVersion") != "2.5.0":
+        fail(errors, "patch contractVersion must be 2.5.0")
     if meta.get("sourceType") != "api.onchange":
         fail(errors, "patch meta.sourceType must be api.onchange")
     if "compat" in meta:

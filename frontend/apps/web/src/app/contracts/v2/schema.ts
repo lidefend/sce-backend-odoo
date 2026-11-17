@@ -608,8 +608,8 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.(0|1|2|3|4)\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0, 2.1, 2.2, 2.3, or 2.4 version' });
+  if (!/^2\.(0|1|2|3|4|5)\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0 through 2.5 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -1017,8 +1017,13 @@ function decodeContainer(
   const nativeLocator = asString(raw.nativeLocator);
   const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
   const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
+  const normalizedContainerType = containerType.toLowerCase();
   const identityKinds = new Set<ContractV2NativeOccurrenceKind>(
-    containerType.toLowerCase() === 'field' ? ['field'] : ['container'],
+    normalizedContainerType === 'field'
+      ? ['field']
+      : normalizedContainerType === 'widget'
+        ? ['widget']
+        : ['container'],
   );
   const nativeIdentity = raw.nativeIdentity === undefined
     ? undefined
@@ -2752,7 +2757,7 @@ function validateNativeOccurrenceAuthority(
   pageInfo: ContractV2PageInfo,
   issues: DecodeIssue[],
 ): void {
-  const supportsStrictOccurrences = /^2\.4\./.test(pageInfo.contractVersion);
+  const supportsStrictOccurrences = /^2\.(4|5)\./.test(pageInfo.contractVersion);
   const occurrenceKeys = new Map<string, string>();
   let pageViewIdentity: ContractV2NativeOccurrenceIdentity | undefined;
   const canonicalViewType = (value: string) => {
@@ -2817,9 +2822,10 @@ function validateNativeOccurrenceAuthority(
       }
     });
   };
-  const rowKindIsField = (row: ContractV2Container): boolean => (
-    asString(row.type || row.containerType).toLowerCase() === 'field'
-  );
+  const rowKind = (row: ContractV2Container): ContractV2NativeOccurrenceKind => {
+    const kind = asString(row.type || row.containerType).toLowerCase();
+    return kind === 'field' || kind === 'widget' ? kind : 'container';
+  };
   const walk = (rows: ContractV2Container[], path: string): void => {
     rows.forEach((row, index) => {
       const rowPath = `${path}[${index}]`;
@@ -2837,8 +2843,8 @@ function validateNativeOccurrenceAuthority(
         if (row.occurrenceIndex !== identity.occurrenceIndex) {
           issues.push({ path: `${rowPath}.occurrenceIndex`, message: 'must match nativeIdentity.occurrenceIndex' });
         }
-        const rowKind = rowKindIsField(row) ? 'field' : 'container';
-        if (identity.kind !== rowKind) {
+        const expectedRowKind = rowKind(row);
+        if (identity.kind !== expectedRowKind) {
           issues.push({ path: `${rowPath}.nativeIdentity.kind`, message: 'must match the native node kind' });
         }
         const rowName = asString(row.fieldCode || row.name);
@@ -2855,12 +2861,12 @@ function validateNativeOccurrenceAuthority(
         if (supportsStrictOccurrences && widgetHasOccurrence && !widgetIdentity) {
           issues.push({ path: widgetPath, message: 'native widget occurrence requires nativeIdentity' });
         }
-        if (identity && rowKindIsField(row) && !widgetIdentity) {
+        if (identity && rowKind(row) === 'field' && !widgetIdentity) {
           issues.push({ path: widgetPath, message: 'field occurrence carrier identity is required' });
         }
         if (
           identity
-          && rowKindIsField(row)
+          && rowKind(row) === 'field'
           && widgetIdentity
           && widgetIdentity.occurrenceKey !== identity.occurrenceKey
         ) {
@@ -3527,7 +3533,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const actionContract = decodeActionContract(
     readAliasedObject(root, 'actionContract', [], '$', issues),
     issues,
-    /^2\.4\./.test(pageInfo.contractVersion),
+    /^2\.(4|5)\./.test(pageInfo.contractVersion),
   );
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);

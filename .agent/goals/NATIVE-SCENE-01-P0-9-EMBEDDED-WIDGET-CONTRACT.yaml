@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT
+  title: Embedded native View widget contract closure
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Native Form embedded widget identity, registry projection, Contract V2 validation and minimal node consumption
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+  baseline:
+    branch: main
+    full_sha: bec4a38da10f15d6f4008af355db3bcc4332e13d
+    prerequisites:
+      - NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY
+      - NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
+  objective: >-
+    Preserve explicit Odoo Form <widget name="..."/> nodes as native contract
+    nodes with identity, options, modifiers and explicit component readiness.
+    Consume web_ribbon positively and reject unsupported embedded widgets through
+    the existing contract-gap mechanism without implementing industry business UI.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral native View node semantics
+    why_here: >-
+      Embedded View widgets are native layout facts shared by all modules. Their
+      projection, occurrence identity and contract validation belong to the P0
+      smart_core contract runtime and generic frontend renderer.
+    why_not_elsewhere:
+      - no industry method, project data or customer semantics is inferred from a widget name
+      - unsupported industry widgets remain explicit contract gaps rather than being implemented
+      - no OWL host, iframe, scenario model or persistent widget manager is introduced
+      - no field ownership, ORM read set, ACL or business-data behavior changes
+  deliverables:
+    - native widget parser facts and deterministic occurrence identity
+    - semantic/component registry declarations for embedded nodes
+    - Contract V2 schema, decoder, presenter and minimal web_ribbon consumption
+    - unsupported native-node fail-closed handling and capability checks
+    - focused parser, assembler, ORM, frontend and browser evidence
+    - P0-9 implementation record and corrected P0-8 closure record
+  acceptance:
+    - duplicate same-name embedded widgets retain distinct stable identities
+    - widget name, raw attributes, parsed options and modifiers survive the final contract
+    - web_ribbon is rendered once through a registered node component
+    - unsupported industry and unknown widgets fail explicitly with a reason
+    - widget nodes never enter field ownership, required-field or ORM field-read sets
+    - existing field, feedback, anchor, button and container behavior remains valid
+  exclusions:
+    - rendering sc_insight_banner, sc_stage_requirements or sc_next_actions
+    - OWL component hosting, iframe embedding or native JavaScript execution
+    - arbitrary widget option evaluation or business-method dispatch
+    - professional view Renderer redesign, Gantt, Calendar, Pivot, Graph or Dashboard
+    - persistent models, database schema, ACL, record-rule or business-data changes
+    - deployment or full product acceptance
+  rollback: Revert parser, registry, assembler, schema, frontend consumption, tests and P0-9 records together.

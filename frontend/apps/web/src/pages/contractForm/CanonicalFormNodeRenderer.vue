@@ -22,8 +22,14 @@
     :aria-label="governedSection?.label || undefined"
   >
     <span v-if="presentableNodeText" class="canonical-form-native-text">{{ presentableNodeText }}</span>
+    <NativeNodeComponent
+      v-if="nodeComponent"
+      :presentation="nodeComponent"
+      :container-id="node.nodeId"
+      @navigate="navigateNodeComponent"
+    />
     <ScButton
-      v-if="node.action"
+      v-else-if="node.action"
       type="button"
       variant="ghost"
       size="small"
@@ -35,9 +41,6 @@
       :data-backend-identity="node.action.actionRef.backendIdentity"
       @click="node.action.enabled && emit('action-ref', node.action.actionRef)"
     >{{ node.title || node.action.label }}</ScButton>
-    <div v-else-if="node.nativeWidget" class="canonical-form-native-widget" :data-native-widget="node.nativeWidget" role="status">
-      {{ node.title || node.nativeWidget }}
-    </div>
     <h3 v-if="groupHeadingVisible" class="canonical-form-node-title">{{ governedSection?.label }}</h3>
     <FormSection
       v-if="fields.length"
@@ -74,8 +77,14 @@ import type { ContractV2ActionRule } from '../../app/contracts/v2/types';
 import FormSection from '../../components/template/FormSection.vue';
 import { declaredLayoutBand, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from '../../components/template/layoutSpan';
 import ScButton from '../../components/design-system/ScButton.vue';
+import NativeNodeComponent from '../../components/template/NativeNodeComponent.vue';
+import { contractGapError } from '../../app/contract/contractGap';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
+import {
+  navigateToDeclaredNode,
+  type NodeComponentPresentation,
+} from '../../app/presentation/nodeComponentPresentation';
 import {
   canonicalFieldToFormSection,
   canonicalNodeHasContent,
@@ -160,12 +169,30 @@ const layoutColumns = computed(() => {
 const declaredNodeSpan = computed(() => declaredLayoutSpan(props.node.span));
 const declaredNodeBand = computed(() => declaredLayoutBand(declaredNodeSpan.value));
 const hasContent = computed(() => canonicalNodeHasContent(props.node));
+const nodeComponent = computed<NodeComponentPresentation | null>(() => {
+  const presentation = props.node.nativePresentation.nodeComponent;
+  return presentation && typeof presentation === 'object'
+    ? presentation as NodeComponentPresentation
+    : null;
+});
 const nativeClass = computed(() => String(props.node.attributes.class || '').trim());
 const presentableNodeText = computed(() => {
   const text = String(props.node.text || '');
   if (props.preferReadonlyFacts && /^[\s.·•:_-]+$/.test(text)) return '';
   return text;
 });
+
+function navigateNodeComponent(event: Event) {
+  const presentation = nodeComponent.value;
+  if (!presentation?.targetContainerId) return;
+  const root = (event.currentTarget as HTMLElement | null)?.closest<HTMLElement>('[data-native-contract-structure]');
+  if (!root) throw contractGapError({
+    kind: 'contract_defect',
+    missing: 'current form navigation root',
+    requiredDeclarationLayer: 'P0: node navigation',
+  }, 'Navigation root missing');
+  navigateToDeclaredNode(root, presentation.targetContainerId);
+}
 
 </script>
 

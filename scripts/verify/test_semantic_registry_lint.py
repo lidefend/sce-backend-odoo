@@ -220,7 +220,7 @@ class NegativeCaseTest(unittest.TestCase):
             "  {componentKey: 'sc.value.money', semanticType: 'money', "
             "supportedFieldTypes: ['monetary'], readiness: 'ready', "
             "renderer: 'ProfessionalBusinessValueControl', rendererVersion: '1.0.0', "
-            "supportedContractVersion: '>=2.0.0 <2.5.0', requiredCapabilities: []},\n",
+            "supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},\n",
             "",
         )
         self.assert_detected("component 'sc.value.money' has no frontend registration")
@@ -247,7 +247,7 @@ class NegativeCaseTest(unittest.TestCase):
             "semanticType: 'payment_settlement_detail_collection', "
             "supportedFieldTypes: ['one2many'], readiness: 'ready', "
             "renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', "
-            "supportedContractVersion: '>=2.0.0 <2.5.0', "
+            "supportedContractVersion: '>=2.0.0 <2.6.0', "
             "requiredCapabilities: ['form.relation.one2many']},\n",
             "",
         )

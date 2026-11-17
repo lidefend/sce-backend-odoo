@@ -12,7 +12,7 @@ import xml.etree.ElementTree as ET
 
 
 NATIVE_VIEW_IDENTITY_SCHEMA_VERSION = "1.0.0"
-NATIVE_OCCURRENCE_KINDS = frozenset({"field", "container", "button", "column"})
+NATIVE_OCCURRENCE_KINDS = frozenset({"field", "container", "button", "column", "widget"})
 
 
 def _text(value: Any) -> str:

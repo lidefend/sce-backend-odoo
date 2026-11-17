@@ -855,14 +855,14 @@
   ],
   "schemas": [
     {
-      "content_hash": "916b8ebe526ab321",
+      "content_hash": "33b90520d97a6fb2",
       "path": "registry/component.yaml",
-      "version": 1
+      "version": 2
     },
     {
-      "content_hash": "451ae91edb935de7",
+      "content_hash": "10f65773047f532c",
       "path": "registry/semantic.yaml",
-      "version": 1
+      "version": 2
     },
     {
       "content_hash": "3d1338fe01caa111",

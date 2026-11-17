@@ -38,6 +38,8 @@ from .semantic_registry_generated import (
     FIELD_CONTRACT_VERSION,
     COMPONENT_REGISTRATIONS,
     NATIVE_WIDGET_STATUS,
+    NATIVE_VIEW_WIDGET_COMPONENTS,
+    NATIVE_VIEW_WIDGET_DEFAULT,
 )
 
 _logger = logging.getLogger(__name__)
@@ -146,6 +148,17 @@ def resolve_native_widget(native_widget: str = "") -> dict[str, str]:
     return {
         "status": _text(declared.get("status")).lower(),
         "reasonCode": _text(declared.get("reasonCode")),
+    }
+
+
+def resolve_native_view_widget(widget_name: str = "") -> dict[str, str]:
+    """Resolve one embedded Form widget to its declared node component."""
+    normalized = _text(widget_name).lower()
+    entry = NATIVE_VIEW_WIDGET_COMPONENTS.get(normalized) or NATIVE_VIEW_WIDGET_DEFAULT
+    return {
+        "component": _text(entry.get("component")),
+        "status": _text(entry.get("status")).lower(),
+        "reasonCode": _text(entry.get("reasonCode")),
     }
 
 

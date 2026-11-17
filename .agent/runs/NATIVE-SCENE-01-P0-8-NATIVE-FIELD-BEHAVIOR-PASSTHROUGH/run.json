@@ -97,10 +97,10 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the exact clean native Context/options passthrough candidate for independent review.",
+  "next_exact_step": "Mainline integration completed in commit bec4a38da10f15d6f4008af355db3bcc4332e13d; successor work is tracked by NATIVE-SCENE-01-P0-9-EMBEDDED-WIDGET-CONTRACT.",
   "id": "NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH",
   "branch": "feature/native-scene-01-p0-8-native-field-behavior-passthrough-20261117",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH.yaml",
   "record": "docs/audit/native-scene-01/p0-8-native-field-behavior-passthrough/implementation_record.md"
 }
