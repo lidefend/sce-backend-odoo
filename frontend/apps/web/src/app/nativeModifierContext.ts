@@ -46,8 +46,13 @@ export function bindNativeRowParentContext(parent: Record<string, unknown>, fiel
   if (fieldContext === undefined || fieldContext === null) return parent;
   if (!record(fieldContext)) return gap();
   const context = parent['$native.context'];
-  if (!record(context)) return gap();
-  return { ...parent, '$native.context': { ...context, ...fieldContext } };
+  return {
+    ...parent,
+    '$native.context': {
+      ...(record(context) ? context : {}),
+      ...fieldContext,
+    },
+  };
 }
 
 export function bindNativeFieldTypes(values: Record<string, unknown>, types: unknown, snapshots?: unknown): Record<string, unknown> {

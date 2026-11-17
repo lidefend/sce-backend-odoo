@@ -271,7 +271,11 @@ assert.equal(contextual.collectValidation().issues.length, 0);
 assert.deepEqual(contextual.buildCommandValue('lines', 'write'), [[0, 0, { note: 'Allowed' }]]);
 parentDraft = true;
 assert.deepEqual(contextual.buildCommandValue('lines', 'write'), [[0, 0, {}]]);
-assert.throws(() => bindNativeRowParentContext({}, { required: true }));
+assert.deepEqual(
+  bindNativeRowParentContext({}, { required: true }),
+  { '$native.context': { required: true } },
+  'a first-render field context must not turn an unbound source context into a page-shaped contract gap',
+);
 assert.throws(() => bindNativeRowParentContext({ '$native.context': {} }, "{'required': True}"));
 console.log('one2many authoritative row frame: passed');
 

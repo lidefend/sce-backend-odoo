@@ -43,6 +43,11 @@
 字段类型使用已有 `sc.input.boolean` 与 `sc.input.text` 组件，同时对 `boolean`
 字段类型增加通用派生规则。未知字段 Widget 仍保持 fail-closed。
 
+字段项目进一步发现，one2many 明细的列过滤会在页面首次渲染时早于
+`dataMeta.sourceContext` 绑定执行。字段 Context 本身合法时，前端现以该字段
+Context 建立首帧求值帧，等正式 store 就绪后继续使用完整 source context；非法
+Context 类型仍然拒绝。这样继承明细条件不会把整页变成加载失败。
+
 ## 当前故障
 
 - 日常运行候选：`a19bf2d976cbda9d99bdc24deab7903143a21cb7`。
@@ -77,11 +82,13 @@
 | 全后端静态验证 | 已通过 | 314 个 XML 产品视图结构 26 项 |
 | 继承能力兜底 | 已通过 | 能力投影 18 项；节点验证 266 项 |
 | 字段 Widget 属性对齐 | 已通过 | `boolean_favorite`、`text` → 通用布尔/文本控件；8 项 provenance、116 项语义 registry |
+| one2many 首帧 Context | 已通过 | 55 项明细 hydration/Context 用例；非法 Context 仍 fail-closed |
 | presentation 目标 | 已通过 | 81 项 |
 | 增量与台账 | 已通过 | 增量映射 168 项；Agent 台账 18 项；续跑入口 58 项 |
 | 候选 `af9a096b` 发布 | 已通过 | 恢复点、模块升级、构建和发布面均 PASS；契约回读 HTTP 200 |
-| 字段 Widget 修正候选 | 待发布 | 需再次升级 `smart_core,smart_construction_core` |
-| 项目台账真实流程 | 待完成 | 等待字段 Widget 修正上线后验证 |
+| 候选 `9c3540ce` 发布 | 已通过 | 字段 Widget 修正已上线；契约无 unsupported field widget |
+| 首帧 Context 修正候选 | 待发布 | 修复 one2many 首帧求值 |
+| 项目台账真实流程 | 待完成 | 等待首帧 Context 修正上线后验证 |
 
 ## 配置数据升级边界
 

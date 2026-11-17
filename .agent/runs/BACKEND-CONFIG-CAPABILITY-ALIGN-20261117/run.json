@@ -21,6 +21,8 @@
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     "contracts/registry/semantic.yaml",
     "scripts/verify/test_native_widget_provenance.py",
+    "frontend/apps/web/src/app/nativeModifierContext.ts",
+    "frontend/apps/web/scripts/create_default_hydration_test.ts",
     "config/acceptance/frontend_presentation_targets.v1.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
@@ -80,6 +82,17 @@
         "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
         "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
         "make/contract.mk"
+      ]
+    },
+    "frontend_hydration_context": {
+      "target": "verify.frontend.create_default_hydration.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/nativeModifierContext.ts",
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "make/frontend.mk"
       ]
     },
     "node_validation": {
