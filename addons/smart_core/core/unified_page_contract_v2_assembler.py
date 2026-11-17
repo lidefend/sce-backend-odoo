@@ -50,6 +50,14 @@ NO_BUSINESS_FACT_AUTHORITY = True
 TRACE_FIELD_TOKENS = ("legacy", "source", "origin", "external", "import", "migration", "trace", "old_")
 NOTE_FIELD_TOKENS = ("note", "remark", "description", "memo", "comment", "说明", "备注")
 _KANBAN_ROW_ACTION_REGISTRY: dict[tuple[str, str], dict[str, Any]] = {}
+_ACTION_SOURCE_VIEW_TYPES = {
+    "native_form_header": "form",
+    "native_form_stat": "form",
+    "native_form_layout_button": "form",
+    "native_tree_row_action": "tree",
+    "native_list_row_action": "tree",
+    "native_kanban_row_action": "kanban",
+}
 _NATIVE_NODE_PAYLOAD_SCHEMAS = {
     "sc.insight.summary": "insight_summary.v1",
     "sc.action.list": "action_list.v1",
@@ -1389,16 +1397,17 @@ def _validate_action_view_scope(contract: dict[str, Any]) -> None:
     page = _dict(contract.get("pageInfo"))
     active_view_type = _text(page.get("viewType")).lower()
     active_view_type = "tree" if active_view_type in {"list", "tree"} else active_view_type
-    form_channels = {
-        "native_form_header",
-        "native_form_stat",
-        "native_form_layout_button",
-    }
     for rule in _list(_dict(contract.get("actionContract")).get("actionRuleList")):
         if not isinstance(rule, dict):
             continue
         source_channel = _text(rule.get("sourceChannel"))
-        if active_view_type != "form" and source_channel in form_channels:
+        source_view_type = _ACTION_SOURCE_VIEW_TYPES.get(source_channel)
+        if not source_view_type:
+            matched = re.match(r"^native_(form|tree|list|kanban)_", source_channel)
+            if matched:
+                source_view_type = matched.group(1)
+                source_view_type = "tree" if source_view_type == "list" else source_view_type
+        if source_view_type and active_view_type != source_view_type:
             raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
         identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
         identity_view_type = _text(
@@ -5446,6 +5455,7 @@ def _append_ui_contract_actions(
     active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
     if active_view_type == "list":
         active_view_type = "tree"
+    active_view = _dict(_dict(ui.get("views")).get(active_view_type))
     form_view = _dict(_dict(ui.get("views")).get("form")) if active_view_type == "form" else {}
     form_meta = _dict(form_view.get("meta"))
     projection_identity = _dict(form_meta.get("projection_identity"))
@@ -5497,12 +5507,36 @@ def _append_ui_contract_actions(
                     "target_scope": _text(row.get("target_scope"), "page"),
                     "_source_channel": "native_form_stat",
                 })
-    active_view = _dict(_dict(ui.get("views")).get(active_view_type))
+    for key, priority, authority in (
+        ("buttons", 100, "native_contract"),
+        ("business_actions", 300, "product_contract"),
+        ("actions", 100, "native_contract"),
+    ):
+        for row in _list(active_view.get(key)):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_{key}",
+                    "_presentation_priority": priority,
+                    "_presentation_authority": authority,
+                })
+    for group in _list(active_view.get("action_groups")):
+        for row in _list(_dict(group).get("actions")):
+            if isinstance(row, dict):
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_action_group",
+                    "_presentation_priority": 250,
+                    "_presentation_authority": "product_contract",
+                })
     active_view_toolbar = _dict(active_view.get("toolbar"))
     for slot in ("header", "sidebar", "footer"):
         for row in _list(active_view_toolbar.get(slot)):
             if isinstance(row, dict):
-                rows.append({**row, "_source_channel": f"native_view_toolbar.{slot}"})
+                rows.append({
+                    **row,
+                    "_source_channel": f"native_{active_view_type}_toolbar.{slot}",
+                })
     if not explicit_form_view:
         # Without an effective native form carrier these top-level contract
         # rows are the only action source and retain their existing semantics.
@@ -5847,11 +5881,12 @@ def _row_declared_action_semantics(
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:
     views = _dict(ui.get("views"))
     rows: list[dict[str, Any]] = []
-    for view_key in ("kanban", "tree", "list"):
-        view = _dict(views.get(view_key))
-        for row in _list(view.get("row_actions")):
-            if isinstance(row, dict):
-                rows.append({**row, "_source_channel": f"native_{view_key}_row_action"})
+    active_view_type = _text(_dict(contract.get("pageInfo")).get("viewType")).lower()
+    active_view_type = "tree" if active_view_type in {"tree", "list"} else active_view_type
+    view = _dict(views.get(active_view_type))
+    for row in _list(view.get("row_actions")):
+        if isinstance(row, dict):
+            rows.append({**row, "_source_channel": f"native_{active_view_type}_row_action"})
     normalized: list[dict[str, Any]] = []
     action_policies = _dict(ui.get("action_policies"))
     for row in rows:

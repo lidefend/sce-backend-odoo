@@ -137,6 +137,20 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "target": {"scene_key": "project.project"},
             }],
         }
+        source["views"]["kanban"]["row_actions"] = [{
+            "key": "kanban_row_action",
+            "name": "kanban_row_action",
+            "kind": "object",
+            "payload": {"method": "kanban_row_action"},
+        }]
+        source["views"]["tree"] = {
+            "row_actions": [{
+                "key": "tree_only_row_action",
+                "name": "tree_only_row_action",
+                "kind": "object",
+                "payload": {"method": "tree_only_row_action"},
+            }],
+        }
 
         contract = self.assembler.assemble_unified_page_contract_v2(
             source,
@@ -148,15 +162,73 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         actions = (contract.get("actionContract") or {}).get("actionRuleList") or []
         keys = [row.get("actionKey") for row in actions]
         self.assertIn("kanban_toolbar_action", keys)
+        self.assertIn("kanban_row_action", keys)
         self.assertNotIn("form_only_action", keys)
+        self.assertNotIn("tree_only_row_action", keys)
 
-    def test_assembler_rejects_form_action_sources_on_kanban(self):
+    def test_active_tree_surface_excludes_kanban_toolbar_actions(self):
+        source = _kanban_source()
+        source["view_type"] = "tree"
+        source["views"]["tree"] = {
+            "toolbar": {
+                "header": [{
+                    "key": "tree_toolbar_action",
+                    "name": "tree_toolbar_action",
+                    "label": "树视图动作",
+                    "intent": "open_scene",
+                    "target": {"scene_key": "project.project"},
+                }],
+            },
+            "row_actions": [],
+        }
+        source["views"]["kanban"] = {
+            "toolbar": {
+                "header": [{
+                    "key": "kanban_toolbar_action",
+                    "name": "kanban_toolbar_action",
+                    "label": "看板动作",
+                    "intent": "open_scene",
+                    "target": {"scene_key": "project.project"},
+                }],
+            },
+            "row_actions": [],
+        }
+
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.tree.kanban-actions-excluded",
+        )
+
+        keys = [
+            row.get("actionKey")
+            for row in ((contract.get("actionContract") or {}).get("actionRuleList") or [])
+        ]
+        self.assertIn("tree_toolbar_action", keys)
+        self.assertNotIn("kanban_toolbar_action", keys)
+
+    def test_assembler_rejects_action_sources_from_other_views(self):
+        for source_channel in ("native_form_header", "native_tree_row_action"):
+            with self.subTest(source_channel=source_channel):
+                contract = {
+                    "pageInfo": {"model": "project.project", "viewType": "kanban"},
+                    "actionContract": {"actionRuleList": [{
+                        "actionKey": "foreign_action",
+                        "sourceChannel": source_channel,
+                        "nativeIdentity": {"model": "project.project", "viewType": "kanban"},
+                    }]},
+                }
+                with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):
+                    self.assembler._validate_action_view_scope(contract)
+
+    def test_assembler_rejects_native_identity_from_another_view(self):
         contract = {
             "pageInfo": {"model": "project.project", "viewType": "kanban"},
             "actionContract": {"actionRuleList": [{
-                "actionKey": "form_only_action",
-                "sourceChannel": "native_form_header",
-                "nativeIdentity": {"model": "project.project", "viewType": "kanban"},
+                "actionKey": "foreign_identity",
+                "sourceChannel": "contract_action",
+                "nativeIdentity": {"model": "project.project", "viewType": "form"},
             }]},
         }
         with self.assertRaisesRegex(ValueError, "ACTION_VIEW_SCOPE_MISMATCH"):

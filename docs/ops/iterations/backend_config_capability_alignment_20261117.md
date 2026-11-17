@@ -50,8 +50,10 @@ Context 类型仍然拒绝。这样继承明细条件不会把整页变成加载
 
 项目看板的浏览器异常定位为动作规则来源错层：Kanban 页面错误纳入了 Form 头部
 `native_identity` 动作，前端严格 Decoder 因活动 View 不匹配而拒绝整份契约。
-现在动作装配按活动 View 过滤：Kanban 保留集合工具栏与行动作，Form 头部、
-Stat 按钮和 Form layout 按钮只在 Form 页面发布。
+现在按原生声明结构还原通用匹配：装配只读取 `views.<active_view_type>` 下的
+toolbar、header、buttons、actions、action groups 与 row actions；同时校验动作
+来源 View、`nativeIdentity.viewType` 和 model 必须等于活动页面。Form 布局节点按钮
+仅在 Form 页面附加发布。该规则覆盖 Form、Tree/List、Kanban，不做模型或页面特判。
 
 ## 当前故障
 
@@ -88,7 +90,7 @@ Stat 按钮和 Form layout 按钮只在 Form 页面发布。
 | 继承能力兜底 | 已通过 | 能力投影 18 项；节点验证 266 项 |
 | 字段 Widget 属性对齐 | 已通过 | `boolean_favorite`、`text` → 通用布尔/文本控件；8 项 provenance、116 项语义 registry |
 | one2many 首帧 Context | 已通过 | 55 项明细 hydration/Context 用例；非法 Context 仍 fail-closed |
-| 看板动作来源过滤 | 已通过 | P0 契约缺陷：Form 动作不再进入 Kanban；assembler guard PASS |
+| 看板动作来源过滤 | 已通过 | P0 契约缺陷：按活动 View 通用匹配；assembler guard PASS，语义/装配 120 项 |
 | presentation 目标 | 已通过 | 81 项 |
 | 增量与台账 | 已通过 | 增量映射 168 项；Agent 台账 18 项；续跑入口 58 项 |
 | 候选 `af9a096b` 发布 | 已通过 | 恢复点、模块升级、构建和发布面均 PASS；契约回读 HTTP 200 |
