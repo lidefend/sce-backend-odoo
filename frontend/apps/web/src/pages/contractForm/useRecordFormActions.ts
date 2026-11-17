@@ -13,7 +13,7 @@ import {
   canonicalizeSubmissionValues,
   createSingleFlightSave,
 } from './saveRecordHelpers';
-import { isContractGapError, type ContractDefectRef } from '../../app/contract/contractGap';
+import { isContractGapError } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 
@@ -21,7 +21,6 @@ type ActionDependencies = Record<string, any> & FormDesignerActionDependencies;
 
 /** Owns save, conflict recovery and projection refresh; delegates designer interactions. */
 export function useRecordFormActions(dependencies: ActionDependencies) {
-  const renderErrorDefect = ref<ContractDefectRef | null>(null);
   const {
     ApiError,
     BUSINESS_CONFIG_ACTION_KEYS,
@@ -90,6 +89,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     recordVersionPolicy,
     recordVersionToken,
     reload,
+    renderErrorDefect,
     renderErrorMessage,
     resolvePendingInlineRelationCreates,
     resolvePendingMany2manyTagCreates,
@@ -626,14 +626,12 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     recordContextChangedEvent: RECORD_CONTEXT_CHANGED_EVENT,
     routeIsOwned: () => isFormPageRouteOwner(route.name),
     reload: () => reload(),
-    renderErrorDefect,
     retainedRouteIdentity,
     status,
     ensureFormInitialReload: () => ensureFormInitialReload(),
   });
 
   return {
-    renderErrorDefect,
     discardChanges,
     confirmActionSafety,
     ensureSavedBeforeRecordAction,

@@ -1,11 +1,11 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { computed, nextTick } from 'vue';
+import { computed, nextTick, ref } from 'vue';
 import { dispatchSceneBlockAction } from './sceneBlockAction';
 import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
-import { isContractGapError } from '../../app/contract/contractGap';
+import { isContractGapError, type ContractDefectRef } from '../../app/contract/contractGap';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { canPublishRecordReady, markStartupPhase } from '../../app/performance/startupTiming';
 import {
@@ -73,7 +73,6 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     recordVersionToken,
     relationKeywords,
     relationOptions,
-    renderErrorDefect,
     renderErrorMessage,
     renderProfile,
     runOnchangeRoundtrip,
@@ -115,6 +114,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
     validationFieldErrors,
     writableFieldCount,
   } = dependencies;
+  const renderErrorDefect = dependencies.renderErrorDefect || ref<ContractDefectRef | null>(null);
   let activeReloadToken = 0;
   let activeReloadIdentity = '';
   let activeReloadPromise: Promise<void> | null = null;

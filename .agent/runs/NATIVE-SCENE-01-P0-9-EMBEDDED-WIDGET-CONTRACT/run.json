@@ -148,6 +148,7 @@
         "config/acceptance/frontend_presentation_targets.v1.json",
         "frontend/apps/web/src/components/StatusPanel.vue",
         "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useContractFormPageState.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
         "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
         "frontend/apps/web/src/views/ActionView.vue",

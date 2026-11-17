@@ -764,7 +764,7 @@ const {
 });
 const designerRouteQueryText = (key: string) => readRouteQueryText(route.query as Record<string, unknown>, key);
 const {
-  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorMessage,
+  status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorDefect, renderErrorMessage,
   recordMissing, errorMessage, loadError, validationErrors, validationFieldErrors, submissionFeedback, formConflict,
   showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
   contract, contractMeta,
@@ -2011,7 +2011,7 @@ const {
   pickContractNavQuery, defaultContractFormRecord, readContractFormRecord, recordId,
   recordIdDisplay, recordMissing, recordVersionPolicy,
   recordVersionToken, relationKeywords, relationOptions,
-  renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
+  renderErrorDefect, renderErrorMessage, renderProfile: requestedRenderProfile, requestedSourceMode,
   requestedSurface, resolveContractV2MainData, resolveCreateDefaultsFromState,
   resolveNavigationUrlFromOrigin,
   restoreIntakeAutosave, retainedRouteIdentity, rights,
@@ -2027,7 +2027,6 @@ const {
   validationErrors, validationFieldErrors, writableFieldCount,
 });
 const {
-  renderErrorDefect,
   discardChanges, confirmActionSafety, ensureSavedBeforeRecordAction, applyClientMode, applyRouteConfigMode,
   onContractFieldAction, onFormSettingsFieldSelect, selectFormDesignerGroup, selectFormDesignerField, onSelectedFormSettingsGroupTitleChange,
   onSelectedFormSettingsFieldLabelChange, contractInlineFieldOrderIndex, onContractInlineFieldOrderMove, onContractInlineFieldOrderDragStart, onContractInlineFieldOrderDragOver,
@@ -2065,7 +2064,7 @@ const {
   onFieldOrderWindowDragStop, onRelationDialogDocumentKeydown, one2manyValidation,
   originalValues, parseMaybeJsonRecord, policyContext,
   recordId, recordVersionPolicy, recordVersionToken,
-  reload, rememberFormConfigFieldLabel, renderErrorMessage,
+  reload, rememberFormConfigFieldLabel, renderErrorDefect, renderErrorMessage,
   resolvePendingInlineRelationCreates, resolvePendingMany2manyTagCreates, retainedRouteIdentity,
   route, routeQueryText: designerRouteQueryText, router, runContractRuleAction,
   sanitizeUiErrorMessage, saveContractFieldOrder, sceneReadyFormSurface,
