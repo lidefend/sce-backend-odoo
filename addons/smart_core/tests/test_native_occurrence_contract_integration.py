@@ -36,7 +36,8 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
                 '<group name="identity"><field name="name" string="Name"/>'
                 '<field name="name" string="Display name"/></group>'
                 '<group name="secondary"><field name="email"/>'
-                '<field name="parent_id" domain="[(\'is_company\', \'=\', True)]"/></group>'
+                '<field name="parent_id" domain="[(\'is_company\', \'=\', True)]" '
+                'context="{\'default_is_company\': True}" options="{\'no_create\': True}"/></group>'
                 '</sheet></form>'
             ),
         })
@@ -211,8 +212,11 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertEqual(len(widgets), 1)
         widget = widgets[0]
         raw = "[('is_company', '=', True)]"
+        context = "{'default_is_company': True}"
         self.assertEqual(widget["fieldDescriptor"]["domain"], raw)
         self.assertEqual(widget["fieldDescriptor"]["domain_expression"]["raw"], raw)
+        self.assertEqual(widget["fieldDescriptor"]["context"], context)
+        self.assertEqual(widget["fieldDescriptor"]["widget_options"], {"no_create": True})
 
     def test_final_handler_boundary_restores_occurrences_after_mutation(self):
         source = self._source("tree")

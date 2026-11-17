@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: NATIVE-SCENE-01-P0-7-NATIVE-FIELD-DOMAIN
   title: Native field domain passthrough closure
-  status: active
+  status: completed
   formal_product_layer: P0 platform kernel product
   layer_target: Odoo View field-domain passthrough into the existing bounded relation-domain expression
   module:

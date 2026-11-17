@@ -424,15 +424,23 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
 
     def test_form_node_assembly_preserves_native_domain_in_existing_descriptor(self):
         raw = "[('project_id', '=', project_id)]"
+        context = "{'default_project_id': project_id}"
+        options = "{'no_create': True}"
         node = self.assembler._native_field_node(
             {
                 "type": "field",
                 "name": "contract_id",
-                "attributes": {"domain": raw},
+                "attributes": {
+                    "domain": raw,
+                    "context": context,
+                    "options": options,
+                },
                 "fieldInfo": {
                     "type": "many2one",
                     "relation": "x.contract",
                     "domain": raw,
+                    "context": context,
+                    "widget_options": {"no_create": True},
                 },
             },
             {},
@@ -449,6 +457,8 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             formal["fieldDescriptor"]["domain_expression"]["dependencies"],
             ["project_id"],
         )
+        self.assertEqual(formal["fieldDescriptor"]["context"], context)
+        self.assertEqual(formal["fieldDescriptor"]["widget_options"], {"no_create": True})
         self.assertNotIn("domainProjection", formal["componentConfig"])
 
         unsupported_raw = "[('x', '=', unsupported_call())]"

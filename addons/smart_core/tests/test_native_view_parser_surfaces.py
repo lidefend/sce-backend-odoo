@@ -684,6 +684,8 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
 
     def test_native_view_domain_is_preserved_in_field_descriptors(self):
         raw = "[('project_id', '=', project_id)]"
+        context = "{'default_project_id': project_id}"
+        options = "{'no_create': True}"
         fields_info = {
             "contract_id": {
                 "type": "many2one",
@@ -692,18 +694,24 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
             }
         }
         tree = self.tree_form_parser._parse_tree_view(
-            f'<tree><field name="contract_id" domain="{raw}"/></tree>',
+            f'<tree><field name="contract_id" domain="{raw}" context="{context}" options="{options}"/></tree>',
             fields_info,
         )
         self.assertEqual(tree["modifiers"]["contract_id"]["domain"], raw)
+        self.assertEqual(tree["modifiers"]["contract_id"]["context"], context)
+        self.assertEqual(tree["modifiers"]["contract_id"]["widget_options"], {"no_create": True})
 
-        form_element = _parse_test_xml(f'<field name="contract_id" domain="{raw}"/>')
+        form_element = _parse_test_xml(
+            f'<field name="contract_id" domain="{raw}" context="{context}" options="{options}"/>'
+        )
         form = self.tree_form_parser._node_to_layout_from_dom(
             form_element,
             fields_info,
             list(form_element.iter()),
         )
         self.assertEqual(form["fieldInfo"]["domain"], raw)
+        self.assertEqual(form["fieldInfo"]["context"], context)
+        self.assertEqual(form["fieldInfo"]["widget_options"], {"no_create": True})
 
     def test_reference_field_type_is_not_declared_as_a_widget_spelling(self):
         # A field type is not a widget alias. ``many2one_reference`` used to be

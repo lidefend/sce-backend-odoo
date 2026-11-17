@@ -2425,6 +2425,7 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
     attributes = _dict(node.get("attributes") or node.get("attrs"))
     xml_widget = _text(attributes.get("widget"))
     xml_domain = str(attributes.get("domain") or "")
+    xml_context = str(attributes.get("context") or "")
     node_widget = _text(node.get("widget"))
     if xml_widget:
         field_source["widget"] = xml_widget
@@ -2452,6 +2453,8 @@ def _native_field_node(node: dict[str, Any], field: dict[str, Any], *, layout_ty
         field_source.setdefault("widget_source", "compatibility_default")
     if xml_domain.strip():
         field_source["domain"] = xml_domain
+    if xml_context.strip():
+        field_source["context"] = xml_context
     widget = _field_widget(field_source, layout_type=layout_type)
     component_config = deepcopy(widget.get("componentConfig") or {})
     field_info["name"] = field_name
@@ -2536,6 +2539,9 @@ def _field_source_with_node_info(node: dict[str, Any], field: dict[str, Any], *,
     native_domain = str(attributes.get("domain") or "")
     if native_domain.strip():
         field_source["domain"] = native_domain
+    native_context = str(attributes.get("context") or "")
+    if native_context.strip():
+        field_source["context"] = native_context
     return field_source
 
 

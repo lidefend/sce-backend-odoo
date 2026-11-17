@@ -1362,7 +1362,7 @@
       "docs/audit/native-scene-01/evidence/navigation_capability_inventory_v1.json",
       "scripts/audit/native_scene_inventory.py"
     ],
-    "sha256": "85fc009b474d8c6b4d06cfef329bb1e79e4a0bb0c35e4a1c8683afdb5b861264"
+    "sha256": "ea4168533172b3f894a0f766582089273efdd63bab51261efabe6d2b4054725d"
   },
   "limitations": [
     "Source declarations are not proof that a module is installed or that a View is effective.",
@@ -1374,22 +1374,22 @@
     "native_action_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_action_inventory.json",
       "primary_row_count": 530,
-      "sha256": "2a4c0970ddc05f0240763d38d2a27f6dcebfa831b0a850ec48ba1e632a6ee7ab"
+      "sha256": "83f726be759f325db35afaa4adb626b9c85ba25a847655d72ae4c69d924788b9"
     },
     "native_menu_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_menu_inventory.json",
       "primary_row_count": 446,
-      "sha256": "d85a5ef269762d925feeb1d086a1ab3708dc97d9817553a7abfd657915b5d1b4"
+      "sha256": "729ec85d108132f89c95cb7430e5926c92bd6a9332f07a50daac2ff5dac6cdd9"
     },
     "native_model_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_model_inventory.json",
       "primary_row_count": 498,
-      "sha256": "003bfe0746473b399f8fe57d79890c596d82ef8136cddc467451a5bdd4e6ff72"
+      "sha256": "b85f03f84991ede01c16898e228411ac26016e144a2c81c3bfe517b9a81dde6b"
     },
     "native_view_inventory.json": {
       "path": "docs/audit/native-scene-01/inventories/native_view_inventory.json",
       "primary_row_count": 797,
-      "sha256": "34bb4f284722c206d2d092e77fa04c2bf9336319e779d1120939b9da0a8b35b2"
+      "sha256": "7ed6cb6ac20ff4b1474dcba6a6dc78e9abb84ea96be596ce61e5fdbf0ae9d7a7"
     }
   },
   "runtime_evidence": {
@@ -1458,11 +1458,11 @@
     "xml_loading": "manifest data and demo files only"
   },
   "source": {
-    "commit_time": "2026-11-17T10:28:03+08:00",
+    "commit_time": "2026-11-17T11:07:07+08:00",
     "dirty_paths": [],
-    "revision": "a66d80500e4dd7a9004895339c61606495aab315",
+    "revision": "af29b5f5f973d4bdac18579680d788c7270ab0a2",
     "root": ".",
-    "tree": "e079433a8dd9c25232c6c2f5927428e4b19d251c"
+    "tree": "af276fc8f648d454e4afe8c1ea2dd318130e7e01"
   },
   "statistics": {
     "actions": {
