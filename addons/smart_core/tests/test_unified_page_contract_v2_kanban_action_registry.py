@@ -214,6 +214,22 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertTrue(self.assembler.requested_view_type_matches(contract, "list"))
         self.assertFalse(self.assembler.requested_view_type_matches(contract, "kanban"))
 
+    def test_requested_view_renderer_must_be_supported(self):
+        contract = {
+            "nativeActionContract": {
+                "viewSet": {
+                    "activeViewType": "kanban",
+                    "orderedViews": [{
+                        "viewType": "kanban",
+                        "rendererStatus": "unsupported",
+                    }],
+                },
+            },
+        }
+        self.assertFalse(self.assembler.requested_view_renderer_supported(contract))
+        contract["nativeActionContract"]["viewSet"]["orderedViews"][0]["rendererStatus"] = "ready"
+        self.assertTrue(self.assembler.requested_view_renderer_supported(contract))
+
     def test_assembler_rejects_action_sources_from_other_views(self):
         for source_channel in ("native_form_header", "native_tree_row_action"):
             with self.subTest(source_channel=source_channel):

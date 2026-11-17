@@ -21,6 +21,7 @@ from ..core.unified_page_contract_v2_assembler import (
     project_runtime_business_actions,
     project_workflow_action_semantics,
     rebind_native_occurrence_identities,
+    requested_view_renderer_supported,
     requested_view_type_matches,
 )
 from ..core.unified_page_contract_v2_client import (
@@ -1027,6 +1028,8 @@ class UiContractV2Handler(BaseIntentHandler):
             contract_v2 = assembled_cached["contract"]
             if not requested_view_type_matches(contract_v2, requested_view_type):
                 raise FormConfigurationError("REQUESTED_VIEW_TYPE_MISMATCH", "pageInfo.viewType")
+            if not requested_view_renderer_supported(contract_v2):
+                raise FormConfigurationError("REQUESTED_VIEW_RENDERER_UNSUPPORTED", "nativeActionContract.viewSet")
             contract_v2 = _authority.seal_runtime_contract(
                 self,
                 contract_v2,
@@ -1263,6 +1266,8 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if not requested_view_type_matches(contract_v2, requested_view_type):
             raise FormConfigurationError("REQUESTED_VIEW_TYPE_MISMATCH", "pageInfo.viewType")
+        if not requested_view_renderer_supported(contract_v2):
+            raise FormConfigurationError("REQUESTED_VIEW_RENDERER_UNSUPPORTED", "nativeActionContract.viewSet")
         post_assembler_at = time.monotonic()
         node_validation_native_tree = deepcopy(contract_v2.get("layoutContract", {}).get("containerTree", []))
         self._apply_field_policies_to_v2_status(contract_v2, source_contract)

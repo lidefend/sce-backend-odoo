@@ -1434,6 +1434,25 @@ def requested_view_type_matches(contract: dict[str, Any], requested_view_type: s
     return requested == delivered
 
 
+def requested_view_renderer_supported(contract: dict[str, Any]) -> bool:
+    """Whether the active native Action View is renderable by the client."""
+    native_action = _dict(contract.get("nativeActionContract"))
+    if not native_action:
+        return True
+    view_set = _dict(native_action.get("viewSet"))
+    active = _text(view_set.get("activeViewType")).lower()
+    active = "tree" if active in {"tree", "list"} else active
+    row = next(
+        (
+            item for item in _list(view_set.get("orderedViews"))
+            if isinstance(item, dict)
+            and _text(item.get("viewType")).lower() == active
+        ),
+        None,
+    )
+    return not row or _text(row.get("rendererStatus")).lower() != "unsupported"
+
+
 def assemble_unified_page_patch_v2(
     onchange_payload: dict[str, Any],
     *,

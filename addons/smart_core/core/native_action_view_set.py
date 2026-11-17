@@ -12,6 +12,17 @@ from typing import Any
 ACTION_VIEW_ORDER_AUTHORITY = "ir.actions.act_window.views"
 ACTION_VIEW_REQUEST_OVERRIDE_DENIED = "ACTION_VIEW_REQUEST_OVERRIDE_DENIED"
 NATIVE_ACTION_VIEW_OVERRIDE_AUTHORIZED = "native_action_view_override_authorized"
+ACTION_VIEW_RENDERER_CAPABILITIES = {
+    "form": "view.form.v1",
+    "tree": "view.tree.v1",
+    "kanban": "view.kanban.v1",
+    "pivot": "view.pivot.v1",
+    "graph": "view.graph.v1",
+    "calendar": "view.calendar.v1",
+    "gantt": "view.gantt.v1",
+    "activity": "view.activity.v1",
+    "dashboard": "view.dashboard.v1",
+}
 
 
 def _text(value: Any) -> str:

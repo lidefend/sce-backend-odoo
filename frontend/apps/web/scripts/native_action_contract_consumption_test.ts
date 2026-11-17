@@ -30,7 +30,7 @@ function nativeActionView(viewType: string, overrides: Record<string, unknown> =
     surfaceRole: viewType === 'form' ? 'record_detail' : 'collection',
     selectable: viewType !== 'form',
     projectionStatus: 'ready',
-    rendererStatus: 'unknown',
+    rendererStatus: 'ready',
     reasonCode: '',
     profile: viewType,
     ...overrides,
@@ -129,7 +129,7 @@ function actionContractPayload() {
       },
       readiness: {
         backendContract: { status: 'ready', reasonCodes: [] },
-        clientRenderer: { status: 'unknown', reasonCodes: [] },
+        clientRenderer: { status: 'ready', reasonCodes: [] },
         businessExecution: { status: 'not_applicable', reasonCodes: [] },
       },
       capabilities: ['action_view_set.v1', 'search_identity.v1'],

@@ -60,6 +60,19 @@ toolbar、header、buttons、actions、action groups 与 row actions；同时校
 `pageInfo.viewType`。前端请求 Kanban 而 Backend 交付 Form，或请求 Tree 而交付
 Kanban，均以 `REQUESTED_VIEW_TYPE_MISMATCH` 拒绝，不再静默换视图。
 
+View 可用性是逐请求动态事实，不是静态常量：
+
+- ActionResolver 从当前 Action 的有效 `views` 顺序得到 View Set；
+- 当前用户/公司/记录权限决定 Action 和 View 投影是否可用；
+- 请求中的 `client_contract_capabilities` 通过 `view.form.v1`、
+  `view.tree.v1`、`view.kanban.v1` 等能力决定 `rendererStatus`；
+- 后端为每个 View 返回 `projectionStatus`、`rendererStatus`、`selectable` 和
+  `reasonCode`；
+- 当前活动 View 缺 Renderer 能力时返回
+  `REQUESTED_VIEW_RENDERER_UNSUPPORTED`；
+- 前端只从 `nativeActionContract.viewSet.orderedViews` 展示可选的集合 View，
+  不再从旧 `view_modes` 推断。
+
 ## 当前故障
 
 - 日常运行候选：`a19bf2d976cbda9d99bdc24deab7903143a21cb7`。
@@ -95,7 +108,8 @@ Kanban，均以 `REQUESTED_VIEW_TYPE_MISMATCH` 拒绝，不再静默换视图。
 | 继承能力兜底 | 已通过 | 能力投影 18 项；节点验证 266 项 |
 | 字段 Widget 属性对齐 | 已通过 | `boolean_favorite`、`text` → 通用布尔/文本控件；8 项 provenance、116 项语义 registry |
 | one2many 首帧 Context | 已通过 | 55 项明细 hydration/Context 用例；非法 Context 仍 fail-closed |
-| 看板动作来源过滤 | 已通过 | P0 契约缺陷：按活动 View 通用匹配；assembler guard PASS，语义/装配 120 项 |
+| 看板动作来源过滤 | 已通过 | P0 契约缺陷：按活动 View 通用匹配；assembler guard PASS，语义/装配 122 项 |
+| View 能力动态协商 | 已通过定向 | 后端 9 项 View Set、7 项 Action Contract；前端 7 项契约消费、3844 项集合语义 |
 | presentation 目标 | 已通过 | 81 项 |
 | 增量与台账 | 已通过 | 增量映射 168 项；Agent 台账 18 项；续跑入口 58 项 |
 | 候选 `af9a096b` 发布 | 已通过 | 恢复点、模块升级、构建和发布面均 PASS；契约回读 HTTP 200 |

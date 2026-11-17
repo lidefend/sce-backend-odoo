@@ -71,7 +71,7 @@ const nativeActionView = (viewType: string, overrides: Record<string, unknown> =
   surfaceRole: viewType === 'form' ? 'record_detail' : 'collection',
   selectable: viewType !== 'form',
   projectionStatus: 'ready',
-  rendererStatus: 'unknown',
+  rendererStatus: 'ready',
   reasonCode: '',
   profile: viewType,
   ...overrides,
