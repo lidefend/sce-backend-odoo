@@ -8,8 +8,10 @@ const props = withDefaults(
   defineProps<{
     tier?: 'primary' | 'secondary' | 'transparent';
     disabled?: boolean;
+    loading?: boolean;
+    loadingLabel?: string;
   }>(),
-  { tier: 'secondary', disabled: false },
+  { tier: 'secondary', disabled: false, loading: false, loadingLabel: '处理中' },
 );
 
 const emit = defineEmits<{ activate: [] }>();
@@ -20,6 +22,11 @@ const driverButton = computed(() => runtime.value?.components.button);
 function tdesignTheme(): 'primary' | 'default' {
   return props.tier === 'primary' ? 'primary' : 'default';
 }
+
+function activate() {
+  if (props.disabled || props.loading) return;
+  emit('activate');
+}
 </script>
 
 <template>
@@ -29,9 +36,12 @@ function tdesignTheme(): 'primary' | 'default' {
     v-bind="$attrs"
     :theme="tdesignTheme()"
     :variant="tier === 'transparent' ? 'text' : 'base'"
-    :disabled="disabled"
+    :loading="loading"
+    :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
+    :data-loading="loading || undefined"
     data-scene-driver-control="button"
-    @click="emit('activate')"
+    @click="activate"
   >
     <slot />
   </component>
@@ -41,10 +51,14 @@ function tdesignTheme(): 'primary' | 'default' {
     type="button"
     class="scene-native-button"
     :data-tier="tier"
-    :disabled="disabled"
-    @click="emit('activate')"
+    :disabled="disabled || loading"
+    :aria-busy="loading || undefined"
+    :data-loading="loading || undefined"
+    @click="activate"
   >
+    <span v-if="loading" class="scene-native-button__spinner" aria-hidden="true"></span>
     <slot />
+    <span v-if="loading" class="sc-visually-hidden">{{ loadingLabel }}</span>
   </button>
 </template>
 
@@ -74,5 +88,25 @@ function tdesignTheme(): 'primary' | 'default' {
 .scene-native-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
+}
+
+.scene-native-button__spinner {
+  display: inline-block;
+  inline-size: 0.9em;
+  block-size: 0.9em;
+  margin-inline-end: 6px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  vertical-align: -0.12em;
+  animation: scene-native-button-spin 720ms linear infinite;
+}
+
+@keyframes scene-native-button-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scene-native-button__spinner { animation: none; }
 }
 </style>

@@ -139,9 +139,11 @@ def main() -> int:
         errors.append("useRecordFormActions.ts must keep saveRecord transaction owner")
     else:
         validation_line = _line_for_token(save_body, "const validation = await validateBeforeSaveRecord({")
-        save_busy_line = _line_for_token(save_body, "busyKind.value = 'save';")
+        save_busy_line = _line_for_token(
+            save_body,
+            "beginFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'save', 'form.save');",
+        )
         flat_save_body = re.sub(r"\s+", "", save_body)
-        busy_release_token = "if(busyOwnerOperationId===operation.id){busyKind.value=null;"
         finally_match = re.search(r"}finally\{", flat_save_body)
         finally_body = _function_body('function ownedFinally() {' + flat_save_body[finally_match.end():], 'ownedFinally') if finally_match else ''
         if validation_line < 0:
@@ -162,8 +164,16 @@ def main() -> int:
         ]:
             if token not in save_body:
                 errors.append(f"saveRecord missing side-effect boundary token: {token}")
-        if busy_release_token not in finally_body:
-            errors.append("saveRecord must clear save busy inside the finally block")
+        for token in [
+            "if(busyOwnerOperationId===operation.id){",
+            "endFormRuntimeBusy({busyKind,busyActionIdentity},'saveRecord','form.save');",
+            "busyOwnerOperationId=0;",
+        ]:
+            if token not in finally_body:
+                errors.append("saveRecord must clear save busy inside the finally block")
+                break
+        if "busyKind.value=" in save_body:
+            errors.append("saveRecord must route save busy changes through runtimeStateApplier")
 
     onchange_body = _function_body(form_state_runtime, "runOnchangeRoundtrip")
     if not onchange_body:
@@ -200,17 +210,19 @@ def main() -> int:
             "const plan = buildFormActionExecutionPlan({",
             "if (plan.kind === 'scene_mutation')",
             "if (actionParams === null) return;",
-            "params.busyKind.value = 'action';",
+            "beginFormRuntimeBusy(params, 'runAction', 'action', actionIdentity);",
             "await params.executeSceneMutation({",
             "if (!await params.ensureSavedBeforeRecordAction() || (owner && !owner.owns())) return;",
             "const actionParams = await params.collectActionParams(action);",
             "const response = await executeRecordButton({",
             "action_params: Object.keys(actionParams).length ? actionParams : undefined,",
             "applyFormRuntimeStatusEvent(params, {",
-            "params.busyKind.value = null;",
+            "if (!owner || owner.owns()) endFormRuntimeBusy(params, 'runAction', actionIdentity);",
         ]:
             if token not in action_body:
                 errors.append(f"runAction missing behavior token: {token}")
+        if "params.busyKind.value =" in action_body:
+            errors.append("runAction must route action busy changes through runtimeStateApplier")
 
     if errors:
         print("[contract_form_side_effect_regression_guard] FAIL")

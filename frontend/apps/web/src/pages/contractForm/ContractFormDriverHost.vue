@@ -65,7 +65,10 @@
             <SceneButton
               v-if="localSaveAction"
               tier="primary"
-              :disabled="busy"
+              :disabled="Boolean(busy)"
+              :loading="localSaveState.loading"
+              :loading-label="`${localSaveAction.label}处理中`"
+              :data-action-loading="localSaveState.loading || undefined"
               data-action-ref="form.save"
               data-action-tier="primary"
               data-action-enabled="true"
@@ -152,6 +155,7 @@ import CanonicalNativeFormSurface from './CanonicalNativeFormSurface.vue';
 import TaskFormPattern from '../../components/product-page-patterns/TaskFormPattern.vue';
 import WorkspaceFormPattern from '../../components/product-page-patterns/WorkspaceFormPattern.vue';
 import { canonicalNodeHasContent, type CanonicalRelationProjection } from './canonicalFormRenderer';
+import { resolveActionInteractionState, useActionExecutionIdentity } from './actionInteractionState';
 import {
   declaredAuditAuthorized,
   declaredCollaborationSurface,
@@ -278,6 +282,10 @@ const localSaveAction = computed(() => (
     ? visibleActions.value.find((action) => action.actionRef.actionId === 'form.save' && action.enabled) || null
     : null
 ));
+const actionExecutionIdentity = useActionExecutionIdentity();
+const localSaveState = computed(() => localSaveAction.value
+  ? resolveActionInteractionState(localSaveAction.value, actionExecutionIdentity.value)
+  : { disabled: true, loading: false });
 const showProductActions = computed(() => Boolean(
   localSaveAction.value || productWriteMode.value
   || floorplan.value.directActions.length || floorplan.value.overflowActions.length,
@@ -334,6 +342,7 @@ const nativeBridge = computed(() => nativeBridgeModel.value
     props.relationAdapter as CanonicalRelationProjection,
     props.claimedStatusbarNodeIdentity || '',
     props.claimedStatusbarFieldCode || '',
+    actionExecutionIdentity.value,
   )
   : null);
 const floorplanSubordinateNodes = computed(() => floorplan.value.subordinateNodes

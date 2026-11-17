@@ -280,7 +280,11 @@
                 size="small"
                 variant="secondary"
                 :disabled="nativeActionDisabled(buttonNode)"
+                :loading="nativeActionLoading(buttonNode)"
+                :loading-label="`${buttonLabel(buttonNode)}处理中`"
                 :title="nativeActionTitle(buttonNode)"
+                :aria-busy="nativeActionLoading(buttonNode) || undefined"
+                :data-action-loading="nativeActionLoading(buttonNode) || undefined"
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               >
                 <template v-for="icon in [buttonIcon(buttonNode)]" :key="icon">
@@ -294,6 +298,7 @@
                 :label="buttonLabel(buttonNode)"
                 :icon="buttonIcon(buttonNode)"
                 :disabled="nativeActionDisabled(buttonNode)"
+                :loading="nativeActionLoading(buttonNode)"
                 :title="nativeActionTitle(buttonNode)"
                 @click.stop.prevent="emitNativeAction(buttonNode)"
               />
@@ -417,7 +422,11 @@
           size="small"
           variant="secondary"
           :disabled="nativeActionDisabled(node)"
+          :loading="nativeActionLoading(node)"
+          :loading-label="`${buttonLabel(node)}处理中`"
           :title="nativeActionTitle(node)"
+          :aria-busy="nativeActionLoading(node) || undefined"
+          :data-action-loading="nativeActionLoading(node) || undefined"
           @click.stop.prevent="emitNativeAction(node)"
         >
           <template v-for="icon in [buttonIcon(node)]" :key="icon">
@@ -431,6 +440,7 @@
           :label="buttonLabel(node)"
           :icon="buttonIcon(node)"
           :disabled="nativeActionDisabled(node)"
+          :loading="nativeActionLoading(node)"
           :title="nativeActionTitle(node)"
           @click.stop.prevent="emitNativeAction(node)"
         />
@@ -532,7 +542,11 @@ const props = withDefaults(defineProps<{
   isNodeVisible?: (node: NativeFormLayoutNode) => boolean;
   buttonLabelResolver?: (node: NativeFormLayoutNode) => string | undefined;
   nativeActionHandler?: (payload: Record<string, unknown>) => void | Promise<void>;
-  nativeActionStateResolver?: (payload: Record<string, unknown>) => { disabled?: boolean; title?: string } | null | undefined;
+  nativeActionStateResolver?: (payload: Record<string, unknown>) => {
+    disabled?: boolean;
+    loading?: boolean;
+    title?: string;
+  } | null | undefined;
   relationAdapter?: RelationFieldAdapter;
   fieldActions?: (field: FormSectionFieldSchema) => FormSectionFieldAction[];
   fieldOrderEditable?: boolean;
@@ -1095,7 +1109,12 @@ function nativeActionState(node: NativeFormLayoutNode) {
 }
 
 function nativeActionDisabled(node: NativeFormLayoutNode) {
-  return nativeActionState(node).disabled === true;
+  const state = nativeActionState(node);
+  return state.disabled === true || state.loading === true;
+}
+
+function nativeActionLoading(node: NativeFormLayoutNode) {
+  return nativeActionState(node).loading === true;
 }
 
 function nativeActionTitle(node: NativeFormLayoutNode) {

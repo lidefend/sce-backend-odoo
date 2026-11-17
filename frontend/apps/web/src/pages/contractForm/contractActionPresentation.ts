@@ -347,7 +347,21 @@ export function isUnifiedSubmitAction(action: ContractAction | null | undefined)
 }
 
 /** Native occurrences borrow availability only from the resolved contract action. */
-export function resolveNativeContractActionState(action: ContractAction | null, busy: boolean) {
+export function resolveNativeContractActionState(
+  action: ContractAction | null,
+  busy: boolean,
+  busyActionIdentity = '',
+) {
   if (!action) return {};
-  return { disabled: busy || !action.enabled, title: action.hint || '' };
+  const identity = String(busyActionIdentity || '').trim();
+  const loading = Boolean(identity) && [
+    String(action.backendIdentity || '').trim(),
+    String(action.authorityActionId || '').trim(),
+    String(action.key || '').trim(),
+  ].filter(Boolean).includes(identity);
+  return {
+    disabled: busy || !action.enabled || loading,
+    ...(loading ? { loading: true } : {}),
+    title: action.hint || '',
+  };
 }

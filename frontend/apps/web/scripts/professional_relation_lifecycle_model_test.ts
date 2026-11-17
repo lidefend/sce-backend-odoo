@@ -209,7 +209,9 @@ const fields = scope.run(() => useRecordRelationshipFields({
 const initializedValues = await fields.loadOne2manyCreateDefaults('line_ids', {
   model: 'x.parent', res_id: null, view_id: 17, values: { owner_id: 2 },
 });
-equal(initializedValues, { name: 'Native name', internal_note: 'Native computed' }, 'loader consumes computed native values before returning');
+equal(initializedValues.values, { name: 'Native name', internal_note: 'Native computed' }, 'loader consumes computed native values before returning');
+equal(initializedValues.modifiersPatch, {}, 'plain child initialization has no modifier overlay');
+equal(initializedValues.warnings, [], 'plain child initialization has no warnings');
 equal(childInitializationRequests[0].model, 'x.parent', 'parent model remains request authority');
 equal(childInitializationRequests[0].view_id, 17, 'selected parent view is preserved');
 equal(childInitializationRequests[0].child_initialization,
@@ -217,21 +219,35 @@ equal(childInitializationRequests[0].child_initialization,
 childInitializationPatch = { unexpected: 'Not declared' };
 await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /返回字段与声明不一致/);
 childInitializationPatch = { name: 'Native name' };
-for (const sideEffects of [{ warnings: [{ message: 'Native warning' }] }, { modifiers_patch: { name: { readonly: true } } }, { line_patches: [{ field: 'nested' }] }]) {
-  childInitializationSideEffects = sideEffects;
-  await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /尚未接入/);
-}
+childInitializationSideEffects = {
+  warnings: [{ message: 'Native warning', reason_code: 'VALIDATION_ERROR' }],
+  modifiers_patch: { name: { readonly: true, invisible: false } },
+};
+const childInteraction = await fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} });
+equal(childInteraction.values, {name:'Native name'}, 'child initialization returns its declared patch');
+equal(childInteraction.modifiersPatch, {name:{readonly:true,invisible:false}}, 'child initialization modifier patch reaches the row runtime');
+equal(childInteraction.warnings, [{message:'Native warning',reason_code:'VALIDATION_ERROR'}], 'child initialization warnings reach the row runtime');
+childInitializationSideEffects = { line_patches: [{ field: 'nested' }] };
+await assert.rejects(fields.loadOne2manyCreateDefaults('line_ids', { model: 'x.parent', res_id: null, values: {} }), /嵌套明细补丁/);
 childInitializationSideEffects = {};
 const rowChangeResult = await fields.loadOne2manyRowChange('line_ids', { id: 4, values: { name: 'Edited' }, changed: ['name'] },
   { model: 'x.parent', res_id: 9, view_id: 17, values: { owner_id: 2 } });
-equal(rowChangeResult, {name:'Native name'}, 'child edit consumes native result');
+equal(rowChangeResult.values, {name:'Native name'}, 'child edit consumes native result');
+equal(rowChangeResult.modifiersPatch, {}, 'plain child edit has no modifier overlay');
+equal(rowChangeResult.warnings, [], 'plain child edit has no warnings');
 const childEditRequest=childInitializationRequests.at(-1)!;
 equal(childEditRequest.child_onchange, {field:'line_ids',fields:['name','internal_note'],values:{name:'Edited'},changed_fields:['name'],record_id:4}, 'child edit uses explicit owned identity and changed fields');
 equal(childEditRequest.view_id,17,'child edit retains selected parent view');
 equal(childEditRequest.context, {company_id:8,allowed_company_ids:[8]}, 'child edit retains authoritative company context');
-childInitializationSideEffects={warnings:[{message:'Native warning'}]};
+childInitializationSideEffects={warnings:[{message:'Native warning'}],modifiers_patch:{name:{readonly:true}}};
+const changedInteraction = await fields.loadOne2manyRowChange('line_ids',{id:0,values:{name:'Edited'},changed:['name']},
+ {model:'x.parent',res_id:null,values:{}});
+equal(changedInteraction.values, {name:'Native name'}, 'child edit returns declared patch through structured interaction');
+equal(changedInteraction.modifiersPatch, {name:{readonly:true}}, 'child edit modifiers reach the row runtime');
+equal(changedInteraction.warnings, [{message:'Native warning'}], 'child edit warnings reach the row runtime');
+childInitializationSideEffects={line_patches:[{field:'nested'}]};
 await assert.rejects(fields.loadOne2manyRowChange('line_ids',{id:0,values:{name:'Edited'},changed:['name']},
- {model:'x.parent',res_id:null,values:{}}),/尚未接入/);
+ {model:'x.parent',res_id:null,values:{}}),/嵌套明细补丁/);
 childInitializationSideEffects={};
 
 guarded.clearRelationRuntime();

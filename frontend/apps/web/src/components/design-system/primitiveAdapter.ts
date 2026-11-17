@@ -141,6 +141,7 @@ export interface ScDropdownOptionInput {
   value: string | number;
   label: string;
   disabled?: boolean;
+  loading?: boolean;
 }
 
 export function tdesignDropdownOptions(items: readonly ScDropdownOptionInput[]) {
@@ -148,6 +149,7 @@ export function tdesignDropdownOptions(items: readonly ScDropdownOptionInput[]) 
     value: item.value,
     content: item.label,
     ...(item.reasonMessage ? { reasonMessage: item.reasonMessage } : {}),
-    disabled: Boolean(item.disabled),
+    disabled: Boolean(item.disabled || item.loading),
+    ...(item.loading ? { loading: true } : {}),
   }));
 }

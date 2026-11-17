@@ -1,7 +1,13 @@
 import { replayOne2manyOnchange } from './one2manyOnchange';
 import { computed, reactive } from 'vue';
 import { createOne2manyRelationRequestAuthority } from '../../components/template/one2manyRelationQuery';
-import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
+import type {
+  One2ManyColumn,
+  One2ManyInlineRow,
+  One2manyChildInteraction,
+  One2manyInteractionWarning,
+  RelationOption,
+} from './types';
 import {
   appendOne2manyDraftRow,
   buildOne2manyCommandValue,
@@ -23,6 +29,41 @@ function makeOne2manyKey() {
   return `o2m_${Date.now()}_${Math.random().toString(16).slice(2, 8)}`;
 }
 
+function normalizeChildInteraction(value: unknown): One2manyChildInteraction {
+  const source = value && typeof value === 'object' && !Array.isArray(value)
+    ? value as Record<string, unknown>
+    : {};
+  const envelope = Object.prototype.hasOwnProperty.call(source, 'values')
+    || Object.prototype.hasOwnProperty.call(source, 'modifiersPatch')
+    || Object.prototype.hasOwnProperty.call(source, 'warnings');
+  if (envelope && Object.prototype.hasOwnProperty.call(source, 'values')
+    && (!source.values || typeof source.values !== 'object' || Array.isArray(source.values))) {
+    throw new Error('明细联动返回的业务值无效');
+  }
+  if (envelope && Object.prototype.hasOwnProperty.call(source, 'modifiersPatch')
+    && (!source.modifiersPatch || typeof source.modifiersPatch !== 'object' || Array.isArray(source.modifiersPatch))) {
+    throw new Error('明细联动返回的修饰声明无效');
+  }
+  if (envelope && Object.prototype.hasOwnProperty.call(source, 'warnings')
+    && !Array.isArray(source.warnings)) {
+    throw new Error('明细联动返回的提示声明无效');
+  }
+  const values = envelope
+    ? (source.values && typeof source.values === 'object' && !Array.isArray(source.values)
+        ? source.values as Record<string, unknown>
+        : {})
+    : source;
+  const modifiers = envelope && source.modifiersPatch && typeof source.modifiersPatch === 'object'
+    && !Array.isArray(source.modifiersPatch)
+    ? source.modifiersPatch as Record<string, Record<string, unknown>>
+    : {};
+  const warnings = envelope && Array.isArray(source.warnings)
+    ? source.warnings.filter((item): item is One2manyInteractionWarning =>
+      Boolean(item && typeof item === 'object' && !Array.isArray(item)))
+    : [];
+  return { values, modifiersPatch: modifiers, warnings };
+}
+
 export function useOne2manyRuntime(params: {
   model: () => string;
   recordId: () => number;
@@ -34,8 +75,8 @@ export function useOne2manyRuntime(params: {
   resolveRelationOptions: (fieldName: string) => RelationOption[];
   parentValues: (fieldName: string) => Record<string, unknown>;
   markFieldChanged: (fieldName: string) => void;
-  loadDefaults?: (fieldName: string) => Promise<Record<string, unknown>>;
-  loadRowChange?: (fieldName: string, row: { id: number; values: Record<string, unknown>; changed: string[] }) => Promise<Record<string, unknown>>;
+  loadDefaults?: (fieldName: string) => Promise<Record<string, unknown> | One2manyChildInteraction>;
+  loadRowChange?: (fieldName: string, row: { id: number; values: Record<string, unknown>; changed: string[] }) => Promise<Record<string, unknown> | One2manyChildInteraction>;
   markDirty?: (fieldName: string) => void;
   createScope?: () => unknown;
   createDraftIdentity?: (fieldName: string) => unknown;
@@ -50,6 +91,11 @@ export function useOne2manyRuntime(params: {
   const changeErrors = reactive<Record<string, string>>({});
   const pendingFields = new Map<string, Set<string>>();
   const defaultsPending = computed(() => Object.values(loadingDefaults).some(Boolean) || Object.values(changing).some(Boolean));
+
+  function applyChildInteraction(row: One2ManyInlineRow, interaction: One2manyChildInteraction) {
+    row.modifierPatches = interaction.modifiersPatch;
+    row.warnings = interaction.warnings;
+  }
 
   function projectModifierValues(source: Record<string, unknown>) {
     const values = { ...source };
@@ -110,12 +156,17 @@ export function useOne2manyRuntime(params: {
     try {
       if (!initialized[name]) initRows(name, params.originalValues()[name]);
       parentSnapshot = draftIdentity();
-      const defaults = params.loadDefaults ? await params.loadDefaults(name) : {};
+      const interaction = normalizeChildInteraction(
+        params.loadDefaults ? await params.loadDefaults(name) : {},
+      );
       if (!ownsRequest()) return;
+      const rowKey = makeOne2manyKey();
       appendOne2manyDraftRow({
-        rowsByField, fieldName: name, key: makeOne2manyKey(),
-        primary: params.resolvePrimaryColumn(name), columns: dataColumns(name), defaults,
+        rowsByField, fieldName: name, key: rowKey,
+        primary: params.resolvePrimaryColumn(name), columns: dataColumns(name), defaults: interaction.values,
       });
+      const row = fieldRows(name).find(item => item.key === rowKey);
+      if (row) applyChildInteraction(row, interaction);
       params.markFieldChanged(name);
     } catch (error) {
       if (ownsRequest()) params.onCreateError?.(error);
@@ -153,11 +204,17 @@ export function useOne2manyRuntime(params: {
       const source = row.isNew ? values : Object.fromEntries(dataColumns(fieldName)
         .filter(item => item.name !== 'id' && Object.prototype.hasOwnProperty.call(row.values, item.name))
         .map(item => [item.name, row.values[item.name]]));
-      const patch = await params.loadRowChange(fieldName, { id: row.isNew ? 0 : Number(row.id),
-        values: JSON.parse(JSON.stringify(source)), changed: [...fields] });
+      const interaction = normalizeChildInteraction(
+        await params.loadRowChange(fieldName, {
+          id: row.isNew ? 0 : Number(row.id),
+          values: JSON.parse(JSON.stringify(source)),
+          changed: [...fields],
+        }),
+      );
       if (!ownsRow()) return;
       if (!sameSurface() || draft() !== before) throw new Error('明细联动上下文已变化，请重新修改该行');
-      prepareOnchangeRows(fieldName, [[1, row.isNew ? row.key : row.id, patch]])();
+      prepareOnchangeRows(fieldName, [[1, row.isNew ? row.key : row.id, interaction.values]])();
+      applyChildInteraction(ensureRows(fieldName).find(item => item.key === rowKey) || row, interaction);
       pendingFields.delete(key);
       params.markFieldChanged(fieldName);
     } catch (error) {

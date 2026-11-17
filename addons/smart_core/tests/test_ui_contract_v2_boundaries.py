@@ -497,6 +497,111 @@ class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
 
+    def test_create_defaults_fingerprint_tracks_only_live_default_changes(self):
+        class Model:
+            _fields = {"write_date": object()}
+
+            def __init__(self):
+                self.defaults = {"name": "Default A", "amount": 10}
+                self.context = {}
+
+            def with_context(self, **context):
+                self.context = dict(context)
+                return self
+
+            def fields_get(self):
+                return {"name": {"type": "char"}, "amount": {"type": "float"}}
+
+            def default_get(self, names):
+                return {name: self.defaults[name] for name in names}
+
+        model = Model()
+        env = {"x.document": model}
+        first = self.module._create_defaults_fingerprint(
+            env,
+            "x.document",
+            {"context": {"active_test": False}},
+            {"model": "x.document"},
+        )
+        same = self.module._create_defaults_fingerprint(
+            env,
+            "x.document",
+            {"context": {"active_test": False}},
+            {"model": "x.document"},
+        )
+        model.defaults["amount"] = 11
+        changed = self.module._create_defaults_fingerprint(
+            env,
+            "x.document",
+            {"context": {"active_test": False}},
+            {"model": "x.document"},
+        )
+        self.assertEqual(first, same)
+        self.assertNotEqual(first, changed)
+        self.assertEqual(model.context["active_test"], False)
+
+    def test_matching_if_none_match_returns_304_without_delivery_payload(self):
+        handler = self.module.UiContractV2Handler(
+            env={},
+            su_env={},
+            request=types.SimpleNamespace(
+                httprequest=types.SimpleNamespace(headers={"If-None-Match": '"upc-v2-stable"'}),
+            ),
+        )
+        delivered = self.module.IntentExecutionResult(
+            ok=True,
+            data={"meta": {"etag": "upc-v2-stable"}},
+            meta={"intent": "ui.contract.v2"},
+        )
+        with patch.object(handler, "_handle_contract", return_value=delivered):
+            result = handler.handle({})
+        self.assertEqual(result.code, 304)
+        self.assertIsNone(result.data)
+        self.assertEqual(result.meta["etag"], "upc-v2-stable")
+
+    def test_non_matching_if_none_match_keeps_full_delivery(self):
+        handler = self.module.UiContractV2Handler(
+            env={},
+            su_env={},
+            request=types.SimpleNamespace(
+                httprequest=types.SimpleNamespace(headers={"If-None-Match": '"upc-v2-old"'}),
+            ),
+        )
+        delivered = self.module.IntentExecutionResult(
+            ok=True,
+            data={"meta": {"etag": "upc-v2-current"}},
+            meta={"intent": "ui.contract.v2"},
+        )
+        with patch.object(handler, "_handle_contract", return_value=delivered):
+            result = handler.handle({})
+        self.assertIs(result, delivered)
+        self.assertEqual(result.data["meta"]["etag"], "upc-v2-current")
+
+    def test_bodyless_304_bypasses_delivery_validation(self):
+        handler = self.module.UiContractV2Handler(
+            env={},
+            su_env={},
+            request=types.SimpleNamespace(
+                httprequest=types.SimpleNamespace(headers={"If-None-Match": '"upc-v2-stable"'}),
+            ),
+        )
+        revalidated = self.module.IntentExecutionResult(
+            ok=True,
+            data=None,
+            code=304,
+            meta={"intent": "ui.contract.v2", "etag": "upc-v2-sha256-stable"},
+        )
+        with (
+            patch.object(handler, "_handle_contract", return_value=revalidated),
+            patch(
+                "odoo.addons.smart_core.core.node_component_capabilities."
+                "validate_component_capabilities"
+            ) as validate,
+        ):
+            result = handler.handle({})
+        self.assertIs(result, revalidated)
+        validate.assert_not_called()
+
     def test_initial_record_snapshot_prefers_seed_and_explicit_native_form_fields(self):
         class Field:
             def __init__(self, field_type):

@@ -163,6 +163,7 @@ const validationErrors = ref<string[]>([]);
 const validationFieldErrors = ref<Record<string, unknown>>({});
 const submissionFeedback = ref<unknown>(null);
 const busyKind = ref<string | null>(null);
+const busyActionIdentity = ref('');
 const status = ref('ok');
 const retainedRouteIdentity = ref(identity.value);
 const isComponentActive = ref(true);
@@ -196,6 +197,7 @@ const deps: Record<string, unknown> = {
   buildSaveRecordPayload: () => ({ name: formData.name }),
   busy: ref(false),
   busyKind,
+  busyActionIdentity,
   canSave,
   clearIntakeAutosave: () => {},
   closeContractPromptAction: () => {},
@@ -484,10 +486,15 @@ writeGates.push(writeGate1, writeGate2);
 const olderSave = saveRecord();
 await drain();
 check(busyKind.value, 'save', '4: the older save owns the busy flag while it writes');
+check(busyActionIdentity.value, 'form.save', '4: the older save owns the action identity while it writes');
 await switchSurfaceTo('sc.general.contract', 11);
+check(busyKind.value, null, '4: leaving the save surface clears its busy flag');
+check(busyActionIdentity.value, '', '4: leaving the save surface clears its action identity');
 formData.name = 'newer operation draft';
 const newerSave = saveRecord();
 await drain();
+check(busyKind.value, 'save', '4: the newer save owns the busy flag while it writes');
+check(busyActionIdentity.value, 'form.save', '4: the newer save owns the action identity while it writes');
 check(olderSave === newerSave, false, '4: a save for another record is never joined to the in-flight one');
 check(writes.length, 2, '4: each operation reaches the write boundary once');
 check(writes[0]?.ids?.[0], 10, '4: the older write kept the record it started for');
@@ -496,11 +503,13 @@ writeGate1.resolve();
 const olderResult = await olderSave;
 check(olderResult, false, '4: the superseded operation reports no success for the surface it no longer owns');
 check(busyKind.value, 'save', '4: the superseded finally does not clear the newer operation\'s loading state');
+check(busyActionIdentity.value, 'form.save', '4: the superseded finally does not clear the newer operation\'s action identity');
 check(submissionFeedback.value, null, '4: the superseded operation writes no feedback for the newer record');
 check(validationErrors.value.length, 0, '4: the superseded operation writes no error for the newer record');
 writeGate2.resolve();
 check(await newerSave, true, '4: the newer operation completes normally');
 check(busyKind.value, null, '4: the newer operation releases its own loading state');
+check(busyActionIdentity.value, '', '4: the newer operation releases its own action identity');
 writeGates.length = 0;
 
 // ---------------------------------------------------------------------------

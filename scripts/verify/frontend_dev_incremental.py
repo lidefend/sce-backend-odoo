@@ -1675,6 +1675,15 @@ RULES = (
     ), (
         "verify.form_container_presentation.guard",
     )),
+    Rule((
+        "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue",
+        "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+        "frontend/apps/web/src/components/template/NativeSmartAction.vue",
+        "scripts/verify/frontend_native_form_action_presentation_guard.py",
+        "scripts/verify/test_frontend_native_form_action_presentation_guard.py",
+    ), (
+        "verify.frontend.native_form_action_presentation.unit",
+    )),
     # The product tree may not carry a customer identity; the governed duty
     # binding under ops_root replaces it, and the customer side of it was last
     # detected at the frozen candidate instead of in the inner loop. Editing the

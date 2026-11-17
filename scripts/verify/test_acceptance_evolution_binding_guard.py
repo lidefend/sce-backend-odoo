@@ -237,8 +237,8 @@ class TestGlobAndPlan(unittest.TestCase):
     def test_stage_selection_is_shared_and_never_marks_deferred_suites_passed(self):
         plan = {"required_evidence_suites": ["daily_runtime_entry", "path_namespace_identity", "list_surface_structure", "relation_roundtrip"], "status": "PASS"}
         merge = guard.plan_for_stage(self.registry, plan, "merge")
-        self.assertEqual(merge["required_evidence_suites"], ["list_surface_structure", "relation_roundtrip"])
-        self.assertEqual(merge["deferred_evidence_suites"], ["daily_runtime_entry", "path_namespace_identity"])
+        self.assertEqual(merge["required_evidence_suites"], [])
+        self.assertEqual(merge["deferred_evidence_suites"], plan["required_evidence_suites"])
         self.assertEqual(guard.plan_for_stage(self.registry, plan)["required_evidence_suites"], plan["required_evidence_suites"])
         self.assertEqual(guard.plan_for_stage(self.registry, plan, "deployment")["required_evidence_suites"], plan["required_evidence_suites"])
         self.assertEqual(len(plan["required_evidence_suites"]), 4)
@@ -767,9 +767,13 @@ class TestGlobAndPlan(unittest.TestCase):
             'base',
             HEAD,
         )
+        self.assertEqual(
+            guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'],
+            [],
+        )
         self.assertIn(
             'list_surface_structure',
-            guard.plan_for_stage(self.registry, mixed, 'merge')['required_evidence_suites'],
+            guard.plan_for_stage(self.registry, mixed, 'deployment')['required_evidence_suites'],
         )
 
     def test_orm_runner_requires_backend_but_not_browser_evidence(self):

@@ -980,6 +980,16 @@ export function one2manyRowHintsFromPatches(params: {
   row: One2ManyInlineRow;
 }) {
   const messages: string[] = [];
+  const appendWarning = (warn: unknown) => {
+    const item = warn && typeof warn === 'object' && !Array.isArray(warn)
+      ? warn as Record<string, unknown>
+      : {};
+    const message = String(item.message || item.title || '').trim();
+    if (message) messages.push(message);
+    const reasonCode = String(item.reason_code || '').trim();
+    if (reasonCode) messages.push(`处理原因：${formRuntimeReasonLabel(reasonCode)}`);
+  };
+  if (Array.isArray(params.row.warnings)) params.row.warnings.forEach(appendWarning);
   params.patches.forEach((patch) => {
     if (String(patch.field || '') !== params.fieldName) return;
     const rowKey = String(patch.row_key || '').trim();
@@ -987,15 +997,7 @@ export function one2manyRowHintsFromPatches(params: {
     const matched = (rowKey && rowKey === params.row.key) || (rowId > 0 && Number(params.row.id || 0) === rowId);
     if (!matched) return;
     const warns = Array.isArray(patch.warnings) ? patch.warnings : [];
-    warns.forEach((warn) => {
-      const item = warn && typeof warn === 'object' && !Array.isArray(warn)
-        ? warn as Record<string, unknown>
-        : {};
-      const message = String(item.message || item.title || '').trim();
-      if (message) messages.push(message);
-      const reasonCode = String(item.reason_code || '').trim();
-      if (reasonCode) messages.push(`处理原因：${formRuntimeReasonLabel(reasonCode)}`);
-    });
+    warns.forEach(appendWarning);
     const rowState = String(patch.row_state || '').trim().toLowerCase();
     if (rowState) messages.push(`处理结果：${formRuntimeRowStateLabel(rowState)}`);
     if (Array.isArray(patch.command_hint) && patch.command_hint.length) {

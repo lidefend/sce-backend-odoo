@@ -9,7 +9,8 @@ import { businessRowErrorKey } from '../../app/businessValidationError';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import type { NativeLayoutLikeNode } from './nativeLayoutUtils';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
-import type { One2ManyColumn, One2ManyInlineRow, RelationOption } from './types';
+import { normalizeOnchangeResponse } from './onchangeNormalization';
+import type { One2ManyColumn, One2ManyInlineRow, One2manyChildInteraction, RelationOption } from './types';
 
 type FieldDependencies = Record<string, any>;
 
@@ -179,7 +180,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
 
   async function loadOne2manyCreateDefaults(name: string, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<One2manyChildInteraction> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
     const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
@@ -196,37 +197,47 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
       throw new Error('未能取得明细默认值，请重试');
     }
     const defaults = Object.fromEntries(Object.entries(result.record).filter(([name]) => fields.includes(name)));
-    const initialized = await (dependencies.initializeChild || triggerOnchange)({
+    const initialized = normalizeOnchangeResponse(await (dependencies.initializeChild || triggerOnchange)({
       ...parentSnapshot, changed_fields: [], context,
       child_initialization: { field: name, fields, values: defaults },
-    });
-    if (!initialized?.patch || typeof initialized.patch !== 'object' || Array.isArray(initialized.patch)
-      || Object.keys(initialized.patch).some(field => !fields.includes(field))) {
+    }));
+    if (Object.keys(initialized.patch).some(field => !fields.includes(field))
+      || Object.keys(initialized.modifiersPatch).some(field => !fields.includes(field))) {
       throw new Error('明细初始化返回字段与声明不一致');
     }
-    if (Object.keys(initialized.modifiers_patch || {}).length || initialized.line_patches?.length || initialized.warnings?.length) {
-      throw new Error('明细初始化包含尚未接入的联动提示或修饰声明');
+    if (initialized.linePatches.length) {
+      throw new Error('明细初始化包含尚未接入的嵌套明细补丁');
     }
-    return { ...defaults, ...initialized.patch };
+    return {
+      values: { ...defaults, ...initialized.patch },
+      modifiersPatch: initialized.modifiersPatch,
+      warnings: initialized.warnings,
+    };
   }
 
   async function loadOne2manyRowChange(name: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
-  }): Promise<Record<string, unknown>> {
+  }): Promise<One2manyChildInteraction> {
     const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) throw new Error('明细联动上下文尚未解析');
-    const response = await (dependencies.initializeChild || triggerOnchange)(JSON.parse(JSON.stringify({
+    const response = normalizeOnchangeResponse(await (dependencies.initializeChild || triggerOnchange)(JSON.parse(JSON.stringify({
       ...parent, changed_fields: [], context: { ...resolveContractFormReadContext(v2ContractStore.value),
         ...(fieldContext as Record<string, unknown> | undefined) },
       child_onchange: { field: name, fields, values: row.values, changed_fields: row.changed, record_id: row.id },
-    })));
-    if (!response?.patch || typeof response.patch !== 'object' || Array.isArray(response.patch)
-      || Object.keys(response.patch).some(field => !fields.includes(field))) throw new Error('明细联动返回字段与声明不一致');
-    if (Object.keys(response.modifiers_patch || {}).length || response.line_patches?.length || response.warnings?.length) {
-      throw new Error('明细联动包含尚未接入的提示或修饰声明');
+    }))));
+    if (Object.keys(response.patch).some(field => !fields.includes(field))
+      || Object.keys(response.modifiersPatch).some(field => !fields.includes(field))) {
+      throw new Error('明细联动返回字段与声明不一致');
     }
-    return response.patch;
+    if (response.linePatches.length) {
+      throw new Error('明细联动包含尚未接入的嵌套明细补丁');
+    }
+    return {
+      values: response.patch,
+      modifiersPatch: response.modifiersPatch,
+      warnings: response.warnings,
+    };
   }
 
   async function hydrateOne2manyRows(name: string, ownsRequest = captureRelationRequest(`one2many:${name}`)) {

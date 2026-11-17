@@ -50,6 +50,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("strict missing declaration must remain an explicit stop surface")
 
     action_bar = read_text("frontend/apps/web/src/pages/contractForm/CanonicalActionBar.vue")
+    action_reason_trigger = read_text("frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue")
+    node_renderer = read_text("frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue")
     driver = read_text("frontend/apps/web/src/pages/contractForm/ContractFormDriverHost.vue")
     task_page = read_text("frontend/apps/web/src/pages/contractForm/ObjectTaskPage.vue")
     if 'blockedActionMessage' in driver or 'blockedActionMessage' in task_page:
@@ -58,17 +60,65 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     header = read_text("frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue")
     confirm = read_text("frontend/apps/web/src/components/business/IntentConfirmationDialog.vue")
     model = read_text("frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts")
+    interaction = read_text("frontend/apps/web/src/pages/contractForm/actionInteractionState.ts")
+    native_renderer = read_text("frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue")
+    scene_button = read_text("frontend/packages/ui/src/components/primitives/SceneButton.vue")
+    dropdown = read_text("frontend/apps/web/src/components/design-system/ScDropdown.vue")
+    primitive_adapter = read_text("frontend/apps/web/src/components/design-system/primitiveAdapter.ts")
     for marker in (
         'data-professional-workflow-component="action-bar"',
         ':data-disabled-reason',
         ':data-workflow-primary-key',
-        '<ScPopover',
-        'data-workflow-reason-trigger',
-        'canonical-action-bar__denial-trigger',
-        '@keydown="activateWorkflowReasonTrigger"',
+        '<ActionReasonTrigger',
+        ':reason="workflowDisabledReason(action)"',
         'reasonMessage: workflowDisabledReason(action)',
     ):
         if marker not in action_bar: failures.append(f"workflow action bar missing {marker}")
+    for marker in (
+        '<ScPopover',
+        'data-workflow-reason-trigger',
+        'action-reason-trigger--denied',
+        '@keydown="activateWorkflowReasonTrigger"',
+        "activateWorkflowReasonTrigger",
+    ):
+        if marker not in action_reason_trigger:
+            failures.append(f"shared disabled-reason trigger missing {marker}")
+    for source, component in ((action_bar, "action bar"), (node_renderer, "canonical node action")):
+        if "import ActionReasonTrigger from './ActionReasonTrigger.vue';" not in source:
+            failures.append(f"{component} bypasses shared disabled-reason trigger")
+        if '<ActionReasonTrigger' not in source:
+            failures.append(f"{component} does not render the shared disabled-reason trigger")
+    for marker in (
+        'actionExecutionCandidates',
+        'resolveActionInteractionState',
+        'provideActionExecutionIdentity',
+        'useActionExecutionIdentity',
+    ):
+        if marker not in interaction:
+            failures.append(f"shared action interaction state missing {marker}")
+    for source, component in (
+        (action_bar, "action bar"),
+        (node_renderer, "canonical node action"),
+        (header, "header"),
+    ):
+        if "resolveActionInteractionState" not in source:
+            failures.append(f"{component} bypasses shared loading/disabled interaction state")
+    if ':loading="actionControlState(action).loading"' not in action_bar:
+        failures.append("action bar does not present the executing action as loading")
+    if ':loading="actionControlState(node.action).loading"' not in node_renderer:
+        failures.append("canonical node action does not present the executing action as loading")
+    for marker in ("loading?: boolean", "loadingLabel?: string", ":loading=\"loading\"", ":disabled=\"disabled || loading\""):
+        if marker not in scene_button:
+            failures.append(f"shared scene button does not consume loading state: {marker}")
+    for marker in ("function nativeActionLoading", ":loading=\"nativeActionLoading(", "state.loading === true"):
+        if marker not in native_renderer:
+            failures.append(f"native form actions bypass loading state: {marker}")
+    for marker in ("loading?: boolean", "item.loading"):
+        if marker not in primitive_adapter:
+            failures.append(f"overflow menu input cannot carry loading state: {marker}")
+    for marker in ("data-action-loading", "item.loading"):
+        if marker not in dropdown:
+            failures.append(f"overflow menu cannot present loading state: {marker}")
     failures.extend(shared_action_bar_errors(driver, surface))
     if 'data-professional-workflow-component="statusbar"' not in header: failures.append("workflow statusbar lacks semantic identity")
     for marker in ('<ScStatusBadge', '<ScSelect', 'aria-label="编辑业务状态"', ':disabled="busy"', ':readonly="statusbar.readonly"', '@change="activateStatus(String($event))"'):
@@ -83,7 +133,7 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     ):
         if marker not in header: failures.append(f"header workflow actions bypass shared authority {marker}")
     shared_import = "import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';"
-    for source, component in ((action_bar, "action bar"), (header, "header")):
+    for source, component in ((action_reason_trigger, "reason trigger"), (header, "header")):
         if shared_import not in source:
             failures.append(f"{component} bypasses shared disabled-reason keyboard activation")
     if re.search(r"\bfunction\s+activateReasonTrigger\s*\(", header):
@@ -92,7 +142,8 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
     if 'data-dialog-purpose="intent-confirmation"' not in confirm: failures.append("workflow confirmation lacks a non-conflicting dialog purpose")
     if "当前操作不可用" not in model: failures.append("disabled workflow action lacks a fail-closed reason")
     for forbidden in ("payment.request", "project.project", "action_id", "menu_id", "付款", "项目"):
-        if forbidden in model or forbidden in action_bar: failures.append(f"workflow components contain forbidden product special case {forbidden}")
+        if forbidden in model or forbidden in action_bar or forbidden in action_reason_trigger or forbidden in node_renderer:
+            failures.append(f"workflow components contain forbidden product special case {forbidden}")
     return failures
 
 def main() -> int:

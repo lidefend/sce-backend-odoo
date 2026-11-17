@@ -20,6 +20,13 @@ interface AppInitDiagnosticResponse {
   user?: unknown;
 }
 
+export interface ApiRawResponse<T> {
+  body: T;
+  traceId: string;
+  status: number;
+  etag: string;
+}
+
 export class ApiError extends Error {
   status: number;
   traceId?: string;
@@ -234,6 +241,15 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
     });
   }
 
+  if (response.status === 304 && headers.has('if-none-match')) {
+    return {
+      body: undefined as T,
+      traceId: resolveTraceId(response, undefined, traceId),
+      status: 304,
+      etag: response.headers.get('etag') || '',
+    };
+  }
+
   if (!response.ok) {
     let message = `request failed: ${response.status}`;
     let traceIdFromBody: string | undefined;
@@ -303,15 +319,25 @@ async function apiRequestRawUncoalesced<T>(path: string, options: RequestInit = 
   }
 
   if (response.status === 204) {
-    return { body: undefined as T, traceId };
+    return {
+      body: undefined as T,
+      traceId,
+      status: 204,
+      etag: response.headers.get('etag') || '',
+    };
   }
 
   const body = (await response.json()) as T;
   const resolvedTrace = resolveTraceId(response, body, traceId);
-  return { body, traceId: resolvedTrace };
+  return {
+    body,
+    traceId: resolvedTrace,
+    status: response.status,
+    etag: response.headers.get('etag') || '',
+  };
 }
 
-const idempotentRequests = new Map<string, Promise<{ body: unknown; traceId?: string }>>();
+const idempotentRequests = new Map<string, Promise<ApiRawResponse<unknown>>>();
 
 function idempotentIntentKey(path: string, options: RequestInit): string {
   if (!String(path || '').startsWith('/api/v1/intent') || options.method !== 'POST' || typeof options.body !== 'string') return '';
@@ -340,12 +366,16 @@ function idempotentIntentKey(path: string, options: RequestInit): string {
 }
 
 export async function apiRequestRaw<T>(path: string, options: RequestInit = {}) {
+  const requestHeaders = new Headers(options.headers ?? {});
+  if (requestHeaders.has('if-none-match')) {
+    return apiRequestRawUncoalesced<T>(path, options);
+  }
   const key = idempotentIntentKey(path, options);
   if (!key) return apiRequestRawUncoalesced<T>(path, options);
   const existing = idempotentRequests.get(key);
-  if (existing) return existing as Promise<{ body: T; traceId?: string }>;
+  if (existing) return existing as Promise<ApiRawResponse<T>>;
   const request = apiRequestRawUncoalesced<T>(path, options);
-  idempotentRequests.set(key, request as Promise<{ body: unknown; traceId?: string }>);
+  idempotentRequests.set(key, request as Promise<ApiRawResponse<unknown>>);
   try {
     return await request;
   } catch (error) {

@@ -16,7 +16,7 @@
 | L0 动态计算 | 装配/投影管线（未命中时） | 不保存；本次请求内计算记录覆盖、权限/entitlement、业务动作、策略、修饰符、状态、seal 与终端裁剪 | 不缓存任何结果 | `record_id`/create/preview 请求每请求执行；record-free 未命中也执行，命中则只复用受 §1 三项身份约束的 L1 已装配结果 |
 | L1 后端进程热缓存 | `LoadContractResponseCache`（`addons/smart_core/utils/load_contract_response_cache.py`） | ① record-independent 源投影；② **仅 record-free 请求**的已装配契约 | 带 `record_id`/create/preview 的已装配契约 | `cache_key` + `source_token` + 缓存版本 + client/profile/limit 门控；TTL 是第二道边界，不是权限边界 |
 | L2 后端持久资产 | `ui_base_contract_asset_repository`（`contract_kind=runtime_source`） | 仅源投影（`ui_data` + 身份化 `ui_meta`） | 已装配契约、record-bound 契约、权限裁决 | `scene_key`（cache_key）+ `role_code` + `company_id` + `asset_version`（source_token）；token 变更即不可达 |
-| L3 前端缓存 | `frontend/apps/web/src/app/contracts/v2/client.ts` 的 `createContractCache` | 仅无 `recordId`、无 `previewToken` 的 create 契约 | 编辑/只读记录契约、预览契约、任意后端未声明可复用的契约 | `sessionDb` + `token` + `contextEpoch` + 完整 params；30s TTL；写入受后端 `runtimeContract.cachePolicy` 门控 |
+| L3 前端缓存 | `frontend/apps/web/src/app/contracts/v2/client.ts` 的 `createContractCache` | 仅无 `recordId`、无 `previewToken` 且 `runtimeContract.cachePolicy=snapshot` 的 create 契约 | `etag`、`none`、编辑/只读记录契约、预览契约 | `sessionDb` + `token` + `contextEpoch` + 完整 params；30s TTL；写入与通用 `permitsContractV2SnapshotReuse` 共用同一判定 |
 
 **结论**：`record_id` 请求永远走 L0。它可以*读*L1/L2 的源投影，但不得读写已装配契约；这正是“复用静态结构、逐请求计算记录与权限”的机制化表达。
 

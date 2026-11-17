@@ -126,6 +126,7 @@ import type { ProductPageHeaderAction, ProductPagePresentationMode } from '../..
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { BusyKind, ContractAction, NativeStatusbarVm } from './types';
 import { resolveWorkflowActionBarAuthority, resolveWorkflowStatusAuthority, workflowDisabledReason } from './professionalWorkflowModel';
+import { resolveActionInteractionState, useActionExecutionIdentity } from './actionInteractionState';
 import { resolveMobileFormActionAuthority } from './mobileFormActionSettlement';
 import { activateWorkflowReasonTrigger } from './workflowReasonTrigger';
 
@@ -194,8 +195,15 @@ const headerPrimaryActions = computed<ProductPageHeaderAction[]>(() => {
   const canonical = props.canonicalDirectActions.find((item) => item.tier === 'primary');
   return canonical ? [{ key: canonical.key, label: canonical.label, semantic: 'other', enabled: canonical.enabled }] : [];
 });
-const canonicalPresentedDirectActions = computed(() => props.canonicalDirectActions.map((action) =>
-  builtInPrimaryClaimed.value && action.tier === 'primary' ? { ...action, tier: 'secondary' as const } : action));
+const actionExecutionIdentity = useActionExecutionIdentity();
+const canonicalPresentedDirectActions = computed(() => props.canonicalDirectActions.map((action) => {
+  const state = resolveActionInteractionState(action, actionExecutionIdentity.value);
+  return {
+    ...action,
+    loading: action.loading === true || state.loading,
+    ...(builtInPrimaryClaimed.value && action.tier === 'primary' ? { tier: 'secondary' as const } : {}),
+  };
+}));
 
 const mobilePresentedDirectActions = computed(() => presentedDirectActions.value.filter((action) => action.presentationTier !== 'primary' && action.semantic !== 'primary_action'));
 const mobileCanonicalDirectActions = computed(() => canonicalPresentedDirectActions.value.filter((action) => action.tier !== 'primary'));
@@ -225,7 +233,10 @@ const headerOverflowModelActions = computed<ProductPageHeaderAction[]>(() => [
 ]);
 const headerOverflowItems = computed<ScDropdownItem[]>(() => [
   ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
-  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
+  ...canonicalPresentedOverflowActions.value.map((action) => {
+    const state = resolveActionInteractionState(action, actionExecutionIdentity.value);
+    return { value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || state.disabled, loading: state.loading };
+  }),
 ]);
 const mobileActionItems = computed<ScDropdownItem[]>(() => [
   ...(mobileActionAuthority.value.keys.includes('back:form.back') ? [{ value: 'builtin:back', label: props.backLabel, disabled: props.busy }] : []),
@@ -233,8 +244,14 @@ const mobileActionItems = computed<ScDropdownItem[]>(() => [
   ...(props.showDraftSave ? [{ value: 'builtin:draft', label: props.draftSaveLabel, disabled: props.draftSaveDisabled }] : []),
   ...mobilePresentedDirectActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
   ...presentedOverflowActions.value.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
-  ...mobileCanonicalDirectActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
-  ...canonicalPresentedOverflowActions.value.map((action) => ({ value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || !action.enabled })),
+  ...mobileCanonicalDirectActions.value.map((action) => {
+    const state = resolveActionInteractionState(action, actionExecutionIdentity.value);
+    return { value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || state.disabled, loading: state.loading };
+  }),
+  ...canonicalPresentedOverflowActions.value.map((action) => {
+    const state = resolveActionInteractionState(action, actionExecutionIdentity.value);
+    return { value: `canonical:${action.key}`, label: action.label, reasonMessage: workflowDisabledReason(action), disabled: props.busy || state.disabled, loading: state.loading };
+  }),
   ...props.configActions.map((action) => ({ value: `business:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.hint : '', disabled: props.busy || !action.enabled })),
   ...(props.recordActions || []).map((action) => ({ value: `record:${action.key}`, label: action.label, reasonMessage: !action.enabled ? action.reason : '', disabled: props.busy || !action.enabled })),
   ...(props.showDiscard ? [{ value: 'builtin:discard', label: props.discardLabel, disabled: props.busy }] : []),
@@ -310,7 +327,9 @@ function dispatchDropdownAction(value: string) {
   }
   if (kind === 'canonical') {
     const action = [...mobileCanonicalDirectActions.value, ...canonicalPresentedOverflowActions.value].find((candidate) => candidate.key === key);
-    if (action?.enabled) emit('canonical-action', action);
+    if (action && !props.busy && !resolveActionInteractionState(action, actionExecutionIdentity.value).disabled) {
+      emit('canonical-action', action);
+    }
     return;
   }
   const action = [...mobilePresentedDirectActions.value, ...presentedOverflowActions.value, ...props.configActions].find((candidate) => candidate.key === key);

@@ -20,6 +20,13 @@ export interface IntentRawResult<T> {
   error?: IntentEnvelopeError;
   hasEnvelope: boolean;
   rawBody?: unknown;
+  status?: number;
+  etag?: string;
+  notModified?: boolean;
+}
+
+export interface IntentRequestOptions {
+  headers?: Record<string, string>;
 }
 
 const STARTUP_CHAIN_ALLOWED_INTENTS = new Set([
@@ -53,14 +60,14 @@ function enforceStartupChainOrThrow(session: ReturnType<typeof useSessionStore>,
   });
 }
 
-function buildHeaders(intent: string, traceId: string) {
+function buildHeaders(intent: string, traceId: string, extraHeaders: Record<string, string> = {}) {
   const headers: Record<string, string> = {
     'X-Trace-Id': traceId,
   };
   if (intent === 'login' || intent === 'auth.login') {
     headers['X-Anonymous-Intent'] = 'true';
   }
-  return headers;
+  return { ...headers, ...extraHeaders };
 }
 
 function withCurrentRecordContext(session: ReturnType<typeof useSessionStore>, payload: IntentPayload): IntentPayload {
@@ -175,7 +182,10 @@ export async function intentRequest<T>(payload: IntentPayload, options: { signal
   }
 }
 
-export async function intentRequestRaw<T>(payload: IntentPayload) {
+export async function intentRequestRaw<T>(
+  payload: IntentPayload,
+  options: IntentRequestOptions = {},
+) {
   const traceId = generateTraceId();
   const session = useSessionStore();
   const effectivePayload = withCurrentRecordContext(session, payload);
@@ -183,7 +193,7 @@ export async function intentRequestRaw<T>(payload: IntentPayload) {
   enforceStartupChainOrThrow(session, effectivePayload);
   const response = await apiRequestRaw<IntentEnvelope<T>>('/api/v1/intent', {
     method: 'POST',
-    headers: buildHeaders(effectivePayload.intent, traceId),
+    headers: buildHeaders(effectivePayload.intent, traceId, options.headers),
     body: JSON.stringify(effectivePayload),
   });
   const resolvedTrace = response.traceId || traceId;
@@ -193,6 +203,19 @@ export async function intentRequestRaw<T>(payload: IntentPayload) {
     latencyMs: Date.now() - startedAt,
     writeMode: effectivePayload.intent.includes('write') || effectivePayload.intent.includes('create') ? 'write' : 'read',
   });
+
+  if (response.status === 304) {
+    return {
+      data: undefined as T,
+      meta: {},
+      traceId: resolvedTrace,
+      ok: true,
+      hasEnvelope: false,
+      status: 304,
+      etag: response.etag,
+      notModified: true,
+    } satisfies IntentRawResult<T>;
+  }
 
   const parsed = parseIntentEnvelope<T>(response.body);
   const envelopeTrace = resolveEnvelopeTraceId(parsed.meta, resolvedTrace);
@@ -207,6 +230,8 @@ export async function intentRequestRaw<T>(payload: IntentPayload) {
     error: parsed.error,
     hasEnvelope: parsed.hasEnvelope,
     rawBody: response.body,
+    status: response.status,
+    etag: response.etag || String(parsed.meta.etag || ''),
   };
   return result;
 }

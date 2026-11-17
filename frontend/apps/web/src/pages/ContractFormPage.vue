@@ -681,6 +681,7 @@ import { useFieldOrderMutationRuntime } from './contractForm/useFieldOrderMutati
 import { useFieldVisibilityDraftRuntime } from './contractForm/useFieldVisibilityDraftRuntime';
 import { useInlineFieldPolicyRuntime } from './contractForm/useInlineFieldPolicyRuntime';
 import { useContractModeActionRuntime } from './contractForm/useContractModeActionRuntime';
+import { provideActionExecutionIdentity } from './contractForm/actionInteractionState';
 import { useActionResponseNavigation } from './contractForm/useActionResponseNavigation';
 import { usePrimaryFormActionRuntime } from './contractForm/usePrimaryFormActionRuntime';
 import { submissionRequirementErrors } from './contractForm/submissionRequirements';
@@ -767,9 +768,10 @@ const designerRouteQueryText = (key: string) => readRouteQueryText(route.query a
 const {
   status, isComponentActive, instanceRouteIdentity, retainedRouteIdentity, renderErrorDefect, renderErrorMessage,
   recordMissing, errorMessage, loadError, validationErrors, validationFieldErrors, submissionFeedback, formConflict,
-  showOne2manyErrors, busyKind, activeContractMode, formSettingsActiveTab, contractModeFeedback,
+  showOne2manyErrors, busyKind, busyActionIdentity, activeContractMode, formSettingsActiveTab, contractModeFeedback,
   contract, contractMeta,
 } = useContractFormPageState();
+provideActionExecutionIdentity(busyActionIdentity);
 const intentConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 const actionReasonDialogRef = ref<InstanceType<typeof ContractReasonDialog> | null>(null);
 const initialFormLoading = computed(() => status.value === 'loading' && !contract.value);
@@ -1224,6 +1226,7 @@ const {
   actionId: () => actionId.value || 0,
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
+  busyActionIdentity,
   confirmActionSafety: (action) => confirmActionSafety(action),
   completeCreatedActivity: () => completeCreatedActivity(),
   errorMessage, hasChanges: () => hasChanges.value,
@@ -1248,6 +1251,7 @@ const {
   applyClientMode: (mode, toggle) => applyClientMode(mode, toggle),
   applyProjectionRefreshPolicy: (policy) => applyProjectionRefreshPolicy(policy),
   busyKind,
+  busyActionIdentity,
   collectActionParams: (action) => collectActionParamsFromPlan(
     action,
     (failure) => applyPageStatusEvent({
@@ -1530,7 +1534,7 @@ const primaryBusinessActionState = computed(() => resolvePrimaryBusinessActionSt
   primaryCreateAction: primaryCreateFooterAction.value, primarySubmitAction: primarySubmitAction.value,
   quickSubmitDisabled: isQuickSubmitDisabled.value,
 }));
-const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value, busy: busy.value, busyKind: busyKind.value }));
+const canonicalHeaderActions = computed(() => resolveCanonicalHeaderActionPresentation({ floorplan: canonicalProductFloorplan.value, actions: canonicalFormRenderState.value.model?.actionBar || [], renderProfile: renderProfile.value, rendererActive: canonicalProductRendererActive.value, dirty: hasChanges.value, busy: busy.value, busyKind: busyKind.value, busyActionIdentity: busyActionIdentity.value }));
 const showPrimaryBusinessFormAction = computed(() => primaryBusinessActionState.value.show);
 const showDraftSaveAction = computed(() => {
   if (!showPrimaryBusinessFormAction.value || !canSave.value || primaryCreateFooterAction.value) return false;
@@ -1824,7 +1828,7 @@ const {
   addOne2manyRow, advancedExpanded, applyPageStatusEvent,
   attachmentError, attachmentUploading, attachmentDeletingIds,
   messageDeletingIds,
-  buildContractFormActions, busy, busyKind,
+  buildContractFormActions, busy, busyKind, busyActionIdentity,
   canOpenRelationRecordForm, changedFieldGroupDraft, chatterDraft, replyTarget,
   chatterError, chatterPosting, chatterTimeline, chatterTimelineHasMore, chatterTimelineLoading, chatterUnavailable,
   followers, followerCount, isFollowing, canFollow, canUnfollow, followersLoading, followerError, updateNativeFollower,
@@ -2040,7 +2044,7 @@ const {
   BUSINESS_CONFIG_ROUTE_FLAGS, RECORD_CONTEXT_CHANGED_EVENT, actionId,
   activeContractMode, activeContractModeFieldRows, appendFormConfigOperation,
   buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery,
-  buildSaveRecordPayload, busy, busyKind,
+  buildSaveRecordPayload, busy, busyKind, busyActionIdentity,
   canSave, clearIntakeAutosave, closeContractPromptAction,
   collectSceneValidationPrecheckErrors, collectWritableValues,
   comparableFieldValue, contract, contractActionConfirmationPrompt, contractActionRuleKey,

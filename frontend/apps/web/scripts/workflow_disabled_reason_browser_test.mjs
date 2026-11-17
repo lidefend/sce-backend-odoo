@@ -22,9 +22,10 @@ const server = await createServer({
     load(id) {
       if (id !== entryId) return undefined;
       return `
-        import { createApp, h } from 'vue';
+        import { createApp, defineComponent, h, ref } from 'vue';
         import SceneUiProvider from ${JSON.stringify(providerUrl)};
         import CanonicalActionBar from '/src/pages/contractForm/CanonicalActionBar.vue';
+        import { provideActionExecutionIdentity } from '/src/pages/contractForm/actionInteractionState.ts';
         import '/src/styles/design-system.css';
 
         const actionRef = (key, enabled) => ({
@@ -54,22 +55,49 @@ const server = await createServer({
           safety: {},
           actionRef: actionRef(key, enabled),
         });
+        const ExecutionBar = defineComponent({
+          props: { identity: String, direct: Array, overflow: Array },
+          setup(props) {
+            provideActionExecutionIdentity(ref(props.identity));
+            return () => h(CanonicalActionBar, {
+              directActions: props.direct,
+              overflowActions: props.overflow,
+              effectivePrimaryKey: props.direct?.[0]?.key || '',
+            });
+          },
+        });
         window.workflowReasonEvidence = { events: [] };
         createApp({
           render: () => h(SceneUiProvider, { kit: 'sc-native' }, {
             default: () => h('main', { style: 'width:min(100%,960px);padding:24px;box-sizing:border-box' }, [
-              h(CanonicalActionBar, {
-                directActions: [
-                  action('save', '保存', true),
-                  action('approve', '审批', false, ${JSON.stringify(reason)}),
-                ],
-                overflowActions: [
-                  action('archive', '归档', false, ${JSON.stringify(overflowReason)}),
-                  action('publish', '发布', true),
-                ],
-                effectivePrimaryKey: 'save',
-                onActionRef: value => window.workflowReasonEvidence.events.push(value.actionKey),
-              }),
+              h('div', { 'data-harness': 'workflow' }, [
+                h(CanonicalActionBar, {
+                  directActions: [
+                    action('save', '保存', true),
+                    action('approve', '审批', false, ${JSON.stringify(reason)}),
+                  ],
+                  overflowActions: [
+                    action('archive', '归档', false, ${JSON.stringify(overflowReason)}),
+                    action('publish', '发布', true),
+                  ],
+                  effectivePrimaryKey: 'save',
+                  onActionRef: value => window.workflowReasonEvidence.events.push(value.actionKey),
+                }),
+              ]),
+              h('div', { 'data-harness': 'direct-loading' }, [
+                h(ExecutionBar, {
+                  identity: 'fixture:save',
+                  direct: [action('save', '保存中操作', true)],
+                  overflow: [],
+                }),
+              ]),
+              h('div', { 'data-harness': 'overflow-loading' }, [
+                h(ExecutionBar, {
+                  identity: 'fixture:publish',
+                  direct: [],
+                  overflow: [action('publish', '发布中操作', true)],
+                }),
+              ]),
             ]),
           }),
         }).mount('#app');
@@ -93,7 +121,7 @@ try {
   for (const width of [1440, 390]) {
     await page.setViewportSize({ width, height: 900 });
     await page.goto(`http://127.0.0.1:${address.port}/__workflow_disabled_reason.html`);
-    const bar = page.locator('[data-canonical-action-bar]');
+    const bar = page.locator('[data-harness="workflow"] [data-canonical-action-bar]');
     await bar.waitFor({ state: 'visible' });
     const denied = bar.locator('[data-action-key="approve"]');
     const trigger = bar.locator('[data-workflow-reason-trigger="approve"]');
@@ -134,7 +162,7 @@ try {
     if (width === 390) await enabled.tap();
     else await enabled.click();
 
-    const more = page.getByRole('button', { name: '展开更多表单操作', exact: true });
+    const more = bar.getByRole('button', { name: '展开更多表单操作', exact: true });
     if (width === 390) await more.tap();
     else await more.click();
     const overflowExplanation = page.getByRole('button', {
@@ -176,6 +204,22 @@ try {
     if (width === 390) await enabledOverflow.tap();
     else await enabledOverflow.click();
 
+    const loadingSave = page.locator('[data-harness="direct-loading"] [data-action-key="save"]');
+    const directLoading = {
+      disabled: await loadingSave.isDisabled(),
+      loading: await loadingSave.getAttribute('data-action-loading'),
+      busy: await loadingSave.getAttribute('aria-busy'),
+    };
+    const loadingOverflowBar = page.locator('[data-harness="overflow-loading"]');
+    await loadingOverflowBar.getByRole('button', { name: '展开更多表单操作', exact: true }).click();
+    const loadingOverflow = page.getByText('发布中操作 · 处理中', { exact: true });
+    await loadingOverflow.waitFor({ state: 'visible' });
+    const overflowLoading = {
+      text: await loadingOverflow.textContent(),
+      loading: await loadingOverflow.getAttribute('data-action-loading'),
+      busy: await loadingOverflow.getAttribute('aria-busy'),
+    };
+
     const evidence = await page.evaluate(() => window.workflowReasonEvidence);
     const layout = await page.evaluate(() => ({
       documentWidth: document.documentElement.scrollWidth,
@@ -200,6 +244,8 @@ try {
       enabledActionEvents: evidence.events.filter((key) => key === 'save').length,
       disabledOverflowEvents: evidence.events.filter((key) => key === 'archive').length,
       enabledOverflowEvents: evidence.events.filter((key) => key === 'publish').length,
+      directLoading,
+      overflowLoading,
       layout,
       pass: enterVisible && spaceVisible && pointerVisible
         && keyboardFocusOutline.style !== 'none'
@@ -216,12 +262,18 @@ try {
         && evidence.events.filter((key) => key === 'save').length === 1
         && evidence.events.filter((key) => key === 'archive').length === 0
         && evidence.events.filter((key) => key === 'publish').length === 1
+        && directLoading.disabled
+        && directLoading.loading === 'true'
+        && directLoading.busy === 'true'
+        && overflowLoading.text === '发布中操作 · 处理中'
+        && overflowLoading.loading === 'true'
+        && overflowLoading.busy === 'true'
         && layout.documentWidth <= layout.viewportWidth + 1,
     });
   }
 
   const pass = results.every((result) => result.pass) && errors.length === 0;
-  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 22 + 1, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + ScDropdown + SceneButton', reason, overflowReason, results, errors }, null, 2));
+  console.log(JSON.stringify({ pass, gatedAssertions: results.length * 30 + 1, viewportCount: results.length, browserErrorCount: errors.length, driver: 'real CanonicalActionBar + ScPopover + ScDropdown + SceneButton', reason, overflowReason, results, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

@@ -29,19 +29,29 @@
       @navigate="navigateNodeComponent"
       @action="emit('native-action', $event)"
     />
-    <ScButton
+    <ActionReasonTrigger
       v-else-if="node.action"
-      type="button"
-      variant="ghost"
-      size="small"
-      class="canonical-form-native-action"
-      appearance="context-action"
-      :disabled="!node.action.enabled"
-      :title="node.action.reasonCode || undefined"
-      :data-action-ref="node.action.actionRef.actionId"
-      :data-backend-identity="node.action.actionRef.backendIdentity"
-      @click="node.action.enabled && emit('action-ref', node.action.actionRef)"
-    >{{ node.title || node.action.label }}</ScButton>
+      :reason="workflowDisabledReason(node.action)"
+      :trigger-key="node.action.key"
+    >
+      <ScButton
+        type="button"
+        variant="ghost"
+        size="small"
+        class="canonical-form-native-action"
+        appearance="context-action"
+        :disabled="actionControlState(node.action).disabled"
+        :loading="actionControlState(node.action).loading"
+        :loading-label="`${node.action.label}处理中`"
+        :aria-busy="actionControlState(node.action).loading || undefined"
+        :title="workflowDisabledReason(node.action) || undefined"
+        :data-action-ref="node.action.actionRef.actionId"
+        :data-backend-identity="node.action.actionRef.backendIdentity"
+        :data-disabled-reason="workflowDisabledReason(node.action) || undefined"
+        :data-action-loading="actionControlState(node.action).loading || undefined"
+        @click="!actionControlState(node.action).disabled && emit('action-ref', node.action.actionRef)"
+      >{{ node.title || node.action.label }}</ScButton>
+    </ActionReasonTrigger>
     <h3 v-if="groupHeadingVisible" class="canonical-form-node-title">{{ governedSection?.label }}</h3>
     <FormSection
       v-if="fields.length"
@@ -79,6 +89,9 @@ import FormSection from '../../components/template/FormSection.vue';
 import { declaredLayoutBand, declaredLayoutSpan, requireDeclaredLayoutColumns, containedFieldLayout } from '../../components/template/layoutSpan';
 import ScButton from '../../components/design-system/ScButton.vue';
 import NativeNodeComponent from '../../components/template/NativeNodeComponent.vue';
+import ActionReasonTrigger from './ActionReasonTrigger.vue';
+import { workflowDisabledReason } from './professionalWorkflowModel';
+import { resolveActionInteractionState, useActionExecutionIdentity } from './actionInteractionState';
 import { contractGapError } from '../../app/contract/contractGap';
 import type { FormSectionFieldActionPayload, FormSectionFieldChange } from '../../components/template/formSection.types';
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
@@ -111,6 +124,10 @@ const emit = defineEmits<{
   'action-ref': [action: ContractV2ActionRule];
   'native-action': [payload: Record<string, unknown>];
 }>();
+const actionExecutionIdentity = useActionExecutionIdentity();
+function actionControlState(action: NonNullable<CanonicalFormNode['action']>) {
+  return resolveActionInteractionState(action, actionExecutionIdentity.value);
+}
 
 const nodeKind = computed(() => String(props.node.kind || 'container').trim().toLowerCase());
 const fields = computed(() => canonicalSectionFields(props.node)

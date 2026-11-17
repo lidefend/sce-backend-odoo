@@ -1,6 +1,7 @@
 import type { CanonicalFormAction } from '../../app/presentation/canonicalFormRenderModel';
 import type { CanonicalFormFloorplan } from '../../app/presentation/canonicalFormFloorplan';
 import { normalizeActionSemantics } from '@sc/schema';
+import { resolveActionInteractionState } from './actionInteractionState';
 
 /** A declared primary action is still not promoted here when its purpose is a
  * deliberate exit (decline, cancel, leave the page) or a lifecycle reversal:
@@ -17,6 +18,7 @@ export function resolveCanonicalHeaderActionPresentation(input: {
   dirty: boolean;
   busy?: boolean;
   busyKind?: string;
+  busyActionIdentity?: string;
 }) {
   const meaning = (action: CanonicalFormAction) => action.actionRef.actionSemanticsInvalid
     ? undefined : (action.actionRef.actionSemantics || normalizeActionSemantics(action.actionRef));
@@ -42,7 +44,9 @@ export function resolveCanonicalHeaderActionPresentation(input: {
     // Dirty is deliberately not a disabling condition: saveRecord owns no-op
     // writes and validation feedback. Busy affects execution, not emphasis.
     enabled: action.enabled && !input.busy,
-    loading: input.busyKind === 'save' && meaning(action)?.executor === 'record.save',
+    loading: (
+      input.busyKind === 'save' && meaning(action)?.executor === 'record.save'
+    ) || resolveActionInteractionState(action, input.busyActionIdentity).loading,
   }));
   return {
     direct: adapted.filter((action) => directKeys.has(action.key)).sort((a, b) => Number(b.tier === 'primary') - Number(a.tier === 'primary')),

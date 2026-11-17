@@ -16,6 +16,7 @@ import {
 import { isContractGapError } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
+import { beginFormRuntimeBusy, endFormRuntimeBusy } from './runtimeStateApplier';
 
 type ActionDependencies = Record<string, any> & FormDesignerActionDependencies;
 
@@ -36,6 +37,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     buildSaveRecordPayload,
     busy,
     busyKind,
+    busyActionIdentity,
     canSave,
     clearIntakeAutosave,
     closeContractPromptAction,
@@ -149,7 +151,10 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     observedSurfaceKey = next;
     surfaceEpoch.value += 1;
     submissionFeedback.value = null;
-    if (busyOwnerOperationId) { busyOwnerOperationId = 0; busyKind.value = null; }
+    if (busyOwnerOperationId) {
+      busyOwnerOperationId = 0;
+      endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');
+    }
   }, { flush: 'sync' });
 
   // Save authority is not surface identity, so it is deliberately absent from
@@ -467,7 +472,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       submissionFeedback.value = { kind: 'warn', message: '表单内容已变化，请重新保存。' };
       return false;
     }
-    busyKind.value = 'save';
+    beginFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'save', 'form.save');
     busyOwnerOperationId = operation.id;
     try {
       const values = buildSaveRecordPayload({
@@ -480,7 +485,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         recordId: operation.recordId,
       });
       if (operation.recordId && !Object.keys(values).length) {
-        if (busyOwnerOperationId === operation.id) busyKind.value = null;
+        if (busyOwnerOperationId === operation.id) {
+          endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');
+        }
         dirtyFieldSet.clear();
         return true;
       }
@@ -599,7 +606,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       // superseded save cannot switch off a newer save's loading state.
       if (!disposed) {
         if (busyOwnerOperationId === operation.id) {
-          busyKind.value = null;
+          endFormRuntimeBusy({ busyKind, busyActionIdentity }, 'saveRecord', 'form.save');
           busyOwnerOperationId = 0;
         }
       }

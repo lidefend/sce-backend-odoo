@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import logging
 import ast
+import hashlib
 import json
 import time
 from copy import deepcopy
@@ -97,7 +98,50 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v84"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v90"
+
+
+def _create_defaults_fingerprint(env, model_name, params, ui_params):
+    """Identify the live create-default facts that shape a create contract."""
+    model = str(model_name or "").strip()
+    if not model or model not in env:
+        return ""
+    raw_context = (
+        ui_params.get("context")
+        or params.get("context")
+        or {}
+    )
+    context_raw = (
+        params.get("context_raw")
+        or params.get("contextRaw")
+        or ui_params.get("context_raw")
+        or ui_params.get("contextRaw")
+    )
+    context = _merge_route_default_context(raw_context, context_raw)
+    try:
+        Model = env[model].with_context(**(context if isinstance(context, dict) else {}))
+        fields_map = Model.fields_get()
+        field_names = [name for name in fields_map if name not in {"id", "display_name"}]
+        defaults = Model.default_get(field_names) if field_names else {}
+        normalized = {}
+        for name, value in (defaults or {}).items():
+            meta = fields_map.get(name) or {}
+            if meta.get("type") == "many2one" and value:
+                relation = str(meta.get("relation") or "").strip()
+                relation_model = env[relation] if relation and relation in env else None
+                record = relation_model.browse(int(value)).exists() if relation_model else None
+                normalized[name] = {
+                    "id": int(value),
+                    "display_name": str(record.display_name or "") if record else "",
+                    "write_date": str(record.write_date or "") if record and "write_date" in record._fields else "",
+                }
+            else:
+                normalized[name] = value
+        payload = json.dumps(normalized, ensure_ascii=False, sort_keys=True, default=str, separators=(",", ":"))
+        return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+    except Exception:
+        _logger.debug("create defaults fingerprint unavailable model=%s", model, exc_info=True)
+        return ""
 
 
 def _node_validation_snapshot_ready(source):
@@ -613,9 +657,17 @@ class UiContractV2Handler(BaseIntentHandler):
     def handle(self, payload: Optional[Dict[str, Any]] = None, ctx: Optional[Dict[str, Any]] = None):
         try:
             result = self._handle_contract(payload, ctx)
-            if result.ok:
+            if result.ok and result.code != 304:
                 from ..core.node_component_capabilities import validate_component_capabilities
                 validate_component_capabilities(result.data, self._params(payload))
+                delivered_etag = str((result.data.get("meta") or {}).get("etag") or "").strip()
+                if delivered_etag and self._client_contract_etag() == delivered_etag:
+                    return IntentExecutionResult(
+                        ok=True,
+                        data=None,
+                        code=304,
+                        meta={**result.meta, "etag": delivered_etag},
+                    )
             return result
         except FormConfigurationError as exc:
             _logger.warning("ui.contract.v2 configuration rejected: %s", exc)
@@ -722,11 +774,10 @@ class UiContractV2Handler(BaseIntentHandler):
         record_error = self._validate_form_record(cache_model, ui_params)
         if record_error is not None:
             return record_error
-        base_params = projection_base_params(params)
-        base_ui_params = projection_base_params(ui_params)
-        # Record-bound and create sources mutate the assembled source graph, so
-        # they must never take the shared assembled read. Compute that identity
-        # before the cache lookup so the hot read can route to the safe accessor.
+        # Record-bound sources mutate the assembled source graph, so they must
+        # never take the shared assembled read. Create requests may share only
+        # when the live-default fingerprint makes the entry exact; their returned
+        # contract is still an independent copy.
         runtime_record_id, _record_id_error = parse_positive_int(
             params.get("record_id")
             or params.get("recordId")
@@ -756,6 +807,20 @@ class UiContractV2Handler(BaseIntentHandler):
             or ""
         ).strip().lower()
         is_create_request = requested_render_profile == "create" or requested_record_id == "new"
+        base_ui_params = projection_base_params(ui_params)
+        if is_create_request and requested_record_id != "new":
+            defaults_fingerprint = _create_defaults_fingerprint(
+                self.env,
+                cache_model,
+                params,
+                ui_params,
+            )
+            base_params = projection_base_params({
+                **params,
+                "_create_defaults_fingerprint": defaults_fingerprint,
+            }) if defaults_fingerprint else None
+        else:
+            base_params = projection_base_params(params)
         cache_key = ""
         source_token = ""
         cached_source = None
@@ -770,7 +835,7 @@ class UiContractV2Handler(BaseIntentHandler):
         if (
             cache_model
             and base_params is not None
-            and base_ui_params is not None
+            and (base_ui_params is not None or is_create_request)
             and getattr(self.env, "company", None) is not None
         ):
             projection_cache_status = "miss"
@@ -793,9 +858,42 @@ class UiContractV2Handler(BaseIntentHandler):
                 menu_id=menu_id,
                 action_id=action_id,
             )
+            client_contract_etag = self._client_contract_etag()
+            cached_runtime_etag = CONTRACT_PROJECTION_HOT_CACHE.get_assembled_runtime_etag(
+                cache_key,
+                source_token,
+                source_type=runtime_source_type,
+                cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
+                client_type=client_type,
+                delivery_profile=delivery_profile,
+                limit_params=limit_params,
+            ) if (
+                not runtime_record_id
+                and cache_key
+                and source_token
+                and client_contract_etag
+            ) else ""
+            if cached_runtime_etag and cached_runtime_etag == client_contract_etag:
+                return IntentExecutionResult(
+                    ok=True,
+                    data=None,
+                    code=304,
+                    meta={
+                        "intent": self.INTENT_TYPE,
+                        "version": self.VERSION,
+                        "contract_version": CONTRACT_VERSION,
+                        "client_type": client_type,
+                        "delivery_profile": delivery_profile,
+                        "source_type": runtime_source_type,
+                        "etag": cached_runtime_etag,
+                    },
+                )
             if cache_key and source_token:
                 cached_source = None
-                if not runtime_record_id and not is_create_request:
+                if not runtime_record_id and (
+                    not is_create_request
+                    or bool(str((base_params or {}).get("_create_defaults_fingerprint") or "").strip())
+                ):
                     # An assembled hit only READS the shared source payload while
                     # seal mutates the contract, so a gate-matching assembled read
                     # can share the source graph instead of re-copying it. Any
@@ -841,7 +939,7 @@ class UiContractV2Handler(BaseIntentHandler):
             cached_source = None
             projection_cache_status = "miss"
             projection_cache_reason = "native_form_source_type_mismatch"
-        if shared_source and cached_source is not None and (not _node_validation_snapshot_ready(cached_source) or _node_snapshot_requires_assembly(cached_source) or not assembled_snapshot_gate_matches(
+        if shared_source and cached_source is not None and (not _node_validation_snapshot_ready(cached_source) or (not is_create_request and _node_snapshot_requires_assembly(cached_source)) or not assembled_snapshot_gate_matches(
             cached_source,
             cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
             client_type=client_type,
@@ -1006,9 +1104,11 @@ class UiContractV2Handler(BaseIntentHandler):
         # assembly path below, which writes into the graph it is handed.
         if (
             isinstance(assembled_cached, dict)
-            and not is_create_request
             and _node_validation_snapshot_ready(cached_source)
-            and not _node_snapshot_requires_assembly(cached_source)
+            and (
+                is_create_request
+                or not _node_snapshot_requires_assembly(cached_source)
+            )
             and assembled_snapshot_gate_matches(
                 cached_source,
                 cache_version=ASSEMBLED_CONTRACT_CACHE_VERSION,
@@ -1021,9 +1121,12 @@ class UiContractV2Handler(BaseIntentHandler):
             projection_cache_reason = "assembled_v2_hot_cache_hit"
             # This branch READS ``ui_data`` / ``source_contract`` and returns
             # before the assembly path below ever runs. ``contract_v2`` here is
-            # this request's own copy (the shared accessor copies it because
-            # sealing rewrites it in place); the source payload it digests stays
-            # on loan to the cache entry and is never written.
+            # this request's own copy: record-free edit/list requests use the
+            # shared accessor's copy, while create requests use the isolated
+            # deep-copy read because create assembly may mutate the graph. A
+            # create hit has already validated its cached final nodes and
+            # component capabilities against the current request, so component
+            # presence does not force a full reassembly.
             source_contract = assembled_cached["source_contract"]
             contract_v2 = assembled_cached["contract"]
             if not requested_view_type_matches(contract_v2, requested_view_type):
@@ -1041,6 +1144,9 @@ class UiContractV2Handler(BaseIntentHandler):
                 action_id=action_id,
                 reuse_digests=_reusable_assembled_digests(assembled_cached),
             )
+            runtime_etag_slot = assembled_cached.get("runtime_etag")
+            if isinstance(runtime_etag_slot, dict):
+                runtime_etag_slot["value"] = str((contract_v2.get("meta") or {}).get("etag") or "")
             return IntentExecutionResult(
                 ok=True,
                 data=contract_v2,
@@ -1399,7 +1505,8 @@ class UiContractV2Handler(BaseIntentHandler):
         # exact dict, so the next hit carries the digests this request paid for
         # without a second walk over the payload.
         assembled_digest_slot: dict[str, str] = {}
-        if not runtime_record_id and not is_create_request and cache_key and source_token:
+        runtime_etag_slot: dict[str, str] = {}
+        if not runtime_record_id and cache_key and source_token:
             # ``source_contract`` is the assembly-time shallow copy of ``ui_data``,
             # so the two object graphs still share every subtree the normalizers
             # did not replace. Deep-copying them under one shared memo stores each
@@ -1427,6 +1534,7 @@ class UiContractV2Handler(BaseIntentHandler):
                         "node_validation_native_tree": node_validation_native_tree,
                         "source_contract": deepcopy(source_contract, source_snapshot_memo),
                         ASSEMBLED_SEMANTIC_DIGESTS_KEY: assembled_digest_slot,
+                        "runtime_etag": runtime_etag_slot,
                     },
                 },
             )
@@ -1461,6 +1569,7 @@ class UiContractV2Handler(BaseIntentHandler):
                 else None
             ),
         )
+        runtime_etag_slot["value"] = str((contract_v2.get("meta") or {}).get("etag") or "")
         assembled_digest_slot.update(sealed_semantic_digests(contract_v2))
         runtime_sealed_at = time.monotonic()
         assembler_stages.update({
@@ -4117,6 +4226,16 @@ class UiContractV2Handler(BaseIntentHandler):
 
     def _headers(self) -> dict[str, Any]:
         return _adapters.headers_from_request(self.request, _logger)
+
+    def _client_contract_etag(self) -> str:
+        for key, value in self._headers().items():
+            if str(key or "").strip().lower() != "if-none-match":
+                continue
+            etag = str(value or "").strip()
+            if len(etag) >= 2 and etag.startswith('"') and etag.endswith('"'):
+                etag = etag[1:-1]
+            return etag
+        return ""
 
     def _trim_limit_params(self, params: dict[str, Any]) -> tuple[dict[str, Optional[int]], Optional[str]]:
         return _adapters.trim_limit_params(params)

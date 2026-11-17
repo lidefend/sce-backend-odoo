@@ -7,6 +7,10 @@
     class="native-smart-action native-action-btn native-action-btn--smart"
     appearance="smart-action"
     :disabled="disabled"
+    :loading="loading"
+    :loading-label="`${label}处理中`"
+    :aria-busy="loading || undefined"
+    :data-action-loading="loading || undefined"
     :title="title"
   >
     <ScIcon v-if="icon" class="native-smart-action__icon" :name="icon" :size="18" />
@@ -23,6 +27,7 @@ defineProps<{
   label: string;
   icon?: ScIconName | '';
   disabled?: boolean;
+  loading?: boolean;
   title?: string;
 }>();
 </script>

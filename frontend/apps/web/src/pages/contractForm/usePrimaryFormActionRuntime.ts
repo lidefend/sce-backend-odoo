@@ -4,7 +4,11 @@ import { relationActionOrigin, workItemActionOrigin } from './relationActionOrig
 import { nextTick, type Ref } from 'vue';
 import { executeButton } from '../../api/executeButton';
 import { sanitizeUiErrorMessage } from './fieldUtils';
-import { applyFormRuntimeStatusEvent } from './runtimeStateApplier';
+import {
+  applyFormRuntimeStatusEvent,
+  beginFormRuntimeBusy,
+  endFormRuntimeBusy,
+} from './runtimeStateApplier';
 import type { BusyKind, ContractAction, SubmissionFeedback, UiStatus } from './types';
 
 export function usePrimaryFormActionRuntime(params: {
@@ -12,6 +16,7 @@ export function usePrimaryFormActionRuntime(params: {
   actionId: () => number;
   applyProjectionRefreshPolicy: (policy?: ContractAction['refreshPolicy']) => Promise<void>;
   busyKind: Ref<BusyKind>;
+  busyActionIdentity?: Ref<string>;
   confirmActionSafety: (action: ContractAction) => Promise<boolean>;
   completeCreatedActivity?: () => boolean;
   errorMessage: Ref<string>;
@@ -39,7 +44,8 @@ export function usePrimaryFormActionRuntime(params: {
     if (!action.enabled) return;
     const owner = params.beginActionFeedback?.();
     if (!await params.confirmActionSafety(action) || (owner && !owner.owns())) return;
-    params.busyKind.value = 'action';
+    const actionIdentity = String(action.backendIdentity || action.key || '').trim();
+    beginFormRuntimeBusy(params, 'primaryAction', 'action', actionIdentity);
     try {
       const response = await (params.executeButtonRequest || executeButton)({
         model: action.targetModel || params.modelName(),
@@ -93,7 +99,7 @@ export function usePrimaryFormActionRuntime(params: {
         params.completeCreatedActivity?.();
       }
     } finally {
-      if (!owner || owner.owns()) params.busyKind.value = null;
+      if (!owner || owner.owns()) endFormRuntimeBusy(params, 'primaryAction', actionIdentity);
     }
   }
 

@@ -21,6 +21,7 @@ export function useContractFormPageState() {
     formConflict: ref(false),
     showOne2manyErrors: ref(false),
     busyKind: ref<BusyKind>(null),
+    busyActionIdentity: ref(''),
     activeContractMode: ref(''),
     formSettingsActiveTab: ref<'structure' | 'fields' | 'details' | 'actions'>('fields'),
     contractModeFeedback: ref(''),
