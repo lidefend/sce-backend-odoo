@@ -626,6 +626,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     recordContextChangedEvent: RECORD_CONTEXT_CHANGED_EVENT,
     routeIsOwned: () => isFormPageRouteOwner(route.name),
     reload: () => reload(),
+    renderErrorDefect,
     retainedRouteIdentity,
     status,
     ensureFormInitialReload: () => ensureFormInitialReload(),
