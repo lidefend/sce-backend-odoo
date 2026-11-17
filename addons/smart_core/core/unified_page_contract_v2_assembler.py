@@ -5407,10 +5407,16 @@ def _append_ui_contract_actions(
     main_data: dict[str, Any] | None = None,
 ) -> None:
     rows: list[dict[str, Any]] = []
-    form_view = _dict(_dict(ui.get("views")).get("form"))
+    active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
+    if active_view_type == "list":
+        active_view_type = "tree"
+    form_view = _dict(_dict(ui.get("views")).get("form")) if active_view_type == "form" else {}
     form_meta = _dict(form_view.get("meta"))
     projection_identity = _dict(form_meta.get("projection_identity"))
-    explicit_form_view = _positive_int(projection_identity.get("source_view_id"), 0) > 0
+    explicit_form_view = (
+        active_view_type == "form"
+        and _positive_int(projection_identity.get("source_view_id"), 0) > 0
+    )
 
     def collect_native_layout_buttons(value: Any, *, parent_type: str = "") -> None:
         if isinstance(value, list):
@@ -5433,30 +5439,28 @@ def _append_ui_contract_actions(
         for child_key in ("children", "pages", "tabs", "nodes", "items"):
             collect_native_layout_buttons(value.get(child_key), parent_type=node_type)
 
-    collect_native_layout_buttons(_dict(contract.get("layoutContract")).get("containerTree"))
-    for source_channel, header_button_source in (
-        ("native_form_header", form_view.get("header_buttons")),
-        ("contract_header", ui.get("header_buttons")),
-    ):
-        for row in _list(header_button_source):
+    if active_view_type == "form":
+        collect_native_layout_buttons(_dict(contract.get("layoutContract")).get("containerTree"))
+        for source_channel, header_button_source in (
+            ("native_form_header", form_view.get("header_buttons")),
+            ("contract_header", ui.get("header_buttons")),
+        ):
+            for row in _list(header_button_source):
+                if isinstance(row, dict):
+                    rows.append({
+                        **row,
+                        "level": _text(row.get("level"), "header"),
+                        "target_scope": _text(row.get("target_scope"), "header"),
+                        "_source_channel": source_channel,
+                    })
+        for row in _list(form_view.get("stat_buttons")):
             if isinstance(row, dict):
                 rows.append({
                     **row,
-                    "level": _text(row.get("level"), "header"),
-                    "target_scope": _text(row.get("target_scope"), "header"),
-                    "_source_channel": source_channel,
+                    "level": _text(row.get("level"), "smart"),
+                    "target_scope": _text(row.get("target_scope"), "page"),
+                    "_source_channel": "native_form_stat",
                 })
-    for row in _list(form_view.get("stat_buttons")):
-        if isinstance(row, dict):
-            rows.append({
-                **row,
-                "level": _text(row.get("level"), "smart"),
-                "target_scope": _text(row.get("target_scope"), "page"),
-                "_source_channel": "native_form_stat",
-            })
-    active_view_type = _text(ui.get("view_type") or _dict(ui.get("head")).get("view_type")).split(",")[0]
-    if active_view_type == "list":
-        active_view_type = "tree"
     active_view = _dict(_dict(ui.get("views")).get(active_view_type))
     active_view_toolbar = _dict(active_view.get("toolbar"))
     for slot in ("header", "sidebar", "footer"):

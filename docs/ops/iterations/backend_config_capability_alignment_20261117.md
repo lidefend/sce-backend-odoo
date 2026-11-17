@@ -48,6 +48,11 @@
 Context 建立首帧求值帧，等正式 store 就绪后继续使用完整 source context；非法
 Context 类型仍然拒绝。这样继承明细条件不会把整页变成加载失败。
 
+项目看板的浏览器异常定位为动作规则来源错层：Kanban 页面错误纳入了 Form 头部
+`native_identity` 动作，前端严格 Decoder 因活动 View 不匹配而拒绝整份契约。
+现在动作装配按活动 View 过滤：Kanban 保留集合工具栏与行动作，Form 头部、
+Stat 按钮和 Form layout 按钮只在 Form 页面发布。
+
 ## 当前故障
 
 - 日常运行候选：`a19bf2d976cbda9d99bdc24deab7903143a21cb7`。
@@ -83,12 +88,14 @@ Context 类型仍然拒绝。这样继承明细条件不会把整页变成加载
 | 继承能力兜底 | 已通过 | 能力投影 18 项；节点验证 266 项 |
 | 字段 Widget 属性对齐 | 已通过 | `boolean_favorite`、`text` → 通用布尔/文本控件；8 项 provenance、116 项语义 registry |
 | one2many 首帧 Context | 已通过 | 55 项明细 hydration/Context 用例；非法 Context 仍 fail-closed |
+| 看板动作来源过滤 | 已通过 | P0 契约缺陷：Form 动作不再进入 Kanban；assembler guard PASS |
 | presentation 目标 | 已通过 | 81 项 |
 | 增量与台账 | 已通过 | 增量映射 168 项；Agent 台账 18 项；续跑入口 58 项 |
 | 候选 `af9a096b` 发布 | 已通过 | 恢复点、模块升级、构建和发布面均 PASS；契约回读 HTTP 200 |
 | 候选 `9c3540ce` 发布 | 已通过 | 字段 Widget 修正已上线；契约无 unsupported field widget |
-| 首帧 Context 修正候选 | 待发布 | 修复 one2many 首帧求值 |
-| 项目台账真实流程 | 待完成 | 等待首帧 Context 修正上线后验证 |
+| 表单单据恢复 | 已通过源码收口 | 字段 Widget、首帧 Context 均已修复 |
+| 项目看板恢复 | 待发布 | 活动 View 动作来源过滤已修复 |
+| 最终页面与业务闭环 | 待完成 | 发布后验证台账 1440/390、编辑回读与看板加载 |
 
 ## 配置数据升级边界
 

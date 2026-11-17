@@ -14,7 +14,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6542 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5982 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5986 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5651 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
@@ -207,6 +207,7 @@ Generated from repository source files. This report is informational during the 
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
+| 852 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
 | 847 | Python source | `scripts/ops/r10_performance_ab_lifecycle.py` |
@@ -225,7 +226,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 813 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
@@ -258,7 +258,7 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- | --- |
 | 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6542 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
-| 5982 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
+| 5986 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5651 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |

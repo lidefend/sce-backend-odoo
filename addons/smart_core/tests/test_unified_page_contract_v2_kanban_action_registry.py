@@ -111,6 +111,45 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(actions[0]["sourceWidgetId"], "page.row")
         self.assertEqual(actions[0]["triggerType"], "click")
 
+    def test_kanban_surface_excludes_form_header_action_rules(self):
+        source = _kanban_source()
+        source["views"]["form"] = {
+            "header_buttons": [{
+                "key": "form_only_action",
+                "name": "form_only_action",
+                "label": "仅表单动作",
+                "intent": "object_method",
+                "native_identity": {
+                    "authoritative": True,
+                    "name": "form_only_action",
+                    "native_locator": "/form[1]/header[1]/button[1]",
+                    "occurrence_index": 1,
+                    "type": "object",
+                },
+            }],
+        }
+        source["views"]["kanban"]["toolbar"] = {
+            "header": [{
+                "key": "kanban_toolbar_action",
+                "name": "kanban_toolbar_action",
+                "label": "看板动作",
+                "intent": "open_scene",
+                "target": {"scene_key": "project.project"},
+            }],
+        }
+
+        contract = self.assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.kanban.form-actions-excluded",
+        )
+
+        actions = (contract.get("actionContract") or {}).get("actionRuleList") or []
+        keys = [row.get("actionKey") for row in actions]
+        self.assertIn("kanban_toolbar_action", keys)
+        self.assertNotIn("form_only_action", keys)
+
     def test_business_value_component_keys_follow_field_metadata(self):
         cases = (
             ({"type": "monetary"}, "number", "sc.value.money"),
