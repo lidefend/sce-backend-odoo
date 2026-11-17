@@ -451,7 +451,6 @@ import NativeSmartAction from './NativeSmartAction.vue';
 import ScCard from '../design-system/ScCard.vue';
 import { useOptionalStandardDetailComposition } from '../../pages/contractForm/standardDetailCompositionRuntime';
 import ScButton from '../design-system/ScButton.vue';
-import { TDesignAlert } from '../design-system/tdesignPrimitiveBridge';
 import ScIcon from '../design-system/ScIcon.vue';
 import ScIconButton from '../design-system/ScIconButton.vue';
 import ScInput from '../design-system/ScInput.vue';

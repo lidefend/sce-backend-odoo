@@ -34,6 +34,9 @@ contract-gap path with an explicit reason. Recognition is separate from support.
   position, raw attributes, raw options, parsed options and normalized modifiers.
 - The compatibility parser path preserves existing native identity when present
   and never manufactures one when absent.
+- Options resolution is type-checked: raw evidence must be a string, parsed
+  resolution must carry its parsed value, and unsupported expression evidence
+  remains distinguishable.
 - The existing native occurrence identity algorithm now accepts the `widget`
   kind.
 - The assembler publishes widget nodes with the existing layout node,
@@ -44,8 +47,8 @@ contract-gap path with an explicit reason. Recognition is separate from support.
   `sc.unsupported.native_node` with `NATIVE_VIEW_WIDGET_UNSUPPORTED`.
 - Contract V2 advances to `2.5.0`. The schema accepts `widget` occurrence
   identity and the frontend decoder consumes versions through `2.5.x`.
-- The assembler cache advances to `v77`; its complete input SHA256 is
-  `efe2373a2f1f0ea0407e107f900ea90753f67ad9f0aa7e6154ad0e3f6d24c6be`.
+- The assembler cache advances to `v78`; its complete input SHA256 is
+  `1875c4ddf4f1dfa5b7759d6268762a37245a70690f032caf43ff3a3a825cf6aa`.
 
 ## Positive Contract
 
@@ -61,11 +64,20 @@ contains two same-name `web_ribbon` occurrences and one
   reason.
 - The web client decodes the supported subset through the normal schema decoder,
   store and presenter.
+- The decoder does not synthesize `fieldCode` or `fieldInfo` for widget nodes,
+  and rejects field carriers supplied by a client.
 - Native-tree and canonical rendering paths both show one ribbon per visible
   occurrence.
+- Feedback nodes continue to resolve the real TDesign Alert component; component
+  resolution warnings are regression failures.
 - Self-hidden and parent-hidden nodes render nothing.
 - The unsupported industry node stops through `ContractGapError` before any
   business request is emitted.
+- Native attribute name/options evidence is checked against projected widget
+  names/options and rejected on conflict.
+- A registered widget lacking native occurrence identity is projected as
+  unsupported with `NATIVE_VIEW_WIDGET_IDENTITY_MISSING`, never as a contradictory
+  ready-unsupported combination.
 
 ## Unsupported Contract
 
@@ -88,10 +100,10 @@ approved. No business UI, data service or action binding is implemented here.
 
 | Check | Result |
 | --- | --- |
-| `make ci.local.iteration` | PASS, 36 required targets |
+| `make ci.local.iteration` | PASS, 38 required targets, 23 executed and 15 content-identical prefixes reused |
 | `make verify.native_occurrence.contract.orm` | PASS, 8 disposable ORM tests |
 | `make verify.frontend.native_embedded_widget.browser` | PASS, both render paths, self/parent hidden cases, unsupported fail-closed, 0 business requests |
-| `make verify.frontend.node_component.unit` | PASS, 46 cases |
+| `make verify.frontend.node_component.unit` | PASS, 48 cases |
 | `make verify.frontend.node_component.component` | PASS, actual SFC server/browser component checks |
 | `make verify.frontend.canonical_form_presenter.unit` | PASS |
 | `make verify.semantic.registry.lint` | PASS |
@@ -101,6 +113,7 @@ approved. No business UI, data service or action binding is implemented here.
 | `make verify.local.dev.conditioned.feedback.orm` | PASS, 0 failed of 26 tests |
 | `make verify.frontend.lint.src` | PASS, warnings only in pre-existing files |
 | `make verify.frontend.typecheck.strict` | PASS |
+| `make verify.docs.all` | FAIL, pre-existing `baseline_evidence_defect`: 72 repository-wide links remain unresolved |
 
 Not run: deployment, L4 role/business acceptance, real consumption of
 `sc_insight_banner`, `sc_stage_requirements` or `sc_next_actions`.

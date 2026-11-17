@@ -1012,12 +1012,25 @@ function decodeContainer(
   const visible = optionalBooleanField(raw, 'visible', path, issues);
   const componentConfig = optionalRecord(raw, 'componentConfig', path, issues);
   const badge = optionalRecord(raw, 'badge', path, issues);
-  const fieldCode = asString(raw.fieldCode || raw.name);
+  const normalizedContainerType = containerType.toLowerCase();
+  if (normalizedContainerType === 'widget') {
+    if (Object.hasOwn(raw, 'fieldCode')) {
+      issues.push({ path: `${path}.fieldCode`, message: 'embedded widget nodes cannot carry a field identity' });
+    }
+    if (Object.hasOwn(raw, 'fieldInfo')) {
+      issues.push({ path: `${path}.fieldInfo`, message: 'embedded widget nodes cannot carry field metadata' });
+    }
+    if (Array.isArray(raw.fields) && raw.fields.length) {
+      issues.push({ path: `${path}.fields`, message: 'embedded widget nodes cannot own fields' });
+    }
+  }
+  const fieldCode = normalizedContainerType === 'widget'
+    ? ''
+    : asString(raw.fieldCode || raw.name);
   const widgetId = asString(raw.widgetId);
   const nativeLocator = asString(raw.nativeLocator);
   const occurrenceIndex = typeof raw.occurrenceIndex === 'number' ? raw.occurrenceIndex : undefined;
   const sourcePosition = typeof raw.sourcePosition === 'number' ? raw.sourcePosition : undefined;
-  const normalizedContainerType = containerType.toLowerCase();
   const identityKinds = new Set<ContractV2NativeOccurrenceKind>(
     normalizedContainerType === 'field'
       ? ['field']

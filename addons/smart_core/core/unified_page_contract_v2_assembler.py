@@ -2730,7 +2730,15 @@ def _normalize_native_layout_nodes(
             out.append(normalized)
             continue
         if node_type == "widget":
-            widget_name = _text(node.get("widget") or node_name)
+            attributes = _dict(node.get("attributes"))
+            native_widget_name = _text(attributes.get("name"))
+            projected_widget_name = _text(node.get("widget") or node_name)
+            if native_widget_name and any(
+                candidate and candidate != native_widget_name
+                for candidate in (node_name, _text(node.get("widget")))
+            ):
+                raise ValueError("embedded native widget name conflicts with native attributes")
+            widget_name = native_widget_name or projected_widget_name
             native_locator = _text(node.get("nativeLocator"))
             occurrence_index = _positive_int(node.get("occurrenceIndex"), 0)
             resolution = _resolve_native_view_widget(widget_name)
@@ -2740,6 +2748,7 @@ def _normalize_native_layout_nodes(
                 and resolution.get("status") == "ready"
                 and bool(resolution.get("component"))
             )
+            widget_status = "ready" if supported else "unsupported"
             component_key = (
                 resolution.get("component")
                 if supported
@@ -2771,12 +2780,18 @@ def _normalize_native_layout_nodes(
             node["componentKey"] = component_key
             component_config: dict[str, Any] = {
                 "nativeWidget": widget_name,
-                "widgetStatus": resolution.get("status"),
+                "widgetStatus": widget_status,
                 "identityComplete": identity_complete,
             }
-            attributes = _dict(node.get("attributes"))
             options_raw = node.get("options_raw", attributes.get("options"))
             options_resolution = _text(node.get("options_resolution")).lower()
+            native_options_raw = attributes.get("options")
+            if (
+                native_options_raw is not None
+                and node.get("options_raw") is not None
+                and str(node.get("options_raw")) != str(native_options_raw)
+            ):
+                raise ValueError("embedded native widget options conflict with native attributes")
             if options_raw is not None or "options" in node:
                 if options_resolution not in {"parsed", "unsupported"}:
                     options_resolution = "unsupported"

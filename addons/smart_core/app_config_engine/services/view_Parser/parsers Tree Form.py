@@ -480,7 +480,13 @@ class _TreeFormParserMixin:
 
     def _native_behavior_from_mapping(self, attributes, field_info=None):
         """Normalize native modifier/relation attributes from a View node."""
-        source = attributes if isinstance(attributes, dict) else {}
+        source = (
+            attributes
+            if isinstance(attributes, dict)
+            else dict(attributes)
+            if hasattr(attributes, "items")
+            else {}
+        )
         modifiers = {}
         for key in ('readonly', 'required', 'invisible', 'column_invisible'):
             value = source.get(key)

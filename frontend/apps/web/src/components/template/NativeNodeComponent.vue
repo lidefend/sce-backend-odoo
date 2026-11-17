@@ -33,6 +33,7 @@
 <script setup lang="ts">
 import type { NodeComponentPresentation } from '../../app/presentation/nodeComponentPresentation';
 import ScButton from '../design-system/ScButton.vue';
+import { TDesignAlert } from '../design-system/tdesignPrimitiveBridge';
 
 defineProps<{
   presentation: NodeComponentPresentation;

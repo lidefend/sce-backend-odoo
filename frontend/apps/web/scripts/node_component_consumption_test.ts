@@ -3,7 +3,12 @@ import { readFileSync } from 'node:fs';
 import type { ContractV2Snapshot, ContractV2Container } from '../src/app/contracts/v2/types';
 import { projectNodeComponents, navigateToDeclaredNode } from '../src/app/presentation/nodeComponentPresentation';
 import { decodeContractV2Snapshot } from '../src/app/contracts/v2/schema';
-import { createContractV2Store } from '../src/app/contracts/v2/store';
+import {
+  createContractV2Store,
+  resolveContractV2FieldDescriptorMap,
+  resolveContractV2FormFieldMap,
+  resolveContractV2RequiredFieldCodes,
+} from '../src/app/contracts/v2/store';
 import { presentContractV2Form } from '../src/app/presentation/contractFormPresenter';
 import { buildCanonicalNativeFormBridge } from '../src/pages/contractForm/canonicalNativeFormBridge';
 function baseSnapshot(): ContractV2Snapshot {
@@ -294,6 +299,14 @@ test('real producer fixture flows through decoder and both consumption paths', (
 
   const decoded = decodeContractV2Snapshot(supported);
   const store = createContractV2Store(decoded);
+  decoded.layoutContract.containerTree.slice(0, 2).forEach((node) => {
+    assert.equal(node.fieldCode, undefined);
+    assert.equal(node.fieldInfo, undefined);
+  });
+  assert.equal(resolveContractV2FieldDescriptorMap(store).web_ribbon, undefined);
+  assert.equal(resolveContractV2FormFieldMap(store).web_ribbon, undefined);
+  assert.equal(store.widgetsByFieldCode.has('web_ribbon'), false);
+  assert.equal(resolveContractV2RequiredFieldCodes(store).includes('web_ribbon'), false);
   const model = presentContractV2Form(store, 'readonly');
   const nodes = model.zones.primary;
   assert.deepEqual(nodes.map((node) => node.nativeWidgetComponent?.componentKey), [
@@ -308,6 +321,24 @@ test('real producer fixture flows through decoder and both consumption paths', (
   assert.throws(
     () => decodeContractV2Snapshot(producer),
     /NATIVE_VIEW_WIDGET_UNSUPPORTED/,
+  );
+  const fieldCodeCollision = structuredClone(supported);
+  fieldCodeCollision.layoutContract.containerTree[0].fieldCode = 'web_ribbon';
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldCodeCollision),
+    /embedded widget nodes cannot carry a field identity/,
+  );
+  const fieldInfoCollision = structuredClone(supported);
+  fieldInfoCollision.layoutContract.containerTree[0].fieldInfo = { type: 'char' };
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldInfoCollision),
+    /embedded widget nodes cannot carry field metadata/,
+  );
+  const fieldsCollision = structuredClone(supported);
+  fieldsCollision.layoutContract.containerTree[0].fields = ['web_ribbon'];
+  assert.throws(
+    () => decodeContractV2Snapshot(fieldsCollision),
+    /embedded widget nodes cannot own fields/,
   );
   const hidden = structuredClone(supported);
   hidden.statusContract.containerStatus[0].visible = false;
@@ -325,12 +356,22 @@ for (const name of ['sc_stage_requirements', 'sc_next_actions', 'unknown_widget'
     );
   });
 }
-for (const mutation of ['widget', 'identity', 'options', 'missing-reason', 'version']) test('ribbon '+mutation,()=>{
+for (const mutation of [
+  'widget',
+  'identity',
+  'options',
+  'options-raw-type',
+  'parsed-missing-options',
+  'missing-reason',
+  'version',
+]) test('ribbon '+mutation,()=>{
   const s = ribbonFixture();
   const node = s.layoutContract.containerTree[0];
   if (mutation === 'widget') node.componentConfig!.nativeWidget = 'other';
   if (mutation === 'identity') node.nativeIdentity = nativeWidgetOccurrence('web_ribbon', '/form[1]/widget[2]', 2);
   if (mutation === 'options') node.componentConfig!.optionsResolution = 'broken';
+  if (mutation === 'options-raw-type') node.componentConfig!.optionsRaw = { limit: 3 };
+  if (mutation === 'parsed-missing-options') delete node.componentConfig!.options;
   if (mutation === 'missing-reason') {
     node.componentKey = 'sc.unsupported.native_node';
     s.layoutContract.componentRegistry['sc.unsupported.native_node'] = { version: '1.0.0' };

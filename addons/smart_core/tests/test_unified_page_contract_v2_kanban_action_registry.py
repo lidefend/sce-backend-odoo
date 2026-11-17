@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import copy
 import importlib.util
 import sys
 import types
@@ -573,6 +574,73 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         self.assertEqual(
             contract["layoutContract"]["componentRegistry"]["sc.unsupported.native_node"],
             {"version": "1.0.0"},
+        )
+
+        conflict_name = {
+            "model": "project.project",
+            "view_type": "form",
+            "fields": {},
+            "views": {
+                "form": {
+                    "viewIdentity": view_identity,
+                    "layout": [{
+                        "type": "widget",
+                        "name": "web_ribbon",
+                        "widget": "web_ribbon",
+                        "attributes": {"name": "sc_next_actions"},
+                        "native_locator": "/form[1]/widget[1]",
+                        "occurrence_index": 1,
+                        "children": [],
+                    }],
+                }
+            },
+        }
+        with self.assertRaisesRegex(ValueError, "name conflicts"):
+            self.assembler.assemble_unified_page_contract_v2(
+                conflict_name,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.form.embedded.widget.name_conflict",
+            )
+
+        conflict_options = copy.deepcopy(conflict_name)
+        conflict_options["views"]["form"]["layout"][0].update({
+            "name": "sc_stage_requirements",
+            "widget": "sc_stage_requirements",
+            "attributes": {"name": "sc_stage_requirements", "options": "{'limit': 3}"},
+            "options_raw": "{'limit': 4}",
+            "options": {"limit": 4},
+            "options_resolution": "parsed",
+        })
+        with self.assertRaisesRegex(ValueError, "options conflict"):
+            self.assembler.assemble_unified_page_contract_v2(
+                conflict_options,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.form.embedded.widget.options_conflict",
+            )
+
+        missing_identity = copy.deepcopy(conflict_name)
+        missing_node = missing_identity["views"]["form"]["layout"][0]
+        missing_node.update({
+            "name": "web_ribbon",
+            "widget": "web_ribbon",
+            "attributes": {"name": "web_ribbon"},
+            "native_locator": "",
+            "occurrence_index": 0,
+        })
+        missing_contract = self.assembler.assemble_unified_page_contract_v2(
+            missing_identity,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.form.embedded.widget.missing_identity",
+        )
+        missing_widget = missing_contract["layoutContract"]["containerTree"][0]
+        self.assertEqual(missing_widget["componentKey"], "sc.unsupported.native_node")
+        self.assertEqual(missing_widget["componentConfig"]["widgetStatus"], "unsupported")
+        self.assertEqual(
+            missing_widget["componentConfig"]["reasonCode"],
+            "NATIVE_VIEW_WIDGET_IDENTITY_MISSING",
         )
 
     def test_native_form_header_button_is_projected_as_root_business_action(self):

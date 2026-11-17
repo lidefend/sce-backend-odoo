@@ -117,6 +117,17 @@ export function projectNodeComponents(
         || rawConfig.widgetStatus !== 'ready'
         || rawConfig.identityComplete !== true
         || !['none', 'parsed', 'unsupported'].includes(String(rawConfig.optionsResolution))
+        || (
+          Object.hasOwn(rawConfig, 'optionsRaw')
+          && (
+            typeof rawConfig.optionsRaw !== 'string'
+            || rawConfig.optionsResolution === 'none'
+          )
+        )
+        || (
+          rawConfig.optionsResolution === 'parsed'
+          && !Object.hasOwn(rawConfig, 'options')
+        )
         || node.type !== 'widget'
         || node.containerType !== 'widget'
         || node.children?.length

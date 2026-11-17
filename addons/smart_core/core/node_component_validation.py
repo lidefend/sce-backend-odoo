@@ -519,6 +519,17 @@ def validate_final_nodes(
                 or type(config.get("widgetStatus")) is not str
                 or type(config.get("identityComplete")) is not bool
                 or config.get("optionsResolution") not in {"none", "parsed", "unsupported"}
+                or (
+                    "optionsRaw" in config
+                    and (
+                        type(config.get("optionsRaw")) is not str
+                        or config.get("optionsResolution") == "none"
+                    )
+                )
+                or (
+                    config.get("optionsResolution") == "parsed"
+                    and "options" not in config
+                )
                 or (key == UNSUPPORTED_NATIVE_NODE and (
                     config.get("widgetStatus") != "unsupported"
                     or type(config.get("reasonCode")) is not str
@@ -539,6 +550,16 @@ def validate_final_nodes(
                 or node.get("fieldDescriptor")
             ):
                 fail("NATIVE_NODE_CONFIG_INVALID", path)
+            attributes = node.get("attributes") if isinstance(node.get("attributes"), dict) else {}
+            native_widget_name = str(attributes.get("name") or "").strip()
+            if native_widget_name and native_widget_name != config["nativeWidget"]:
+                fail("NATIVE_NODE_CONFIG_INVALID", path + ".componentConfig.nativeWidget")
+            native_options_raw = attributes.get("options")
+            projected_options_raw = config.get("optionsRaw")
+            if native_options_raw is not None and str(projected_options_raw or "") != str(native_options_raw):
+                fail("NATIVE_NODE_CONFIG_INVALID", path + ".componentConfig.optionsRaw")
+            if native_options_raw is None and projected_options_raw is not None:
+                fail("NATIVE_NODE_CONFIG_INVALID", path + ".componentConfig.optionsRaw")
             if config["identityComplete"]:
                 native_source(node, originals, path, "NATIVE_NODE_IDENTITY_INVALID")
                 identity = node.get("nativeIdentity") or {}

@@ -240,6 +240,7 @@ class NodeValidationTests(unittest.TestCase):
             'name': widget,
             'widget': widget,
             'title': 'Paid' if supported else 'Industry widget',
+            'attributes': {'name': widget, 'options': "{'limit': 3}"},
             'children': [],
             'widgetList': [],
             'nativeLocator': '/form/widget[1]',
@@ -283,6 +284,21 @@ class NodeValidationTests(unittest.TestCase):
         self.embedded_widget()
         self.contract['layoutContract']['containerTree'][0]['nativeIdentity']['kind'] = 'container'
         self.reject('NATIVE_NODE_IDENTITY_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsRaw'] = {'limit': 3}
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        del self.contract['layoutContract']['containerTree'][0]['componentConfig']['options']
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsResolution'] = 'none'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['nativeWidget'] = 'sc_next_actions'
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
+        self.embedded_widget()
+        self.contract['layoutContract']['containerTree'][0]['componentConfig']['optionsRaw'] = "{'limit': 4}"
+        self.reject('NATIVE_NODE_CONFIG_INVALID')
 
     def test_navigation_valid(self):
         self.navigation(); self.validate()

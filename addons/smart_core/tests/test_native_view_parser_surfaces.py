@@ -586,6 +586,21 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
                 self.assertEqual(node["options"], expected)
                 self.assertEqual(node["options_resolution"], "parsed")
 
+    def test_native_behavior_mapping_accepts_non_dict_mapping_carriers(self):
+        modifiers, relation = self.tree_form_parser._native_behavior_from_mapping(
+            types.MappingProxyType({
+                "invisible": "not active",
+                "can_create": "0",
+            }),
+            {"type": "many2one"},
+        )
+        self.assertEqual(modifiers["invisible"], {
+            "kind": "not",
+            "expr": {"kind": "field_truthy", "field": "active"},
+            "raw": "not active",
+        })
+        self.assertIs(relation["create"], False)
+
     def test_native_button_static_body_label_and_explicit_precedence(self):
         parser = self.tree_form_parser
         resolve = super(_TreeFormParserProbe, parser)._resolve_action_label

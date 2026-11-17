@@ -5,6 +5,13 @@ import { parse, compileScript, registerTS } from 'vue/compiler-sfc';
 import { createRequire } from 'node:module';
 const require = createRequire(import.meta.url);
 registerTS(() => require('typescript'));
+const componentResolutionWarnings = [];
+const baseConsoleWarn = console.warn;
+console.warn = (...args) => {
+  const message = args.map(String).join(' ');
+  if (message.includes('Failed to resolve component')) componentResolutionWarnings.push(message);
+  baseConsoleWarn(...args);
+};
 const root = process.cwd();
 const entry = `${root}/frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue`;
 const output = '/tmp/fe-gate-03a-node-component-ssr.mjs';
@@ -51,6 +58,7 @@ const { render, renderLegacy, renderRibbon, renderCanonicalRibbon } = await impo
 let checks=0;
 for(const purpose of ['advisory','warning','error','explanation']) {
  const html=await render(purpose);assert.equal((html.match(/Read this/g)||[]).length,1);checks++;
+ if (purpose !== 'explanation') assert.ok(html.includes('t-alert'), html);
  if(purpose==='error') assert.ok(html.includes('role="alert"'));
  else if(purpose!=='explanation') assert.ok(html.includes('role="status"'));
  else assert.ok(!html.includes('role="alert"'));checks++;
@@ -81,4 +89,5 @@ const explicitAnchor=await renderLegacy('alert-link',{anchor:true});
 assert.ok(explicitAnchor.includes('<button'));checks++;
 const statusText=await renderLegacy('',{text:'Status copy',role:'status'});
 assert.ok(statusText.includes('role="status"'));checks++;
+assert.deepEqual(componentResolutionWarnings, []);
 console.log(`[node-component-SSR] PASS cases=${checks} actual NativeFormTreeRenderer`);
