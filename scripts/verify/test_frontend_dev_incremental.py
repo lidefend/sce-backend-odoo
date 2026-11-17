@@ -68,6 +68,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertIn(owner, select_targets([path]))
 
+    def test_branch_cleanup_paths_keep_their_worktree_guard(self):
+        for path in (
+            "scripts/ops/branch_cleanup_safe.sh",
+            "scripts/ops/test_safe_worktree_cleanup.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.workspace.worktree.guard"],
+                )
+
     def test_demo_module_paths_select_demo_lifecycle_contracts(self) -> None:
         demo_targets = [
             "verify.demo.lifecycle.unit",

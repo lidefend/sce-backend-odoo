@@ -1032,6 +1032,12 @@ RULES = (
         "verify.workspace.branch.sync-main",
     )),
     Rule((
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+    ), (
+        "verify.workspace.worktree.guard",
+    )),
+    Rule((
         "scripts/verify/baseline_iteration_execution_policy_guard.py",
         "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
     ), (

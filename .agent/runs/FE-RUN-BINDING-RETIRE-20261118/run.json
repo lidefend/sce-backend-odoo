@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "id": "FE-RUN-BINDING-RETIRE-20261118",
+  "branch": "fix/retire-frontend-run-bindings-20261118",
+  "baseline_sha": "43a9b9a4bf6170f8202d6f649799049f80b12189",
+  "status": "pending_merge_decision",
+  "goal": ".agent/goals/FE-RUN-BINDING-RETIRE-20261118.yaml",
+  "record": "docs/ops/iterations/fe_run_binding_retire_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RUN-BINDING-RETIRE-20261118.yaml",
+    ".agent/runs/FE-RUN-BINDING-RETIRE-20261118/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/fe_run_binding_retire_20261118.md",
+    "scripts/ops/branch_cleanup_safe.sh",
+    "scripts/ops/test_safe_worktree_cleanup.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing branch cleanup guard, active-run ledger and exact merged PR identity"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FE-RUN-BINDING-RETIRE-20261118.yaml",
+        ".agent/runs/FE-RUN-BINDING-RETIRE-20261118/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    },
+    "branch_cleanup_guard": {
+      "target": "verify.workspace.worktree.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/branch_cleanup_safe.sh",
+        "scripts/ops/test_safe_worktree_cleanup.py",
+        "scripts/ops/safe_worktree_cleanup.py",
+        "scripts/ops/safe_worktree_create.py",
+        "make/codex.mk"
+      ]
+    },
+    "incremental_frontend_plan": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/ops/agent_run_context.py",
+        "make/frontend.mk"
+      ]
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "kind": "offline",
+      "inputs": [
+        "docs/ops/iterations/fe_run_binding_retire_20261118.md",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "make/dev_test.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit and publish the exact P4 cleanup candidate, merge after current-head checks, then retire the exact merged feature, previous cleanup and current cleanup branches."
+}
