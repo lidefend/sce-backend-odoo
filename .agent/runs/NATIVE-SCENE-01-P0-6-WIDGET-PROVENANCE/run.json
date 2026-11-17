@@ -5,6 +5,7 @@
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",
     ".agent/runs/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE/run.json",
+    ".github/workflows/backend_test_suite.yml",
     ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
     ".agent/runs/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION/run.json",
     "addons/smart_core/app_config_engine/services/view_Parser/base.py",
@@ -41,6 +42,7 @@
     "config/acceptance/evolution_binding.v1.json",
     "config/contract/page_contract_v1_retirement_manifest.json",
     "scripts/verify/",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/contract/generate_semantic_registry.py",
     "make/guards.mk",
     "make/frontend.mk",
@@ -145,6 +147,8 @@
     "ci_workflow_contract": {
       "target": "verify.ci.workflow.contract",
       "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
         "make/ci.mk",
         "make/frontend.mk",
         "scripts/verify/registry.yaml"
@@ -289,6 +293,7 @@
     "frontend_decoder": "synchronized",
     "validation_governance": "local and freeze plans now use merge-stage evidence; deployment-only evidence remains deferred",
     "independent_review_repair": "Form node canonical widget no longer promotes or overwrites native/metadata provenance; assembly-chain regression coverage passed",
+    "ci_retry_artifact_contract": "backend suite cross-job artifacts bind stable run_id artifacts with overwrite, so failed-job reruns reuse the plan instead of looking for a nonexistent current-attempt artifact",
     "product_database_modified": false
   },
   "completion_status_dimensions": {

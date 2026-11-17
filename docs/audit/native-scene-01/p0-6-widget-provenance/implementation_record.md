@@ -2,8 +2,9 @@
 
 Status: the merged implementation had one independent-review source-authority
 defect in the Form node assembly path. The bounded repair and its assembly-chain
-regression coverage pass on exact head `8baf4773c1ace0f69f73d507229118a42f0d7f65`;
-PR publication, remote CI and final review remain pending.
+regression coverage pass on exact head
+`aa0f8f033c6568f4998b31e79d2e339f5f7ef27f`; PR #913 remote CI and final
+review remain pending.
 
 Baseline main: `bb63c755238b27c39844701411de4c4dddd8c17e`
 
@@ -207,6 +208,26 @@ claiming date provenance while retaining a text-input fixture.
 The review-repair inventory run binds 1,354 source files with inputs SHA256
 `b617f91a862f148ecadfcceed9ff5c9b8db2644bb1158322d774af68561a6f99`.
 
+### CI Retry Mechanism Gap
+
+The first hotfix run exposed a separate control-plane defect:
+
+- `professional_quality_gate` shard 3 hit the existing
+  `test_intent_smoke.test_system_init_intent` error
+  `psycopg2.ProgrammingError: no results to fetch`; the focused governed
+  `TestIntentSmoke` run passed all 10 tests.
+- Re-running only the failed job then failed before tests because cross-job
+  artifact names included `github.run_attempt`: the unchanged upstream `plan`
+  artifact belonged to the prior attempt, while the shard searched for an
+  artifact named for the new attempt.
+
+The workflow now binds `backend-plan`, `backend-execution` and
+`changed-test-coverage` artifacts to stable `github.run_id` names. Full retries
+use `overwrite: true`, while failed-job retries reuse the previous exact-head
+plan. `test_backend_test_suite_dispatch_contract.py` asserts the stable names,
+overwrite semantics and absence of `github.run_attempt` from cross-job
+artifacts.
+
 ## 7. Validation Governance Closure
 
 The implementation exposed two validation-system issues unrelated to product
@@ -254,6 +275,11 @@ Passed during the dirty candidate and rechecked on the clean exact head:
 | `make ci.local.iteration` | PASS on `7af300c1e`, 23 required targets |
 | `make ci.local.iteration` | PASS on review-repair dirty candidate, 11 required targets |
 | `make ci.local.iteration` | PASS on `8baf4773c`, 11 required targets |
+| `make ci.local.iteration` | PASS on `aa0f8f033`, 13 affected targets after CI retry repair |
+| `make verify.ci.workflow.contract` | PASS after CI retry repair |
+| `python3 scripts/ci/test_backend_test_suite_dispatch_contract.py` | PASS, 18 tests |
+| `python3 scripts/verify/github_actions_security_guard.py` | PASS |
+| `make local.test.test MODULE=smart_core TEST_TAGS=/smart_core:TestIntentSmoke` | PASS, 10 tests |
 | `python3 scripts/audit/native_scene_inventory.py --check` | PASS after clean-head regeneration |
 
 The exact-head iteration executed all 23 required targets, including frontend
