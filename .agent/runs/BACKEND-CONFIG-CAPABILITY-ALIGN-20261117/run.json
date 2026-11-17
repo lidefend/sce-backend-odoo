@@ -3,7 +3,7 @@
   "id": "BACKEND-CONFIG-CAPABILITY-ALIGN-20261117",
   "branch": "fix/backend-config-capability-alignment-20261117",
   "baseline_sha": "a19bf2d976cbda9d99bdc24deab7903143a21cb7",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/BACKEND-CONFIG-CAPABILITY-ALIGN-20261117.yaml",
   "record": "docs/ops/iterations/backend_config_capability_alignment_20261117.md",
   "scope": [
@@ -235,5 +235,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the exact dirty candidate iteration and commit the generic View negotiation and validation-stage separation; deploy only after a clean exact HEAD passes affected checks."
+  "next_exact_step": "Publish candidate 4c373015c07bc3f86c109b77fe298cb613136b6f, wait for current-head required CI, merge through the protected PR, then deploy the exact daily runtime and read back the served revision."
 }
