@@ -2,7 +2,7 @@
 
 ## 身份与范围
 
-- 基线提交：`1068da05ea9b198f97bbf06b49b7361fabbd9e4f`
+- 基线提交：`200185560d5b745e1e7369694bfa9e9d7947f91f`
 - 审计类型：静态、可复现、只读；未启动浏览器、服务、数据库或 fixture。
 - Formal Product Layer：P4（工程盘点与证据）；后续 Tokens/Primitives/Shell 等产品实现应分别按 P0 立项。
 - 扫描器：`scripts/audit/generate_frontend_professionalization_baseline.py`。
@@ -12,14 +12,14 @@
 
 | 维度 | 静态证据 | 解释 |
 | --- | ---: | --- |
-| 路由页面面 | 24 | Vue Router 的正式静态入口；record 的 task/workspace 必须由运行时 Contract V2 判定。 |
+| 路由页面面 | 27 | Vue Router 的正式静态入口；record 的 task/workspace 必须由运行时 Contract V2 判定。 |
 | 已观察 action/menu 表面 | 70 | 历史角色旅程 CSV，不能视为全量当前权限目录。 |
-| 声明式 window action | 416 | XML 静态定义；不等于当前用户可访问的 action。 |
-| 声明式菜单 | 422 | XML 静态定义；运行时可见性应以后端导航解释为准。 |
-| CSS 变量 | 131 | 需要 Phase 1 归类为 primitive / semantic / component / pattern。 |
-| 硬编码色彩词法命中 | 0 | 先作为 allowlist 输入；不把扫描命中直接等同为违规。 |
-| 已有 `Sc*` 组件 | 25 | 有基础目录，但无统一 readiness/capability registry。 |
-| Phase 2 精确 primitive 缺口 | 8 | 以请求 API 名称严格比对；别名须显式决定。 |
+| 声明式 window action | 423 | XML 静态定义；不等于当前用户可访问的 action。 |
+| 声明式菜单 | 418 | XML 静态定义；运行时可见性应以后端导航解释为准。 |
+| CSS 变量 | 201 | 需要 Phase 1 归类为 primitive / semantic / component / pattern。 |
+| 硬编码色彩词法命中 | 39 | 先作为 allowlist 输入；不把扫描命中直接等同为违规。 |
+| 已有 `Sc*` 组件 | 63 | 有基础目录，但无统一 readiness/capability registry。 |
+| Phase 2 精确 primitive 缺口 | 0 | 以请求 API 名称严格比对；别名须显式决定。 |
 
 ## P0 缺口（平台通用机制）
 

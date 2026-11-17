@@ -45,9 +45,20 @@ class FrontendProfessionalizationBaselineTest(unittest.TestCase):
     def test_design_and_component_reports_keep_missing_explicit(self) -> None:
         self.assertGreater(len(self.design["cssVariableDefinitions"]), 0)
         gaps = {item["componentKey"] for item in self.components["phase2PrimitiveGaps"]}
-        self.assertIn("ScInput", gaps)
-        self.assertIn("ScLoading", gaps)
+        self.assertEqual(gaps, set())
         self.assertTrue(self.components["coveragePolicy"]["noSilentFallback"])
+
+    def test_css_variable_inventory_excludes_bem_modifier_like_text(self) -> None:
+        text = """
+.control--action:hover {
+  --sc-test-token: var(--sc-base-color);
+  color: red;
+}
+"""
+        self.assertEqual(
+            INVENTORY.CSS_VAR_RE.findall(text),
+            [("--sc-test-token", "var(--sc-base-color)")],
+        )
 
     def test_component_source_presence_is_not_readiness_or_capability(self) -> None:
         for item in self.components["declaredComponents"]:

@@ -38,8 +38,10 @@ READY_SEMANTICS = {
     "hierarchy_planner",
     "hierarchical_worksheet",
     "activity",
+    "pivot",
+    "graph",
 }
-FALLBACK_SEMANTICS = {"pivot", "graph", "calendar", "gantt", "dashboard"}
+FALLBACK_SEMANTICS = {"calendar", "gantt", "dashboard"}
 
 
 def _text(value) -> str:

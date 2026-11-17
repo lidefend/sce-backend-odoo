@@ -7,10 +7,9 @@
       </ScButton>
     </header>
 
-    <div v-if="state === 'loading'" class="enterprise-readiness-panel__status">正在读取企业配置状态…</div>
-    <div v-else-if="state === 'error'" class="enterprise-readiness-panel__status enterprise-readiness-panel__status--error">
-      {{ errorMessage }}
-    </div>
+    <ScInlineState v-if="state === 'loading'" state="loading" label="正在读取企业配置状态…" />
+    <ScInlineState v-else-if="state === 'error'" state="error" :label="errorMessage" />
+    <ScInlineState v-else-if="!rules.length" state="empty" label="暂无企业业务配置诊断项。" />
     <ul v-else class="enterprise-readiness-panel__list">
       <li v-for="rule in rules" :key="rule.rule_key" class="enterprise-readiness-panel__row">
         <div class="enterprise-readiness-panel__row-main">
@@ -39,6 +38,7 @@
 
 <script setup lang="ts">
 import ScButton from '../design-system/ScButton.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import { useEnterpriseReadiness, type ReadinessRemediation } from '../../composables/useEnterpriseReadiness';
 
 defineEmits<{ (e: 'remediate', target: ReadinessRemediation): void }>();

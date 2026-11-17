@@ -235,12 +235,85 @@ BATCH_BINDINGS = {
         "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue": {"article": {"attrs": {"data-semantic-component": "BlockRichTextOverview", ":data-state": "phase", ":data-editable": "view.canEdit ? 'true' : 'false'"}}},
         "frontend/apps/web/src/pages/AnalysisPage.vue": {"section": {"attrs": {":data-analysis-view": "model.viewType", ":data-analysis-state": "model.ok ? 'ready' : 'unavailable'", ":data-analysis-reason": "model.reasonCode"}}},
     },
+    "p0-residual-shared-scene-form-state-completion-v1": {
+        "frontend/apps/web/src/components/FieldValue.vue": {
+            "scinlinestate": {"states": {"empty"}, "attrs": {"density": "compact"}, "minimum": 1},
+        },
+        "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue": {
+            "nav": {"attrs": {"data-semantic-component": "ProductScenarioNavigation", "aria-label": "业务场景导航"}},
+            "scinlinestate": {"states": {"empty"}, "minimum": 2},
+        },
+        "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue": {
+            "div": {"attrs": {"data-semantic-component": "ProductShellSidebarFooter"}},
+            "scinlinestate": {"states": {"success", "error"}, "minimum": 1},
+        },
+        "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue": {
+            "section": {"attrs": {"data-semantic-component": "EnterpriseReadinessPanel", ":data-state": "state"}},
+            "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3},
+        },
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue": {
+            "section": {"attrs": {"data-semantic-component": "ScenarioActivationPanel", ":data-state": "state"}},
+            "scinlinestate": {"states": {"loading", "empty", "error"}, "minimum": 3},
+        },
+        "frontend/apps/web/src/components/template/NativeNodeComponent.vue": {
+            "div": {"attrs": {"data-semantic-component": "NativeNodeComponent"}, "minimum": 1},
+            "tdesignalert": {"attrs": {"data-semantic-component": "NativeNodeComponent"}, "minimum": 2},
+            "sccard": {"attrs": {"data-semantic-component": "NativeNodeComponent"}, "minimum": 1},
+            "scbutton": {"attrs": {"data-semantic-component": "NativeNodeComponent"}, "minimum": 1},
+        },
+        "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue": {
+            "span": {"attrs": {"data-semantic-component": "NativeWeightedRelationDisplay", ":data-display-state": "state"}},
+            "scinlinestate": {"states": {"loading", "error"}, "minimum": 2},
+        },
+        "frontend/apps/web/src/pages/ContractFormRoute.vue": {
+            "productformloadingskeleton": {
+                "import": "ProductFormLoadingSkeleton",
+                "import_path": "../components/product-record/ProductFormLoadingSkeleton.vue",
+                "attrs": {"loading-label": "正在载入业务表单"},
+            },
+            "scerrorstate": {"attrs": {"title": "业务表单加载失败"}, "minimum": 1},
+        },
+        "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue": {
+            "span": {"attrs": {"data-semantic-component": "ActionReasonTrigger", ":data-state": "reason ? 'disabled' : 'ready'"}},
+        },
+        "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue": {
+            "scdialog": {"attrs": {"data-contract-reason-dialog": "true", "data-dialog-purpose": "action-reason", "data-state": "interactive"}},
+            "scformfield": {"minimum": 1},
+            "sctextarea": {"minimum": 1},
+            "scbutton": {"minimum": 2},
+        },
+        "frontend/apps/web/src/views/MyCapabilitiesView.vue": {
+            "scpage": {"attrs": {"data-semantic-component": "MyCapabilitiesView"}},
+            "scinlinestate": {"states": {"loading", "error", "empty"}, "minimum": 4},
+        },
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue": {
+            "scpage": {"attrs": {"data-semantic-component": "PlatformCapabilityExplorerView"}},
+            "scinlinestate": {"states": {"info", "loading", "error", "success"}, "minimum": 5},
+            "scemptystate": {"minimum": 2},
+        },
+        "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue": {
+            "scpage": {"attrs": {"data-semantic-component": "SystemParameterCatalogView"}},
+            "scinlinestate": {"states": {"loading", "error"}, "minimum": 5},
+        },
+    },
+}
+PENDING_BATCHES = {
 }
 OWNED_BINDINGS = {
     source: (batch, requirements)
     for batch, bindings in BATCH_BINDINGS.items()
     for source, requirements in bindings.items()
 }
+TARGET_BATCH_BY_SOURCE = {
+    source: batch
+    for batch, sources in PENDING_BATCHES.items()
+    for source in sources
+}
+TARGET_BATCH_BY_SOURCE.update({
+    source: batch
+    for batch, bindings in BATCH_BINDINGS.items()
+    for source in bindings
+})
 NEXT_BATCH_GAPS = set(BATCH_BINDINGS["p0-inline-full-state-completion-v1"])
 NEXT_BATCH_BINDINGS = BATCH_BINDINGS["p0-inline-full-state-completion-v1"]
 COMPONENT_IMPORTS = {
@@ -351,7 +424,7 @@ def component_binding_failures(text: str, requirements: dict[str, dict[str, Any]
             if "state" in attrs:
                 states.add(attrs["state"])
             expression = attrs.get(":state", "")
-            states.update(re.findall(r"['\"](info|loading|empty|error)['\"]", expression))
+            states.update(re.findall(r"['\"](info|loading|empty|error|success)['\"]", expression))
         missing_states = set(rule.get("states", set())) - states
         if missing_states:
             failures.append(f"{expected_import or tag} missing states {','.join(sorted(missing_states))}")
@@ -495,7 +568,7 @@ def build_inventory() -> dict[str, Any]:
             "stateTypes": state_types,
             "rawControls": raw_controls,
             "governedStatePrimitives": governed_primitives,
-            "targetBatch": OWNED_BINDINGS[source][0] if source in OWNED_BINDINGS else None,
+            "targetBatch": TARGET_BATCH_BY_SOURCE.get(source),
         })
     deferred_sources = {item["source"] for item in surfaces if item["status"] == "p3_out_of_scope"}
     deferral_failures = p3_state_band_ownership_failures(deferred_sources)
@@ -511,12 +584,26 @@ def build_inventory() -> dict[str, Any]:
     p0_p1_raw_bypass_controls = sum(
         sum(item["rawControls"].values()) for item in p0_p1_raw_bypass_surfaces
     )
-    next_batch = None if counts.get("gap", 0) == 0 else {
-        "key": "p0-shared-utility-scene-completion-v1",
-        "targetSurfaceCount": len(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
-        "targetSources": sorted(BATCH_BINDINGS["p0-shared-utility-scene-completion-v1"]),
-        "commitBudget": {"minimum": 12, "maximum": 20},
-    }
+    gap_sources = {item["source"] for item in surfaces if item["status"] == "gap"}
+    unassigned_gap_sources = sorted(
+        source for source in gap_sources if source not in TARGET_BATCH_BY_SOURCE
+    )
+    next_batch = None
+    for batch, target_sources in (
+        *((batch, sources) for batch, sources in PENDING_BATCHES.items()),
+        *((batch, set(bindings)) for batch, bindings in BATCH_BINDINGS.items()),
+    ):
+        affected = sorted(gap_sources & target_sources)
+        if not affected:
+            continue
+        next_batch = {
+            "key": batch,
+            "targetSurfaceCount": len(target_sources),
+            "targetSources": sorted(target_sources),
+            "gapSources": affected,
+            "commitBudget": {"minimum": 8, "maximum": 16},
+        }
+        break
     generator_digest = hashlib.sha256(Path(__file__).read_bytes()).hexdigest()
     ownership_digest = hashlib.sha256(OWNERSHIP_PATH.read_bytes()).hexdigest()
     input_digest = digest(vue_files + sorted(template_files) + [OWNERSHIP_PATH])
@@ -543,8 +630,10 @@ def build_inventory() -> dict[str, Any]:
             "p0P1RawControlBypassSurfaceCount": len(p0_p1_raw_bypass_surfaces),
             "p0P1RawControlBypassControlCount": p0_p1_raw_bypass_controls,
             **{key: counts.get(key, 0) for key in sorted(STATUS_VALUES)},
+            "unassignedGapSourceCount": len(unassigned_gap_sources),
         },
         "nextBatch": next_batch,
+        "unassignedGapSources": unassigned_gap_sources,
         "surfaces": surfaces,
         "completionPolicy": {
             "formalP0P1UntreatedGapTarget": 0,

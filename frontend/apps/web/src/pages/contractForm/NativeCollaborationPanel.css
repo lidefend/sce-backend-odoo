@@ -816,24 +816,6 @@
   flex-wrap: wrap;
 }
 
-/* ScList's root wraps the actual TDesign list; only this follower list wraps. */
-.native-follower-list :deep(.t-list__inner) {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--sc-space-xs);
-}
-
-.native-follower-list :deep(.t-list-item) {
-  min-width: 0;
-  max-width: 100%;
-  padding: 0;
-}
-
-.native-follower-list :deep(.t-list-item-main) {
-  min-width: 0;
-  gap: var(--sc-space-xs);
-}
-
 .native-follower-name {
   min-width: 0;
   overflow-wrap: anywhere;

@@ -1,5 +1,10 @@
 <template>
-  <ScPage class="my-capabilities sc-product-main-surface" content-layout="data-grid" data-semantic-component="MyCapabilitiesView">
+  <ScPage
+    class="my-capabilities sc-product-main-surface"
+    content-layout="data-grid"
+    data-semantic-component="MyCapabilitiesView"
+    :data-state="loading ? 'loading' : error || gap ? 'error' : capabilities.length ? 'ready' : 'empty'"
+  >
     <div class="my-capabilities-head">
       <div>
         <h1>{{ title }}</h1>

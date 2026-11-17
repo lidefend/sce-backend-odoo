@@ -32,7 +32,7 @@ EXCLUDED_SCOPES = [
     "user-specific visibility",
 ]
 COLOR_RE = re.compile(r"(?<![\w-])(#[0-9a-fA-F]{3,8}\b|rgba?\([^)]*\)|hsla?\([^)]*\))")
-CSS_VAR_RE = re.compile(r"(--[A-Za-z0-9_-]+)\s*:\s*([^;{}]+)")
+CSS_VAR_RE = re.compile(r"(?:^|[;{])\s*(--[A-Za-z0-9_-]+)\s*:\s*([^;{}]+)", re.M)
 Z_INDEX_RE = re.compile(r"\bz-index\s*:\s*([^;{}]+)")
 BREAKPOINT_RE = re.compile(r"@media\s*\(([^)]*(?:width|height)[^)]*)\)")
 TDESIGN_RE = re.compile(r"(?:from\s+['\"]tdesign-vue-next|<t-[A-Za-z])")

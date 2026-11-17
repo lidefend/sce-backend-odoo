@@ -1433,6 +1433,11 @@ verify.frontend.professionalization.project_domain.runtime: guard.prod.forbid ch
 		--json-output docs/frontend_productization/domain-rollout/project-domain-coverage-v1.json \
 		--markdown-output docs/frontend_productization/domain-rollout/project-domain-coverage-v1.md
 
+.PHONY: verify.frontend.project_domain_rollout.unit
+verify.frontend.project_domain_rollout.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/frontend_project_domain_rollout.py scripts/verify/frontend_project_domain_rollout_report.py scripts/verify/test_frontend_project_domain_rollout.py
+	@python3 -m unittest scripts.verify.test_frontend_project_domain_rollout
+
 .PHONY: verify.frontend.professionalization.contract_domain.runtime
 verify.frontend.professionalization.contract_domain.runtime: guard.prod.forbid check-compose-project check-compose-env
 	@mkdir -p artifacts/frontend-professionalization docs/frontend_productization/domain-rollout

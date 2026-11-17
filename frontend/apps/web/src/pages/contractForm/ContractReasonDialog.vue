@@ -3,6 +3,9 @@
     :open="open"
     :title="title"
     panel-class="contract-reason-dialog"
+    data-contract-reason-dialog="true"
+    data-dialog-purpose="action-reason"
+    data-state="interactive"
     @close="settle(null)"
   >
     <ScFormField

@@ -130,6 +130,24 @@
         "frontend/apps/web/src/pages/AnalysisPage.vue"
       ]
     },
+  "p0-residual-shared-scene-form-state-completion-v1": {
+    "formalProductLayer": "P0",
+    "sources": [
+      "frontend/apps/web/src/components/FieldValue.vue",
+      "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+      "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
+      "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
+      "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+      "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+      "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+      "frontend/apps/web/src/pages/ContractFormRoute.vue",
+      "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
+      "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+      "frontend/apps/web/src/views/MyCapabilitiesView.vue",
+      "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+      "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue"
+    ]
+  },
     "p3-low-code-administration": {
       "formalProductLayer": "P3",
       "sources": [

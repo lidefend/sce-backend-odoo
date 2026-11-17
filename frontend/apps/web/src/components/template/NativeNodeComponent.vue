@@ -2,6 +2,7 @@
   <div
     v-if="presentation.kind === 'feedback'"
     class="native-explicit-feedback"
+    data-semantic-component="NativeNodeComponent"
     :data-purpose="presentation.purpose"
     :data-contract-container-id="containerId"
     tabindex="-1"
@@ -18,12 +19,14 @@
     v-else-if="presentation.kind === 'anchor'"
     type="button"
     variant="ghost"
+    data-semantic-component="NativeNodeComponent"
     :data-contract-container-id="containerId"
     @click="$emit('navigate', $event)"
   >{{ presentation.content }}</ScButton>
   <div
     v-else-if="presentation.kind === 'ribbon'"
     class="native-ribbon"
+    data-semantic-component="NativeNodeComponent"
     :class="presentation.styleClass"
     :data-contract-container-id="containerId"
     data-native-widget="web_ribbon"
@@ -31,6 +34,7 @@
   <TDesignAlert
     v-else-if="presentation.kind === 'insight_summary' && presentation.insight"
     class="native-node-insight"
+    data-semantic-component="NativeNodeComponent"
     :theme="presentation.insight.tone"
     role="status"
     :data-contract-container-id="containerId"
@@ -43,6 +47,7 @@
   <ScCard
     v-else-if="presentation.kind === 'action_list' && presentation.actionList"
     class="native-node-action-list"
+    data-semantic-component="NativeNodeComponent"
     :title="presentation.actionList.title"
     :bordered="false"
     :data-contract-container-id="containerId"

@@ -20,11 +20,11 @@
       </ScInput>
     </label>
 
-    <div class="scenario-side-navigation__tree" tabindex="0" aria-label="业务场景树">
+    <div class="scenario-side-navigation__tree" tabindex="0" aria-label="业务场景树" :data-state="isEmpty ? 'empty' : 'ready'">
       <template v-if="searching">
         <section class="scenario-group scenario-group--results" aria-label="搜索结果">
           <h3 class="scenario-group__heading">搜索结果</h3>
-          <p v-if="!searchHits.length" class="scenario-search__empty">没有匹配的业务入口</p>
+          <ScInlineState v-if="!searchHits.length" state="empty" label="没有匹配的业务入口" />
           <ul v-else class="scenario-entries">
             <li v-for="hit in searchHits" :key="hit.entry.menu_xmlid">
               <ScButton
@@ -117,9 +117,7 @@
           </div>
         </section>
 
-        <p v-if="isEmpty" class="scenario-side-navigation__empty" role="status">
-          当前没有可用的业务入口
-        </p>
+        <ScInlineState v-if="isEmpty" state="empty" label="当前没有可用的业务入口" />
       </template>
     </div>
   </nav>
@@ -135,6 +133,7 @@ import {
 import ScIcon from '../design-system/ScIcon.vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScInput from '../design-system/ScInput.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 
 const props = withDefaults(defineProps<{
   model: ScenarioNavigationModel;

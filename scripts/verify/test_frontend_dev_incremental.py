@@ -216,6 +216,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.frontend.component_driver_takeover.unit"],
                 )
 
+    def test_rendering_evidence_inputs_select_their_registered_units(self) -> None:
+        cases = {
+            "scripts/audit/generate_frontend_rendering_detail_inventory.py": "verify.frontend.rendering_detail_state.unit",
+            "scripts/audit/generate_frontend_visual_projection_inventory.py": "verify.frontend.rendering_detail_state.unit",
+            "scripts/verify/frontend_rendering_detail_state_guard.py": "verify.frontend.rendering_detail_state.unit",
+            "frontend/apps/web/scripts/view_type_render_coverage_probe.ts": "verify.frontend.view_type_render_coverage.guard",
+            "scripts/verify/frontend_project_domain_rollout.py": "verify.frontend.project_domain_rollout.unit",
+            "scripts/verify/frontend_state_dashboard_browser.mjs": "verify.frontend.state_dashboard.unit",
+            "scripts/audit/generate_frontend_professionalization_baseline.py": "verify.frontend.style_system.guard",
+            "scripts/verify/test_design_token_system.py": "verify.frontend.style_system.guard",
+        }
+        for path, target in cases.items():
+            with self.subTest(path=path):
+                self.assertIn(target, select_targets([path]))
+
     def test_contract_structure_fingerprint_keeps_its_lock(self) -> None:
         self.assertEqual(
             select_targets(["contracts/generated/contract_structure_fingerprint.json"]),

@@ -1,0 +1,59 @@
+schema_version: 1
+goal:
+  id: FE-EVIDENCE-TRUTH-RECOVERY-20261118
+  status: active
+  formal_product_layer: P0/P4
+  layer_target: frontend P0 presentation ownership, generated evidence, audit guards and completion routing
+  module:
+    - scripts/audit
+    - scripts/verify
+    - docs/frontend_productization/rendering-detail
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Restore a truthful frontend evidence baseline and close every residual formal P0
+    surface identified by that baseline without changing contract or business semantics.
+  product_result: >-
+    The current 194-surface frontend inventory is reproducible with P0/P1 gap zero,
+    no stale proof source, no TDesign internal selector and no unassigned completion work.
+  why_here: >-
+    P4 repairs measurement truth; P0 closes the residual shared state and interaction
+    ownership that the corrected inventory exposes. Keeping these responsibilities in
+    separate commits preserves rollback while delivering one truthful product result.
+  why_not_elsewhere:
+    - No backend contract, model, permission or business action changes.
+    - No page-specific frontend fallback or CSS relaxation.
+    - No TDesign internal-selector allowance or evidence weakening.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-EVIDENCE-TRUTH-RECOVERY-20261118.yaml
+      - .agent/runs/FE-EVIDENCE-TRUTH-RECOVERY-20261118/run.json
+      - docs/frontend_productization/rendering-detail/
+      - docs/frontend_productization/page-surface-inventory.json
+      - docs/frontend_productization/navigation-authority-inventory.json
+      - docs/frontend_productization/design-token-inventory.json
+      - docs/frontend_productization/component-coverage-inventory.json
+      - docs/frontend_productization/professionalization-gap-plan.md
+      - frontend/apps/web/scripts/view_type_render_coverage_probe.ts
+      - scripts/audit/generate_frontend_rendering_detail_inventory.py
+      - scripts/audit/generate_frontend_visual_projection_inventory.py
+      - scripts/verify/frontend_rendering_detail_state_guard.py
+      - scripts/verify/frontend_project_domain_rollout.py
+      - frontend/apps/web/src/components
+      - frontend/apps/web/src/pages
+      - frontend/apps/web/src/views
+    product_behavior: no runtime business behavior change
+  acceptance:
+    - Rendering-detail inventory reflects current sources with P0/P1 gap zero.
+    - Visual formal-gap bindings point to existing governed targets and named assertions.
+    - Global accessibility proof follows the current accessibility source owner.
+    - View-type render coverage probe accepts the current Contract V2 schema version.
+    - Domain renderer classification agrees with the action surface renderer registry.
+    - All 13 residual shared/scene/form surfaces are governed by parsed component bindings.
+    - Official TDesign internal-selector gap count is zero.
+    - All generated frontend inventories and their guard checks are refreshed and reproducible.
+  exclusions:
+    - Contract, permission, business action, runtime deployment or user acceptance changes.
+  rollback: >-
+    Revert the P4 tooling and regenerated evidence commits together; no data or runtime state
+    requires restoration.

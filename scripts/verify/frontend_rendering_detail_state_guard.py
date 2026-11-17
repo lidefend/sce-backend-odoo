@@ -28,17 +28,17 @@ LEGACY_PRIVATE_STATE_DOM = {
 # that are not bound to a single owned surface but must never regress.
 GLOBAL_ACCESSIBILITY_CONTRACTS = (
     (
-        "frontend/apps/web/src/styles/product-patterns.css",
+        "frontend/apps/web/src/styles/accessibility.css",
         "Global reduced-motion fallback",
         "@media (prefers-reduced-motion: reduce)",
     ),
     (
-        "frontend/apps/web/src/styles/product-patterns.css",
+        "frontend/apps/web/src/styles/accessibility.css",
         "global focus-visible rule",
         ":is(a, button, input, select, textarea, [tabindex]):focus-visible",
     ),
     (
-        "frontend/apps/web/src/styles/product-patterns.css",
+        "frontend/apps/web/src/styles/accessibility.css",
         "component-owned focus exclusion",
         "[data-focus-ring-owner='component'] *",
     ),

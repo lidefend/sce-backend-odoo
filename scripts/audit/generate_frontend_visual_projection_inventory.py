@@ -32,9 +32,9 @@ FORMAL_GAP_EVIDENCE = {
     "collection.authoritative-status-tone": ("verify.frontend.collection_row_cell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "collectionSummaryEvidence"),
     "shell.context-and-navigation-density": ("verify.frontend.navigation_shell.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "shellAdapterEvidence"),
     "form.task-field-hierarchy": ("verify.frontend.primitive_adapter.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs", "data-semantic-component"),
-    "form.workspace-native-structure-density": ("verify.frontend.native_form_action_presentation.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs", "focusSequence"),
+    "form.workspace-native-structure-density": ("verify.frontend.native_form_action_presentation.unit", "verify.local.dev.project_create_contract_action_scope", "scripts/verify/local_dev_project_create_contract_driver_probe.mjs", "nativeStructure"),
     "relations-x2many.lifecycle-and-table-detail": ("verify.frontend.professional_relation_lifecycle.unit", "local.dev.candidate.frontend.visual-smoke", "scripts/verify/local_dev_candidate_visual_smoke.mjs", "relationSearchDialogEvidence"),
-    "workflow.action-status-disabled-reason": ("verify.frontend.professional_workflow.unit", "verify.frontend.native_form_action_presentation.browser", "scripts/verify/frontend_native_form_action_presentation_browser.mjs", "allDisabledEscapeClosed"),
+    "workflow.action-status-disabled-reason": ("verify.frontend.professional_workflow.unit", "verify.frontend.native_form_action_presentation.browser", "frontend/apps/web/scripts/workflow_disabled_reason_browser_test.mjs", "disabledOverflowEvents"),
     "overlay.dialog-drawer-focus-density": ("verify.frontend.overlay_lifecycle.unit", "verify.frontend.overlay_lifecycle.browser", "scripts/verify/frontend_overlay_lifecycle_browser.mjs", "bodyLocked"),
     "collaboration.chatter-activity-attachment": ("verify.frontend.professional_collaboration.unit", "verify.frontend.collaboration_primitives.browser", "scripts/verify/frontend_collaboration_primitives_browser.mjs", "filePrimitivePresent"),
     "states.loading-empty-error-disabled-focus": ("verify.frontend.rendering_detail_state.unit", "verify.frontend.rendering_detail_state.browser", "scripts/verify/frontend_rendering_detail_state_browser.mjs", "data-state"),
@@ -166,6 +166,7 @@ def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -
         for path in (
             root / "scripts/dev/local_dev_candidate_frontend.py",
             root / "scripts/verify/local_dev_candidate_visual_smoke.sh",
+            root / "scripts/verify/local_dev_project_create_contract_action_scope.sh",
         )
         if path.is_file()
     )
@@ -185,6 +186,7 @@ def evaluate_formal_gap_evidence(parity: dict[str, object], root: Path = ROOT) -
         failure_exit_present = (
             "process.exit(1)" in source
             or "process.exitCode = 1" in source
+            or "throw new Error" in source
             or ("function check" in source and "throw new Error" in source)
         )
         assertion_present = assertion_marker in source

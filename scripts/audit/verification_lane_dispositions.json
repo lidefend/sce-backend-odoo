@@ -2628,11 +2628,6 @@
       "reason": "verify.local.dev.payroll 是现有 sc-local-dev/sc_dev_demo 候选的按需产品走查；须先通过身份与候选前端检查，保存入口另要求写租约、明确确认和恢复核验，不由 CI 自动启动。 本批仅登记实际执行边界；入口/环境/调用者改变时重新核验是否接线或退役，原始验收证据另行判定。",
       "review_by": "2026-12-31"
     },
-    "verify.local.dev.project_create_contract_action_scope": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.local.dev.readiness.browser": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -3415,11 +3410,6 @@
   },
   "scripts": {
     "scripts/audit/tenant_pro_03_data_responsibility_inventory.py": {
-      "disposition": "audit_tooling",
-      "owner": "platform-team",
-      "reason": "审计工具：审计侧一次性盘点/生成器，仓库内零引用；能力可能仍被审计车道需要，登记待接线。"
-    },
-    "scripts/audit/test_generate_frontend_professionalization_baseline.py": {
       "disposition": "audit_tooling",
       "owner": "platform-team",
       "reason": "审计工具：审计侧一次性盘点/生成器，仓库内零引用；能力可能仍被审计车道需要，登记待接线。"

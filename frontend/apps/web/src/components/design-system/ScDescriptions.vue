@@ -14,11 +14,8 @@ withDefaults(defineProps<{ title?: string; column?: number; bordered?: boolean; 
 
 <style scoped>
 .sc-descriptions--compact {
-  width: max-content;
-  max-width: 100%;
-}
-
-.sc-descriptions--compact :deep(.t-descriptions__body) {
+  display: inline-table;
   width: auto;
+  max-width: 100%;
 }
 </style>

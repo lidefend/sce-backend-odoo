@@ -1,9 +1,9 @@
 {
   "schemaVersion": "rendering-detail-component-coverage/v1",
-  "sourceIdentity": "fcb73e3f4a966cbc9b42255482aeba292f788f89d63b420a92319e68bc9b74a4",
-  "generatorDigest": "349d8b7947d0bf2d31e1d9e31dff64aedce1de2694efa54c01a3664b9287d80b",
-  "ownershipDigest": "7270916fa00b0bc90ff8e4a2af9a5701c0ea92fcd833d3c5c6d98961f12593cd",
-  "inputDigest": "f7eac9cdf8eada421a80c180360968740f20db817a2f12f1a0e49bfa54d1a08b",
+  "sourceIdentity": "6bd8370f9f058324a3bef8af13d7456ce053c379b2ba55f8cb7025a329c81956",
+  "generatorDigest": "0f11c3ea8d764879874ed9e8dc8e24354ed67aab7c52ab1cd963f26072e48cfa",
+  "ownershipDigest": "24db3e27b4d559a704d33dbf3824b6bd6bd5609b35c5c84808b818ba8f2b7f43",
+  "inputDigest": "0da8f8eb984ad7a7184e06ba0bf3a3bbc6f7c49061dbcb879e4d218c2ead4f52",
   "scope": "repository formal-product frontend Vue rendering-detail sources, including external <template src> files",
   "statusVocabulary": [
     "deliberate_native_composite",
@@ -20,16 +20,18 @@
     "permission and route authority changes"
   ],
   "summary": {
-    "surfaceCount": 174,
+    "surfaceCount": 194,
     "p0P1RawControlBypassSurfaceCount": 0,
     "p0P1RawControlBypassControlCount": 0,
     "deliberate_native_composite": 0,
     "gap": 0,
-    "governed_composite": 114,
-    "governed_primitive": 41,
-    "p3_out_of_scope": 19
+    "governed_composite": 127,
+    "governed_primitive": 48,
+    "p3_out_of_scope": 19,
+    "unassignedGapSourceCount": 0
   },
   "nextBatch": null,
+  "unassignedGapSources": [],
   "surfaces": [
     {
       "source": "frontend/apps/web/src/App.vue",
@@ -53,6 +55,20 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/FieldValue.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue",
@@ -186,7 +202,8 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
-        "empty"
+        "empty",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -340,6 +357,7 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
         "disabled",
         "focus"
       ],
@@ -403,6 +421,7 @@
       "status": "governed_primitive",
       "reason": "design-system primitive source",
       "stateTypes": [
+        "loading",
         "disabled",
         "focus"
       ],
@@ -749,6 +768,7 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "loading",
+        "empty",
         "disabled",
         "focus"
       ],
@@ -815,6 +835,104 @@
       "reason": "design-system primitive source",
       "stateTypes": [
         "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "error",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_primitive",
+      "reason": "design-system primitive source",
+      "stateTypes": [
+        "loading",
+        "disabled",
+        "focus"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
@@ -1327,6 +1445,35 @@
       "targetBatch": "p0-navigation-hierarchy-composite-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -1466,6 +1613,40 @@
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -1511,7 +1692,9 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "empty",
+        "error",
         "disabled",
         "focus"
       ],
@@ -1520,16 +1703,49 @@
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/components/template/NativeNodeComponent.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "empty",
+        "error",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScEmptyState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/components/template/NativeSmartAction.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "disabled"
       ],
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
@@ -1673,6 +1889,21 @@
       "targetBatch": "p0-form-relation-workflow-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/pages/ContractFormRoute.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "error"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScErrorState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/pages/KanbanPage.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -1718,6 +1949,19 @@
       "targetBatch": "p0-collection-state-control-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/pages/contractForm/ActionReasonTrigger.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/pages/contractForm/BoundFormSettingsPanel.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -1738,6 +1982,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "disabled"
       ],
       "rawControls": {},
@@ -1750,6 +1995,8 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
+        "error",
         "disabled"
       ],
       "rawControls": {},
@@ -1774,6 +2021,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "empty",
         "error",
         "disabled"
@@ -1791,6 +2039,7 @@
       "status": "governed_composite",
       "reason": "formal ownership and parsed SFC component bindings are present",
       "stateTypes": [
+        "loading",
         "empty",
         "error",
         "disabled",
@@ -1838,6 +2087,19 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-form-relation-workflow-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.vue",
@@ -2016,9 +2278,7 @@
         "error"
       ],
       "rawControls": {},
-      "governedStatePrimitives": [
-        "ScErrorState"
-      ],
+      "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
@@ -2137,6 +2397,23 @@
       "targetBatch": "p0-shared-utility-scene-completion-v1"
     },
     {
+      "source": "frontend/apps/web/src/views/MyCapabilitiesView.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
+    },
+    {
       "source": "frontend/apps/web/src/views/MyWorkView.vue",
       "formalProductLayer": "P0",
       "status": "governed_composite",
@@ -2187,6 +2464,25 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": "p0-shared-utility-scene-completion-v1"
+    },
+    {
+      "source": "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled",
+        "focus"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState",
+        "ScEmptyState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
     },
     {
       "source": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
@@ -2412,6 +2708,7 @@
       "stateTypes": [
         "loading",
         "empty",
+        "error",
         "disabled"
       ],
       "rawControls": {},
@@ -2449,6 +2746,23 @@
       "rawControls": {},
       "governedStatePrimitives": [],
       "targetBatch": null
+    },
+    {
+      "source": "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
+      "formalProductLayer": "P0",
+      "status": "governed_composite",
+      "reason": "formal ownership and parsed SFC component bindings are present",
+      "stateTypes": [
+        "loading",
+        "empty",
+        "error",
+        "disabled"
+      ],
+      "rawControls": {},
+      "governedStatePrimitives": [
+        "ScInlineState"
+      ],
+      "targetBatch": "p0-residual-shared-scene-form-state-completion-v1"
     }
   ],
   "completionPolicy": {
