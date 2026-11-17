@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v75"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v76"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -78,13 +78,15 @@ ASSEMBLED_CACHE_INPUTS = (
     # single capability rule.  All of them are runtime inputs of the assembled
     # contract, so a change to any of them must invalidate the served cache.
     "addons/smart_core/core/native_relation_domain.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/base.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
     "addons/smart_core/core/unified_page_contract_v2_permissions.py",
     "addons/smart_core/utils/collection_action_capability.py",
     "addons/smart_core/utils/contract_governance.py",
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "5da798c8e7afadaa2f0ed506f65807af07725ce9d2b09d2dafe6a2c4bd134f89"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "643e7cb563b1f5a3b87a4d235ea4598bdfd66b3506408962b760b30a2cea939f"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and

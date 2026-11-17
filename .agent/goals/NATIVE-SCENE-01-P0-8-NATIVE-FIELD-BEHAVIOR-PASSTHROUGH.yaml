@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH
+  title: Native field context and options passthrough closure
+  status: active
+  formal_product_layer: P0 platform kernel product
+  layer_target: Odoo View field Context and options passthrough into existing Contract V2 descriptor fields
+  module:
+    - addons/smart_core
+  baseline:
+    branch: main
+    full_sha: 91056172b8cb1244ffa0378b3b9626c900e4d530
+    prerequisites:
+      - NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION
+      - NATIVE-SCENE-01-P0-4-OCCURRENCE-IDENTITY
+      - NATIVE-SCENE-01-P0-7-NATIVE-FIELD-DOMAIN
+  objective: >-
+    Preserve explicit Odoo View field Context and options through the existing
+    field descriptor carriers and existing frontend store consumption, without
+    introducing a new behavior expression or a second Renderer vocabulary.
+  product_boundary:
+    standard_vs_user_specific: platform-neutral native View field behavior
+    why_here: >-
+      View XML Context/options, Contract V2 field descriptors and the generic
+      component option map are existing P0 mechanisms shared by every module.
+    why_not_elsewhere:
+      - no industry model, customer preference or low-code layout is introduced
+      - the frontend store already consumes descriptor Context and widget options
+      - no Renderer redesign or Parser/AST rewrite is included
+      - no persistent model or database behavior is introduced
+  deliverables:
+    - "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py"
+    - addons/smart_core/core/unified_page_contract_v2_assembler.py
+    - addons/smart_core/handlers/ui_contract_v2.py
+    - scripts/verify/unified_page_contract_v2_assembler_guard.py
+    - focused backend and frontend contract tests
+    - docs/audit/native-scene-01/p0-8-native-field-behavior-passthrough/implementation_record.md
+  acceptance:
+    - explicit View field Context survives into the existing field descriptor
+    - parsed View field options survive as the existing widgetOptions map
+    - existing store and Renderer consumption paths remain unchanged
+    - no parallel Context expression or options vocabulary is introduced
+    - parser and assembler output are bound into the assembled-contract cache identity
+    - non-zero targeted backend, frontend and disposable ORM tests pass
+  exclusions:
+    - Context expression evaluation
+    - Widget option support-matrix or rejection semantics
+    - embedded <widget name> nodes and QWeb rendering
+    - List/Kanban/Activity Renderer implementation
+    - Gantt, Calendar, Pivot, Graph or Dashboard work
+    - Parser/AST rewrite, database, ACL, record-rule or business-data changes
+    - deployment or product acceptance
+  rollback: Revert the parser Context/options passthrough, cache input binding, focused tests and audit record together.

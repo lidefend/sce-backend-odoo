@@ -104,15 +104,15 @@
     "product_database_modified": false
   },
   "completion_status_dimensions": {
-    "batch": "verification_pending",
-    "mainline": "not_merged",
+    "batch": "completed",
+    "mainline": "merged_pr_915",
     "deployment": "not_deployed",
     "user_acceptance": "not_run"
   },
-  "next_exact_step": "Complete affected-set and exact-head validation for native View Domain passthrough, then publish for independent review.",
+  "next_exact_step": "Completed and merged as PR #915 at main 91056172b8cb1244ffa0378b3b9626c900e4d530; continue under NATIVE-SCENE-01-P0-8-NATIVE-FIELD-BEHAVIOR-PASSTHROUGH.",
   "id": "NATIVE-SCENE-01-P0-7-NATIVE-FIELD-DOMAIN",
   "branch": "feature/native-scene-01-p0-7-native-field-domain-20261117",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/NATIVE-SCENE-01-P0-7-NATIVE-FIELD-DOMAIN.yaml",
   "record": "docs/audit/native-scene-01/p0-7-native-field-domain/implementation_record.md"
 }
