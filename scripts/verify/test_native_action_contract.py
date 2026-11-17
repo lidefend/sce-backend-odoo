@@ -11,6 +11,16 @@ SPEC = importlib.util.spec_from_file_location("native_action_contract", MODULE_P
 MODULE = importlib.util.module_from_spec(SPEC)
 assert SPEC and SPEC.loader
 SPEC.loader.exec_module(MODULE)
+PAYLOAD_MODULE_PATH = (
+    ROOT / "addons/smart_core/app_config_engine/utils/payload.py"
+)
+PAYLOAD_SPEC = importlib.util.spec_from_file_location(
+    "smart_core_contract_payload",
+    PAYLOAD_MODULE_PATH,
+)
+PAYLOAD_MODULE = importlib.util.module_from_spec(PAYLOAD_SPEC)
+assert PAYLOAD_SPEC and PAYLOAD_SPEC.loader
+PAYLOAD_SPEC.loader.exec_module(PAYLOAD_MODULE)
 
 
 def view_set():
@@ -141,6 +151,44 @@ class NativeActionContractTest(unittest.TestCase):
         self.assertIsNone(
             self.build(view_set={"complete": False, "orderedViews": []})
         )
+
+
+class ContractPayloadCapabilityTransportTest(unittest.TestCase):
+    def test_client_view_capabilities_survive_payload_normalization(self):
+        payload = PAYLOAD_MODULE.parse_payload({
+            "subject": "action",
+            "client_contract_capabilities": [
+                "view.tree.v1",
+                "view.kanban.v1",
+                "view.form.v1",
+            ],
+        })
+
+        self.assertEqual(
+            payload["client_contract_capabilities"],
+            ["view.tree.v1", "view.kanban.v1", "view.form.v1"],
+        )
+
+    def test_camel_case_capabilities_are_normalized(self):
+        payload = PAYLOAD_MODULE.parse_payload({
+            "subject": "action",
+            "clientContractCapabilities": "view.tree.v1, view.kanban.v1",
+        })
+
+        self.assertEqual(
+            payload["client_contract_capabilities"],
+            ["view.tree.v1", "view.kanban.v1"],
+        )
+
+    def test_capability_absence_is_distinct_from_an_empty_negotiated_set(self):
+        absent = PAYLOAD_MODULE.parse_payload({"subject": "action"})
+        empty = PAYLOAD_MODULE.parse_payload({
+            "subject": "action",
+            "client_contract_capabilities": [],
+        })
+
+        self.assertNotIn("client_contract_capabilities", absent)
+        self.assertEqual(empty["client_contract_capabilities"], [])
 
 
 if __name__ == "__main__":
