@@ -225,6 +225,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "string": "安排的日期",
                 "type": "date",
                 "widget": "daterange",
+                "widget_source": "native_explicit",
                 "widget_options": {"end_date_field": "date"},
                 "widget_semantics": {
                     "kind": "date_range",
@@ -261,6 +262,7 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
                 "name": "date_start",
                 "type": "date",
                 "widget": "daterange",
+                "widget_source": "native_explicit",
                 "widget_semantics": {
                     "kind": "date_range",
                     "start_field": "date_start",
@@ -293,6 +295,33 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
         )
         self.assertEqual(direct_widgets[0]["componentConfig"]["nativeWidget"], "daterange")
         self.assertEqual(direct_widgets[0]["componentConfig"]["widgetSemantics"]["end_field"], "date")
+
+    def test_unknown_explicit_widget_is_not_allowed_to_become_a_text_input(self):
+        widget = self.assembler._field_widget(
+            {
+                "name": "future_editor",
+                "string": "Future editor",
+                "type": "char",
+                "widget": "future_editor",
+                "widget_source": "native_explicit",
+            },
+            layout_type="form",
+        )
+
+        self.assertEqual(widget["componentKey"], "sc.unsupported.native_widget")
+        self.assertEqual(widget["componentConfig"]["nativeWidget"], "future_editor")
+        self.assertEqual(
+            widget["componentConfig"]["widgetProvenance"],
+            {
+                "nativeWidget": "future_editor",
+                "widgetSource": "native_explicit",
+                "declaredWidget": "future_editor",
+                "derivedWidgetType": "",
+                "resolvedWidgetType": "input",
+                "resolutionStatus": "unsupported",
+                "reasonCode": "NATIVE_WIDGET_UNRECOGNIZED",
+            },
+        )
 
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(

@@ -538,6 +538,7 @@ class _TreeFormParserMixin:
                         "name": fname,
                         "field_type": str((field_info or {}).get("type") or "").strip().lower(),
                         "widget": str(el.get("widget") or (field_info or {}).get("widget") or "").strip().lower(),
+                        "widget_source": "native_explicit" if el.get("widget") else "model_metadata_derived",
                         "source_position": source_position,
                         **occurrence_identity,
                         "attributes": dict(el.attrib or {}),
@@ -583,6 +584,7 @@ class _TreeFormParserMixin:
                     # 列上的 widget / sum（页脚汇总）
                     if el.get('widget'):
                         mods['widget'] = el.get('widget')
+                        mods['widget_source'] = 'native_explicit'
                     if el.get('sum'):
                         mods['sum'] = el.get('sum')
 
@@ -1188,6 +1190,7 @@ class _TreeFormParserMixin:
                 meta['help'] = el.get('help')
             if el.get('widget'):
                 meta['widget'] = el.get('widget')
+                meta['widget_source'] = 'native_explicit'
             # Label presentation is a native view atom. Keep it explicit so
             # downstream renderers never infer it from container shape.
             node['label'] = meta.get('label') or fname
@@ -1759,6 +1762,7 @@ class _TreeFormParserMixin:
                 meta['help'] = attrs.get('help')
             if attrs.get('widget'):
                 meta['widget'] = attrs.get('widget')
+                meta['widget_source'] = 'native_explicit'
             if attrs.get('options'):
                 options_val = self._safe_eval_expr(attrs.get('options'))
                 meta['widget_options'] = options_val if isinstance(options_val, dict) else {}

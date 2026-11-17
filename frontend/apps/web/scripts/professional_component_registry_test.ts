@@ -460,8 +460,14 @@ for (const componentKey of [
     `missing auth registration ${componentKey}`,
   );
 }
+assert.throws(() => resolveProfessionalComponent({
+  componentKey: 'sc.unsupported.native_widget',
+  fieldType: 'char',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+}), /PROFESSIONAL_COMPONENT_UNREGISTERED:sc\.unsupported\.native_widget/);
 
-assert.equal(professionalComponentRegistrations.length, 25);
+assert.equal(professionalComponentRegistrations.length, 26);
 const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
 const everyFieldType = [
   'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',

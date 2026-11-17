@@ -336,6 +336,19 @@ RULES = (
         "verify.semantic.registry.lint",
     )),
     Rule((
+        "addons/smart_core/core/native_widget_profile.py",
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/base.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py",
+        "scripts/verify/test_native_widget_provenance.py",
+    ), (
+        "verify.native_widget.provenance.unit",
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
         "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
         "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",

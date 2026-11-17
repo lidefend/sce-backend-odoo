@@ -29,7 +29,7 @@ P1_PROJECT_LAYOUT_PATH = ROOT / "addons/smart_construction_core/core_extension_p
 # the version literal the handler serves to a digest of the code that produces
 # the assembled contract; on drift this guard fails closed and the author
 # re-pins both values deliberately instead of the cache hiding the change.
-ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v71"
+ASSEMBLED_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v72"
 ASSEMBLED_CACHE_HANDLER = "addons/smart_core/handlers/ui_contract_v2.py"
 ASSEMBLED_CACHE_MODULE = "addons/smart_core/utils/load_contract_response_cache.py"
 ASSEMBLED_CACHE_INPUTS = (
@@ -38,6 +38,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
     "addons/smart_core/core/form_structure_authority.py",
     "addons/smart_core/core/native_view_projection.py",
+    "addons/smart_core/core/native_widget_profile.py",
     "addons/smart_core/core/native_view_parsed_cache.py",
     "addons/smart_core/core/layout_semantics.py",
     "addons/smart_core/handlers/ui_contract_v2_form_structure.py",
@@ -83,7 +84,7 @@ ASSEMBLED_CACHE_INPUTS = (
     "addons/smart_core/utils/contract_governance_list_surface.py",
     "addons/smart_core/utils/contract_governance_user_surface.py",
 )
-ASSEMBLED_CACHE_INPUTS_SHA256 = "75dc355f1a1cf49067b2aae8f1c624717877683f1db1ffd77638a97dbc78c936"
+ASSEMBLED_CACHE_INPUTS_SHA256 = "3ed381063cb6f6796c4a7625a89b1944ded42df376e82591cf5f98c8146f72df"
 
 # Cache layers are deliberately separated:
 #   * dynamic per-request computation owns record facts, permission verdicts and
@@ -811,12 +812,12 @@ def main() -> int:
     onchange_patch = target.assemble_unified_page_patch_v2(onchange_source, action_id="project.name.change")
 
     widget_projection_cases = (
-        ({"name": "state", "type": "selection", "widget": "selection"}, "select", "sc.select.remote"),
-        ({"name": "active", "type": "boolean", "widget": "boolean"}, "checkbox", "sc.input.boolean"),
-        ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "relation": "x.line"}, "table", "sc.relation.table"),
-        ({"name": "amount", "type": "monetary", "widget": "monetary"}, "number", "sc.value.money"),
-        ({"name": "state", "type": "selection", "widget": "statusbar"}, "display", "sc.display.status"),
-        ({"name": "quick_encoding_vals", "type": "json", "widget": "json"}, "display", "sc.display.text"),
+        ({"name": "state", "type": "selection", "widget": "selection", "widget_source": "native_explicit"}, "select", "sc.select.remote"),
+        ({"name": "active", "type": "boolean", "widget": "boolean", "widget_source": "native_explicit"}, "checkbox", "sc.input.boolean"),
+        ({"name": "line_ids", "type": "one2many", "widget": "one2many_list", "widget_source": "native_explicit", "relation": "x.line"}, "table", "sc.relation.table"),
+        ({"name": "amount", "type": "monetary", "widget": "monetary", "widget_source": "native_explicit"}, "number", "sc.value.money"),
+        ({"name": "state", "type": "selection", "widget": "statusbar", "widget_source": "native_explicit"}, "display", "sc.display.status"),
+        ({"name": "quick_encoding_vals", "type": "json", "widget": "json", "widget_source": "native_explicit"}, "display", "sc.display.text"),
     )
     for field, expected_widget, expected_component in widget_projection_cases:
         projected = target._field_widget(field, layout_type="form")
@@ -826,6 +827,60 @@ def main() -> int:
             fail(errors, f"native widget {field['widget']} must resolve component {expected_component}")
         if projected.get("componentConfig", {}).get("nativeWidget") != field["widget"]:
             fail(errors, f"native widget {field['widget']} must remain available as presentation metadata")
+
+    derived_widget = target._field_widget(
+        {"name": "derived_text", "type": "char", "widget": "input", "widget_source": "model_metadata_derived"},
+        layout_type="form",
+    )
+    derived_provenance = derived_widget.get("componentConfig", {}).get("widgetProvenance", {})
+    if "nativeWidget" in derived_widget.get("componentConfig", {}):
+        fail(errors, "field-metadata Widget derivation must not publish as nativeWidget")
+    if derived_provenance.get("widgetSource") != "model_metadata_derived":
+        fail(errors, "field-metadata Widget derivation must preserve its provenance")
+    if derived_provenance.get("resolutionStatus") != "not_applicable":
+        fail(errors, "field-metadata Widget derivation must not claim native resolution")
+    derived_node = target._native_field_node(
+        {
+            "type": "field",
+            "name": "derived_text",
+            "fieldInfo": {
+                "type": "char",
+                "widget": "input",
+                "widget_source": "model_metadata_derived",
+            },
+        },
+        {
+            "name": "derived_text",
+            "type": "char",
+            "widget": "input",
+            "widget_source": "model_metadata_derived",
+        },
+        layout_type="form",
+    )
+    direct_derived = target._direct_field_widgets_from_nodes(
+        [derived_node],
+        {"derived_text": {"name": "derived_text", "type": "char"}},
+        layout_type="form",
+    )
+    if "nativeWidget" in direct_derived[0].get("componentConfig", {}):
+        fail(errors, "normalized canonical Widget nodes must not turn derivation into native evidence")
+
+    unsupported_widget = target._field_widget(
+        {
+            "name": "future_editor",
+            "type": "char",
+            "widget": "future_editor",
+            "widget_source": "native_explicit",
+        },
+        layout_type="form",
+    )
+    unsupported_provenance = unsupported_widget.get("componentConfig", {}).get("widgetProvenance", {})
+    if unsupported_widget.get("componentKey") != "sc.unsupported.native_widget":
+        fail(errors, "unknown explicit Widget must resolve to sc.unsupported.native_widget")
+    if unsupported_provenance.get("resolutionStatus") != "unsupported":
+        fail(errors, "unknown explicit Widget must publish unsupported resolution")
+    if unsupported_provenance.get("reasonCode") != "NATIVE_WIDGET_UNRECOGNIZED":
+        fail(errors, "unknown explicit Widget must publish NATIVE_WIDGET_UNRECOGNIZED")
 
     validate_contract(
         scene_contract,

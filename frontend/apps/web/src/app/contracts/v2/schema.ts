@@ -50,6 +50,7 @@ import type {
   ContractV2NativeActionReadinessAxis,
   ContractV2NativeActionView,
   ContractV2NativeActionViewType,
+  ContractV2NativeWidgetProvenance,
   ContractV2NativeOccurrenceBehavior,
   ContractV2NativeOccurrenceIdentity,
   ContractV2NativeOccurrenceKind,
@@ -777,6 +778,71 @@ function decodeNativeOccurrenceIdentity(
   };
 }
 
+function decodeWidgetProvenance(
+  raw: unknown,
+  path: string,
+  issues: DecodeIssue[],
+): ContractV2NativeWidgetProvenance | undefined {
+  if (raw === undefined) return undefined;
+  if (!isRecord(raw)) {
+    issues.push({ path, message: 'must be an object' });
+    return undefined;
+  }
+  rejectUnknownKeys(raw, [
+    'nativeWidget', 'widgetSource', 'declaredWidget', 'derivedWidgetType',
+    'resolvedWidgetType', 'resolutionStatus', 'reasonCode',
+  ], path, issues);
+  const nativeWidget = requiredDisplayString(raw, 'nativeWidget', path, issues);
+  const declaredWidget = requiredDisplayString(raw, 'declaredWidget', path, issues);
+  const derivedWidgetType = requiredDisplayString(raw, 'derivedWidgetType', path, issues);
+  const resolvedWidgetType = requiredDisplayString(raw, 'resolvedWidgetType', path, issues);
+  const reasonCode = requiredDisplayString(raw, 'reasonCode', path, issues);
+  const widgetSource = requiredEnumString(
+    raw,
+    'widgetSource',
+    ['native_explicit', 'model_metadata_derived', 'compatibility_default'] as const,
+    path,
+    issues,
+  );
+  const resolutionStatus = requiredEnumString(
+    raw,
+    'resolutionStatus',
+    ['not_applicable', 'ready', 'fallback', 'unsupported'] as const,
+    path,
+    issues,
+  );
+  if (widgetSource === 'native_explicit' && !nativeWidget) {
+    issues.push({ path: `${path}.nativeWidget`, message: 'explicit Widget source requires the native token' });
+  }
+  if (widgetSource !== 'native_explicit' && nativeWidget) {
+    issues.push({ path: `${path}.nativeWidget`, message: 'only native_explicit source may carry a native token' });
+  }
+  if (widgetSource !== 'native_explicit' && resolutionStatus !== 'not_applicable') {
+    issues.push({
+      path: `${path}.resolutionStatus`,
+      message: 'non-native Widget source must use not_applicable resolution',
+    });
+  }
+  if (widgetSource === 'native_explicit' && resolutionStatus === 'not_applicable') {
+    issues.push({
+      path: `${path}.resolutionStatus`,
+      message: 'explicit native Widget must publish a resolvable status',
+    });
+  }
+  if (resolutionStatus === 'unsupported' && !reasonCode) {
+    issues.push({ path: `${path}.reasonCode`, message: 'unsupported resolution requires a reason code' });
+  }
+  return {
+    nativeWidget,
+    widgetSource,
+    declaredWidget,
+    derivedWidgetType,
+    resolvedWidgetType,
+    resolutionStatus,
+    reasonCode,
+  };
+}
+
 function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): ContractV2Widget | null {
   if (!isRecord(raw)) {
     issues.push({ path, message: 'widget must be an object' });
@@ -793,6 +859,40 @@ function decodeWidget(raw: unknown, path: string, issues: DecodeIssue[]): Contra
   const widgetId = requiredString(raw, 'widgetId', path, issues);
   const widgetType = decodeWidgetType(requiredString(raw, 'widgetType', path, issues), `${path}.widgetType`, issues);
   const componentKey = requiredString(raw, 'componentKey', path, issues);
+  const widgetProvenance = decodeWidgetProvenance(
+    componentConfig.widgetProvenance,
+    `${path}.componentConfig.widgetProvenance`,
+    issues,
+  );
+  if (widgetProvenance) {
+    const nativeWidget = asString(componentConfig.nativeWidget);
+    if (widgetProvenance.widgetSource === 'native_explicit') {
+      if (!widgetProvenance.nativeWidget || nativeWidget !== widgetProvenance.nativeWidget) {
+        issues.push({
+          path: `${path}.componentConfig.widgetProvenance`,
+          message: 'explicit native Widget provenance must match componentConfig.nativeWidget',
+        });
+      }
+    } else if (nativeWidget) {
+      issues.push({
+        path: `${path}.componentConfig.nativeWidget`,
+        message: 'must be absent when the Widget is not an explicit native declaration',
+      });
+    }
+    if (widgetProvenance.resolutionStatus === 'unsupported') {
+      if (componentKey !== 'sc.unsupported.native_widget' || !widgetProvenance.reasonCode) {
+        issues.push({
+          path,
+          message: 'unsupported native Widget must resolve to the fail-closed component and name a reason',
+        });
+      }
+    } else if (componentKey === 'sc.unsupported.native_widget') {
+      issues.push({
+        path,
+        message: 'only an unsupported native Widget may use the fail-closed component',
+      });
+    }
+  }
   const ownerContainerId = requiredString(raw, 'ownerContainerId', path, issues);
   const formStructureRole = raw.formStructureRole === undefined
     ? null

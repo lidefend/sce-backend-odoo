@@ -351,6 +351,10 @@ ALLOWED_STRICT_SCHEMA_SNAKE_CASE_TOKENS = {
     "field_groups",
     "legacy_contract",
     "visible_fields",
+    "native_widget",
+    "native_explicit",
+    "model_metadata_derived",
+    "compatibility_default",
     # Canonical searchContract currently freezes the backend search dialect.
     "default_order",
     "default_sort",

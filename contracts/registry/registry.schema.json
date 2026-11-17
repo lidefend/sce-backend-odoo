@@ -66,11 +66,29 @@
       },
       "additionalProperties": false
     },
+    "nativeWidgetStatus": {
+      "type": "object",
+      "required": ["status"],
+      "properties": {
+        "status": { "type": "string", "enum": ["ready", "fallback", "unsupported"] },
+        "reason_code": {
+          "type": "string",
+          "pattern": "^[A-Z][A-Z0-9_]*$"
+        }
+      },
+      "additionalProperties": false
+    },
     "semanticRegistry": {
       "type": "object",
-      "required": ["registry", "derivation", "semantics"],
+      "required": ["registry", "native_widgets", "derivation", "semantics"],
       "properties": {
         "registry": { "const": "semantic" },
+        "native_widgets": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": { "pattern": "^[a-z][a-z0-9_.-]*$" },
+          "additionalProperties": { "$ref": "#/$defs/nativeWidgetStatus" }
+        },
         "derivation": {
           "type": "object",
           "required": ["default", "rules"],
