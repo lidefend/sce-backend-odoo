@@ -1,10 +1,11 @@
 {
   "schema_version": 1,
-  "baseline_sha": "bb63c755238b27c39844701411de4c4dddd8c17e",
+  "baseline_sha": "15d8e83923943e784b4364114d0b07c2a62bee79",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",
     ".agent/runs/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE/run.json",
+    ".github/workflows/backend_test_suite.yml",
     ".agent/goals/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION.yaml",
     ".agent/runs/NATIVE-SCENE-01-B-S3-WIDGET-CONVERSION/run.json",
     "addons/smart_core/app_config_engine/services/view_Parser/base.py",
@@ -41,6 +42,7 @@
     "config/acceptance/evolution_binding.v1.json",
     "config/contract/page_contract_v1_retirement_manifest.json",
     "scripts/verify/",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/contract/generate_semantic_registry.py",
     "make/guards.mk",
     "make/frontend.mk",
@@ -145,6 +147,8 @@
     "ci_workflow_contract": {
       "target": "verify.ci.workflow.contract",
       "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
         "make/ci.mk",
         "make/frontend.mk",
         "scripts/verify/registry.yaml"
@@ -288,6 +292,8 @@
     "parser_metadata_derivation": "no_longer_published_as_nativeWidget",
     "frontend_decoder": "synchronized",
     "validation_governance": "local and freeze plans now use merge-stage evidence; deployment-only evidence remains deferred",
+    "independent_review_repair": "Form node canonical widget no longer promotes or overwrites native/metadata provenance; assembly-chain regression coverage passed",
+    "ci_retry_artifact_contract": "backend suite cross-job artifacts bind stable run_id artifacts with overwrite, so failed-job reruns reuse the plan instead of looking for a nonexistent current-attempt artifact",
     "product_database_modified": false
   },
   "completion_status_dimensions": {
@@ -296,9 +302,9 @@
     "deployment": "not_deployed",
     "user_acceptance": "not_run"
   },
-  "next_exact_step": "Run freeze preparation, review generated changes, commit the clean P0-6 candidate, then run exact-head validation and publish for independent review.",
+  "next_exact_step": "Repair the Form node Widget source override identified by independent review, add assembly-chain regression coverage, then validate and publish the exact-head hotfix.",
   "id": "NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE",
-  "branch": "feature/native-scene-01-p0-6-widget-provenance-20261117",
+  "branch": "fix/native-widget-provenance-form-override-20261117",
   "status": "verification_pending",
   "goal": ".agent/goals/NATIVE-SCENE-01-P0-6-WIDGET-PROVENANCE.yaml",
   "record": "docs/audit/native-scene-01/p0-6-widget-provenance/implementation_record.md"

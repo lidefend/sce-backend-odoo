@@ -255,6 +255,65 @@ python3() {
         self.assertIn("CI_PROJECT_NAME: sc-suite-${{ github.run_id }}", workflow)
         self.assertIn("docker compose down -v --remove-orphans", workflow)
 
+    def test_cross_job_artifacts_survive_failed_job_rerun(self):
+        workflow = yaml.safe_load(
+            (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
+        )
+        plan = workflow["jobs"]["plan"]
+        upload_plan = next(step for step in plan["steps"] if step.get("name") == "Upload stable execution plan")
+        self.assertEqual(
+            upload_plan["with"]["name"],
+            "backend-plan-${{ github.run_id }}",
+        )
+        self.assertTrue(upload_plan["with"]["overwrite"])
+
+        suite = workflow["jobs"]["backend_suite"]
+        download_plan = next(
+            step for step in suite["steps"] if step.get("name") == "Download immutable execution plan"
+        )
+        self.assertEqual(
+            download_plan["with"]["name"],
+            "backend-plan-${{ github.run_id }}",
+        )
+        upload_execution = next(
+            step for step in suite["steps"]
+            if step.get("name") == "Preserve per-target execution observations"
+        )
+        self.assertEqual(
+            upload_execution["with"]["name"],
+            "backend-execution-${{ github.run_id }}-${{ matrix.index }}",
+        )
+        self.assertTrue(upload_execution["with"]["overwrite"])
+
+        coverage = workflow["jobs"]["verify_coverage"]
+        coverage_downloads = [
+            step for step in coverage["steps"]
+            if step.get("name") == "Download coverage evidence"
+        ]
+        self.assertEqual(coverage_downloads[0]["with"]["name"], "backend-plan-${{ github.run_id }}")
+        self.assertEqual(
+            coverage_downloads[1]["with"]["pattern"],
+            "backend-execution-${{ github.run_id }}-*",
+        )
+        upload_coverage = next(
+            step for step in coverage["steps"] if step.get("name") == "Publish changed test coverage"
+        )
+        self.assertEqual(
+            upload_coverage["with"]["name"],
+            "changed-test-coverage-${{ github.run_id }}",
+        )
+        self.assertTrue(upload_coverage["with"]["overwrite"])
+
+        for job in workflow["jobs"].values():
+            for step in job.get("steps", []):
+                artifact = (step.get("with") or {}).get("name", "")
+                if any(token in artifact for token in (
+                    "backend-plan-",
+                    "backend-execution-",
+                    "changed-test-coverage-",
+                )):
+                    self.assertNotIn("github.run_attempt", artifact)
+
 
 class BackendTestSuiteStepIntegrityTest(unittest.TestCase):
     """The per-module step must not be able to report a truncated scope as a pass.

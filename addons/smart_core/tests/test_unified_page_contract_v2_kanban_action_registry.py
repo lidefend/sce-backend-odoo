@@ -323,6 +323,105 @@ class UnifiedPageContractV2KanbanActionRegistryTests(unittest.TestCase):
             },
         )
 
+    def test_form_node_assembly_does_not_promote_canonical_widget_to_native(self):
+        cases = (
+            {
+                "label": "model-derived",
+                "node": {
+                    "type": "field",
+                    "name": "name",
+                    "widget": "input",
+                    "fieldInfo": {
+                        "type": "char",
+                        "widget": "input",
+                        "widget_source": "model_metadata_derived",
+                    },
+                },
+                "source": "model_metadata_derived",
+                "native": "",
+                "node_widget": "input",
+                "component": "sc.input.text",
+                "status": "not_applicable",
+            },
+            {
+                "label": "unmarked-compatibility",
+                "node": {
+                    "type": "field",
+                    "name": "name",
+                    "widget": "input",
+                    "fieldInfo": {"type": "char", "widget": "input"},
+                },
+                "source": "compatibility_default",
+                "native": "",
+                "node_widget": "input",
+                "component": "sc.input.text",
+                "status": "not_applicable",
+            },
+            {
+                "label": "unknown-explicit",
+                "node": {
+                    "type": "field",
+                    "name": "name",
+                    "widget": "input",
+                    "attributes": {"widget": "future_editor"},
+                    "fieldInfo": {
+                        "type": "char",
+                        "widget": "future_editor",
+                        "widget_source": "native_explicit",
+                    },
+                },
+                "source": "native_explicit",
+                "native": "future_editor",
+                "node_widget": "future_editor",
+                "component": "sc.unsupported.native_widget",
+                "status": "unsupported",
+            },
+            {
+                "label": "supported-explicit",
+                "node": {
+                    "type": "field",
+                    "name": "date_start",
+                    "widget": "date",
+                    "attributes": {"widget": "daterange"},
+                    "fieldInfo": {
+                        "type": "date",
+                        "widget": "daterange",
+                        "widget_source": "native_explicit",
+                    },
+                },
+                "source": "native_explicit",
+                "native": "daterange",
+                "node_widget": "daterange",
+                "component": "sc.input.date",
+                "status": "ready",
+            },
+        )
+        for case in cases:
+            with self.subTest(case=case["label"]):
+                node = self.assembler._native_field_node(
+                    case["node"],
+                    {},
+                    layout_type="form",
+                )
+                config = node["componentConfig"]
+                provenance = config["widgetProvenance"]
+                self.assertEqual(provenance["widgetSource"], case["source"])
+                self.assertEqual(provenance["nativeWidget"], case["native"])
+                self.assertEqual(provenance["resolutionStatus"], case["status"])
+                self.assertEqual(config.get("nativeWidget", ""), case["native"])
+                self.assertEqual(node["componentKey"], case["component"])
+                self.assertEqual(node["fieldInfo"]["widget"], case["node_widget"])
+                formal_source = self.assembler._field_source_with_node_info(
+                    node,
+                    {},
+                    fallback_name=case["node"]["name"],
+                )
+                formal_widget = self.assembler._field_widget(formal_source, layout_type="form")
+                formal_provenance = formal_widget["componentConfig"]["widgetProvenance"]
+                self.assertEqual(formal_provenance["widgetSource"], case["source"])
+                self.assertEqual(formal_provenance["nativeWidget"], case["native"])
+                self.assertEqual(formal_widget["componentKey"], case["component"])
+
     def test_native_form_header_button_is_projected_as_root_business_action(self):
         contract = self.assembler.assemble_unified_page_contract_v2(
             {

@@ -24064,8 +24064,8 @@
       "sce_customer_sample",
       "smart_construction_demo"
     ],
-    "source_revision": "7af300c1ecf882916e421ebeceee1e587a438753",
-    "source_tree": "fbae581486820f7d61ddf7097eb80003b64ccb8a"
+    "source_revision": "b9ac31fdf34880c551209472fab7cb70d6a749cf",
+    "source_tree": "cb5d107d6dcbb6029c48af0f66fd376d245cc328"
   },
   "summary": {
     "actionless_containers": 67,
