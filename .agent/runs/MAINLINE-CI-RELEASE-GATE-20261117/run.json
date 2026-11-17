@@ -1,0 +1,70 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "b9909e8e103001a8e598c3575d77bcc58f1e8314",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-CI-RELEASE-GATE-20261117.yaml",
+    ".agent/runs/MAINLINE-CI-RELEASE-GATE-20261117/run.json",
+    "docs/ops/iterations/mainline_ci_release_gate_20261117.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets and locked frontend toolchain; no product database, service, credential, or deployment mutation"
+  },
+  "checks": {
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintignore",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/pnpm-lock.yaml",
+        "scripts/dev/pnpm_exec.sh",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_release_lint": {
+      "target": "verify.frontend.lint",
+      "inputs": [
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintignore",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/pnpm-lock.yaml",
+        "scripts/dev/pnpm_exec.sh",
+        "scripts/verify/frontend_static_release_audit.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the exact five-file recovery scope, publish it through the protected GitHub PR lane, and require the current candidate's frontend_release_gate to pass.",
+  "id": "MAINLINE-CI-RELEASE-GATE-20261117",
+  "branch": "fix/mainline-ci-release-gate-20261117",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAINLINE-CI-RELEASE-GATE-20261117.yaml",
+  "record": "docs/ops/iterations/mainline_ci_release_gate_20261117.md"
+}

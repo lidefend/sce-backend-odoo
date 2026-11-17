@@ -4348,7 +4348,7 @@ assert.throws(() => presentContractV2Form(createRelationStore, 'edit', { line_id
 assert.deepEqual(createRelationStore.snapshot.dataContract.mainData.line_ids, createSource);
 console.log('native create relation snapshot binding: passed');
 
-const nestedWidgetSnapshot: any = structuredClone(snapshot());
+const nestedWidgetSnapshot: ContractV2Snapshot = structuredClone(snapshot());
 nestedWidgetSnapshot.pageInfo.contractVersion = '2.4.0';
 const nestedContainer = nestedWidgetSnapshot.layoutContract.containerTree[0];
 const sourceAuthority = {
@@ -4409,7 +4409,7 @@ assert.doesNotThrow(
   'a direct field widget under a container may carry its own field occurrence identity',
 );
 
-const fieldOwnerSnapshot: any = structuredClone(snapshot());
+const fieldOwnerSnapshot: ContractV2Snapshot = structuredClone(snapshot());
 fieldOwnerSnapshot.pageInfo.contractVersion = '2.4.0';
 const fieldOwnerNode = fieldOwnerSnapshot.layoutContract.containerTree[0].children[0];
 fieldOwnerNode.nativeLocator = widgetLocator;
