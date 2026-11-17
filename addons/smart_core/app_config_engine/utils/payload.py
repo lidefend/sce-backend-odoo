@@ -28,7 +28,7 @@ def parse_payload(payload):
     """
     按《Contract-2.0-Spec》约定解析关键字段；设置兜底默认值。
     """
-    return {
+    parsed = {
         "subject": (payload.get("subject") or "model").lower(),
         "menu_id": payload.get("menu_id"),
         "action_id": payload.get("action_id"),
@@ -56,3 +56,13 @@ def parse_payload(payload):
         "hud": payload.get("hud"),
         "debug_hud": payload.get("debug_hud"),
     }
+    supplied_capabilities = payload.get("client_contract_capabilities")
+    if supplied_capabilities is None:
+        supplied_capabilities = payload.get("clientContractCapabilities")
+    if supplied_capabilities is not None:
+        # Preserve absence as "client capability unknown". An explicitly empty
+        # list means "capability negotiation is supported and no optional view
+        # renderer is available"; collapsing both states would change page
+        # availability instead of merely normalizing the request.
+        parsed["client_contract_capabilities"] = _as_list(supplied_capabilities)
+    return parsed

@@ -1475,6 +1475,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/core/native_action_contract.py",
+        "addons/smart_core/app_config_engine/utils/payload.py",
         "addons/smart_core/tests/test_native_action_contract_integration.py",
         "scripts/verify/test_native_action_contract.py",
     ), (
