@@ -1517,6 +1517,12 @@ RULES = (
         "verify.frontend.contract_v2_render_authority.unit",
     )),
     Rule((
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+    ), (
+        "verify.docs.links",
+    )),
+    Rule((
         "scripts/verify/frontend_contract_record_action_state.test.mjs",
     ), (
         "verify.frontend.contract_record_action_state.unit",

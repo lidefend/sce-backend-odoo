@@ -1,0 +1,60 @@
+schema_version: 1
+goal:
+  id: MAINLINE-DOCS-LINKS-20261117
+  title: Restore mainline documentation link integrity
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: documentation evidence links and inventory governance
+  module:
+    - docs links verification
+    - native scene audit inventory
+    - historical delivery evidence
+  objective: >-
+    Make verify.docs.all pass on current main without weakening the zero-missing
+    link threshold by removing permanent links to ephemeral .runtime evidence and
+    correcting the link checker so standard angle destinations and percent-encoded
+    spaces resolve correctly.
+  baseline:
+    branch: main
+    full_sha: bec4a38da10f15d6f4008af355db3bcc4332e13d
+  failure:
+    classification:
+      - baseline_evidence_defect
+      - validation_tool_defect
+    command: make verify.docs.all
+    detail: >-
+      verify.docs.links reports 72 missing links: 62 links to ephemeral ignored
+      .runtime evidence and 10 false positives for valid source links containing
+      spaces.
+  product_boundary:
+    standard_vs_user_specific: repository-wide documentation and evidence governance
+    why_here: >-
+      The failure is stale and malformed documentation evidence references, not
+      product behavior, contracts, or runtime configuration.
+    why_not_elsewhere:
+      - no P0 platform contract or consumer change
+      - no P1 construction product behavior change
+      - no P2 customer baseline change
+      - no P3 low-code configuration change
+      - no link threshold, path exemption, or required gate reduction
+    blast_radius:
+      - four documentation files with broken references
+      - the docs links checker and its focused regression test
+      - frontend incremental routing for docs-link tooling
+      - verify.docs.links and verify.docs.all
+      - the current run's agent metadata
+  acceptance:
+    - verify.docs.links reports zero missing links
+    - verify.docs.all passes end to end
+    - permanent Markdown links no longer target ignored .runtime evidence
+    - existing source links resolve to the checked-in parser files
+    - angle destinations and percent-encoded spaces are covered by focused tests
+    - docs-link tooling changes deterministically route to verify.docs.links
+    - no documentation link threshold or exclusion is weakened
+  exclusions:
+    - product source and tests
+    - generated runtime evidence recreation
+    - unrelated documentation rewrites
+    - workflow, database, deployment, and runtime environment changes
+  rollback: Revert the documentation-link repair commit; no data or runtime rollback is required.
+  next_exact_step: Replace ephemeral links with explicit evidence path text, fix source links, and run verify.docs.all.
