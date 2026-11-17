@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "id": "MERGED-RUN-BINDING-CLEANUP-20261117",
+  "branch": "fix/cleanup-merged-run-bindings-20261117",
+  "baseline_sha": "8078fb6abf1d65066f4bde998abb7e0307c9d93e",
+  "status": "active",
+  "goal": ".agent/goals/MERGED-RUN-BINDING-CLEANUP-20261117.yaml",
+  "record": "docs/ops/iterations/merged_run_binding_cleanup_20261117.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MERGED-RUN-BINDING-CLEANUP-20261117.yaml",
+    ".agent/runs/MERGED-RUN-BINDING-CLEANUP-20261117/run.json",
+    "docs/ops/iterations/merged_run_binding_cleanup_20261117.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing branch cleanup guard and immutable GitHub merged-PR identity"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/MERGED-RUN-BINDING-CLEANUP-20261117.yaml",
+        ".agent/runs/MERGED-RUN-BINDING-CLEANUP-20261117/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Validate and integrate the binding-only cleanup, then retire each exact merged local and remote branch through make branch.cleanup.feature."
+}

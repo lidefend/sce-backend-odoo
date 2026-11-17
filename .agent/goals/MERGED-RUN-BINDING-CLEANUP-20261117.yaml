@@ -1,0 +1,15 @@
+schema_version: 1
+goal:
+  id: MERGED-RUN-BINDING-CLEANUP-20261117
+  status: active
+  formal_product_layer: P4
+  objective: Remove active-run bindings that still point to already merged, exact-head candidate branches so the governed cleanup entries can retire those refs without leaving dangling run state.
+  product_result: Only genuinely active or unmerged run bindings remain; merged local and remote candidate branches can be retired through existing governed entries.
+  scope:
+    - merged exact-head PR bindings in .agent/active-runs.json
+    - bounded cleanup run metadata
+  exclusions:
+    - unmerged branch deletion
+    - release branch changes
+    - worktree deletion with uncommitted or detached state
+    - runtime, database, deployment or product changes
