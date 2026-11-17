@@ -338,6 +338,16 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
     };
     const mobileCards = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row')).filter(visible);
     const mobileMode = mobileCards.length > 0;
+    const numericHeaderCells = Array.from(document.querySelectorAll('.table thead th'))
+      .filter((cell) => cell.classList.contains('column-numeric') || cell.classList.contains('column-layout-money'));
+    const numericBodyCells = Array.from(document.querySelectorAll('.table tbody td'))
+      .filter((cell) => cell.classList.contains('column-numeric') || cell.classList.contains('column-layout-money'));
+    const numericHeaderMisaligned = numericHeaderCells
+      .filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
+    const numericBodyMisaligned = numericBodyCells
+      .filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
+    const numericColumnAlignment = mobileMode
+      || (numericHeaderMisaligned === 0 && numericBodyMisaligned === 0);
     const visibleMobileSelectionControls = Array.from(document.querySelectorAll('.mobile-record-list .collection-mobile-record-row .collection-selection-control[data-selection-scope="row"]')).filter(visible);
     const mobileSelectionTargetSizes = visibleMobileSelectionControls.map((target) => {
       const rect = target.getBoundingClientRect();
@@ -472,6 +482,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           selected_mobile_card_detail_reachable: !mobileMode || selectedMobileCards.some((card) => visible(card.querySelector('.collection-mobile-record-row__card'))),
           decision_trace_complete: expectedState === 'empty' || traceComplete,
           table_headers_single_line: tableHeadersSingleLine,
+          numeric_column_alignment: numericColumnAlignment,
           primary_identity_integrity: primaryIdentityIntegrity,
         },
         metrics: {
@@ -486,6 +497,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
           selection_source: selectionSource,
           column_decision_trace: columnDecisionTrace,
           header_metrics: headerMetrics,
+          numeric_header_count: numericHeaderCells.length,
+          numeric_body_count: numericBodyCells.length,
+          numeric_header_misaligned: numericHeaderMisaligned,
+          numeric_body_misaligned: numericBodyMisaligned,
           primary_identity: primaryIdentity,
         },
       };
@@ -625,6 +640,7 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       mobile_touch_targets: mobileTouchTargetsPass,
       search_input_usable: Boolean(searchInputRect && searchInputRect.width >= 72 && searchInputRect.height >= 28),
       table_headers_single_line: tableHeadersSingleLine,
+      numeric_column_alignment: numericColumnAlignment,
       primary_identity_integrity: primaryIdentityIntegrity,
     };
     return {
@@ -652,6 +668,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
         search_input_rect: searchInputRect ? { left: searchInputRect.left, right: searchInputRect.right, width: searchInputRect.width, height: searchInputRect.height } : null,
         column_decision_trace: columnDecisionTrace,
         header_metrics: headerMetrics,
+        numeric_header_count: numericHeaderCells.length,
+        numeric_body_count: numericBodyCells.length,
+        numeric_header_misaligned: numericHeaderMisaligned,
+        numeric_body_misaligned: numericBodyMisaligned,
         primary_identity: primaryIdentity,
       },
       observations: {

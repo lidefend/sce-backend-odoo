@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118",
+  "branch": "feature/fe-collection-numeric-header-alignment-20261118",
+  "baseline_sha": "e37774ae9bf6393951686c5b005918743126a932",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118.yaml",
+  "record": "docs/ops/iterations/fe_collection_numeric_header_alignment_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118.yaml",
+    ".agent/runs/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_collection_numeric_header_alignment_20261118.md",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "scripts/verify/frontend_list_surface_structure_browser.mjs"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered acceptance profile sc-fe-r2-p1-01 / sc_frontend_acceptance; isolated browser readback"
+  },
+  "checks": {
+    "collection_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "scripts/verify/collection_view_semantics_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "list_search_contract": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "scripts/verify/test_frontend_list_surface_search_contract.py",
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+        "make/frontend.mk"
+      ]
+    },
+    "list_surface_runtime": {
+      "target": "verify.frontend.list_surface_structure.browser",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/final-acceptance/list-surface-structure.json"
+      },
+      "inputs": [
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "scripts/verify/frontend_list_surface_structure_browser.mjs",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "config/frontend/acceptance_environments_v1.json",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate, prepare the registered acceptance carrier, and run verify.frontend.list_surface_structure.browser at all governed viewports."
+}
