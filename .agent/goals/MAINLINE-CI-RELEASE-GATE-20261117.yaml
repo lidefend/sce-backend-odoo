@@ -1,0 +1,52 @@
+schema_version: 1
+goal:
+  id: MAINLINE-CI-RELEASE-GATE-20261117
+  title: Restore the mainline frontend release lint gate
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend release validation corpus and static release audit
+  module:
+    - frontend release lint gate
+    - canonical form presenter test
+  objective: >-
+    Remove the two explicit TypeScript any usages that make the exact mainline
+    frontend release lint command fail, while preserving the canonical form
+    presenter test behavior and every existing release assertion.
+  baseline:
+    branch: main
+    full_sha: b9909e8e103001a8e598c3575d77bcc58f1e8314
+  product_boundary:
+    standard_vs_user_specific: repository-wide validation tooling
+    why_here: >-
+      The failure is in a frontend test corpus consumed by the governed release
+      lint command, not in product contract declarations or runtime behavior.
+    why_not_elsewhere:
+      - no P0 contract or platform mechanism change
+      - no P1 industry model or product default change
+      - no P2 customer-specific behavior change
+      - no P3 low-code runtime configuration change
+      - no frontend source behavior change
+      - no lint rule, ignored path, threshold, or required-check reduction
+    blast_radius:
+      - frontend/apps/web/scripts/canonical_form_presenter_test.ts
+      - the existing canonical form presenter unit assertions
+      - the exact-head frontend release lint and release audit
+  deliverables:
+    - frontend/apps/web/scripts/canonical_form_presenter_test.ts
+    - .agent/active-runs.json
+    - .agent/goals/MAINLINE-CI-RELEASE-GATE-20261117.yaml
+    - .agent/runs/MAINLINE-CI-RELEASE-GATE-20261117/run.json
+    - docs/ops/iterations/mainline_ci_release_gate_20261117.md
+  acceptance:
+    - the exact mainline frontend lint command exits zero
+    - the canonical form presenter unit executes non-zero assertions and passes
+    - the changed test is type-compatible with the existing ContractV2Snapshot contract
+    - no lint rule, ignore entry, release assertion, or required CI check is weakened
+    - local iteration and affected release-gate checks pass before publication
+  exclusions:
+    - product frontend and backend behavior
+    - workflow trigger, required-check name, and branch-protection changes
+    - database, fixture, deployment, and runtime environment changes
+    - unrelated lint warnings and pre-existing worktree changes
+  rollback: Revert the typed test declarations to the prior commit; no data or runtime rollback is required.
+  next_exact_step: Run the existing canonical form presenter unit and exact frontend lint entry after the typed snapshot change.
