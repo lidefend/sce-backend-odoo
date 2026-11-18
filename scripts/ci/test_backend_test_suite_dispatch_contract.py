@@ -139,6 +139,14 @@ python3() {
         self.assertIn('--heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"', run)
         self.assertIn('--module "${module}" --selectors', run)
         self.assertNotIn('| tee "${module_log}"', run)
+        resolve = next(
+            step for step in suite['steps']
+            if step.get('name') == 'Resolve module list'
+        )
+        self.assertIn(
+            'echo "PLAN_SHA256=${PLAN_SHA256}" >> "${GITHUB_ENV}"',
+            resolve['run'],
+        )
 
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
