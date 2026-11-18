@@ -178,5 +178,5 @@
   "blockers": [
     "BE-CLOSE-01 exact-head required checks are still running on d3e2f8d4f6a3f3c7250316ee51a690dac470591a"
   ],
-  "next_exact_step": "Commit the validated frontend candidate, publish the exact-head PR, and bind its checks to BE-CLOSE-01 d3e2f8d4f6a3f3c7250316ee51a690dac470591a."
+  "next_exact_step": "Publish the exact-head frontend PR and bind its checks to BE-CLOSE-01 d3e2f8d4f6a3f3c7250316ee51a690dac470591a."
 }
