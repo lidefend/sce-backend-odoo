@@ -3,8 +3,8 @@
 ## Boundary
 
 - Formal Product Layer: P0/P4
-- Layer Target: generic dialog state projection and guard-registry lifecycle metadata
-- Module: frontend contract action dialog, `scripts/verify`
+- Layer Target: generic dialog state projection, guard-registry lifecycle and formal-release lane equivalence
+- Module: frontend contract action dialog, `scripts/verify`, CI risk lanes, merge policy
 - Standard vs User-Specific: platform engineering standard
 
 The scheduled `professional_quality_gate` failed because the guard registry still
@@ -20,10 +20,16 @@ purpose markers, but it must not replace primitive-owned state. The registry is 
 P4 lifecycle declaration for verification scripts and must match its executable
 Make/CI consumers.
 
+The formal-release boundary also required a control-plane correction. An explicit
+`ci:candidate` now forces the same full professional and frontend lanes used by the
+scheduled audit. Non-FAST branches cannot pass `merge_policy_gate` without that
+explicit candidate qualification, so a daily standard lane can no longer be mistaken
+for formal-release evidence.
+
 Why not elsewhere:
 
 - no backend contract, model, permission, action or customer behavior changes;
-- no workflow trigger, gate, required-check name or browser assertion is weakened;
+- no required-check context name, gate, browser assertion or workflow schedule is weakened;
 - the browser test already detects the attribute collision and remains unchanged;
 - no unrelated orphaned guard is retired or reclassified in this batch.
 
@@ -32,12 +38,15 @@ Why not elsewhere:
 - Keep descriptive action-reason dialog attributes without overriding dialog state.
 - Execute the selected design-token test in the existing style-system target and
   reconcile the guard registry with that executable consumer.
+- Force candidate and scheduled runs through the same full frontend/professional
+  lanes, and reject non-FAST merges that lack explicit candidate qualification.
+- Execute `verify.guard.registry` in every professional quality lane.
 - Validate the affected browser contract, registry audit, style system, lint,
-  strict typecheck and agent ledger.
+  strict typecheck, CI workflow and merge-policy contracts, and agent ledger.
 
 ## Exclusions
 
-- Workflow, branch-protection, check-name and merge-policy changes;
+- Required-check context names, branch rulesets and workflow schedules;
 - database, fixture, deployment and user-acceptance changes;
 - unrelated guard-registry debt and generated frontend inventories.
 
@@ -45,14 +54,16 @@ Why not elsewhere:
 
 - The action-reason browser test performs its non-zero assertion set and passes.
 - `verify.guard.registry` passes without weakening or bypassing the audit.
+- Non-FAST merges without `ci:candidate` fail closed.
+- Candidate and scheduled runs both use full frontend and professional lanes.
 - The affected frontend lint, strict typecheck and style-system targets pass.
 - `make ci.local.iteration` executes the registered affected set with truthful
   per-target status and original logs.
 
 ## Rollback
 
-Revert the dialog state-marker correction and regenerated guard-registry metadata
-together. No data or runtime state requires restoration.
+Revert the dialog state-marker correction, guard-registry repair, and formal lane
+routing/tests together. No data or runtime state requires restoration.
 
 ## Execution log
 
@@ -75,10 +86,13 @@ together. No data or runtime state requires restoration.
 - `verify.frontend.lint.src`: PASS, zero errors; four existing warnings remain.
 - `verify.frontend.typecheck.strict`: PASS.
 - `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
-- `make ci.local.iteration`: PASS, 12 affected targets executed on the final
+- `verify.ci.workflow.contract`: PASS, 453 tests covering risk classification,
+  candidate/full lane selection, merge-policy enforcement and workflow wiring.
+- `make ci.local.iteration`: PASS, 14 affected targets executed on the final
   pre-commit working set.
 - `make ci.delivery.freeze.prepare`: PASS; refreshed the complexity report, split
   queue and component-driver input digest affected by the source delta.
+- `make ci.generated_evidence.preflight`: PASS.
 
 Not run locally: full Quick, ORM and database acceptance. They are not required
 for this ordinary candidate's local gate and the remote required checks remain

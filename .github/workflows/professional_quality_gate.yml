@@ -197,7 +197,7 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
       CANDIDATE_REQUESTED: ${{ needs.professional_authorization.outputs.candidate_requested }}
-      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || (needs.professional_authorization.outputs.candidate_requested == 'true' && needs.professional_authorization.outputs.professional_mode) || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_runtime_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
+      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
       BACKEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_runtime_changed }}
@@ -315,6 +315,7 @@ jobs:
       - name: Run early static quality owners
         run: |
           set -euo pipefail
+          make verify.guard.registry
           python3 scripts/verify/frontend_product_page_header_guard.py
           python3 scripts/verify/frontend_delivery_hardening_guard.py
           make verify.unified_page_contract.v2.assembler

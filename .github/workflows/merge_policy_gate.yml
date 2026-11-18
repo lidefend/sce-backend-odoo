@@ -32,6 +32,7 @@ jobs:
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       managed_orm_required: ${{ steps.risk.outputs.managed_orm_required }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
+      frontend_full_required: ${{ steps.risk.outputs.frontend_full_required }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -144,9 +145,17 @@ jobs:
           persist-credentials: false
 
       - name: Resolve merge-policy lane once
+        env:
+          RISK_LANE: ${{ needs.classify.outputs.lane }}
+          CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
+          EVENT_NAME: ${{ github.event_name }}
         run: |
           set -euo pipefail
           test "${{ needs.wait_for_fact_checks.result }}" = success
+          if [ "${EVENT_NAME}" = "pull_request" ] && [ "${RISK_LANE}" != "FAST" ] && [ "${CANDIDATE_REQUESTED}" != "true" ]; then
+            echo "non-FAST mainline integration requires ci:candidate formal-release qualification" >&2
+            exit 1
+          fi
           if [ "${{ needs.classify.outputs.lane }}" = "FAST" ]; then
             test "${{ needs.fast.result }}" = success
             exit 0
@@ -165,6 +174,7 @@ jobs:
           CONTROL_PLANE_CHANGED: ${{ needs.classify.outputs.control_plane_changed }}
           MANAGED_ORM_REQUIRED: ${{ needs.classify.outputs.managed_orm_required }}
           PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
+          FRONTEND_FULL_REQUIRED: ${{ needs.classify.outputs.frontend_full_required }}
           CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
           FAST_RESULT: ${{ needs.fast.result }}
           FACT_RESULT: ${{ needs.wait_for_fact_checks.result }}
@@ -175,18 +185,11 @@ jobs:
           if [ "${CANDIDATE_REQUESTED}" = true ] && [ "${MANAGED_ORM_REQUIRED}" = true ]; then
             effective_frontend="full"
           fi
-          if [ "${CANDIDATE_REQUESTED}" != "true" ]; then
+          if [ "${FRONTEND_FULL_REQUIRED}" = "true" ]; then
+            effective_frontend="full"
+          elif [ "${CANDIDATE_REQUESTED}" != "true" ]; then
             if [ "${effective_frontend}" = "full" ]; then
               effective_frontend="standard"
-            fi
-            if [ "${effective_professional}" = "full" ]; then
-              if [ "${BACKEND_RUNTIME_CHANGED}" = true ]; then
-                effective_professional="standard_backend"
-              elif [ "${FRONTEND_CHANGED}" = true ]; then
-                effective_professional="standard_frontend"
-              else
-                effective_professional="governance"
-              fi
             fi
           fi
           if [ "${EVENT_NAME}" = schedule ]; then
@@ -215,8 +218,8 @@ jobs:
             echo "| Fast job result | ${FAST_RESULT} |"
             echo "| Fact workflow result | ${FACT_RESULT} |"
             echo ""
-            if [ "${CANDIDATE_REQUESTED}" != "true" ] && { [ "${FRONTEND_MODE}" = "full" ] || [ "${PROFESSIONAL_MODE}" = "full" ]; }; then
-              echo "Ordinary PR governance changes were downgraded from candidate-grade validation to daily iteration lanes."
+            if [ "${RISK_LANE}" != "FAST" ] && [ "${CANDIDATE_REQUESTED}" != "true" ]; then
+              echo "Formal-release qualification is missing for this non-FAST head."
             elif [ "${CANDIDATE_REQUESTED}" = "true" ]; then
               echo "Explicit candidate validation was requested for this exact head."
             else

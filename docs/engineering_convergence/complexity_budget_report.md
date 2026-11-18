@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5262`
 - Files requiring split plan: `81`
-- Files above warning threshold: `153`
+- Files above warning threshold: `154`
 
 ## Split Plan Required
 
@@ -206,6 +206,7 @@ Generated from repository source files. This report is informational during the 
 | 875 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
+| 861 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
@@ -235,8 +236,8 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 525 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
-| 499 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
+| 526 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 500 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

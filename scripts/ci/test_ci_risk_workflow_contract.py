@@ -100,6 +100,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("CANDIDATE_REQUESTED:", text)
         self.assertIn("Resolve effective frontend lane", text)
         self.assertIn("steps.effective_lane.outputs.frontend_mode", text)
+        self.assertIn("full_required='${{ steps.risk.outputs.frontend_full_required }}'", text)
+        self.assertIn('[ "${CANDIDATE_REQUESTED}" = "true" ] || [ "${full_required}" = "true" ]', text)
         self.assertIn('[ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]', text)
         self.assertIn("frontend_mode == 'full'", text)
         self.assertIn("frontend_mode == 'standard'", text)
@@ -123,6 +125,48 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("verify.frontend.navigation_shell.unit", merge_units)
         self.assertIn("verify.frontend.state_dashboard.unit", merge_units)
         self.assertNotIn("verify.frontend.professional_audit.unit", merge_units)
+
+    def test_frontend_lane_preserves_full_requirement_and_candidate_mode(self) -> None:
+        workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        step = next(
+            step
+            for step in workflow["jobs"]["frontend_release_gate"]["steps"]
+            if step.get("name") == "Resolve effective frontend lane"
+        )
+        cases = (
+            ("schedule", "skip", "false", "false", "full"),
+            ("pull_request", "full", "true", "false", "full"),
+            ("pull_request", "full", "false", "true", "full"),
+            ("pull_request", "standard", "false", "false", "standard"),
+            ("pull_request", "full", "false", "false", "standard"),
+        )
+        with tempfile.TemporaryDirectory() as tmp:
+            output = Path(tmp) / "github-output"
+            for event, mode, full_required, candidate, expected in cases:
+                with self.subTest(event=event, mode=mode, full_required=full_required,
+                                  candidate=candidate):
+                    output.write_text("")
+                    script = (
+                        step["run"]
+                        .replace("${{ steps.risk.outputs.frontend_mode }}", mode)
+                        .replace("${{ steps.risk.outputs.frontend_full_required }}", full_required)
+                    )
+                    result = subprocess.run(
+                        ["bash", "-c", script],
+                        env={
+                            **os.environ,
+                            "GITHUB_EVENT_NAME": event,
+                            "GITHUB_OUTPUT": str(output),
+                            "CANDIDATE_REQUESTED": candidate,
+                        },
+                        capture_output=True,
+                        text=True,
+                    )
+                    self.assertEqual(0, result.returncode, result.stderr)
+                    self.assertEqual(
+                        f"frontend_mode={expected}\n",
+                        output.read_text(),
+                    )
 
     def test_professional_gate_pins_the_node_runtime_of_the_syntax_sweep(self) -> None:
         """The sweep behind ``test.unit``/``test.contract`` parses ``.js`` files.
@@ -212,7 +256,13 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         professional_mode = next(
             line for line in text.splitlines() if line.strip().startswith("PROFESSIONAL_MODE:")
         )
-        self.assertIn("outputs.backend_runtime_changed == 'true'", professional_mode)
+        self.assertIn(
+            "needs.professional_authorization.outputs.candidate_requested == 'true' && 'full'",
+            professional_mode,
+        )
+        self.assertIn("needs.professional_authorization.outputs.professional_mode", professional_mode)
+        self.assertNotIn("standard_backend", professional_mode)
+        self.assertNotIn("standard_frontend", professional_mode)
         self.assertNotIn("outputs.backend_changed == 'true'", professional_mode)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
@@ -581,44 +631,104 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                    'FRONTEND_MODE': 'skip', 'PROFESSIONAL_MODE': 'full',
                    'BACKEND_CHANGED': 'true', 'BACKEND_RUNTIME_CHANGED': 'true',
                    'FRONTEND_CHANGED': 'false', 'CONTROL_PLANE_CHANGED': 'false',
-                   'MANAGED_ORM_REQUIRED': 'false',
+                   'MANAGED_ORM_REQUIRED': 'false', 'FRONTEND_FULL_REQUIRED': 'false',
                    'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
                    'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
-            for event, expected in [('pull_request', 'standard_backend'), ('push', 'mainline'), ('schedule', 'full')]:
+            for event, expected in [('pull_request', 'full'), ('push', 'mainline'), ('schedule', 'full')]:
                 summary.write_text('')
                 result = subprocess.run(['bash', '-c', step['run']], env={**env, 'EVENT_NAME': event,
                     'REF': 'refs/heads/main' if event == 'push' else env['REF']}, capture_output=True, text=True)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn('| Effective professional lane | ' + expected + ' |', summary.read_text())
 
-    def test_merge_summary_routes_pure_control_plane_to_governance(self):
+    def test_merge_summary_preserves_risk_derived_full_lanes(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
                     if s.get('name') == 'Publish lane summary')
         with tempfile.TemporaryDirectory() as tmp:
             summary = Path(tmp) / 'summary'
             scenarios = (
-                ('pure_ci', 'true', 'false', 'false', 'governance'),
-                ('mixed_frontend_backend', 'true', 'true', 'true', 'standard_backend'),
-                ('frontend_only', 'false', 'false', 'true', 'standard_frontend'),
-                ('backend_quality_tool', 'true', 'false', 'false', 'governance'),
+                ('pure_ci', 'true', 'false', 'false'),
+                ('mixed_frontend_backend', 'true', 'true', 'true'),
+                ('frontend_only', 'false', 'false', 'true'),
+                ('backend_quality_tool', 'true', 'false', 'false'),
             )
-            for name, backend, runtime, frontend, expected in scenarios:
+            for name, backend, runtime, frontend in scenarios:
                 with self.subTest(scenario=name):
                     summary.write_text('')
                     env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary),
-                           'RISK_LANE': 'HIGH_RISK', 'FRONTEND_MODE': 'skip',
+                           'RISK_LANE': 'HIGH_RISK', 'FRONTEND_MODE': 'standard',
                            'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': backend,
                            'BACKEND_RUNTIME_CHANGED': runtime, 'FRONTEND_CHANGED': frontend,
                            'CONTROL_PLANE_CHANGED': 'true', 'MANAGED_ORM_REQUIRED': 'false',
+                           'FRONTEND_FULL_REQUIRED': 'false',
                            'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped',
                            'FACT_RESULT': 'success', 'EVENT_NAME': 'pull_request',
                            'REF': 'refs/pull/1/merge'}
                     result = subprocess.run(['bash', '-c', step['run']], env=env,
                                             capture_output=True, text=True)
                     self.assertEqual(0, result.returncode, result.stderr)
-                    self.assertIn('| Effective professional lane | ' + expected + ' |',
+                    self.assertIn('| Effective professional lane | full |',
                                   summary.read_text())
+
+    def test_merge_summary_keeps_full_required_frontend_on_pull_request(self):
+        workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
+        step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
+                    if s.get('name') == 'Publish lane summary')
+        with tempfile.TemporaryDirectory() as tmp:
+            summary = Path(tmp) / 'summary'
+            env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary),
+                   'RISK_LANE': 'HIGH_RISK', 'FRONTEND_MODE': 'full',
+                   'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': 'false',
+                   'BACKEND_RUNTIME_CHANGED': 'false', 'FRONTEND_CHANGED': 'true',
+                   'CONTROL_PLANE_CHANGED': 'false', 'MANAGED_ORM_REQUIRED': 'false',
+                   'FRONTEND_FULL_REQUIRED': 'true', 'CANDIDATE_REQUESTED': 'false',
+                   'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
+                   'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
+            result = subprocess.run(['bash', '-c', step['run']], env=env,
+                                    capture_output=True, text=True)
+            self.assertEqual(0, result.returncode, result.stderr)
+            self.assertIn('| Effective frontend lane | full |', summary.read_text())
+            self.assertIn('| Effective professional lane | full |', summary.read_text())
+
+    def test_merge_policy_requires_formal_candidate_for_non_fast_heads(self):
+        workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
+        step = next(
+            step
+            for step in workflow['jobs']['merge_policy_gate']['steps']
+            if step.get('name') == 'Resolve merge-policy lane once'
+        )
+        script = (
+            step['run']
+            .replace('${{ needs.wait_for_fact_checks.result }}', 'success')
+            .replace('${{ needs.classify.outputs.lane }}', 'HIGH_RISK')
+            .replace('${{ needs.fast.result }}', 'skipped')
+        )
+        accepted = subprocess.run(
+            ['bash', '-c', script],
+            env={**os.environ, 'EVENT_NAME': 'pull_request', 'RISK_LANE': 'HIGH_RISK',
+                 'CANDIDATE_REQUESTED': 'true'},
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, accepted.returncode, accepted.stderr)
+        rejected = subprocess.run(
+            ['bash', '-c', script],
+            env={**os.environ, 'EVENT_NAME': 'pull_request', 'RISK_LANE': 'HIGH_RISK',
+                 'CANDIDATE_REQUESTED': 'false'},
+            capture_output=True,
+            text=True,
+        )
+        self.assertNotEqual(0, rejected.returncode)
+        self.assertIn('requires ci:candidate formal-release qualification', rejected.stderr)
+        push = subprocess.run(
+            ['bash', '-c', script],
+            env={**os.environ, 'EVENT_NAME': 'push', 'RISK_LANE': 'RELEASE',
+                 'CANDIDATE_REQUESTED': 'false'},
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(0, push.returncode, push.stderr)
 
     def test_candidate_summary_distinguishes_skip_from_pass_and_rejects_failure(self):
         workflow = yaml.safe_load(self.text('release_candidate_gate.yml'))
@@ -715,6 +825,7 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         static = next(step for step in steps if step['name'] == 'Run early static quality owners')
         static_run = static['run']
         for guard in (
+            'make verify.guard.registry',
             'scripts/verify/frontend_product_page_header_guard.py',
             'scripts/verify/frontend_delivery_hardening_guard.py',
         ):

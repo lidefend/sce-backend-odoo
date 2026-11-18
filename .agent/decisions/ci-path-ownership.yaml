@@ -33,6 +33,8 @@ decision:
   invariants:
     - control_plane_changes_never_imply_backend_runtime
     - frontend_quality_tooling_never_implies_backend_business
+    - frontend_full_required_paths_cannot_downgrade_to_standard_on_pull_request
+    - guard_registry_audit_runs_on_every_professional_quality_lane
     - unknown_paths_cannot_be_treated_as_skip
     - no_runtime_impact_does_not_create_full_module_suite_from_missing_history
   reason:
