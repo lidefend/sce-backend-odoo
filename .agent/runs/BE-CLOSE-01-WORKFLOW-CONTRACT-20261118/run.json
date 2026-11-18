@@ -257,5 +257,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the complete backend candidate, recapture the authenticated final API sample on that exact SHA, then bind FE-CLOSE-01 to the resulting contract artifact and acceptance environment."
+  "next_exact_step": "Bind FE-CLOSE-01 to backend product candidate a94d6c093595019f97e1e1c14690cba32f8d80c9 and the authenticated sample at .runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json; then implement and verify the two frontend entries."
 }

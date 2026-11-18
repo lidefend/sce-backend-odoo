@@ -105,3 +105,9 @@
   `sc-fe-r2-p1-01`，database `sc_frontend_acceptance`，backend HTTP
   `127.0.0.1:18082`。
 - 最终样本必须在最终提交 SHA 上重新采集并登记后，才可交给前端联调。
+- 后端产品候选：`a94d6c093595019f97e1e1c14690cba32f8d80c9`。
+- 最终 API 样本 `served_sha=expected_sha=a94d6c0935...`；8 份
+  workflow contract 已再次通过 Schema，付款提交和项目启动均完成回读。
+- 前端消费入口：
+  `.runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json`
+  与验收环境 `http://127.0.0.1:18082`（entry namespace `acceptance`）。
