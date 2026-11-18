@@ -430,19 +430,15 @@ verify.project_intake.contract_governance.unit: guard.prod.forbid
 verify.smart_construction_core.close_03.module_baseline: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core
 
-SC_CLOSE_03_BASE_URL ?= http://127.0.0.1:18081/t/demo
-SC_CLOSE_03_LOGIN ?= wutao
-SC_CLOSE_03_PASSWORD_VAR ?= SC_DEMO_USER_PASSWORD
+SC_CLOSE_03_BASE_URL ?= http://127.0.0.1:18082
+SC_CLOSE_03_LOGIN ?= fixture_role_config_admin
 SC_CLOSE_03_OUTPUT ?= .runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/intake_autosave_samples
 
 .PHONY: verify.backend.close_03.intake_autosave.samples
-verify.backend.close_03.intake_autosave.samples: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
-	@set -a; . "$(LOCAL_DEV_ENV_FILE)"; set +a; \
-	  password_var="$(SC_CLOSE_03_PASSWORD_VAR)"; \
-	  close_03_password="$${!password_var}"; \
-	  SC_CLOSE_03_BASE_URL="$(SC_CLOSE_03_BASE_URL)" \
+verify.backend.close_03.intake_autosave.samples: guard.prod.forbid acceptance.artifact.verify backend.acceptance.health
+	@SC_CLOSE_03_BASE_URL="$(SC_CLOSE_03_BASE_URL)" \
 	  SC_CLOSE_03_LOGIN="$(SC_CLOSE_03_LOGIN)" \
-	  SC_CLOSE_03_PASSWORD="$$close_03_password" \
+	  SC_CLOSE_03_PASSWORD="$(SC_ACCEPTANCE_FIXTURE_PASSWORD)" \
 	  SC_CLOSE_03_EXPECTED_SHA="$$(git rev-parse HEAD)" \
 	  SC_CLOSE_03_OUTPUT="$(SC_CLOSE_03_OUTPUT)" \
 	  node scripts/verify/close_03_intake_autosave_samples.mjs
@@ -455,6 +451,20 @@ verify.intake_autosave.contract.unit: guard.prod.forbid
 	  addons/smart_construction_core/tests/test_project_intake_contract_governance.py \
 	  scripts/verify/close_03_intake_autosave_samples_validate.py
 	@node --check scripts/verify/close_03_intake_autosave_samples.mjs
+	@node --check scripts/verify/close_03_project_intake_browser.mjs
+
+SC_CLOSE_03_BROWSER_OUTPUT ?= .runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/browser_journey
+SC_CLOSE_03_SAMPLE_SUMMARY ?= .runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/intake_autosave_samples/summary.json
+
+.PHONY: verify.frontend.close_03.project_intake.browser
+verify.frontend.close_03.project_intake.browser: guard.prod.forbid frontend.acceptance.health backend.acceptance.health
+	@SC_CLOSE_03_FRONTEND_URL="$${SC_CLOSE_03_FRONTEND_URL:-http://127.0.0.1:5175}" \
+	  SC_CLOSE_03_DB="sc_frontend_acceptance" \
+	  SC_CLOSE_03_LOGIN="$${SC_CLOSE_03_LOGIN:-fixture_role_config_admin}" \
+	  SC_CLOSE_03_PASSWORD="$(SC_ACCEPTANCE_FIXTURE_PASSWORD)" \
+	  SC_CLOSE_03_BROWSER_OUTPUT="$(SC_CLOSE_03_BROWSER_OUTPUT)" \
+	  SC_CLOSE_03_SAMPLE_SUMMARY="$(SC_CLOSE_03_SAMPLE_SUMMARY)" \
+	  node scripts/verify/close_03_project_intake_browser.mjs
 
 SC_CLOSE_02_BROWSER_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/browser_journeys
 

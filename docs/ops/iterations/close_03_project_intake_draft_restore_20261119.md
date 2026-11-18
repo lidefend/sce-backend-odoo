@@ -61,6 +61,7 @@ Status: surface generated and focused guards passed; complete release-surface ga
 - `construction.standard` exposes 132 released entries.
 - The compatibility `construction.preview` product key remains present with the same 132 released entries, while its product `state` remains `preview`.
 - The quick project-create entry is therefore also standard-released and receives an explicit five-field local-draft policy instead of inheriting the nine-field standard project-intake policy.
+- Runtime audit on the first candidate exposed persisted `construction.standard` still at 92 entries while `construction.preview` was 132. The maintained-policy synchronization intentionally does not overwrite existing rows. Migration `17.0.0.183` therefore adds only missing formal identities to standard and promotes rows explicitly still marked preview; unrelated operator edits remain untouched.
 
 ## FE-CLOSE-03
 
@@ -73,6 +74,13 @@ Consumption points under review:
 - `useRecordPageLifecycle.ts` defaults-before-restore ordering;
 - `useRecordFormActions.ts` post-create cleanup and attachment partial failure;
 - existing dirty, onchange, request-generation and form-instance identity tests.
+
+## FE results
+
+- Intake policy/storage runtime: 24 focused cases pass, including identity isolation, 24-hour expiry, corrupt/incompatible payload, storage quota failure, false/0/empty preservation, stale-token cleanup refusal and restore/discard.
+- Default hydration/create/dirty/occurrence families pass.
+- The acceptance journey exposed `ONCHANGE_SPEC_INVALID`: the client listed `validation_status` in `changed_fields` while omitting it from values. The common onchange request now filters changed names that are absent or undefined in the serialized values payload; a regression case covers the native intake shape.
+- Browser journey passes: save, refresh, restore prompt, typed/relation restore, local validation failure without create, corrected real create/readback, draft cleanup, new-form absence, payment-create isolation and saved-record isolation. The created synthetic project was removed through the governed unlink intent and readback returned zero.
 
 ## Results
 

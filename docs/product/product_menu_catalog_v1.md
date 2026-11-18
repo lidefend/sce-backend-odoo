@@ -4,18 +4,18 @@
 
 ## 运行时来源
 
-- database: `sc_ten_center_clean`
-- generated_at: `2026-08-11T18:13:29.901029+00:00`
+- database: `sc_dev_demo`
+- generated_at: `2026-11-18T21:03:54.707423+00:00`
 - roots: `smart_construction_core.menu_sc_root, smart_core.menu_smart_core_platform_root`
 - visible_login_probe: `admin`
 
 ## 总览
 
-- menu_count: `425`
-- active_menu_count: `318`
-- inactive_menu_count: `107`
-- action_menu_count: `344`
-- needs_review_count: `0`
+- menu_count: `429`
+- active_menu_count: `334`
+- inactive_menu_count: `95`
+- action_menu_count: `346`
+- needs_review_count: `1`
 - internal_history_business_visible_count: `0`
 - ordinary_business_system_config_visible_count: `0`
 - business_config_legacy_count: `0`
@@ -35,11 +35,11 @@
 
 | Layer | Count |
 | --- | ---: |
-| `formal_product` | 361 |
-| `system_config` | 32 |
+| `formal_product` | 368 |
+| `system_config` | 24 |
 | `user_config` | 0 |
-| `history_acceptance` | 5 |
-| `dev_governance` | 27 |
+| `history_acceptance` | 6 |
+| `dev_governance` | 31 |
 
 ## 正式产品入口概览
 
@@ -48,7 +48,7 @@
 | 智慧施工管理平台 / 产品配置 | `smart_construction_core.menu_sc_business_config_center` |  |
 | 智慧施工管理平台 / 会计账务中心 | `smart_construction_core.menu_sc_accounting_center` |  |
 | 智慧施工管理平台 / 合同中心 | `smart_construction_core.menu_sc_contract_center` |  |
-| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` |  |
+| 智慧施工管理平台 / 工作台 | `smart_construction_core.menu_sc_workspace_center` | admin |
 | 智慧施工管理平台 / 成本中心 | `smart_construction_core.menu_sc_cost_center` |  |
 | 智慧施工管理平台 / 报表中心 | `smart_construction_core.menu_sc_data_center` |  |
 | 智慧施工管理平台 / 税务中心 | `smart_construction_core.menu_sc_tax_center` |  |
@@ -67,7 +67,7 @@
 | 智慧施工管理平台 / 产品配置 | `formal_product` |  | `smart_construction_core.menu_sc_business_config_center` |
 | 智慧施工管理平台 / 会计账务中心 | `formal_product` |  | `smart_construction_core.menu_sc_accounting_center` |
 | 智慧施工管理平台 / 合同中心 | `formal_product` |  | `smart_construction_core.menu_sc_contract_center` |
-| 智慧施工管理平台 / 工作台 | `formal_product` |  | `smart_construction_core.menu_sc_workspace_center` |
+| 智慧施工管理平台 / 工作台 | `formal_product` | admin | `smart_construction_core.menu_sc_workspace_center` |
 | 智慧施工管理平台 / 成本中心 | `formal_product` |  | `smart_construction_core.menu_sc_cost_center` |
 | 智慧施工管理平台 / 报表中心 | `formal_product` |  | `smart_construction_core.menu_sc_data_center` |
 | 智慧施工管理平台 / 税务中心 | `formal_product` |  | `smart_construction_core.menu_sc_tax_center` |
@@ -93,15 +93,16 @@
     - 运营任务 [`dev_governance`] -> `sc.ops.job`
 - 智慧施工管理平台 [`formal_product`]
   - 产品配置 [`formal_product`]
+    - 业务场景 [`formal_product`] -> `sc.product.scenario`
     - 业务基础数据 [`formal_product` inactive]
       - 业务分类字典 [`system_config`] -> `sc.business.category`
       - 审批岗位人员 [`system_config`] -> `sc.approval.scope`
       - 数据字典 [`system_config`] -> `sc.dictionary`
       - 阶段要求配置 [`system_config`] -> `sc.project.stage.requirement.item`
       - 预算类型 [`system_config`] -> `project.cost.code`
+    - 企业初始化 [`formal_product`] -> `res.company`
     - 低代码系统配置 [`system_config` inactive]
       - 新增表单字段 [`system_config` inactive] -> `ui.form.custom.field.wizard`
-      - 菜单配置 [`system_config`] -> `ui.menu.config.policy`
     - 字段管理 [`formal_product`] -> `ui.form.field.policy`
     - 工作流运行数据 [`dev_governance` inactive]
       - 工作流实例 [`dev_governance`] -> `sc.workflow.instance`
@@ -111,6 +112,7 @@
     - 流程审批配置 [`system_config`] -> `sc.approval.policy`
     - 系统参数 [`system_config`] -> `sc.product.system.settings`
     - 编码规则 [`system_config`] -> `ir.sequence`
+    - 菜单配置 [`system_config`] -> `ui.menu.config.policy`
     - 表单配置 [`formal_product`] -> `ui.business.config.contract`
   - 会计账务中心 [`formal_product`]
     - 分析分配模型 [`formal_product`] -> `account.analytic.distribution.model`
@@ -120,6 +122,7 @@
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
     - 合同办理 [`formal_product` inactive] -> `construction.contract`
     - 合同变更 [`formal_product`] -> `sc.contract.change`
+    - 合同执行态势 [`formal_product`] -> `sc.contract.execution.position`
     - 合同管理 [`formal_product` inactive] -> `sc.expense.contract.ledger`
       - 一般合同（公司） [`formal_product`] -> `sc.general.contract`
       - 其他合同 [`formal_product`] -> `construction.contract.expense`
@@ -150,17 +153,19 @@
     - 收入结算 [`formal_product`] -> `sc.settlement.order`
     - 日常合同 [`formal_product`] -> `sc.general.contract`
     - 日常合同结算 [`formal_product`] -> `sc.settlement.order`
+    - 结算单 [`formal_product`] -> `sc.settlement.order`
   - 工作台 [`formal_product`]
     - 待办事项 [`formal_product`] -> `sc.workbench.item`
     - 我的审批 [`formal_product` inactive] -> `sc.workbench.item`
+    - 我的工作 [`formal_product`] -> `project.project`
     - 我的项目 [`formal_product` inactive] -> `project.project`
     - 数据总览 [`formal_product`] -> `sc.operating.metrics.project`
     - 消息通知 [`formal_product`] -> `mail.notification`
+    - 角色首页 [`formal_product`] -> `scene:workspace.home`
     - 项目看板 [`formal_product`] -> `project.project`
   - 成本中心 [`formal_product`]
     - WBS/分部分项 [`formal_product` inactive] -> `construction.work.breakdown`
     - 动态成本 [`formal_product` inactive]
-      - 成本台账 [`formal_product`] -> `project.cost.ledger`
       - 进度计量 [`formal_product`] -> `project.progress.entry`
     - 成本分析 [`formal_product` inactive]
       - 成本汇总 [`formal_product`] -> `project.cost.compare`
@@ -187,6 +192,8 @@
   - 报表中心 [`formal_product`]
     - 业务核算主体 [`formal_product` inactive] -> `sc.business.entity`
     - 劳务分包报表 [`formal_product`] -> `sc.labor.subcontract.report`
+    - 历史业务主体对照 [`history_acceptance`] -> `sc.business.entity`
+    - 成本台账 [`formal_product`] -> `project.cost.ledger`
     - 成本报表 [`formal_product` inactive]
     - 成本报表 [`formal_product`] -> `sc.comprehensive.cost.summary`
       - 发票分析报表 [`formal_product`] -> `sc.invoice.registration`
@@ -208,12 +215,11 @@
       - 经营大屏 [`formal_product`] -> `sc.operating.metrics.project`
       - 经营指标 [`formal_product` inactive]
       - 资金驾驶舱 [`formal_product`] -> `sc.dashboard.cockpit.fact`
+      - 项目驾驶舱 [`formal_product`] -> `project.project`
     - 财务分析 [`formal_product` inactive]
-      - 付款统计表 [`formal_product`] -> `sc.treasury.ledger`
       - 供应商账款 [`formal_product`] -> `sc.ar.ap.company.summary`
       - 客户账款 [`formal_product`] -> `sc.ar.ap.project.summary`
       - 收款统计表 [`formal_product`] -> `sc.treasury.ledger`
-      - 资金台账 [`formal_product`] -> `sc.treasury.ledger`
     - 资金报表 [`formal_product`] -> `sc.fund.daily.summary`
     - 项目报表 [`formal_product`] -> `sc.operating.metrics.project`
     - 预测预警（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
@@ -234,6 +240,10 @@
   - 系统管理（内部） [`system_config`]
     - 历史验收归档（内部） [`history_acceptance` inactive]
     - 场景与能力 [`dev_governance`]
+      - Scene Governance [`dev_governance`]
+        - Company Channels [`dev_governance`] -> `sc.scene.company.channel`
+        - Governance Actions [`dev_governance`] -> `sc.scene.governance.wizard`
+        - Governance Logs [`dev_governance`] -> `sc.scene.governance.log`
       - 交付包安装记录 [`dev_governance`] -> `sc.pack.installation`
       - 交付包注册表 [`dev_governance`] -> `sc.pack.registry`
       - 场景版本 [`dev_governance`] -> `sc.scene.version`
@@ -251,18 +261,9 @@
       - 定额中心（左树右明细） [`system_config`] -> `project.dictionary`
       - 定额子目 [`system_config`] -> `project.dictionary`
       - 定额层级 [`system_config`] -> `project.dictionary`
-    - 定额引擎 [`system_config`] -> `sc.norm.item`
-      - 专业维护 [`system_config`] -> `sc.norm.specialty`
-      - 定额库 [`system_config`] -> `sc.norm.item`
-      - 定额库版本维护 [`system_config`] -> `sc.norm.catalog`
-      - 定额项维护 [`system_config`] -> `sc.norm.item`
-      - 导入定额 [`system_config`] -> `sc.norm.import.wizard`
-      - 章节维护 [`system_config`] -> `sc.norm.chapter`
-      - 适用地区维护 [`system_config`] -> `sc.norm.region`
     - 工作流 [`dev_governance`]
       - 工作流定义 [`dev_governance`] -> `sc.workflow.def`
-    - 项目内部结构 [`formal_product`]
-      - 执行结构 [`formal_product`] -> `ir.actions.server`
+    - 项目内部结构 [`formal_product` review]
     - 项目管理（后台） [`dev_governance`] -> `project.project`
   - 行政中心 [`formal_product`]
     - 人事薪酬 [`formal_product` inactive]
@@ -296,9 +297,10 @@
       - 付款申请 [`formal_product` inactive] -> `payment.request`
       - 付款申请明细 [`formal_product` inactive] -> `payment.request.line`
       - 付款申请残余事实 [`formal_product` inactive] -> `sc.payment.execution`
+    - 付款分摊审计 [`formal_product`] -> `payment.ledger.allocation`
     - 付款申请 [`formal_product`] -> `payment.request`
     - 付款管理 [`formal_product` inactive]
-      - 支付申请 [`formal_product`] -> `payment.request`
+      - 付款申请 [`formal_product` inactive] -> `payment.request`
     - 保证金管理 [`formal_product` inactive]
       - 付款保证金退回 [`formal_product`] -> `sc.expense.claim`
       - 付款还保证金 [`formal_product`] -> `sc.expense.claim`
@@ -320,17 +322,17 @@
       - 销项调整记录 [`formal_product`] -> `sc.output.invoice.ledger`
     - 备用金 [`formal_product`] -> `sc.expense.claim`
     - 实付登记 [`formal_product`] -> `sc.payment.execution`
+    - 工程进度款收入登记 [`formal_product`] -> `sc.receipt.income`
     - 往来款登记 [`formal_product`] -> `sc.current.account.workspace`
     - 待我审批（付款申请） [`formal_product` inactive] -> `tier.review`
     - 扣款 [`formal_product` inactive]
     - 扣款与非现金 [`formal_product` inactive]
     - 扣款税费核对 [`history_acceptance` inactive]
+    - 支付台账 [`formal_product`] -> `payment.ledger`
     - 收付款办理 [`formal_product` inactive]
-      - 工程进度款收入登记 [`formal_product`] -> `sc.receipt.income`
       - 往来单位付款 [`formal_product`] -> `sc.payment.execution`
       - 收款申请 [`formal_product`] -> `payment.request`
       - 结算中心 [`formal_product`]
-        - 结算单 [`formal_product`] -> `sc.settlement.order`
         - 结算调整 [`formal_product`] -> `sc.settlement.adjustment`
     - 收支 [`formal_product` inactive]
     - 收款 [`formal_product` inactive]
@@ -379,13 +381,20 @@
       - 项目收付款来源明细 [`formal_product`] -> `sc.finance.business.fact`
       - 项目收付款汇总 [`formal_product`] -> `sc.finance.business.project.summary`
       - 项目资金总览 [`formal_product`] -> `sc.finance.project.capital.position`
+    - 资金台账 [`formal_product`] -> `sc.treasury.ledger`
     - 资金汇总 [`formal_product`] -> `project.funding.baseline`
     - 资金计划 [`formal_product` inactive]
       - 资金计划申报 [`formal_product`] -> `project.funding.baseline`
-    - 资金计划实际付款分配 [`formal_product` inactive] -> `project.funding.actual.event.allocation`
+    - 资金计划实际付款分配 [`formal_product`] -> `project.funding.actual.event.allocation`
     - 资金预测（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
     - 项目资金 [`formal_product` inactive]
   - 项目中心 [`formal_product`]
+    - 专业分包 [`formal_product`]
+      - 分包方单 [`formal_product`] -> `sc.subcontract.request`
+      - 分包申请 [`formal_product`] -> `sc.subcontract.request`
+      - 分包登记 [`formal_product`] -> `sc.subcontract.register`
+      - 分包结算 [`formal_product`] -> `sc.subcontract.settlement`
+      - 分包计划 [`formal_product`] -> `sc.subcontract.plan`
     - 分包成本 [`formal_product`]
       - 分包成本登记 [`formal_product`] -> `sc.subcontract.register`
       - 分包签证费用 [`formal_product`] -> `sc.site.variation`
@@ -393,102 +402,97 @@
       - 劳务实名制 [`formal_product`] -> `sc.labor.worker`
       - 劳务成本登记 [`formal_product`] -> `sc.labor.usage`
       - 劳务扣款明细 [`formal_product`] -> `sc.labor.deduction`
+    - 劳务管理 [`formal_product`]
+      - 劳务申请 [`formal_product`] -> `sc.labor.request`
+      - 劳务结算 [`formal_product`] -> `sc.labor.settlement`
+      - 劳务计划 [`formal_product`] -> `sc.labor.plan`
+      - 方单 [`formal_product`] -> `sc.labor.usage`
+      - 考勤记录 [`formal_product`] -> `sc.attendance.checkin`
+      - 零星用工 [`formal_product`] -> `sc.labor.usage`
+    - 周转材料租赁 [`formal_product`]
+      - 租赁单 [`formal_product`] -> `sc.material.rental.order`
+      - 租赁结算 [`formal_product`] -> `sc.material.rental.settlement`
+      - 租赁计划 [`formal_product`] -> `sc.material.rental.plan`
+    - 安全管理 [`formal_product`]
+      - 危险源 [`formal_product`] -> `sc.hazard.source`
+      - 安全交底 [`formal_product`] -> `sc.safety.disclosure`
+      - 安全复验 [`formal_product`] -> `sc.safety.recheck`
+      - 安全巡检 [`formal_product`] -> `sc.safety.patrol.task`
+      - 安全整改 [`formal_product`] -> `sc.safety.rectification`
+      - 安全方案 [`formal_product`] -> `sc.safety.plan`
+      - 风险库 [`formal_product`] -> `sc.risk.library`
     - 客商管理 [`formal_product`]
       - 供应商档案 [`formal_product`] -> `res.partner`
       - 客商黑名单 [`formal_product`] -> `res.partner`
       - 客户档案 [`formal_product`] -> `res.partner`
     - 招投标管理 [`formal_product`]
       - 中标管理 [`formal_product`] -> `tender.bid`
-      - 开标记录 [`formal_product` inactive] -> `tender.opening`
+      - 开标记录 [`formal_product`] -> `tender.opening`
       - 投标保证金 [`formal_product`] -> `tender.guarantee`
       - 投标准备 [`formal_product` inactive] -> `tender.bid`
       - 投标报名管理 [`formal_product` inactive] -> `tender.bid`
-      - 投标报名费申请 [`formal_product` inactive] -> `tender.doc.purchase`
+      - 投标报名费申请 [`formal_product`] -> `tender.doc.purchase`
       - 投标项目 [`formal_product`] -> `tender.bid`
       - 招标信息 [`formal_product`] -> `tender.opportunity`
       - 标书管理 [`formal_product`] -> `tender.document`
     - 施工管理 [`formal_product`]
       - BIM协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
       - 安全检查 [`formal_product`] -> `sc.safety.issue`
-      - 安全管理 [`formal_product` inactive]
-        - 危险源 [`formal_product`] -> `sc.hazard.source`
-        - 安全交底 [`formal_product`] -> `sc.safety.disclosure`
-        - 安全复验 [`formal_product`] -> `sc.safety.recheck`
-        - 安全巡检 [`formal_product`] -> `sc.safety.patrol.task`
-        - 安全整改 [`formal_product`] -> `sc.safety.rectification`
-        - 安全方案 [`formal_product`] -> `sc.safety.plan`
-        - 风险库 [`formal_product`] -> `sc.risk.library`
       - 工程资料 [`formal_product`] -> `sc.project.document`
+      - 执行结构 [`formal_product`] -> `construction.work.breakdown`
       - 施工日志 [`formal_product`] -> `sc.construction.diary`
       - 施工进度 [`formal_product`] -> `project.progress.entry`
       - 现场移动（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
       - 签证变更 [`formal_product`] -> `sc.site.variation`
-      - 质量管理 [`formal_product` inactive]
-        - 现场影像 [`formal_product`] -> `sc.site.photo.batch`
-        - 质量复验 [`formal_product`] -> `sc.quality.recheck`
-        - 质量整改 [`formal_product`] -> `sc.quality.rectification`
-        - 质量标准 [`formal_product`] -> `sc.check.standard`
-        - 质量检查 [`formal_product`] -> `sc.quality.issue`
       - 质量验收 [`formal_product`] -> `sc.quality.acceptance`
-      - 进度与施工 [`formal_product` inactive]
-        - 计划汇报 [`formal_product`] -> `sc.plan.report`
-        - 计划管理 [`formal_product`] -> `sc.plan`
     - 施工资料 [`formal_product` inactive]
       - 现场资料 [`formal_product`] -> `sc.project.document`
     - 机械成本 [`formal_product`]
       - 机械台班登记 [`formal_product`] -> `sc.equipment.usage`
+    - 机械设备 [`formal_product`]
+      - 机械台班记录 [`formal_product`] -> `sc.equipment.usage`
+      - 设备使用登记 [`formal_product`] -> `sc.equipment.usage`
+      - 设备申请 [`formal_product`] -> `sc.equipment.request`
+      - 设备结算 [`formal_product`] -> `sc.equipment.settlement`
+      - 设备计划 [`formal_product`] -> `sc.equipment.plan`
     - 材料成本 [`formal_product`]
-      - 专业分包 [`formal_product` inactive]
-        - 分包方单 [`formal_product`] -> `sc.subcontract.request`
-        - 分包申请 [`formal_product`] -> `sc.subcontract.request`
-        - 分包登记 [`formal_product`] -> `sc.subcontract.register`
-        - 分包结算 [`formal_product`] -> `sc.subcontract.settlement`
-        - 分包计划 [`formal_product`] -> `sc.subcontract.plan`
       - 供应链协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
-      - 劳务管理 [`formal_product` inactive]
-        - 劳务申请 [`formal_product`] -> `sc.labor.request`
-        - 劳务结算 [`formal_product`] -> `sc.labor.settlement`
-        - 劳务计划 [`formal_product`] -> `sc.labor.plan`
-        - 方单 [`formal_product`] -> `sc.labor.usage`
-        - 考勤记录 [`formal_product`] -> `sc.attendance.checkin`
-        - 零星用工 [`formal_product`] -> `sc.labor.usage`
-      - 周转材料租赁 [`formal_product` inactive]
-        - 租赁单 [`formal_product`] -> `sc.material.rental.order`
-        - 租赁结算 [`formal_product`] -> `sc.material.rental.settlement`
-        - 租赁计划 [`formal_product`] -> `sc.material.rental.plan`
       - 待我审批（物资计划） [`formal_product` inactive] -> `tier.review`
-      - 机械设备 [`formal_product` inactive]
-        - 机械台班记录 [`formal_product`] -> `sc.equipment.usage`
-        - 设备使用登记 [`formal_product`] -> `sc.equipment.usage`
-        - 设备申请 [`formal_product`] -> `sc.equipment.request`
-        - 设备结算 [`formal_product`] -> `sc.equipment.settlement`
-        - 设备计划 [`formal_product`] -> `sc.equipment.plan`
       - 材料入库 [`formal_product`] -> `sc.material.inbound`
       - 材料出库 [`formal_product`] -> `sc.material.outbound`
-      - 材料管理 [`formal_product` inactive]
-        - 报价单 [`formal_product`] -> `sc.material.rfq`
-        - 材料价格库 [`formal_product`] -> `sc.material.price`
-        - 材料损耗 [`formal_product`] -> `sc.material.outbound`
-        - 材料档案 [`formal_product`] -> `sc.material.catalog`
-        - 材料结算 [`formal_product`] -> `sc.material.settlement`
-        - 材料计划 [`formal_product`] -> `project.material.plan`
-        - 材料调拨 [`formal_product`] -> `sc.material.outbound`
-        - 材料进场验收 [`formal_product`] -> `sc.material.acceptance`
-        - 询比价 [`formal_product`] -> `sc.material.rfq`
-        - 退库办理 [`formal_product`] -> `sc.material.outbound`
-        - 采购申请 [`formal_product`] -> `sc.material.purchase.request`
-        - 采购订单 [`formal_product`] -> `purchase.order`
       - 材料退货 [`formal_product`] -> `sc.material.supplier.return`
+    - 材料管理 [`formal_product`]
+      - 报价单 [`formal_product`] -> `sc.material.rfq`
+      - 材料价格库 [`formal_product`] -> `sc.material.price`
+      - 材料损耗 [`formal_product`] -> `sc.material.outbound`
+      - 材料档案 [`formal_product`] -> `sc.material.catalog`
+      - 材料结算 [`formal_product`] -> `sc.material.settlement`
+      - 材料计划 [`formal_product`] -> `project.material.plan`
+      - 材料调拨 [`formal_product`] -> `sc.material.outbound`
+      - 材料进场验收 [`formal_product`] -> `sc.material.acceptance`
+      - 询比价 [`formal_product`] -> `sc.material.rfq`
+      - 退库办理 [`formal_product`] -> `sc.material.outbound`
+      - 采购申请 [`formal_product`] -> `sc.material.purchase.request`
+      - 采购订单 [`formal_product`] -> `purchase.order`
     - 班组借/扣款 [`formal_product`]
       - 班组借/扣款登记 [`formal_product`] -> `sc.team.loan.deduction.workspace`
+    - 质量管理 [`formal_product`]
+      - 现场影像 [`formal_product`] -> `sc.site.photo.batch`
+      - 质量复验 [`formal_product`] -> `sc.quality.recheck`
+      - 质量整改 [`formal_product`] -> `sc.quality.rectification`
+      - 质量标准 [`formal_product`] -> `sc.check.standard`
+      - 质量检查 [`formal_product`] -> `sc.quality.issue`
+    - 进度与施工 [`formal_product`]
+      - 计划汇报 [`formal_product`] -> `sc.plan.report`
+      - 计划管理 [`formal_product`] -> `sc.plan`
     - 里程碑管理（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
+    - 项目列表 [`formal_product`] -> `project.project`
     - 项目创建 [`formal_product`]
-      - 快速创建项目 [`formal_product` inactive] -> `project.project`
+      - 快速创建项目 [`formal_product`] -> `project.project`
       - 新项目立项 [`formal_product`] -> `project.project`
-      - 项目信息编辑 [`formal_product`] -> `project.project`
       - 项目启停管理 [`formal_product`] -> `project.project`
     - 项目协同（后续上线） [`formal_product` inactive] -> `sc.project.capability.roadmap`
-    - 项目台账 [`formal_product` inactive]
+    - 项目台账 [`formal_product`]
       - 项目台账 [`formal_product`] -> `project.project`
     - 项目总览 [`formal_product` inactive]
       - 项目驾驶舱 [`formal_product`] -> `project.project`
@@ -506,4 +510,6 @@
 
 ## 待复核队列
 
-未检测到需要人工复核的模糊菜单。
+| Path | Layer | Reason | XMLID |
+| --- | --- | --- | --- |
+| 智慧施工管理平台 / 系统管理（内部） / 项目内部结构 | `formal_product` | container_default | `smart_construction_core.menu_sc_project_internal_group_v2` |

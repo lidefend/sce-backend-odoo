@@ -17,6 +17,11 @@
       "owner": "construction-product-team",
       "reason": "CLOSE-03 focused ORM entry for ProjectIntakeContractGovernanceCase. It is selected by the affected-family plan and is also reusable for a single-family diagnosis without running the whole module."
     },
+    "verify.frontend.close_03.project_intake.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "construction-product-team",
+      "reason": "CLOSE-03 governed browser journey for save, restore prompt, relation hydration, validation retry, real create/readback/cleanup, and payment/detail isolation. It requires the existing acceptance carrier and is intentionally not part of offline lanes."
+    },
     "verify.smart_construction_core.close_03.module_baseline": {
       "disposition": "product_tooling",
       "owner": "construction-product-team",

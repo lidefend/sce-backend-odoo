@@ -1361,9 +1361,17 @@
     },
     "scripts/verify/close_03_intake_autosave_samples.mjs": {
       "status": "supported",
-      "reason": "Browser-authenticated Contract V2 sampling for standard intake, saved project and payment create boundaries.",
+      "reason": "Acceptance entry-authenticated Contract V2 sampling for standard intake, saved project and payment create boundaries.",
       "prior_recipe_targets": [
         "verify.backend.close_03.intake_autosave.samples"
+      ],
+      "audit_rules": []
+    },
+    "scripts/verify/close_03_project_intake_browser.mjs": {
+      "status": "supported",
+      "reason": "Governed acceptance journey for draft save, restore consent, validation retry, create identity, draft cleanup, and payment/detail isolation.",
+      "prior_recipe_targets": [
+        "verify.frontend.close_03.project_intake.browser"
       ],
       "audit_rules": []
     },

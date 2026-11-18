@@ -480,6 +480,106 @@ class ScProductPolicy(models.Model):
         return True
 
     @api.model
+    def promote_preview_entries_to_standard_release(self):
+        """Converge persisted policies after the 2026-11-19 preview promotion.
+
+        Existing maintained policies intentionally do not follow source-file
+        rewrites. This migration seam adds only missing formal menu identities,
+        then promotes rows explicitly classified as preview. Existing rows that
+        are already released or hidden, and unrelated operator edits, remain
+        untouched.
+        """
+        contract = load_locked_menu_policy_contract()
+        standard = contract["products"].get("construction.standard")
+        if not isinstance(standard, dict):
+            raise LockedMenuPolicyContractError(
+                "LOCKED_MENU_BASELINE_PRODUCT_MISMATCH",
+                "construction.standard",
+            )
+        standard_targets = [
+            _text(menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key"))
+            for group in standard.get("menu_groups") or []
+            for menu in group.get("menus") or []
+            if isinstance(menu, dict)
+        ]
+        merge = self._merge_locked_formal_menu_additions(
+            "construction.standard",
+            menu_xmlids=standard_targets,
+        )
+        promoted = set(merge["added"])
+        for product_key in ("construction.standard", "construction.preview"):
+            product = contract["products"].get(product_key)
+            if not isinstance(product, dict):
+                raise LockedMenuPolicyContractError(
+                    "LOCKED_MENU_BASELINE_PRODUCT_MISMATCH",
+                    product_key,
+                )
+            desired = {}
+            for group in product.get("menu_groups") or []:
+                for menu in group.get("menus") or []:
+                    if not isinstance(menu, dict):
+                        continue
+                    menu_xmlid = _text(
+                        menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key")
+                    )
+                    if menu_xmlid:
+                        desired[menu_xmlid] = menu
+            rec = self.sudo().with_context(active_test=False).search([
+                ("product_key", "=", product_key),
+            ], limit=1)
+            if not rec:
+                continue
+            groups = deepcopy(rec.menu_groups or [])
+            capabilities = deepcopy(rec.capabilities or [])
+            changed = 0
+            for group in groups:
+                if not isinstance(group, dict):
+                    continue
+                for menu in group.get("menus") or []:
+                    if not isinstance(menu, dict):
+                        continue
+                    menu_xmlid = _text(
+                        menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key")
+                    )
+                    release = desired.get(menu_xmlid)
+                    if not release or _text(release.get("release_state")) != "released":
+                        continue
+                    if _text(menu.get("release_state")) != "preview":
+                        continue
+                    menu["release_state"] = "released"
+                    menu["enabled"] = True
+                    menu["capability_maturity"] = _text(
+                        release.get("capability_maturity")
+                    ) or "RELEASED_FOUNDATION"
+                    promoted.add(menu_xmlid)
+                    changed += 1
+            for capability in capabilities:
+                if not isinstance(capability, dict):
+                    continue
+                menu_xmlid = _text(capability.get("menu_xmlid"))
+                release = desired.get(menu_xmlid)
+                if not release or _text(release.get("release_state")) != "released":
+                    continue
+                if _text(capability.get("release_state")) != "preview":
+                    continue
+                capability["release_state"] = "released"
+                capability["capability_maturity"] = _text(
+                    release.get("capability_maturity")
+                ) or "RELEASED_FOUNDATION"
+                changed += 1
+            if changed:
+                rec.write({
+                    "menu_groups": groups,
+                    "capabilities": capabilities,
+                })
+        self.env.registry.clear_cache()
+        return {
+            "standard_added": list(merge["added"]),
+            "promoted_entry_count": len(promoted),
+            "promoted_entry_xmlids": sorted(promoted),
+        }
+
+    @api.model
     def apply_entry_group_rebinding(self):
         """Rebind the 68 cross-domain menus to their entry exposure groups.
 

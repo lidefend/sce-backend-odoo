@@ -19,6 +19,9 @@
     "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/tests/",
     "addons/smart_construction_core/services/contract_governance_overrides.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/migrations/17.0.0.183/",
+    "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
     "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
@@ -29,6 +32,7 @@
     "frontend/apps/web/src/app/contracts/v2/",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/contractForm/",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
     "frontend/apps/web/scripts/",
     "make/ci.mk",
     "make/frontend.mk",
@@ -41,6 +45,8 @@
     "docs/audit/test_coverage_registry/",
     "docs/engineering_convergence/",
     "docs/frontend_productization/",
+    "docs/product/product_menu_blueprint_v1.md",
+    "docs/product/product_menu_catalog_v1.md",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_baseline.json",
@@ -53,13 +59,13 @@
   "stages": [
     {
       "id": "BE-CLOSE-03",
-      "status": "active",
+      "status": "completed",
       "owner": "single_writer",
-      "exit": "Complete policy projection and three real create/record samples bound to the acceptance runtime"
+      "exit": "Persisted standard/preview policy promotion, complete policy projection, and three real create/record samples bound to the acceptance runtime"
     },
     {
       "id": "FE-CLOSE-03",
-      "status": "planned",
+      "status": "active",
       "owner": "single_writer",
       "exit": "Policy-driven local draft persistence, restore, save cleanup and user feedback close on the backend candidate"
     },
@@ -148,6 +154,17 @@
       "inputs": [
         "addons/smart_construction_core/",
         "make/ci.mk"
+      ]
+    },
+    "preview_promotion_migration": {
+      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "kind": "orm",
+      "inputs": [
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py"
       ]
     },
     "product_menu_contract": {
@@ -261,6 +278,17 @@
         "make/frontend.mk"
       ]
     },
+    "project_intake_browser": {
+      "target": "verify.frontend.close_03.project_intake.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/ci.mk",
+        "scripts/verify/close_03_project_intake_browser.mjs",
+        "scripts/verify/close_03_intake_autosave_samples.mjs"
+      ]
+    },
     "frontend_lint": {
       "target": "verify.frontend.lint.src",
       "kind": "offline",
@@ -288,5 +316,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Fix the sample login wait, rerun the standard-create/existing-record/payment-create real contract samples against the exact candidate, then close frontend validation, the complete release-surface gate set and the protected PR."
+  "next_exact_step": "Commit and run migration 17.0.0.183 on the governed dev and acceptance carriers, verify standard/preview policies both contain 132 released entries, then finish frontend commit, remote CI, independent review and protected merge."
 }

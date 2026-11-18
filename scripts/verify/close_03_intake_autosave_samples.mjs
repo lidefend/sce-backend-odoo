@@ -3,17 +3,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { createRequire } from 'node:module';
-import {
-  authenticateBrowserProbe,
-  fillLoginCredentials,
-  successfulIntentData,
-} from './frontend_authenticated_intent.mjs';
-
-const requireBase = fs.existsSync(path.join(process.cwd(), 'frontend/apps/web/package.json'))
-  ? path.join(process.cwd(), 'frontend/apps/web/package.json')
-  : path.join(process.cwd(), 'package.json');
-const { chromium } = createRequire(requireBase)('playwright');
+import { successfulIntentData } from './frontend_authenticated_intent.mjs';
 
 const BASE_URL = String(process.env.SC_CLOSE_03_BASE_URL || 'http://127.0.0.1:18081/t/demo').replace(/\/+$/, '');
 const LOGIN = String(process.env.SC_CLOSE_03_LOGIN || 'wutao').trim();
@@ -61,12 +51,77 @@ function writeJson(relativePath, value) {
   return path.relative(OUTPUT_DIR, target).split(path.sep).join('/');
 }
 
+function acceptanceEntryHeaders() {
+  const identityPath = path.resolve('config/acceptance/isolated_entry_identity.v1.env');
+  const values = {};
+  for (const line of fs.readFileSync(identityPath, 'utf8').split(/\r?\n/)) {
+    const clean = line.trim();
+    if (!clean || clean.startsWith('#') || !clean.includes('=')) continue;
+    const [key, ...rest] = clean.split('=');
+    values[key.trim()] = rest.join('=').trim();
+  }
+  return {
+    'X-SC-Namespace': values.SC_ENTRY_NAMESPACE || '',
+    'X-SC-Audience': values.SC_ENTRY_AUDIENCE || '',
+    'X-SC-Entry-Secret': values.SC_ENTRY_SHARED_SECRET || '',
+    'X-SC-Route-Version': values.SC_ENTRY_ROUTE_VERSION || '',
+  };
+}
+
+async function createDirectTransport() {
+  const entryHeaders = acceptanceEntryHeaders();
+  assert(Object.values(entryHeaders).every(Boolean), 'acceptance entry identity is incomplete');
+  let token = '';
+
+  const post = async (payload, anonymous = false) => {
+    const response = await fetch(`${BASE_URL}/api/v1/intent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...entryHeaders,
+        ...(anonymous ? { 'X-Anonymous-Intent': 'true' } : {}),
+        ...(!anonymous && token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+
+  const login = await post({
+    intent: 'login',
+    params: { login: LOGIN, password: PASSWORD, contract_mode: 'default' },
+  }, true);
+  const loginData = success(login, 'login');
+  token = String(loginData?.session?.token || loginData?.token || '').trim();
+  assert(token, 'login did not issue a token');
+
+  const replayIntent = async (_context, intent, params) => post({
+    intent,
+    params,
+    context: { lang: 'zh_CN', tz: 'Asia/Shanghai' },
+  });
+  const getRuntime = async () => {
+    const response = await fetch(`${BASE_URL}/api/runtime-version`, { headers: entryHeaders });
+    assert(response.ok, `runtime-version rejected (HTTP ${response.status})`);
+    return response.json();
+  };
+  return { replayIntent, getRuntime };
+}
+
 function unwrap(body) {
   return body?.data || body?.result || body;
 }
 
 function success(result, label) {
   return successfulIntentData(result.status, result.body, label);
+}
+
+async function stage(label, promise) {
+  try {
+    return await promise;
+  } catch (error) {
+    throw new Error(`${label}: ${error?.message || error}`);
+  }
 }
 
 function walkNav(nodes, rows = []) {
@@ -85,19 +140,29 @@ function walkNav(nodes, rows = []) {
   return rows;
 }
 
-async function lookupXmlids(requestContext, replayIntent, module, names) {
-  const { status, body } = await replayIntent(requestContext, 'api.data', {
-    op: 'list',
-    model: 'ir.model.data',
-    fields: ['module', 'name', 'res_id'],
-    domain: [
-      ['module', '=', module],
-      ['name', 'in', names],
-    ],
-    limit: names.length + 5,
-  });
-  const data = success({ status, body }, 'ir.model.data');
-  return new Map((data.records || []).map((row) => [String(row.name), Number(row.res_id || 0)]));
+function findEntryIdentities(value, menuXmlid) {
+  const rows = [];
+  const visit = (candidate) => {
+    if (Array.isArray(candidate)) {
+      candidate.forEach(visit);
+      return;
+    }
+    if (!candidate || typeof candidate !== 'object') return;
+    const compatibility = candidate.entry_target?.compatibility_refs || {};
+    const declaredMenu = String(candidate.menu_xmlid || candidate.menu_key || '').trim();
+    if (declaredMenu === menuXmlid) {
+      rows.push({
+        menuId: Number(candidate.menu_id || candidate.config_menu_id || compatibility.menu_id || 0),
+        actionId: Number(candidate.action_id || compatibility.action_id || 0),
+        menuXmlid: declaredMenu,
+        actionXmlid: String(candidate.action_xmlid || compatibility.action_xmlid || '').trim(),
+        model: String(candidate.model || candidate.res_model || '').trim(),
+      });
+    }
+    Object.values(candidate).forEach(visit);
+  };
+  visit(value);
+  return rows;
 }
 
 function policyOf(contract) {
@@ -157,7 +222,7 @@ function createParams(entry, identity) {
     client_type: 'web_pc',
     delivery_profile: 'full',
     contract_surface: 'user',
-    source_mode: 'governance',
+    source_mode: 'governance_pipeline',
     context: entry.intakeMode ? { intake_mode: entry.intakeMode } : undefined,
   };
 }
@@ -165,11 +230,14 @@ function createParams(entry, identity) {
 function minimalCreateValues(policy, actorId) {
   const values = {};
   for (const field of policy.fields || []) {
+    if (field.inputKind === 'relation' && field.relation === 'res.users' && actorId > 0) {
+      values[field.name] = actorId;
+      continue;
+    }
     if (!field.required) continue;
     if (field.inputKind === 'text') values[field.name] = field.name === 'name' ? 'CLOSE-03 project intake' : '';
     else if (field.inputKind === 'date') values[field.name] = new Date().toISOString().slice(0, 10);
     else if (field.inputKind === 'datetime') values[field.name] = new Date().toISOString().slice(0, 19);
-    else if (field.inputKind === 'relation' && field.relation === 'res.users') values[field.name] = actorId;
     else if (field.inputKind === 'selection') values[field.name] = field.constraints?.allowedValues?.[0] || '';
     else if (field.inputKind === 'integer') values[field.name] = 0;
     else if (field.inputKind === 'decimal') values[field.name] = 0;
@@ -182,29 +250,15 @@ async function main() {
   assert(PASSWORD, 'SC_CLOSE_03_PASSWORD is required');
   fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ baseURL: BASE_URL });
-  const page = await context.newPage();
   const assertions = [];
   const check = (name, condition, detail = '') => {
     assertions.push({ name, status: condition ? 'passed' : 'failed', detail: String(detail || '') });
     assert(condition, `${name}${detail ? `: ${detail}` : ''}`);
   };
 
-  try {
-    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    // The application redirects the root entry into the tenant login route and
-    // hydrates the form after DOMContentLoaded. Starting the credential fill
-    // before that boundary races a transient empty submit and yields 401.
-    await page.locator('#login-username, input[autocomplete="username"]').first()
-      .waitFor({ state: 'visible', timeout: 45000 });
-    const replayIntent = await authenticateBrowserProbe(
-      page,
-      LOGIN,
-      async () => fillLoginCredentials(page, LOGIN, PASSWORD).then(
-        () => page.locator('button[type="submit"]').first().click(),
-      ),
-    );
+  {
+    const { replayIntent, getRuntime } = await createDirectTransport();
+    const context = null;
     const { status: systemStatus, body: systemBody } = await replayIntent(context, 'system.init', {
       scene: 'web',
       with_preload: false,
@@ -212,27 +266,39 @@ async function main() {
       with: ['workspace_home'],
     });
     const systemData = success({ status: systemStatus, body: systemBody }, 'system.init');
-    const runtimeResponse = await context.request.get(`${BASE_URL}/api/runtime-version`);
-    const runtime = await runtimeResponse.json();
+    const runtime = await getRuntime();
     const servedSha = String(runtime.git_sha || runtime.source_revision || '').trim();
     if (servedSha && EXPECTED_SHA) check('runtime_source_sha', servedSha === EXPECTED_SHA, `${servedSha} != ${EXPECTED_SHA}`);
     const actor = systemData?.user || {};
     const recordContext = systemData?.record_context || {};
     const navRows = walkNav(systemData?.navigation?.nav || []);
+    writeJson('system.init.json', systemData);
 
     async function resolve(entry) {
-      const nav = navRows.find((row) => row.xmlid === `${entry.module}.${entry.menu}`) || {};
-      const xmlids = await lookupXmlids(context, replayIntent, entry.module, [entry.menu, entry.action]);
-      const menuId = Number(nav.menuId || xmlids.get(entry.menu) || 0);
-      const actionId = Number(nav.actionId || xmlids.get(entry.action) || 0);
+      const menuXmlid = `${entry.module}.${entry.menu}`;
+      const actionXmlid = `${entry.module}.${entry.action}`;
+      const nav = navRows.find((row) => row.xmlid === menuXmlid) || {};
+      const declared = findEntryIdentities(systemData, menuXmlid)
+        .find((row) => row.menuId > 0 && row.actionId > 0) || {};
+      const menuId = Number(nav.menuId || declared.menuId || 0);
+      const actionId = Number(nav.actionId || declared.actionId || 0);
       check(`${entry.key}.menu_resolved`, menuId > 0, menuId);
       check(`${entry.key}.action_resolved`, actionId > 0, actionId);
-      return { menuId, actionId };
+      check(
+        `${entry.key}.action_identity`,
+        !declared.actionXmlid || declared.actionXmlid === actionXmlid,
+        declared.actionXmlid,
+      );
+      return { menuId, actionId, menuXmlid, actionXmlid };
     }
 
     const intakeIdentity = await resolve(ENTRIES.intake);
+    writeJson('project_intake/identity.json', intakeIdentity);
     const intakeParams = createParams(ENTRIES.intake, intakeIdentity);
-    const { status: intakeStatus, body: intakeBody } = await replayIntent(context, 'ui.contract.v2', intakeParams);
+    const { status: intakeStatus, body: intakeBody } = await stage(
+      'project_intake.contract',
+      replayIntent(context, 'ui.contract.v2', intakeParams),
+    );
     const intakeContract = success({ status: intakeStatus, body: intakeBody }, 'project_intake.ui.contract.v2');
     const intakePolicy = policyOf(intakeContract);
     assertPolicy(intakePolicy, 'project_intake');
@@ -254,7 +320,8 @@ async function main() {
     const projectId = Number(projectData?.records?.[0]?.id || 0);
     check('project_record.id_resolved', projectId > 0, projectId);
     const recordIdentity = await resolve(ENTRIES.record);
-    const { status: recordStatus, body: recordBody } = await replayIntent(context, 'ui.contract.v2', {
+    writeJson('project_record/identity.json', recordIdentity);
+    const { status: recordStatus, body: recordBody } = await stage('project_record.contract', replayIntent(context, 'ui.contract.v2', {
       op: 'action_open',
       action_id: recordIdentity.actionId,
       menu_id: recordIdentity.menuId,
@@ -264,14 +331,18 @@ async function main() {
       client_type: 'web_pc',
       delivery_profile: 'full',
       contract_surface: 'user',
-      source_mode: 'governance',
-    });
+      source_mode: 'governance_pipeline',
+    }));
     const recordContract = success({ status: recordStatus, body: recordBody }, 'project_record.ui.contract.v2');
     assertNoPolicy(recordContract, 'project_record');
 
     const paymentIdentity = await resolve(ENTRIES.payment);
+    writeJson('payment_create/identity.json', paymentIdentity);
     const paymentParams = createParams(ENTRIES.payment, paymentIdentity);
-    const { status: paymentStatus, body: paymentBody } = await replayIntent(context, 'ui.contract.v2', paymentParams);
+    const { status: paymentStatus, body: paymentBody } = await stage(
+      'payment_create.contract',
+      replayIntent(context, 'ui.contract.v2', paymentParams),
+    );
     const paymentContract = success({ status: paymentStatus, body: paymentBody }, 'payment_create.ui.contract.v2');
     assertNoPolicy(paymentContract, 'payment_create');
 
@@ -334,9 +405,6 @@ async function main() {
     };
     const summaryPath = writeJson('summary.json', summary);
     process.stdout.write(`[close-03-intake-samples] PASS assertions=${assertions.length} summary=${summaryPath}\n`);
-  } finally {
-    await context.close();
-    await browser.close();
   }
 }
 

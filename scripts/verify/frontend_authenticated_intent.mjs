@@ -3,7 +3,21 @@
 export function successfulIntentData(status, body, label) {
   if (status < 200 || status >= 300 || !body || body.ok === false || body.error
       || Number(body.code || 0) >= 400) {
-    throw new Error(`${label}: intent request rejected (HTTP ${status})`);
+    const error = body?.error && typeof body.error === 'object' ? body.error : {};
+    const code = String(error.code || body?.code || '').trim();
+    const reason = String(error.reason_code || '').trim();
+    const failure = new Error(
+      `${label}: intent request rejected (HTTP ${status}`
+      + `${code ? `, code=${code}` : ''}${reason ? `, reason=${reason}` : ''})`,
+    );
+    failure.safeDetails = {
+      status,
+      code,
+      reason_code: reason,
+      message: String(error.message || '').trim().slice(0, 240),
+      details: error.details && typeof error.details === 'object' ? error.details : {},
+    };
+    throw failure;
   }
   return body.result || body.data || body;
 }
