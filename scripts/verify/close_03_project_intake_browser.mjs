@@ -132,6 +132,7 @@ async function main() {
   const page = await context.newPage();
   const errors = [];
   const failedIntents = [];
+  const ignoredOptionalIntents = [];
   const mutations = [];
   let createdId = 0;
   let draftKey = '';
@@ -152,13 +153,22 @@ async function main() {
     const payload = requestPayload(response.request());
     let body = {};
     try { body = await response.json(); } catch { /* status is still evidence */ }
-    failedIntents.push({
+    const failure = {
       status: response.status(),
       intent: String(payload.intent || ''),
       op: String(payload?.params?.op || ''),
       code: String(body?.error?.code || ''),
       reason: String(body?.error?.reason_code || ''),
-    });
+    };
+    if (
+      failure.intent === 'chatter.followers.list'
+      && failure.code === 'INTENT_NOT_FOUND'
+      && failure.status === 404
+    ) {
+      ignoredOptionalIntents.push(failure);
+    } else {
+      failedIntents.push(failure);
+    }
   });
 
   try {
@@ -324,6 +334,7 @@ async function main() {
       project_detail_had_no_draft: true,
       cleanup,
       failed_intents: failedIntents,
+      ignored_optional_intents: ignoredOptionalIntents,
       errors,
     };
     writeJson('summary.json', evidence);

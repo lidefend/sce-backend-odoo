@@ -165,6 +165,40 @@ function harness(options: {
   assert.equal(h.dirtyFieldSet.has('active'), true, 'a different boolean is dirty');
 }
 
+// 4a. A declared field with no current value cannot be sent as a changed field:
+//     the native onchange handler requires every changed name to exist in the
+//     values payload. This happens for invisible computed companions such as
+//     validation_status on the project-intake form.
+{
+  const h = harness({
+    fields: {
+      name: { ttype: 'char', name: 'name' },
+    },
+    formData: { name: 'Before' },
+    originalValues: { name: 'Before' },
+    rules: [SERVER_RULE, {
+      sourceWidgetId: 'field.validation_status',
+      triggerType: 'change',
+      dispatchMode: 'server',
+    }],
+  });
+  let request: Record<string, unknown> | null = null;
+  h.context.requestOnchange = async (params: Record<string, unknown>) => {
+    request = params;
+    return { patch: {} };
+  };
+  h.api.setTextField('name', 'After');
+  h.changedFieldSet.add('validation_status');
+  h.stopTimer();
+  await h.api.runOnchangeRoundtrip();
+  assert.ok(request, 'valid changed input must still dispatch');
+  assert.deepEqual(
+    (request as Record<string, unknown>).changed_fields,
+    ['name'],
+    'changed fields absent from the values payload must be filtered',
+  );
+}
+
 // 5. A relation search keyword is a transient input buffer, never a field value:
 //    it has no delivered-record baseline to differ from. The live contract
 //    declares `tag_ids` on the project ledger edit layout with

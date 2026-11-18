@@ -65,13 +65,13 @@
     },
     {
       "id": "FE-CLOSE-03",
-      "status": "active",
+      "status": "completed",
       "owner": "single_writer",
       "exit": "Policy-driven local draft persistence, restore, save cleanup and user feedback close on the backend candidate"
     },
     {
       "id": "JOINT-CLOSE-03",
-      "status": "planned",
+      "status": "active",
       "owner": "single_writer",
       "exit": "Formal project-intake journey, negative boundaries, independent review and current-candidate gates complete"
     }
@@ -315,6 +315,8 @@
       ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Commit and run migration 17.0.0.183 on the governed dev and acceptance carriers, verify standard/preview policies both contain 132 released entries, then finish frontend commit, remote CI, independent review and protected merge."
+  "blockers": [
+    "Pre-existing release-surface runtime guard mismatches remain outside CLOSE-03 behavior: cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native delivery with an empty native-nav fixture. The migrated product policy itself reports 132 entries for both construction.standard and construction.preview."
+  ],
+  "next_exact_step": "Commit the frontend consumption and regression fixes, run ci.local.iteration and freeze preparation, then publish one exact-head PR and wait for the four required checks and independent review."
 }
