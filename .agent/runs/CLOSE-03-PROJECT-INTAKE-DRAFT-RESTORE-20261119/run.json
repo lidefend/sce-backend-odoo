@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "id": "CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119",
+  "branch": "feature/close-03-project-intake-draft-restore-20261119",
+  "baseline_sha": "c365db1eae1ae8c4e2efab649c609ea1aebd8a0b",
+  "status": "active",
+  "goal": ".agent/goals/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119.yaml",
+  "record": "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118.yaml",
+    ".agent/goals/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119.yaml",
+    ".agent/runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/run.json",
+    ".agent/runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/run.json",
+    "docs/architecture/unified_page_contract_v2/",
+    "docs/ops/iterations/close_02_field_query_sort_detail_20261118.md",
+    "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_core/services/contract_governance_overrides.py",
+    "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+    "frontend/apps/web/src/app/contracts/v2/",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/",
+    "frontend/apps/web/scripts/",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "scripts/verify/",
+    "config/frontend/probe_toolchain_registry.json",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Registered local.test, local.dev and acceptance Make entries only; no manual Compose, database, port, volume or credential assembly"
+  },
+  "stages": [
+    {
+      "id": "BE-CLOSE-03",
+      "status": "active",
+      "owner": "single_writer",
+      "exit": "Complete policy projection and three real create/record samples bound to the acceptance runtime"
+    },
+    {
+      "id": "FE-CLOSE-03",
+      "status": "planned",
+      "owner": "single_writer",
+      "exit": "Policy-driven local draft persistence, restore, save cleanup and user feedback close on the backend candidate"
+    },
+    {
+      "id": "JOINT-CLOSE-03",
+      "status": "planned",
+      "owner": "single_writer",
+      "exit": "Formal project-intake journey, negative boundaries, independent review and current-candidate gates complete"
+    }
+  ],
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "unified_page_contract_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/",
+        "make/ci.mk",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py"
+      ]
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "frontend/apps/web/src",
+        "make/frontend.mk",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py"
+      ]
+    },
+    "unified_page_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ]
+    },
+    "unified_page_contract_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py",
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_runtime_guard.py"
+      ]
+    },
+    "native_action_contract": {
+      "target": "verify.native_action.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/native_action_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "make/guards.mk",
+        "scripts/verify/test_native_action_contract.py"
+      ]
+    },
+    "create_default_hydration": {
+      "target": "verify.frontend.create_default_hydration.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/create_default_hydration_test.ts",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/frontend.mk"
+      ]
+    },
+    "create_record_user_journey": {
+      "target": "verify.frontend.create_record_user_journey.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/create_record_user_journey_test.ts",
+        "frontend/apps/web/scripts/native_attachment_partial_failure_test.mjs",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_form_save_failure_recovery": {
+      "target": "verify.frontend.contract_form_save_failure_recovery.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_form_save_failure_recovery_test.ts",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_form_dirty_semantics": {
+      "target": "verify.frontend.contract_form_dirty_semantics.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_form_dirty_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_field_occurrence_identity": {
+      "target": "verify.frontend.contract_field_occurrence_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_field_occurrence_identity_test.ts",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ]
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/src",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Register the project-intake policy and final Contract V2 projection tests, then produce the standard-create, existing-record and payment-create real contract samples."
+}

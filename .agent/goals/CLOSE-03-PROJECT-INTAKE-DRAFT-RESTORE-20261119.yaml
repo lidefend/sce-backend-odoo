@@ -1,0 +1,82 @@
+schema_version: 1
+goal:
+  id: CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119
+  status: active
+  formal_product_layer: P1/P0
+  layer_target: >-
+    Project intake local-draft policy, Contract V2 intakeAutosave projection, and
+    shared create-form restore/save/cleanup runtime
+  module:
+    - addons/smart_construction_core
+    - addons/smart_core
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Users who refresh or are interrupted while entering a new project can restore
+    only the policy-allowed input, continue normal validation and create the record;
+    after creation succeeds, the matching local intake draft no longer appears.
+  product_result: >-
+    The released project-intake entry shows a restore-or-discard prompt for a valid
+    local draft, restores typed and relation values through the normal form pipeline,
+    retains the draft after explicit failure, and removes it after a real record
+    identity is created; payment-create and existing-record surfaces do not restore
+    project-intake input.
+  why_here: >-
+    smart_construction_core owns the project-intake business scope and field policy;
+    smart_core owns the generic Contract V2 schema/projection carrier; the frontend
+    owns browser-local persistence mechanics and interaction. The 24-hour retention
+    rule is a P1 standard-product policy and must be declared before consumption.
+  why_not_elsewhere:
+    - The frontend must not infer allowed fields, scope, expiry or recovery behavior.
+    - P2 customer preferences and P3 runtime configuration are not the source of this standard policy.
+    - Odoo records are not created during local draft collection; the existing create chain remains authoritative.
+    - Attachments, binary data, unsaved child records, workflow state and other entries are outside this local-draft carrier.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_initiation
+      - smart_construction_core.menu_sc_user_payment_apply
+      - project.project existing-record form
+      - smart_construction_core.menu_sc_project_quick_create
+    behavior:
+      - Contract V2 runtimeContract.intakeAutosave
+      - browser-local policy-scoped draft persistence
+      - normal create-form hydration, validation, onchange and save
+      - post-create draft cleanup including attachment partial failure
+      - tenant, user, company, entry and form-instance isolation
+  backend_stage:
+    id: BE-CLOSE-03
+    status: active
+    acceptance:
+      - Project-intake create contracts carry a complete, schema-valid intakeAutosave policy.
+      - The standard intake policy is enabled only for create input with explicit allowed fields, 24-hour retention, storage and recovery semantics.
+      - The allowed fields are intersected with the effective create form and current field rights.
+      - Existing project records and payment request create contracts do not enable intake recovery.
+      - Real samples bind menu/action/model/view identities and provide minimal valid create input.
+  frontend_stage:
+    id: FE-CLOSE-03
+    status: read_only_preparation
+    acceptance:
+      - The frontend consumes only complete backend policy and fails closed when enabled declarations are incomplete.
+      - Draft keys include tenant, user, company, entry and form-instance identity and use policy compatibility version rather than deployment SHA.
+      - Recovery occurs after contract/defaults readiness and before autosave, dirty propagation and interactive tabs.
+      - false, 0, empty string, deliberate clearing and relation IDs survive policy-scoped normalization and hydration.
+      - Creation identity clears the exact initiating draft even when attachment upload fails; stale requests cannot clear or repopulate another instance.
+      - Storage failure preserves manual create behavior and is reported without claiming the whole document is saved.
+  joint_acceptance:
+    - Released project-intake journey completes input, refresh/reopen, restore, explicit failure, correction, create, identity readback and draft absence.
+    - Payment create does not inherit project-intake drafts.
+    - Existing project record does not expose new-input recovery.
+    - Quick project create remains preview-scoped and isolated.
+    - Owning module baseline, affected frontend tests, lint, strict typecheck, production build and bound browser evidence pass.
+  exclusions:
+    - Attachments, binary values, unsaved child-record commands and workflow state in local drafts.
+    - Autosave for record-edit mode or any entry without an explicit enabled policy.
+    - Backend-created draft records or server-side restore storage.
+    - Search, renderer and full-entry acceptance.
+    - Deployment, release and product-delivery claims.
+  rollback: >-
+    Revert the P1 policy declaration, P0 Contract V2 projection/schema, and shared
+    create-form local-draft runtime. Browser-local drafts are non-authoritative and
+    may be cleared without database migration or business-data restoration.

@@ -3,7 +3,7 @@
   "id": "CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118",
   "branch": "feature/close-02-field-query-sort-detail-20261118",
   "baseline_sha": "7fe5dd7652204b3f0b678c07d51ae98d6e25b848",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118.yaml",
   "record": "docs/ops/iterations/close_02_field_query_sort_detail_20261118.md",
   "scope": [
@@ -74,9 +74,13 @@
     },
     {
       "id": "JOINT-CLOSE-02",
-      "status": "planned",
+      "status": "completed",
       "owner": "single_writer",
-      "exit": "Both bounded entry journeys, independent review and exact-candidate gates complete"
+      "exit": "Both bounded entry journeys, independent review and exact-candidate gates complete",
+      "pr": 936,
+      "pr_head": "ea60be692fd741450b431fe945e803a0178598d2",
+      "merge_commit": "c365db1eae1ae8c4e2efab649c609ea1aebd8a0b",
+      "integrated_tree": "2992f984f80e71efb9219193327d39885c327aca"
     }
   ],
   "checks": {
@@ -486,5 +490,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Record exact-candidate evidence, complete independent review, publish one protected CLOSE-02 PR and verify all four required checks on its head."
+  "next_exact_step": "Closed: PR #936 merged at c365db1eae1ae8c4e2efab649c609ea1aebd8a0b with the reviewed candidate tree 2992f984f80e71efb9219193327d39885c327aca. CLOSE-03 is the next active product batch."
 }
