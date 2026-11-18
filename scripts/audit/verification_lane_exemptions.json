@@ -179,6 +179,12 @@
       "reason": "E2E preflight or environment bootstrap helper that needs a live stack; the remote e2e/preflight lane owns it."
     },
     {
+      "script": "scripts/dev/acceptance_artifact.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_e2e_preflight",
+      "reason": "Exact Git-object artifact construction and verification run as part of the managed acceptance backend lifecycle. Local exact-head quick deliberately excludes that live-stack lane, while the acceptance runtime and its focused unit entry own the check."
+    },
+    {
       "script": "scripts/dev/frontend_acceptance_operation_entry.sh",
       "lane_owner": "remote",
       "reason_code": "remote_e2e_preflight",
@@ -219,12 +225,6 @@
       "lane_owner": "remote",
       "reason_code": "remote_unit_shard",
       "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant."
-    },
-    {
-      "script": "scripts/verify/frontend_acceptance_login_probe.py",
-      "lane_owner": "remote",
-      "reason_code": "frontend_lane_toolchain",
-      "reason": "Frontend professional/release guard executed remotely by verify.frontend.pr.unit or verify.frontend.release.audit with the Node/pnpm toolchain. The local exact-head quick lane is deliberately toolchain-free, so it must not depend on it; the frontend_release_gate owns enforcement."
     },
     {
       "script": "scripts/verify/frontend_action_view_page_actions_guard.py",

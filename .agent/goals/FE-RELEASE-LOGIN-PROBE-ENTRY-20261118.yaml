@@ -1,0 +1,39 @@
+schema_version: 1
+goal:
+  id: FE-RELEASE-LOGIN-PROBE-ENTRY-20261118
+  title: route frontend HTTP login probes through the managed acceptance entry
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: frontend page-identity and delivery-hardening login entries
+  module:
+    - make/runtime_ops.mk
+    - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/test_frontend_release_local_entry.py
+  standard_vs_user_specific: platform delivery verification standard
+  objective: >-
+    Remove direct login-script calls from the page-identity and delivery-hardening
+    release browser targets and reuse the governed acceptance.runtime.login_probe
+    entry that validates backend runtime identity before issuing the same
+    credential to the HTTP login path.
+  why_here: >-
+    The failure is in release verification wiring. The same file already uses the
+    managed login entry for the performance probe, while two browser targets bypass
+    it and expose executor-dependent authentication readiness.
+  why_not_elsewhere:
+    - No frontend product rendering, contract, business action or permission change.
+    - No authentication, credential, database or backend runtime mutation.
+    - No browser assertion, accessibility rule or evidence threshold is weakened.
+  blast_radius:
+    product_behavior: none
+    verification: frontend page-identity and delivery-hardening browser entries
+    exclusions:
+      - no acceptance matrix result is inferred before the browser run completes
+      - no deployment or product acceptance claim
+  acceptance:
+    - Both browser targets invoke acceptance.runtime.login_probe with the selected profile and fixture credential.
+    - A focused non-zero regression test rejects a return to the direct login script.
+    - The existing release-local entry test verifies cleanup, backend, managed login and frontend ordering.
+    - Verification-lane coverage registers the acceptance artifact helper and removes the now-unused direct-probe exemption without changing the remote-only allowance.
+    - The delivery-hardening guard passes.
+    - The managed release browser entry proceeds past login and records its real browser outcomes.
+  rollback: Revert the two verification commits; no data or runtime state requires restoration.

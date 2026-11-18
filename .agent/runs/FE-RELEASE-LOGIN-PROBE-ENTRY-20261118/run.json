@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "FE-RELEASE-LOGIN-PROBE-ENTRY-20261118",
+  "branch": "fix/frontend-release-login-probe-entry-20261118",
+  "baseline_sha": "129df3827f4e8cffbc8302d626ec590ff63c14d9",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118.yaml",
+  "record": "docs/ops/iterations/fe_release_login_probe_entry_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118.yaml",
+    ".agent/runs/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/fe_release_login_probe_entry_20261118.md",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_release_local_entry.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing Make tools and acceptance profile; no credential or service mutation by the focused guard"
+  },
+  "checks": {
+    "delivery_hardening_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_error_state_contract.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the clean candidate, then run the exact local acceptance browser entry from that commit."
+}
