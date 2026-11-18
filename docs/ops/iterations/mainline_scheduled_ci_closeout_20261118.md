@@ -98,6 +98,13 @@ routing/tests together. No data or runtime state requires restoration.
 - `make ci.delivery.freeze.prepare`: PASS; refreshed the complexity report, split
   queue and component-driver input digest affected by the source delta.
 - `make ci.generated_evidence.preflight`: PASS.
+- Published-branch sync appended reviewed main `9821a9c6` without rewrite or
+  force-push. The governed conflict path accepted only the known generated
+  component-driver inventory, recorded recovery bundle
+  `e18bff8b40601a5acaf34f200c5a7a60600cb840aac90ac04529b01229725ec5`,
+  and produced merge head `e9750af33285cb579b24ca4aa960f0b794e7b521`.
+- `make ci.delivery.freeze.prepare` after that merge regenerated the conflicted
+  inventory from the synchronized source tree and passed.
 
 Not run locally: full Quick, ORM and database acceptance. They are not required
 for this ordinary candidate's local gate and the remote required checks remain

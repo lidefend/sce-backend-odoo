@@ -135,7 +135,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the CI workflow contract and affected local gate, commit and publish the updated head, re-dispatch ci:candidate, and require all four checks to pass on that exact head.",
+  "next_exact_step": "Commit the regenerated post-sync inventory, publish the exact head, re-dispatch ci:candidate, and require all four checks on that head.",
   "id": "MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118",
   "branch": "fix/main-scheduled-ci-20261118",
   "status": "verification_pending",
