@@ -397,5 +397,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Refresh generated evidence, commit and publish the CI execution-efficiency repair on PR #933, then verify the focused backend shards finish within their hard timeout."
+  "next_exact_step": "Publish the backend-shard mainline-ref repair on PR #933 and verify both focused shards complete without origin/main resolution failures."
 }

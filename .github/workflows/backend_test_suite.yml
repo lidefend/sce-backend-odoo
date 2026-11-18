@@ -182,9 +182,33 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${IMPACT_BASE}" ]; then
-            git fetch --no-tags origin "${IMPACT_BASE}"
+            for attempt in 1 2 3; do
+              if timeout 60 git fetch --no-tags origin "${IMPACT_BASE}" &&
+                git cat-file -e "${IMPACT_BASE}^{commit}" 2>/dev/null; then
+                break
+              fi
+              sleep "$((attempt * 5))"
+            done
+            if ! git rev-parse --verify --quiet \
+                'refs/remotes/origin/main^{commit}' >/dev/null 2>&1 ||
+              [ "$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')" != "${IMPACT_BASE}" ]; then
+              git update-ref refs/remotes/origin/main "${IMPACT_BASE}"
+            fi
+          else
+            for attempt in 1 2 3; do
+              if timeout 60 git fetch --no-tags origin \
+                "main:refs/remotes/origin/main" &&
+                git rev-parse --verify --quiet 'refs/remotes/origin/main^{commit}' >/dev/null; then
+                break
+              fi
+              sleep "$((attempt * 5))"
+            done
           fi
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          mainline_base="$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')"
+          if [ -n "${IMPACT_BASE}" ]; then
+            test "${mainline_base}" = "${IMPACT_BASE}"
+          fi
           MODULES=""
           PYTHON_MODULES=""
           MIXED_PYTHON_FILES=""
@@ -196,6 +220,10 @@ jobs:
             $(if [ "${SUITE_MODE:-full}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/backend-plan.json")"
           echo "PLAN_SHA256=${PLAN_SHA256}" >> "${GITHUB_ENV}"
+          echo "MAINLINE_BASE_SHA=${mainline_base}" >> "${GITHUB_ENV}"
+          # Some inherited Make guards resolve their baseline themselves. Give
+          # them the same authenticated mainline commit materialized above.
+          echo "VIEW_STRUCTURE_BASELINE_SHA=${mainline_base}" >> "${GITHUB_ENV}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
             test_dir=""

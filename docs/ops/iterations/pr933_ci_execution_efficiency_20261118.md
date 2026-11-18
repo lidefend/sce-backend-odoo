@@ -24,6 +24,11 @@ product contract, model, permission, action, frontend behavior or customer data.
   269/24-second values visible on main.
 - A module test had no independent timeout. Four shards could remain stuck in
   one step until the 240-minute job ceiling, with no live heartbeat.
+- The shard checkout fetched the candidate branch but never materialized the
+  event-bound integration base as `refs/remotes/origin/main`. Both focused
+  shards therefore entered Make with a repository that could not resolve the
+  mainline ref, repeated `fatal: Not a valid object name origin/main`, and were
+  correctly stopped by the new ten-minute module timeout.
 
 ## Correction
 
@@ -36,6 +41,11 @@ product contract, model, permission, action, frontend behavior or customer data.
   heartbeat and preserved partial log.
 - Use authenticated historical durations for shard balancing even when test
   reuse remains denied by the existing six-dimension closure policy.
+- Before planning or invoking Make, materialize the exact PR base SHA as
+  `refs/remotes/origin/main`; for schedule, candidate, and operator full runs,
+  fetch the authoritative mainline tip. Export the same resolved commit as
+  `VIEW_STRUCTURE_BASELINE_SHA` so inherited guards do not probe a different
+  identity.
 
 ## Acceptance
 
@@ -45,6 +55,8 @@ product contract, model, permission, action, frontend behavior or customer data.
 - A module that emits no output still emits heartbeat lines.
 - A hung module exits 124 within its lane timeout rather than waiting for the
   job ceiling.
+- Every backend shard starts its test process with a resolvable, verified
+  mainline ref.
 - Scheduled and explicit formal-release runs retain complete module scope.
 - CI workflow contract, scheduled gates and GitHub Actions security checks pass.
 
@@ -62,8 +74,13 @@ together. No database or runtime state requires restoration.
 - `verify.test.coverage.registry`: PASS, 19 tests; generated snapshot refreshed.
 - `verify.frontend.dev.incremental.unit`: PASS, 178 tests.
 - `verify.agent.resume.unit`: PASS, 64 tests.
+- `test_backend_test_suite_dispatch_contract.py`: PASS, 20 tests after adding
+  the shard mainline-ref contract.
 - Real focused planning for PR #933 selected two modules, 50 exact selectors,
   and authenticated durations of 269/24 seconds.
+- Exact-head run `44292217981` proved the missing-ref defect: both focused
+  shards repeated `fatal: Not a valid object name origin/main` and stopped at
+  the 600-second module timeout with exit 124.
 - A full local `ci.local.iteration` was intentionally stopped after fifteen
   targets because it would repeat already-passed PR business ORM work. It is
   not reported as a pass; the exact-head remote PR remains the integration

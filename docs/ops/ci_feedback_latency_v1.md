@@ -203,3 +203,12 @@ closure authorities pass. They may still supply exact measured module durations
 for shard balancing. Discovery accepts the current
 `backend-execution-<run-id>-<shard>` artifact name and the legacy
 attempt-qualified name for attempt one.
+
+Each focused or full backend shard materializes the event-bound integration base
+as `refs/remotes/origin/main` before consulting the frozen plan or invoking Make.
+That ref is the exact pull-request base SHA when supplied, and the fetched
+authoritative mainline tip for schedule, candidate, and operator full runs. The
+resolved commit is exported as `VIEW_STRUCTURE_BASELINE_SHA` so inherited Make
+guards consume the same identity without independently probing a ref that the
+shard checkout may not have fetched. A missing or mismatched ref fails before
+database or module-test preparation.

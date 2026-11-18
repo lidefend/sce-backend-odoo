@@ -148,6 +148,43 @@ python3() {
             resolve['run'],
         )
 
+    def test_shard_materializes_mainline_ref_before_running_module_tests(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        steps = workflow['jobs']['backend_suite']['steps']
+        resolve_index = next(
+            index for index, step in enumerate(steps)
+            if step.get('name') == 'Resolve module list'
+        )
+        test_index = next(
+            index for index, step in enumerate(steps)
+            if step.get('name') == 'Run backend test suite per module'
+        )
+        self.assertLess(resolve_index, test_index)
+
+        resolve = steps[resolve_index]['run']
+        self.assertIn(
+            'git fetch --no-tags origin "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            'git update-ref refs/remotes/origin/main "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            '"main:refs/remotes/origin/main"',
+            resolve,
+        )
+        self.assertIn(
+            'test "${mainline_base}" = "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            'echo "VIEW_STRUCTURE_BASELINE_SHA=${mainline_base}" >> "${GITHUB_ENV}"',
+            resolve,
+        )
+
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
