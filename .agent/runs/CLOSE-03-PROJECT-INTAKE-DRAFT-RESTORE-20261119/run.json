@@ -20,6 +20,12 @@
     "addons/smart_core/tests/",
     "addons/smart_construction_core/services/contract_governance_overrides.py",
     "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+    "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
     "frontend/apps/web/src/app/contracts/v2/",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/contractForm/",
@@ -27,7 +33,16 @@
     "make/ci.mk",
     "make/frontend.mk",
     "scripts/verify/",
+    "scripts/ops/test_promote_product_ten_center_policy.py",
+    "config/product_menu_contract_v1.json",
     "config/frontend/probe_toolchain_registry.json",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "docs/architecture/backend_contract_boundaries.md",
+    "docs/audit/test_coverage_registry/",
+    "docs/engineering_convergence/",
+    "docs/frontend_productization/",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json"
   ],
@@ -106,6 +121,67 @@
         "scripts/verify/unified_page_contract_v2_assembler_guard.py"
       ]
     },
+    "intake_autosave_contract": {
+      "target": "verify.intake_autosave.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/ci.mk",
+        "scripts/verify/close_03_intake_autosave_samples.mjs",
+        "scripts/verify/close_03_intake_autosave_samples_validate.py"
+      ]
+    },
+    "project_intake_contract_governance": {
+      "target": "verify.project_intake.contract_governance.unit",
+      "kind": "orm",
+      "inputs": [
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+        "make/ci.mk"
+      ]
+    },
+    "construction_core_module_baseline": {
+      "target": "verify.smart_construction_core.close_03.module_baseline",
+      "kind": "orm",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "make/ci.mk"
+      ]
+    },
+    "product_menu_contract": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/product_menu_contract_v1_guard.py",
+        "scripts/verify/test_product_menu_contract_v1_guard.py"
+      ]
+    },
+    "product_menu_release_manifest": {
+      "target": "verify.product.menu.release_manifest_v2.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/ops/promote_product_ten_center_policy.py",
+        "scripts/ops/test_promote_product_ten_center_policy.py",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py"
+      ]
+    },
+    "scenario_surface_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "scripts/verify/scenario_surface_projection_guard.py"
+      ]
+    },
     "unified_page_contract_runtime": {
       "target": "verify.unified_page_contract.v2.runtime",
       "kind": "offline",
@@ -174,6 +250,17 @@
         "make/frontend.mk"
       ]
     },
+    "intake_autosave_runtime": {
+      "target": "verify.frontend.intake_autosave.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
+        "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+        "make/frontend.mk"
+      ]
+    },
     "frontend_lint": {
       "target": "verify.frontend.lint.src",
       "kind": "offline",
@@ -201,5 +288,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Register the project-intake policy and final Contract V2 projection tests, then produce the standard-create, existing-record and payment-create real contract samples."
+  "next_exact_step": "Fix the sample login wait, rerun the standard-create/existing-record/payment-create real contract samples against the exact candidate, then close frontend validation, the complete release-surface gate set and the protected PR."
 }

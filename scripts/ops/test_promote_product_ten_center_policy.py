@@ -68,36 +68,34 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
                     else:
                         self.assertEqual(depth, 3)
 
-    def test_iterating_finance_entries_publish_only_in_preview_without_permission_overrides(self):
+    def test_finance_entries_publish_in_both_products_without_permission_overrides(self):
         raw = json.loads(SOURCE_PATH.read_text())
         keys = {"smart_construction_core." + key for key in (
             "menu_payment_ledger", "menu_sc_treasury_ledger", "menu_sc_settlement_order")}
         selected = [row for row in raw["entries"] if row["menu_xmlid"] in keys]
         self.assertEqual(len(selected), 3)
         for row in selected:
-            self.assertEqual(row["release_state"], "preview")
+            self.assertEqual(row["release_state"], "released")
+            self.assertEqual(row["delivery"], "RELEASED_FOUNDATION")
             self.assertFalse({"groups_id", "required_roles", "readonly", "domain"} & set(row))
         _, publication = project(load_source())
         for product in publication["products"]:
             rows = {row["menu_xmlid"]: row for group in product["menu_groups"] for row in group["menus"]}
-            if product["edition_key"] == "standard":
-                self.assertFalse(keys & set(rows))
-            else:
-                self.assertTrue(keys <= set(rows))
-                for key in keys:
-                    self.assertEqual(rows[key]["release_state"], "preview")
-                    self.assertEqual(rows[key]["action_xmlid"], native_facts()[key]["action"])
+            self.assertTrue(keys <= set(rows))
+            for key in keys:
+                self.assertEqual(rows[key]["release_state"], "released")
+                self.assertEqual(rows[key]["capability_maturity"], "RELEASED_FOUNDATION")
+                self.assertEqual(rows[key]["action_xmlid"], native_facts()[key]["action"])
 
-    def test_unreleased_quick_creation_is_only_in_preview(self):
+    def test_quick_creation_is_released_in_both_products(self):
         _, publication = project(load_source())
         for product in publication["products"]:
             quick = [row for group in product["menu_groups"] for row in group["menus"] if row["menu_xmlid"] == "smart_construction_core.menu_sc_project_quick_create"]
-            if product["edition_key"] == "standard":
-                self.assertEqual(quick, [])
-                continue
             self.assertEqual(len(quick), 1)
             self.assertEqual(quick[0]["action_xmlid"], "smart_construction_core.action_project_initiation_quick")
             self.assertEqual(quick[0]["visible_menu_path"], "智慧施工管理平台 / 项目中心 / 项目创建 / 快速创建项目")
+            self.assertEqual(quick[0]["release_state"], "released")
+            self.assertEqual(quick[0]["capability_maturity"], "RELEASED_FOUNDATION")
 
     def test_generated_copies_cannot_drift_from_source(self):
         for path, expected in artifacts().items():
@@ -129,8 +127,6 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         contract, publication = project(source)
         self.assertEqual(contract["centers"][1]["level_two"][0]["children"][1]["name"], "测试快速入口")
         for product in publication["products"]:
-            if product["edition_key"] == "standard":
-                continue
             row = next(row for group in product["menu_groups"] for row in group["menus"] if row["menu_xmlid"] == leaf["binding"]["menu_xmlid"])
             self.assertEqual(row["label"], "测试快速入口")
             self.assertTrue(row["visible_menu_path"].endswith(" / 测试快速入口"))
@@ -142,8 +138,6 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         facts[key]["name"] = "原生新名称"
         contract, publication = project(resolve_native_source(raw, facts))
         for product in publication["products"]:
-            if product["edition_key"] == "standard":
-                continue
             row = next(row for group in product["menu_groups"] for row in group["menus"] if row["menu_xmlid"] == key)
             self.assertEqual(row["label"], "原生新名称")
             self.assertTrue(row["visible_menu_path"].endswith(" / 原生新名称"))
@@ -241,22 +235,22 @@ class ProductTenCenterPolicyPromotionTests(unittest.TestCase):
         def menus(payload):
             return {product["edition_key"]: {row["menu_xmlid"]: row for group in product["menu_groups"] for row in group["menus"]} for product in payload["products"]}
         before = menus(project(source)[1])
-        self.assertEqual(len(before["standard"]), 91)
-        self.assertTrue({
-            "smart_construction_core.menu_sc_project_quick_create",
-        } <= set(before["preview"]) - set(before["standard"]))
+        self.assertEqual(len(before["standard"]), 132)
+        self.assertEqual(set(before["standard"]), set(before["preview"]))
+        self.assertEqual(before["standard"], before["preview"])
+        self.assertIn("smart_construction_core.menu_sc_project_quick_create", before["standard"])
         self.assertIn("smart_construction_core.menu_ui_menu_config_policy_business_config", before["standard"])
         for key, row in before["standard"].items():
             self.assertEqual(row, before["preview"][key])
             self.assertEqual(row["release_state"], "released")
         leaf = source["product_contract"]["centers"][1]["level_two"][0]["children"][1]
         key = leaf["binding"]["menu_xmlid"]
-        self.assertEqual(before["preview"][key]["release_state"], "preview")
-        leaf["binding"]["release_state"] = "released"
+        leaf["binding"]["release_state"] = "preview"
+        leaf["binding"]["delivery"] = "PREVIEW_FOUNDATION"
         after = menus(project(source)[1])
-        self.assertEqual(set(after["standard"]) - set(before["standard"]), {key})
+        self.assertEqual(set(before["standard"]) - set(after["standard"]), {key})
         self.assertEqual(set(after["preview"]), set(before["preview"]))
-        self.assertEqual(after["standard"][key], after["preview"][key])
+        self.assertEqual(after["preview"][key]["release_state"], "preview")
 
     def test_missing_state_and_standard_preview_widening_fail_closed(self):
         raw = json.loads(SOURCE_PATH.read_text())

@@ -114,7 +114,8 @@ try:
     edition_entries = {key: {row['menu_xmlid'] for group in product['menu_groups'] for row in group['menus']}
                        for key, product in contract['products'].items()}
     preview_only = edition_entries['construction.preview'] - edition_entries['construction.standard']
-    preview_ids = {env.ref(xmlid).id for xmlid in preview_only}
+    assert not preview_only, 'preview-only entries remain after standard-release promotion: ' + str(sorted(preview_only))
+    assert edition_entries['construction.preview'] == edition_entries['construction.standard'], 'standard and preview compatibility surfaces diverged'
     for key in ('construction.standard', 'construction.preview'):
         reply = SystemInitHandler(env=actor_env).handle(payload={'params': {'delivery_product_key': key,
             'delivery_edition_key': key.split('.')[-1]}})
@@ -132,11 +133,8 @@ try:
         visit(reply.data['navigation']['nav'])
         declared_ids = {env.ref(xmlid).id for xmlid in edition_entries[key]}
         assert observed & declared_ids, 'empty edition observation'
-        assert key != 'construction.standard' or not observed & preview_ids, 'preview entries leaked into standard'
-        assert key != 'construction.preview' or observed & preview_ids, 'preview edition has no discriminating preview entry'
         results.append({'check': 'actor_edition_navigation', 'status': 'passed', 'product_key': key,
                         'observed_declared_count': len(observed & declared_ids),
-                        'observed_preview_count': len(observed & preview_ids),
                         'user_id': actor.id, 'company_id': actor.company_id.id})
 except Exception as exc:
     errors.append(str(exc))

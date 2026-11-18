@@ -303,7 +303,7 @@
       "literal": "/",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        78
+        91
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        574
+        598
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        578
+        602
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -976,7 +976,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1372
+        1390
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -990,9 +990,9 @@
       "literal": "error",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        71,
-        77,
-        1372
+        84,
+        90,
+        1390
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -1007,9 +1007,9 @@
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
         42,
-        79,
-        81,
-        1372
+        92,
+        94,
+        1390
       ],
       "occurrences": 4,
       "classification": "excluded-render-interaction",
@@ -1023,7 +1023,7 @@
       "literal": "success",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1372
+        1390
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1212,6 +1212,59 @@
       "reason": "declared UI state-machine value",
       "declaredClass": "ui_state_machine",
       "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|expired|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "expired",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        82,
+        86
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/auth_credential_policy.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|invalid|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "invalid",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        82
+      ],
+      "occurrences": 1,
+      "classification": "unclassified",
+      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
+      "ownerLayer": "unresolved"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|recoverable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "recoverable",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        77
+      ],
+      "occurrences": 1,
+      "classification": "unclassified",
+      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
+      "ownerLayer": "unresolved"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|unavailable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "unavailable",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        88
+      ],
+      "occurrences": 1,
+      "classification": "unclassified",
+      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
+      "ownerLayer": "unresolved"
     },
     {
       "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/views/ActionView.vue",
@@ -1744,19 +1797,20 @@
     }
   ],
   "summary": {
-    "totalFindings": 163,
-    "distinctDecisions": 117,
+    "totalFindings": 168,
+    "distinctDecisions": 121,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 127
+      "R4_business_state_literal": 132
     },
     "byClassification": {
-      "contract-derived": 64,
-      "excluded-render-interaction": 99
+      "contract-derived": 66,
+      "excluded-render-interaction": 99,
+      "unclassified": 3
     },
-    "unclassified": 0,
-    "contractDerived": 64,
+    "unclassified": 3,
+    "contractDerived": 66,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
     "excludedRenderInteraction": 99

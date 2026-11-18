@@ -17,6 +17,9 @@ goal:
     Users who refresh or are interrupted while entering a new project can restore
     only the policy-allowed input, continue normal validation and create the record;
     after creation succeeds, the matching local intake draft no longer appears.
+    In the same product candidate, every previously preview-only business entry
+    advances to standard release while the compatibility preview product key remains
+    available with no preview-only menu difference.
   product_result: >-
     The released project-intake entry shows a restore-or-discard prompt for a valid
     local draft, restores typed and relation values through the normal form pipeline,
@@ -39,12 +42,15 @@ goal:
       - smart_construction_core.menu_sc_user_payment_apply
       - project.project existing-record form
       - smart_construction_core.menu_sc_project_quick_create
+      - all 40 previously preview-only product-menu entries
     behavior:
       - Contract V2 runtimeContract.intakeAutosave
       - browser-local policy-scoped draft persistence
       - normal create-form hydration, validation, onchange and save
       - post-create draft cleanup including attachment partial failure
       - tenant, user, company, entry and form-instance isolation
+      - standard-release product and capability maturity for the promoted entries
+      - compatibility construction.preview key remains released-equivalent but its product state stays preview
   backend_stage:
     id: BE-CLOSE-03
     status: active
@@ -68,14 +74,15 @@ goal:
     - Released project-intake journey completes input, refresh/reopen, restore, explicit failure, correction, create, identity readback and draft absence.
     - Payment create does not inherit project-intake drafts.
     - Existing project record does not expose new-input recovery.
-    - Quick project create remains preview-scoped and isolated.
+    - Quick project create is now part of standard release and its explicitly declared local-draft policy remains isolated from the standard project-intake policy.
+    - All previously preview-only entries are released with RELEASED_FOUNDATION capability maturity in the canonical policy and generated consumers.
     - Owning module baseline, affected frontend tests, lint, strict typecheck, production build and bound browser evidence pass.
   exclusions:
     - Attachments, binary values, unsaved child-record commands and workflow state in local drafts.
     - Autosave for record-edit mode or any entry without an explicit enabled policy.
     - Backend-created draft records or server-side restore storage.
     - Search, renderer and full-entry acceptance.
-    - Deployment, release and product-delivery claims.
+    - Deployment and product-delivery claims. The compatibility preview product key is not removed in this batch.
   rollback: >-
     Revert the P1 policy declaration, P0 Contract V2 projection/schema, and shared
     create-form local-draft runtime. Browser-local drafts are non-authoritative and

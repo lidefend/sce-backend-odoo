@@ -21,12 +21,15 @@ class ProductMenuContractGuardTest(unittest.TestCase):
         self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
 
     def test_preview_requires_explicit_preview_state(self) -> None:
+        contract = copy.deepcopy(self.contract)
+        leaf = next(child for center in contract["centers"] for item in center["level_two"]
+                    for child in (item.get("children") or [item]) if child.get("delivery") == "RELEASED_FOUNDATION")
+        leaf["delivery"] = "PREVIEW_FOUNDATION"
         for state in (None, "released", "draft"):
-            contract = copy.deepcopy(self.contract)
-            leaf = next(child for center in contract["centers"] for item in center["level_two"]
-                        for child in (item.get("children") or [item]) if child.get("delivery") == "PREVIEW_FOUNDATION")
-            leaf["release_state"] = state
-            self.assertTrue(any("delivery/release_state mismatch" in error for error in validate(contract, self.baseline)))
+            candidate = copy.deepcopy(contract)
+            next(child for center in candidate["centers"] for item in center["level_two"]
+                 for child in (item.get("children") or [item]) if child.get("delivery") == "PREVIEW_FOUNDATION")["release_state"] = state
+            self.assertTrue(any("delivery/release_state mismatch" in error for error in validate(candidate, self.baseline)))
 
     def test_released_cannot_silently_become_preview(self) -> None:
         contract = copy.deepcopy(self.contract)
@@ -45,8 +48,8 @@ class ProductMenuContractGuardTest(unittest.TestCase):
         contract["centers"][2]["level_two"][3]["name"] = "通用合同"
         self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
 
-    def test_contract_preview_cannot_be_removed_replaced_or_promoted(self) -> None:
-        for mutation in ("remove", "replace", "promote"):
+    def test_contract_released_entries_cannot_be_removed_replaced_or_downgraded(self) -> None:
+        for mutation in ("remove", "replace", "downgrade"):
             with self.subTest(mutation=mutation):
                 contract = copy.deepcopy(self.contract)
                 center = next(row for row in contract["centers"] if row["key"] == "contract")
@@ -55,7 +58,7 @@ class ProductMenuContractGuardTest(unittest.TestCase):
                 elif mutation == "replace":
                     center["level_two"][-1]["name"] = "未声明入口"
                 else:
-                    center["level_two"][-1].update(delivery="RELEASED_FOUNDATION", release_state="released")
+                    center["level_two"][-1].update(delivery="PREVIEW_FOUNDATION", release_state="preview")
                 self.assertTrue(validate(contract, self.baseline, self.evolution_policy))
 
     def test_seed_customer_cannot_become_primary_goal(self) -> None:

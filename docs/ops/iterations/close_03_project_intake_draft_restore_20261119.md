@@ -17,6 +17,7 @@
 - Why Here: P1 owns the allowed project-intake fields and 24-hour policy; P0 owns the generic contract carrier; the frontend owns browser persistence and interaction mechanics.
 - Why Not Elsewhere: the frontend cannot infer fields, expiry or recovery semantics; P2/P3 are not the source of the standard; no Odoo record is created while collecting local input.
 - Blast Radius: released project-intake create, project-intake saved-record form, payment request create, and preview quick-create isolation.
+- Product-surface promotion: all 40 entries previously classified as preview-only are promoted to standard release and capability maturity `RELEASED_FOUNDATION`; the compatibility `construction.preview` product key remains readable with the same released entry set, but no preview-only menu difference remains.
 - Exclusions: attachments, binary values, unsaved x2many commands, workflow state in local drafts, edit-mode autosave, search, renderer, full-entry acceptance, deployment and product-delivery claims.
 
 ## 稳定基线门禁责任表
@@ -34,7 +35,7 @@
 
 ## BE-CLOSE-03
 
-Status: registered; implementation and real samples pending.
+Status: policy and Contract V2 projection implemented; real samples pending exact-candidate runtime.
 
 Required declaration:
 
@@ -46,9 +47,20 @@ Required declaration:
 Entry boundaries:
 
 - Standard released project intake: explicitly enabled after effective-form and field-right intersection.
-- Quick project create: preview-only isolation; no accidental inheritance from the standard policy.
+- Quick project create: promoted to standard release and explicitly enabled with its own smaller allowed field set; it does not inherit the standard project-intake policy merely through model/create-mode matching.
 - Saved project record: disabled.
 - Payment request create: disabled.
+
+## All-preview release promotion
+
+Status: surface generated and focused guards passed; complete release-surface gate family and exact-candidate runtime readback pending.
+
+- Every entry formerly marked preview-only is now released.
+- Capability maturity is `RELEASED_FOUNDATION` for all promoted entries.
+- The canonical release entry count advances from 92 to 132.
+- `construction.standard` exposes 132 released entries.
+- The compatibility `construction.preview` product key remains present with the same 132 released entries, while its product `state` remains `preview`.
+- The quick project-create entry is therefore also standard-released and receives an explicit five-field local-draft policy instead of inheriting the nine-field standard project-intake policy.
 
 ## FE-CLOSE-03
 

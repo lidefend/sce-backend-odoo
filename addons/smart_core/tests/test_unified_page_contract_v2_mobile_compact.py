@@ -4696,6 +4696,97 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertEqual(explicit["searchContract"]["defaults"]["order"], "name desc")
 
+    def test_intake_autosave_policy_is_preserved_only_for_valid_create_input(self):
+        policy = {
+            "schemaVersion": "intake_autosave_policy.v1",
+            "policyVersion": 1,
+            "enabled": True,
+            "appliesTo": ["create"],
+            "scope": "project_intake_standard",
+            "storage": {
+                "kind": "browser_local_storage",
+                "keyPrefix": "sc:intake:autosave",
+                "payloadVersion": 1,
+            },
+            "retention": {"seconds": 86400, "basis": "last_valid_input"},
+            "recovery": {
+                "strategy": "prompt_restore_or_discard",
+                "actions": ["restore", "discard"],
+            },
+            "identity": {
+                "requiredScopes": [
+                    "tenant", "user", "company", "menu", "action",
+                    "form_view", "entry_scope", "form_instance",
+                ],
+            },
+            "fields": [{
+                "name": "name",
+                "label": "项目名称",
+                "type": "char",
+                "relation": "",
+                "inputKind": "text",
+                "required": True,
+                "readonly": False,
+                "allowEmpty": True,
+                "source": "effective_create_form",
+                "constraints": {},
+            }],
+            "coverage": {
+                "fields": True,
+                "attachments": False,
+                "binary": False,
+                "unsavedChildRecords": False,
+                "workflowState": False,
+                "serverDefaults": False,
+            },
+        }
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "head": {"render_profile": "create"},
+            "fields": {"name": {"name": "name", "type": "char", "string": "项目名称"}},
+            "views": {"form": {"layout": [{"type": "field", "name": "name"}], "autosave": policy}},
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.intake.autosave.valid-create",
+        )
+
+        self.assertEqual(full["runtimeContract"]["intakeAutosave"], policy)
+        source["head"]["render_profile"] = "edit"
+        with self.assertRaisesRegex(ValueError, "non-create"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.intake.autosave.edit",
+            )
+
+    def test_enabled_intake_autosave_requires_a_complete_policy(self):
+        source = {
+            "model": "project.project",
+            "view_type": "form",
+            "head": {"render_profile": "create"},
+            "fields": {"name": {"name": "name", "type": "char"}},
+            "views": {
+                "form": {
+                    "layout": [{"type": "field", "name": "name"}],
+                    "autosave": {"enabled": True},
+                },
+            },
+        }
+
+        with self.assertRaisesRegex(ValueError, "intakeAutosave policy missing"):
+            assembler.assemble_unified_page_contract_v2(
+                source,
+                source_type="ui.contract",
+                client_type="web_pc",
+                request_id="test.intake.autosave.incomplete",
+            )
+
     def test_search_native_identity_is_canonicalized_at_v2_boundary(self):
         source = {
             "model": "project.project",

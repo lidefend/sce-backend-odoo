@@ -310,6 +310,302 @@
         }
       }
     },
+    "intakeAutosavePolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schemaVersion",
+        "policyVersion",
+        "enabled",
+        "appliesTo",
+        "scope",
+        "storage",
+        "retention",
+        "recovery",
+        "identity",
+        "fields",
+        "coverage"
+      ],
+      "properties": {
+        "schemaVersion": {
+          "const": "intake_autosave_policy.v1"
+        },
+        "policyVersion": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "enabled": {
+          "type": "boolean"
+        },
+        "appliesTo": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {
+            "const": "create"
+          }
+        },
+        "scope": {
+          "type": "string",
+          "minLength": 1
+        },
+        "storage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "kind",
+            "keyPrefix",
+            "payloadVersion"
+          ],
+          "properties": {
+            "kind": {
+              "const": "browser_local_storage"
+            },
+            "keyPrefix": {
+              "type": "string",
+              "minLength": 1
+            },
+            "payloadVersion": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "retention": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "seconds",
+            "basis"
+          ],
+          "properties": {
+            "seconds": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "basis": {
+              "const": "last_valid_input"
+            }
+          }
+        },
+        "recovery": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "strategy",
+            "actions"
+          ],
+          "properties": {
+            "strategy": {
+              "const": "prompt_restore_or_discard"
+            },
+            "actions": {
+              "type": "array",
+              "minItems": 2,
+              "maxItems": 2,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "restore",
+                  "discard"
+                ]
+              }
+            }
+          }
+        },
+        "identity": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "requiredScopes"
+          ],
+          "properties": {
+            "requiredScopes": {
+              "type": "array",
+              "minItems": 1,
+              "uniqueItems": true,
+              "items": {
+                "enum": [
+                  "tenant",
+                  "user",
+                  "company",
+                  "menu",
+                  "action",
+                  "form_view",
+                  "entry_scope",
+                  "form_instance"
+                ]
+              }
+            }
+          }
+        },
+        "fields": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/intakeAutosaveField"
+          }
+        },
+        "coverage": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "fields",
+            "attachments",
+            "binary",
+            "unsavedChildRecords",
+            "workflowState",
+            "serverDefaults"
+          ],
+          "properties": {
+            "fields": {
+              "const": true
+            },
+            "attachments": {
+              "const": false
+            },
+            "binary": {
+              "const": false
+            },
+            "unsavedChildRecords": {
+              "const": false
+            },
+            "workflowState": {
+              "const": false
+            },
+            "serverDefaults": {
+              "const": false
+            }
+          }
+        },
+        "reasonCode": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "enabled": {
+                "const": true
+              }
+            },
+            "required": [
+              "enabled"
+            ]
+          },
+          "then": {
+            "properties": {
+              "fields": {
+                "minItems": 1
+              }
+            }
+          }
+        }
+      ]
+    },
+    "intakeAutosaveField": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "name",
+        "label",
+        "type",
+        "relation",
+        "inputKind",
+        "required",
+        "readonly",
+        "allowEmpty",
+        "source",
+        "constraints"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$"
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "enum": [
+            "char",
+            "text",
+            "html",
+            "integer",
+            "float",
+            "monetary",
+            "boolean",
+            "date",
+            "datetime",
+            "selection",
+            "many2one",
+            "many2many",
+            "one2many"
+          ]
+        },
+        "relation": {
+          "type": "string"
+        },
+        "inputKind": {
+          "enum": [
+            "text",
+            "integer",
+            "decimal",
+            "boolean",
+            "date",
+            "datetime",
+            "selection",
+            "relation"
+          ]
+        },
+        "required": {
+          "type": "boolean"
+        },
+        "readonly": {
+          "const": false
+        },
+        "allowEmpty": {
+          "const": true
+        },
+        "source": {
+          "const": "effective_create_form"
+        },
+        "constraints": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "maxLength": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "format": {
+              "enum": [
+                "YYYY-MM-DD",
+                "YYYY-MM-DDTHH:mm:ss"
+              ]
+            },
+            "numeric": {
+              "const": true
+            },
+            "mustExist": {
+              "const": true
+            },
+            "allowedValues": {
+              "type": "array",
+              "items": {
+                "type": [
+                  "string",
+                  "integer",
+                  "boolean"
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
     "workflowActionSemantics": {
       "type": "object",
       "additionalProperties": false,
@@ -4121,7 +4417,7 @@
           "$ref": "#/$defs/deliveryProfile"
         },
         "intakeAutosave": {
-          "type": "object"
+          "$ref": "#/$defs/intakeAutosavePolicy"
         },
         "fieldSemantics": {
           "type": "object"

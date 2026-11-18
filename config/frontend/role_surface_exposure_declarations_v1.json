@@ -159,9 +159,9 @@
       "route": "/s/workspace.home",
       "entry_target_type": "scene",
       "delivery_bucket": "released_product_policy",
-      "reason": "（2026-11-11）发布面 standard 的 92 个叶子中，角色首页由 scene 交付（entry_target.type=scene，无 action），矩阵按 action_xmlid 寻址入口，因此它无法进入 91 项可执行入口 CSV；它是已发布的产品交付载体而非缺口，必须在验收口径中显式登记，避免发布面与验收宇宙静默分叉。",
-      "evidence": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json#policy_strategy.menu_count_by_product.construction.standard=92；.runtime/acceptance/fixture_orm_20261111T053901Z.log（Business Full/Config Admin 最终导航契约 47 passed）"
+      "reason": "（2026-11-19）原 preview 的 40 个入口已全部提升到 released，standard 发布面现为 132 个叶子；角色首页由 scene 交付（entry_target.type=scene，无 action），矩阵按 action_xmlid 寻址入口，因此它不进入 action CSV，但必须作为正式交付载体显式登记。",
+      "evidence": "scripts/verify/baselines/formal_business_product_menu_policy_v1.json#policy_strategy.menu_count_by_product.construction.standard=132；原 92 入口导航契约由 .runtime/acceptance/fixture_orm_20261111T053901Z.log 覆盖，新增 40 入口由 CLOSE-03 发布晋级验证覆盖"
     }
   },
-  "non_action_delivery_reason": "发布面叶子必须由 action 验收宇宙或已登记的无 action scene 覆盖。我的工作作为正式 action 入口加入验收CSV但保持 pending；当前91项action入口加1项scene等于92项发布入口，不将旧91项证据扩充为新增项通过。"
+  "non_action_delivery_reason": "发布面叶子必须由 action 验收宇宙或已登记的无 action scene 覆盖。角色首页仍是 scene 交付载体；原 92 项证据不自动外推为新增 40 个 preview 晋级入口的通过证据。"
 }

@@ -422,6 +422,40 @@ verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
 verify.smart_core.close_02.module_baseline: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=/smart_core
 
+.PHONY: verify.project_intake.contract_governance.unit
+verify.project_intake.contract_governance.unit: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:ProjectIntakeContractGovernanceCase
+
+.PHONY: verify.smart_construction_core.close_03.module_baseline
+verify.smart_construction_core.close_03.module_baseline: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core
+
+SC_CLOSE_03_BASE_URL ?= http://127.0.0.1:18081/t/demo
+SC_CLOSE_03_LOGIN ?= wutao
+SC_CLOSE_03_PASSWORD_VAR ?= SC_DEMO_USER_PASSWORD
+SC_CLOSE_03_OUTPUT ?= .runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/intake_autosave_samples
+
+.PHONY: verify.backend.close_03.intake_autosave.samples
+verify.backend.close_03.intake_autosave.samples: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+	@set -a; . "$(LOCAL_DEV_ENV_FILE)"; set +a; \
+	  password_var="$(SC_CLOSE_03_PASSWORD_VAR)"; \
+	  close_03_password="$${!password_var}"; \
+	  SC_CLOSE_03_BASE_URL="$(SC_CLOSE_03_BASE_URL)" \
+	  SC_CLOSE_03_LOGIN="$(SC_CLOSE_03_LOGIN)" \
+	  SC_CLOSE_03_PASSWORD="$$close_03_password" \
+	  SC_CLOSE_03_EXPECTED_SHA="$$(git rev-parse HEAD)" \
+	  SC_CLOSE_03_OUTPUT="$(SC_CLOSE_03_OUTPUT)" \
+	  node scripts/verify/close_03_intake_autosave_samples.mjs
+	@python3 scripts/verify/close_03_intake_autosave_samples_validate.py --samples "$(SC_CLOSE_03_OUTPUT)"
+
+.PHONY: verify.intake_autosave.contract.unit
+verify.intake_autosave.contract.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_construction_core/services/contract_governance_overrides.py \
+	  addons/smart_construction_core/tests/test_project_intake_contract_governance.py \
+	  scripts/verify/close_03_intake_autosave_samples_validate.py
+	@node --check scripts/verify/close_03_intake_autosave_samples.mjs
+
 SC_CLOSE_02_BROWSER_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/browser_journeys
 
 .PHONY: verify.frontend.close_02.field_query.browser
