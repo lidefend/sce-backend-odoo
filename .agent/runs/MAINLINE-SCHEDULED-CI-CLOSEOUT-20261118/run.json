@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "129df3827f4e8cffbc8302d626ec590ff63c14d9",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml",
+    ".agent/runs/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118/run.json",
+    "docs/audit/guard_registry/guard_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/mainline_scheduled_ci_closeout_20261118.md",
+    "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+    "make/frontend.mk",
+    "scripts/verify/registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets and locked frontend toolchain; no product database, service, credential, or deployment mutation"
+  },
+  "checks": {
+    "dialog_contract_browser": {
+      "target": "verify.frontend.contract_reason_dialog.browser",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+        "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        ".github/workflows",
+        "Makefile",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "frontend_style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/design-tokens",
+        "frontend/packages/ui/src",
+        "make/frontend.mk",
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/test_design_token_system.py",
+        "scripts/verify/test_frontend_inline_style_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/.eslintignore",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/dev/pnpm_exec.sh"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/dev/pnpm_exec.sh"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review the generated diff, commit the exact candidate, publish it through the governed PR lane, and require all four checks on the current remote head.",
+  "id": "MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118",
+  "branch": "fix/main-scheduled-ci-20261118",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml",
+  "record": "docs/ops/iterations/mainline_scheduled_ci_closeout_20261118.md"
+}

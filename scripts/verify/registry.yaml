@@ -1273,6 +1273,13 @@ entries:
   date: '2026-07-20'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: odoo_native_capability_explorer_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Read-only runtime probe executed by audit.odoo_native_capability_explorer.demo.
+    It joins native Odoo metadata to existing product-scenario facts and never creates
+    or writes capabilities.
 - script: odoo_runtime_facts.py
   status: active
   owner: platform-team
@@ -1280,21 +1287,6 @@ entries:
   wire_or_retire: file-consumed
   reason: Maintained module consumed by scripts/verify/module_upgrade_observation.py.
     No claim of live ORM or release execution from this registration.
-- script: odoo_native_capability_explorer_probe.py
-  status: active
-  owner: platform-team
-  date: '2026-11-15'
-  reason: Read-only runtime probe executed by
-    audit.odoo_native_capability_explorer.demo. It joins native Odoo metadata
-    to existing product-scenario facts and never creates or writes capabilities.
-- script: platform_capability_explorer_runtime_probe.py
-  status: active
-  owner: platform-team
-  date: '2026-11-15'
-  reason: Read-only Odoo shell probe executed by
-    audit.platform_capability_explorer.demo. It verifies API counts, stale-token
-    rejection, permissions, query counts, identity isolation and serialization
-    timing without writing business data.
 - script: operation_strategy_contract_surface_audit.py
   status: active
   owner: platform-team
@@ -1403,6 +1395,13 @@ entries:
   date: '2026-08-16'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: platform_capability_explorer_runtime_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Read-only Odoo shell probe executed by audit.platform_capability_explorer.demo.
+    It verifies API counts, stale-token rejection, permissions, query counts, identity
+    isolation and serialization timing without writing business data.
 - script: platform_config_fixture.py
   status: active
   owner: platform-team
@@ -1731,12 +1730,6 @@ entries:
   owner: platform-team
   date: '2026-10-13'
   reason: 'Governed unittest module invocation in: verify.data_space.policy.unit'
-- script: test_design_token_system.py
-  status: orphan
-  owner: platform-team
-  date: '2026-08-24'
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_dev_acceptance_release_identity.py
   status: active
   owner: platform-team
@@ -2021,18 +2014,6 @@ entries:
   date: '2026-11-06'
   reason: Executed by verify.capability.module_tooling.unit in local Quick and professional
     backend lanes. Pure tests only; runtime upgrade subprocesses are mocked.
-- script: test_odoo_native_capability_explorer_probe.py
-  status: active
-  owner: platform-team
-  date: '2026-11-15'
-  reason: Executed by verify.odoo_native_capability_explorer.unit. Tests native
-    entry selection boundaries without database, runtime or write access.
-- script: test_platform_capability_explorer_runtime_probe.py
-  status: active
-  owner: platform-team
-  date: '2026-11-15'
-  reason: Executed by verify.platform.capability_explorer.unit. Tests the runtime
-    probe's exact count, stale-token, concurrency and read-only contract declarations.
 - script: test_native_view_capability_taxonomy.py
   status: orphan
   owner: platform-team
@@ -2051,6 +2032,12 @@ entries:
   date: '2026-08-21'
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
+- script: test_odoo_native_capability_explorer_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Executed by verify.odoo_native_capability_explorer.unit. Tests native entry
+    selection boundaries without database, runtime or write access.
 - script: test_p1_payment_request_field_completeness_guard.py
   status: orphan
   owner: platform-team
@@ -2090,6 +2077,12 @@ entries:
   owner: platform-team
   date: '2026-10-13'
   reason: 'Governed unittest module invocation in: verify.payment_slice.data_authority.unit'
+- script: test_platform_capability_explorer_runtime_probe.py
+  status: active
+  owner: platform-team
+  date: '2026-11-15'
+  reason: Executed by verify.platform.capability_explorer.unit. Tests the runtime
+    probe's exact count, stale-token, concurrency and read-only contract declarations.
 - script: test_playwright_vendor_coupling_guard.py
   status: active
   owner: platform-team

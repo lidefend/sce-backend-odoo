@@ -95,6 +95,7 @@
     "fix/guard-registry-governance-20261106": ".agent/runs/GUARD-REGISTRY-GOVERNANCE-20261106/run.json",
     "fix/local-development-environment-closeout-20261016": ".agent/runs/LOCAL-DEVELOPMENT-ENVIRONMENT-CLOSEOUT-20261016/run.json",
     "fix/main-scheduled-ci-closeout-20261016": ".agent/runs/MAIN-SCHEDULED-CI-CLOSEOUT-20261016/run.json",
+    "fix/main-scheduled-ci-20261118": ".agent/runs/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118/run.json",
     "fix/menu-cache-invalidation-closeout-20261017": ".agent/runs/MENU-CACHE-INVALIDATION-CLOSEOUT-20261017/run.json",
     "fix/my-work-fact-layer-convergence-20261104": ".agent/runs/MY-WORK-FACT-LAYER-CONVERGENCE-20261104/run.json",
     "fix/native-relation-helper-declaration": ".agent/runs/NATIVE-RELATION-DECLARATION/run.json",

@@ -1,0 +1,85 @@
+# Mainline scheduled CI closeout (2026-11-18)
+
+## Boundary
+
+- Formal Product Layer: P0/P4
+- Layer Target: generic dialog state projection and guard-registry lifecycle metadata
+- Module: frontend contract action dialog, `scripts/verify`
+- Standard vs User-Specific: platform engineering standard
+
+The scheduled `professional_quality_gate` failed because the guard registry still
+declared `test_design_token_system.py` as an orphan after the test was wired into
+the incremental selection map for `verify.frontend.style_system.guard`, while that
+target did not actually execute the test. The scheduled `frontend_release_gate`
+first failed in the action-reason dialog browser contract because the caller's
+`data-state="interactive"` attribute overrode the `ScDialog` primitive's
+authoritative `open`/`closed` state through `$attrs`.
+
+Why here: `ScDialog` owns observable overlay lifecycle state. A consumer may attach
+purpose markers, but it must not replace primitive-owned state. The registry is the
+P4 lifecycle declaration for verification scripts and must match its executable
+Make/CI consumers.
+
+Why not elsewhere:
+
+- no backend contract, model, permission, action or customer behavior changes;
+- no workflow trigger, gate, required-check name or browser assertion is weakened;
+- the browser test already detects the attribute collision and remains unchanged;
+- no unrelated orphaned guard is retired or reclassified in this batch.
+
+## Scope
+
+- Keep descriptive action-reason dialog attributes without overriding dialog state.
+- Execute the selected design-token test in the existing style-system target and
+  reconcile the guard registry with that executable consumer.
+- Validate the affected browser contract, registry audit, style system, lint,
+  strict typecheck and agent ledger.
+
+## Exclusions
+
+- Workflow, branch-protection, check-name and merge-policy changes;
+- database, fixture, deployment and user-acceptance changes;
+- unrelated guard-registry debt and generated frontend inventories.
+
+## Acceptance
+
+- The action-reason browser test performs its non-zero assertion set and passes.
+- `verify.guard.registry` passes without weakening or bypassing the audit.
+- The affected frontend lint, strict typecheck and style-system targets pass.
+- `make ci.local.iteration` executes the registered affected set with truthful
+  per-target status and original logs.
+
+## Rollback
+
+Revert the dialog state-marker correction and regenerated guard-registry metadata
+together. No data or runtime state requires restoration.
+
+## Execution log
+
+- Baseline: `main@129df3827f4e8cffbc8302d626ec590ff63c14d9`,
+  clean source with only this batch's governance metadata dirty.
+- `verify.frontend.contract_reason_dialog.browser`: failed at the unchanged
+  `section[role="dialog"][data-state="open"]` wait; original log retained under
+  `.runtime/agent-runs/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118/logs/`.
+- `verify.guard.registry`: unit tests passed 24/24, then the audit rejected the
+  stale orphan acknowledgement for the already-wired design-token test; original
+  log retained in the same runtime evidence directory.
+- `make guard.registry.seed` removed the stale orphan entry but then failed closed
+  because no Make target actually executed the test. The selected target was
+  repaired rather than accepting a file-consumed disposition as execution proof.
+- `verify.frontend.contract_reason_dialog.browser`: PASS, 21 checks, zero console
+  errors.
+- `verify.guard.registry`: PASS, 24 unit tests plus the 1633-script audit.
+- `verify.frontend.style_system.guard`: PASS, 8 inline-style tests, 12 design-token
+  tests and the guard audit.
+- `verify.frontend.lint.src`: PASS, zero errors; four existing warnings remain.
+- `verify.frontend.typecheck.strict`: PASS.
+- `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
+- `make ci.local.iteration`: PASS, 12 affected targets executed on the final
+  pre-commit working set.
+- `make ci.delivery.freeze.prepare`: PASS; refreshed the complexity report, split
+  queue and component-driver input digest affected by the source delta.
+
+Not run locally: full Quick, ORM and database acceptance. They are not required
+for this ordinary candidate's local gate and the remote required checks remain
+the integration authority.
