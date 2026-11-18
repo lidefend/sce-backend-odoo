@@ -112,8 +112,8 @@ routing/tests together. No data or runtime state requires restoration.
   exact-head release-condition materialization.
 - `release_condition`: PASS, 4 tests covering exact SHA/tree, workflow set,
   scheduled slot, candidate mode and fail-closed identity rejection.
-- `verify.ci.scheduled_gates`: PASS, 96 tests including the CI login-probe route
-  and release-CI guard wiring.
+- `verify.ci.scheduled_gates`: PASS, 97 tests including the CI login-probe route,
+  shared internal-entry identity and release-CI guard wiring.
 - `verify.workspace.branch.sync-github.unit`: PASS, 53 tests covering the exact
   published-branch sync, generated-report conflict handling and recovery paths.
 - `make ci.local.iteration`: PASS, 16 affected targets executed on the final
