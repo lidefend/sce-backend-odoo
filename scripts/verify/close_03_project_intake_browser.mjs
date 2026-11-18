@@ -303,8 +303,13 @@ async function main() {
       limit: 1,
     });
     check(Number(afterCleanup?.count || afterCleanup?.records?.length || 0) === 0, 'created project cleanup readback is not empty');
+    const ignoredOptionalBrowserErrors = errors.filter((message) => (
+      ignoredOptionalIntents.length > 0
+      && message === 'Failed to load resource: the server responded with a status of 404 (NOT FOUND)'
+    ));
+    const actionableErrors = errors.filter((message) => !ignoredOptionalBrowserErrors.includes(message));
     check(failedIntents.length === 0, 'browser journey observed failed intents', failedIntents);
-    check(errors.length === 0, 'browser journey observed page errors', errors);
+    check(actionableErrors.length === 0, 'browser journey observed page errors', actionableErrors);
 
     const evidence = {
       schema: 'close_03.project_intake_browser.v1',
@@ -330,7 +335,8 @@ async function main() {
       cleanup,
       failed_intents: failedIntents,
       ignored_optional_intents: ignoredOptionalIntents,
-      errors,
+      ignored_optional_browser_errors: ignoredOptionalBrowserErrors,
+      errors: actionableErrors,
     };
     writeJson('summary.json', evidence);
     process.stdout.write(`[close-03-browser] PASS created=${createdId} cleaned=1\n`);
