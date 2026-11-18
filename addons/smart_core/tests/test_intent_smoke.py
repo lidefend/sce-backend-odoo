@@ -2,6 +2,7 @@
 import hashlib
 import json
 import threading
+import time
 
 from odoo.tests.common import HttpCase, tagged
 
@@ -313,7 +314,12 @@ class TestIntentSmoke(HttpCase):
         from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
         # HttpCase requests share the test transaction.  A timed-out background
         # request may still own its cursor after the intent response is received.
-        self._wait_remaining_requests(timeout=30)
+        deadline = time.monotonic() + 30
+        while time.monotonic() < deadline and any(
+            thread.name.startswith("odoo.service.http.request.")
+            for thread in threading.enumerate()
+        ):
+            time.sleep(0.05)
         self.assertFalse([
             thread.name for thread in threading.enumerate()
             if thread.name.startswith("odoo.service.http.request.")

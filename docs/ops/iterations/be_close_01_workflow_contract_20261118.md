@@ -115,7 +115,11 @@
   已提交状态重复 `submit` 的死动作。
 - 已修正测试夹具：合同工作流测试使用受管业务公司、项目负责人、税组和
   正式状态转换；收款契约使用真实 `type=out` 合同。API 兼容测试不再跟随
-  `/web/login` 重定向，确保只验证 `/api/v1/intent`。
+  `/web/login` 重定向，并在直接 ORM 对比前显式等待
+  `odoo.service.http.request.*` 线程退出，确保只验证 `/api/v1/intent`。
+- `TestIntentSmoke`：10 tests PASS，独立 target
+  `verify.smart_core.intent_smoke.orm` 耗时约 43s；此前测试文件变化会误触发
+  整套权限真相 ORM。
 - `workflow_contract_backend`：32 tests PASS。
 - 付款动作可用性、P1 付款能力和并发：73 tests PASS。
 - 完整 `smart_construction_core` 模块 ORM 基线：563 tests PASS；
@@ -155,7 +159,7 @@
 - 修正路由期望与 reuse 执行后的
   `verify.frontend.dev.incremental.unit`：177 tests PASS。
 - `ci.local.iteration`：PASS；稳定基线复用后 21 个已登记 target 直接复用，
-  仅执行 2 个尚未登记的目标。
+  只执行实际受影响的 intent smoke、guard registry 和 2 个尚未登记目标。
 - `bash -n`（受管验收入口）、相关 Python `py_compile`、`git diff --check` PASS。
 - `verify.workflow_contract.be_close_01.samples`：已生成 2 个新建目录、4 个
   记录契约、2 个动作执行后回读；8 份 workflow contract 全部通过 Schema。
