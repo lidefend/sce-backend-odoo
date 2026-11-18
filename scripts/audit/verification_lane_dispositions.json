@@ -3413,6 +3413,12 @@
       "owner": "platform-team",
       "reason": "CLOSE-02 owning-module ORM baseline wrapper over the registered disposable local.test profile. It is invoked for the batch baseline rather than recursively from every CI gate.",
       "review_by": "2027-02-28"
+    },
+    "verify.frontend.close_02.field_query.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 two-entry browser journey on the registered acceptance carrier. It is intentionally on demand because it mutates no product data but requires the seeded acceptance fixture, browser runtime and exact current candidate identities.",
+      "review_by": "2027-02-28"
     }
   },
   "scripts": {

@@ -419,6 +419,18 @@ verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
 verify.smart_core.close_02.module_baseline: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=/smart_core
 
+SC_CLOSE_02_BROWSER_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/browser_journeys
+
+.PHONY: verify.frontend.close_02.field_query.browser
+verify.frontend.close_02.field_query.browser: guard.prod.forbid frontend.acceptance.health backend.acceptance.health
+	@SC_CLOSE_02_FRONTEND_URL="$${SC_CLOSE_02_FRONTEND_URL:-http://127.0.0.1:5175}" \
+	  SC_CLOSE_02_DB="sc_frontend_acceptance" \
+	  SC_CLOSE_02_LOGIN="$${SC_CLOSE_02_LOGIN:-fixture_role_config_admin}" \
+	  SC_CLOSE_02_PASSWORD="$(SC_ACCEPTANCE_FIXTURE_PASSWORD)" \
+	  SC_CLOSE_02_BROWSER_OUTPUT="$(SC_CLOSE_02_BROWSER_OUTPUT)" \
+	  SC_CLOSE_02_SAMPLE_SUMMARY=".runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples/summary.json" \
+	  node scripts/verify/close_02_field_query_browser_journeys.mjs
+
 .PHONY: verify.unified_page_contract.v2.client
 verify.unified_page_contract.v2.client: guard.prod.forbid
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_client.py scripts/verify/unified_page_contract_v2_client_guard.py
