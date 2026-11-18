@@ -141,7 +141,7 @@
     },
     "project_intake_contract_governance": {
       "target": "verify.project_intake.contract_governance.unit",
-      "kind": "orm",
+      "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/services/contract_governance_overrides.py",
         "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
@@ -150,7 +150,7 @@
     },
     "construction_core_module_baseline": {
       "target": "verify.smart_construction_core.close_03.module_baseline",
-      "kind": "orm",
+      "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/",
         "make/ci.mk"
@@ -158,7 +158,7 @@
     },
     "preview_promotion_migration": {
       "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
-      "kind": "orm",
+      "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/__manifest__.py",
         "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
