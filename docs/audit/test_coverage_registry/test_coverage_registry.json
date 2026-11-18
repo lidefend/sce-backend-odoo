@@ -2176,7 +2176,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)"
+        "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)",
+        "make:verify.smart_construction_core.close_03.preview_promotion.orm :: /TestLockedMenuPolicyInitialization (class selection)"
       ],
       "disposition": "wire-pending"
     },

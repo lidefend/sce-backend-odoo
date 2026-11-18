@@ -157,7 +157,7 @@
       ]
     },
     "preview_promotion_migration": {
-      "target": "local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization",
+      "target": "verify.smart_construction_core.close_03.preview_promotion.orm",
       "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/__manifest__.py",

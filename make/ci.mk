@@ -427,8 +427,12 @@ verify.project_intake.contract_governance.unit: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:ProjectIntakeContractGovernanceCase
 
 .PHONY: verify.smart_construction_core.close_03.module_baseline
-verify.smart_construction_core.close_03.module_baseline: guard.prod.forbid
+verify.smart_construction_core.close_03.module_baseline: guard.prod.forbid verify.smart_construction_core.close_03.preview_promotion.orm
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core
+
+.PHONY: verify.smart_construction_core.close_03.preview_promotion.orm
+verify.smart_construction_core.close_03.preview_promotion.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization
 
 SC_CLOSE_03_BASE_URL ?= http://127.0.0.1:18082
 SC_CLOSE_03_LOGIN ?= fixture_role_config_admin
