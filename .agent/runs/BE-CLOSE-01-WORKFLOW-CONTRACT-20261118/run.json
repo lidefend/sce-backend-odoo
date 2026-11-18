@@ -23,6 +23,7 @@
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
     "scripts/audit/workflow_state_inventory.py",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/be_close_01_workflow_contract_http_probe.py",
