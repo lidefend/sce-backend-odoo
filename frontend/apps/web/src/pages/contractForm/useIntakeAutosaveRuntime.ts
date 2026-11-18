@@ -76,6 +76,9 @@ export function useIntakeAutosaveRuntime(options: {
     });
     if (result.status === 'recoverable') {
       candidate.value = result.candidate;
+      // A successful create while the prompt is still visible must retire the
+      // exact draft that produced the prompt, even if the user did not restore.
+      lastSavedToken = result.candidate.draftToken;
       options.onNotice({ kind: 'info', message: `发现可恢复的新建输入。${coverageText.value}` });
       return result.status;
     }
