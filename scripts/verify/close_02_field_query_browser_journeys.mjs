@@ -124,7 +124,7 @@ async function openCustomFilter(page) {
 async function applyFieldFilter(page, field, value, label) {
   const panel = await openCustomFilter(page);
   await chooseSelectOption(page, panel, 0, label);
-  const valueInput = panel.locator('[data-semantic-component="ScInput"] input').last();
+  const valueInput = panel.locator('input').last();
   await valueInput.fill(String(value));
   const applied = await waitForList(page, async () => {
     await panel.locator('.custom-search-actions button').first().click();

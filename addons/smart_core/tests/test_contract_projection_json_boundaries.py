@@ -230,7 +230,7 @@ class ContractProjectionJsonBoundaryTests(unittest.TestCase):
 
         _filters, _groupbys, fields = record._parse_search_view("""
             <search>
-                <field name="name" string="Name"/>
+                <field name="name"/>
                 <field name="project_id" string="Project" domain="[('active', '=', True)]"/>
                 <field name="project_id" string="Project contains" filter_domain="[('project_id.name', 'ilike', self)]"/>
                 <field name="state" string="State" operator="!="/>
@@ -242,6 +242,7 @@ class ContractProjectionJsonBoundaryTests(unittest.TestCase):
         self.assertEqual(len({row["occurrence_key"] for row in projected}), 4)
         self.assertEqual(projected[0]["query_mode"], "domain")
         self.assertEqual(projected[0]["operator"], "ilike")
+        self.assertEqual(projected[0]["label"], "Name")
         self.assertEqual(projected[1]["type"], "many2one")
         self.assertEqual(projected[1]["relation"], "project.project")
         self.assertEqual(projected[1]["operator"], "=")

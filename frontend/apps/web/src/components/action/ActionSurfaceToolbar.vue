@@ -766,6 +766,8 @@ watch(activeCustomFilterField, (field) => {
 function handleDocumentPointerDown(event: PointerEvent) {
   const root = toolbarRoot.value;
   if (!root || root.contains(event.target as Node | null)) return;
+  const target = event.target instanceof Element ? event.target : null;
+  if (target?.closest('.t-select__dropdown, .t-select__panel, .t-popup')) return;
   searchMenuOpen.value = false;
   overflowMenuOpen.value = false;
 }

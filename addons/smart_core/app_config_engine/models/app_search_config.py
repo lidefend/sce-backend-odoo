@@ -464,6 +464,9 @@ class AppSearchConfig(models.Model):
                 continue
             meta = fields_meta.get(name) or {}
             field_type = str(meta.get("type") or "char").strip() or "char"
+            declared_label = str(row.get("label") or "").strip()
+            if not declared_label or declared_label == name:
+                declared_label = str(meta.get("string") or name).strip() or name
             attributes = row.get("attributes") if isinstance(row.get("attributes"), dict) else {}
             widget = str(attributes.get("widget") or "").strip()
             explicit_operator = str(row.get("operator") or "").strip()
@@ -499,6 +502,7 @@ class AppSearchConfig(models.Model):
                 occurrence_key = "%s@%s" % (name, native_locator)
             row.update({
                 "field": name,
+                "label": declared_label,
                 "type": field_type,
                 "relation": str(meta.get("relation") or "").strip(),
                 "choices": choices,
