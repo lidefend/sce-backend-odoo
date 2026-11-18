@@ -50,13 +50,20 @@ function inspectWorkflowRow(value: unknown, index: number, declaration = false):
   const directMethod = typeof row.method === 'string' ? text(row.method) : '';
   const targetMethod = typeof target.method === 'string' ? text(target.method) : '';
   const method = directMethod || targetMethod;
+  const saveAction = row.kind === 'save';
+  const methodShapeValid = !hasOwn(row, 'method')
+    || typeof row.method === 'string'
+    || (saveAction && row.method === null);
+  const targetMethodShapeValid = !hasOwn(target, 'method')
+    || typeof target.method === 'string'
+    || (saveAction && target.method === null);
   let issue = '';
   if ((hasOwn(row, 'key') && typeof row.key !== 'string')
-    || (hasOwn(row, 'method') && typeof row.method !== 'string')) {
+    || !methodShapeValid) {
     issue = `availableActions[${index}] identity must use strings`;
   } else if (hasOwn(row, 'target') && (!row.target || typeof row.target !== 'object' || Array.isArray(row.target))) {
     issue = `availableActions[${index}].target must be an object`;
-  } else if (hasOwn(target, 'method') && typeof target.method !== 'string') {
+  } else if (!targetMethodShapeValid) {
     issue = `availableActions[${index}].target.method must be a string`;
   } else if (directMethod && targetMethod && directMethod !== targetMethod) {
     issue = `actions[${index}] method conflicts with target.method`;

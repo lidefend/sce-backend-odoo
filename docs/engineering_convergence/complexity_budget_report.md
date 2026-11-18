@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5265`
+- Scanned files: `5266`
 - Files requiring split plan: `81`
 - Files above warning threshold: `154`
 
@@ -35,7 +35,7 @@ Generated from repository source files. This report is informational during the 
 | 3192 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2910 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2916 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -223,7 +223,7 @@ Generated from repository source files. This report is informational during the 
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
 | 829 | Python source | `addons/smart_core/core/node_component_validation.py` |
-| 829 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
+| 828 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 815 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
@@ -280,7 +280,7 @@ Generated from repository source files. This report is informational during the 
 | 3192 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2910 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2916 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |

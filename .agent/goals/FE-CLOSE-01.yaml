@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: FE-CLOSE-01
-  status: active
+  status: verification_pending
   formal_product_layer: P0/P4
   layer_target: >-
     Contract V2 workflow consumption for payment requests and project lifecycle,
@@ -25,6 +25,8 @@ goal:
     task: BE-CLOSE-01
     branch: feature/be-close-01-workflow-contract-20261118
     worktree: /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109-be-close-01-20261118
+    candidate_sha: d3e2f8d4f6a3f3c7250316ee51a690dac470591a
+    accepted_main_sha: 64f2e68ea1b80464fd080bb93b1a83312decc8c4
     required_handoff:
       - exact backend commit SHA
       - one governed acceptance environment

@@ -61,6 +61,7 @@ import {
 import {
   normalizeNativeFormStatusbar,
   normalizeWorkflowActionRows,
+  normalizeWorkflowPhaseStatusbar,
 } from '../src/pages/contractForm/workflowContract';
 import {
   buildContractFormActions,
@@ -3693,11 +3694,49 @@ assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'subm
 assert.equal(resolveWorkflowActionAvailability({ availableActions: [{ key: 'submit', method: 'action_submit', target: { method: 'different_method' }, enabled: true }] }, submitIdentity).kind, 'error');
 assert.equal(resolveWorkflowActionAvailability({ actions: [], availableActions: [{ key: 'submit', method: 'action_submit', enabled: true }] }, submitIdentity).kind, 'error');
 assert.equal(resolveWorkflowActionAvailability({ ...declaredPause, availableActions: [{ key: 'pause', method: 'transition_42', enabled: true }] }, { methodName: 'transition_42' }).enabled, true);
+const saveDraftWorkflow = {
+  actions: [{ key: 'save_draft', method: null, kind: 'save', intent: 'data.write' }],
+  availableActions: [{
+    key: 'save_draft',
+    method: null,
+    kind: 'save',
+    intent: 'data.write',
+    enabled: true,
+    target: { model: 'payment.request', id: 7, method: null },
+  }],
+};
+assert.equal(
+  resolveWorkflowActionAvailability(saveDraftWorkflow, { actionKey: 'save_draft' }).kind,
+  'managed',
+  'save actions may declare method=null without becoming an invalid contract',
+);
 const unavailableDeclaredSnapshot = snapshot();
 unavailableDeclaredSnapshot.actionContract.actionRuleList[0].button = { type: 'object', name: 'transition_42' };
 unavailableDeclaredSnapshot.workflowContract = declaredPause;
 assert.equal(presentContractV2Form(createContractV2Store(decodeContractV2Snapshot(unavailableDeclaredSnapshot)), 'edit').actionBar[0].enabled, false,
   'the shared presenter must disable a declared unavailable method regardless of its name');
+const explainedUnavailableSnapshot = structuredClone(unavailableDeclaredSnapshot);
+explainedUnavailableSnapshot.workflowContract = {
+  ...declaredPause,
+  availableActions: [{
+    key: 'pause',
+    method: 'transition_42',
+    enabled: false,
+    reason_code: 'PROJECT_TERMINAL_BLOCKED',
+    blocked_message: '存在未完结付款申请，暂不能关闭项目。',
+    target: { model: 'project.project', id: 7, method: 'transition_42' },
+  }],
+};
+const explainedUnavailable = presentContractV2Form(
+  createContractV2Store(decodeContractV2Snapshot(explainedUnavailableSnapshot)), 'edit',
+).actionBar[0];
+assert.equal(explainedUnavailable.enabled, false);
+assert.equal(explainedUnavailable.reasonCode, 'PROJECT_TERMINAL_BLOCKED');
+assert.equal(
+  explainedUnavailable.reasonMessage,
+  '存在未完结付款申请，暂不能关闭项目。',
+  'workflow-disabled actions must retain the backend user-facing reason',
+);
 console.log('[canonical_form_presenter] complete declaration identity cases PASS count=10');
 
 // Optional replay of an existing browser capture through the shared presenter.
@@ -3729,6 +3768,116 @@ assert.equal(resolveWorkflowActionAvailability(declarationOnlyWorkflow, { method
 assert.equal(resolveWorkflowActionAvailability({ ...declarationOnlyWorkflow, record_id: 7 }, { methodName: 'action_submit' }).kind, 'error');
 assert.equal(resolveWorkflowActionAvailability({ actions: declarationOnlyWorkflow.actions }, { methodName: 'action_submit' }).kind, 'error');
 console.log('[declaration-only-workflow] PASS cases=3');
+
+const projectWorkflowStatus = normalizeWorkflowPhaseStatusbar({
+  statusbar: {
+    field: 'lifecycle_state',
+    current: 'in_progress',
+    readonly: true,
+    source: 'workflowContract',
+    states: [
+      { value: 'draft', label: '草稿' },
+      { value: 'in_progress', label: '执行中' },
+      { value: 'paused', label: '已暂停' },
+    ],
+  },
+});
+assert.equal(projectWorkflowStatus.field, 'lifecycle_state');
+assert.equal(projectWorkflowStatus.current, 'in_progress');
+assert.equal(projectWorkflowStatus.states.length, 3);
+assert.equal(projectWorkflowStatus.readonly, true);
+assert.deepEqual(projectWorkflowStatus.reachedValues, [], 'selection order must not be presented as transition history');
+assert.throws(
+  () => normalizeWorkflowPhaseStatusbar({
+    statusbar: {
+      current: 'in_progress',
+      readonly: true,
+      source: 'workflowContract',
+      states: [{ value: 'in_progress', label: '执行中' }],
+    },
+  }),
+  /workflowContract\.statusbar field must be a non-empty string/,
+  'workflow status must not invent a synthetic phase field',
+);
+assert.throws(
+  () => normalizeWorkflowPhaseStatusbar({
+    statusbar: {
+      field: 'lifecycle_state',
+      current: 'missing',
+      readonly: true,
+      source: 'workflowContract',
+      states: [{ value: 'draft', label: '草稿' }],
+    },
+  }),
+  /current missing is not listed in states/,
+  'workflow status must fail closed when current is not a declared state',
+);
+console.log('[workflow-statusbar] PASS cases=6');
+
+// Optional replay of the BE-CLOSE-01 authenticated API handoff. The sample is
+// generated by the backend entry, never by this presentation test.
+const workflowSamplePath = process.env.SC_WORKFLOW_CONTRACT_SAMPLE;
+if (workflowSamplePath) {
+  const { readFileSync } = await import('node:fs');
+  const sample = JSON.parse(readFileSync(workflowSamplePath, 'utf8')) as {
+    create_catalog_samples?: Array<{ contract?: Record<string, unknown> }>;
+    persisted_record_samples?: Array<{ contract?: Record<string, unknown> }>;
+    action_execution_readbacks?: Array<{ after?: Record<string, unknown> }>;
+  };
+  let checked = 0;
+  for (const item of sample.create_catalog_samples || []) {
+    const contract = item.contract || {};
+    assert.equal(contract.availabilityScope, 'declaration_only');
+    assert.equal(Object.prototype.hasOwnProperty.call(contract, 'record_id'), false);
+    assert.equal(Object.prototype.hasOwnProperty.call(contract, 'availableActions'), false);
+    const keys = new Set<string>();
+    for (const raw of (contract.actions as Array<Record<string, unknown>> | undefined) || []) {
+      const key = String(raw.key || '').trim();
+      assert.ok(key && !keys.has(key), 'create catalog action keys must be unique');
+      keys.add(key);
+      if (raw.kind === 'save') assert.equal(raw.method, null);
+      else assert.ok(String(raw.method || '').trim());
+    }
+    checked += 1;
+  }
+  for (const item of sample.persisted_record_samples || []) {
+    const contract = item.contract || {};
+    const statusbar = (contract.statusbar || {}) as Record<string, unknown>;
+    assert.equal(contract.availabilityScope, 'record');
+    assert.equal(statusbar.field, contract.stateField);
+    assert.equal(statusbar.current, contract.rawState);
+    assert.ok((statusbar.states as Array<Record<string, unknown>> | undefined)?.some(
+      (state) => state.value === contract.rawState,
+    ));
+    const rows = (contract.availableActions as Array<Record<string, unknown>> | undefined) || [];
+    assert.equal(new Set(rows.map((row) => String(row.key || ''))).size, rows.length);
+    for (const row of rows) {
+      const availability = resolveWorkflowActionAvailability(contract, {
+        actionKey: row.key,
+        methodName: row.method,
+        backendIdentity: row.key,
+      });
+      assert.equal(
+        availability.kind,
+        'managed',
+        `workflow availability must resolve ${String(contract.model)}:${String(row.key)}`,
+      );
+      if (row.enabled === false) {
+        assert.ok(String(row.reason_code || '').trim());
+        assert.ok(String(row.blocked_message || '').trim());
+      }
+    }
+    checked += 1;
+  }
+  for (const item of sample.action_execution_readbacks || []) {
+    const after = (item.after?.contract || {}) as Record<string, unknown>;
+    assert.equal(after.availabilityScope, 'record');
+    assert.equal((after.statusbar as Record<string, unknown>).field, after.stateField);
+    checked += 1;
+  }
+  assert.ok(checked > 0, 'workflow sample replay requires non-zero contracts');
+  console.log(`[workflow-contract-sample] PASS contracts=${checked}`);
+}
 
 // ---------------------------------------------------------------------------
 // Declared action-rule authority (authorizationAllowed / businessAvailable)
@@ -3817,9 +3966,19 @@ const unprovenStateDenied = presentContractV2Form(
   createContractV2Store(decodeContractV2Snapshot(unprovenStateDeniedSnapshot)), 'edit',
 ).actionBar.find((action) => action.key === 'action_submit');
 assert.equal(
-  unprovenStateDenied,
-  undefined,
-  'a business reason without an explicit visibility explanation must not override the native modifier',
+  unprovenStateDenied?.visible,
+  true,
+  'explicit authorized business unavailability must remain visible even when the native modifier hides the source button',
+);
+assert.equal(
+  unprovenStateDenied?.enabled,
+  false,
+  'explicit authorized business unavailability remains disabled',
+);
+assert.equal(
+  unprovenStateDenied?.reasonMessage,
+  '付款申请必须处于已批准状态。',
+  'explicit business unavailability retains the backend reason',
 );
 
 const invalidVisibilityExplanationSnapshot = structuredClone(explainedStateDeniedSnapshot);

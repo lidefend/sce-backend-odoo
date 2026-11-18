@@ -2,8 +2,8 @@
   "schema_version": 1,
   "id": "FE-CLOSE-01",
   "branch": "feature/fe-close-01-workflow-handling-20261118",
-  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
-  "status": "active",
+  "baseline_sha": "64f2e68ea1b80464fd080bb93b1a83312decc8c4",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-CLOSE-01.yaml",
   "record": "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
   "scope": [
@@ -12,20 +12,171 @@
     ".agent/runs/FE-CLOSE-01/run.json",
     "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
     "frontend/apps/web/src/app/contracts/v2",
+    "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
     "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
     "frontend/apps/web/src/pages/contractForm",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+    "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/scripts",
-    "scripts/verify"
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "make/frontend.mk",
+    "scripts/verify",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_payment_request_workflow_browser.mjs"
   ],
   "environment": {
     "kind": "offline",
-    "authority": "current frontend source and focused static/unit checks; governed runtime waits for BE-CLOSE-01 handoff"
+    "authority": "current frontend source, focused static/unit checks, and the governed local acceptance pair sc_frontend_acceptance@d3e2f8d4 with authenticated fixture identities"
   },
-  "checks": {},
+  "checks": {
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts"
+      ]
+    },
+    "product_page_header": {
+      "target": "verify.frontend.product_page_header.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py"
+      ]
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/contractHeaderActionPresentation.ts"
+      ]
+    },
+    "contract_runtime_policy": {
+      "target": "verify.frontend.contract_v2_runtime_policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/runtime.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts"
+      ]
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src"
+      ]
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/src"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py"
+      ]
+    },
+    "payment_workflow_browser": {
+      "target": "verify.frontend.business_entry.payment_request.browser",
+      "kind": "runtime",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FE-CLOSE-01/payment_workflow_browser/summary.json"
+      }
+    },
+    "project_lifecycle_browser": {
+      "target": "verify.frontend.business_entry.lifecycle.browser",
+      "kind": "runtime",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FE-CLOSE-01/project_lifecycle_browser/summary.json"
+      }
+    }
+  },
   "blockers": [
-    "BE-CLOSE-01 exact-head required checks are still running on d3e2f8d4f6a3f3c7250316ee51a690dac470591a",
-    "current authenticated sample file still reports served_sha=54c0d25a; final API samples must be regenerated on the accepted BE-CLOSE-01 candidate before browser handoff"
+    "BE-CLOSE-01 exact-head required checks are still running on d3e2f8d4f6a3f3c7250316ee51a690dac470591a"
   ],
-  "next_exact_step": "After BE-CLOSE-01 exact-head checks pass, sync this FE branch to accepted main 64f2e68e and then implement the minimal contract-preserving presenter/statusbar reason path for the two entries."
+  "next_exact_step": "Commit the validated frontend candidate, publish the exact-head PR, and bind its checks to BE-CLOSE-01 d3e2f8d4f6a3f3c7250316ee51a690dac470591a."
 }

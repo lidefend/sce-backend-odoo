@@ -1,4 +1,5 @@
 import { parseMaybeJsonRecord } from '../../app/contractRuntime';
+import { contractGapError } from '../../app/contract/contractGap';
 import { dictOrEmpty } from './recordUtils';
 import type { FieldDescriptor } from '@sc/schema';
 import { resolveContractV2WorkflowContract, type ContractV2NormalizedStore } from '../../app/contracts/v2';
@@ -75,24 +76,45 @@ export function normalizeWorkflowEvidenceGateRows(workflow: Record<string, unkno
 }
 
 export function normalizeWorkflowPhaseStatusbar(workflow: Record<string, unknown>): NativeStatusbarVm {
-  const statusbar = dictOrEmpty(workflow.statusbar);
-  const current = String(statusbar.current || '').trim();
-  const states = Array.isArray(statusbar.states)
-    ? statusbar.states
-      .map((item) => dictOrEmpty(item))
-      .map((item) => ({ value: String(item.value || '').trim(), label: String(item.label || item.value || '').trim() }))
-      .filter((item) => item.value && item.label)
-    : [];
-  if (!current || !states.length) {
+  const raw = workflow.statusbar;
+  if (raw === undefined || raw === null) {
     return { visible: false, field: '', current: '', states: [], reachedValues: [], readonly: true };
   }
-  const currentIndex = states.findIndex((item) => String(item.value) === current);
+  const gap = (detail: string): never => {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'workflowContract.statusbar',
+      requiredDeclarationLayer: 'P1:smart_construction_core:workflow_contract_service',
+    }, `workflowContract.statusbar ${detail}`);
+  };
+  if (typeof raw !== 'object' || Array.isArray(raw)) gap('must be an object');
+  const statusbar = raw as Record<string, unknown>;
+  const field = typeof statusbar.field === 'string' ? statusbar.field.trim() : '';
+  const current = typeof statusbar.current === 'string' ? statusbar.current.trim() : '';
+  if (!field) gap('field must be a non-empty string');
+  if (!current) gap('current must be a non-empty string');
+  if (statusbar.readonly !== true) gap('readonly must be true');
+  if (statusbar.source !== 'workflowContract') gap('source must be workflowContract');
+  if (!Array.isArray(statusbar.states) || !statusbar.states.length) gap('states must be a non-empty array');
+  const seen = new Set<string>();
+  const states = (statusbar.states as unknown[]).map((item, index) => {
+    if (!item || typeof item !== 'object' || Array.isArray(item)) gap(`states[${index}] must be an object`);
+    const state = item as Record<string, unknown>;
+    const value = typeof state.value === 'string' ? state.value.trim() : '';
+    const label = typeof state.label === 'string' ? state.label.trim() : '';
+    if (!value || !label) gap(`states[${index}] requires non-empty value and label`);
+    if (seen.has(value)) gap(`states[${index}] duplicates ${value}`);
+    seen.add(value);
+    return { value, label };
+  });
+  if (!seen.has(current)) gap(`current ${current} is not listed in states`);
   return {
     visible: true,
-    field: String(statusbar.field || '__workflow_phase').trim() || '__workflow_phase',
+    field,
     current,
     states,
-    reachedValues: currentIndex >= 0 ? states.slice(0, currentIndex).map((item) => String(item.value)) : [],
+    // Selection order describes display order, not the record's transition history.
+    reachedValues: [],
     readonly: true,
   };
 }

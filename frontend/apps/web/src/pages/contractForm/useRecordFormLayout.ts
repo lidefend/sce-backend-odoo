@@ -3,6 +3,7 @@ import { computed, watch, type ComputedRef, type Ref } from 'vue';
 import type { ContractV2NormalizedStore } from '../../app/contracts/v2';
 import type { NativeFormLayoutNode } from '../../components/template/NativeFormTreeRenderer.vue';
 import { buildRuntimeFieldStates } from '../../app/modifierEngine';
+import { contractGapError } from '../../app/contract/contractGap';
 import { resolveNativeContainerStateDerivedStatus } from '../../app/presentation/actionRuleDerivation';
 import { resolveOccurrenceAuthVerdict } from '../../app/contract/contractAuthLevel';
 import {
@@ -21,7 +22,11 @@ import {
   resolveNativeOccurrenceBehavior, resolveStatusFieldSuppression, nativeModifierValue,
   type NativeLayoutLikeNode, type FieldSemanticMeta,
 } from './nativeLayoutUtils';
-import { normalizeNativeFormStatusbar, resolveStatusbarSelectionValue } from './workflowContract';
+import {
+  normalizeNativeFormStatusbar,
+  normalizeWorkflowPhaseStatusbar,
+  resolveStatusbarSelectionValue,
+} from './workflowContract';
 import type { NativeStatusbarVm } from './types';
 import {
   fieldGroupTitleMatches, isReadableFieldGroupTitle, layoutHasReadableFieldGroups,
@@ -244,6 +249,17 @@ export function useRecordFormLayout(context: {
     const selected=canonicalNativeStatusbar.value;
     const occurrence=selected.node?runtimeOccurrenceState(selected.node):null;
     const workflow=resolveContractV2WorkflowContract(context.v2ContractStore.value);
+    const workflowProjection=normalizeWorkflowPhaseStatusbar(workflow);
+    if(workflowProjection.visible){
+      if(selected.field&&selected.field!==workflowProjection.field){
+        throw contractGapError({
+          kind:'contract_defect',
+          missing:'workflowContract.statusbar.field',
+          requiredDeclarationLayer:'P1:smart_construction_core:workflow_contract_service',
+        },'workflowContract.statusbar.field conflicts with the native statusbar occurrence');
+      }
+      return occurrence?.invisible?{...workflowProjection,visible:false,readonly:true}:workflowProjection;
+    }
     const workflowStatus=workflow.statusbar&&typeof workflow.statusbar==='object'&&!Array.isArray(workflow.statusbar)
       ? workflow.statusbar as Record<string,unknown>:{};
     const workflowReadonly=workflowStatus.field===selected.field&&workflowStatus.readonly===true;
