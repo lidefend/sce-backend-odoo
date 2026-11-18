@@ -81,6 +81,13 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                         "capability_maturity": "PREVIEW_FOUNDATION",
                     })
         preview.write({"menu_groups": preview_groups})
+        stale_maturity_key = "smart_construction_core.menu_sc_project_project"
+        stale_groups = deepcopy(standard.menu_groups)
+        for group in stale_groups:
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == stale_maturity_key:
+                    menu["capability_maturity"] = "PREVIEW_FOUNDATION"
+        standard.write({"menu_groups": stale_groups})
 
         result = policy_model.promote_preview_entries_to_standard_release()
         self.assertIn(target_xmlid, result["standard_added"])

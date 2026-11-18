@@ -23,7 +23,11 @@ def migrate(cr, version):
             for row in group.get("menus") or []
             if isinstance(row, dict)
         ]
-        if len(rows) != 132 or any(row.get("release_state") != "released" for row in rows):
+        if (
+            len(rows) != 132
+            or any(row.get("release_state") != "released" for row in rows)
+            or any(row.get("capability_maturity") != "RELEASED_FOUNDATION" for row in rows)
+        ):
             raise RuntimeError(
                 "CLOSE03_PREVIEW_PROMOTION_INCOMPLETE: %s promoted=%s"
                 % (product_key, result["promoted_entry_count"])

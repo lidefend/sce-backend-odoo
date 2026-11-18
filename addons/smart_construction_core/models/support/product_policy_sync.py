@@ -544,14 +544,21 @@ class ScProductPolicy(models.Model):
                     release = desired.get(menu_xmlid)
                     if not release or _text(release.get("release_state")) != "released":
                         continue
-                    if _text(menu.get("release_state")) != "preview":
+                    current_release = _text(menu.get("release_state"))
+                    if current_release not in {"preview", "released"}:
                         continue
-                    menu["release_state"] = "released"
-                    menu["enabled"] = True
-                    menu["capability_maturity"] = _text(
+                    target_maturity = _text(
                         release.get("capability_maturity")
                     ) or "RELEASED_FOUNDATION"
-                    promoted.add(menu_xmlid)
+                    if current_release == "released" and _text(
+                        menu.get("capability_maturity")
+                    ) == target_maturity:
+                        continue
+                    if current_release == "preview":
+                        promoted.add(menu_xmlid)
+                    menu["release_state"] = "released"
+                    menu["enabled"] = True
+                    menu["capability_maturity"] = target_maturity
                     changed += 1
             for capability in capabilities:
                 if not isinstance(capability, dict):
@@ -560,12 +567,20 @@ class ScProductPolicy(models.Model):
                 release = desired.get(menu_xmlid)
                 if not release or _text(release.get("release_state")) != "released":
                     continue
-                if _text(capability.get("release_state")) != "preview":
+                current_release = _text(capability.get("release_state"))
+                if current_release not in {"preview", "released"}:
                     continue
-                capability["release_state"] = "released"
-                capability["capability_maturity"] = _text(
+                target_maturity = _text(
                     release.get("capability_maturity")
                 ) or "RELEASED_FOUNDATION"
+                if current_release == "released" and _text(
+                    capability.get("capability_maturity")
+                ) == target_maturity:
+                    continue
+                if current_release == "preview":
+                    promoted.add(menu_xmlid)
+                capability["release_state"] = "released"
+                capability["capability_maturity"] = target_maturity
                 changed += 1
             if changed:
                 rec.write({
