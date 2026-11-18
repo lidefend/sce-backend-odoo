@@ -95,7 +95,7 @@ elements as focusable native list items, preserves `aria-disabled`,
 
 ### Final matrix
 
-The final clean candidate `3f4788d5dadd23a62c4a257a21249d295b0bba19` passed the
+The final clean product candidate `afb3e7029c804dbd9c0774ff4bf792c05387747a` passed the
 managed release browser matrix:
 
 - J09 network/conflict recovery, J10 action authority and J11 company-switch work
@@ -107,6 +107,13 @@ managed release browser matrix:
 - console, unhandled HTTP, page-error and unhandled runtime error collections are
   empty.
 
+Runtime evidence is recorded in the run index as a non-reusable stage observation:
+the target requires a clean product source and emits new source-bound browser
+artifacts, while the remote `frontend_release_gate` remains the authoritative
+reusable system check. The run record binds the exact profile, database, actor,
+artifact hashes and final product SHA. Any successor commit is limited to run and
+documentation files, so this product evidence carries forward without rerunning.
+
 ## Rollback
 
-Revert this P4 batch. No database or runtime state requires restoration.
+Revert this P0/P4 batch. No database or persistent runtime state requires restoration.
