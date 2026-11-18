@@ -29,6 +29,8 @@ for formal-release evidence.
 All pull-request actions now share one concurrency group per PR. Adding the candidate
 label supersedes the preceding synchronize run instead of scheduling a second
 authoritative suite on the same SHA; push and schedule remain isolated event groups.
+Ordinary synchronize runs keep their short standard lanes. Only the exact candidate
+label switches to the full formal-release lanes required before merge.
 
 Successful scheduled and explicit-candidate aggregate runs now emit a machine-readable
 `release-condition.json` bound to the exact head/tree and four authoritative run IDs.

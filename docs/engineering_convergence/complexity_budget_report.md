@@ -200,8 +200,8 @@ Generated from repository source files. This report is informational during the 
 | 889 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 889 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
-| 886 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
+| 883 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 882 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 875 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
@@ -237,7 +237,7 @@ Generated from repository source files. This report is informational during the 
 | 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 526 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
-| 500 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
+| 499 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

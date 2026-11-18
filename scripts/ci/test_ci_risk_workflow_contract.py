@@ -100,8 +100,6 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("CANDIDATE_REQUESTED:", text)
         self.assertIn("Resolve effective frontend lane", text)
         self.assertIn("steps.effective_lane.outputs.frontend_mode", text)
-        self.assertIn("full_required='${{ steps.risk.outputs.frontend_full_required }}'", text)
-        self.assertIn('[ "${CANDIDATE_REQUESTED}" = "true" ] || [ "${full_required}" = "true" ]', text)
         self.assertIn('[ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]', text)
         self.assertIn("frontend_mode == 'full'", text)
         self.assertIn("frontend_mode == 'standard'", text)
@@ -126,7 +124,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("verify.frontend.state_dashboard.unit", merge_units)
         self.assertNotIn("verify.frontend.professional_audit.unit", merge_units)
 
-    def test_frontend_lane_preserves_full_requirement_and_candidate_mode(self) -> None:
+    def test_frontend_lane_keeps_sync_standard_and_candidate_full(self) -> None:
         workflow = yaml.safe_load(self.text("frontend_release_gate.yml"))
         step = next(
             step
@@ -135,7 +133,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         cases = (
             ("schedule", "skip", "false", "false", "full"),
-            ("pull_request", "full", "true", "false", "full"),
+            ("pull_request", "full", "true", "false", "standard"),
             ("pull_request", "full", "false", "true", "full"),
             ("pull_request", "standard", "false", "false", "standard"),
             ("pull_request", "full", "false", "false", "standard"),
@@ -149,7 +147,6 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                     script = (
                         step["run"]
                         .replace("${{ steps.risk.outputs.frontend_mode }}", mode)
-                        .replace("${{ steps.risk.outputs.frontend_full_required }}", full_required)
                     )
                     result = subprocess.run(
                         ["bash", "-c", script],
@@ -261,8 +258,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             professional_mode,
         )
         self.assertIn("needs.professional_authorization.outputs.professional_mode", professional_mode)
-        self.assertNotIn("standard_backend", professional_mode)
-        self.assertNotIn("standard_frontend", professional_mode)
+        self.assertIn("outputs.backend_runtime_changed == 'true'", professional_mode)
+        self.assertIn("outputs.frontend_changed == 'true'", professional_mode)
         self.assertNotIn("outputs.backend_changed == 'true'", professional_mode)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
@@ -680,7 +677,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                     self.assertIn('| Effective professional lane | full |',
                                   summary.read_text())
 
-    def test_merge_summary_keeps_full_required_frontend_on_pull_request(self):
+    def test_candidate_merge_summary_keeps_full_required_frontend(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
                     if s.get('name') == 'Publish lane summary')
@@ -691,7 +688,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                    'PROFESSIONAL_MODE': 'full', 'BACKEND_CHANGED': 'false',
                    'BACKEND_RUNTIME_CHANGED': 'false', 'FRONTEND_CHANGED': 'true',
                    'CONTROL_PLANE_CHANGED': 'false', 'MANAGED_ORM_REQUIRED': 'false',
-                   'FRONTEND_FULL_REQUIRED': 'true', 'CANDIDATE_REQUESTED': 'false',
+                   'FRONTEND_FULL_REQUIRED': 'true', 'CANDIDATE_REQUESTED': 'true',
                    'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
                    'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
             result = subprocess.run(['bash', '-c', step['run']], env=env,

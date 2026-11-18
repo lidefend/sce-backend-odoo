@@ -81,8 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mode='${{ steps.risk.outputs.frontend_mode }}'
-          full_required='${{ steps.risk.outputs.frontend_full_required }}'
-          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${CANDIDATE_REQUESTED}" = "true" ] || [ "${full_required}" = "true" ]; then
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${CANDIDATE_REQUESTED}" = "true" ]; then
             mode='full'
           elif [ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]; then
             mode='standard'
