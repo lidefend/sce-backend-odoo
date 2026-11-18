@@ -7,6 +7,7 @@
   "goal": ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
   "record": "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
   "scope": [
+    "AGENTS.md",
     ".agent/active-runs.json",
     ".agent/README.md",
     ".agent/decisions/evidence-reuse-identity.yaml",
@@ -15,14 +16,18 @@
     "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
     "docs/ops/ci_feedback_latency_v1.md",
     "docs/architecture/unified_page_contract_v2/workflow-contract-interface-v1.md",
+    "docs/architecture/stable_baseline_iteration_invariants_v1.md",
     "addons/smart_construction_core/models/core/project_core.py",
     "addons/smart_construction_core/models/core/payment_request.py",
     "addons/smart_construction_core/models/support/workflow_contract_service.py",
     "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+    "addons/smart_core/tests/test_intent_smoke.py",
     "addons/smart_core/core/contract_lifecycle.py",
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
     "docs/architecture/unified_page_contract_v2/examples/",
     "make/ci.mk",
+    "make/dev.mk",
+    "make/guards.mk",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/ops/github_published_branch_sync.py",
@@ -39,6 +44,7 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_agent_run_context.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_development_lifecycle.py",
     "scripts/verify/unified_page_contract_v2_schema_guard.py"
   ],
   "environment": {
@@ -188,6 +194,17 @@
         "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
+    "local_development_lifecycle": {
+      "target": "verify.local.development_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/dev.mk",
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/verify/test_local_test_runner.py"
+      ]
+    },
     "be_close_01_samples": {
       "target": "verify.workflow_contract.be_close_01.samples",
       "kind": "runtime",
@@ -301,5 +318,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the P4 dependency fingerprint commit to backend PR #933, then resume BE-CLOSE-01 final API handoff and frontend integration."
+  "next_exact_step": "Publish the baseline-corrected backend candidate to PR #933, then wait for exact-head required checks and resume BE-CLOSE-01 final API handoff."
 }

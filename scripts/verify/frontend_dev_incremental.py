@@ -127,12 +127,16 @@ RULES = (
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     ), ("verify.frontend.professional_relation_field.unit",)),
     Rule((
-        "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_intent_smoke.py",
+    ), (
+        "verify.smart_core.intent_smoke.orm",
     )),
     Rule((
         "frontend/apps/web/scripts/route_authority_guard_test.ts",
@@ -548,7 +552,6 @@ RULES = (
         "addons/smart_core/tests/test_native_config_menu_projection.py",
         "addons/smart_core/tests/test_relation_entry_contract.py",
         "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
-        "addons/smart_core/tests/test_intent_smoke.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.system_init.menu_boundary.guard",

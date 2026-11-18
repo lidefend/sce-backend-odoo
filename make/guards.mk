@@ -122,6 +122,11 @@ verify.page.project_finalize.authority.orm: guard.prod.forbid
 verify.approval.contract_closure.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=approval_contract_closure
 
+.PHONY: verify.smart_core.intent_smoke.orm
+verify.smart_core.intent_smoke.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_core \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS='/smart_core:TestIntentSmoke'
+
 check.compose.project:
 	@if [ -z "$${COMPOSE_PROJECT_NAME:-}" ]; then \
 	  echo "[FATAL] COMPOSE_PROJECT_NAME is required. Set it or create .env"; \

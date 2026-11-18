@@ -451,10 +451,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_startup_smoke_selects_real_lifecycle_orm(self) -> None:
         self.assertEqual(select_targets(["addons/smart_core/tests/test_intent_smoke.py"]), [
-            "verify.backend.navigation_delivery.unit",
-            "verify.daily.permission_truth.capability.orm",
-            "verify.scenario.center_projection.guard",
-            "verify.system_init.menu_boundary.guard",
+            "verify.smart_core.intent_smoke.orm",
         ])
 
     def test_runtime_capability_catalog_selects_its_projection_unit(self) -> None:
