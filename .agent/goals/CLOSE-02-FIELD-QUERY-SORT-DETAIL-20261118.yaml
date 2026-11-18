@@ -8,6 +8,7 @@ goal:
     ActionView query-state restoration, and list pagination identity
   module:
     - addons/smart_core
+    - addons/smart_construction_acceptance_fixture
     - frontend/apps/web
     - scripts/verify
     - docs/ops/iterations

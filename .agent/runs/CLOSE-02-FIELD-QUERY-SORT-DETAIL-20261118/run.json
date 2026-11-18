@@ -16,6 +16,7 @@
     "addons/smart_core/handlers/api_data.py",
     "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
     "addons/smart_core/tests/",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "frontend/apps/web/src/app/action_runtime",
     "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts",
     "frontend/apps/web/src/app/runtime/collectionViewRuntime.ts",

@@ -387,15 +387,21 @@ verify.unified_page_contract.v2.runtime: guard.prod.forbid verify.smart_core.sea
 SC_CLOSE_02_BASE_URL ?= http://127.0.0.1:18081/t/demo
 SC_CLOSE_02_LOGIN ?= wutao
 SC_CLOSE_02_ENTRY ?=
+SC_CLOSE_02_TARGET_MODE ?= local
+SC_CLOSE_02_TRANSPORT ?= browser
+SC_CLOSE_02_PASSWORD_VAR ?= SC_DEMO_USER_PASSWORD
 SC_CLOSE_02_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples
 
 .PHONY: verify.backend.close_02.search_contract.samples
 verify.backend.close_02.search_contract.samples: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
 	@set -a; . "$(LOCAL_DEV_ENV_FILE)"; set +a; \
+	  password_var="$(SC_CLOSE_02_PASSWORD_VAR)"; \
+	  eval "close_02_password=\$$password_var"; \
 	  SC_CLOSE_02_BASE_URL="$(SC_CLOSE_02_BASE_URL)" \
 	  SC_CLOSE_02_LOGIN="$(SC_CLOSE_02_LOGIN)" \
 	  SC_CLOSE_02_ENTRY="$(SC_CLOSE_02_ENTRY)" \
-	  SC_CLOSE_02_PASSWORD="$$SC_DEMO_USER_PASSWORD" \
+	  SC_CLOSE_02_TRANSPORT="$(SC_CLOSE_02_TRANSPORT)" \
+	  SC_CLOSE_02_PASSWORD="$(if $(filter SC_ACCEPTANCE_FIXTURE_PASSWORD,$(SC_CLOSE_02_PASSWORD_VAR)),$(SC_ACCEPTANCE_FIXTURE_PASSWORD),$$close_02_password)" \
 	  SC_CLOSE_02_EXPECTED_SHA="$$(git rev-parse HEAD)" \
 	  SC_CLOSE_02_OUTPUT="$(SC_CLOSE_02_OUTPUT)" \
 	  node scripts/verify/close_02_backend_contract_samples.mjs

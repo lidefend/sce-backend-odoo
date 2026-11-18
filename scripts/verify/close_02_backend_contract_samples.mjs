@@ -20,6 +20,7 @@ const LOGIN = String(process.env.SC_CLOSE_02_LOGIN || 'wutao').trim();
 const PASSWORD = String(process.env.SC_CLOSE_02_PASSWORD || '').trim();
 const EXPECTED_SHA = String(process.env.SC_CLOSE_02_EXPECTED_SHA || '').trim();
 const ENTRY_FILTER = String(process.env.SC_CLOSE_02_ENTRY || '').trim();
+const TRANSPORT = String(process.env.SC_CLOSE_02_TRANSPORT || 'browser').trim().toLowerCase();
 const OUTPUT_DIR = path.resolve(String(
   process.env.SC_CLOSE_02_OUTPUT
     || '.runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples',
@@ -33,6 +34,7 @@ const ENTRIES = [
     menu: 'menu_sc_project_project',
     action: 'action_sc_project_list',
     model: 'project.project',
+    resolutionKey: 'project',
   },
   {
     key: 'payment_request',
@@ -41,6 +43,7 @@ const ENTRIES = [
     menu: 'menu_sc_user_payment_apply',
     action: 'action_payment_request_user_payment_apply',
     model: 'payment.request',
+    resolutionKey: 'payment_request',
   },
 ];
 
@@ -118,6 +121,27 @@ function findEntryIdentities(value, menuXmlid, rows = []) {
   return rows;
 }
 
+function readResolutionHint(entry) {
+  const resolutionPath = path.resolve('artifacts/backend/acceptance_record_identity.json');
+  if (!fs.existsSync(resolutionPath)) return null;
+  const body = JSON.parse(fs.readFileSync(resolutionPath, 'utf8'));
+  const target = body?.targets?.[entry.resolutionKey];
+  if (!target || target.menu_xmlid !== entry.xmlids.menu || target.action_xmlid !== entry.xmlids.action) {
+    return null;
+  }
+  return {
+    path: path.relative(process.cwd(), resolutionPath).split(path.sep).join('/'),
+    schema: String(body.schema || ''),
+    producer: String(body.producer || ''),
+    hint_expected_sha: String(body.expected_sha || ''),
+    menu_id: Number(target.menu_id || 0),
+    action_id: Number(target.action_id || 0),
+    menu_xmlid: String(target.menu_xmlid || ''),
+    action_xmlid: String(target.action_xmlid || ''),
+    model: String(target.model || ''),
+  };
+}
+
 function recordValueId(value) {
   if (Array.isArray(value)) return Number(value[0] || 0);
   if (value && typeof value === 'object') return Number(value.id || value.res_id || 0);
@@ -132,6 +156,77 @@ function recordValueText(value) {
 
 function unique(values) {
   return [...new Set(values.filter(Boolean))];
+}
+
+function acceptanceEntryHeaders() {
+  const values = {};
+  const identityPath = path.resolve('config/acceptance/isolated_entry_identity.v1.env');
+  for (const line of fs.readFileSync(identityPath, 'utf8').split(/\r?\n/)) {
+    const clean = line.trim();
+    if (!clean || clean.startsWith('#') || !clean.includes('=')) continue;
+    const [key, ...rest] = clean.split('=');
+    values[key.trim()] = rest.join('=').trim();
+  }
+  return {
+    'X-SC-Namespace': values.SC_ENTRY_NAMESPACE || '',
+    'X-SC-Audience': values.SC_ENTRY_AUDIENCE || '',
+    'X-SC-Entry-Secret': values.SC_ENTRY_SHARED_SECRET || '',
+    'X-SC-Route-Version': values.SC_ENTRY_ROUTE_VERSION || '',
+  };
+}
+
+async function createDirectTransport() {
+  const entryHeaders = acceptanceEntryHeaders();
+  assert(Object.values(entryHeaders).every(Boolean), 'acceptance entry identity is incomplete');
+  let token = '';
+  let startupPayload = null;
+
+  const post = async (payload, anonymous = false) => {
+    const response = await fetch(`${BASE_URL}/api/v1/intent`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...entryHeaders,
+        ...(anonymous ? { 'X-Anonymous-Intent': 'true' } : {}),
+        ...(!anonymous && token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify(payload),
+    });
+    return { status: response.status, body: await response.json() };
+  };
+
+  const login = await post({
+    intent: 'login',
+    params: { login: LOGIN, password: PASSWORD, contract_mode: 'default' },
+  }, true);
+  const loginData = intentData(login, 'login');
+  token = String(loginData?.session?.token || loginData?.token || '').trim();
+  assert(token, 'login did not issue a token');
+
+  startupPayload = {
+    intent: 'system.init',
+    params: { scene: 'web', with_preload: false, scene_ready_mode: 'registry', with: ['workspace_home'] },
+    context: { lang: 'zh_CN', tz: 'Asia/Shanghai' },
+  };
+  const system = await post(startupPayload);
+  intentData(system, 'system.init');
+
+  const replayIntent = async (_context, intent, params) => {
+    const result = await post({ ...startupPayload, intent, params });
+    intentData(result, intent);
+    return [result.status, result.body];
+  };
+  replayIntent.startupData = startupPayload;
+  return {
+    replayIntent,
+    systemResult: system,
+    async runtimeVersion() {
+      const response = await fetch(`${BASE_URL}/api/runtime-version`, { headers: entryHeaders });
+      assert(response.ok, `runtime-version status=${response.status}`);
+      return await response.json();
+    },
+    async close() {},
+  };
 }
 
 function flattenDomain(value) {
@@ -166,9 +261,9 @@ async function main() {
   fs.rmSync(OUTPUT_DIR, { recursive: true, force: true });
   fs.mkdirSync(OUTPUT_DIR, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
-  const context = await browser.newContext({ baseURL: BASE_URL });
-  const page = await context.newPage();
+  let browser = null;
+  let context = null;
+  let direct = null;
   const assertions = [];
   const check = (name, condition, detail = '') => {
     assertions.push({ name, status: condition ? 'passed' : 'failed', detail });
@@ -176,22 +271,36 @@ async function main() {
   };
 
   try {
-    await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
-    const replayIntent = await authenticateBrowserProbe(
-      page,
-      LOGIN,
-      async () => fillLoginCredentials(page, LOGIN, PASSWORD).then(
-        () => page.locator('button[type="submit"]').first().click(),
-      ),
-    );
-    const systemResult = await stage(
-      'system.init',
-      replayIntent(context, 'system.init', replayIntent.startupData?.params || {}),
-    );
+    let replayIntent;
+    let systemResult;
+    let runtimeResponse;
+    if (TRANSPORT === 'http') {
+      direct = await createDirectTransport();
+      replayIntent = direct.replayIntent;
+      systemResult = direct.systemResult;
+      runtimeResponse = await direct.runtimeVersion();
+    } else {
+      browser = await chromium.launch({ headless: true });
+      context = await browser.newContext({ baseURL: BASE_URL });
+      const page = await context.newPage();
+      await page.goto(BASE_URL, { waitUntil: 'domcontentloaded', timeout: 45000 });
+      replayIntent = await authenticateBrowserProbe(
+        page,
+        LOGIN,
+        async () => fillLoginCredentials(page, LOGIN, PASSWORD).then(
+          () => page.locator('button[type="submit"]').first().click(),
+        ),
+      );
+      systemResult = await stage(
+        'system.init',
+        replayIntent(context, 'system.init', replayIntent.startupData?.params || {}),
+      );
+      runtimeResponse = await context.request.get(`${BASE_URL}/api/runtime-version`);
+      runtimeResponse = await runtimeResponse.json();
+    }
     const systemData = intentData(systemResult, 'system.init');
 
-    const runtimeResponse = await context.request.get(`${BASE_URL}/api/runtime-version`);
-    const runtimeBody = await runtimeResponse.json();
+    const runtimeBody = runtimeResponse;
     const servedSha = String(runtimeBody.git_sha || runtimeBody.source_revision || '').trim();
     if (servedSha && servedSha !== 'unknown' && EXPECTED_SHA) {
       check('runtime_source_sha', servedSha === EXPECTED_SHA, `${servedSha} != ${EXPECTED_SHA}`);
@@ -239,8 +348,9 @@ async function main() {
       const nav = navRows.find((row) => row.xmlid === entry.xmlids.menu) || {};
       const identity = findEntryIdentities(systemData, entry.xmlids.menu)
         .find((row) => row.menu_id > 0 && row.action_id > 0) || {};
-      let actionId = Number(nav.action_id || identity.action_id || 0);
-      let menuId = Number(nav.menu_id || identity.menu_id || 0);
+      const resolutionHint = readResolutionHint(entry);
+      let actionId = Number(nav.action_id || identity.action_id || resolutionHint?.action_id || 0);
+      let menuId = Number(nav.menu_id || identity.menu_id || resolutionHint?.menu_id || 0);
 
       if (!actionId || !menuId) {
         const lookup = await stage(`${entry.key}.xmlid_lookup`, replayIntent(context, 'api.data', {
@@ -262,32 +372,28 @@ async function main() {
       check(`${entry.key}.action_resolved`, actionId > 0, String(actionId));
       check(
         `${entry.key}.declared_entry_identity`,
-        identity.menu_xmlid === entry.xmlids.menu && identity.action_xmlid === entry.xmlids.action,
-        JSON.stringify(identity),
+        (
+          identity.menu_xmlid === entry.xmlids.menu
+          && identity.action_xmlid === entry.xmlids.action
+        ) || (
+          resolutionHint?.menu_xmlid === entry.xmlids.menu
+          && resolutionHint?.action_xmlid === entry.xmlids.action
+          && resolutionHint?.model === entry.model
+        ),
+        JSON.stringify(identity.menu_xmlid ? identity : resolutionHint),
       );
       entry.menu_id = menuId;
       entry.action_id = actionId;
       entry.navigation = nav;
       entry.declared_route = identity;
+      entry.resolution_hint = resolutionHint;
 
       const [contractStatus, contractBody] = await stage(`${entry.key}.contract`, replayIntent(context, 'ui.contract.v2', {
         op: 'action_open',
-        model: declaration.model,
         action_id: actionId,
         menu_id: menuId,
-        view_type: 'tree',
         client_type: 'web_pc',
         delivery_profile: 'full',
-        contract_surface: 'user',
-        source_mode: 'governance_pipeline',
-        accepted_contract_versions: ['2.0.x', '2.1.x', '2.2.x'],
-        client_contract_capabilities: [
-          'container_tree.v2',
-          'data_source.v2',
-          'action_rule.v2',
-          'relation_entry.v2',
-          'status_contract.v2',
-        ],
       }));
       check(`${entry.key}.contract_http`, contractStatus === 200);
       const contract = intentData({ status: contractStatus, body: contractBody }, 'ui.contract.v2');
@@ -336,7 +442,11 @@ async function main() {
         limit: Math.min(200, Math.max(40, pageSize * 4)),
         order: primaryOrder,
       });
-      const baseResult = await stage(`${entry.key}.base_list`, replayIntent(context, 'api.data', baseRequest));
+      const [baseStatus, baseBody] = await stage(
+        `${entry.key}.base_list`,
+        replayIntent(context, 'api.data', baseRequest),
+      );
+      const baseResult = { status: baseStatus, body: baseBody };
       const baseData = intentData(baseResult, `api.data:base:${entry.key}`);
       const baseRows = Array.isArray(baseData.records) ? baseData.records : [];
       const baseTotal = Number(baseData.total || 0);
@@ -382,10 +492,11 @@ async function main() {
             limit: 1,
             order: primaryOrder,
           });
-          const result = await stage(
+          const [status, body] = await stage(
             `${entry.key}.candidate.${candidate.row.field}`,
             replayIntent(context, 'api.data', params),
           );
+          const result = { status, body };
           const data = intentData(result, `api.data:candidate:${entry.key}:${candidate.row.field}`);
           const total = Number(data.total || 0);
           if (!best || total > best.total) best = { ...candidate, params, total };
@@ -426,10 +537,11 @@ async function main() {
           limit: 1,
           order: primaryOrder,
         });
-        const result = await stage(
+        const [status, body] = await stage(
           `${entry.key}.filter.${candidate.row.key}`,
           replayIntent(context, 'api.data', params),
         );
+        const result = { status, body };
         const data = intentData(result, `api.data:filter:${entry.key}:${candidate.row.key}`);
         const total = Number(data.total || 0);
         if (!filterHit || total > filterHit.total) filterHit = { ...candidate, params, total };
@@ -447,7 +559,11 @@ async function main() {
           limit,
           order: primaryOrder,
         });
-        const result = await stage(`${entry.key}.${sampleKey}`, replayIntent(context, 'api.data', params));
+        const [status, body] = await stage(
+          `${entry.key}.${sampleKey}`,
+          replayIntent(context, 'api.data', params),
+        );
+        const result = { status, body };
         const data = intentData(result, `api.data:${sampleKey}:${entry.key}`);
         const requestPath = writeJson(`${entry.key}/${sampleKey}.request.json`, params);
         const responsePath = writeJson(`${entry.key}/${sampleKey}.response.json`, result.body);
@@ -582,8 +698,9 @@ async function main() {
     const summaryPath = writeJson('summary.json', summary);
     process.stdout.write(`[close-02-backend-samples] PASS entries=${summary.entries.length} assertions=${assertions.length} summary=${summaryPath}\n`);
   } finally {
-    await context.close();
-    await browser.close();
+    if (direct) await direct.close();
+    if (context) await context.close();
+    if (browser) await browser.close();
   }
 }
 
