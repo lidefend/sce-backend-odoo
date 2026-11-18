@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "id": "BE-CLOSE-01-WORKFLOW-CONTRACT-20261118",
+  "branch": "feature/be-close-01-workflow-contract-20261118",
+  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
+  "status": "active",
+  "goal": ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
+  "record": "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
+    ".agent/runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/run.json",
+    "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
+    "docs/architecture/unified_page_contract_v2/workflow-contract-interface-v1.md",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+    "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "make/ci.mk",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/audit/workflow_state_inventory.py",
+    "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+    "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
+    "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
+    "scripts/verify/test_payment_approval_state_machine.py",
+    "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/unified_page_contract_v2_schema_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current repository sources and registered local development/Acceptance tools; no manual Compose or credential assembly"
+  },
+  "checks": {
+    "be_close_01_unit": {
+      "target": "verify.workflow_contract.be_close_01.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/ci.mk",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
+        "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py"
+      ]
+    },
+    "be_close_01_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "make/ci.mk",
+        "scripts/test/test_safe.sh"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_orm_readback.json"
+      }
+    },
+    "be_close_01_samples": {
+      "target": "verify.workflow_contract.be_close_01.samples",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "config/acceptance/backend_contract_instance_v1.json",
+        "make/ci.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/ops/odoo_shell_exec.sh",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_runtime_ids.py"
+      ],
+      "readback": {
+        "artifact": "artifacts/backend/be_close_01_workflow_contract_samples_v1.json"
+      }
+    },
+    "payment_state_machine": {
+      "target": "verify.payment.approval_state_machine.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/state_machine.py",
+        "make/ci.mk",
+        "scripts/verify/test_payment_approval_state_machine.py"
+      ]
+    },
+    "workflow_semantics": {
+      "target": "verify.workflow_action_semantics.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "scripts/verify/workflow_action_semantics_completeness_guard.py",
+        "scripts/verify/test_workflow_action_semantics_completeness_guard.py",
+        "make/ci.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Re-run the fixed ORM tag after the authorization projection fix, then provision the registered acceptance carrier and capture authenticated final API samples."
+}

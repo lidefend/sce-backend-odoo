@@ -1653,8 +1653,12 @@ class ProjectProject(models.Model):
         XML button groups and frontend capability hints are presentation
         controls only.  Every RPC/write path must pass this same backend gate.
         """
+        if not self._has_lifecycle_transition_permission(target_state):
+            raise UserError("你没有权限变更项目生命周期。")
+
+    def _has_lifecycle_transition_permission(self, target_state):
         if self.env.su:
-            return
+            return True
         is_manager = (
             self.env.user.has_group("smart_construction_core.group_sc_cap_project_manager")
             or self.env.user.has_group("smart_construction_core.group_sc_super_admin")
@@ -1668,8 +1672,31 @@ class ProjectProject(models.Model):
             and all(project.lifecycle_state == "draft" for project in self)
         )
         if is_manager or (is_operator and draft_start_only):
-            return
-        raise UserError("你没有权限变更项目生命周期。")
+            return True
+        return False
+
+    _WORKFLOW_ACTION_TARGET = {
+        "activate": "in_progress",
+        "pause": "paused",
+        "resume": "in_progress",
+        "complete": "done",
+        "advance_closing": "closing",
+        "advance_warranty": "warranty",
+        "close": "closed",
+    }
+
+    def _workflow_action_is_authorized(self, action_key):
+        """Read-only authorization projection shared with workflow contracts."""
+        self.ensure_one()
+        key = str(action_key or "").strip()
+        if key == "submit":
+            return self._has_initiation_submit_access()
+        if key in ("approve", "reject"):
+            return bool(self.can_review)
+        target_state = self._WORKFLOW_ACTION_TARGET.get(key)
+        if target_state:
+            return self._has_lifecycle_transition_permission(target_state)
+        return False
 
     def action_sc_pause(self):
         self.action_set_lifecycle_state("paused")
@@ -1712,6 +1739,59 @@ class ProjectProject(models.Model):
                 suggestions.append("建议后续导入工程量清单，便于成本、进度和结算衔接")
         return list(dict.fromkeys(suggestions))
 
+    def _workflow_lifecycle_blockers(self, target_state):
+        """Return model-owned business blockers for one lifecycle transition.
+
+        This is a read-only snapshot used by the workflow contract. The action
+        path calls the same method again before changing state.
+        """
+        self.ensure_one()
+        blockers = []
+        if self.lifecycle_state == "draft" and target_state in ("in_progress", "paused"):
+            try:
+                self._assert_initiation_approved()
+            except UserError as exc:
+                blockers.append({
+                    "reasonCode": "PROJECT_INITIATION_NOT_APPROVED",
+                    "message": str(exc) or "项目立项尚未审批通过，暂不能启动项目。",
+                })
+        if target_state in ("warranty", "closed"):
+            settlement_count = self.env["project.settlement"].sudo().search_count([
+                ("project_id", "=", self.id),
+                ("state", "in", ["draft", "confirmed"]),
+            ])
+            if settlement_count:
+                blockers.append({
+                    "reasonCode": "P0_PROJECT_TERMINAL_BLOCKED",
+                    "message": "存在未完成结算单：%s 条" % settlement_count,
+                })
+            payment_count = self.env["payment.request"].sudo().search_count([
+                ("project_id", "=", self.id),
+                ("state", "in", ["submit", "approve", "approved"]),
+            ])
+            if payment_count:
+                blockers.append({
+                    "reasonCode": "P0_PROJECT_TERMINAL_BLOCKED",
+                    "message": "存在未完结付款申请：%s 条" % payment_count,
+                })
+        return blockers
+
+    def _workflow_business_blockers(self, action_keys):
+        """Project-owned availability projection consumed by V2 contracts."""
+        keys = [action_keys] if isinstance(action_keys, str) else list(action_keys or [])
+        blockers = []
+        for action_key in keys:
+            target_state = self._WORKFLOW_ACTION_TARGET.get(str(action_key or "").strip())
+            if not target_state:
+                continue
+            blockers.extend({
+                **blocker,
+                "actionKeys": [action_key],
+                "blocking": True,
+                "severity": "block",
+            } for blocker in self._workflow_lifecycle_blockers(target_state))
+        return blockers
+
     @api.depends("owner_id", "location", "manager_id", "user_id", "boq_line_count")
     def _compute_lifecycle_advisory(self):
         for project in self:
@@ -1735,17 +1815,21 @@ class ProjectProject(models.Model):
 
     def _validate_lifecycle_transition(self, target_state):
         for project in self:
-            if project.lifecycle_state == "draft" and target_state in ("in_progress", "paused"):
-                project._assert_initiation_approved()
             ScStateMachine.assert_transition(
                 ScStateMachine.PROJECT,
                 project.lifecycle_state,
                 target_state,
                 obj_display=project.display_name,
             )
-            if target_state in ("warranty", "closed"):
-                project._guard_project_close_by_settlement(target_state)
-                project._guard_project_close_by_payment(target_state)
+            blockers = project._workflow_lifecycle_blockers(target_state)
+            if blockers:
+                blocker = blockers[0]
+                raise_guard(
+                    blocker["reasonCode"],
+                    f"项目[{project.display_name}]",
+                    "状态变更",
+                    reasons=[blocker["message"]],
+                )
             # Completeness such as BOQ availability is advisory.  Only
             # conflicts that would strand executable settlement/payment data
             # remain hard terminal guards above.
@@ -1804,38 +1888,32 @@ class ProjectProject(models.Model):
     def _guard_project_close_by_settlement(self, target_state):
         # 结项守卫只统计未完成事实，不向操作者返回结算记录；跨能力域的
         # 存在性校验使用内部提权，避免把财务读权限变成项目经理的前置条件。
-        Settlement = self.env["project.settlement"].sudo()
-        count = Settlement.search_count(
-            [
-                ("project_id", "=", self.id),
-                ("state", "in", ["draft", "confirmed"]),
-            ]
+        blocker = next(
+            (row for row in self._workflow_lifecycle_blockers(target_state) if "结算单" in row["message"]),
+            None,
         )
-        if count:
+        if blocker:
             label = ScStateMachine.label(ScStateMachine.PROJECT, target_state)
             raise_guard(
-                "P0_PROJECT_TERMINAL_BLOCKED",
+                blocker["reasonCode"],
                 f"项目[{self.display_name}]",
                 f"进入“{label}”",
-                reasons=[f"存在未完成结算单：{count} 条"],
+                reasons=[blocker["message"]],
                 hints=["请先完成或取消相关结算单"],
             )
 
     def _guard_project_close_by_payment(self, target_state):
-        Payment = self.env["payment.request"].sudo()
-        count = Payment.search_count(
-            [
-                ("project_id", "=", self.id),
-                ("state", "in", ["submit", "approve", "approved"]),
-            ]
+        blocker = next(
+            (row for row in self._workflow_lifecycle_blockers(target_state) if "付款申请" in row["message"]),
+            None,
         )
-        if count:
+        if blocker:
             label = ScStateMachine.label(ScStateMachine.PROJECT, target_state)
             raise_guard(
-                "P0_PROJECT_TERMINAL_BLOCKED",
+                blocker["reasonCode"],
                 f"项目[{self.display_name}]",
                 f"进入“{label}”",
-                reasons=[f"存在未完结付款申请：{count} 条"],
+                reasons=[blocker["message"]],
                 hints=["请先完成审批或取消相关付款申请"],
             )
 

@@ -2230,6 +2230,25 @@ class PaymentRequest(models.Model):
         if not self._has_finance_approve_access():
             raise ValidationError(_("你没有审批付款/收款申请的权限。"))
 
+    def _workflow_action_is_authorized(self, action_key):
+        """Read-only authorization projection shared with workflow contracts."""
+        self.ensure_one()
+        key = str(action_key or "").strip()
+        if key == "save_draft":
+            try:
+                self.check_access_rights("write", raise_exception=True)
+                self.check_access_rule("write")
+            except AccessError:
+                return False
+            return True
+        if key == "submit":
+            return self._has_submit_access()
+        if key in ("approve", "reject"):
+            return self._has_finance_approve_access() and bool(self.can_review)
+        if key in ("done", "cancel"):
+            return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
+        return False
+
     @api.depends("settlement_id", "settlement_remaining_amount", "amount")
     def _compute_settlement_amount_insufficient(self):
         for rec in self:
@@ -3256,32 +3275,121 @@ class PaymentRequest(models.Model):
     def _check_submission_prerequisites(self):
         """Read-only prerequisites shared by preview and the locked submit action."""
         for rec in self:
-            rec._check_detail_amount_consistency()
-            if rec.state not in ("draft", "rejected"):
-                raise UserError(
-                    _("只有草稿或已驳回的付款/收款申请可以提交审批。")
-                )
-            if (rec.amount or 0.0) <= 0:
-                raise UserError(_("申请金额必须大于 0。"))
-            guidance = rec._native_submit_action_guidance()
-            if guidance["blocking"]:
-                raise UserError(guidance["message"])
-            if not rec._has_payment_basis():
-                raise UserError("请先选择关联合同或结算单后再提交付款/收款申请。")
-            canceled_settlements = rec._linked_settlement_orders().filtered(
-                lambda settlement: settlement.state == "cancel"
-            )
-            if canceled_settlements:
-                raise UserError(
-                    _("已作废结算单不能作为付款申请依据：%s")
-                    % ", ".join(canceled_settlements.mapped("display_name"))
-                )
-            if rec.contract_id and rec.contract_id.state == "cancel":
-                raise UserError("关联合同已取消，不能提交付款/收款申请。")
+            blocking = [
+                row for row in rec._workflow_business_blockers({"submit"})
+                if row.get("blocking") is True
+            ]
+            if blocking:
+                raise UserError(blocking[0]["message"])
             # R10: Overpay is handled as a soft advisory via _collect_payment_advisories,
             # not as a hard guard at submit. The advisory system allows override when
             # force_block_enabled is False (default).
-            rec._check_material_settlement_remaining_amount()
+            continue
+
+    def _workflow_business_blockers(self, action_keys=None):
+        """Model-owned availability facts shared by contract and execution."""
+        self.ensure_one()
+        keys = {str(key or "").strip() for key in (action_keys or {"submit", "approve", "done"})}
+        gates = []
+
+        def add(code, message, keys_for_gate, *, blocking=True, severity="block"):
+            action_keys = sorted(str(key) for key in keys_for_gate if key in keys)
+            if not action_keys:
+                return
+            gates.append({
+                "reasonCode": str(code or "").strip() or "PAYMENT_BUSINESS_RULE_FAILED",
+                "message": str(message or "").strip() or "付款申请当前不可执行。",
+                "actionKeys": action_keys,
+                "blocking": bool(blocking),
+                "severity": severity,
+            })
+
+        if keys & {"submit", "approve"}:
+            try:
+                self._check_detail_amount_consistency()
+            except (UserError, ValidationError) as exc:
+                add("PAYMENT_DETAIL_AMOUNT_INCONSISTENT", str(exc), {"submit", "approve"})
+            if not self.project_id:
+                add("PAYMENT_MISSING_PROJECT", "付款/收款申请必须关联项目。", {"submit", "approve"})
+            if (self.amount or 0.0) <= 0:
+                add("PAYMENT_INVALID_AMOUNT", "申请金额必须大于 0。", {"submit", "approve"})
+            if not self._has_payment_basis():
+                add(
+                    "PAYMENT_MISSING_BASIS",
+                    "请先选择关联合同或结算单后再提交付款/收款申请。",
+                    {"submit", "approve"},
+                )
+
+        if "submit" in keys:
+            if self.state not in ("draft", "rejected"):
+                add(
+                    "PAYMENT_SUBMIT_STATE_INVALID",
+                    "只有草稿或已驳回的付款/收款申请可以提交审批。",
+                    {"submit"},
+                )
+            guidance = self._native_submit_action_guidance()
+            if guidance.get("blocking"):
+                add(
+                    guidance.get("reason_code") or "PAYMENT_SUBMIT_BLOCKED",
+                    guidance.get("message"),
+                    {"submit"},
+                )
+            canceled_settlements = self._linked_settlement_orders().filtered(
+                lambda settlement: settlement.state == "cancel"
+            )
+            if canceled_settlements:
+                add(
+                    "PAYMENT_SETTLEMENT_CANCELLED",
+                    "已作废结算单不能作为付款申请依据：%s" % ", ".join(
+                        canceled_settlements.mapped("display_name")
+                    ),
+                    {"submit"},
+                )
+            if self.contract_id and self.contract_id.state == "cancel":
+                add("PAYMENT_CONTRACT_CANCELLED", "关联合同已取消，不能提交付款/收款申请。", {"submit"})
+            try:
+                self._check_material_settlement_remaining_amount()
+            except (UserError, ValidationError) as exc:
+                text = str(exc)
+                matched = re.search(r"\[SC_GUARD:([A-Z0-9_]+)\]", text)
+                add(
+                    matched.group(1) if matched else "PAYMENT_MATERIAL_SETTLEMENT_BLOCKED",
+                    text,
+                    {"submit"},
+                )
+
+        if keys & {"submit", "approve"} and self.type == "pay":
+            for action_key in sorted(keys & {"submit", "approve"}):
+                for advisory in self._collect_payment_advisories(action_key):
+                    add(
+                        advisory.get("reason_code"),
+                        advisory.get("message"),
+                        {action_key},
+                        blocking=advisory.get("force_block_enabled") is True,
+                        severity="block" if advisory.get("force_block_enabled") is True else "warn",
+                    )
+
+        if "done" in keys:
+            if self.type == "pay":
+                add(
+                    "PAYMENT_EXECUTION_REQUIRED",
+                    "付款申请必须通过专业付款登记完成实付；请生成付款登记，完成审批、付款账户确认和已付款登记。",
+                    {"done"},
+                )
+            elif self.type == "receive":
+                add(
+                    "RECEIPT_EXECUTION_REQUIRED",
+                    "收款申请必须通过专业收款登记完成入账；请生成收款登记并由财务执行“登记收款”。",
+                    {"done"},
+                )
+            elif self.state != "approved":
+                add(
+                    "PAYMENT_GUARD_NOT_READY",
+                    "当前状态为 %s，不能完成付款申请。" % self.state,
+                    {"done"},
+                )
+
+        return gates
 
     def action_submit(self):
         if not self._has_submit_access():
@@ -3383,25 +3491,12 @@ class PaymentRequest(models.Model):
             raise ValidationError(_("你没有完成付款/收款申请的权限。"))
         advisory_result = {}
         for rec in self:
-            if rec.type == "pay":
-                raise UserError(
-                    _(
-                        "付款申请必须通过专业付款登记完成实付；请生成付款登记，完成审批、付款账户确认和已付款登记。"
-                    )
-                )
-            if rec.type == "receive":
-                raise UserError(
-                    _(
-                        "收款申请必须通过专业收款登记完成入账；请生成收款登记并由财务执行“登记收款”。"
-                    )
-                )
-            if rec.state != "approved":
-                raise_guard(
-                    "PAYMENT_GUARD_NOT_READY",
-                    f"付款申请[{rec.display_name}]",
-                    "完成付款申请",
-                    reasons=[f"当前状态为 {rec.state}"],
-                )
+            blocking = [
+                row for row in rec._workflow_business_blockers({"done"})
+                if row.get("blocking") is True
+            ]
+            if blocking:
+                raise UserError(blocking[0]["message"])
             # R10: overpay handled as advisory via _handle_payment_advisories
             rec._check_material_settlement_remaining_amount()
             advisory_result[rec.id] = rec._handle_payment_advisories(

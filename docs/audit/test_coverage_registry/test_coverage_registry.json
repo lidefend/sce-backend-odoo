@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 218,
+    "odoo_tags": 219,
     "gated": 5,
-    "on_demand": 75,
+    "on_demand": 76,
     "unwired": 138,
-    "odoo_tag_declarations": 448,
+    "odoo_tag_declarations": 449,
     "gated_declarations": 102,
-    "uncovered_declarations": 346,
+    "uncovered_declarations": 347,
     "ci_unit_scripts": 19,
     "ci_unit_scripts_wired": 19,
     "ci_unit_scripts_unwired": 0
@@ -744,6 +744,20 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.baseline.readiness :: baseline_readiness $(MAKE) --no-print-directory local.dev.test"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "be_close_01_workflow_contract",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.workflow_contract.be_close_01.orm :: be_close_01_workflow_contract"
       ],
       "disposition": "class-selected"
     },

@@ -1,0 +1,64 @@
+schema_version: 1
+goal:
+  id: BE-CLOSE-01-WORKFLOW-CONTRACT-20261118
+  status: active
+  formal_product_layer: P1
+  supporting_layers:
+    - P0
+    - P4
+  layer_target: >-
+    unified construction workflow contract interface, production projection and
+    record execution availability
+  module:
+    - addons/smart_construction_core
+    - docs/architecture/unified_page_contract_v2
+    - scripts/verify
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Unify the Workflow Contract interface and production implementation for
+    payment requests and project lifecycle entry, including create catalogs,
+    persisted record state/action availability, denial reasons, one primary
+    status projection, shared business checks, and post-action contract readback.
+  product_result: >-
+    Two formal entries emit schema-valid, internally consistent workflow
+    contracts from the final authenticated API path, with stable action
+    identities, truthful record availability backed by the same model-owned
+    checks used at execution, and a frontend handoff bound to one governed
+    backend candidate.
+  why_here: >-
+    Payment and project lifecycle state semantics are construction-industry
+    business rules. The backend owns their effective values, action
+    availability and denial reasons; V2 Schema owns the cross-layer shape.
+  why_not_elsewhere:
+    - The frontend must not derive state or action availability from labels, model names or current values.
+    - No page-specific fallback or hidden approval policy belongs in frontend/apps/web.
+    - No new transitions carrier or search/draft/renderer behavior is included.
+    - No customer-specific or low-code runtime configuration is introduced.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_user_payment_apply
+      - smart_construction_core.menu_sc_product_project_lifecycle_v1
+    behavior:
+      - create workflow action catalog
+      - persisted workflow action availability
+      - workflow statusbar
+      - action denial reason and message
+      - contract readback after declared action
+  acceptance:
+    - Both entries produce schema-valid create and persisted workflow contracts.
+    - Persisted records expose one stable identity and one truthful availability row per declared action that remains applicable.
+    - Business/policy denial always carries a reason code and user-visible message.
+    - Contract availability and execution call the same model-owned read-only business checks.
+    - The primary statusbar field and current value use the real model state field.
+    - Action execution followed by contract readback returns the expected new state and next actions.
+    - Applicable create, actionable persisted and business-blocked persisted samples are collected from the final authenticated API response for both entries.
+    - Frontend handoff identifies backend branch/SHA, environment, sample paths and fields to consume.
+    - Focused non-zero backend tests and governed runtime evidence pass.
+  exclusions:
+    - frontend/apps/web implementation
+    - search, intake autosave, renderer registry, performance control plane
+    - workflowContract.transitions
+    - deployment or product delivery claims
+  rollback: >-
+    Revert the P1 workflow profile/schema/tests and remove generated samples;
+    no persistent data migration is planned.

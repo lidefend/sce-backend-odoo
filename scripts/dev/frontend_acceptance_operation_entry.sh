@@ -190,6 +190,11 @@ case "$operation" in
     ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
       < "$ROOT_DIR/scripts/verify/frontend_delivery_hardening_runtime_ids.py"
     ;;
+  be-close-01-runtime-ids)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    ODOO_SHELL_RUN_ISOLATED=1 bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/verify/be_close_01_workflow_contract_runtime_ids.py"
+    ;;
   core-record-form-journeys)
     validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
     # shellcheck source=../common/frontend_acceptance_make_identity.sh

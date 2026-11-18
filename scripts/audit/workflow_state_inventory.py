@@ -31,6 +31,7 @@ WORKFLOW_METHOD_NAMES = (
     "action_sc_submit",
     "action_approve",
     "action_approval_decision",
+    "action_approval_reject",
     "action_done",
     "action_close",
     "action_sc_close",
