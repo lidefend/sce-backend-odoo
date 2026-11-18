@@ -4649,6 +4649,53 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         self.assertEqual(full["searchContract"]["default_sort"], "write_date desc")
         self.assertNotIn("search", full["dataContract"])
 
+    def test_primary_order_uses_effective_collection_view_before_model_search_default(self):
+        source = {
+            "model": "project.project",
+            "view_type": "tree",
+            "views": {
+                "tree": {
+                    "fields": ["name"],
+                    "default_order": "sequence asc, id asc",
+                },
+            },
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "Name"},
+            },
+            "search": {
+                "fields": [{"field": "name", "label": "Name"}],
+                "defaults": {"limit": 20, "order": "write_date desc"},
+                "default_order": "write_date desc",
+                "default_sort": "write_date desc",
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.search.effective-order",
+        )
+
+        primary_order = full["dataContract"]["dataSource"]["primary"]["params"]["order"]
+        self.assertEqual(primary_order, "sequence asc, id asc")
+        self.assertEqual(full["searchContract"]["defaults"]["order"], primary_order)
+        self.assertEqual(full["searchContract"]["default_order"], primary_order)
+        self.assertEqual(full["searchContract"]["default_sort"], primary_order)
+
+        source["order"] = "name desc"
+        explicit = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.search.explicit-order",
+        )
+        self.assertEqual(
+            explicit["dataContract"]["dataSource"]["primary"]["params"]["order"],
+            "name desc",
+        )
+        self.assertEqual(explicit["searchContract"]["defaults"]["order"], "name desc")
+
     def test_activity_projection_requires_complete_native_carrier(self):
         occurrence = {
             "tag": "activity", "native_locator": "activity", "occurrence_index": 1,
