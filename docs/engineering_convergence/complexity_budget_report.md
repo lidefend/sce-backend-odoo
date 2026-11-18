@@ -191,8 +191,8 @@ Generated from repository source files. This report is informational during the 
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
 | 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 937 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
+| 920 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
-| 915 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 914 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 914 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
 | 914 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |

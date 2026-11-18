@@ -41,6 +41,7 @@
     "make/frontend.mk",
     "scripts/verify/",
     "scripts/ops/test_promote_product_ten_center_policy.py",
+    "scripts/release/test_locked_menu_policy_contract.py",
     "config/product_menu_contract_v1.json",
     "config/frontend/probe_toolchain_registry.json",
     "config/frontend/role_surface_exposure_declarations_v1.json",
@@ -223,6 +224,15 @@
         "addons/smart_construction_core/services/scenario_surface_projection.py",
         "addons/smart_construction_core/data/product_menu_source.json",
         "make/frontend.mk"
+      ]
+    },
+    "role_surface_landing_contract": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/locked_menu_policy_contract.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "scripts/release/test_locked_menu_policy_contract.py"
       ]
     },
     "unified_page_contract_runtime": {
