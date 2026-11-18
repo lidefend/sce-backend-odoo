@@ -75,8 +75,16 @@ findings, reduced to two shared P0 causes:
 
 The P0 fix keeps the official components: only the active activity title is a tab
 stop, the active tab is selected, Delete keeps close reachable, the pointer close
-control is removed from the accessibility tree, and canonical menu nodes expose
-button semantics plus Enter/Space activation.
+control is removed from the accessibility tree, and canonical navigation list
+items become focusable with Enter/Space activation. The menu items deliberately
+retain native list semantics; assigning `button` roles to `li` elements created
+new invalid-list and nested-interactive findings and is not used.
+
+The first post-fix matrix removed all activity-tab critical findings. It exposed
+that adding `button` roles to the vendor menu's `li` elements introduced invalid
+list children and nested-interactive findings. The candidate now keeps those
+elements as focusable native list items, preserves `aria-disabled`,
+`aria-current` and `aria-expanded`, and handles Enter/Space directly.
 
 ## Rollback
 

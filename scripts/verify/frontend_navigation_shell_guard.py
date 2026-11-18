@@ -99,7 +99,7 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in (
         ':data-navigation-label="node.label"',
         ':aria-label="node.label"',
-        'role="button"',
+        ':aria-disabled="blocked || undefined"',
         ':tabindex="blocked ? -1 : 0"',
         '@keydown.enter.prevent="activateFromKeyboard"',
         '@keydown.space.prevent="activateFromKeyboard"',

@@ -41,7 +41,7 @@ goal:
     - Verification-lane coverage registers the acceptance artifact helper and removes the now-unused direct-probe exemption without changing the remote-only allowance.
     - The delivery-hardening guard passes.
     - Activity tabs expose one valid tab stop and keep close available by Delete.
-    - Canonical navigation items are focusable and activate with Enter or Space.
+    - Canonical navigation list items are focusable, expose disabled state and activate with Enter or Space without invalid ARIA roles.
     - The managed release browser entry proceeds past login and records its real browser outcomes.
     - The complete accessibility matrix reports zero blocking findings.
   rollback: Revert the P4 and P0 commits together; no data or runtime state requires restoration.

@@ -13,7 +13,7 @@
     :title="blockedTitle"
     :aria-label="node.label"
     :tabindex="blocked ? -1 : 0"
-    role="button"
+    :aria-disabled="blocked || undefined"
     @keydown.enter.prevent="activateFromKeyboard"
     @keydown.space.prevent="activateFromKeyboard"
   >
@@ -47,8 +47,8 @@
     :title="blockedTitle || node.label"
     :aria-label="node.label"
     :aria-current="active ? 'page' : undefined"
+    :aria-disabled="blocked || undefined"
     :tabindex="blocked ? -1 : 0"
-    role="button"
     @keydown.enter.prevent="activateFromKeyboard"
     @keydown.space.prevent="activateFromKeyboard"
   >
