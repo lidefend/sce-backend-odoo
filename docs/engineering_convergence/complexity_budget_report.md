@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5262`
+- Scanned files: `5263`
 - Files requiring split plan: `81`
 - Files above warning threshold: `153`
 
@@ -192,8 +192,8 @@ Generated from repository source files. This report is informational during the 
 | 915 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 914 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 914 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
+| 914 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
-| 910 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 908 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |

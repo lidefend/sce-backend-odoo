@@ -613,18 +613,22 @@ load_profile
         self.assertNotIn("print(os.environ", fixture)
 
         source = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
-        for target in (
-            "verify.frontend.page_identity.browser:",
-            "verify.frontend.delivery_hardening.release.browser:",
+        for target, login_entry in (
+            ("verify.frontend.page_identity.browser:", "acceptance.runtime.login_probe"),
+            ("verify.frontend.delivery_hardening.release.browser:", "acceptance.runtime.login_probe"),
         ):
             block = source.rsplit(target, 1)[1].split("\n\n", 1)[0]
             backend = block.index("backend.acceptance.up")
-            login_probe = block.index("frontend_acceptance_login_probe.py")
+            login_probe = block.index(login_entry)
             frontend = block.index("frontend.acceptance.up")
             cleanup = block.index("trap '")
             self.assertLess(cleanup, backend, target)
             self.assertLess(backend, login_probe, target)
             self.assertLess(login_probe, frontend, target)
+            self.assertNotIn(
+                "python3 scripts/verify/frontend_acceptance_login_probe.py",
+                block,
+            )
         page_identity_block = source.rsplit("verify.frontend.page_identity.browser:", 1)[1].split(
             "\n\n", 1
         )[0]
