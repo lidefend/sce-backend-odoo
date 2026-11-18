@@ -4,43 +4,55 @@
     "breakpoints": [
       {
         "condition": "max-width: 760px",
-        "count": 14
+        "count": 28
+      },
+      {
+        "condition": "max-width: 640px",
+        "count": 13
       },
       {
         "condition": "max-width: 860px",
-        "count": 10
+        "count": 9
       },
       {
         "condition": "max-width: 900px",
         "count": 8
       },
       {
-        "condition": "max-width: 720px",
+        "condition": "max-width: 960px",
         "count": 7
       },
       {
-        "condition": "max-width: 960px",
-        "count": 5
-      },
-      {
-        "condition": "max-width: 640px",
-        "count": 5
-      },
-      {
         "condition": "max-width: 520px",
-        "count": 5
+        "count": 7
+      },
+      {
+        "condition": "max-width: 720px",
+        "count": 6
       },
       {
         "condition": "min-width: 761px",
+        "count": 6
+      },
+      {
+        "condition": "max-width: 480px",
+        "count": 5
+      },
+      {
+        "condition": "max-width: 560px",
         "count": 5
       },
       {
         "condition": "max-width: 768px",
-        "count": 4
+        "count": 3
       },
       {
-        "condition": "max-width: 560px",
+        "condition": "max-width: 920px",
         "count": 3
+      },
+      {
+        "condition": "max-width: 1100px",
+        "count": 2
       },
       {
         "condition": "max-width:600px",
@@ -51,7 +63,15 @@
         "count": 2
       },
       {
+        "condition": "max-width: 390px",
+        "count": 2
+      },
+      {
         "condition": "min-width: 961px",
+        "count": 2
+      },
+      {
+        "condition": "max-width: 680px",
         "count": 2
       },
       {
@@ -59,15 +79,7 @@
         "count": 2
       },
       {
-        "condition": "max-width: 480px",
-        "count": 2
-      },
-      {
         "condition": "max-width: 1199px",
-        "count": 1
-      },
-      {
-        "condition": "max-width: 1100px",
         "count": 1
       },
       {
@@ -75,7 +87,15 @@
         "count": 1
       },
       {
-        "condition": "max-width:640px",
+        "condition": "min-width: 641px",
+        "count": 1
+      },
+      {
+        "condition": "max-width: 420px",
+        "count": 1
+      },
+      {
+        "condition": "max-width:860px",
         "count": 1
       },
       {
@@ -87,11 +107,11 @@
         "count": 1
       },
       {
-        "condition": "max-width: 680px",
+        "condition": "min-width: 768px",
         "count": 1
       },
       {
-        "condition": "min-width: 861px",
+        "condition": "min-width: 1024px",
         "count": 1
       },
       {
@@ -103,90 +123,110 @@
         "count": 1
       },
       {
+        "condition": "max-width: 576px",
+        "count": 1
+      },
+      {
         "condition": "max-width: 1280px",
         "count": 1
       },
       {
-        "condition": "max-width: 920px",
+        "condition": "min-width: 1201px",
         "count": 1
       }
     ],
     "componentStyleSurface": [
       {
-        "score": 74,
+        "score": 78,
         "source": "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue"
       },
       {
-        "score": 53,
-        "source": "frontend/apps/web/src/components/template/FormSection.vue"
-      },
-      {
-        "score": 53,
+        "score": 69,
         "source": "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
       },
       {
-        "score": 42,
-        "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue"
+        "score": 65,
+        "source": "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue"
+      },
+      {
+        "score": 43,
+        "source": "frontend/apps/web/src/components/template/FormSection.vue"
       },
       {
         "score": 40,
         "source": "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue"
       },
       {
-        "score": 35,
-        "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+        "score": 34,
+        "source": "frontend/apps/web/src/components/GlobalMessagePanel.vue"
       },
       {
-        "score": 28,
+        "score": 32,
         "source": "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue"
       },
       {
-        "score": 28,
-        "source": "frontend/apps/web/src/components/action/HierarchyPlanner.vue"
-      },
-      {
-        "score": 28,
-        "source": "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue"
-      },
-      {
-        "score": 24,
-        "source": "frontend/apps/web/src/components/action/HierarchyBrowser.vue"
-      },
-      {
-        "score": 24,
-        "source": "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue"
-      },
-      {
-        "score": 22,
+        "score": 32,
         "source": "frontend/apps/web/src/components/role-home/WorkspaceHome.vue"
       },
       {
-        "score": 19,
+        "score": 28,
+        "source": "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue"
+      },
+      {
+        "score": 27,
+        "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+      },
+      {
+        "score": 23,
+        "source": "frontend/apps/web/src/components/action/HierarchyBrowser.vue"
+      },
+      {
+        "score": 23,
+        "source": "frontend/apps/web/src/components/boq/BoqImportPreviewPanel.vue"
+      },
+      {
+        "score": 22,
         "source": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue"
       },
       {
-        "score": 18,
+        "score": 22,
+        "source": "frontend/apps/web/src/components/view/ViewRelationalRenderer.vue"
+      },
+      {
+        "score": 20,
+        "source": "frontend/apps/web/src/components/action/HierarchyPlanner.vue"
+      },
+      {
+        "score": 17,
         "source": "frontend/apps/web/src/components/StatusPanel.vue"
       },
       {
+        "score": 17,
+        "source": "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.vue"
+      },
+      {
         "score": 16,
+        "source": "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue"
+      },
+      {
+        "score": 16,
+        "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+      },
+      {
+        "score": 16,
+        "source": "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue"
+      },
+      {
+        "score": 15,
+        "source": "frontend/apps/web/src/components/chart/ChartDatasetPanel.vue"
+      },
+      {
+        "score": 14,
         "source": "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue"
       },
       {
         "score": 14,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue"
-      },
-      {
-        "score": 14,
-        "source": "frontend/apps/web/src/components/product-list/ListSurfaceHeader.vue"
-      },
-      {
-        "score": 13,
-        "source": "frontend/apps/web/src/components/attachment/AttachmentViewer.vue"
-      },
-      {
-        "score": 13,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue"
+        "source": "frontend/apps/web/src/components/product-list/CollectionRowCell.vue"
       },
       {
         "score": 12,
@@ -194,19 +234,51 @@
       },
       {
         "score": 12,
-        "source": "frontend/apps/web/src/components/MenuTree.vue"
-      },
-      {
-        "score": 12,
         "source": "frontend/apps/web/src/components/page/PageRenderer.vue"
       },
       {
         "score": 12,
-        "source": "frontend/apps/web/src/components/product-record/ProductFormLoadingSkeleton.vue"
+        "source": "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalManyToManySelect.vue"
+      },
+      {
+        "score": 12,
+        "source": "frontend/apps/web/src/components/template/NativeNodeComponent.vue"
       },
       {
         "score": 11,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue"
+        "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue"
+      },
+      {
+        "score": 11,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockRichTextOverview.vue"
+      },
+      {
+        "score": 11,
+        "source": "frontend/apps/web/src/components/product-shell/ProductShellSidebarFooter.vue"
+      },
+      {
+        "score": 11,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue"
+      },
+      {
+        "score": 10,
+        "source": "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue"
+      },
+      {
+        "score": 10,
+        "source": "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue"
       },
       {
         "score": 9,
@@ -214,7 +286,7 @@
       },
       {
         "score": 9,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockActivityFeed.vue"
+        "source": "frontend/apps/web/src/components/editor/RestrictedHtmlEditor.vue"
       },
       {
         "score": 9,
@@ -222,11 +294,35 @@
       },
       {
         "score": 9,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue"
+        "source": "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue"
       },
       {
         "score": 9,
-        "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+        "source": "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.vue"
+      },
+      {
+        "score": 9,
+        "source": "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue"
+      },
+      {
+        "score": 8,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockActivityFeed.vue"
+      },
+      {
+        "score": 8,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue"
+      },
+      {
+        "score": 8,
+        "source": "frontend/apps/web/src/components/platform-duty/PlatformDutyPanel.vue"
+      },
+      {
+        "score": 8,
+        "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.vue"
       },
       {
         "score": 7,
@@ -234,19 +330,19 @@
       },
       {
         "score": 7,
+        "source": "frontend/apps/web/src/components/attachment/AttachmentViewer.vue"
+      },
+      {
+        "score": 7,
+        "source": "frontend/apps/web/src/components/design-system/ScButton.vue"
+      },
+      {
+        "score": 7,
         "source": "frontend/apps/web/src/components/page/blocks/BlockAccordionGroup.vue"
       },
       {
         "score": 7,
-        "source": "frontend/apps/web/src/components/template/PageHeader.vue"
-      },
-      {
-        "score": 6,
-        "source": "frontend/apps/web/src/components/design-system/ScFileField.vue"
-      },
-      {
-        "score": 6,
-        "source": "frontend/apps/web/src/components/page/BlockRenderer.vue"
+        "source": "frontend/apps/web/src/components/template/NativeActionOverflowMenu.vue"
       },
       {
         "score": 6,
@@ -254,7 +350,15 @@
       },
       {
         "score": 6,
-        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue"
+        "source": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-list/CollectionSummaryStrip.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-page-patterns/ProductWorkspaceSurface.vue"
       },
       {
         "score": 6,
@@ -262,19 +366,43 @@
       },
       {
         "score": 6,
-        "source": "frontend/apps/web/src/components/product-shell/PrimaryNavigation.vue"
+        "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue"
       },
       {
         "score": 6,
-        "source": "frontend/apps/web/src/components/product-shell/ProductIdentity.vue"
+        "source": "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/product-shell/WorkspaceContextIndicator.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue"
+      },
+      {
+        "score": 6,
+        "source": "frontend/apps/web/src/components/template/One2ManyCellEditor.vue"
       },
       {
         "score": 6,
         "source": "frontend/apps/web/src/components/view/ViewFieldRenderer.vue"
       },
       {
-        "score": 6,
-        "source": "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue"
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScDialog.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScErrorState.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/design-system/ScField.vue"
       },
       {
         "score": 5,
@@ -282,23 +410,51 @@
       },
       {
         "score": 5,
-        "source": "frontend/apps/web/src/components/design-system/ScPageHeader.vue"
+        "source": "frontend/apps/web/src/components/page/blocks/BlockBoqImportPreview.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockChartDataset.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupHeader.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/product-list/ProductLoadingSkeleton.vue"
+      },
+      {
+        "score": 5,
+        "source": "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
       },
       {
         "score": 4,
-        "source": "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScCheckbox.vue"
       },
       {
         "score": 4,
-        "source": "frontend/apps/web/src/components/design-system/ScDialog.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
       },
       {
         "score": 4,
-        "source": "frontend/apps/web/src/components/design-system/ScField.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScInlineState.vue"
       },
       {
         "score": 4,
-        "source": "frontend/apps/web/src/components/page/PageHeader.vue"
+        "source": "frontend/apps/web/src/components/page/BlockRenderer.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/product-list/CollectionKanbanLane.vue"
       },
       {
         "score": 4,
@@ -306,7 +462,23 @@
       },
       {
         "score": 4,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalDetailCollectionControl.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/template/NativeSmartAction.vue"
+      },
+      {
+        "score": 4,
         "source": "frontend/apps/web/src/components/template/PageFooter.vue"
+      },
+      {
+        "score": 4,
+        "source": "frontend/apps/web/src/components/view/ViewNotebookRenderer.vue"
       },
       {
         "score": 3,
@@ -314,11 +486,19 @@
       },
       {
         "score": 3,
-        "source": "frontend/apps/web/src/components/design-system/ScDrawer.vue"
+        "source": "frontend/apps/web/src/components/action/ActionSurfaceRendererHost.vue"
       },
       {
         "score": 3,
-        "source": "frontend/apps/web/src/components/design-system/ScEmptyState.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScFileField.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScInput.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScList.vue"
       },
       {
         "score": 3,
@@ -326,7 +506,35 @@
       },
       {
         "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScPanel.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
+      },
+      {
+        "score": 3,
         "source": "frontend/apps/web/src/components/design-system/ScSection.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/product-list/CollectionFilterChip.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/product-list/CollectionSelectionControl.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/product-shell/NavigationBreadcrumb.vue"
+      },
+      {
+        "score": 3,
+        "source": "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue"
       },
       {
         "score": 3,
@@ -334,7 +542,7 @@
       },
       {
         "score": 2,
-        "source": "frontend/apps/web/src/components/action/ActionSurfaceRendererHost.vue"
+        "source": "frontend/apps/web/src/components/MenuTree.vue"
       },
       {
         "score": 2,
@@ -346,19 +554,23 @@
       },
       {
         "score": 2,
+        "source": "frontend/apps/web/src/components/business/IntentConfirmationDialog.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/content/ScRichText.vue"
+      },
+      {
+        "score": 2,
         "source": "frontend/apps/web/src/components/design-system/ScAuditTrail.vue"
       },
       {
         "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScButton.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScDatePicker.vue"
       },
       {
         "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScDataTable.vue"
-      },
-      {
-        "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScErrorState.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScDescriptions.vue"
       },
       {
         "score": 2,
@@ -370,11 +582,7 @@
       },
       {
         "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScIconButton.vue"
-      },
-      {
-        "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScPanel.vue"
+        "source": "frontend/apps/web/src/components/design-system/ScRadioGroup.vue"
       },
       {
         "score": 2,
@@ -382,7 +590,35 @@
       },
       {
         "score": 2,
-        "source": "frontend/apps/web/src/components/design-system/ScStatusBadge.vue"
+        "source": "frontend/apps/web/src/components/product-list/ProductListSurface.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-page-patterns/CollectionPattern.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-page-patterns/DashboardPattern.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-page-patterns/TaskFormPattern.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-page-patterns/WorkspaceFormPattern.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-shell/ProductMobileNavigationDrawer.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/product-shell/ProductShellContentFooter.vue"
+      },
+      {
+        "score": 2,
+        "source": "frontend/apps/web/src/components/professional-fields/ProfessionalRelationFieldControl.vue"
       },
       {
         "score": 2,
@@ -398,7 +634,19 @@
       },
       {
         "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+      },
+      {
+        "score": 1,
         "source": "frontend/apps/web/src/components/design-system/ScDateField.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScIconButton.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScInputGroup.vue"
       },
       {
         "score": 1,
@@ -410,25 +658,247 @@
       },
       {
         "score": 1,
-        "source": "frontend/apps/web/src/components/design-system/ScRelationField.vue"
-      },
-      {
-        "score": 1,
         "source": "frontend/apps/web/src/components/design-system/ScSelect.vue"
       },
       {
         "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScTable.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/design-system/ScTextarea.vue"
+      },
+      {
+        "score": 1,
+        "source": "frontend/apps/web/src/components/template/PageHeader.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScAside.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScAutoComplete.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScBadge.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScCollapse.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScContent.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScDisclosure.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScDropdown.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScFooter.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScForm.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScFormField.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScFormItem.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScHeader.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScLayout.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScLoading.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScNumberInput.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScPageHeader.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScPagination.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScPopconfirm.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScPopover.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScProgress.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScRadio.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScSkeleton.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScSteps.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScSwitch.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScTabs.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScTimePicker.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScTimeline.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScTooltip.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/ScUpload.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneButton.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneDateField.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneIcon.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneInput.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneSelect.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTable.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/design-system/scene-adapter/ScSceneTextarea.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/page/PageHeader.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionAggregateFooter.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupHeader.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupPageControls.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionGroupingToolbar.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionKanbanLane.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionKanbanRecordCard.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionMobileRecordRow.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionPaginationFooter.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionRowCell.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionSelectionControl.css"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-list/CollectionSummaryStrip.css"
+      },
+      {
+        "score": 0,
         "source": "frontend/apps/web/src/components/product-record/ProductFormErrorSummary.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/product-shell/ProductAppShell.vue"
+      },
+      {
+        "score": 0,
+        "source": "frontend/apps/web/src/components/professional-fields/PaymentSettlementDetailCollectionControl.vue"
       }
     ],
     "existingScPrefixedVariables": [
       "--sc-app-accent",
+      "--sc-app-accent-contrast",
+      "--sc-app-accent-soft",
       "--sc-app-bg",
       "--sc-app-border",
+      "--sc-app-border-default",
       "--sc-app-border-strong",
+      "--sc-app-danger",
       "--sc-app-danger-bg",
       "--sc-app-danger-border",
       "--sc-app-danger-text",
+      "--sc-app-error",
+      "--sc-app-error-bg",
       "--sc-app-focus-ring",
       "--sc-app-hover-bg",
       "--sc-app-info-bg",
@@ -438,33 +908,77 @@
       "--sc-app-muted-bg",
       "--sc-app-overlay",
       "--sc-app-panel",
+      "--sc-app-panel-muted",
+      "--sc-app-primary",
+      "--sc-app-primary-bg",
+      "--sc-app-radius-md",
       "--sc-app-selected-bg",
       "--sc-app-selected-border",
       "--sc-app-selected-text",
       "--sc-app-shadow",
+      "--sc-app-shadow-lg",
+      "--sc-app-shadow-md",
       "--sc-app-shadow-modal",
       "--sc-app-shadow-popover",
       "--sc-app-subtle-bg",
+      "--sc-app-success",
       "--sc-app-success-bg",
       "--sc-app-success-border",
       "--sc-app-success-text",
+      "--sc-app-surface",
+      "--sc-app-tag-bg",
+      "--sc-app-text",
+      "--sc-app-text-inverse",
+      "--sc-app-text-muted",
       "--sc-app-text-primary",
       "--sc-app-text-secondary",
+      "--sc-app-warning",
       "--sc-app-warning-bg",
       "--sc-app-warning-border",
       "--sc-app-warning-text",
+      "--sc-bg-container",
+      "--sc-bg-secondary",
+      "--sc-border-secondary",
+      "--sc-bridge-tdesign-brand-active",
+      "--sc-bridge-tdesign-brand-focus",
+      "--sc-bridge-tdesign-brand-hover",
+      "--sc-bridge-tdesign-component-stroke",
+      "--sc-bridge-tdesign-radius-default",
+      "--sc-bridge-tdesign-radius-medium",
+      "--sc-card-body-padding",
       "--sc-card-gap",
       "--sc-card-padding",
+      "--sc-color-bg-1",
+      "--sc-color-bg-2",
+      "--sc-color-bg-secondary",
       "--sc-color-border",
+      "--sc-color-border-2",
+      "--sc-color-border-3",
+      "--sc-color-border-default",
       "--sc-color-border-strong",
+      "--sc-color-brand",
+      "--sc-color-error",
       "--sc-color-focus",
       "--sc-color-interactive",
+      "--sc-color-primary",
+      "--sc-color-success",
       "--sc-color-surface",
       "--sc-color-surface-raised",
       "--sc-color-surface-subtle",
+      "--sc-color-text-1",
+      "--sc-color-text-2",
+      "--sc-color-text-3",
       "--sc-color-text-muted",
       "--sc-color-text-primary",
       "--sc-color-text-secondary",
+      "--sc-column-header-control-space",
+      "--sc-component-input-form-height",
+      "--sc-component-login-layer-base",
+      "--sc-component-login-layer-content",
+      "--sc-component-login-layer-modal",
+      "--sc-component-overlay-dropdown-z-index",
+      "--sc-component-overlay-local-action-z-index",
+      "--sc-component-sticky-header-z-index",
       "--sc-content-form-max",
       "--sc-content-layout-inline-size",
       "--sc-content-reading-max",
@@ -479,6 +993,7 @@
       "--sc-lowcode-panel-gap",
       "--sc-lowcode-panel-radius",
       "--sc-lowcode-workspace-gap",
+      "--sc-motion-fast",
       "--sc-nav-row-gap",
       "--sc-navigation-active-bg",
       "--sc-navigation-bg",
@@ -488,6 +1003,9 @@
       "--sc-page-padding-mobile",
       "--sc-page-padding-wide",
       "--sc-page-section-gap",
+      "--sc-pattern-task-form-field-gap",
+      "--sc-pattern-task-form-label-row-margin-bottom",
+      "--sc-pattern-task-form-readonly-column-gap",
       "--sc-product-control-height",
       "--sc-product-line-body",
       "--sc-product-list-inline-end",
@@ -504,22 +1022,52 @@
       "--sc-product-space-2",
       "--sc-product-space-3",
       "--sc-product-space-4",
+      "--sc-product-table-header-height",
       "--sc-product-table-row-height",
       "--sc-product-text-body",
+      "--sc-product-text-caption",
       "--sc-product-text-section",
       "--sc-product-text-sm",
       "--sc-product-text-title",
+      "--sc-product-text-weight-bold",
+      "--sc-product-text-weight-semibold",
+      "--sc-product-text-xs",
       "--sc-product-toolbar-height",
       "--sc-product-workspace-gap",
       "--sc-product-workspace-stack-gap",
+      "--sc-radius-md",
+      "--sc-radius-sm",
+      "--sc-semantic-border-default",
+      "--sc-semantic-border-interactive",
+      "--sc-semantic-border-strong",
+      "--sc-semantic-border-subtle",
+      "--sc-semantic-focus-ring",
+      "--sc-semantic-state-success-text",
+      "--sc-semantic-state-warning-text",
+      "--sc-semantic-surface-interactive",
+      "--sc-semantic-surface-interactive-hover",
+      "--sc-semantic-surface-selected",
+      "--sc-semantic-text-link",
+      "--sc-semantic-text-muted",
+      "--sc-semantic-text-on-interactive",
+      "--sc-semantic-text-primary",
+      "--sc-semantic-text-secondary",
+      "--sc-semantic-text-selected",
       "--sc-shell-navigation-item-height",
       "--sc-shell-page-gutter",
       "--sc-shell-sidebar-collapsed-width",
       "--sc-shell-sidebar-width",
       "--sc-shell-topbar-height",
+      "--sc-space-1",
+      "--sc-space-2",
       "--sc-space-2xs",
+      "--sc-space-3",
+      "--sc-space-4",
+      "--sc-space-5",
+      "--sc-space-6",
       "--sc-space-lg",
       "--sc-space-md",
+      "--sc-space-none",
       "--sc-space-sm",
       "--sc-space-xl",
       "--sc-space-xs",
@@ -530,65 +1078,426 @@
       "--sc-table-header-height",
       "--sc-table-row-height",
       "--sc-text-link",
+      "--sc-text-primary",
+      "--sc-text-secondary",
       "--sc-toolbar-gap",
       "--sc-toolbar-group-gap",
       "--sc-touch-target-min",
-      "--sc-workspace-frame-max"
+      "--sc-workspace-frame-max",
+      "--sc-z-content",
+      "--sc-z-content-raised",
+      "--sc-z-overlay"
     ],
-    "hardcodedColorValues": [],
-    "otherVariablesNeedingTaxonomy": [
-      "--accent",
-      "--clickable",
-      "--compact",
-      "--designer-workspace",
-      "--draggable",
-      "--field",
-      "--html",
-      "--ink",
-      "--layout-divider",
-      "--minimal",
-      "--muted",
-      "--order-editable",
-      "--panel",
-      "--readonly",
-      "--readonly-empty-relation",
-      "--selectable",
-      "--smart",
-      "--surface",
-      "--title-hidden"
+    "hardcodedColorValues": [
+      {
+        "count": 3,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-interactive: #087f6a;",
+            "line": 25,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-border-interactive: #087f6a;",
+            "line": 30,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-text-link: #087f6a;",
+            "line": 31,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#087f6a"
+      },
+      {
+        "count": 3,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-interactive: #004f9e;",
+            "line": 46,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-border-interactive: #004f9e;",
+            "line": 51,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-text-link: #004f9e;",
+            "line": 52,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#004f9e"
+      },
+      {
+        "count": 2,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-interactive-hover: #066b5a;",
+            "line": 26,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-hover: #066b5a;",
+            "line": 40,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#066b5a"
+      },
+      {
+        "count": 2,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-text-on-interactive: #ffffff;",
+            "line": 29,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-text-on-interactive: #ffffff;",
+            "line": 50,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#ffffff"
+      },
+      {
+        "count": 2,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-interactive-hover: #003f7d;",
+            "line": 47,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-hover: #003f7d;",
+            "line": 61,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#003f7d"
+      },
+      {
+        "count": 2,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-text-selected: #071526;",
+            "line": 49,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-text-primary: #071526;",
+            "line": 68,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#071526"
+      },
+      {
+        "count": 2,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-text-secondary: #2f4050;",
+            "line": 69,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          },
+          {
+            "excerpt": "--sc-semantic-text-muted: #2f4050;",
+            "line": 70,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#2f4050"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-selected: #e4f4f0;",
+            "line": 27,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#e4f4f0"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-text-selected: #18302a;",
+            "line": 28,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#18302a"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-focus-ring: #006fbb;",
+            "line": 32,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#006fbb"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-default: #d5dfdc;",
+            "line": 33,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#d5dfdc"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-subtle: #e3eae8;",
+            "line": 34,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#e3eae8"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-strong: #a9b8b3;",
+            "line": 35,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#a9b8b3"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-state-warning-text: #8f4b00;",
+            "line": 36,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#8f4b00"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-state-success-text: #087a43;",
+            "line": 37,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#087a43"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-active: #055444;",
+            "line": 41,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#055444"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-focus: rgba(8, 127, 106, 0.24);",
+            "line": 42,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "rgba(8, 127, 106, 0.24)"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-surface-selected: #d9ecff;",
+            "line": 48,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#d9ecff"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-focus-ring: #d44900;",
+            "line": 53,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#d44900"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-default: #263746;",
+            "line": 54,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#263746"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-subtle: #3d5164;",
+            "line": 55,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#3d5164"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-border-strong: #1c2b38;",
+            "line": 56,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#1c2b38"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-state-warning-text: #7a3500;",
+            "line": 57,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#7a3500"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-semantic-state-success-text: #00652e;",
+            "line": 58,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#00652e"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-active: #003264;",
+            "line": 62,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "#003264"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-focus: rgba(212, 73, 0, 0.32);",
+            "line": 63,
+            "source": "frontend/apps/web/src/styles/tokens/profile.css"
+          }
+        ],
+        "value": "rgba(212, 73, 0, 0.32)"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-hover: #0052a9;",
+            "line": 3,
+            "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+          }
+        ],
+        "value": "#0052a9"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-active: #003f88;",
+            "line": 4,
+            "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+          }
+        ],
+        "value": "#003f88"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-brand-focus: rgba(10, 110, 209, 0.24);",
+            "line": 5,
+            "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+          }
+        ],
+        "value": "rgba(10, 110, 209, 0.24)"
+      },
+      {
+        "count": 1,
+        "samples": [
+          {
+            "excerpt": "--sc-bridge-tdesign-component-stroke: #9cadbe;",
+            "line": 6,
+            "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+          }
+        ],
+        "value": "#9cadbe"
+      }
     ],
+    "otherVariablesNeedingTaxonomy": [],
     "pageWidthValues": [
       {
-        "count": 268,
+        "count": 430,
         "value": "0"
       },
       {
-        "count": 175,
+        "count": 282,
         "value": "100%"
       },
       {
-        "count": 14,
+        "count": 28,
         "value": "760px)"
       },
       {
-        "count": 12,
-        "value": "1px"
-      },
-      {
-        "count": 12,
+        "count": 17,
         "value": "auto"
       },
       {
-        "count": 11,
-        "value": "44px"
+        "count": 14,
+        "value": "1px"
+      },
+      {
+        "count": 13,
+        "value": "640px)"
+      },
+      {
+        "count": 13,
+        "value": "var(--sc-touch-target-min)"
       },
       {
         "count": 10,
-        "value": "20px"
-      },
-      {
-        "count": 10,
-        "value": "220px"
+        "value": "480px)"
       },
       {
         "count": 10,
@@ -596,7 +1505,15 @@
       },
       {
         "count": 9,
+        "value": "220px"
+      },
+      {
+        "count": 8,
         "value": "32px"
+      },
+      {
+        "count": 8,
+        "value": "960px)"
       },
       {
         "count": 8,
@@ -604,35 +1521,35 @@
       },
       {
         "count": 8,
+        "value": "52px"
+      },
+      {
+        "count": 8,
         "value": "none"
       },
       {
         "count": 7,
+        "value": "44px"
+      },
+      {
+        "count": 7,
+        "value": "520px)"
+      },
+      {
+        "count": 6,
         "value": "720px)"
       },
       {
-        "count": 7,
+        "count": 6,
         "value": "72px"
       },
       {
-        "count": 7,
+        "count": 6,
         "value": "180px"
       },
       {
-        "count": 7,
-        "value": "52px"
-      },
-      {
         "count": 6,
-        "value": "960px)"
-      },
-      {
-        "count": 6,
-        "value": "640px)"
-      },
-      {
-        "count": 6,
-        "value": "36px"
+        "value": "761px)"
       },
       {
         "count": 6,
@@ -640,35 +1557,35 @@
       },
       {
         "count": 5,
-        "value": "520px)"
+        "value": "28px"
       },
       {
         "count": 5,
-        "value": "761px)"
+        "value": "18px"
+      },
+      {
+        "count": 5,
+        "value": "30px"
       },
       {
         "count": 5,
         "value": "thin"
       },
       {
-        "count": 4,
-        "value": "30px"
+        "count": 5,
+        "value": "560px)"
       },
       {
         "count": 4,
-        "value": "240px"
+        "value": "100vw"
       },
       {
         "count": 4,
-        "value": "96px"
+        "value": "20px"
       },
       {
         "count": 4,
-        "value": "22px"
-      },
-      {
-        "count": 4,
-        "value": "120px"
+        "value": "140px"
       },
       {
         "count": 4,
@@ -676,7 +1593,15 @@
       },
       {
         "count": 4,
-        "value": "12px"
+        "value": "92px"
+      },
+      {
+        "count": 3,
+        "value": "300px"
+      },
+      {
+        "count": 3,
+        "value": "240px"
       },
       {
         "count": 3,
@@ -684,11 +1609,11 @@
       },
       {
         "count": 3,
-        "value": "`$"
+        "value": "560px"
       },
       {
         "count": 3,
-        "value": "560px"
+        "value": "min(480px, calc(100vw - 32px))"
       },
       {
         "count": 3,
@@ -696,27 +1621,43 @@
       },
       {
         "count": 3,
+        "value": "`$"
+      },
+      {
+        "count": 3,
         "value": "5px"
       },
       {
         "count": 3,
-        "value": "104px"
+        "value": "22px"
       },
       {
         "count": 3,
-        "value": "76px"
+        "value": "36px"
       },
       {
         "count": 3,
-        "value": "18px"
+        "value": "10px"
+      },
+      {
+        "count": 3,
+        "value": "479px)"
+      },
+      {
+        "count": 3,
+        "value": "480px) and (max-width: 959px)"
+      },
+      {
+        "count": 3,
+        "value": "96px"
+      },
+      {
+        "count": 3,
+        "value": "120px"
       },
       {
         "count": 3,
         "value": "max-content"
-      },
-      {
-        "count": 3,
-        "value": "92px"
       },
       {
         "count": 3,
@@ -728,35 +1669,35 @@
       },
       {
         "count": 3,
-        "value": "560px)"
-      },
-      {
-        "count": 3,
         "value": "34px"
       },
       {
         "count": 3,
-        "value": "42px"
+        "value": "520px"
+      },
+      {
+        "count": 3,
+        "value": "920px)"
       },
       {
         "count": 2,
-        "value": "300px"
+        "value": "34%"
       },
       {
         "count": 2,
-        "value": "100vw"
+        "value": "960px)')"
       },
       {
         "count": 2,
-        "value": "64%"
+        "value": "104px"
       },
       {
         "count": 2,
-        "value": "28px"
+        "value": "2px"
       },
       {
         "count": 2,
-        "value": "140px"
+        "value": "1100px)"
       },
       {
         "count": 2,
@@ -764,19 +1705,15 @@
       },
       {
         "count": 2,
-        "value": "var(--sc-touch-target-min)"
-      },
-      {
-        "count": 2,
         "value": "1200px)"
       },
       {
         "count": 2,
-        "value": "190px"
+        "value": "390px)"
       },
       {
         "count": 2,
-        "value": "54px"
+        "value": "12px"
       },
       {
         "count": 2,
@@ -784,7 +1721,23 @@
       },
       {
         "count": 2,
-        "value": "46px"
+        "value": "640px"
+      },
+      {
+        "count": 2,
+        "value": "0 0 1px"
+      },
+      {
+        "count": 2,
+        "value": "88px"
+      },
+      {
+        "count": 2,
+        "value": "160px"
+      },
+      {
+        "count": 2,
+        "value": "84px"
       },
       {
         "count": 2,
@@ -792,15 +1745,7 @@
       },
       {
         "count": 2,
-        "value": "680px)"
-      },
-      {
-        "count": 2,
-        "value": "24px"
-      },
-      {
-        "count": 2,
-        "value": "4px"
+        "value": "fit-content"
       },
       {
         "count": 2,
@@ -808,19 +1753,19 @@
       },
       {
         "count": 2,
-        "value": "fit-content"
+        "value": "4px"
       },
       {
         "count": 2,
-        "value": "10px"
+        "value": "116px"
       },
       {
         "count": 2,
-        "value": "min(240px, 100%)"
+        "value": "80, fixed: 'right'"
       },
       {
         "count": 2,
-        "value": "26px"
+        "value": "680px)"
       },
       {
         "count": 2,
@@ -832,11 +1777,15 @@
       },
       {
         "count": 2,
-        "value": "108px"
+        "value": "1300px)"
       },
       {
         "count": 2,
-        "value": "1300px)"
+        "value": "calc(var(--sc-component-button-section-tab-height) * 1px)"
+      },
+      {
+        "count": 2,
+        "value": "34ch"
       },
       {
         "count": 2,
@@ -844,7 +1793,7 @@
       },
       {
         "count": 2,
-        "value": "480px)"
+        "value": "72%"
       },
       {
         "count": 1,
@@ -864,6 +1813,10 @@
       },
       {
         "count": 1,
+        "value": "64%"
+      },
+      {
+        "count": 1,
         "value": "min(150px, 38%)"
       },
       {
@@ -880,19 +1833,11 @@
       },
       {
         "count": 1,
-        "value": "34%"
-      },
-      {
-        "count": 1,
         "value": "number"
       },
       {
         "count": 1,
-        "value": "2px"
-      },
-      {
-        "count": 1,
-        "value": "1100px)"
+        "value": "column.width,"
       },
       {
         "count": 1,
@@ -900,7 +1845,7 @@
       },
       {
         "count": 1,
-        "value": "column.field === outlineField.value ? 'min(36vw, 520px)' : '150px'"
+        "value": "column.field === outlineField.value ? 360 : 150,"
       },
       {
         "count": 1,
@@ -908,23 +1853,27 @@
       },
       {
         "count": 1,
-        "value": "min(1040px, 100%)"
+        "value": "641px) and (max-width: 1200px)"
       },
       {
         "count": 1,
-        "value": "min(calc(100% - 2 * var(--sc-product-space-2)), 460px)"
+        "value": "'var(--sc-shell-sidebar-width)'"
       },
       {
         "count": 1,
-        "value": "min(480px, calc(100vw - 32px))"
+        "value": "760px): the"
       },
       {
         "count": 1,
-        "value": "min(100%,560px)"
+        "value": "min(var(--sc-component-dialog-width), calc(100vw - 2 * var(--sc-product-page-gutter)))"
       },
       {
         "count": 1,
-        "value": "min(90vw,420px)"
+        "value": "min(var(--sc-component-dialog-wide-width), calc(100vw - 2 * var(--sc-product-page-gutter)))"
+      },
+      {
+        "count": 1,
+        "value": "56ch"
       },
       {
         "count": 1,
@@ -932,7 +1881,31 @@
       },
       {
         "count": 1,
-        "value": "max(100%, 560px)"
+        "value": "180"
+      },
+      {
+        "count": 1,
+        "value": "100"
+      },
+      {
+        "count": 1,
+        "value": "120, align: 'right'"
+      },
+      {
+        "count": 1,
+        "value": "8px"
+      },
+      {
+        "count": 1,
+        "value": "64px"
+      },
+      {
+        "count": 1,
+        "value": "16px"
+      },
+      {
+        "count": 1,
+        "value": "420px)"
       },
       {
         "count": 1,
@@ -948,47 +1921,51 @@
       },
       {
         "count": 1,
-        "value": "82px"
+        "value": "190px"
       },
       {
         "count": 1,
-        "value": "84px"
+        "value": "auto` then refuses to shrink, which pushes the trailing submit and"
       },
       {
         "count": 1,
-        "value": "820px"
+        "value": "auto` then refuses to shrink,"
       },
       {
         "count": 1,
-        "value": "78%"
+        "value": "'100%', height: '44px', marginBottom: '12px'"
       },
       {
         "count": 1,
-        "value": "90%"
+        "value": "'100%', height: '38px', marginBottom: '1px'"
       },
       {
         "count": 1,
-        "value": "58%"
+        "value": "'42%', height: '32px', marginTop: '12px'"
       },
       {
         "count": 1,
-        "value": "72%"
+        "value": "columns === 1 ? '100%' : `calc($"
       },
       {
         "count": 1,
-        "value": "48%"
+        "value": "min(46rem, 100%)"
       },
       {
         "count": 1,
-        "value": "92%"
+        "value": "min(100%, var(--sc-content-form-max))"
       },
       {
         "count": 1,
-        "value": "68%"
+        "value": "min(100%, var(--sc-content-record-max))"
       },
       {
         "count": 1,
-        "value": "88px"
+        "value": "36%"
+      },
+      {
+        "count": 1,
+        "value": "46px"
       },
       {
         "count": 1,
@@ -996,11 +1973,7 @@
       },
       {
         "count": 1,
-        "value": "1240px)"
-      },
-      {
-        "count": 1,
-        "value": "160px"
+        "value": "76px"
       },
       {
         "count": 1,
@@ -1008,7 +1981,23 @@
       },
       {
         "count": 1,
-        "value": "116px"
+        "value": "50%"
+      },
+      {
+        "count": 1,
+        "value": "1024px)"
+      },
+      {
+        "count": 1,
+        "value": "25%"
+      },
+      {
+        "count": 1,
+        "value": "90, fixed: 'left'"
+      },
+      {
+        "count": 1,
+        "value": "1120px"
       },
       {
         "count": 1,
@@ -1016,27 +2005,11 @@
       },
       {
         "count": 1,
-        "value": "min(340px, calc(100vw - 44px))"
-      },
-      {
-        "count": 1,
-        "value": "960px)')"
-      },
-      {
-        "count": 1,
-        "value": "60px"
-      },
-      {
-        "count": 1,
         "value": "clamp(280px, 32vw, 460px)"
       },
       {
         "count": 1,
-        "value": "56px"
-      },
-      {
-        "count": 1,
-        "value": "64px"
+        "value": "min(240px, 100%)"
       },
       {
         "count": 1,
@@ -1048,19 +2021,23 @@
       },
       {
         "count": 1,
-        "value": "3px"
-      },
-      {
-        "count": 1,
-        "value": "8px"
-      },
-      {
-        "count": 1,
-        "value": "16px"
+        "value": "108px"
       },
       {
         "count": 1,
         "value": "resolveListColumnBudgetWidth("
+      },
+      {
+        "count": 1,
+        "value": "40,"
+      },
+      {
+        "count": 1,
+        "value": "52,"
+      },
+      {
+        "count": 1,
+        "value": "resolvedColumnWidth(field),"
       },
       {
         "count": 1,
@@ -1080,14 +2057,6 @@
       },
       {
         "count": 1,
-        "value": "360px"
-      },
-      {
-        "count": 1,
-        "value": "861px)"
-      },
-      {
-        "count": 1,
         "value": "78ch"
       },
       {
@@ -1100,7 +2069,19 @@
       },
       {
         "count": 1,
-        "value": "68px"
+        "value": "520px)') : null"
+      },
+      {
+        "count": 1,
+        "value": "14rem"
+      },
+      {
+        "count": 1,
+        "value": "14rem)"
+      },
+      {
+        "count": 1,
+        "value": "24px"
       },
       {
         "count": 1,
@@ -1116,7 +2097,7 @@
       },
       {
         "count": 1,
-        "value": "min(920px, 100%)"
+        "value": "min(var(--sc-component-dialog-wide-width), 100%)"
       },
       {
         "count": 1,
@@ -1136,15 +2117,7 @@
       },
       {
         "count": 1,
-        "value": "calc(var(--sc-component-shell-sidebar-width, 248) * 1px)"
-      },
-      {
-        "count": 1,
-        "value": "calc(var(--sc-component-shell-sidebar-collapsed-width, 56) * 1px)"
-      },
-      {
-        "count": 1,
-        "value": "1280px)"
+        "value": "576px)"
       },
       {
         "count": 1,
@@ -1160,27 +2133,135 @@
       },
       {
         "count": 1,
-        "value": "1px !important"
+        "value": "calc(var(--sc-pattern-app-shell-sidebar-width) * 1px)"
       },
       {
         "count": 1,
-        "value": "min(1180px, 100%)"
+        "value": "calc(var(--sc-pattern-app-shell-sidebar-collapsed-width) * 1px)"
       },
       {
         "count": 1,
-        "value": "620px"
+        "value": "1280px)"
       },
       {
         "count": 1,
-        "value": "920px)"
+        "value": "min(40vw, 520px)"
       },
       {
         "count": 1,
-        "value": "min(560px, 100%)"
+        "value": "62%"
+      },
+      {
+        "count": 1,
+        "value": "24%"
+      },
+      {
+        "count": 1,
+        "value": "112px"
+      },
+      {
+        "count": 1,
+        "value": "min(68vw, 860px)"
+      },
+      {
+        "count": 1,
+        "value": "38%"
+      },
+      {
+        "count": 1,
+        "value": "min(46vw, 590px)"
+      },
+      {
+        "count": 1,
+        "value": "150px"
+      },
+      {
+        "count": 1,
+        "value": "280px"
+      },
+      {
+        "count": 1,
+        "value": "78px"
+      },
+      {
+        "count": 1,
+        "value": "400px"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.index, align: 'center' as const"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.name"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.defaultLabel"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.origin"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.parent"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.level, align: 'center' as const"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.sequence, align: 'center' as const"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.moveTarget"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.visible, align: 'center' as const"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.roleGroups"
+      },
+      {
+        "count": 1,
+        "value": "BULK_COLUMN_WIDTHS.note"
+      },
+      {
+        "count": 1,
+        "value": "72ch"
+      },
+      {
+        "count": 1,
+        "value": "260, cell: (_h: unknown,"
+      },
+      {
+        "count": 1,
+        "value": "96, cell: (_h: unknown,"
+      },
+      {
+        "count": 1,
+        "value": "128, cell: (_h: unknown,"
+      },
+      {
+        "count": 1,
+        "value": "26px"
       },
       {
         "count": 1,
         "value": "760px"
+      },
+      {
+        "count": 1,
+        "value": "1201px)"
+      },
+      {
+        "count": 1,
+        "value": "42px"
       },
       {
         "count": 1,
@@ -1193,80 +2274,76 @@
       {
         "count": 1,
         "value": "390px"
-      },
-      {
-        "count": 1,
-        "value": "900px"
-      },
-      {
-        "count": 1,
-        "value": "106px"
       }
     ],
     "radiusValues": [
       {
-        "count": 97,
-        "value": "8px"
-      },
-      {
-        "count": 85,
+        "count": 67,
         "value": "6px"
       },
       {
-        "count": 69,
+        "count": 65,
+        "value": "8px"
+      },
+      {
+        "count": 57,
         "value": "999px"
       },
       {
-        "count": 39,
+        "count": 30,
         "value": "0"
       },
       {
-        "count": 35,
+        "count": 20,
         "value": "var(--sc-component-panel-radius)"
       },
       {
-        "count": 22,
-        "value": "4px"
-      },
-      {
-        "count": 20,
+        "count": 17,
         "value": "var(--sc-product-radius-control)"
       },
       {
-        "count": 18,
-        "value": "12px"
+        "count": 14,
+        "value": "4px"
       },
       {
-        "count": 18,
-        "value": "10px"
-      },
-      {
-        "count": 15,
+        "count": 12,
         "value": "var(--sc-product-radius-panel)"
       },
       {
-        "count": 14,
-        "value": "5px"
-      },
-      {
-        "count": 10,
-        "value": "var(--sc-component-input-radius)"
-      },
-      {
-        "count": 8,
-        "value": "var(--sc-component-button-radius)"
-      },
-      {
-        "count": 7,
+        "count": 12,
         "value": "var(--sc-product-panel-radius)"
       },
       {
-        "count": 5,
-        "value": "7px"
+        "count": 11,
+        "value": "10px"
       },
       {
-        "count": 3,
-        "value": "var(--sc-component-dialog-radius)"
+        "count": 8,
+        "value": "12px"
+      },
+      {
+        "count": 8,
+        "value": "var(--sc-radius-md)"
+      },
+      {
+        "count": 8,
+        "value": "5px"
+      },
+      {
+        "count": 5,
+        "value": "var(--sc-component-input-radius)"
+      },
+      {
+        "count": 5,
+        "value": "50%"
+      },
+      {
+        "count": 4,
+        "value": "2px"
+      },
+      {
+        "count": 4,
+        "value": "var(--sc-component-button-radius)"
       },
       {
         "count": 3,
@@ -1278,7 +2355,11 @@
       },
       {
         "count": 3,
-        "value": "9px"
+        "value": "0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel)"
+      },
+      {
+        "count": 3,
+        "value": "0 8px 8px 0"
       },
       {
         "count": 2,
@@ -1290,19 +2371,19 @@
       },
       {
         "count": 2,
-        "value": "var(--sc-radius-md, 8px)"
+        "value": "var(--sc-app-radius-md)"
       },
       {
         "count": 2,
-        "value": "8px 8px 0 0"
+        "value": "var(--sc-radius-small, 4px)"
       },
       {
         "count": 2,
-        "value": "14px"
+        "value": "inherit"
       },
       {
         "count": 2,
-        "value": "0 5px 5px 0"
+        "value": "18px"
       },
       {
         "count": 2,
@@ -1314,27 +2395,27 @@
       },
       {
         "count": 2,
-        "value": "0 8px 8px 0"
+        "value": "var(--sc-radius-sm)"
       },
       {
         "count": 1,
-        "value": "10px 10px 0 0"
+        "value": "0 5px 5px 0"
       },
       {
         "count": 1,
-        "value": "0 999px 999px 0"
+        "value": "var(--sc-product-radius-panel) var(--sc-product-radius-panel) 0 0"
       },
       {
         "count": 1,
-        "value": "9px 9px 0 0"
+        "value": "var(--sc-radius-sm, 4px)"
       },
       {
         "count": 1,
-        "value": "2px"
+        "value": "var(--sc-radius-md, 8px)"
       },
       {
         "count": 1,
-        "value": "0 0 var(--sc-product-radius-panel) var(--sc-product-radius-panel)"
+        "value": "8px 8px 0 0"
       },
       {
         "count": 1,
@@ -1342,11 +2423,7 @@
       },
       {
         "count": 1,
-        "value": "18px"
-      },
-      {
-        "count": 1,
-        "value": "3px"
+        "value": "14px"
       },
       {
         "count": 1,
@@ -1362,15 +2439,7 @@
       },
       {
         "count": 1,
-        "value": "4px 0 0 4px"
-      },
-      {
-        "count": 1,
-        "value": "0 4px 4px 0"
-      },
-      {
-        "count": 1,
-        "value": "5px 0 0 5px"
+        "value": "var(--sc-component-card-radius)"
       },
       {
         "count": 1,
@@ -1378,11 +2447,23 @@
       },
       {
         "count": 1,
-        "value": "var(--sc-component-control-radius)"
+        "value": "var(--sc-component-dialog-radius)"
       },
       {
         "count": 1,
-        "value": "50%"
+        "value": "24px"
+      },
+      {
+        "count": 1,
+        "value": "48% 52% 44% 56%"
+      },
+      {
+        "count": 1,
+        "value": "22px"
+      },
+      {
+        "count": 1,
+        "value": "34px"
       },
       {
         "count": 1,
@@ -1395,56 +2476,40 @@
         "value": "none"
       },
       {
-        "count": 12,
+        "count": 8,
         "value": "var(--sc-app-shadow)"
       },
       {
-        "count": 11,
-        "value": "0 0 0 3px var(--sc-app-focus-ring)"
-      },
-      {
-        "count": 7,
-        "value": "var(--sc-semantic-shadow-modal)"
-      },
-      {
-        "count": 6,
+        "count": 5,
         "value": "var(--sc-app-shadow-popover)"
       },
       {
         "count": 5,
-        "value": "var(--sc-product-shadow-overlay)"
+        "value": "var(--sc-app-shadow-modal)"
       },
       {
         "count": 4,
-        "value": "inset 3px 0 0 var(--sc-app-accent)"
+        "value": "var(--sc-semantic-shadow-modal)"
       },
       {
-        "count": 3,
-        "value": "inset 3px 0 0 var(--sc-semantic-surface-interactive)"
+        "count": 4,
+        "value": "0 0 0 3px var(--sc-app-focus-ring)"
       },
       {
         "count": 3,
         "value": "inset 0 0 0 1px var(--sc-semantic-border-subtle)"
       },
       {
-        "count": 2,
-        "value": "var(--sc-app-shadow-modal)"
+        "count": 3,
+        "value": "inset 3px 0 0 var(--sc-app-accent)"
       },
       {
         "count": 2,
-        "value": "0 16px 30px var(--sc-app-shadow)"
+        "value": "var(--sc-product-shadow-overlay)"
       },
       {
         "count": 2,
-        "value": "inset 0 -2px 0 var(--sc-semantic-surface-interactive)"
-      },
-      {
-        "count": 2,
-        "value": "0 12px 28px var(--sc-app-shadow)"
-      },
-      {
-        "count": 2,
-        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent)"
+        "value": "inset 0 -2px 0 var(--sc-app-accent)"
       },
       {
         "count": 2,
@@ -1452,19 +2517,7 @@
       },
       {
         "count": 2,
-        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent)"
-      },
-      {
-        "count": 2,
-        "value": "8px 0 10px -10px var(--sc-app-shadow)"
-      },
-      {
-        "count": 2,
-        "value": "inset 0 0 0 1px var(--sc-semantic-surface-interactive)"
-      },
-      {
-        "count": 2,
-        "value": "0 0 0 1px var(--sc-app-border)"
+        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 38%, transparent)"
       },
       {
         "count": 1,
@@ -1480,18 +2533,6 @@
       },
       {
         "count": 1,
-        "value": "0 1px 2px var(--sc-app-shadow)"
-      },
-      {
-        "count": 1,
-        "value": "0 10px 24px var(--sc-app-shadow)"
-      },
-      {
-        "count": 1,
-        "value": "0 18px 36px var(--sc-app-focus-ring)"
-      },
-      {
-        "count": 1,
         "value": "0 10px 20px var(--sc-app-shadow)"
       },
       {
@@ -1504,7 +2545,19 @@
       },
       {
         "count": 1,
-        "value": "inset 0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 6%, transparent)"
+        "value": "inset 0 0 0 2px var(--sc-semantic-focus-ring)"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 12px var(--sc-app-shadow)"
+      },
+      {
+        "count": 1,
+        "value": "0 4px 12px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent)"
+      },
+      {
+        "count": 1,
+        "value": "0 0 0 1px var(--sc-color-primary)"
       },
       {
         "count": 1,
@@ -1516,7 +2569,7 @@
       },
       {
         "count": 1,
-        "value": "0 2px 8px color-mix(in srgb, var(--sc-app-shadow) 8%, transparent)"
+        "value": "var(--sc-component-relation-dropdown-shadow)"
       },
       {
         "count": 1,
@@ -1524,19 +2577,7 @@
       },
       {
         "count": 1,
-        "value": "8px 0 28px color-mix(in srgb, var(--sc-app-shadow) 12%, transparent)"
-      },
-      {
-        "count": 1,
-        "value": "inset 3px 0 0 var(--sc-app-accent), 0 3px 10px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent)"
-      },
-      {
-        "count": 1,
         "value": "0 4px 12px color-mix(in srgb, var(--sc-app-accent) 28%, transparent)"
-      },
-      {
-        "count": 1,
-        "value": "0 4px 16px color-mix(in srgb, var(--sc-app-shadow) 10%, transparent), inset 0 3px 0 var(--sc-app-border)"
       },
       {
         "count": 1,
@@ -1544,19 +2585,15 @@
       },
       {
         "count": 1,
-        "value": "0 20px 34px var(--sc-app-shadow)"
+        "value": "0 12px 28px var(--sc-app-shadow)"
       },
       {
         "count": 1,
-        "value": "inset 0 0 0 2px var(--sc-app-info-text)"
+        "value": "0 1px 2px color-mix(in srgb, var(--sc-app-shadow) 36%, transparent)"
       },
       {
         "count": 1,
-        "value": "0 8px 24px color-mix(in srgb, var(--sc-app-shadow) 14%, transparent)"
-      },
-      {
-        "count": 1,
-        "value": "0 10px 30px color-mix(in srgb, var(--sc-app-shadow) 16%, transparent)"
+        "value": "inset 0 0 0 1px var(--sc-semantic-surface-interactive)"
       },
       {
         "count": 1,
@@ -1568,15 +2605,15 @@
       },
       {
         "count": 1,
-        "value": "0 18px 50px var(--sc-app-shadow)"
+        "value": "inset 3px 0 0 var(--sc-semantic-surface-interactive)"
       },
       {
         "count": 1,
-        "value": "0 4px 12px var(--sc-app-shadow)"
+        "value": "0 0 0 6px color-mix(in srgb, var(--sc-semantic-surface-interactive) 18%, transparent)"
       },
       {
         "count": 1,
-        "value": "0 10px 22px var(--sc-app-focus-ring)"
+        "value": "0 30px 52px color-mix(in srgb, var(--sc-semantic-surface-interactive) 30%, transparent)"
       },
       {
         "count": 1,
@@ -1584,36 +2621,32 @@
       },
       {
         "count": 1,
-        "value": "inset 0 -2px 0 var(--sc-app-accent)"
+        "value": "0 0 0 1px var(--sc-app-border)"
       },
       {
         "count": 1,
         "value": "inset 3px 0 0 var(--sc-app-warning-text)"
-      },
-      {
-        "count": 1,
-        "value": "inset 0 2px 0 var(--sc-semantic-surface-interactive)"
       }
     ],
     "spacingValues": [
       {
-        "count": 277,
+        "count": 323,
         "value": "0"
       },
       {
-        "count": 165,
+        "count": 177,
         "value": "8px"
       },
       {
-        "count": 127,
+        "count": 128,
         "value": "12px"
       },
       {
-        "count": 124,
+        "count": 115,
         "value": "6px"
       },
       {
-        "count": 112,
+        "count": 95,
         "value": "10px"
       },
       {
@@ -1621,100 +2654,104 @@
         "value": "4px"
       },
       {
-        "count": 45,
-        "value": "16px"
+        "count": 50,
+        "value": "var(--sc-space-xs)"
       },
       {
-        "count": 36,
-        "value": "8px 10px"
-      },
-      {
-        "count": 29,
-        "value": "10px 12px"
-      },
-      {
-        "count": 27,
-        "value": "14px"
-      },
-      {
-        "count": 26,
+        "count": 42,
         "value": "var(--sc-product-space-2)"
       },
       {
-        "count": 25,
-        "value": "4px 8px"
+        "count": 39,
+        "value": "var(--sc-space-sm)"
+      },
+      {
+        "count": 33,
+        "value": "16px"
+      },
+      {
+        "count": 31,
+        "value": "10px 12px"
+      },
+      {
+        "count": 29,
+        "value": "8px 10px"
+      },
+      {
+        "count": 24,
+        "value": "2px"
       },
       {
         "count": 23,
-        "value": "var(--sc-space-xs)"
+        "value": "4px 0 0"
+      },
+      {
+        "count": 21,
+        "value": "14px"
       },
       {
         "count": 20,
         "value": "0 8px"
       },
       {
-        "count": 19,
-        "value": "2px"
+        "count": 18,
+        "value": "4px 8px"
+      },
+      {
+        "count": 18,
+        "value": "var(--sc-product-space-1)"
+      },
+      {
+        "count": 18,
+        "value": "var(--sc-space-md)"
       },
       {
         "count": 17,
-        "value": "0 10px"
-      },
-      {
-        "count": 15,
-        "value": "5px"
-      },
-      {
-        "count": 14,
-        "value": "4px 0 0"
-      },
-      {
-        "count": 14,
-        "value": "18px"
-      },
-      {
-        "count": 14,
-        "value": "2px 0 0"
-      },
-      {
-        "count": 13,
-        "value": "var(--sc-space-sm)"
-      },
-      {
-        "count": 13,
         "value": "var(--sc-toolbar-gap)"
       },
       {
-        "count": 13,
-        "value": "6px 0 0"
+        "count": 16,
+        "value": "8px 12px"
+      },
+      {
+        "count": 14,
+        "value": "2px 8px"
+      },
+      {
+        "count": 14,
+        "value": "5px"
       },
       {
         "count": 13,
-        "value": "6px 10px"
+        "value": "var(--sc-space-xs) var(--sc-space-sm)"
       },
       {
         "count": 12,
-        "value": "3px 8px"
+        "value": "var(--sc-product-workspace-stack-gap)"
+      },
+      {
+        "count": 11,
+        "value": "var(--sc-space-2xs)"
       },
       {
         "count": 11,
         "value": "var(--sc-product-space-3)"
       },
       {
-        "count": 11,
-        "value": "var(--sc-product-workspace-stack-gap)"
+        "count": 10,
+        "value": "3px 8px"
       },
       {
         "count": 10,
-        "value": "8px 12px"
+        "value": "2px 0"
       },
       {
         "count": 10,
-        "value": "8px 0 0"
+        "value": "6px 0 0"
       },
       {
         "count": 10,
-        "value": "var(--sc-product-space-1)"
+        "value": "2px 0 0"
       },
       {
         "count": 10,
@@ -1722,59 +2759,31 @@
       },
       {
         "count": 10,
+        "value": "6px 10px"
+      },
+      {
+        "count": 10,
+        "value": "0 10px"
+      },
+      {
+        "count": 10,
+        "value": "var(--sc-product-panel-gap)"
+      },
+      {
+        "count": 10,
         "value": "var(--sc-product-workspace-gap)"
       },
       {
         "count": 9,
-        "value": "var(--sc-space-2xs)"
+        "value": "8px 0 0"
       },
       {
         "count": 9,
-        "value": "0 var(--sc-space-sm)"
-      },
-      {
-        "count": 9,
-        "value": "var(--sc-space-xs) var(--sc-space-sm)"
+        "value": "18px"
       },
       {
         "count": 8,
         "value": "0 0 8px"
-      },
-      {
-        "count": 8,
-        "value": "4px 10px"
-      },
-      {
-        "count": 8,
-        "value": "2px 8px"
-      },
-      {
-        "count": 8,
-        "value": "24px"
-      },
-      {
-        "count": 8,
-        "value": "var(--sc-toolbar-group-gap)"
-      },
-      {
-        "count": 8,
-        "value": "12px 14px"
-      },
-      {
-        "count": 8,
-        "value": "20px"
-      },
-      {
-        "count": 8,
-        "value": "var(--sc-space-3, 12px)"
-      },
-      {
-        "count": 8,
-        "value": "12px 16px"
-      },
-      {
-        "count": 7,
-        "value": "0 0 10px"
       },
       {
         "count": 7,
@@ -1782,59 +2791,63 @@
       },
       {
         "count": 7,
-        "value": "0 12px"
+        "value": "var(--sc-toolbar-group-gap)"
       },
       {
         "count": 7,
-        "value": "6px 12px"
+        "value": "var(--sc-space-lg)"
       },
       {
         "count": 7,
-        "value": "0 9px"
+        "value": "0 6px"
       },
       {
-        "count": 6,
-        "value": "7px 12px"
+        "count": 7,
+        "value": "var(--sc-space-2, 8px)"
       },
       {
-        "count": 6,
+        "count": 7,
         "value": "6px 8px"
       },
       {
         "count": 6,
-        "value": "var(--sc-space-md)"
+        "value": "4px 10px"
       },
       {
         "count": 6,
+        "value": "1px 6px"
+      },
+      {
+        "count": 6,
+        "value": "6px 12px"
+      },
+      {
+        "count": 5,
+        "value": "0 var(--sc-space-sm)"
+      },
+      {
+        "count": 5,
+        "value": "0 0 4px"
+      },
+      {
+        "count": 5,
+        "value": "0 12px"
+      },
+      {
+        "count": 5,
         "value": "10px 14px"
       },
       {
         "count": 5,
-        "value": "7px"
+        "value": "var(--sc-space-3, 12px)"
       },
       {
         "count": 5,
-        "value": "1px"
-      },
-      {
-        "count": 5,
-        "value": "var(--sc-surface-padding)"
+        "value": "12px 14px"
       },
       {
         "count": 5,
         "value": "0 2px"
-      },
-      {
-        "count": 5,
-        "value": "5px 8px"
-      },
-      {
-        "count": 5,
-        "value": "0 6px"
-      },
-      {
-        "count": 5,
-        "value": "var(--sc-product-panel-gap)"
       },
       {
         "count": 4,
@@ -1842,95 +2855,111 @@
       },
       {
         "count": 4,
-        "value": "0 var(--sc-space-xs)"
+        "value": "24px"
       },
       {
         "count": 4,
-        "value": "0 0 6px"
+        "value": "var(--sc-product-space-1) 0 0"
       },
       {
         "count": 4,
-        "value": "var(--sc-field-row-gap)"
+        "value": "8px 0"
       },
       {
         "count": 4,
-        "value": "2px 0"
+        "value": "var(--sc-page-section-gap)"
+      },
+      {
+        "count": 4,
+        "value": "-1px"
+      },
+      {
+        "count": 4,
+        "value": "0 0 12px"
       },
       {
         "count": 4,
         "value": "10px 0 0"
       },
       {
-        "count": 4,
-        "value": "5px 11px"
+        "count": 3,
+        "value": "0 0 10px"
       },
       {
-        "count": 4,
+        "count": 3,
+        "value": "var(--sc-surface-padding)"
+      },
+      {
+        "count": 3,
+        "value": "12px 16px"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-space-xl)"
+      },
+      {
+        "count": 3,
+        "value": "0.5em 0 0.3em"
+      },
+      {
+        "count": 3,
+        "value": "10px 0"
+      },
+      {
+        "count": 3,
+        "value": "9px 10px"
+      },
+      {
+        "count": 3,
+        "value": "0 0 6px"
+      },
+      {
+        "count": 3,
+        "value": "5px 8px"
+      },
+      {
+        "count": 3,
+        "value": "0 9px"
+      },
+      {
+        "count": 3,
+        "value": "20px"
+      },
+      {
+        "count": 3,
+        "value": "var(--sc-product-space-4)"
+      },
+      {
+        "count": 3,
         "value": "12px 0 0"
       },
       {
-        "count": 4,
-        "value": "0 0 4px"
+        "count": 3,
+        "value": "var(--sc-product-space-2) var(--sc-product-space-3)"
       },
       {
         "count": 3,
-        "value": "7px 8px"
+        "value": "56px 0 0"
       },
       {
         "count": 3,
-        "value": "5px 9px"
-      },
-      {
-        "count": 3,
-        "value": "var(--sc-space-2xs) var(--sc-space-xs)"
-      },
-      {
-        "count": 3,
-        "value": "calc(var(--sc-component-panel-padding) * 1px)"
-      },
-      {
-        "count": 3,
-        "value": "22px"
-      },
-      {
-        "count": 3,
-        "value": "1px 6px"
-      },
-      {
-        "count": 3,
-        "value": "var(--sc-space-2, 8px)"
-      },
-      {
-        "count": 3,
-        "value": "7px 10px"
-      },
-      {
-        "count": 3,
-        "value": "4px 9px"
-      },
-      {
-        "count": 3,
-        "value": "3px 7px"
-      },
-      {
-        "count": 3,
-        "value": "0 0 12px"
-      },
-      {
-        "count": 3,
-        "value": "28px"
+        "value": "72px 16px 56px"
       },
       {
         "count": 2,
-        "value": "6px 0"
+        "value": "7px"
       },
       {
         "count": 2,
-        "value": "2px 4px"
+        "value": "false"
       },
       {
         "count": 2,
-        "value": "2px 6px"
+        "value": "0 0 var(--sc-space-sm)"
+      },
+      {
+        "count": 2,
+        "value": "7px 12px"
       },
       {
         "count": 2,
@@ -1938,43 +2967,31 @@
       },
       {
         "count": 2,
-        "value": "calc(var(--sc-component-table-cell-padding-y) * 1px) calc(var(--sc-component-table-cell-padding-x) * 1px)"
-      },
-      {
-        "count": 2,
-        "value": "0 0 var(--sc-product-space-1)"
-      },
-      {
-        "count": 2,
         "value": "3px 0 0"
       },
       {
         "count": 2,
-        "value": "16px 20px"
+        "value": "var(--sc-card-body-padding)"
       },
       {
         "count": 2,
-        "value": "5px 10px"
+        "value": "calc(var(--sc-component-panel-padding) * 1px)"
       },
       {
         "count": 2,
-        "value": "0 16px"
+        "value": "0.3em 0"
       },
       {
         "count": 2,
-        "value": "9px"
+        "value": "var(--sc-space-1, 4px)"
       },
       {
         "count": 2,
-        "value": "0 4px"
+        "value": "0 var(--sc-space-xs)"
       },
       {
         "count": 2,
-        "value": "0 var(--sc-space-3, 12px)"
-      },
-      {
-        "count": 2,
-        "value": "-1px"
+        "value": "32px"
       },
       {
         "count": 2,
@@ -1982,7 +2999,31 @@
       },
       {
         "count": 2,
-        "value": "var(--sc-space-4, 16px)"
+        "value": "var(--sc-nav-row-gap)"
+      },
+      {
+        "count": 2,
+        "value": "7px 8px"
+      },
+      {
+        "count": 2,
+        "value": "4px 16px"
+      },
+      {
+        "count": 2,
+        "value": "16px 0 0"
+      },
+      {
+        "count": 2,
+        "value": "16px 0"
+      },
+      {
+        "count": 2,
+        "value": "calc(var(--sc-pattern-task-form-field-gap, 12) * 1px)"
+      },
+      {
+        "count": 2,
+        "value": "calc(var(--sc-pattern-task-form-column-gap, 24) * 1px)"
       },
       {
         "count": 2,
@@ -1994,7 +3035,15 @@
       },
       {
         "count": 2,
-        "value": "10px 0"
+        "value": "var(--sc-field-row-gap)"
+      },
+      {
+        "count": 2,
+        "value": "var(--sc-space-sm) var(--sc-space-md)"
+      },
+      {
+        "count": 2,
+        "value": "7px 10px"
       },
       {
         "count": 2,
@@ -2002,23 +3051,7 @@
       },
       {
         "count": 2,
-        "value": "4px 0"
-      },
-      {
-        "count": 2,
-        "value": "8px 14px"
-      },
-      {
-        "count": 2,
-        "value": "9px 10px"
-      },
-      {
-        "count": 2,
-        "value": "3px 0"
-      },
-      {
-        "count": 2,
-        "value": "1px 5px"
+        "value": "3px 7px"
       },
       {
         "count": 2,
@@ -2026,23 +3059,23 @@
       },
       {
         "count": 2,
-        "value": "14px 16px 16px"
+        "value": "0 0 2px"
       },
       {
         "count": 2,
-        "value": "2px 10px"
+        "value": "12px 0"
       },
       {
         "count": 2,
-        "value": "0 0 18px"
+        "value": "var(--sc-space-md) 0"
       },
       {
         "count": 2,
-        "value": "0 0 0 -1px"
+        "value": "var(--sc-space-2xs) 0"
       },
       {
         "count": 2,
-        "value": "var(--sc-space-lg)"
+        "value": "0 var(--sc-product-space-2)"
       },
       {
         "count": 2,
@@ -2050,11 +3083,23 @@
       },
       {
         "count": 2,
-        "value": "32px"
+        "value": "64px"
       },
       {
         "count": 2,
-        "value": "14px 18px"
+        "value": "clamp(116px, 20vh, 178px) clamp(24px, 5vw, 72px) 88px"
+      },
+      {
+        "count": 2,
+        "value": "16px 0 24px"
+      },
+      {
+        "count": 2,
+        "value": "4px 0"
+      },
+      {
+        "count": 2,
+        "value": "5px 11px"
       },
       {
         "count": 1,
@@ -2066,23 +3111,7 @@
       },
       {
         "count": 1,
-        "value": "1px 0 3px"
-      },
-      {
-        "count": 1,
-        "value": "0 6px 0 8px"
-      },
-      {
-        "count": 1,
-        "value": "5px 0"
-      },
-      {
-        "count": 1,
-        "value": "3px 3px 3px 8px"
-      },
-      {
-        "count": 1,
-        "value": "4px 7px"
+        "value": "(error as"
       },
       {
         "count": 1,
@@ -2106,6 +3135,14 @@
       },
       {
         "count": 1,
+        "value": "var(--sc-space-2)"
+      },
+      {
+        "count": 1,
+        "value": "auto 0 auto auto"
+      },
+      {
+        "count": 1,
         "value": "var(--sc-space-2xs) 0 0"
       },
       {
@@ -2114,15 +3151,11 @@
       },
       {
         "count": 1,
-        "value": "0 0 var(--sc-space-sm)"
-      },
-      {
-        "count": 1,
-        "value": "var(--sc-space-2)"
-      },
-      {
-        "count": 1,
         "value": "var(--sc-space-6)"
+      },
+      {
+        "count": 1,
+        "value": "8px 24px"
       },
       {
         "count": 1,
@@ -2130,11 +3163,11 @@
       },
       {
         "count": 1,
-        "value": "10px 0 14px"
+        "value": "3px 16px"
       },
       {
         "count": 1,
-        "value": "10px 20px"
+        "value": "8px 20px"
       },
       {
         "count": 1,
@@ -2142,7 +3175,31 @@
       },
       {
         "count": 1,
-        "value": "var(--sc-product-page-gutter)"
+        "value": "var(--sc-space-xs) var(--sc-space-lg) var(--sc-space-md)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) 0 var(--sc-space-lg)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-md) 0 var(--sc-space-xs)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-card-gap)"
+      },
+      {
+        "count": 1,
+        "value": "0 var(--sc-space-md) var(--sc-space-md)"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-space-md)"
+      },
+      {
+        "count": 1,
+        "value": "5px 10px"
       },
       {
         "count": 1,
@@ -2150,7 +3207,51 @@
       },
       {
         "count": 1,
+        "value": "0.6em 0 0.3em"
+      },
+      {
+        "count": 1,
+        "value": "1rem"
+      },
+      {
+        "count": 1,
+        "value": "1rem 0"
+      },
+      {
+        "count": 1,
+        "value": "0.25rem"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) var(--sc-space-sm)"
+      },
+      {
+        "count": 1,
+        "value": "2px 9px"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-xs) 0 0"
+      },
+      {
+        "count": 1,
         "value": "2px var(--sc-space-2xs)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-2xs) var(--sc-space-xs)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-xs) 0 var(--sc-space-sm)"
+      },
+      {
+        "count": 1,
+        "value": "6px 16px"
+      },
+      {
+        "count": 1,
+        "value": "12px 16px 10px"
       },
       {
         "count": 1,
@@ -2166,6 +3267,10 @@
       },
       {
         "count": 1,
+        "value": "9px"
+      },
+      {
+        "count": 1,
         "value": "28px 0 22px"
       },
       {
@@ -2174,7 +3279,35 @@
       },
       {
         "count": 1,
-        "value": "14px 0 0"
+        "value": "0 var(--sc-nav-row-gap)"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-nav-row-gap)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-1)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-xs) calc(var(--sc-component-input-padding-x) * 1px)"
+      },
+      {
+        "count": 1,
+        "value": "2px 10px"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-space-2, 8px)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-3, 12px) 0"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-space-4, 16px)"
       },
       {
         "count": 1,
@@ -2182,43 +3315,43 @@
       },
       {
         "count": 1,
-        "value": "18px 20px 20px"
+        "value": "var(--sc-pattern-task-form-label-row-gap, 8px)"
       },
       {
         "count": 1,
-        "value": "-18px -20px 14px"
+        "value": "var(--sc-pattern-task-form-inline-config-gap, 6px)"
       },
       {
         "count": 1,
-        "value": "12px 16px 10px 20px"
+        "value": "var(--sc-pattern-task-form-inline-actions-gap, 8px)"
       },
       {
         "count": 1,
-        "value": "26px"
+        "value": "var(--sc-pattern-task-form-control-row-gap, 6px)"
       },
       {
         "count": 1,
-        "value": "14px 14px 16px"
+        "value": "var(--sc-pattern-task-form-readonly-column-gap, 26px)"
       },
       {
         "count": 1,
-        "value": "-14px -14px 12px"
+        "value": "1px"
       },
       {
         "count": 1,
-        "value": "10px 12px 9px 16px"
+        "value": "var(--sc-space-xs) var(--sc-space-md)"
       },
       {
         "count": 1,
-        "value": "6px 6px 0"
-      },
-      {
-        "count": 1,
-        "value": "8px 16px"
+        "value": "6px 18px"
       },
       {
         "count": 1,
         "value": "0 8px 8px"
+      },
+      {
+        "count": 1,
+        "value": "8px 0 2px"
       },
       {
         "count": 1,
@@ -2230,15 +3363,7 @@
       },
       {
         "count": 1,
-        "value": "10px 6px"
-      },
-      {
-        "count": 1,
         "value": "-10px -10px 2px"
-      },
-      {
-        "count": 1,
-        "value": "8px 0"
       },
       {
         "count": 1,
@@ -2246,7 +3371,11 @@
       },
       {
         "count": 1,
-        "value": "6px 4px"
+        "value": "var(--sc-space-xs) var(--sc-page-padding) 0"
+      },
+      {
+        "count": 1,
+        "value": "5px 9px"
       },
       {
         "count": 1,
@@ -2254,7 +3383,15 @@
       },
       {
         "count": 1,
+        "value": "0 4px"
+      },
+      {
+        "count": 1,
         "value": "12px 6px"
+      },
+      {
+        "count": 1,
+        "value": "14px 16px 16px"
       },
       {
         "count": 1,
@@ -2274,15 +3411,19 @@
       },
       {
         "count": 1,
-        "value": "8px 4px"
+        "value": "8px 6px"
       },
       {
         "count": 1,
-        "value": "var(--sc-space-2xs) var(--sc-space-sm)"
+        "value": "1px 0 6px"
       },
       {
         "count": 1,
-        "value": "3px 6px"
+        "value": "22px"
+      },
+      {
+        "count": 1,
+        "value": "3px 0"
       },
       {
         "count": 1,
@@ -2290,15 +3431,7 @@
       },
       {
         "count": 1,
-        "value": "0 auto"
-      },
-      {
-        "count": 1,
-        "value": "8px 12px 8px 18px"
-      },
-      {
-        "count": 1,
-        "value": "2px 9px"
+        "value": "16px 32px"
       },
       {
         "count": 1,
@@ -2306,11 +3439,7 @@
       },
       {
         "count": 1,
-        "value": "8px 24px"
-      },
-      {
-        "count": 1,
-        "value": "0 30px 0 10px"
+        "value": "0 16px"
       },
       {
         "count": 1,
@@ -2326,39 +3455,15 @@
       },
       {
         "count": 1,
-        "value": "16px 18px 18px"
-      },
-      {
-        "count": 1,
-        "value": "0 20px 24px"
-      },
-      {
-        "count": 1,
-        "value": "var(--sc-space-sm) var(--sc-surface-padding)"
-      },
-      {
-        "count": 1,
         "value": "9px 14px"
       },
       {
         "count": 1,
-        "value": "8px 0 9px"
-      },
-      {
-        "count": 1,
-        "value": "calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) 0"
-      },
-      {
-        "count": 1,
-        "value": "0 var(--sc-surface-padding)"
+        "value": "var(--sc-space-xs) 0"
       },
       {
         "count": 1,
         "value": "calc(-1 * var(--sc-surface-padding)) calc(-1 * var(--sc-surface-padding)) var(--sc-field-row-gap)"
-      },
-      {
-        "count": 1,
-        "value": "8px 2px"
       },
       {
         "count": 1,
@@ -2370,11 +3475,15 @@
       },
       {
         "count": 1,
-        "value": "calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) 0"
+        "value": "calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) var(--sc-field-row-gap)"
       },
       {
         "count": 1,
-        "value": "calc(-1 * var(--sc-space-sm)) calc(-1 * var(--sc-space-sm)) var(--sc-field-row-gap)"
+        "value": "2px 12px"
+      },
+      {
+        "count": 1,
+        "value": "8px 14px"
       },
       {
         "count": 1,
@@ -2382,7 +3491,19 @@
       },
       {
         "count": 1,
-        "value": "4px 16px"
+        "value": "var(--sc-product-panel-gap) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "3px 12px"
+      },
+      {
+        "count": 1,
+        "value": "20px 10px"
+      },
+      {
+        "count": 1,
+        "value": "2px 6px"
       },
       {
         "count": 1,
@@ -2390,27 +3511,11 @@
       },
       {
         "count": 1,
-        "value": "10px 16px"
-      },
-      {
-        "count": 1,
-        "value": "11px"
+        "value": "var(--sc-product-space-1) var(--sc-product-space-2)"
       },
       {
         "count": 1,
         "value": "var(--sc-space-2xs) 0 var(--sc-space-xs)"
-      },
-      {
-        "count": 1,
-        "value": "var(--sc-page-padding-wide)"
-      },
-      {
-        "count": 1,
-        "value": "var(--sc-page-padding-compact)"
-      },
-      {
-        "count": 1,
-        "value": "var(--sc-page-padding-mobile)"
       },
       {
         "count": 1,
@@ -2430,7 +3535,11 @@
       },
       {
         "count": 1,
-        "value": "calc(var(--sc-component-button-padding-y) * 1px) calc(var(--sc-component-button-padding-x) * 1px)"
+        "value": "inherit"
+      },
+      {
+        "count": 1,
+        "value": "4px 9px"
       },
       {
         "count": 1,
@@ -2442,19 +3551,23 @@
       },
       {
         "count": 1,
-        "value": "0 !important"
+        "value": "8"
       },
       {
         "count": 1,
-        "value": "-1px !important"
+        "value": "var(--sc-page-padding-wide)"
       },
       {
         "count": 1,
-        "value": "var(--sc-product-space-4)"
+        "value": "var(--sc-page-padding-compact)"
       },
       {
         "count": 1,
-        "value": "var(--sc-product-space-1) 0 0"
+        "value": "var(--sc-page-padding-mobile)"
+      },
+      {
+        "count": 1,
+        "value": "0 0 var(--sc-product-space-1)"
       },
       {
         "count": 1,
@@ -2462,19 +3575,19 @@
       },
       {
         "count": 1,
-        "value": "0 var(--sc-product-space-2)"
+        "value": "64px 64px 54px"
       },
       {
         "count": 1,
-        "value": "30px 16px"
+        "value": "clamp(130px, 20vh, 190px) clamp(32px, 5vw, 72px) 88px"
       },
       {
         "count": 1,
-        "value": "clamp(28px, 5vw, 80px)"
+        "value": "12% 9%"
       },
       {
         "count": 1,
-        "value": "11px 12px"
+        "value": "6px 0"
       },
       {
         "count": 1,
@@ -2482,27 +3595,15 @@
       },
       {
         "count": 1,
-        "value": "16px 10px 18px"
-      },
-      {
-        "count": 1,
-        "value": "2px 0 8px"
-      },
-      {
-        "count": 1,
-        "value": "7px 0"
-      },
-      {
-        "count": 1,
-        "value": "10px 8px"
-      },
-      {
-        "count": 1,
-        "value": "16px 18px 12px"
+        "value": "var(--sc-space-sm) 0 0"
       },
       {
         "count": 1,
         "value": "var(--sc-product-space-3) 0 0"
+      },
+      {
+        "count": 1,
+        "value": "14px 18px"
       },
       {
         "count": 1,
@@ -2522,50 +3623,46 @@
       },
       {
         "count": 1,
+        "value": "1px 5px"
+      },
+      {
+        "count": 1,
+        "value": "0 0 18px"
+      },
+      {
+        "count": 1,
         "value": "12px 12px 10px"
       },
       {
         "count": 1,
         "value": "8px 10px 10px"
-      },
-      {
-        "count": 1,
-        "value": "12px 0"
       }
     ],
     "tdesignDirectUse": [],
     "zIndexValues": [
       {
-        "count": 11,
-        "value": "1"
+        "count": 8,
+        "value": "var(--sc-component-login-layer-content)"
       },
       {
-        "count": 7,
+        "count": 6,
         "value": "2"
       },
       {
-        "count": 7,
-        "value": "20"
+        "count": 4,
+        "value": "1"
       },
       {
-        "count": 4,
-        "value": "90"
-      },
-      {
-        "count": 4,
+        "count": 3,
         "value": "40"
       },
       {
         "count": 3,
-        "value": "80"
+        "value": "var(--sc-component-sticky-header-z-index)"
       },
       {
         "count": 3,
-        "value": "5"
-      },
-      {
-        "count": 3,
-        "value": "1000"
+        "value": "var(--sc-component-login-layer-base)"
       },
       {
         "count": 2,
@@ -2573,23 +3670,63 @@
       },
       {
         "count": 2,
+        "value": "5"
+      },
+      {
+        "count": 2,
         "value": "4"
       },
       {
         "count": 2,
-        "value": "12"
+        "value": "var(--sc-z-content-raised)"
       },
       {
         "count": 2,
-        "value": "6"
+        "value": "20"
       },
       {
         "count": 2,
         "value": "14"
       },
       {
+        "count": 2,
+        "value": "var(--sc-component-login-layer-modal)"
+      },
+      {
         "count": 1,
-        "value": "91"
+        "value": "80"
+      },
+      {
+        "count": 1,
+        "value": "90"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-component-overlay-local-action-z-index)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-z-overlay)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-z-content)"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-component-button-overflow-z-index)"
+      },
+      {
+        "count": 1,
+        "value": "6"
+      },
+      {
+        "count": 1,
+        "value": "var(--sc-component-relation-dropdown-z-index)"
+      },
+      {
+        "count": 1,
+        "value": "100"
       },
       {
         "count": 1,
@@ -2621,6 +3758,10 @@
       },
       {
         "count": 1,
+        "value": "12"
+      },
+      {
+        "count": 1,
         "value": "15"
       },
       {
@@ -2629,285 +3770,61 @@
       },
       {
         "count": 1,
-        "value": "30"
+        "value": "var(--sc-pattern-overlay-skip-link-z-index)"
       },
       {
         "count": 1,
-        "value": "50"
+        "value": "var(--sc-base-z-index-dropdown)"
       },
       {
         "count": 1,
-        "value": "10000"
+        "value": "var(--sc-base-z-index-sticky)"
       }
     ]
   },
   "cssVariableDefinitions": [
     {
-      "name": "--accent",
-      "sources": [
-        {
-          "line": 5,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        },
-        {
-          "line": 242,
-          "source": "frontend/apps/web/src/views/LoginView.vue"
-        }
-      ],
-      "values": [
-        "var(--sc-semantic-surface-interactive)"
-      ]
-    },
-    {
-      "name": "--clickable",
-      "sources": [
-        {
-          "line": 557,
-          "source": "frontend/apps/web/src/views/businessConfigSurface/style.css"
-        }
-      ],
-      "values": [
-        "hover"
-      ]
-    },
-    {
-      "name": "--compact",
-      "sources": [
-        {
-          "line": 1671,
-          "source": "frontend/apps/web/src/views/SceneView.vue"
-        }
-      ],
-      "values": [
-        "deep(.ghost)"
-      ]
-    },
-    {
-      "name": "--designer-workspace",
-      "sources": [
-        {
-          "line": 1101,
-          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
-        }
-      ],
-      "values": [
-        "deep(.template-form-section-grid--columns-3)"
-      ]
-    },
-    {
-      "name": "--draggable",
-      "sources": [
-        {
-          "line": 681,
-          "source": "frontend/apps/web/src/pages/contractForm/CurrentFormFieldSettingsPanel.css"
-        }
-      ],
-      "values": [
-        "active"
-      ]
-    },
-    {
-      "name": "--field",
-      "sources": [
-        {
-          "line": 98,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 106,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 107,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 108,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 109,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 110,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        },
-        {
-          "line": 111,
-          "source": "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue"
-        }
-      ],
-      "values": [
-        "deep(.contract-readonly-value)",
-        "deep(.field),",
-        "deep(.field-control-main)",
-        "deep(.field-control-row),",
-        "deep(.readonly-value),",
-        "deep(.template-form-section)",
-        "deep(.template-form-section-grid),"
-      ]
-    },
-    {
-      "name": "--html",
-      "sources": [
-        {
-          "line": 1244,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        },
-        {
-          "line": 1245,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        },
-        {
-          "line": 1250,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        }
-      ],
-      "values": [
-        "deep(ol)",
-        "deep(p)",
-        "deep(ul),"
-      ]
-    },
-    {
-      "name": "--ink",
-      "sources": [
-        {
-          "line": 3,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        },
-        {
-          "line": 240,
-          "source": "frontend/apps/web/src/views/LoginView.vue"
-        }
-      ],
-      "values": [
-        "var(--sc-app-text-primary)",
-        "var(--sc-semantic-text-primary)"
-      ]
-    },
-    {
-      "name": "--layout-divider",
-      "sources": [
-        {
-          "line": 7,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        }
-      ],
-      "values": [
-        "var(--sc-app-border)"
-      ]
-    },
-    {
-      "name": "--minimal",
-      "sources": [
-        {
-          "line": 1312,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        },
-        {
-          "line": 1322,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        }
-      ],
-      "values": [
-        "is(.sidebar-toggle, .theme-switch)",
-        "is(.sidebar-toggle, .theme-switch):hover"
-      ]
-    },
-    {
-      "name": "--muted",
-      "sources": [
-        {
-          "line": 4,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        },
-        {
-          "line": 241,
-          "source": "frontend/apps/web/src/views/LoginView.vue"
-        }
-      ],
-      "values": [
-        "var(--sc-app-text-secondary)",
-        "var(--sc-semantic-text-secondary)"
-      ]
-    },
-    {
-      "name": "--order-editable",
-      "sources": [
-        {
-          "line": 1191,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        }
-      ],
-      "values": [
-        "active"
-      ]
-    },
-    {
-      "name": "--panel",
-      "sources": [
-        {
-          "line": 6,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
-        }
-      ],
-      "values": [
-        "var(--sc-semantic-surface-panel)"
-      ]
-    },
-    {
-      "name": "--readonly",
-      "sources": [
-        {
-          "line": 167,
-          "source": "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue"
-        },
-        {
-          "line": 1260,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        },
-        {
-          "line": 1331,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        }
-      ],
-      "values": [
-        "deep(.contract-readonly-value)",
-        "hover"
-      ]
-    },
-    {
-      "name": "--readonly-empty-relation",
-      "sources": [
-        {
-          "line": 1320,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        }
-      ],
-      "values": [
-        "deep(.relation-readonly-empty)"
-      ]
-    },
-    {
       "name": "--sc-app-accent",
       "sources": [
         {
-          "line": 98,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 32,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
         "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-app-accent-contrast",
+      "sources": [
+        {
+          "line": 61,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-on-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-app-accent-soft",
+      "sources": [
+        {
+          "line": 60,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-selected)"
       ]
     },
     {
       "name": "--sc-app-bg",
       "sources": [
         {
-          "line": 81,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 14,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2918,12 +3835,24 @@
       "name": "--sc-app-border",
       "sources": [
         {
-          "line": 85,
+          "line": 11,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 123,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 19,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-default)"
+      ]
+    },
+    {
+      "name": "--sc-app-border-default",
+      "sources": [
+        {
+          "line": 62,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2934,12 +3863,12 @@
       "name": "--sc-app-border-strong",
       "sources": [
         {
-          "line": 86,
+          "line": 12,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 124,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 20,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2947,15 +3876,27 @@
       ]
     },
     {
+      "name": "--sc-app-danger",
+      "sources": [
+        {
+          "line": 79,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger)"
+      ]
+    },
+    {
       "name": "--sc-app-danger-bg",
       "sources": [
         {
-          "line": 100,
+          "line": 22,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 134,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 34,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2966,12 +3907,12 @@
       "name": "--sc-app-danger-border",
       "sources": [
         {
-          "line": 101,
+          "line": 23,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 135,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 35,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2982,12 +3923,12 @@
       "name": "--sc-app-danger-text",
       "sources": [
         {
-          "line": 102,
+          "line": 24,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 136,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 36,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -2995,15 +3936,39 @@
       ]
     },
     {
+      "name": "--sc-app-error",
+      "sources": [
+        {
+          "line": 54,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger)"
+      ]
+    },
+    {
+      "name": "--sc-app-error-bg",
+      "sources": [
+        {
+          "line": 55,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger-bg)"
+      ]
+    },
+    {
       "name": "--sc-app-focus-ring",
       "sources": [
         {
-          "line": 99,
+          "line": 21,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 133,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 33,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3014,12 +3979,12 @@
       "name": "--sc-app-hover-bg",
       "sources": [
         {
-          "line": 90,
+          "line": 16,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 128,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 24,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3030,12 +3995,12 @@
       "name": "--sc-app-info-bg",
       "sources": [
         {
-          "line": 109,
+          "line": 31,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 143,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 43,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3046,12 +4011,12 @@
       "name": "--sc-app-info-border",
       "sources": [
         {
-          "line": 110,
+          "line": 32,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 144,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 44,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3062,12 +4027,12 @@
       "name": "--sc-app-info-text",
       "sources": [
         {
-          "line": 111,
+          "line": 33,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 145,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 45,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3078,12 +4043,12 @@
       "name": "--sc-app-input-bg",
       "sources": [
         {
-          "line": 89,
+          "line": 15,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 127,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 23,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3094,12 +4059,12 @@
       "name": "--sc-app-muted-bg",
       "sources": [
         {
-          "line": 87,
+          "line": 13,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 125,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 21,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3110,8 +4075,8 @@
       "name": "--sc-app-overlay",
       "sources": [
         {
-          "line": 97,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 31,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3122,8 +4087,8 @@
       "name": "--sc-app-panel",
       "sources": [
         {
-          "line": 82,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 15,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3131,15 +4096,63 @@
       ]
     },
     {
+      "name": "--sc-app-panel-muted",
+      "sources": [
+        {
+          "line": 50,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel-muted)"
+      ]
+    },
+    {
+      "name": "--sc-app-primary",
+      "sources": [
+        {
+          "line": 53,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-app-primary-bg",
+      "sources": [
+        {
+          "line": 56,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-selected)"
+      ]
+    },
+    {
+      "name": "--sc-app-radius-md",
+      "sources": [
+        {
+          "line": 33,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-radius-md)"
+      ]
+    },
+    {
       "name": "--sc-app-selected-bg",
       "sources": [
         {
-          "line": 91,
+          "line": 17,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 129,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 25,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3150,12 +4163,12 @@
       "name": "--sc-app-selected-border",
       "sources": [
         {
-          "line": 92,
+          "line": 18,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 130,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 26,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3166,12 +4179,12 @@
       "name": "--sc-app-selected-text",
       "sources": [
         {
-          "line": 93,
+          "line": 19,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 131,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 27,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3182,12 +4195,12 @@
       "name": "--sc-app-shadow",
       "sources": [
         {
-          "line": 94,
+          "line": 20,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 132,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 28,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3195,11 +4208,35 @@
       ]
     },
     {
+      "name": "--sc-app-shadow-lg",
+      "sources": [
+        {
+          "line": 64,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-modal)"
+      ]
+    },
+    {
+      "name": "--sc-app-shadow-md",
+      "sources": [
+        {
+          "line": 63,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-shadow-popover)"
+      ]
+    },
+    {
       "name": "--sc-app-shadow-modal",
       "sources": [
         {
-          "line": 96,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 30,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3210,8 +4247,8 @@
       "name": "--sc-app-shadow-popover",
       "sources": [
         {
-          "line": 95,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 29,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3222,12 +4259,12 @@
       "name": "--sc-app-subtle-bg",
       "sources": [
         {
-          "line": 88,
+          "line": 14,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 126,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 22,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3235,15 +4272,27 @@
       ]
     },
     {
+      "name": "--sc-app-success",
+      "sources": [
+        {
+          "line": 57,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-success)"
+      ]
+    },
+    {
       "name": "--sc-app-success-bg",
       "sources": [
         {
-          "line": 106,
+          "line": 28,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 140,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 40,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3254,12 +4303,12 @@
       "name": "--sc-app-success-border",
       "sources": [
         {
-          "line": 107,
+          "line": 29,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 141,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 41,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3270,12 +4319,12 @@
       "name": "--sc-app-success-text",
       "sources": [
         {
-          "line": 108,
+          "line": 30,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 142,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 42,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3283,11 +4332,71 @@
       ]
     },
     {
+      "name": "--sc-app-surface",
+      "sources": [
+        {
+          "line": 52,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--sc-app-tag-bg",
+      "sources": [
+        {
+          "line": 59,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-subtle)"
+      ]
+    },
+    {
+      "name": "--sc-app-text",
+      "sources": [
+        {
+          "line": 51,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--sc-app-text-inverse",
+      "sources": [
+        {
+          "line": 46,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-on-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-app-text-muted",
+      "sources": [
+        {
+          "line": 18,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-muted)"
+      ]
+    },
+    {
       "name": "--sc-app-text-primary",
       "sources": [
         {
-          "line": 83,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 16,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3298,8 +4407,8 @@
       "name": "--sc-app-text-secondary",
       "sources": [
         {
-          "line": 84,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 17,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3307,15 +4416,27 @@
       ]
     },
     {
+      "name": "--sc-app-warning",
+      "sources": [
+        {
+          "line": 58,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-warning)"
+      ]
+    },
+    {
       "name": "--sc-app-warning-bg",
       "sources": [
         {
-          "line": 103,
+          "line": 25,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 137,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 37,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3326,12 +4447,12 @@
       "name": "--sc-app-warning-border",
       "sources": [
         {
-          "line": 104,
+          "line": 26,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 138,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 38,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3342,12 +4463,12 @@
       "name": "--sc-app-warning-text",
       "sources": [
         {
-          "line": 105,
+          "line": 27,
           "source": "frontend/apps/web/src/styles/design-system.css"
         },
         {
-          "line": 139,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 39,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3355,11 +4476,196 @@
       ]
     },
     {
-      "name": "--sc-card-gap",
+      "name": "--sc-bg-container",
+      "sources": [
+        {
+          "line": 83,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--sc-bg-secondary",
+      "sources": [
+        {
+          "line": 84,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-subtle)"
+      ]
+    },
+    {
+      "name": "--sc-border-secondary",
+      "sources": [
+        {
+          "line": 82,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-strong)"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-brand-active",
+      "sources": [
+        {
+          "line": 41,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 62,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 4,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "#003264",
+        "#003f88",
+        "#055444"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-brand-focus",
+      "sources": [
+        {
+          "line": 42,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 63,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 5,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "rgba(10, 110, 209, 0.24)",
+        "rgba(212, 73, 0, 0.32)",
+        "rgba(8, 127, 106, 0.24)"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-brand-hover",
+      "sources": [
+        {
+          "line": 40,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 61,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 3,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "#003f7d",
+        "#0052a9",
+        "#066b5a"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-component-stroke",
+      "sources": [
+        {
+          "line": 6,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "#9cadbe"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-radius-default",
+      "sources": [
+        {
+          "line": 38,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 59,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 7,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "10px",
+        "5px",
+        "6px"
+      ]
+    },
+    {
+      "name": "--sc-bridge-tdesign-radius-medium",
       "sources": [
         {
           "line": 39,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 60,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 8,
+          "source": "frontend/apps/web/src/styles/tokens/tdesign-bridge.css"
+        }
+      ],
+      "values": [
+        "14px",
+        "8px",
+        "9px"
+      ]
+    },
+    {
+      "name": "--sc-card-body-padding",
+      "sources": [
+        {
+          "line": 79,
+          "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+        },
+        {
+          "line": 108,
+          "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+        },
+        {
+          "line": 113,
+          "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+        },
+        {
+          "line": 114,
+          "source": "frontend/apps/web/src/components/design-system/ScCard.vue"
+        }
+      ],
+      "values": [
+        "0 0 var(--sc-space-md)",
+        "0 var(--sc-space-md) var(--sc-space-md)",
+        "var(--sc-space-lg)",
+        "var(--sc-space-xl)"
+      ]
+    },
+    {
+      "name": "--sc-card-gap",
+      "sources": [
+        {
+          "line": 14,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3370,8 +4676,8 @@
       "name": "--sc-card-padding",
       "sources": [
         {
-          "line": 38,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 13,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3379,11 +4685,83 @@
       ]
     },
     {
+      "name": "--sc-color-bg-1",
+      "sources": [
+        {
+          "line": 68,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel)"
+      ]
+    },
+    {
+      "name": "--sc-color-bg-2",
+      "sources": [
+        {
+          "line": 69,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-panel-muted)"
+      ]
+    },
+    {
+      "name": "--sc-color-bg-secondary",
+      "sources": [
+        {
+          "line": 77,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-subtle)"
+      ]
+    },
+    {
       "name": "--sc-color-border",
       "sources": [
         {
-          "line": 16,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 6,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-default)"
+      ]
+    },
+    {
+      "name": "--sc-color-border-2",
+      "sources": [
+        {
+          "line": 70,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-default)"
+      ]
+    },
+    {
+      "name": "--sc-color-border-3",
+      "sources": [
+        {
+          "line": 71,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-border-strong)"
+      ]
+    },
+    {
+      "name": "--sc-color-border-default",
+      "sources": [
+        {
+          "line": 78,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3394,8 +4772,8 @@
       "name": "--sc-color-border-strong",
       "sources": [
         {
-          "line": 17,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 7,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3403,11 +4781,35 @@
       ]
     },
     {
+      "name": "--sc-color-brand",
+      "sources": [
+        {
+          "line": 73,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-color-error",
+      "sources": [
+        {
+          "line": 75,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-danger)"
+      ]
+    },
+    {
       "name": "--sc-color-focus",
       "sources": [
         {
-          "line": 22,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 12,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3418,8 +4820,8 @@
       "name": "--sc-color-interactive",
       "sources": [
         {
-          "line": 21,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 11,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3427,11 +4829,35 @@
       ]
     },
     {
+      "name": "--sc-color-primary",
+      "sources": [
+        {
+          "line": 72,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-surface-interactive)"
+      ]
+    },
+    {
+      "name": "--sc-color-success",
+      "sources": [
+        {
+          "line": 74,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-state-success)"
+      ]
+    },
+    {
       "name": "--sc-color-surface",
       "sources": [
         {
-          "line": 13,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 3,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3442,8 +4868,8 @@
       "name": "--sc-color-surface-raised",
       "sources": [
         {
-          "line": 15,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 5,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3454,8 +4880,8 @@
       "name": "--sc-color-surface-subtle",
       "sources": [
         {
-          "line": 14,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 4,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3463,11 +4889,47 @@
       ]
     },
     {
+      "name": "--sc-color-text-1",
+      "sources": [
+        {
+          "line": 65,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--sc-color-text-2",
+      "sources": [
+        {
+          "line": 66,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-secondary)"
+      ]
+    },
+    {
+      "name": "--sc-color-text-3",
+      "sources": [
+        {
+          "line": 67,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-muted)"
+      ]
+    },
+    {
       "name": "--sc-color-text-muted",
       "sources": [
         {
-          "line": 20,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 10,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3478,8 +4940,8 @@
       "name": "--sc-color-text-primary",
       "sources": [
         {
-          "line": 18,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 8,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3490,8 +4952,8 @@
       "name": "--sc-color-text-secondary",
       "sources": [
         {
-          "line": 19,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 9,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
         }
       ],
       "values": [
@@ -3499,38 +4961,157 @@
       ]
     },
     {
-      "name": "--sc-content-form-max",
+      "name": "--sc-column-header-control-space",
       "sources": [
         {
-          "line": 49,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 1,
+          "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css"
+        },
+        {
+          "line": 21,
+          "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css"
+        },
+        {
+          "line": 22,
+          "source": "frontend/apps/web/src/components/product-list/CollectionColumnHeaderControl.css"
         }
       ],
       "values": [
-        "1200px"
+        "28px",
+        "34px",
+        "50px"
+      ]
+    },
+    {
+      "name": "--sc-component-input-form-height",
+      "sources": [
+        {
+          "line": 329,
+          "source": "frontend/apps/web/src/components/business/MyWorkApprovalWorkspace.vue"
+        },
+        {
+          "line": 161,
+          "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+        },
+        {
+          "line": 197,
+          "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+        },
+        {
+          "line": 235,
+          "source": "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+        }
+      ],
+      "values": [
+        "36px",
+        "44px"
+      ]
+    },
+    {
+      "name": "--sc-component-login-layer-base",
+      "sources": [
+        {
+          "line": 17,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-z-index-base)"
+      ]
+    },
+    {
+      "name": "--sc-component-login-layer-content",
+      "sources": [
+        {
+          "line": 18,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-z-index-dropdown)"
+      ]
+    },
+    {
+      "name": "--sc-component-login-layer-modal",
+      "sources": [
+        {
+          "line": 19,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-z-index-modal)"
+      ]
+    },
+    {
+      "name": "--sc-component-overlay-dropdown-z-index",
+      "sources": [
+        {
+          "line": 21,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-z-index-dropdown)"
+      ]
+    },
+    {
+      "name": "--sc-component-overlay-local-action-z-index",
+      "sources": [
+        {
+          "line": 20,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "1"
+      ]
+    },
+    {
+      "name": "--sc-component-sticky-header-z-index",
+      "sources": [
+        {
+          "line": 22,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-z-index-sticky)"
+      ]
+    },
+    {
+      "name": "--sc-content-form-max",
+      "sources": [
+        {
+          "line": 24,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "var(--sc-pattern-task-form-content-max-width)"
       ]
     },
     {
       "name": "--sc-content-layout-inline-size",
       "sources": [
         {
-          "line": 70,
+          "line": 49,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         },
         {
-          "line": 75,
+          "line": 54,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         },
         {
-          "line": 76,
+          "line": 55,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         },
         {
-          "line": 77,
+          "line": 56,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         },
         {
-          "line": 78,
+          "line": 57,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         }
       ],
@@ -3545,8 +5126,8 @@
       "name": "--sc-content-reading-max",
       "sources": [
         {
-          "line": 47,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 22,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3557,20 +5138,20 @@
       "name": "--sc-content-record-max",
       "sources": [
         {
-          "line": 48,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 23,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "1440px"
+        "var(--sc-pattern-workspace-form-content-max-width)"
       ]
     },
     {
       "name": "--sc-dialog-padding",
       "sources": [
         {
-          "line": 43,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 18,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3581,8 +5162,8 @@
       "name": "--sc-field-column-gap",
       "sources": [
         {
-          "line": 41,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 16,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3593,8 +5174,8 @@
       "name": "--sc-field-row-gap",
       "sources": [
         {
-          "line": 40,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 15,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3605,7 +5186,7 @@
       "name": "--sc-form-command-bar-height",
       "sources": [
         {
-          "line": 107,
+          "line": 16,
           "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
         }
       ],
@@ -3617,19 +5198,24 @@
       "name": "--sc-form-section-nav-height",
       "sources": [
         {
-          "line": 108,
+          "line": 17,
+          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
+        },
+        {
+          "line": 25,
           "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
         }
       ],
       "values": [
-        "0px"
+        "calc(var(--sc-component-button-section-tab-height) * 1px + var(--sc-space-xs) + 1px)",
+        "calc(var(--sc-touch-target-min) + var(--sc-space-xs) + 1px)"
       ]
     },
     {
       "name": "--sc-form-sticky-gap",
       "sources": [
         {
-          "line": 109,
+          "line": 18,
           "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
         }
       ],
@@ -3641,8 +5227,8 @@
       "name": "--sc-label-control-gap",
       "sources": [
         {
-          "line": 42,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 17,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3653,7 +5239,7 @@
       "name": "--sc-lowcode-panel-gap",
       "sources": [
         {
-          "line": 11,
+          "line": 10,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         }
       ],
@@ -3665,7 +5251,7 @@
       "name": "--sc-lowcode-panel-radius",
       "sources": [
         {
-          "line": 12,
+          "line": 11,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         }
       ],
@@ -3677,7 +5263,7 @@
       "name": "--sc-lowcode-workspace-gap",
       "sources": [
         {
-          "line": 10,
+          "line": 9,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         }
       ],
@@ -3686,11 +5272,23 @@
       ]
     },
     {
+      "name": "--sc-motion-fast",
+      "sources": [
+        {
+          "line": 34,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-motion-fast)"
+      ]
+    },
+    {
       "name": "--sc-nav-row-gap",
       "sources": [
         {
-          "line": 44,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 19,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3701,8 +5299,8 @@
       "name": "--sc-navigation-active-bg",
       "sources": [
         {
-          "line": 79,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 59,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3713,8 +5311,8 @@
       "name": "--sc-navigation-bg",
       "sources": [
         {
-          "line": 78,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 58,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3725,8 +5323,8 @@
       "name": "--sc-page-inline-padding",
       "sources": [
         {
-          "line": 33,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 8,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3737,16 +5335,16 @@
       "name": "--sc-page-padding",
       "sources": [
         {
-          "line": 53,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 31,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         },
         {
-          "line": 115,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 64,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         },
         {
-          "line": 119,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 68,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3759,8 +5357,8 @@
       "name": "--sc-page-padding-compact",
       "sources": [
         {
-          "line": 51,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 29,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3771,8 +5369,8 @@
       "name": "--sc-page-padding-mobile",
       "sources": [
         {
-          "line": 52,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 30,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3783,8 +5381,8 @@
       "name": "--sc-page-padding-wide",
       "sources": [
         {
-          "line": 50,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 28,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3795,8 +5393,8 @@
       "name": "--sc-page-section-gap",
       "sources": [
         {
-          "line": 34,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 9,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3804,23 +5402,59 @@
       ]
     },
     {
-      "name": "--sc-product-control-height",
+      "name": "--sc-pattern-task-form-field-gap",
       "sources": [
         {
-          "line": 62,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 25,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "36px"
+        "8"
+      ]
+    },
+    {
+      "name": "--sc-pattern-task-form-label-row-margin-bottom",
+      "sources": [
+        {
+          "line": 26,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "2px"
+      ]
+    },
+    {
+      "name": "--sc-pattern-task-form-readonly-column-gap",
+      "sources": [
+        {
+          "line": 27,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "24px"
+      ]
+    },
+    {
+      "name": "--sc-product-control-height",
+      "sources": [
+        {
+          "line": 13,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-button-height-md) * 1px)"
       ]
     },
     {
       "name": "--sc-product-line-body",
       "sources": [
         {
-          "line": 61,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 43,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3831,7 +5465,7 @@
       "name": "--sc-product-list-inline-end",
       "sources": [
         {
-          "line": 9,
+          "line": 8,
           "source": "frontend/apps/web/src/styles/product-patterns.css"
         }
       ],
@@ -3843,32 +5477,32 @@
       "name": "--sc-product-list-inline-start",
       "sources": [
         {
-          "line": 8,
-          "source": "frontend/apps/web/src/styles/product-patterns.css"
+          "line": 3,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "0px"
+        "var(--sc-page-padding)"
       ]
     },
     {
       "name": "--sc-product-list-toolbar-height",
       "sources": [
         {
-          "line": 65,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 48,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "46px"
+        "var(--sc-pattern-collection-toolbar-height)"
       ]
     },
     {
       "name": "--sc-product-page-gutter",
       "sources": [
         {
-          "line": 54,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 32,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3903,56 +5537,56 @@
       "name": "--sc-product-radius-control",
       "sources": [
         {
-          "line": 67,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 14,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "6px"
+        "var(--sc-base-radius-sm)"
       ]
     },
     {
       "name": "--sc-product-radius-dialog",
       "sources": [
         {
-          "line": 69,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 16,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "8px"
+        "var(--sc-component-dialog-radius)"
       ]
     },
     {
       "name": "--sc-product-radius-panel",
       "sources": [
         {
-          "line": 68,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 15,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "8px"
+        "var(--sc-component-panel-radius)"
       ]
     },
     {
       "name": "--sc-product-shadow-overlay",
       "sources": [
         {
-          "line": 70,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 50,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "var(--sc-semantic-shadow-popover)"
+        "var(--sc-pattern-overlay-shadow)"
       ]
     },
     {
       "name": "--sc-product-space-1",
       "sources": [
         {
-          "line": 29,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 4,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3963,8 +5597,8 @@
       "name": "--sc-product-space-2",
       "sources": [
         {
-          "line": 30,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 5,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3975,8 +5609,8 @@
       "name": "--sc-product-space-3",
       "sources": [
         {
-          "line": 31,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 6,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3987,8 +5621,8 @@
       "name": "--sc-product-space-4",
       "sources": [
         {
-          "line": 32,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 7,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -3996,75 +5630,145 @@
       ]
     },
     {
-      "name": "--sc-product-table-row-height",
+      "name": "--sc-product-table-header-height",
       "sources": [
         {
-          "line": 63,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 45,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        },
+        {
+          "line": 76,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "44px"
+        "42px",
+        "var(--sc-table-header-height)"
+      ]
+    },
+    {
+      "name": "--sc-product-table-row-height",
+      "sources": [
+        {
+          "line": 44,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        },
+        {
+          "line": 77,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "46px",
+        "var(--sc-table-row-height)"
       ]
     },
     {
       "name": "--sc-product-text-body",
       "sources": [
         {
-          "line": 58,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 37,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "14px"
+        "calc(var(--sc-base-font-size-md) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-product-text-caption",
+      "sources": [
+        {
+          "line": 35,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "var(--sc-product-text-sm)"
       ]
     },
     {
       "name": "--sc-product-text-section",
       "sources": [
         {
-          "line": 59,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 38,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "16px"
+        "calc(var(--sc-base-font-size-lg) * 1px)"
       ]
     },
     {
       "name": "--sc-product-text-sm",
       "sources": [
         {
-          "line": 57,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 33,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "12px"
+        "calc(var(--sc-base-font-size-sm) * 1px)"
       ]
     },
     {
       "name": "--sc-product-text-title",
       "sources": [
         {
-          "line": 60,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 39,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "24px"
+        "calc(var(--sc-pattern-page-header-title-size) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-product-text-weight-bold",
+      "sources": [
+        {
+          "line": 41,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-font-weight-bold)"
+      ]
+    },
+    {
+      "name": "--sc-product-text-weight-semibold",
+      "sources": [
+        {
+          "line": 42,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-font-weight-semibold)"
+      ]
+    },
+    {
+      "name": "--sc-product-text-xs",
+      "sources": [
+        {
+          "line": 36,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "var(--sc-product-text-sm)"
       ]
     },
     {
       "name": "--sc-product-toolbar-height",
       "sources": [
         {
-          "line": 64,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 46,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "52px"
+        "var(--sc-pattern-collection-toolbar-height)"
       ]
     },
     {
@@ -4092,143 +5796,507 @@
       ]
     },
     {
-      "name": "--sc-shell-navigation-item-height",
+      "name": "--sc-radius-md",
       "sources": [
         {
-          "line": 74,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 32,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "calc(var(--sc-component-shell-navigation-item-height, 44) * 1px)"
+        "var(--sc-base-radius-md)"
+      ]
+    },
+    {
+      "name": "--sc-radius-sm",
+      "sources": [
+        {
+          "line": 31,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-base-radius-sm)"
+      ]
+    },
+    {
+      "name": "--sc-semantic-border-default",
+      "sources": [
+        {
+          "line": 33,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 54,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#263746",
+        "#d5dfdc"
+      ]
+    },
+    {
+      "name": "--sc-semantic-border-interactive",
+      "sources": [
+        {
+          "line": 30,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 51,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#004f9e",
+        "#087f6a"
+      ]
+    },
+    {
+      "name": "--sc-semantic-border-strong",
+      "sources": [
+        {
+          "line": 35,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 56,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#1c2b38",
+        "#a9b8b3"
+      ]
+    },
+    {
+      "name": "--sc-semantic-border-subtle",
+      "sources": [
+        {
+          "line": 34,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 55,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#3d5164",
+        "#e3eae8"
+      ]
+    },
+    {
+      "name": "--sc-semantic-focus-ring",
+      "sources": [
+        {
+          "line": 32,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 53,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#006fbb",
+        "#d44900"
+      ]
+    },
+    {
+      "name": "--sc-semantic-state-success-text",
+      "sources": [
+        {
+          "line": 37,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 58,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#00652e",
+        "#087a43"
+      ]
+    },
+    {
+      "name": "--sc-semantic-state-warning-text",
+      "sources": [
+        {
+          "line": 36,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 57,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#7a3500",
+        "#8f4b00"
+      ]
+    },
+    {
+      "name": "--sc-semantic-surface-interactive",
+      "sources": [
+        {
+          "line": 25,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 46,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#004f9e",
+        "#087f6a"
+      ]
+    },
+    {
+      "name": "--sc-semantic-surface-interactive-hover",
+      "sources": [
+        {
+          "line": 26,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 47,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#003f7d",
+        "#066b5a"
+      ]
+    },
+    {
+      "name": "--sc-semantic-surface-selected",
+      "sources": [
+        {
+          "line": 27,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 48,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#d9ecff",
+        "#e4f4f0"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-link",
+      "sources": [
+        {
+          "line": 31,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 52,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#004f9e",
+        "#087f6a"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-muted",
+      "sources": [
+        {
+          "line": 70,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#2f4050"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-on-interactive",
+      "sources": [
+        {
+          "line": 29,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 50,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#ffffff"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-primary",
+      "sources": [
+        {
+          "line": 68,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#071526"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-secondary",
+      "sources": [
+        {
+          "line": 69,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#2f4050"
+      ]
+    },
+    {
+      "name": "--sc-semantic-text-selected",
+      "sources": [
+        {
+          "line": 28,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        },
+        {
+          "line": 49,
+          "source": "frontend/apps/web/src/styles/tokens/profile.css"
+        }
+      ],
+      "values": [
+        "#071526",
+        "#18302a"
+      ]
+    },
+    {
+      "name": "--sc-shell-navigation-item-height",
+      "sources": [
+        {
+          "line": 54,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
+        }
+      ],
+      "values": [
+        "calc(var(--sc-component-shell-navigation-item-height) * 1px)"
       ]
     },
     {
       "name": "--sc-shell-page-gutter",
       "sources": [
         {
-          "line": 75,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 55,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "calc(var(--sc-component-shell-page-gutter, 24) * 1px)"
+        "calc(var(--sc-pattern-app-shell-page-gutter) * 1px)"
       ]
     },
     {
       "name": "--sc-shell-sidebar-collapsed-width",
       "sources": [
         {
-          "line": 73,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 53,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "calc(var(--sc-component-shell-sidebar-collapsed-width, 56) * 1px)"
+        "calc(var(--sc-pattern-app-shell-sidebar-collapsed-width) * 1px)"
       ]
     },
     {
       "name": "--sc-shell-sidebar-width",
       "sources": [
         {
-          "line": 72,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 52,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "calc(var(--sc-component-shell-sidebar-width, 248) * 1px)"
+        "calc(var(--sc-pattern-app-shell-sidebar-width) * 1px)"
       ]
     },
     {
       "name": "--sc-shell-topbar-height",
       "sources": [
         {
-          "line": 71,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 51,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "calc(var(--sc-component-shell-topbar-height, 48) * 1px)"
+        "calc(var(--sc-pattern-app-shell-topbar-height) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-space-1",
+      "sources": [
+        {
+          "line": 25,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-2xs)"
+      ]
+    },
+    {
+      "name": "--sc-space-2",
+      "sources": [
+        {
+          "line": 26,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xs)"
       ]
     },
     {
       "name": "--sc-space-2xs",
       "sources": [
         {
-          "line": 23,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 5,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "4px"
+        "calc(var(--sc-base-space-2xs) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-space-3",
+      "sources": [
+        {
+          "line": 27,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-sm)"
+      ]
+    },
+    {
+      "name": "--sc-space-4",
+      "sources": [
+        {
+          "line": 28,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-md)"
+      ]
+    },
+    {
+      "name": "--sc-space-5",
+      "sources": [
+        {
+          "line": 29,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-lg)"
+      ]
+    },
+    {
+      "name": "--sc-space-6",
+      "sources": [
+        {
+          "line": 30,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "var(--sc-space-xl)"
       ]
     },
     {
       "name": "--sc-space-lg",
       "sources": [
         {
-          "line": 27,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 9,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "24px"
+        "calc(var(--sc-base-space-lg) * 1px)"
       ]
     },
     {
       "name": "--sc-space-md",
       "sources": [
         {
-          "line": 26,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 8,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "16px"
+        "calc(var(--sc-base-space-md) * 1px)"
+      ]
+    },
+    {
+      "name": "--sc-space-none",
+      "sources": [
+        {
+          "line": 4,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
+        }
+      ],
+      "values": [
+        "0px"
       ]
     },
     {
       "name": "--sc-space-sm",
       "sources": [
         {
-          "line": 25,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 7,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "12px"
+        "calc(var(--sc-base-space-sm) * 1px)"
       ]
     },
     {
       "name": "--sc-space-xl",
       "sources": [
         {
-          "line": 28,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 10,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "32px"
+        "calc(var(--sc-base-space-xl) * 1px)"
       ]
     },
     {
       "name": "--sc-space-xs",
       "sources": [
         {
-          "line": 24,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 6,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "8px"
+        "calc(var(--sc-base-space-xs) * 1px)"
       ]
     },
     {
       "name": "--sc-surface-padding",
       "sources": [
         {
-          "line": 35,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 10,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4239,8 +6307,8 @@
       "name": "--sc-table-cell-inline-padding",
       "sources": [
         {
-          "line": 45,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 20,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4251,8 +6319,8 @@
       "name": "--sc-table-divider",
       "sources": [
         {
-          "line": 77,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 57,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4263,8 +6331,8 @@
       "name": "--sc-table-header-bg",
       "sources": [
         {
-          "line": 76,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 56,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4275,42 +6343,32 @@
       "name": "--sc-table-header-height",
       "sources": [
         {
-          "line": 161,
-          "source": "frontend/apps/web/src/pages/ListPage.css"
-        },
-        {
-          "line": 55,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 11,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "40px",
-        "42px"
+        "calc(var(--sc-component-table-header-height) * 1px)"
       ]
     },
     {
       "name": "--sc-table-row-height",
       "sources": [
         {
-          "line": 162,
-          "source": "frontend/apps/web/src/pages/ListPage.css"
-        },
-        {
-          "line": 56,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 12,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "44px",
-        "46px"
+        "calc(var(--sc-component-table-row-height) * 1px)"
       ]
     },
     {
       "name": "--sc-text-link",
       "sources": [
         {
-          "line": 80,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 60,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4318,11 +6376,35 @@
       ]
     },
     {
+      "name": "--sc-text-primary",
+      "sources": [
+        {
+          "line": 80,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-primary)"
+      ]
+    },
+    {
+      "name": "--sc-text-secondary",
+      "sources": [
+        {
+          "line": 81,
+          "source": "frontend/apps/web/src/styles/tokens/semantic.css"
+        }
+      ],
+      "values": [
+        "var(--sc-semantic-text-secondary)"
+      ]
+    },
+    {
       "name": "--sc-toolbar-gap",
       "sources": [
         {
-          "line": 36,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 11,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4333,8 +6415,8 @@
       "name": "--sc-toolbar-group-gap",
       "sources": [
         {
-          "line": 37,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 12,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4345,8 +6427,8 @@
       "name": "--sc-touch-target-min",
       "sources": [
         {
-          "line": 66,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 49,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
@@ -4357,69 +6439,48 @@
       "name": "--sc-workspace-frame-max",
       "sources": [
         {
-          "line": 46,
-          "source": "frontend/apps/web/src/styles/design-system.css"
+          "line": 21,
+          "source": "frontend/apps/web/src/styles/tokens/pattern.css"
         }
       ],
       "values": [
-        "1920px"
+        "var(--sc-pattern-workspace-form-frame-max-width)"
       ]
     },
     {
-      "name": "--selectable",
+      "name": "--sc-z-content",
       "sources": [
         {
-          "line": 1022,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
-        },
-        {
-          "line": 1023,
-          "source": "frontend/apps/web/src/components/template/FormSection.vue"
+          "line": 36,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "focus-visible",
-        "hover,"
+        "var(--sc-base-z-index-base)"
       ]
     },
     {
-      "name": "--smart",
+      "name": "--sc-z-content-raised",
       "sources": [
         {
-          "line": 1085,
-          "source": "frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue"
+          "line": 37,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "hover"
+        "var(--sc-component-overlay-local-action-z-index)"
       ]
     },
     {
-      "name": "--surface",
+      "name": "--sc-z-overlay",
       "sources": [
         {
-          "line": 2,
-          "source": "frontend/apps/web/src/layouts/AppShell.css"
+          "line": 38,
+          "source": "frontend/apps/web/src/styles/tokens/component.css"
         }
       ],
       "values": [
-        "var(--sc-semantic-surface-page)"
-      ]
-    },
-    {
-      "name": "--title-hidden",
-      "sources": [
-        {
-          "line": 593,
-          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
-        },
-        {
-          "line": 673,
-          "source": "frontend/apps/web/src/pages/contractForm/ContractFormPage.css"
-        }
-      ],
-      "values": [
-        "not(:has(.template-page-header-status > *)))"
+        "var(--sc-base-z-index-modal)"
       ]
     }
   ],
@@ -4429,9 +6490,9 @@
     "runtime installed-module state",
     "user-specific visibility"
   ],
-  "generatedFromDirtyWorktree": false,
-  "generatorDigest": "71dc9437a14b608f0e3e5a19330ed9002af185761e7ca697703ea341f341d4b1",
-  "inputDigest": "10b485c359af181336e64d94e4af4858b12ab56faa08b2ae09fa7b74f55167b9",
+  "generatedFromDirtyWorktree": true,
+  "generatorDigest": "efa7cd47e50a0c8b732cce71f11dab319dddab0c7cdd33f6113637cbbb5fab8d",
+  "inputDigest": "dfd459571733c132fefde711c143b3f3da91a47161fa01b7b6b33a94ca044115",
   "inputScopes": [
     {
       "path": "frontend/apps/web/src/**/*.{css,scss,sass,vue}",
@@ -4445,5 +6506,5 @@
   },
   "kind": "design_token_inventory",
   "schemaVersion": "1.0",
-  "sourceCommit": "1068da05ea9b198f97bbf06b49b7361fabbd9e4f"
+  "sourceCommit": "200185560d5b745e1e7369694bfa9e9d7947f91f"
 }

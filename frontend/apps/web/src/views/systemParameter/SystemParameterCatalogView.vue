@@ -1,5 +1,10 @@
 <template>
-  <ScPage class="system-parameter-catalog sc-product-main-surface" content-layout="data-grid" data-semantic-component="SystemParameterCatalogView">
+  <ScPage
+    class="system-parameter-catalog sc-product-main-surface"
+    content-layout="data-grid"
+    data-semantic-component="SystemParameterCatalogView"
+    :data-state="loading ? 'loading' : error || gap ? 'error' : categories.length ? 'ready' : 'empty'"
+  >
     <div class="system-parameter-head">
       <div>
         <h1>系统参数</h1>

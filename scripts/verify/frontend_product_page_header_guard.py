@@ -641,7 +641,7 @@ def validate() -> list[str]:
             failures.append(f"structural header summary does not stay content-sized: {marker}")
     if ':compact-summary="nodeType(node) === \'header\'"' not in form_renderer:
         failures.append("structural header container does not opt into compact summary presentation")
-    for marker in ("'sc-descriptions--compact': compact", "width: max-content", "width: auto"):
+    for marker in ("'sc-descriptions--compact': compact", "display: inline-table", "width: auto"):
         if marker not in descriptions:
             failures.append(f"ScDescriptions compact consumption is incomplete: {marker}")
     if 'v-if="headerOverflowItems.length && !isNarrowViewport"' not in contract:

@@ -1,5 +1,10 @@
 <template>
-  <ScPage class="capability-explorer" content-layout="data-grid" data-semantic-component="PlatformCapabilityExplorerView">
+  <ScPage
+    class="capability-explorer"
+    content-layout="data-grid"
+    data-semantic-component="PlatformCapabilityExplorerView"
+    :data-state="loading && !catalog ? 'loading' : error ? 'error' : rows.length ? 'ready' : 'empty'"
+  >
     <header v-if="pageSectionEnabled('header', true)" class="capability-explorer__header">
       <div>
         <p class="capability-explorer__eyebrow">{{ pageText('eyebrow', '') }}</p>

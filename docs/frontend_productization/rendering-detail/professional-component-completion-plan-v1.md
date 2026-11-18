@@ -101,7 +101,9 @@ Navigation/Hierarchy 9 个，共 24 个表面必须全部退出 `gap`。
 
 状态：已纳入当前扩展 PR。21 个
 `targetBatch=p0-shared-utility-scene-completion-v1` 表面已全部退出 `gap`；
-当前机器清单为 137 个表面、P0/P1 `gap = 0`。
+历史批次收口后机器清单曾为 137 个表面、P0/P1 `gap = 0`。当前源码扩展后
+清单为 194 个表面，并重新识别出 13 个正式 P0 责任缺口；这些缺口已由
+Batch 5 关闭，当前 P0/P1 `gap = 0`。
 
 ## P3 独立计划
 
@@ -115,6 +117,26 @@ Navigation/Hierarchy 9 个，共 24 个表面必须全部退出 `gap`。
 - Usage Analytics。
 
 它们进入后续 `P3 Admin and Low-code Surface Professionalization`，不得为了清零 P0/P1 将其错误标记为 `governed_composite`。
+
+## Batch 5：Residual Shared、Scene and Form State Completion
+
+目标是关闭当前机器清单中的 13 个正式 P0 缺口：
+
+- shared field/navigation：`FieldValue`、`ProductScenarioNavigation`、
+  `ProductShellSidebarFooter`；
+- scene readiness/activation：`EnterpriseReadinessPanel`、
+  `ScenarioActivationPanel`；
+- native form presentation：`NativeNodeComponent`、
+  `NativeWeightedRelationDisplay`、`ContractFormRoute`；
+- workflow reason lifecycle：`ActionReasonTrigger`、`ContractReasonDialog`；
+- capability and system catalog：`MyCapabilitiesView`、
+  `PlatformCapabilityExplorerView`、`SystemParameterCatalogView`。
+
+本批只建立加载、空态、错误、禁用、焦点和原生节点呈现的统一组件责任与可执行
+证据，不修改业务权限、动作或契约语义。完成条件是每个缺口退出 `gap`，且机器
+清单不存在无目标批次的缺口。
+
+状态：已完成。13 个表面均通过机器解析绑定；P0/P1 `gap = 0`，未分配缺口为 0。
 
 ## 每批统一封板
 

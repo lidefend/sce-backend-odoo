@@ -51,7 +51,12 @@
         @click="copyIdentity"
       >
         <span class="shell-sidebar-footer__version">{{ identityLabel }}</span>
-        <span class="shell-sidebar-footer__copy" aria-live="polite">{{ copyStatus }}</span>
+        <ScInlineState
+          v-if="copyStatus"
+          class="shell-sidebar-footer__copy"
+          :state="copyStatus === '已复制' ? 'success' : 'error'"
+          :label="copyStatus"
+        />
       </ScButton>
     </span>
   </div>
@@ -61,6 +66,7 @@
 import { computed, onBeforeUnmount, ref } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScIcon from '../design-system/ScIcon.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import {
   buildIdentityCopyText,
   buildIdentityTitle,

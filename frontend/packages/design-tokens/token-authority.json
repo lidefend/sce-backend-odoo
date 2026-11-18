@@ -68,6 +68,15 @@
   ],
   "legacyClassificationRules": [
     {
+      "match": "--sc-(bg|border|bridge-tdesign|column-header-control|component|motion|pattern|radius|semantic|z)-.*",
+      "status": "alias",
+      "replacement": "Token v1 canonical layer selected by the alias family",
+      "owner": "frontend.design_token_authority",
+      "allowedConsumerScope": [
+        "application"
+      ]
+    },
+    {
       "match": "--sc-(app|color|space|product|page|content|workspace|navigation|table|text|toolbar|card|field|label|dialog|nav|surface|touch)-.*",
       "status": "alias",
       "replacement": "Token v1 canonical layer selected by the alias value",

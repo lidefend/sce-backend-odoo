@@ -348,10 +348,10 @@ async function measure(page, viewport, state = 'normal', interaction = {}) {
       .filter((cell) => getComputedStyle(cell).textAlign !== 'right').length;
     const numericColumnAlignment = mobileMode
       || (numericHeaderMisaligned === 0 && numericBodyMisaligned === 0);
-    const visibleTableContents = Array.from(document.querySelectorAll('.t-table__content')).filter(visible);
+    const visibleTableContents = Array.from(document.querySelectorAll('[data-table-content="ScTable"]')).filter(visible);
     const overflowingTableContents = visibleTableContents.filter((content) => {
       const table = content.querySelector('table');
-      return Boolean(table && table.getBoundingClientRect().width > content.clientWidth + 1);
+      return Boolean(table && table.offsetWidth > content.clientWidth + 1);
     });
     const scrollRegions = Array.from(document.querySelectorAll('[data-table-scroll-region="true"]')).filter(visible);
     const scrollTools = Array.from(document.querySelectorAll('.sc-table-scroll-tools')).filter(visible);

@@ -19,9 +19,12 @@
 - `outlet`：由标准集合面或注册组件承载；
 - `reasonCode`：降级或不支持时的稳定原因码。
 
-当前 ready：`table`、`card`、`workflow_board`、`hierarchy_browser`。
+当前 ready：`table`、`card`、`workflow_board`、`hierarchy_browser`、
+`hierarchy_planner`、`hierarchical_worksheet`、`activity`、`pivot`、`graph`。
 
-当前纳入架构但尚未实现：`pivot`、`graph`、`calendar`、`gantt`、`activity`、`dashboard`。它们必须登记为 `fallback`，统一使用 `core.readable_records`，直到各自正式渲染器具备契约测试和浏览器验收后切换为 `ready`。
+当前纳入架构但尚未实现：`calendar`、`gantt`、`dashboard`。它们必须登记为
+`fallback`，统一使用 `core.readable_records`，直到各自正式渲染器具备契约测试和
+浏览器验收后切换为 `ready`。
 
 ## 硬约束
 

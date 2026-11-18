@@ -247,10 +247,21 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         path = root / "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue"
         scroll_selector = ":deep(." + "t-menu--scroll)"
         path.write_text(
-            path.read_text().replace(scroll_selector, ":deep(.unowned-menu)"),
+            path.read_text() + f"\n<style>{scroll_selector} {{ overflow: auto; }}</style>\n",
             encoding="utf-8",
         )
-        self.assertTrue(any("bounded scroll ownership" in error for error in validate(root)))
+        self.assertTrue(any("must not select vendor menu internals" in error for error in validate(root)))
+
+    def test_activity_tabs_must_not_select_vendor_internals(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+        tabs_selector = ":deep(." + "t-tabs__nav)"
+        path.write_text(
+            path.read_text() + f"\n<style>{tabs_selector} {{ min-width: 0; }}</style>\n",
+            encoding="utf-8",
+        )
+        self.assertTrue(any("must not select vendor tab internals" in error for error in validate(root)))
 
     def test_menu_host_must_not_reintroduce_horizontal_scroll(self):
         temporary, root = self.fixture()

@@ -72,7 +72,7 @@ const activityProfile = {
 const activityPayload = {
   pageInfo: {
     pageId: 'page.x.activity', sceneKey: 'x.activity', pageName: 'Activities', model: 'x.activity',
-    viewType: 'activity', layoutType: 'activity', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc',
+    viewType: 'activity', layoutType: 'activity', renderMode: 'governed', contractVersion: '2.5.0', clientType: 'web_pc',
   },
   layoutContract: {
     pageId: 'page.x.activity', layoutType: 'activity', adaptMode: 'pc', containerTree: [],
@@ -87,12 +87,12 @@ const activityPayload = {
     sourceType: 'ui.contract', lifecycle: {
       lifecycleVersion: '1.0.0', stage: 'runtime_delivery',
       definition: {
-        schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0',
+        schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.5.0',
         schemaSha256: 'b4a2614f4aa0f5ad052b6fc0f1351fb74cf511825c5fdee3036afdb0122ee419',
-        contractVersion: '2.2.0', normativeStatus: 'stable',
+        contractVersion: '2.5.0', normativeStatus: 'stable',
       },
       generation: {
-        generator: 'view_type_render_coverage_probe', generatorVersion: '2.2.0', sourceType: 'ui.contract',
+        generator: 'view_type_render_coverage_probe', generatorVersion: '2.5.0', sourceType: 'ui.contract',
         sourceSha256: '44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a',
       },
       runtime: { requestId: 'activity-request', traceId: 'activity-trace', clientType: 'web_pc', traceSource: 'request_context' },

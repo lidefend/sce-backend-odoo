@@ -65,6 +65,7 @@ def declared_anchor_errors(node_component: str) -> list[str]:
     expected = {
         "type": "button",
         "variant": "ghost",
+        "data-semantic-component": "NativeNodeComponent",
         ":data-contract-container-id": "containerId",
         "@click": "$emit('navigate', $event)",
     }

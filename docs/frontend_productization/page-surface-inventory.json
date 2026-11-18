@@ -234,6 +234,14 @@
       "viewRef": null
     },
     {
+      "actionXmlidLocal": "action_payment_ledger_allocation_evidence",
+      "authority": "declarative_action_definition",
+      "model": "payment.ledger.allocation",
+      "source": "addons/smart_construction_core/views/core/payment_ledger_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": null
+    },
+    {
       "actionXmlidLocal": "action_payment_request",
       "authority": "declarative_action_definition",
       "model": "payment.request",
@@ -815,7 +823,7 @@
       "model": "sc.document.admin.document",
       "source": "addons/smart_construction_core/views/core/document_admin_document_views.xml",
       "viewMode": "tree,form",
-      "viewRef": null
+      "viewRef": "smart_construction_core.view_sc_certificate_registration_tree"
     },
     {
       "actionXmlidLocal": "action_sc_check_standard",
@@ -946,6 +954,14 @@
       "viewRef": null
     },
     {
+      "actionXmlidLocal": "action_sc_contract_execution_position",
+      "authority": "declarative_action_definition",
+      "model": "sc.contract.execution.position",
+      "source": "addons/smart_construction_core/views/core/contract_execution_position_views.xml",
+      "viewMode": "tree,pivot,form",
+      "viewRef": null
+    },
+    {
       "actionXmlidLocal": "action_sc_contract_performance_roadmap",
       "authority": "declarative_action_definition",
       "model": "sc.project.capability.roadmap",
@@ -1024,6 +1040,22 @@
       "source": "addons/smart_core/views/platform_company_access_views.xml",
       "viewMode": "tree,form",
       "viewRef": null
+    },
+    {
+      "actionXmlidLocal": "action_sc_enterprise_company",
+      "authority": "declarative_action_definition",
+      "model": "res.company",
+      "source": "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": null
+    },
+    {
+      "actionXmlidLocal": "action_sc_enterprise_initialization",
+      "authority": "declarative_action_definition",
+      "model": "res.company",
+      "source": "addons/smart_construction_core/views/support/enterprise_initialization_views.xml",
+      "viewMode": "form",
+      "viewRef": "view_sc_enterprise_initialization_form"
     },
     {
       "actionXmlidLocal": "action_sc_entitlement",
@@ -1842,6 +1874,14 @@
       "viewRef": null
     },
     {
+      "actionXmlidLocal": "action_sc_my_work",
+      "authority": "declarative_action_definition",
+      "model": "project.project",
+      "source": "addons/smart_construction_core/views/support/my_work_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": null
+    },
+    {
       "actionXmlidLocal": "action_sc_norm_catalog_master",
       "authority": "declarative_action_definition",
       "model": "sc.norm.catalog",
@@ -2071,7 +2111,7 @@
       "model": "sc.hr.payroll.document",
       "source": "addons/smart_construction_core/views/menu_product_administration_wave1.xml",
       "viewMode": "tree,form",
-      "viewRef": null
+      "viewRef": "smart_construction_core.view_sc_payroll_management_tree"
     },
     {
       "actionXmlidLocal": "action_sc_people_lifecycle_roadmap",
@@ -2094,6 +2134,22 @@
       "authority": "declarative_action_definition",
       "model": "sc.plan.report",
       "source": "addons/smart_construction_core/views/core/plan_management_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": null
+    },
+    {
+      "actionXmlidLocal": "action_sc_platform_maintenance_access",
+      "authority": "declarative_action_definition",
+      "model": "sc.platform.maintenance.access",
+      "source": "addons/smart_core/views/platform_company_access_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": null
+    },
+    {
+      "actionXmlidLocal": "action_sc_platform_namespace",
+      "authority": "declarative_action_definition",
+      "model": "sc.platform.namespace",
+      "source": "addons/smart_core/views/platform_company_access_views.xml",
       "viewMode": "tree,form",
       "viewRef": null
     },
@@ -2256,6 +2312,14 @@
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
       "viewMode": "tree,form",
       "viewRef": null
+    },
+    {
+      "actionXmlidLocal": "action_sc_product_scenario",
+      "authority": "declarative_action_definition",
+      "model": "sc.product.scenario",
+      "source": "addons/smart_construction_core/views/support/product_scenario_views.xml",
+      "viewMode": "tree,form",
+      "viewRef": "view_sc_product_scenario_tree"
     },
     {
       "actionXmlidLocal": "action_sc_product_site_variation_v1",
@@ -3724,6 +3788,14 @@
       "source": "addons/smart_construction_core/views/core/payment_ledger_views.xml"
     },
     {
+      "actionRef": "action_payment_ledger_allocation_evidence",
+      "authority": "declarative_menu_definition_not_runtime_visibility",
+      "label": "付款分摊审计",
+      "menuXmlidLocal": "menu_payment_ledger_allocation_evidence",
+      "parentRef": "smart_construction_core.menu_sc_finance_center",
+      "source": "addons/smart_construction_core/views/core/payment_ledger_views.xml"
+    },
+    {
       "actionRef": "action_payment_request_line",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "付款申请明细",
@@ -4100,7 +4172,7 @@
       "source": "addons/smart_construction_core/views/menu.xml"
     },
     {
-      "actionRef": "action_exec_structure_entry",
+      "actionRef": "action_exec_structure_wbs",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "执行结构",
       "menuXmlidLocal": "menu_sc_project_wbs",
@@ -5196,14 +5268,6 @@
       "source": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
     },
     {
-      "actionRef": "smart_construction_core.action_sc_safety_issue",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "安全检查",
-      "menuXmlidLocal": "menu_sc_safety_issue",
-      "parentRef": "smart_construction_core.menu_sc_construction_management_center",
-      "source": "addons/smart_construction_core/views/menu_business_taxonomy.xml"
-    },
-    {
       "actionRef": "smart_construction_core.action_sc_safety_recheck",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "安全复验",
@@ -5540,14 +5604,6 @@
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
     },
     {
-      "actionRef": "smart_construction_core.action_sc_equipment_usage",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "机械台班登记",
-      "menuXmlidLocal": "menu_sc_product_equipment_shift_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_equipment_cost_group_v1",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
       "actionRef": "smart_construction_core.action_sc_product_general_contract_settlement_v1",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "日常合同结算",
@@ -5569,30 +5625,6 @@
       "label": "劳务成本",
       "menuXmlidLocal": "menu_sc_product_labor_cost_group_v1",
       "parentRef": "smart_construction_core.menu_sc_project_center",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_product_labor_cost_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "劳务成本登记",
-      "menuXmlidLocal": "menu_sc_product_labor_cost_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_product_labor_deduction_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "劳务扣款明细",
-      "menuXmlidLocal": "menu_sc_product_labor_deduction_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_product_labor_realname_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "劳务实名制",
-      "menuXmlidLocal": "menu_sc_product_labor_realname_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_labor_cost_group_v1",
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
     },
     {
@@ -5692,14 +5724,6 @@
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
     },
     {
-      "actionRef": "smart_construction_core.action_sc_product_quality_acceptance_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "质量验收",
-      "menuXmlidLocal": "menu_sc_product_quality_acceptance_v1",
-      "parentRef": "smart_construction_core.menu_sc_construction_management_center",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
       "actionRef": "smart_construction_core.action_sc_product_site_variation_v1",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "签证变更",
@@ -5721,22 +5745,6 @@
       "label": "分包成本",
       "menuXmlidLocal": "menu_sc_product_subcontract_cost_group_v1",
       "parentRef": "smart_construction_core.menu_sc_project_center",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_subcontract_register",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "分包成本登记",
-      "menuXmlidLocal": "menu_sc_product_subcontract_cost_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_subcontract_cost_group_v1",
-      "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
-    },
-    {
-      "actionRef": "smart_construction_core.action_sc_product_subcontract_variation_v1",
-      "authority": "declarative_menu_definition_not_runtime_visibility",
-      "label": "分包签证费用",
-      "menuXmlidLocal": "menu_sc_product_subcontract_variation_v1",
-      "parentRef": "smart_construction_core.menu_sc_product_subcontract_cost_group_v1",
       "source": "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
     },
     {
@@ -5800,6 +5808,14 @@
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "合同变更",
       "menuXmlidLocal": "menu_sc_p1_contract_change",
+      "parentRef": "smart_construction_core.menu_sc_contract_center",
+      "source": "addons/smart_construction_core/views/menu_product_contract_wave1.xml"
+    },
+    {
+      "actionRef": "smart_construction_core.action_sc_contract_execution_position",
+      "authority": "declarative_menu_definition_not_runtime_visibility",
+      "label": "合同执行态势",
+      "menuXmlidLocal": "menu_sc_p1_contract_execution_position",
       "parentRef": "smart_construction_core.menu_sc_contract_center",
       "source": "addons/smart_construction_core/views/menu_product_contract_wave1.xml"
     },
@@ -6444,6 +6460,14 @@
       "source": "addons/smart_construction_core/views/support/dictionary_views.xml"
     },
     {
+      "actionRef": "action_sc_enterprise_initialization",
+      "authority": "declarative_menu_definition_not_runtime_visibility",
+      "label": "企业初始化",
+      "menuXmlidLocal": "menu_sc_enterprise_initialization",
+      "parentRef": "menu_sc_business_config_center",
+      "source": "addons/smart_construction_core/views/support/enterprise_initialization_views.xml"
+    },
+    {
       "actionRef": "smart_construction_core.action_ui_form_custom_field_wizard_business_config",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "新增表单字段",
@@ -6468,12 +6492,28 @@
       "source": "addons/smart_construction_core/views/support/menu_config_policy_views.xml"
     },
     {
+      "actionRef": "smart_construction_core.action_sc_my_work",
+      "authority": "declarative_menu_definition_not_runtime_visibility",
+      "label": "我的工作",
+      "menuXmlidLocal": "menu_sc_my_work",
+      "parentRef": "smart_construction_core.menu_sc_workspace_center",
+      "source": "addons/smart_construction_core/views/support/my_work_views.xml"
+    },
+    {
       "actionRef": "action_sc_organization_department",
       "authority": "declarative_menu_definition_not_runtime_visibility",
       "label": "组织架构",
       "menuXmlidLocal": "menu_sc_organization_department",
       "parentRef": "menu_sc_business_base_config_group",
       "source": "addons/smart_construction_core/views/support/organization_department_views.xml"
+    },
+    {
+      "actionRef": "action_sc_product_scenario",
+      "authority": "declarative_menu_definition_not_runtime_visibility",
+      "label": "业务场景",
+      "menuXmlidLocal": "menu_sc_product_scenario_business_config",
+      "parentRef": "smart_construction_core.menu_sc_business_config_center",
+      "source": "addons/smart_construction_core/views/support/product_scenario_views.xml"
     },
     {
       "actionRef": "action_sc_project_stage_requirement_items",
@@ -6698,9 +6738,9 @@
     "runtime installed-module state",
     "user-specific visibility"
   ],
-  "generatedFromDirtyWorktree": false,
-  "generatorDigest": "71dc9437a14b608f0e3e5a19330ed9002af185761e7ca697703ea341f341d4b1",
-  "inputDigest": "fed99e11905665bcebe587faede88046de824953b356ae77aa0f0274fe53a8e2",
+  "generatedFromDirtyWorktree": true,
+  "generatorDigest": "efa7cd47e50a0c8b732cce71f11dab319dddab0c7cdd33f6113637cbbb5fab8d",
+  "inputDigest": "ff6ba8bf84303dae4c1511fd25c2162ef73df62c4f6b866199344932ceb4f1de",
   "inputScopes": [
     {
       "path": "frontend/apps/web/src",
@@ -6725,7 +6765,7 @@
     {
       "component": "LoginView",
       "evidence": {
-        "line": 235,
+        "line": 336,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "unknown",
@@ -6741,7 +6781,7 @@
     {
       "component": "LoginView",
       "evidence": {
-        "line": 236,
+        "line": 337,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "unknown",
@@ -6757,7 +6797,7 @@
     {
       "component": "AccountActivationView",
       "evidence": {
-        "line": 237,
+        "line": 339,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "unknown",
@@ -6773,7 +6813,7 @@
     {
       "component": "PasswordRecoveryView",
       "evidence": {
-        "line": 238,
+        "line": 340,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "unknown",
@@ -6789,10 +6829,10 @@
     {
       "component": "views/HomeView.vue",
       "evidence": {
-        "line": 239,
+        "line": 341,
         "source": "frontend/apps/web/src/router/index.ts"
       },
-      "header": "none_detected",
+      "header": "PageHeader",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
@@ -6805,10 +6845,10 @@
     {
       "component": "views/HomeView.vue",
       "evidence": {
-        "line": 240,
+        "line": 342,
         "source": "frontend/apps/web/src/router/index.ts"
       },
-      "header": "none_detected",
+      "header": "PageHeader",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
@@ -6819,9 +6859,9 @@
       "surfaceType": "scene"
     },
     {
-      "component": "views/MyWorkView.vue",
+      "component": "views/MyCapabilitiesView.vue",
       "evidence": {
-        "line": 241,
+        "line": 344,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6829,18 +6869,18 @@
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
       "renderer": "not_directly_declared",
-      "route": "/my-work",
-      "routeName": "my-work",
+      "route": "/my-capabilities",
+      "routeName": "my-capabilities",
       "shell": "AppShell",
-      "surfaceType": "workspace"
+      "surfaceType": "utility"
     },
     {
       "component": "views/MyWorkView.vue",
       "evidence": {
-        "line": 242,
+        "line": 345,
         "source": "frontend/apps/web/src/router/index.ts"
       },
-      "header": "none_detected",
+      "header": "PageHeader",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
@@ -6853,7 +6893,7 @@
     {
       "component": "views/SceneView.vue",
       "evidence": {
-        "line": 243,
+        "line": 346,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6869,7 +6909,7 @@
     {
       "component": "views/MenuView.vue",
       "evidence": {
-        "line": 244,
+        "line": 347,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6885,7 +6925,7 @@
     {
       "component": "views/AccessDeniedView.vue",
       "evidence": {
-        "line": 245,
+        "line": 348,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6901,7 +6941,7 @@
     {
       "component": "views/WorkbenchView.vue",
       "evidence": {
-        "line": 247,
+        "line": 350,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6917,7 +6957,7 @@
     {
       "component": "views/SceneHealthView.vue",
       "evidence": {
-        "line": 248,
+        "line": 351,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6933,7 +6973,7 @@
     {
       "component": "views/ScenePackagesView.vue",
       "evidence": {
-        "line": 249,
+        "line": 352,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6949,7 +6989,7 @@
     {
       "component": "views/UsageAnalyticsView.vue",
       "evidence": {
-        "line": 250,
+        "line": 353,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6965,10 +7005,10 @@
     {
       "component": "views/ReleaseOperatorView.vue",
       "evidence": {
-        "line": 251,
+        "line": 354,
         "source": "frontend/apps/web/src/router/index.ts"
       },
-      "header": "none_detected",
+      "header": "PageHeader",
       "mobileState": "component_media_query",
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
@@ -6979,9 +7019,41 @@
       "surfaceType": "utility"
     },
     {
+      "component": "views/PlatformCapabilityExplorerView.vue",
+      "evidence": {
+        "line": 355,
+        "source": "frontend/apps/web/src/router/index.ts"
+      },
+      "header": "none_detected",
+      "mobileState": "component_media_query",
+      "presentationMode": "not_applicable_or_runtime",
+      "renderProfile": "runtime_or_not_applicable",
+      "renderer": "not_directly_declared",
+      "route": "/admin/capability-explorer",
+      "routeName": "capability-explorer",
+      "shell": "AppShell",
+      "surfaceType": "utility"
+    },
+    {
+      "component": "views/PlatformDutyView.vue",
+      "evidence": {
+        "line": 356,
+        "source": "frontend/apps/web/src/router/index.ts"
+      },
+      "header": "PageHeader",
+      "mobileState": "shell_or_shared_css",
+      "presentationMode": "not_applicable_or_runtime",
+      "renderProfile": "runtime_or_not_applicable",
+      "renderer": "not_directly_declared",
+      "route": "/platform",
+      "routeName": "platform-duty",
+      "shell": "AppShell",
+      "surfaceType": "utility"
+    },
+    {
       "component": "views/BusinessConfigSurfaceView.vue",
       "evidence": {
-        "line": 252,
+        "line": 357,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -6995,12 +7067,28 @@
       "surfaceType": "utility"
     },
     {
-      "component": "views/MenuConfigView.vue",
+      "component": "views/systemParameter/SystemParameterCatalogView.vue",
       "evidence": {
-        "line": 253,
+        "line": 358,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
+      "mobileState": "shell_or_shared_css",
+      "presentationMode": "not_applicable_or_runtime",
+      "renderProfile": "runtime_or_not_applicable",
+      "renderer": "not_directly_declared",
+      "route": "/admin/system-parameters",
+      "routeName": "system-parameters",
+      "shell": "AppShell",
+      "surfaceType": "utility"
+    },
+    {
+      "component": "views/MenuConfigView.vue",
+      "evidence": {
+        "line": 359,
+        "source": "frontend/apps/web/src/router/index.ts"
+      },
+      "header": "ScPageHeader",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "not_applicable_or_runtime",
       "renderProfile": "runtime_or_not_applicable",
@@ -7013,7 +7101,7 @@
     {
       "component": "views/ActionViewShell.vue",
       "evidence": {
-        "line": 254,
+        "line": 360,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -7029,7 +7117,7 @@
     {
       "component": "views/ApiKeyManagementView.vue",
       "evidence": {
-        "line": 255,
+        "line": 361,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "ScPageHeader",
@@ -7045,7 +7133,7 @@
     {
       "component": "views/ActionViewShell.vue",
       "evidence": {
-        "line": 256,
+        "line": 362,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
@@ -7061,14 +7149,14 @@
     {
       "component": "pages/ContractFormRoute.vue",
       "evidence": {
-        "line": 257,
+        "line": 363,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "runtime_contract_required",
       "renderProfile": "edit_or_create",
-      "renderer": "not_directly_declared",
+      "renderer": "ContractFormRoute",
       "route": "/f/:model/:id",
       "routeName": "model-form",
       "shell": "AppShell",
@@ -7077,14 +7165,14 @@
     {
       "component": "pages/ContractFormRoute.vue",
       "evidence": {
-        "line": 258,
+        "line": 364,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "none_detected",
       "mobileState": "shell_or_shared_css",
       "presentationMode": "runtime_contract_required",
       "renderProfile": "readonly",
-      "renderer": "not_directly_declared",
+      "renderer": "ContractFormRoute",
       "route": "/r/:model/:id",
       "routeName": "record",
       "shell": "AppShell",
@@ -7093,7 +7181,7 @@
     {
       "component": "views/NotFoundView.vue",
       "evidence": {
-        "line": 259,
+        "line": 365,
         "source": "frontend/apps/web/src/router/index.ts"
       },
       "header": "ScPageHeader",
@@ -8165,5 +8253,5 @@
     "runtimeEvidence": "docs/frontend_productization/frontend_surface_inventory_v1.csv",
     "staticRoutes": "frontend/apps/web/src/router/index.ts"
   },
-  "sourceCommit": "1068da05ea9b198f97bbf06b49b7361fabbd9e4f"
+  "sourceCommit": "200185560d5b745e1e7369694bfa9e9d7947f91f"
 }

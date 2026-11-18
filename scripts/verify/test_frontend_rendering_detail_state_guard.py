@@ -35,7 +35,7 @@ class FrontendRenderingDetailStateGuardTest(unittest.TestCase):
         self.assertEqual(validate(), [])
 
     def test_removing_global_reduced_motion_fails_closed(self) -> None:
-        target = "frontend/apps/web/src/styles/product-patterns.css"
+        target = "frontend/apps/web/src/styles/accessibility.css"
         original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
         removed = original.replace("@media (prefers-reduced-motion: reduce)", "@media (prefers-reduced-motion: missing)")
 
@@ -48,7 +48,7 @@ class FrontendRenderingDetailStateGuardTest(unittest.TestCase):
         self.assertTrue(any("contract missing" in failure and target in failure for failure in failures))
 
     def test_component_owned_focus_is_excluded_from_global_fallback(self) -> None:
-        target = "frontend/apps/web/src/styles/product-patterns.css"
+        target = "frontend/apps/web/src/styles/accessibility.css"
         original = (INVENTORY.ROOT / target).read_text(encoding="utf-8")
         regressed = original.replace(
             "[data-focus-ring-owner='component'] *",

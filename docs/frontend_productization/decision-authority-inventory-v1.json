@@ -1735,7 +1735,7 @@
       "literal": "published",
       "path": "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue",
       "lines": [
-        76
+        81
       ],
       "occurrences": 1,
       "classification": "contract-derived",

@@ -91,6 +91,25 @@ class FrontendVisualProjectionInventoryTest(unittest.TestCase):
         self.assertEqual(result[0]["status"], "bound")
         self.assertTrue(result[0]["browserTargetRecipeWired"])
 
+    def test_uncaught_throw_is_a_nonzero_browser_failure(self) -> None:
+        parity = {"gaps": [{"key": "overlay.dialog-drawer-focus-density", "status": "open"}]}
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            (root / "make").mkdir()
+            (root / "make/frontend.mk").write_text(
+                "verify.frontend.overlay_lifecycle.unit:\n\t@true\nverify.frontend.overlay_lifecycle.browser:\n\t@node scripts/verify/frontend_overlay_lifecycle_browser.mjs\n",
+                encoding="utf-8",
+            )
+            source = root / "scripts/verify/frontend_overlay_lifecycle_browser.mjs"
+            source.parent.mkdir(parents=True)
+            source.write_text(
+                "const bodyLocked = false; if (!bodyLocked) throw new Error('body not locked');",
+                encoding="utf-8",
+            )
+            result = evaluate_formal_gap_evidence(parity, root)
+        self.assertEqual(result[0]["status"], "bound")
+        self.assertTrue(result[0]["browserFailureExitPresent"])
+
 
 if __name__ == "__main__":
     unittest.main()

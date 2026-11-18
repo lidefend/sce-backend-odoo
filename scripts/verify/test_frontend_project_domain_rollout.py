@@ -51,10 +51,16 @@ class TestFrontendProjectDomainRollout(unittest.TestCase):
         self.assertEqual(result["readiness"], "fail_closed")
         self.assertEqual(result["reason"], "UNREGISTERED_SMART_VIEW_CLASS")
 
-    def test_planned_native_modes_remain_explicit_readable_fallbacks(self):
+    def test_pivot_and_graph_follow_the_ready_renderer_registry(self):
         result = runtime.classify_surface("pivot", "")
+        self.assertEqual(result, {"semantic": "pivot", "readiness": "ready", "reason": ""})
+        result = runtime.classify_surface("graph", "")
+        self.assertEqual(result, {"semantic": "graph", "readiness": "ready", "reason": ""})
+
+    def test_planned_native_modes_remain_explicit_readable_fallbacks(self):
+        result = runtime.classify_surface("calendar", "")
         self.assertEqual(result["readiness"], "readable_fallback")
-        self.assertEqual(result["reason"], "RENDERER_PIVOT_PLANNED")
+        self.assertEqual(result["reason"], "RENDERER_CALENDAR_PLANNED")
 
     def test_snapshot_drops_database_identity_and_sorts_authority(self):
         payload = {

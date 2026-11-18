@@ -5,7 +5,7 @@ const entryId = '\0state-dashboard-browser-entry';
 const server = await createServer({
   root: new URL('../../frontend/apps/web', import.meta.url).pathname,
   logLevel: 'error',
-  server: { host: '127.0.0.1', port: 0 },
+  server: { host: '127.0.0.1', port: 0, hmr: false },
   plugins: [{
     name: 'state-dashboard-browser-harness',
     configureServer(vite) {
@@ -19,7 +19,9 @@ const server = await createServer({
       if (id !== entryId) return undefined;
       return `
         import { createApp, h, reactive } from 'vue';
+        import { createPinia } from 'pinia';
         import { createMemoryHistory, createRouter } from 'vue-router';
+        import { useSessionStore } from '/src/stores/session.ts';
         import ActivityPage from '/src/pages/ActivityPage.vue';
         import StatusPanel from '/src/components/StatusPanel.vue';
         import ActivityPageTabs from '/src/components/product-shell/ActivityPageTabs.vue';
@@ -63,6 +65,20 @@ const server = await createServer({
           ] }),
         ]); } });
         const router = createRouter({ history: createMemoryHistory(), routes: [{ path: '/', component: { render: () => null } }] });
+        const pinia = createPinia();
+        app.use(pinia);
+        useSessionStore(pinia).errorStateContract = {
+          schema_version: '1.0.0',
+          default_kind: 'network',
+          states: [{
+            kind: 'network',
+            title: '网络连接异常',
+            message: '请检查网络后重试。',
+            statuses: [],
+            reasons: [],
+            action: { kind: 'retry', label: '重试', path: null },
+          }],
+        };
         app.use(router);
         await router.push('/');
         await router.isReady();
@@ -91,20 +107,41 @@ try {
   const empty = await page.locator('[data-activity-surface] [data-semantic-component="ScEmptyState"][data-state="empty"]').count() === 1;
   await page.evaluate(() => { window.stateDashboard.mode = 'records'; });
   const card = page.locator('.activity-card');
-  await card.focus();
-  const focusVisible = await card.evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
-  await card.click();
+  if (await card.count() === 0) {
+    throw new Error(JSON.stringify({
+      step: 'activity-record-render',
+      activityText: await page.locator('[data-activity-surface]').innerText().catch(() => ''),
+      bodyText: (await page.locator('body').innerText()).slice(0, 1000),
+      errors,
+    }));
+  }
+  const recordOpen = card.locator('.activity-card__open');
+  await recordOpen.focus();
+  const focusVisible = await recordOpen.evaluate((node) => getComputedStyle(node).outlineStyle !== 'none');
+  await recordOpen.click();
 
   const firstTab = page.locator('[role="tab"]').first();
+  if (await page.locator('[role="tab"]').count() === 0) {
+    throw new Error(JSON.stringify({
+      step: 'activity-tab-render',
+      tabsHtml: await page.locator('.activity-page-tabs-host').innerHTML().catch(() => ''),
+      bodyText: (await page.locator('body').innerText()).slice(0, 1000),
+      errors,
+    }));
+  }
   await firstTab.focus();
   await firstTab.press('ArrowRight');
   const selectedTab = await page.locator('[role="tab"][aria-selected="true"]').textContent();
   const focusedTab = await page.evaluate(() => document.activeElement?.textContent?.trim() || '');
-  const tablistUnexpectedButtonCount = await page.locator('[role="tablist"] button:not([role="tab"])').count();
+  const tablistCloseButtonCount = await page.locator('[role="tablist"] button:not([role="tab"])').count();
   await page.locator('[role="tab"][aria-selected="true"]').press('Delete');
-  await page.locator('#activity-focus-exit').waitFor();
-  const singlePageTablistHidden = await page.locator('[role="tablist"]').count() === 0;
-  const emptyTabFocusSettled = await page.locator('#activity-focus-exit').evaluate((node) => document.activeElement === node);
+  await page.waitForFunction(() => document.activeElement?.textContent?.includes('第一个页面'));
+  const deletedTabFocusSettled = await page.locator('[role="tab"][aria-selected="true"]').evaluate(
+    (node) => document.activeElement === node,
+  );
+  const singlePageTablistVisible = await page.locator('[role="tablist"]').count() === 1;
+  await page.locator('[role="tab"][aria-selected="true"]').press('Escape');
+  const focusExitSettled = await page.locator('#activity-focus-exit').evaluate((node) => document.activeElement === node);
 
   const retry = page.locator('.sc-state-panel [data-semantic-component="ScButton"]').filter({ hasText: '重试' });
   await retry.click();
@@ -117,12 +154,13 @@ try {
 
   const pass = loading && error && empty && focusVisible && state.opened === '7' && state.retries === 1
     && selectedTab?.includes('第二个页面') && focusedTab === '第二个页面'
-    && tablistUnexpectedButtonCount === 0 && singlePageTablistHidden
-    && state.closedTabs.includes('two') && state.focusExits === 1 && emptyTabFocusSettled
+    && tablistCloseButtonCount === 2 && singlePageTablistVisible
+    && state.closedTabs.includes('two') && deletedTabFocusSettled
+    && state.focusExits === 1 && focusExitSettled
     && dashboardEmptyCount === 2 && dashboardEmptyHeadingCount === 2 && dashboardUnexpectedH2Count === 0
     && state.dashboardActions.includes('open_todo')
     && !overflow && errors.length === 0;
-  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistUnexpectedButtonCount, singlePageTablistHidden, emptyTabFocusSettled, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
+  console.log(JSON.stringify({ pass, loading, error, empty, focusVisible, selectedTab, focusedTab, tablistCloseButtonCount, singlePageTablistVisible, deletedTabFocusSettled, focusExitSettled, dashboardEmptyCount, dashboardEmptyHeadingCount, dashboardUnexpectedH2Count, state, overflow, errors }, null, 2));
   if (!pass) process.exitCode = 1;
 } finally {
   await browser.close();

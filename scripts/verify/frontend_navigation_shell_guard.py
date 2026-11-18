@@ -116,25 +116,24 @@ def validate(root: Path = ROOT) -> list[str]:
         "overflow: hidden",
         ".product-side-navigation__tree",
         "overflow: auto",
-        VENDOR_MENU_SCROLL_SELECTOR,
-        "max-height: none !important",
-        "overflow: visible !important",
     ):
         if marker not in (shell_style + "\n" + side_navigation):
             errors.append(f"navigation shell lost bounded scroll ownership: {marker}")
+    if VENDOR_MENU_SCROLL_SELECTOR in side_navigation:
+        errors.append("ProductSideNavigation must not select vendor menu internals")
     if not re.search(r"\.topbar\s*\{[^}]*flex-shrink:\s*0", shell_style, re.DOTALL):
         errors.append("responsive topbar must not shrink over the activity page tabs")
     for marker in (
         "revealActivePageTab",
         "scrollBy({ left:",
         "overflow-x: auto",
-        ".t-tabs__operations--right",
-        "display: none",
         "min-height: var(--sc-touch-target-min)",
         "width: var(--sc-touch-target-min)",
     ):
         if marker not in activity_tabs:
             errors.append(f"activity page tabs lost narrow reachability contract: {marker}")
+    if ":deep(.t-tabs" in activity_tabs:
+        errors.append("activity page tabs must not select vendor tab internals")
     if VENDOR_BUTTON_TEXT_SELECTOR in shell_style:
         errors.append("published app layout must use owned content markup instead of vendor internals")
     if re.search(r"(?m)^\.sidebar\s*\{", shell_style):

@@ -376,6 +376,35 @@ RULES = (
         "verify.frontend.component_driver_takeover.unit",
     )),
     Rule((
+        "scripts/audit/generate_frontend_rendering_detail_inventory.py",
+        "scripts/audit/generate_frontend_visual_projection_inventory.py",
+        "scripts/audit/test_generate_frontend_rendering_detail_inventory.py",
+        "scripts/audit/test_generate_frontend_visual_projection_inventory.py",
+        "scripts/verify/frontend_rendering_detail_state_guard.py",
+        "scripts/verify/test_frontend_rendering_detail_state_guard.py",
+    ), (
+        "verify.frontend.rendering_detail_state.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/view_type_render_coverage_probe.ts",
+        "scripts/verify/view_type_render_coverage_guard.py",
+        "scripts/verify/test_view_type_render_coverage_guard.py",
+    ), (
+        "verify.frontend.view_type_render_coverage.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_project_domain_rollout.py",
+        "scripts/verify/frontend_project_domain_rollout_report.py",
+        "scripts/verify/test_frontend_project_domain_rollout.py",
+    ), (
+        "verify.frontend.project_domain_rollout.unit",
+    )),
+    Rule((
+        "scripts/verify/frontend_state_dashboard_browser.mjs",
+    ), (
+        "verify.frontend.state_dashboard.unit",
+    )),
+    Rule((
         "scripts/audit/native_scene_inventory.py",
         "scripts/audit/test_native_scene_inventory.py",
     ), (
@@ -424,6 +453,9 @@ RULES = (
         "scripts/verify/frontend_inline_style_guard.py",
         "scripts/verify/frontend_style_system_guard.py",
         "scripts/verify/test_frontend_inline_style_guard.py",
+        "scripts/verify/test_design_token_system.py",
+        "scripts/audit/generate_frontend_professionalization_baseline.py",
+        "scripts/audit/test_generate_frontend_professionalization_baseline.py",
     ), (
         "verify.frontend.style_system.guard",
     )),

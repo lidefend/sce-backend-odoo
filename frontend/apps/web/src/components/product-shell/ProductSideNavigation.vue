@@ -96,11 +96,6 @@ const emit = defineEmits<{
   scrollbar-gutter: stable;
 }
 
-.product-side-navigation__tree :deep(.t-menu--scroll) {
-  max-height: none !important;
-  overflow: visible !important;
-}
-
 .sr-only {
   position: absolute;
   width: 1px;

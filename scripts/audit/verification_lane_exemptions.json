@@ -137,6 +137,24 @@
   ],
   "remote_only": [
     {
+      "script": "scripts/verify/frontend_project_domain_rollout.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "The Odoo-shell domain runtime audit is intentionally on demand; its pure classifier is executed by verify.frontend.project_domain_rollout.unit and only the runtime refresh remains remote/on-demand."
+    },
+    {
+      "script": "scripts/verify/frontend_project_domain_rollout_report.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "The report normalizer is consumed by the on-demand Odoo-shell domain audit and is not a standalone local acceptance gate."
+    },
+    {
+      "script": "scripts/verify/test_frontend_project_domain_rollout.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "The test is executed by the governed project-domain rollout unit; the runtime refresh remains an explicit on-demand audit."
+    },
+    {
       "script": "scripts/ci/frontend_professional_extension_guard.py",
       "lane_owner": "remote",
       "reason_code": "frontend_lane_toolchain",

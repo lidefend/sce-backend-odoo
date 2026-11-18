@@ -5,6 +5,8 @@
     ref="tabsRef"
     class="activity-page-tabs"
     :value="activeKey"
+    role="tablist"
+    :aria-label="label"
     placement="top"
     size="medium"
     theme="normal"
@@ -27,8 +29,9 @@
             appearance="auth-link"
             data-navigation-control="activity-page-title"
             variant="ghost"
+            role="tab"
             :aria-label="`切换至${page.title}`"
-            :aria-pressed="page.key === activeKey"
+            :aria-selected="page.key === activeKey"
             @click.stop="handleTitleActivate(page)"
           >{{ page.title }}</ScButton>
           <ScIconButton
@@ -149,6 +152,17 @@ async function handleKeydown(event: KeyboardEvent) {
   const target = event.target instanceof HTMLElement ? event.target : null;
   const key = target?.closest<HTMLElement>('[data-activity-page-key]')?.dataset.activityPageKey || '';
   const currentIndex = props.pages.findIndex((page) => page.key === key);
+  if (event.key === 'Delete' && currentIndex >= 0) {
+    event.preventDefault();
+    event.stopPropagation();
+    const page = props.pages[currentIndex];
+    const remaining = props.pages.filter((item) => item.key !== page?.key);
+    pendingFocusKey = remaining[Math.min(currentIndex, remaining.length - 1)]?.key || '';
+    if (page) emit('close', page);
+    await nextTick();
+    restoreKeyboardFocus();
+    return;
+  }
   const nextIndex = resolveActivityTabKeyboardIndex({ key: event.key, currentIndex, count: props.pages.length });
   if (nextIndex === null) return;
   event.preventDefault();
@@ -192,36 +206,11 @@ async function handleKeydown(event: KeyboardEvent) {
 
 @media (max-width: 760px) {
   .activity-page-tabs {
-    overflow: visible;
-    padding-inline: 0;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__nav) {
-    min-width: 0;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__nav-container) {
-    min-width: 0;
-    overflow: hidden;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__nav-scroll) {
     overflow-x: auto;
     overflow-y: hidden;
     overscroll-behavior-inline: contain;
     scrollbar-width: thin;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__nav-wrap) {
-    padding-inline: 8px;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__operations--right) {
-    display: none;
-  }
-
-  .activity-page-tabs :deep(.t-tabs__nav-item) {
-    min-height: var(--sc-touch-target-min);
+    padding-inline: 0;
   }
 
   .activity-page-tab-label {

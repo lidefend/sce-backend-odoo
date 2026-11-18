@@ -11,6 +11,7 @@
       {{ link.name }}
     </a>
   </span>
+  <ScInlineState v-else-if="!display.trim()" state="empty" density="compact" :label="FIELD_VALUE_EMPTY_TEXT" />
   <span v-else class="field-value">{{ display }}</span>
   <AttachmentViewer ref="attachmentViewerRef" />
 </template>
@@ -19,6 +20,7 @@
 import { computed, ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
 import AttachmentViewer from './attachment/AttachmentViewer.vue';
+import ScInlineState from './design-system/ScInlineState.vue';
 import { formatDisplayValue, parseAttachmentReferenceLinks } from '../utils/display';
 import {
   formatMonetaryDisplayValue,

@@ -6,6 +6,8 @@
         :class="{ 'action-reason-trigger--denied': Boolean(reason) }"
         :tabindex="reason ? 0 : undefined"
         :role="reason ? 'button' : undefined"
+        data-semantic-component="ActionReasonTrigger"
+        :data-state="reason ? 'disabled' : 'ready'"
         :aria-label="reason || undefined"
         :data-workflow-reason-trigger="reason ? triggerKey : undefined"
         @keydown="activateWorkflowReasonTrigger"

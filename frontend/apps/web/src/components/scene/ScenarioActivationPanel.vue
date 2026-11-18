@@ -4,11 +4,9 @@
       <h3>企业业务场景管理</h3>
       <ScButton size="small" variant="ghost" type="button" :disabled="busy" @click="refresh">刷新</ScButton>
     </header>
-    <div v-if="state === 'loading'" class="scenario-activation-panel__status">正在读取场景目录…</div>
-    <div v-else-if="state === 'error'" class="scenario-activation-panel__status scenario-activation-panel__status--error">
-      {{ errorMessage }}
-    </div>
-    <div v-else-if="!rows.length" class="scenario-activation-panel__status">暂无场景目录。</div>
+    <ScInlineState v-if="state === 'loading'" state="loading" label="正在读取场景目录…" />
+    <ScInlineState v-else-if="state === 'error'" state="error" :label="errorMessage" />
+    <ScInlineState v-else-if="!rows.length" state="empty" label="暂无场景目录。" />
     <ul v-else class="scenario-activation-panel__list">
       <li v-for="row in rows" :key="row.scene_key" class="scenario-activation-panel__row">
         <div class="scenario-activation-panel__row-main">
@@ -34,6 +32,7 @@
 
 <script setup lang="ts">
 import ScButton from '../design-system/ScButton.vue';
+import ScInlineState from '../design-system/ScInlineState.vue';
 import { useScenarioActivation } from '../../composables/useScenarioActivation';
 
 const { rows, state, errorMessage, busy, refresh, execute } = useScenarioActivation();

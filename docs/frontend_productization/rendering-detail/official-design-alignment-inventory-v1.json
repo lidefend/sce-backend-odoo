@@ -14,7 +14,7 @@
     "task/workspace authority",
     "P3 low-code designer styling"
   ],
-  "inputDigest": "df306ecb7f747b18832f72d3568e2edc6d1959ab4d773aa5b8d43b82acf1e1f8",
+  "inputDigest": "4e10ab72324a08a9bc9cfb9253057718bac1cf28d5551fa6534a9785cb61c38e",
   "internalVendorSelectorGaps": [],
   "productAppearanceVariants": [
     {
@@ -98,6 +98,9 @@
     {
       "appearance": "collection",
       "consumers": [
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
         "frontend/apps/web/src/app/presentation/productPageHeader.ts",
         "frontend/apps/web/src/app/presentation/productPageHeaderAdapters.ts",
         "frontend/apps/web/src/app/presentation/productPagePattern.ts",
@@ -130,7 +133,8 @@
       "consumers": [
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
         "frontend/apps/web/src/components/design-system/ScInput.vue",
-        "frontend/apps/web/src/components/product-list/ProductListHeader.vue"
+        "frontend/apps/web/src/components/product-list/ProductListHeader.vue",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='collection-search']"
@@ -257,7 +261,8 @@
         "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/components/template/FormSection.vue",
         "frontend/apps/web/src/components/view/ViewFieldRenderer.vue",
-        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue"
+        "frontend/apps/web/src/pages/contractForm/ProfessionalCollaborationComposer.vue",
+        "frontend/apps/web/src/views/systemParameter/SystemParameterCatalogView.vue"
       ],
       "selectors": [
         ".sc-input[data-appearance='form-field'], .sc-select[data-appearance='form-field'], [data-semantic-component='ScRelationField'][data-appearance='form-field'], [data-semantic-component='ScDateField'][data-appearance='form-field']",
@@ -294,6 +299,7 @@
         "frontend/apps/web/src/components/GlobalMessagePanel.vue",
         "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
         "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
         "frontend/apps/web/src/components/professional-fields/ProfessionalMany2oneFieldControl.vue",
         "frontend/apps/web/src/layouts/AppShell.vue",
         "frontend/apps/web/src/views/ActionView.vue"
@@ -318,6 +324,7 @@
         "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "frontend/apps/web/src/views/SceneHealthView.vue",
         "frontend/apps/web/src/views/UsageAnalyticsView.vue"
@@ -335,6 +342,7 @@
       "appearance": "navigation-search",
       "consumers": [
         "frontend/apps/web/src/components/design-system/ScInput.vue",
+        "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
         "frontend/apps/web/src/components/product-shell/ProductSideNavigation.vue",
         "frontend/apps/web/src/layouts/AppShell.vue"
       ],
@@ -533,6 +541,7 @@
         "frontend/apps/web/src/components/design-system/ScButton.vue",
         "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
         "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/components/template/NativeWeightedRelationDisplay.vue",
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue"
       ],
       "selectors": [
@@ -605,7 +614,9 @@
         "frontend/apps/web/src/components/action/HierarchicalWorksheet.vue",
         "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
         "frontend/apps/web/src/components/action/HierarchyTreeNode.vue",
-        "frontend/apps/web/src/components/design-system/ScButton.vue"
+        "frontend/apps/web/src/components/design-system/ScButton.vue",
+        "frontend/apps/web/src/components/product-shell/ProductScenarioNavigation.vue",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue"
       ],
       "selectors": [
         ".sc-btn[data-appearance='tree-item']",
@@ -658,6 +669,7 @@
         "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
         "frontend/apps/web/src/router/index.ts",
         "frontend/apps/web/src/stores/session.ts",
+        "frontend/apps/web/src/stores/sessionPersistence.ts",
         "frontend/apps/web/src/views/MyWorkView.vue",
         "frontend/apps/web/src/views/PlaceholderView.vue",
         "frontend/apps/web/src/views/SceneView.vue"
@@ -672,7 +684,7 @@
   "schemaVersion": "frontend.official-design-alignment.inventory.v1",
   "scope": "formal P0/P1 frontend TDesign driver and product adapter styling",
   "summary": {
-    "formalStyleSourceCount": 223,
+    "formalStyleSourceCount": 238,
     "internalVendorSelectorGapCount": 0,
     "officialPublicTokenCount": 240,
     "orphanedProductAppearanceVariantCount": 0,

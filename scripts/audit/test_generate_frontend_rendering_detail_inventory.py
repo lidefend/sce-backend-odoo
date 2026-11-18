@@ -80,6 +80,15 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
             self.assertEqual(self.by_source[source]["status"], "governed_composite")
             self.assertEqual(self.by_source[source]["targetBatch"], batch)
 
+    def test_residual_shared_scene_form_sources_have_machine_proven_completion(self) -> None:
+        batch = "p0-residual-shared-scene-form-state-completion-v1"
+        sources = INVENTORY.BATCH_BINDINGS[batch]
+        self.assertEqual(len(sources), 13)
+        for source in sources:
+            self.assertIn(source, self.by_source)
+            self.assertEqual(self.by_source[source]["status"], "governed_composite")
+            self.assertEqual(self.by_source[source]["targetBatch"], batch)
+
     def test_official_workspace_and_action_bindings_fail_closed(self):
         cases = [
             ('App.vue', '@click="session.loadPublicPageContracts(true)"', '@click="noop"'),
@@ -98,8 +107,21 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
                 self.assertEqual(INVENTORY.classify(source, text.replace(before, after))[0], 'gap')
 
     def test_zero_gap_report_has_no_stale_next_batch(self) -> None:
-        self.assertEqual(self.report["summary"]["gap"], 0)
-        self.assertIsNone(self.report["nextBatch"])
+        gap_sources = {
+            item["source"] for item in self.report["surfaces"] if item["status"] == "gap"
+        }
+        self.assertEqual(self.report["summary"]["unassignedGapSourceCount"], 0)
+        self.assertEqual(self.report["unassignedGapSources"], [])
+        self.assertTrue(all(
+            item["targetBatch"]
+            for item in self.report["surfaces"]
+            if item["status"] == "gap"
+        ))
+        if gap_sources:
+            self.assertIsNotNone(self.report["nextBatch"])
+            self.assertEqual(set(self.report["nextBatch"]["gapSources"]), gap_sources)
+        else:
+            self.assertIsNone(self.report["nextBatch"])
 
     def test_form_host_and_optional_collection_bindings_fail_closed(self) -> None:
         cases = (
@@ -123,6 +145,15 @@ class FrontendRenderingDetailInventoryTest(unittest.TestCase):
         status, reason = INVENTORY.classify(source, fake)
         self.assertEqual(status, "gap")
         self.assertIn("data-semantic-component", reason)
+
+    def test_state_binding_recognizes_success_band(self) -> None:
+        text = """<template><ScInlineState :state="ok ? 'success' : 'error'" label="status" /></template>
+<script setup>import ScInlineState from './design-system/ScInlineState.vue';</script>"""
+        failures = INVENTORY.component_binding_failures(
+            text,
+            {"scinlinestate": {"states": {"success", "error"}}},
+        )
+        self.assertEqual(failures, [])
 
     def test_next_batch_missing_marker_fails_closed(self) -> None:
         source = "frontend/apps/web/src/components/page/BlockRenderer.vue"
