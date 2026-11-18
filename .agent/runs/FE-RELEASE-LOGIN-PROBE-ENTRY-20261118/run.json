@@ -15,6 +15,9 @@
     "docs/ops/iterations/fe_release_login_probe_entry_20261118.md",
     "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
     "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+    "frontend/apps/web/src/components/product-shell/navigationMenuKeyboard.ts",
+    "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
+    "make/frontend.mk",
     "make/runtime_ops.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_exemptions.json",
@@ -35,6 +38,8 @@
         "make/frontend.mk",
         "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
         "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+        "frontend/apps/web/src/components/product-shell/navigationMenuKeyboard.ts",
+        "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
         "scripts/verify/frontend_navigation_shell_guard.py",
         "scripts/verify/test_frontend_navigation_shell_guard.py"
       ]
@@ -59,5 +64,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the final evidence record, run independent exact-candidate review, publish the branch, and merge only after protected required checks pass."
+  "next_exact_step": "Commit the behavioral keyboard fix, then rerun the complete managed browser matrix from the clean candidate."
 }

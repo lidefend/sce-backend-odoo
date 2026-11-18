@@ -14,8 +14,8 @@
     :aria-label="node.label"
     :tabindex="blocked ? -1 : 0"
     :aria-disabled="blocked || undefined"
-    @keydown.enter.prevent="activateFromKeyboard"
-    @keydown.space.prevent="activateFromKeyboard"
+    @keydown.enter.prevent="activateNavigationMenuFromKeyboard"
+    @keydown.space.prevent="activateNavigationMenuFromKeyboard"
   >
     <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <template #title>
@@ -49,8 +49,8 @@
     :aria-current="active ? 'page' : undefined"
     :aria-disabled="blocked || undefined"
     :tabindex="blocked ? -1 : 0"
-    @keydown.enter.prevent="activateFromKeyboard"
-    @keydown.space.prevent="activateFromKeyboard"
+    @keydown.enter.prevent="activateNavigationMenuFromKeyboard"
+    @keydown.space.prevent="activateNavigationMenuFromKeyboard"
   >
     <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <span class="navigation-node__label">{{ node.label }}</span>
@@ -63,6 +63,7 @@ import { computed, inject, type ComputedRef } from 'vue';
 import type { CanonicalNavigationNode } from '@sc/schema';
 import { TDesignMenuItem, TDesignSubmenu } from '../design-system/tdesignPrimitiveBridge';
 import ScIcon from '../design-system/ScIcon.vue';
+import { activateNavigationMenuFromKeyboard } from './navigationMenuKeyboard';
 
 type NavigationIconName = 'apps' | 'briefcase' | 'building' | 'clipboard' | 'construction' | 'contract' | 'file-text' | 'folder' | 'home' | 'project' | 'settings' | 'user';
 
@@ -82,10 +83,6 @@ const icon = computed<NavigationIconName>(() => {
   return knownIcons.has(requested) ? requested : props.node.children.length ? 'folder' : 'file-text';
 });
 
-function activateFromKeyboard(event: KeyboardEvent) {
-  const target = event.currentTarget;
-  if (target instanceof HTMLElement) target.click();
-}
 </script>
 
 <style scoped>

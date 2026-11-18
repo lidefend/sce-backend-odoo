@@ -52,7 +52,7 @@ verification-lane registrations.
 | Check | Result |
 | --- | --- |
 | `verify.frontend.delivery_hardening.guard` | PASS; 17 tests |
-| `verify.frontend.navigation_shell.unit` | PASS; 29 final shell tests, 223 collected assertions across the target |
+| `verify.frontend.navigation_shell.unit` | PASS; 29 final shell tests, 227 collected assertions across the target |
 | `verify.frontend.state_dashboard.unit` | PASS; 25 Python tests plus all keyed activity-tab suites |
 | `verify.frontend.standard_preview.unit` | PASS; 139 tests plus 42 policy checks |
 | `ci.local.iteration` | PASS; 8 affected targets, 74 verification-lane tests, strict typecheck and lint |
@@ -79,6 +79,13 @@ control is removed from the accessibility tree, and canonical navigation list
 items become focusable with Enter/Space activation. The menu items deliberately
 retain native list semantics; assigning `button` roles to `li` elements created
 new invalid-list and nested-interactive findings and is not used.
+
+Submenu keyboard activation now resolves the registered
+`data-navigation-toggle="submenu"` control before dispatching a click. This is
+required because TDesign 1.20.5 attaches submenu expansion to the inner submenu
+`div`, not the outer `li`; clicking the outer `li` only works for leaf items. A
+dedicated non-zero TypeScript test covers Enter and Space activation for both a
+submenu toggle and a leaf item.
 
 The first post-fix matrix removed all activity-tab critical findings. It exposed
 that adding `button` roles to the vendor menu's `li` elements introduced invalid
