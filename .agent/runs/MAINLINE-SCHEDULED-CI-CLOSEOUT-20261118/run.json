@@ -18,6 +18,10 @@
     "make/frontend.mk",
     "scripts/ci/test_merge_policy_gate.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/registry.yaml"
   ],
   "environment": {
@@ -64,6 +68,18 @@
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_merge_policy_gate.py",
         "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "kind": "offline"
+    },
+    "github_published_branch_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "inputs": [
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ],
       "kind": "offline"
     },

@@ -1064,6 +1064,14 @@ RULES = (
         "verify.workspace.branch.sync-main",
     )),
     Rule((
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+    ), (
+        "verify.workspace.branch.sync-github.unit",
+    )),
+    Rule((
         "scripts/ops/branch_cleanup_safe.sh",
         "scripts/ops/test_safe_worktree_cleanup.py",
     ), (

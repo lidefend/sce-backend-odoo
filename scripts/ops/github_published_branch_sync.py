@@ -11,7 +11,8 @@ URLS = {'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lide
 INDEX = '.agent/active-runs.json'
 REPORTS = {'docs/engineering_convergence/complexity_budget_report.md',
            'docs/engineering_convergence/test_inventory.csv',
-           'docs/engineering_convergence/test_inventory_summary.md'}
+           'docs/engineering_convergence/test_inventory_summary.md',
+           'docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json'}
 
 
 def merge_index(base, ours, theirs):

@@ -2117,6 +2117,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_published_branch_sync_inputs_route_to_their_unit(self) -> None:
+        for path in (
+            "scripts/ops/gitee_published_branch_sync.py",
+            "scripts/ops/github_published_branch_sync.py",
+            "scripts/ops/test_gitee_published_branch_sync.py",
+            "scripts/ops/test_github_published_branch_sync.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.workspace.branch.sync-github.unit"],
+                )
+
     def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(
             select_targets([

@@ -41,8 +41,11 @@ Why not elsewhere:
 - Force candidate and scheduled runs through the same full frontend/professional
   lanes, and reject non-FAST merges that lack explicit candidate qualification.
 - Execute `verify.guard.registry` in every professional quality lane.
+- Allow the governed published-branch sync to resolve only the known generated
+  component-driver inventory conflict, then require full regeneration.
 - Validate the affected browser contract, registry audit, style system, lint,
-  strict typecheck, CI workflow and merge-policy contracts, and agent ledger.
+  strict typecheck, CI workflow, merge-policy and published-sync contracts, and
+  agent ledger.
 
 ## Exclusions
 
@@ -88,7 +91,9 @@ routing/tests together. No data or runtime state requires restoration.
 - `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
 - `verify.ci.workflow.contract`: PASS, 453 tests covering risk classification,
   candidate/full lane selection, merge-policy enforcement and workflow wiring.
-- `make ci.local.iteration`: PASS, 14 affected targets executed on the final
+- `verify.workspace.branch.sync-github.unit`: PASS, 53 tests covering the exact
+  published-branch sync, generated-report conflict handling and recovery paths.
+- `make ci.local.iteration`: PASS, 15 affected targets executed on the final
   pre-commit working set.
 - `make ci.delivery.freeze.prepare`: PASS; refreshed the complexity report, split
   queue and component-driver input digest affected by the source delta.

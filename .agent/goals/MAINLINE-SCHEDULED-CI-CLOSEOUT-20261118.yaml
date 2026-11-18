@@ -41,6 +41,10 @@ goal:
       - .github/workflows/merge_policy_gate.yml
       - scripts/ci/test_merge_policy_gate.py
       - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ops/github_published_branch_sync.py
+      - scripts/ops/test_github_published_branch_sync.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/registry.yaml
       - docs/audit/guard_registry/guard_registry.json
       - generated reports whose source-size or input digests derive from the changed dialog
@@ -55,6 +59,10 @@ goal:
     - .github/workflows/merge_policy_gate.yml
     - scripts/ci/test_merge_policy_gate.py
     - scripts/ci/test_ci_risk_workflow_contract.py
+    - scripts/ops/github_published_branch_sync.py
+    - scripts/ops/test_github_published_branch_sync.py
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_frontend_dev_incremental.py
     - .agent/decisions/ci-path-ownership.yaml
     - docs/engineering_convergence/complexity_budget_report.md
     - docs/engineering_convergence/split_plan_queue.md
