@@ -104,6 +104,16 @@
         ".agent/runs/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118/run.json",
         "make/codex.mk"
       ]
+    },
+    "ci_orm_selection": {
+      "target": "verify.ci.orm_selection.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "make/frontend.mk"
+      ]
     }
   },
   "blockers": [],
