@@ -1431,6 +1431,25 @@ RULES = (
         "verify.frontend.contract_header_action.unit",
     )),
     Rule((
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "scripts/verify/test_payment_approval_state_machine.py",
+        "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
+    ), (
+        "verify.workflow_contract.be_close_01.unit",
+        "verify.workflow_contract.be_close_01.orm",
+        "verify.workflow_contract.be_close_01.samples",
+        "verify.payment.approval_state_machine.unit",
+    )),
+    Rule((
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+    ), (
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
         "addons/smart_construction_core/services/review_work_item_service.py",
         "addons/smart_construction_core/tests/test_approval_contract_closure.py",
         "scripts/verify/test_general_contract_review_authority.py",

@@ -43,7 +43,13 @@
 - statusbar 的 `field/current/states` 已回到 `state` 和 `lifecycle_state`
   的真实字段与 Selection，并增加运行时一致性自检。
 - 已增加 schema、HTTP probe、运行时身份解析和 BE-CLOSE-01 定向测试入口。
-- 正在用已提交候选启动受管验收 carrier，采集最终 API 样本。
+- 已用受管 acceptance carrier 采集真实最终 API 样本；付款提交后回读
+  `state=submit`，项目提交/启动后回读 `lifecycle_state=in_progress`。
+- 项目业务阻断样本的 `close` 因存在未完结付款申请而 disabled，原因码
+  `P0_PROJECT_TERMINAL_BLOCKED`；付款 approved 样本的 `done` 因必须走
+  专业付款登记而 disabled，原因码 `PAYMENT_EXECUTION_REQUIRED`。
+- V2 Schema 字节变化后，契约生命周期摘要和四个示例中的
+  `schemaSha256` 已通过唯一同步入口重新绑定。
 
 ## 发现
 
@@ -74,6 +80,28 @@
 - `verify.payment.approval_state_machine.unit`：203 tests PASS；日志
   `.runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/payment_state_machine.log`。
 - `verify.model.ui_dependency.guard`、`verify.backend.boundary_guard`：PASS。
+- `verify.approval.contract_closure.orm`：3 tests PASS。
+- `verify.backend.contract_lifecycle.authority`：57 tests PASS，
+  schema digest=`f06471c4c2cdb7c5bcbd0877303ee46b6bf29523a3a2f1f5b37bd4d6cd5ad139`。
+- `verify.ci.workflow.contract`：440 tests PASS。
+- `verify.frontend.standard_preview.unit`：181 tests PASS。
+- `verify.unified_page_contract.v2.{action,assembler,runtime,schema,status}`：
+  178 assertions PASS。
+- `verify.frontend.dev.incremental.unit`：170 tests PASS。
+- `ci.local.iteration`：PASS，受影响 target 集合 21 项全部真实执行通过。
 - `bash -n`（受管验收入口）、相关 Python `py_compile`、`git diff --check` PASS。
-- `verify.workflow_contract.be_close_01.samples`：NOT RUN。必须先提交当前
-  候选，使 acceptance artifact 与 HTTP carrier 绑定同一精确 SHA。
+- `verify.workflow_contract.be_close_01.samples`：已生成 2 个新建目录、4 个
+  记录契约、2 个动作执行后回读；8 份 workflow contract 全部通过 Schema。
+  该证据需在最终后端提交后重新生成一次，避免 `contract_lifecycle.py` 和
+  示例摘要更新造成 served SHA 与样本读取不一致。
+
+## 交接
+
+- 后端最终样本：
+  `.runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json`
+- 运行时身份：
+  `.runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_runtime_ids_v1.json`
+- 验收环境：`sc-frontend-acceptance` profile，`sc-local` project
+  `sc-fe-r2-p1-01`，database `sc_frontend_acceptance`，backend HTTP
+  `127.0.0.1:18082`。
+- 最终样本必须在最终提交 SHA 上重新采集并登记后，才可交给前端联调。

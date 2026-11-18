@@ -16,17 +16,21 @@
     "addons/smart_construction_core/models/core/payment_request.py",
     "addons/smart_construction_core/models/support/workflow_contract_service.py",
     "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+    "addons/smart_core/core/contract_lifecycle.py",
     "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+    "docs/architecture/unified_page_contract_v2/examples/",
     "make/ci.mk",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/audit/workflow_state_inventory.py",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/be_close_01_workflow_contract_http_probe.py",
     "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
     "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
     "scripts/verify/test_payment_approval_state_machine.py",
     "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/unified_page_contract_v2_schema_guard.py"
   ],
   "environment": {
@@ -34,6 +38,61 @@
     "authority": "current repository sources and registered local development/Acceptance tools; no manual Compose or credential assembly"
   },
   "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/",
+        "make/codex.mk",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "approval_contract_closure_orm": {
+      "target": "verify.approval.contract_closure.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/general_contract.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/approval_policy.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/tests/business_case.py",
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "addons/smart_construction_core/views/core/general_contract_views.xml",
+        "addons/smart_construction_core/views/core/payment_request_views.xml",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/work_item_action_authority.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "make/guards.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/approval_contract_closure_orm_readback.json"
+      }
+    },
+    "backend_contract_lifecycle_authority": {
+      "target": "verify.backend.contract_lifecycle.authority",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/contract_lifecycle.py",
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/dev_test.mk",
+        "scripts/verify/backend_contract_lifecycle_authority_guard.py",
+        "scripts/verify/contract_schema_declaration_sync.py",
+        "scripts/verify/test_contract_schema_declaration_sync.py"
+      ]
+    },
+    "baseline_iteration_execution_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+      ]
+    },
     "be_close_01_unit": {
       "target": "verify.workflow_contract.be_close_01.unit",
       "kind": "offline",
@@ -61,6 +120,41 @@
       "readback": {
         "artifact": ".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_orm_readback.json"
       }
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py"
+      ]
+    },
+    "contract_v2_render_authority": {
+      "target": "verify.frontend.contract_v2_render_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/contract-v2-render-authority-matrix-v1.json",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "make/frontend.mk",
+        "scripts/verify/contract_v2_render_authority_matrix.py"
+      ]
+    },
+    "frontend_standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py"
+      ]
     },
     "be_close_01_samples": {
       "target": "verify.workflow_contract.be_close_01.samples",
@@ -92,6 +186,65 @@
         "scripts/verify/test_payment_approval_state_machine.py"
       ]
     },
+    "test_coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "kind": "offline",
+      "inputs": [
+        "docs/audit/test_coverage_registry/",
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ]
+    },
+    "unified_page_contract_action": {
+      "target": "verify.unified_page_contract.v2.action",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_action_guard.py"
+      ]
+    },
+    "unified_page_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ]
+    },
+    "unified_page_contract_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "addons/smart_core/handlers/ui_contract_v2_projection.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_runtime.py"
+      ]
+    },
+    "unified_page_contract_schema": {
+      "target": "verify.unified_page_contract.v2.schema",
+      "kind": "offline",
+      "inputs": [
+        "docs/architecture/unified_page_contract_v2/enum_registry.json",
+        "docs/architecture/unified_page_contract_v2/examples/",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/ci.mk",
+        "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
+        "scripts/verify/unified_page_contract_v2_schema_guard.py"
+      ]
+    },
+    "unified_page_contract_status": {
+      "target": "verify.unified_page_contract.v2.status",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "make/ci.mk",
+        "scripts/verify/unified_page_contract_v2_status_guard.py"
+      ]
+    },
     "workflow_semantics": {
       "target": "verify.workflow_action_semantics.guard",
       "kind": "offline",
@@ -104,5 +257,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Re-run the fixed ORM tag after the authorization projection fix, then provision the registered acceptance carrier and capture authenticated final API samples."
+  "next_exact_step": "Commit the complete backend candidate, recapture the authenticated final API sample on that exact SHA, then bind FE-CLOSE-01 to the resulting contract artifact and acceptance environment."
 }
