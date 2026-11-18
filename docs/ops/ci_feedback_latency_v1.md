@@ -70,7 +70,7 @@ publication. The full professional and frontend release gates remain
 authoritative only on explicit candidate paths, and `release_candidate_gate`
 summarizes that publication qualification.
 
-The full candidate suite runs nightly at `18:30 UTC` (`02:30 Asia/Shanghai`).
+The full candidate suite runs nightly at `18:00 UTC` (`02:00 Asia/Shanghai`).
 The governed `ci:candidate` label and authorized manual dispatch remain the
 immediate paths when publication evidence is needed before that window. An
 ordinary push to `main` runs mainline health only; it does not silently become

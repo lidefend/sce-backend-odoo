@@ -1,6 +1,7 @@
 {
   "schema_version": 1,
   "branches": {
+    "fix/ci-schedule-baseline-20261118": ".agent/runs/CI-SCHEDULE-BASELINE-20261118/run.json",
     "fix/formal-ci-parity-20261118": ".agent/runs/FORMAL-RELEASE-CI-PARITY-20261118/run.json",
     "fix/frontend-release-login-probe-entry-20261118": ".agent/runs/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118/run.json",
     "fix/frontend-evidence-truth-recovery-20261118": ".agent/runs/FE-EVIDENCE-TRUTH-RECOVERY-20261118/run.json",

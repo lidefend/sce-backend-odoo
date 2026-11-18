@@ -1,0 +1,66 @@
+schema_version: 1
+goal:
+  id: CI-SCHEDULE-BASELINE-20261118
+  title: Schedule formal CI at 02:00 Beijing and isolate baseline tests
+  status: active
+  formal_product_layer: P4
+  layer_target: scheduled formal-release execution and offline baseline test isolation
+  module:
+    - GitHub Actions schedules
+    - scheduled slot observation
+    - complete registered offline baseline
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Move the daily formal-release workflows to 02:00 Asia/Shanghai and make
+    the backend impact gate truth-table test isolate CANDIDATE_REQUESTED from
+    the CI job environment.
+  baseline:
+    branch: main
+    full_sha: db37e290f2c78a375f581ab5275a22e7471b4d10
+  product_boundary:
+    why_here: >-
+      Cron selection, scheduled slot identity and baseline test-environment
+      isolation are P4 delivery mechanisms.
+    why_not_elsewhere:
+      - No product contract, business behavior, database data or deployment changes.
+      - Ordinary PR standard-lane latency and required-check names remain unchanged.
+    blast_radius:
+      - .github/workflows/frontend_release_gate.yml
+      - .github/workflows/merge_policy_gate.yml
+      - .github/workflows/professional_quality_gate.yml
+      - .github/workflows/public_guard.yml
+      - .github/workflows/release_candidate_gate.yml
+      - scripts/ci/scheduled_validation.py
+      - scripts/ci/test_backend_changed_test_coverage.py
+      - scripts/ci/test_backend_impact_plan.py
+      - scripts/ci/test_release_condition.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - CI schedule contract tests and documentation
+  deliverables:
+    - the five formal-release workflow schedules
+    - scripts/ci/scheduled_validation.py
+    - scripts/ci/test_backend_impact_plan.py
+    - scripts/ci/test_backend_changed_test_coverage.py
+    - scripts/ci/test_release_condition.py
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_frontend_dev_incremental.py
+    - affected CI contract tests and documentation
+    - .agent/active-runs.json
+    - .agent/goals/CI-SCHEDULE-BASELINE-20261118.yaml
+    - .agent/runs/CI-SCHEDULE-BASELINE-20261118/run.json
+  acceptance:
+    - Every formal-release workflow uses cron 0 18 * * *.
+    - Scheduled slot inference uses 18:00 UTC, displayed as 02:00 Asia/Shanghai.
+    - The backend impact truth table explicitly controls CANDIDATE_REQUESTED for every case.
+    - The baseline test passes both with and without an inherited candidate environment.
+    - Ordinary PR standard lanes and required-check names remain unchanged.
+  exclusions:
+    - Product code, contracts, database data, deployment and user acceptance.
+    - Historical run records that truthfully describe the former 02:30 schedule.
+  rollback: >-
+    Revert the cron/slot change and the baseline test-environment isolation
+    together. No runtime data requires restoration.
+  next_exact_step: >-
+    Apply the 02:00 schedule and truth-table isolation, run affected checks,
+    then merge through the protected PR lane.
