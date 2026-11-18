@@ -2302,11 +2302,29 @@ def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str,
             out[key] = deepcopy(value)
     native_identity = search.get("nativeIdentity") or search.get("native_identity")
     if isinstance(native_identity, dict) and native_identity:
-        out["nativeIdentity"] = deepcopy(native_identity)
+        out["nativeIdentity"] = _canonical_search_native_identity(native_identity)
     search_panel = search.get("search_panel") or search.get("searchpanel")
     if isinstance(search_panel, dict):
         out["search_panel"] = deepcopy(search_panel)
     return out
+
+
+def _canonical_search_native_identity(value: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "model": _text(value.get("model")),
+        "actionId": (
+            _positive_int(value.get("actionId"), 0)
+            or _positive_int(value.get("action_id"), 0)
+            or None
+        ),
+        "viewId": (
+            _positive_int(value.get("viewId"), 0)
+            or _positive_int(value.get("view_id"), 0)
+        ),
+        "viewXmlId": _text(value.get("viewXmlId") or value.get("view_xmlid")),
+        "authority": _text(value.get("authority")),
+        "sourceLocator": _text(value.get("sourceLocator") or value.get("source_locator")),
+    }
 
 
 def _inject_collaboration_runtime_contract(contract: dict[str, Any], collaboration: dict[str, Any]) -> None:

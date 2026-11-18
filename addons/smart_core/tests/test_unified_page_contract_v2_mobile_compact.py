@@ -4696,6 +4696,44 @@ class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
         )
         self.assertEqual(explicit["searchContract"]["defaults"]["order"], "name desc")
 
+    def test_search_native_identity_is_canonicalized_at_v2_boundary(self):
+        source = {
+            "model": "project.project",
+            "view_type": "tree",
+            "fields": {
+                "name": {"name": "name", "type": "char", "string": "Name"},
+            },
+            "search": {
+                "native_identity": {
+                    "model": "project.project",
+                    "action_id": 590,
+                    "view_id": 1508,
+                    "view_xmlid": "smart_construction_core.view_project_project_search_sc_business",
+                    "authority": "action_search_view",
+                    "source_locator": "ir.actions.act_window.search_view_id",
+                },
+            },
+        }
+
+        full = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.web.search.native-identity",
+        )
+
+        self.assertEqual(
+            full["searchContract"]["nativeIdentity"],
+            {
+                "model": "project.project",
+                "actionId": 590,
+                "viewId": 1508,
+                "viewXmlId": "smart_construction_core.view_project_project_search_sc_business",
+                "authority": "action_search_view",
+                "sourceLocator": "ir.actions.act_window.search_view_id",
+            },
+        )
+
     def test_activity_projection_requires_complete_native_carrier(self):
         occurrence = {
             "tag": "activity", "native_locator": "activity", "occurrence_index": 1,
