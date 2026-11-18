@@ -14,7 +14,7 @@ from scripts.ci.release_condition import REQUIRED_WORKFLOWS, build_condition
 HEAD = "a" * 40
 TREE = "b" * 40
 REPOSITORY = "lidefend/sce-backend-odoo"
-SLOT = "2026-11-17T18:30:00+00:00"
+SLOT = "2026-11-17T18:00:00+00:00"
 
 
 def run(path: str, index: int, *, event: str = "schedule") -> dict:

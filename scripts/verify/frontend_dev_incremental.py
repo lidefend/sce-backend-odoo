@@ -262,6 +262,8 @@ RULES = (
         ".github/workflows/frontend_release_gate.yml",
         ".github/workflows/public_guard.yml",
         ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
     ), (
         "verify.ci.workflow.contract",
         "verify.github_actions.security",

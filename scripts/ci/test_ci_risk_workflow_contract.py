@@ -489,7 +489,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             "release_candidate_gate.yml",
         ):
             text = self.text(workflow)
-            self.assertIn("cron: '30 18 * * *'", text)
+            self.assertIn("cron: '0 18 * * *'", text)
         frontend = self.text("frontend_release_gate.yml")
         self.assertIn("github.event_name == 'schedule'", frontend)
         self.assertIn("mode='full'", frontend)
@@ -889,7 +889,7 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',
                      'merge_policy_gate', 'release_candidate_gate'):
             text = (ROOT / '.github/workflows' / (name + '.yml')).read_text()
-            self.assertIn("cron: '30 18 * * *'", text)
+            self.assertIn("cron: '0 18 * * *'", text)
             self.assertIn('python3 scripts/ci/scheduled_validation.py', text)
         backend = (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
         self.assertNotIn('  schedule:', backend)

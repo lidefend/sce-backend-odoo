@@ -37,7 +37,7 @@ CI is split into trust and delivery lanes:
    cross-workflow polling.
 4. `release_candidate_gate` is a separate exact-head publication lane. It runs
    only for explicit candidate requests such as the governed `ci:candidate`
-   label event, the nightly `18:30 UTC` (`02:30 Asia/Shanghai`) schedule, or an
+   label event, the nightly `18:00 UTC` (`02:00 Asia/Shanghai`) schedule, or an
    authorized `workflow_dispatch`. An ordinary `push` on `main` runs mainline
    health and is not a candidate request. Candidate success means the exact head
    is qualified for release review, not merely mergeable.

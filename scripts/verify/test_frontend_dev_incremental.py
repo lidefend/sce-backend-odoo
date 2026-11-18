@@ -673,15 +673,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         ])
 
     def test_required_pr_workflows_select_contract_and_security_checks(self) -> None:
-        for workflow in (
+        for path in (
             ".github/workflows/frontend_release_gate.yml",
             ".github/workflows/merge_policy_gate.yml",
             ".github/workflows/professional_quality_gate.yml",
             ".github/workflows/public_guard.yml",
             ".github/workflows/release_candidate_gate.yml",
+            "scripts/ci/scheduled_validation.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
         ):
-            with self.subTest(workflow=workflow):
-                self.assertEqual(select_targets([workflow]), [
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), [
                     "verify.ci.workflow.contract",
                     "verify.github_actions.security",
                 ])

@@ -1,0 +1,123 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "db37e290f2c78a375f581ab5275a22e7471b4d10",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CI-SCHEDULE-BASELINE-20261118.yaml",
+    ".agent/runs/CI-SCHEDULE-BASELINE-20261118/run.json",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/public_guard.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "docs/ops/ci_feedback_latency_v1.md",
+    "docs/ops/ci_schedule_baseline_isolation_20261118.md",
+    "docs/ops/clean_repository_ci_governance_v1.md",
+    "docs/ops/gitee_github_mirror_v1.md",
+    "scripts/ci/scheduled_validation.py",
+    "scripts/ci/test_backend_changed_test_coverage.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets; no product database or deployment mutation"
+  },
+  "checks": {
+    "ci_risk_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/test_backend_changed_test_coverage.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_release_candidate_gate.py"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        ".github/workflows",
+        "Makefile",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "formal_release_baseline": {
+      "target": "verify.test.baseline",
+      "inputs": [
+        "make/guards.mk",
+        "scripts/ci",
+        "scripts/verify/test_baseline_contract.py",
+        "scripts/verify/test_baseline_manifest.json"
+      ],
+      "kind": "offline"
+    },
+    "github_actions_security": {
+      "target": "verify.github_actions.security",
+      "inputs": [
+        ".github/workflows",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the 02:00 schedule and baseline isolation, publish the exact head, and require the four standard PR checks before protected merge.",
+  "id": "CI-SCHEDULE-BASELINE-20261118",
+  "branch": "fix/ci-schedule-baseline-20261118",
+  "status": "active",
+  "goal": ".agent/goals/CI-SCHEDULE-BASELINE-20261118.yaml",
+  "record": "docs/ops/ci_schedule_baseline_isolation_20261118.md"
+}
