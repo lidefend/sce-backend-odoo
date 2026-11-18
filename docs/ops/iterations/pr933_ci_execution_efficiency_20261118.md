@@ -169,3 +169,17 @@ reused. It included a second successful ten-test HTTP ORM execution at
 `.runtime/test-baseline/1795008107482500233/receipt.json`. Dockerfile and the new
 Compose overlay now route to existing tool owners; all 183 planner regressions pass.
 Independent review found no remaining code blockers.
+
+Remote run 44313842369 exposed a missed Bake runtime entitlement check: --print
+validates configuration but does not exercise filesystem access authorization. The
+new build requires read access only to backend-build-cache and write access only to
+backend-build-cache-new. Both directories are created before Bake so cold-cache
+resolution does not request their parent. Explicit path-scoped entitlements are
+now supplied, with regression coverage; filesystem checks remain enabled. Reference:
+https://docs.docker.com/reference/cli/docker/buildx/bake/ .
+
+A real local Buildx fixture (not --print) reproduced the same entitlement refusal
+without allow flags, then built and exported cache successfully with the two scoped
+flags. A second build consumed that exported cache and reported CACHED. Logs are
+`.runtime/pr933-ci-diagnosis/bake-entitlement-probe/{denied,allowed,warm}.log`.
+This proves entitlement and cache operation, not full remote suite success.

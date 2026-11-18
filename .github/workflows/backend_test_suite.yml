@@ -370,7 +370,10 @@ jobs:
           docker compose pull db redis || true
           # Bake consumes the same Compose build args/image tag. BuildKit checks
           # current inputs even after a prefix cache restore; no verdict is cached.
+          mkdir -p "${RUNNER_TEMP}/backend-build-cache" "${RUNNER_TEMP}/backend-build-cache-new"
           docker buildx bake --builder "${BUILDX_BUILDER}" -f docker-compose.yml \
+            --allow "fs.read=${RUNNER_TEMP}/backend-build-cache" \
+            --allow "fs.write=${RUNNER_TEMP}/backend-build-cache-new" \
             --set "odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache" \
             --set "odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max" \
             --load odoo

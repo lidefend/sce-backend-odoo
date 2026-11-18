@@ -72,6 +72,12 @@ stop_heartbeat
         self.assertIn('odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache', build)
         self.assertIn('odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max', build)
         self.assertNotIn('cache-hit', build)
+        self.assertIn('--allow "fs.read=${RUNNER_TEMP}/backend-build-cache"', build)
+        self.assertIn('--allow "fs.write=${RUNNER_TEMP}/backend-build-cache-new"', build)
+        self.assertLess(build.index('mkdir -p "${RUNNER_TEMP}/backend-build-cache"'),
+                        build.index('docker buildx bake'))
+        self.assertNotIn('BUILDX_BAKE_ENTITLEMENTS_FS=0', build)
+        self.assertNotIn('fs=*', build)
 
     def test_test_carriers_disable_only_application_health_probe(self):
         overlay = yaml.safe_load((ROOT / 'docker-compose.test-isolation.yml').read_text())
