@@ -212,3 +212,12 @@ resolved commit is exported as `VIEW_STRUCTURE_BASELINE_SHA` so inherited Make
 guards consume the same identity without independently probing a ref that the
 shard checkout may not have fetched. A missing or mismatched ref fails before
 database or module-test preparation.
+
+The backend suite also disables the generic per-module `pip install` step.
+Repository ORM tests resolve `odoo_test_helper` from the tracked
+`addons/odoo_test_helper` stub, while the runtime image owns its production
+dependencies. This removes a network package-index round trip from every module
+and makes the test entry independent of package-index latency. A named one-off
+test container is retained until the workflow cleanup step, so a module timeout
+can preserve and print its process log instead of deleting the only diagnostic
+carrier with `docker compose run --rm`.

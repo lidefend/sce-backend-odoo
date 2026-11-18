@@ -140,6 +140,12 @@ jobs:
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
       SC_TEST_DEPENDENCY_PREPARATION: '1'
+      # Backend ORM tests consume the repository's ``odoo_test_helper`` stub.
+      # Do not make every module depend on a network package-index round trip.
+      SC_TEST_SKIP_DEPENDENCY_INSTALL: '1'
+      # Preserve the one-off test container so a module timeout can expose its
+      # process output instead of deleting the only diagnostic carrier.
+      KEEP_TEST_CONTAINER: '1'
       SUITE_MODE: ${{ needs.plan.outputs.scope_mode }}
       BACKEND_MODULE_TIMEOUT_SECONDS: ${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}
       BACKEND_MODULE_HEARTBEAT_SECONDS: '30'
@@ -675,10 +681,20 @@ jobs:
         run: |
           docker compose ps || true
           docker compose logs --no-color --tail=200 || true
+          for container in $(docker ps -aq \
+            --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}"); do
+            echo "===== container ${container} ====="
+            docker inspect -f '{{.Name}} {{.State.Status}} exit={{.State.ExitCode}}' "${container}" || true
+            docker logs --no-color --tail=400 "${container}" || true
+          done
 
       - name: Cleanup
         if: always()
         run: |
+          for container in $(docker ps -aq \
+            --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}"); do
+            docker rm -f "${container}" >/dev/null || true
+          done
           docker compose down -v --remove-orphans || true
           docker buildx rm "${CI_PROJECT_NAME}-builder" || true
           bash scripts/ci/self_hosted_runner_cleanup.sh

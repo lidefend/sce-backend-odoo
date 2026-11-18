@@ -29,6 +29,12 @@ product contract, model, permission, action, frontend behavior or customer data.
   shards therefore entered Make with a repository that could not resolve the
   mainline ref, repeated `fatal: Not a valid object name origin/main`, and were
   correctly stopped by the new ten-minute module timeout.
+- After the mainline ref was repaired, both modules produced no test output for
+  the full timeout. The backend runner unconditionally performed a network
+  `pip install` before every module even though the repository already carries
+  the required `odoo_test_helper` import stub. This made module execution
+  depend on package-index availability and hid the stalled phase behind a
+  quiet command.
 
 ## Correction
 
@@ -46,6 +52,9 @@ product contract, model, permission, action, frontend behavior or customer data.
   fetch the authoritative mainline tip. Export the same resolved commit as
   `VIEW_STRUCTURE_BASELINE_SHA` so inherited guards do not probe a different
   identity.
+- Backend suite containers skip the generic dependency installation and emit an
+  explicit dependency-stage marker. They retain a named one-off container until
+  cleanup so timeout diagnostics include the exact process log.
 
 ## Acceptance
 
@@ -57,6 +66,8 @@ product contract, model, permission, action, frontend behavior or customer data.
   job ceiling.
 - Every backend shard starts its test process with a resolvable, verified
   mainline ref.
+- Backend module execution performs no package-index network operation before
+  starting Odoo.
 - Scheduled and explicit formal-release runs retain complete module scope.
 - CI workflow contract, scheduled gates and GitHub Actions security checks pass.
 
@@ -81,6 +92,9 @@ together. No database or runtime state requires restoration.
 - Exact-head run `44292217981` proved the missing-ref defect: both focused
   shards repeated `fatal: Not a valid object name origin/main` and stopped at
   the 600-second module timeout with exit 124.
+- Exact-head run `44295077001` proved the missing-ref repair and exposed the
+  second blocker: both modules timed out with no test output because the
+  unconditional dependency install never reached Odoo.
 - A full local `ci.local.iteration` was intentionally stopped after fifteen
   targets because it would repeat already-passed PR business ORM work. It is
   not reported as a pass; the exact-head remote PR remains the integration

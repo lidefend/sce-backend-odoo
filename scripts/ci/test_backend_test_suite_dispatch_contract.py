@@ -128,6 +128,8 @@ python3() {
 
         suite = workflow['jobs']['backend_suite']
         self.assertEqual('${{ needs.plan.outputs.scope_mode }}', suite['env']['SUITE_MODE'])
+        self.assertEqual('1', suite['env']['SC_TEST_SKIP_DEPENDENCY_INSTALL'])
+        self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
         self.assertEqual(
             "${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}",
             suite['env']['BACKEND_MODULE_TIMEOUT_SECONDS'],
@@ -184,6 +186,34 @@ python3() {
             'echo "VIEW_STRUCTURE_BASELINE_SHA=${mainline_base}" >> "${GITHUB_ENV}"',
             resolve,
         )
+
+    def test_backend_suite_skips_network_install_and_preserves_failed_container(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        suite = workflow['jobs']['backend_suite']
+        self.assertEqual('1', suite['env']['SC_TEST_SKIP_DEPENDENCY_INSTALL'])
+        self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
+        script = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn(
+            'if [ \\"\\${SC_TEST_SKIP_DEPENDENCY_INSTALL:-0}\\" = 1 ]; then',
+            script,
+        )
+        self.assertIn("dependency-install=skip repository-stub-and-runtime-image", script)
+        self.assertIn('dependency-install=start', script)
+        self.assertIn('dependency-install=complete', script)
+        self.assertTrue((ROOT / 'addons/odoo_test_helper/__init__.py').is_file())
+
+        steps = {step['name']: step for step in suite['steps']}
+        failure_logs = steps['Dump logs on failure']['run']
+        cleanup = steps['Cleanup']['run']
+        for body in (failure_logs, cleanup):
+            self.assertIn(
+                'label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}',
+                body,
+            )
+        self.assertIn('docker logs --no-color --tail=400', failure_logs)
+        self.assertIn('docker rm -f "${container}"', cleanup)
 
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
