@@ -16,6 +16,7 @@ export function buildActionViewRouteSyncStatePayload(options: {
   groupWindowId: string;
   groupWindowDigest: string;
   groupWindowIdentityKey: string;
+  listOffset: number;
   extra?: Dict;
 }): Dict {
   return {
@@ -34,6 +35,7 @@ export function buildActionViewRouteSyncStatePayload(options: {
     groupWindowId: options.groupWindowId,
     groupWindowDigest: options.groupWindowDigest,
     groupWindowIdentityKey: options.groupWindowIdentityKey,
+    listOffset: options.listOffset,
     extra: options.extra,
   };
 }

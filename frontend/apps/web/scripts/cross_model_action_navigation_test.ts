@@ -19,6 +19,15 @@ const sourceQuery = {
   entry_title: 'Create source document',
   allowed_business_category_codes: 'source.category',
   search: 'source search',
+  field_filter: JSON.stringify({
+    identity: 'name@/search[1]/field[1]',
+    field: 'name',
+    label: '名称 source',
+    type: 'char',
+    relation: '',
+    operator: 'ilike',
+    value: 'source',
+  }),
   group_by: 'state',
   list_offset: '20',
   entry_context: JSON.stringify({ section: 'source', source: 'workspace' }),
@@ -59,6 +68,7 @@ for (const key of [
   'default_business_category_label',
   'allowed_business_category_codes',
   'search',
+  'field_filter',
   'group_by',
   'list_offset',
   'domain_raw',
@@ -78,6 +88,7 @@ const sameModelQuery = actionResponseNavQuery(sourceQuery, {
 }, undefined, { currentModel: 'x.source' });
 assert.equal(sameModelQuery.current_business_category_code, 'source.category', 'same-model actions retain business context');
 assert.equal(sameModelQuery.search, 'source search', 'same-model actions retain collection context');
+assert.equal(sameModelQuery.field_filter, sourceQuery.field_filter, 'same-model actions retain field-query context');
 assert.equal(sameModelQuery.entry_context, sourceQuery.entry_context, 'same-model actions retain validated workspace context');
 
 const sameModelActionViewTarget = buildContractActionRouteTarget({

@@ -378,11 +378,61 @@ verify.unified_page_contract.v2.data: guard.prod.forbid
 	@python3 scripts/verify/unified_page_contract_v2_data_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/data_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/data_contract_snapshot_v2.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
 
 .PHONY: verify.unified_page_contract.v2.runtime
-verify.unified_page_contract.v2.runtime: guard.prod.forbid
+verify.unified_page_contract.v2.runtime: guard.prod.forbid verify.smart_core.search_contract.close_02.unit
 	@python3 -m py_compile addons/smart_core/core/unified_page_contract_v2_runtime.py scripts/verify/unified_page_contract_v2_runtime_guard.py addons/smart_core/tests/test_unified_page_contract_v2_runtime.py addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_runtime.py
 	@python3 addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py
 	@python3 scripts/verify/unified_page_contract_v2_runtime_guard.py --fixture docs/architecture/unified_page_contract_v2/fixtures/runtime_contract_source.json --snapshot docs/architecture/unified_page_contract_v2/snapshots/runtime_contract_snapshot_v2.json --schema docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json --enum-registry docs/architecture/unified_page_contract_v2/enum_registry.json
+
+SC_CLOSE_02_BASE_URL ?= http://127.0.0.1:18081/t/demo
+SC_CLOSE_02_LOGIN ?= wutao
+SC_CLOSE_02_ENTRY ?=
+SC_CLOSE_02_TARGET_MODE ?= local
+SC_CLOSE_02_TRANSPORT ?= browser
+SC_CLOSE_02_PASSWORD_VAR ?= SC_DEMO_USER_PASSWORD
+SC_CLOSE_02_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples
+
+.PHONY: verify.backend.close_02.search_contract.samples
+verify.backend.close_02.search_contract.samples: guard.prod.forbid local.dev.ready local.dev.demo_credentials.prepare
+	@set -a; . "$(LOCAL_DEV_ENV_FILE)"; set +a; \
+	  password_var="$(SC_CLOSE_02_PASSWORD_VAR)"; \
+	  eval "close_02_password=\$$password_var"; \
+	  SC_CLOSE_02_BASE_URL="$(SC_CLOSE_02_BASE_URL)" \
+	  SC_CLOSE_02_LOGIN="$(SC_CLOSE_02_LOGIN)" \
+	  SC_CLOSE_02_ENTRY="$(SC_CLOSE_02_ENTRY)" \
+	  SC_CLOSE_02_TRANSPORT="$(SC_CLOSE_02_TRANSPORT)" \
+	  SC_CLOSE_02_PASSWORD="$(if $(filter SC_ACCEPTANCE_FIXTURE_PASSWORD,$(SC_CLOSE_02_PASSWORD_VAR)),$(SC_ACCEPTANCE_FIXTURE_PASSWORD),$$close_02_password)" \
+	  SC_CLOSE_02_EXPECTED_SHA="$$(git rev-parse HEAD)" \
+	  SC_CLOSE_02_OUTPUT="$(SC_CLOSE_02_OUTPUT)" \
+	  node scripts/verify/close_02_backend_contract_samples.mjs
+	@python3 scripts/verify/close_02_backend_contract_samples_validate.py --samples "$(SC_CLOSE_02_OUTPUT)"
+
+.PHONY: verify.smart_core.search_contract.close_02.unit
+verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/app_config_engine/models/app_search_config.py \
+	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
+	  addons/smart_core/tests/test_contract_projection_json_boundaries.py \
+	  scripts/verify/close_02_backend_contract_samples_validate.py
+	@node --check scripts/verify/close_02_backend_contract_samples.mjs
+	@node --check scripts/verify/close_02_field_query_browser_journeys.mjs
+	@python3 addons/smart_core/tests/test_contract_projection_json_boundaries.py
+
+.PHONY: verify.smart_core.close_02.module_baseline
+verify.smart_core.close_02.module_baseline: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=/smart_core
+
+SC_CLOSE_02_BROWSER_OUTPUT ?= .runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/browser_journeys
+
+.PHONY: verify.frontend.close_02.field_query.browser
+verify.frontend.close_02.field_query.browser: guard.prod.forbid frontend.acceptance.health backend.acceptance.health
+	@SC_CLOSE_02_FRONTEND_URL="$${SC_CLOSE_02_FRONTEND_URL:-http://127.0.0.1:5175}" \
+	  SC_CLOSE_02_DB="sc_frontend_acceptance" \
+	  SC_CLOSE_02_LOGIN="$${SC_CLOSE_02_LOGIN:-fixture_role_config_admin}" \
+	  SC_CLOSE_02_PASSWORD="$(SC_ACCEPTANCE_FIXTURE_PASSWORD)" \
+	  SC_CLOSE_02_BROWSER_OUTPUT="$(SC_CLOSE_02_BROWSER_OUTPUT)" \
+	  SC_CLOSE_02_SAMPLE_SUMMARY=".runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples/summary.json" \
+	  node scripts/verify/close_02_field_query_browser_journeys.mjs
 
 .PHONY: verify.unified_page_contract.v2.client
 verify.unified_page_contract.v2.client: guard.prod.forbid

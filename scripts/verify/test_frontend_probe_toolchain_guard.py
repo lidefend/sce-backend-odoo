@@ -6,10 +6,31 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from scripts.verify.frontend_probe_toolchain_guard import ROOT, check, violations, executes_blocked_probe, blocked_make_targets
+from scripts.verify.frontend_probe_toolchain_guard import (
+    ROOT,
+    blocked_make_targets,
+    check,
+    executes_blocked_probe,
+    static_external_imports,
+    violations,
+)
 
 
 class ProbeToolchainTest(unittest.TestCase):
+    def test_blocked_esm_requires_external_packages_to_load_after_the_guard(self):
+        safe = """
+        import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
+        import fs from 'node:fs';
+        import helper from './local_helper.mjs';
+        const { chromium } = await import('playwright');
+        """
+        self.assertEqual(static_external_imports(safe), [])
+        unsafe = """
+        import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
+        import { chromium } from 'playwright';
+        """
+        self.assertEqual(static_external_imports(unsafe), ['playwright'])
+
     def test_relation_login_uses_observed_request_before_click(self):
         source = (ROOT / 'scripts/verify/record_relation_roundtrip_acceptance.js').read_text()
         start = source.index('async function login(page)')

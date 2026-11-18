@@ -204,6 +204,58 @@ class ContractProjectionJsonBoundaryTests(unittest.TestCase):
         with self.assertRaises(Exception):
             record._parse_search_view("<search><field></search>")
 
+    def test_search_fields_project_executable_semantics_without_losing_occurrences(self):
+        module = _load_module("smart_core_test_app_search_config_field_semantics", SEARCH_PATH)
+
+        class _Model:
+            def sudo(self):
+                return self
+
+            def fields_get(self):
+                return {
+                    "name": {"type": "char", "string": "Name"},
+                    "project_id": {"type": "many2one", "string": "Project", "relation": "project.project"},
+                    "state": {
+                        "type": "selection",
+                        "string": "State",
+                        "selection": [("draft", "Draft"), ("done", "Done")],
+                    },
+                }
+
+        env = _Env()
+        env["x.demo"] = _Model()
+        record = module.AppSearchConfig.__new__(module.AppSearchConfig)
+        record.env = env
+        record._safe_eval_expr = lambda raw: ast.literal_eval(raw) if raw else None
+
+        _filters, _groupbys, fields = record._parse_search_view("""
+            <search>
+                <field name="name"/>
+                <field name="project_id" string="Project" domain="[('active', '=', True)]"/>
+                <field name="project_id" string="Project contains" filter_domain="[('project_id.name', 'ilike', self)]"/>
+                <field name="state" string="State" operator="!="/>
+            </search>
+        """)
+        projected = record._project_native_search_fields("x.demo", fields)
+
+        self.assertEqual(len(projected), 4)
+        self.assertEqual(len({row["occurrence_key"] for row in projected}), 4)
+        self.assertEqual(projected[0]["query_mode"], "domain")
+        self.assertEqual(projected[0]["operator"], "ilike")
+        self.assertEqual(projected[0]["label"], "Name")
+        self.assertEqual(projected[1]["type"], "many2one")
+        self.assertEqual(projected[1]["relation"], "project.project")
+        self.assertEqual(projected[1]["operator"], "=")
+        self.assertEqual(projected[1]["value_domain"], [("active", "=", True)])
+        self.assertEqual(projected[2]["query_mode"], "filter_domain")
+        self.assertTrue(projected[2]["filter_domain_requires_input"])
+        self.assertEqual(projected[2]["filter_domain_raw"], "[('project_id.name', 'ilike', self)]")
+        self.assertEqual(projected[3]["operator"], "!=")
+        self.assertEqual(
+            projected[3]["choices"],
+            [{"value": "draft", "label": "Draft"}, {"value": "done", "label": "Done"}],
+        )
+
     def test_workflow_contract_serializes_non_json_scalars(self):
         module = _load_module("smart_core_test_app_workflow_config", WORKFLOW_PATH)
         record = module.AppWorkflowConfig.__new__(module.AppWorkflowConfig)

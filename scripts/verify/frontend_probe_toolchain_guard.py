@@ -26,6 +26,25 @@ def violations(source: str) -> list[str]:
     return [name for name, pattern in PATTERNS.items() if any(re.search(pattern, line) for line in lines)]
 
 
+def static_external_imports(source: str) -> list[str]:
+    """Return external packages resolved before an ESM blocker can execute."""
+    packages = []
+    for line in source.splitlines():
+        clean = line.strip()
+        if not clean or clean.startswith(("//", "*")):
+            continue
+        match = re.match(
+            r"""(?:import\s+(?:[^'"]*?\s+from\s+)?|}\s+from\s+)['"]([^'"]+)['"]""",
+            clean,
+        )
+        if not match:
+            continue
+        package = match.group(1)
+        if not package.startswith((".", "/", "node:", "data:")) and package not in packages:
+            packages.append(package)
+    return packages
+
+
 def executes_blocked_probe(line: str, blocked: set[str]) -> bool:
     # Match the interpreter's script operand, not arbitrary recipe asset lists.
     # Also covers interpreters inside a quoted container/SSH shell command.
@@ -97,6 +116,12 @@ def check(root: Path) -> list[str]:
             expected = f"import '{relative}';" if path.suffix == '.mjs' else f"require('{relative}').assertProbeSupported(__filename);"
             if not statements or statements[0] != expected:
                 errors.append(f"{name}: legacy blocker must precede every executable/import")
+                continue
+            external = static_external_imports('\n'.join(statements[1:]))
+            if external:
+                errors.append(
+                    f"{name}: external imports must follow the blocker dynamically: {','.join(external)}"
+                )
         elif entry["status"] != "supported":
             errors.append(f"{name}: unknown lifecycle")
     paths = list((root / "scripts").rglob("*")) + list((root / "frontend/apps/web/scripts").glob("*"))

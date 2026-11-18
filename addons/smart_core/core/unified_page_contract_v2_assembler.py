@@ -2043,6 +2043,10 @@ def _assemble_ui_contract(
         contract["dataContract"]["dataSource"]["primary"] = data_source
     search_contract = _ui_search_contract(source, ui)
     if search_contract:
+        _align_search_contract_order(
+            search_contract,
+            _dict(_dict(data_source).get("params")).get("order"),
+        )
         contract["searchContract"] = search_contract
     business_operation_profile = _dict(source.get("business_operation_profile"))
     if business_operation_profile:
@@ -2298,11 +2302,29 @@ def _ui_search_contract(source: dict[str, Any], ui: dict[str, Any]) -> dict[str,
             out[key] = deepcopy(value)
     native_identity = search.get("nativeIdentity") or search.get("native_identity")
     if isinstance(native_identity, dict) and native_identity:
-        out["nativeIdentity"] = deepcopy(native_identity)
+        out["nativeIdentity"] = _canonical_search_native_identity(native_identity)
     search_panel = search.get("search_panel") or search.get("searchpanel")
     if isinstance(search_panel, dict):
         out["search_panel"] = deepcopy(search_panel)
     return out
+
+
+def _canonical_search_native_identity(value: dict[str, Any]) -> dict[str, Any]:
+    return {
+        "model": _text(value.get("model")),
+        "actionId": (
+            _positive_int(value.get("actionId"), 0)
+            or _positive_int(value.get("action_id"), 0)
+            or None
+        ),
+        "viewId": (
+            _positive_int(value.get("viewId"), 0)
+            or _positive_int(value.get("view_id"), 0)
+        ),
+        "viewXmlId": _text(value.get("viewXmlId") or value.get("view_xmlid")),
+        "authority": _text(value.get("authority")),
+        "sourceLocator": _text(value.get("sourceLocator") or value.get("source_locator")),
+    }
 
 
 def _inject_collaboration_runtime_contract(contract: dict[str, Any], collaboration: dict[str, Any]) -> None:
@@ -3524,7 +3546,14 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
                     if isinstance(owner.get("context"), dict)), None)
     if isinstance(context, dict):
         out.setdefault("context", deepcopy(context))
-    order = source.get("order") or source_meta.get("order") or ui.get("order") or search_defaults.get("order")
+    order = (
+        source.get("order")
+        or source_meta.get("order")
+        or ui.get("order")
+        or action.get("order")
+        or _effective_collection_view_order(ui)
+        or search_defaults.get("order")
+    )
     if _text(order):
         out["order"] = _text(order)
     limit = source.get("limit") or source_meta.get("limit") or ui.get("limit") or search_defaults.get("limit")
@@ -3532,6 +3561,28 @@ def _ui_data_source_extra_params(source: dict[str, Any], ui: dict[str, Any]) -> 
     if parsed_limit:
         out["limit"] = parsed_limit
     return out
+
+
+def _effective_collection_view_order(ui: dict[str, Any]) -> str:
+    views = _dict(ui.get("views"))
+    for view_key in ("tree", "list", "kanban"):
+        view = _dict(views.get(view_key))
+        order = _text(view.get("default_order") or view.get("order"))
+        if order:
+            return order
+    return ""
+
+
+def _align_search_contract_order(search_contract: dict[str, Any], order: Any) -> None:
+    effective_order = _text(order)
+    if not effective_order:
+        return
+    defaults = _dict(search_contract.get("defaults"))
+    defaults["order"] = effective_order
+    search_contract["defaults"] = defaults
+    for key in ("default_order", "default_sort"):
+        if key in search_contract:
+            search_contract[key] = effective_order
 
 
 def _ui_source_context(source: dict[str, Any], ui: dict[str, Any]) -> dict[str, Any]:

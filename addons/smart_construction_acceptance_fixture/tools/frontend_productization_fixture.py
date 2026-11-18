@@ -1795,6 +1795,12 @@ def ensure_fixture(env) -> Dict[str, Any]:
     project_b = _project(env, "B", company_a, pm, partner_b)
     project_c = _project(env, "C", company_b, finance, partner_c)
     non_draft_project = _non_draft_project(env, company_a, pm, partner_a)
+    # CLOSE-02 needs a deterministic surface larger than one declared page
+    # after text and relation conditions are applied. These rows remain owned
+    # by the acceptance fixture and intentionally share the same PM/partner so
+    # the relation-field sample is stable without manufacturing product facts.
+    for index in range(1, 25):
+        _project(env, "CLOSE02%02d" % index, company_a, pm, partner_a)
     lifecycle_carrier, lifecycle_carrier_reset = _lifecycle_carrier(
         env, company_a, config_admin, partner_a
     )
@@ -1836,6 +1842,20 @@ def ensure_fixture(env) -> Dict[str, Any]:
     _request(env, "A", 2, project_a, contract_a, settlement_a, partner_a, "draft", 250.0)
     request_b = _request(env, "B", 1, project_b, contract_b, settlement_b, partner_b, "draft", 1000.0)
     request_c = _request(env, "C", 1, project_c, contract_c, settlement_c, partner_c, "approved", 1000.0)
+    # Keep the payment entry's fixed pay scope and add enough deterministic
+    # rows for real pagination after field filters.
+    for sequence in range(1, 25):
+        _request(
+            env,
+            "CLOSE02",
+            sequence,
+            project_a,
+            contract_a,
+            settlement_a,
+            partner_a,
+            "draft",
+            100.0 + sequence,
+        )
     env.cr.execute(
         "UPDATE payment_request SET validation_status=%s, create_uid=%s WHERE id=%s",
         ("validated", finance.id, request_c.id),

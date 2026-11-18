@@ -1,0 +1,74 @@
+schema_version: 1
+goal:
+  id: CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Unified Page Contract V2 native search declaration, query execution order,
+    ActionView query-state restoration, and list pagination identity
+  module:
+    - addons/smart_core
+    - addons/smart_construction_acceptance_fixture
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: platform_mechanism
+  objective: >-
+    Users can find records through fields declared by the effective native Search
+    view, view them in the backend-resolved default order and page, open a detail,
+    and return to the same confirmed query context; changing a query condition
+    resets the request, displayed page and URL page to the first page.
+  product_result: >-
+    The project ledger and payment request entries expose executable field-query
+    semantics, use one effective order across first and subsequent requests, and
+    preserve or reset route-backed query state according to whether the condition
+    changed.
+  why_here: >-
+    smart_core owns generic contract projection, native search semantics, API query
+    execution and frontend contract consumption. The behavior must be identical for
+    both entries without industry-specific frontend branches.
+  why_not_elsewhere:
+    - The frontend must not infer native field operators, domains or default order.
+    - P1 XML may declare native search behavior, but generic projection and execution belong to smart_core.
+    - P2 customer preferences and P3 runtime configuration are not the source of this defect.
+    - search_panel, autosave, renderer changes and the full business-entry matrix are excluded.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_project
+      - smart_construction_core.menu_sc_user_payment_apply
+    behavior:
+      - searchContract.fields declaration and consumption
+      - domain and filter-domain execution semantics
+      - effective collection default order
+      - route-backed field filter serialization and restoration
+      - URL, in-memory offset and displayed page synchronization
+      - detail return query context
+  backend_stage:
+    id: BE-CLOSE-02
+    status: completed
+    acceptance:
+      - Effective native Search view declarations project field identity, type, constraints and executable semantics.
+      - Field occurrences remain distinct and native domain, filter_domain and context uses remain separate.
+      - If self-bound native expressions are present, backend evaluation binds typed input through the existing query path.
+      - Primary dataSource params.order and compatible default order fields agree with effective collection view order or model _order.
+      - Raw authenticated samples cover both entries, hit and valid-zero results, a second page, and preserved entry scope.
+  frontend_stage:
+    id: FE-CLOSE-02
+    status: completed
+    acceptance:
+      - Native root search fields feed the existing field/operator/value controls.
+      - Field conditions use the existing domain/context/list request chain and compose with entry scope.
+      - Route state stores stable field occurrence identity and typed values, including false and 0.
+      - Rebuilding the page or returning from detail restores the same query context.
+      - A changed condition resets request offset, in-memory page and URL page together.
+  joint_acceptance:
+    - Project ledger and payment request each complete the bounded browser journey.
+    - Hit, zero-result, invalid field, false/0 and cross-entry isolation are checked at the appropriate unit or request layer.
+    - Backend module baseline, affected families, frontend lint/type/tests/build and exact-candidate browser checks pass.
+  exclusions:
+    - search_panel unless both real entry contracts declare it
+    - autosave, renderer and full-entry acceptance
+    - deployment, release, merge or product-delivery claims
+  rollback: >-
+    Revert the P0 search-contract/query/order changes and the shared ActionView
+    query-state changes. No persistent data migration or external state is planned.

@@ -2,7 +2,7 @@ import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fsSync from "node:fs";
 import fs from "node:fs/promises";
 import path from "node:path";
-import { chromium } from "playwright";
+const { chromium } = await import("playwright");
 
 function requiredEnv(name, aliases = []) {
   for (const key of [name, ...aliases]) {

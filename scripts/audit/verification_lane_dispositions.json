@@ -3401,6 +3401,24 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/workflow_state_unification_plan.md。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.backend.close_02.search_contract.samples": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 BE handoff probe: tenant-namespace, read-only contract and api.data sampling against the registered acceptance carrier. It is intentionally on demand because it requires the seeded two-entry acceptance fixture and exact current source artifact.",
+      "review_by": "2027-02-28"
+    },
+    "verify.smart_core.close_02.module_baseline": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 owning-module ORM baseline wrapper over the registered disposable local.test profile. It is invoked for the batch baseline rather than recursively from every CI gate.",
+      "review_by": "2027-02-28"
+    },
+    "verify.frontend.close_02.field_query.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 two-entry browser journey on the registered acceptance carrier. It is intentionally on demand because it mutates no product data but requires the seeded acceptance fixture, browser runtime and exact current candidate identities.",
+      "review_by": "2027-02-28"
     }
   },
   "scripts": {

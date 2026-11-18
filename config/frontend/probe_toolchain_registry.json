@@ -1343,6 +1343,22 @@
       "language": "shell",
       "reason": "Legacy direct client database routing; unsupported runtime verification."
     },
+    "scripts/verify/close_02_backend_contract_samples.mjs": {
+      "status": "supported",
+      "reason": "Browser-authenticated tenant-namespace transport; captures the live V2 contract and api.data responses without database hints or token guessing.",
+      "prior_recipe_targets": [
+        "verify.backend.close_02.search_contract.samples"
+      ],
+      "audit_rules": []
+    },
+    "scripts/verify/close_02_field_query_browser_journeys.mjs": {
+      "status": "supported",
+      "reason": "Browser-authenticated, tenant-namespace two-entry journey using the served native fields, route-backed field filters, pagination and detail return.",
+      "prior_recipe_targets": [
+        "verify.frontend.close_02.field_query.browser"
+      ],
+      "audit_rules": []
+    },
     "scripts/verify/record_relation_roundtrip_acceptance.js": {
       "status": "supported",
       "reason": "Governed environment and served identity; browser login/system.init binds the actual principal without storage-token guessing or database hints. Real relation assertions remain required.",

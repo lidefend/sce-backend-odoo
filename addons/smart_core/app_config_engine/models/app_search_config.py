@@ -2,7 +2,7 @@
 # models/app_search_config.py
 from odoo import models, fields, api, _
 from odoo.tools.safe_eval import safe_eval
-import json, hashlib, logging
+import json, hashlib, logging, re
 
 _logger = logging.getLogger(__name__)
 
@@ -407,7 +407,13 @@ class AppSearchConfig(models.Model):
             ),
         )
         saved_sorted = sorted(saved_filters or [], key=lambda x: (not x.get('is_shared', False), x.get('name') or ''))
-        fields_sorted = sorted(fields or [], key=lambda x: x.get('source_position', 9999))
+        fields_sorted = sorted(
+            self._project_native_search_fields(
+                model_name,
+                fields or [],
+            ),
+            key=lambda x: x.get('source_position', 9999),
+        )
         group_sorted = sorted(
             group_by or [],
             key=lambda x: (
@@ -434,6 +440,96 @@ class AppSearchConfig(models.Model):
             },
             "defaults": defaults or {"limit": 20, "order": "id desc", "page_size_options": list(DEFAULT_PAGE_SIZE_OPTIONS), "page_size_range": dict(DEFAULT_PAGE_SIZE_RANGE)}
         }
+
+    def _project_native_search_fields(self, model_name, fields):
+        """Project declared Search-view fields into executable query semantics.
+
+        The raw XML and occurrence evidence remain available.  Consumers also
+        receive the field type, value constraints, effective default operator,
+        and the native query carrier, so they never have to infer an operator
+        from an empty attribute or parse a field expression.
+        """
+        if not fields:
+            return []
+        env = getattr(self, "env", {})
+        model = env[model_name] if model_name in env else None
+        fields_meta = model.sudo().fields_get() if model is not None else {}
+        projected = []
+        for raw in fields:
+            if not isinstance(raw, dict):
+                continue
+            row = dict(raw)
+            name = str(row.get("name") or row.get("field") or "").strip()
+            if not name:
+                continue
+            meta = fields_meta.get(name) or {}
+            field_type = str(meta.get("type") or "char").strip() or "char"
+            declared_label = str(row.get("label") or "").strip()
+            if not declared_label or declared_label == name:
+                declared_label = str(meta.get("string") or name).strip() or name
+            attributes = row.get("attributes") if isinstance(row.get("attributes"), dict) else {}
+            widget = str(attributes.get("widget") or "").strip()
+            explicit_operator = str(row.get("operator") or "").strip()
+            filter_domain_raw = str(
+                row.get("filter_domain") or row.get("filter_domain_raw") or ""
+            ).strip()
+            domain_raw = str(row.get("domain") or row.get("domain_raw") or "").strip()
+            context_raw = str(row.get("context") or row.get("context_raw") or "").strip()
+            default_operator = explicit_operator or self._native_search_default_operator(
+                field_type,
+                widget=widget,
+            )
+            operators = self._custom_filter_operators(field_type)
+            if explicit_operator:
+                operators = [
+                    {"value": explicit_operator, "label": explicit_operator, "needs_value": True}
+                ]
+            elif operators:
+                operators = sorted(
+                    operators,
+                    key=lambda item: 0 if item.get("value") == default_operator else 1,
+                )
+            choices = [
+                {"value": str(value), "label": str(text or value)}
+                for value, text in (meta.get("selection") or [])
+                if value not in (None, False, "")
+            ]
+            domain_value = self._safe_eval_expr(domain_raw)
+            context_value = self._safe_eval_expr(context_raw)
+            occurrence_key = ""
+            native_locator = str(row.get("native_locator") or "").strip()
+            if native_locator:
+                occurrence_key = "%s@%s" % (name, native_locator)
+            row.update({
+                "field": name,
+                "label": declared_label,
+                "type": field_type,
+                "relation": str(meta.get("relation") or "").strip(),
+                "choices": choices,
+                "operator": default_operator,
+                "operators": operators,
+                "query_mode": "filter_domain" if filter_domain_raw else "domain",
+                "value_domain": domain_value if isinstance(domain_value, list) else [],
+                "value_context": context_value if isinstance(context_value, dict) else {},
+                "filter_domain_raw": filter_domain_raw,
+                "domain_raw": domain_raw,
+                "context_raw": context_raw,
+                "filter_domain_requires_input": bool(
+                    filter_domain_raw and re.search(r"\bself\b", filter_domain_raw)
+                ),
+                "context_requires_input": bool(
+                    context_raw and re.search(r"\bself\b", context_raw)
+                ),
+                "occurrence_key": occurrence_key,
+            })
+            projected.append(row)
+        return projected
+
+    def _native_search_default_operator(self, field_type, *, widget=""):
+        operator_type = str(widget or field_type or "").strip().lower()
+        if operator_type in ("char", "html", "many2many", "one2many", "text"):
+            return "ilike"
+        return "="
 
     def _source_contract(self, model_name):
         return {

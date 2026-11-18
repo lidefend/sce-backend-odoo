@@ -7071,9 +7071,11 @@ require(
 )
 record_form_layout = (WEB_SRC / "pages/contractForm/useRecordFormLayout.ts").read_text(encoding="utf-8")
 require(
-    "normalizeWorkflowPhaseStatusbar" not in record_form_layout
-    and "fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}" in record_form_layout,
-    "form statusbar can still be fabricated from workflow fallback",
+    "fallback:{visible:false,field:'',current:'',states:[],reachedValues:[],readonly:true}" in record_form_layout
+    and "const workflowProjection=normalizeWorkflowPhaseStatusbar(workflow);" in record_form_layout
+    and "workflowContract.statusbar.field conflicts with the native statusbar occurrence" in record_form_layout
+    and "return occurrence?.invisible?{...workflowProjection,visible:false,readonly:true}:workflowProjection;" in record_form_layout,
+    "form statusbar may fabricate a workflow fallback without native field identity or conflict fail-closed",
 )
 
 collection_surface = (UI_SRC / "components/SceneCollectionSurface.vue").read_text(encoding="utf-8")

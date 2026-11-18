@@ -2,7 +2,7 @@ import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import assert from 'node:assert/strict';
-import { chromium } from 'playwright';
+const { chromium } = await import('playwright');
 import { resolveChangeSetOpenResponse, resolveDesignerDraftPolicy, resolveCleanupRelease } from './designer_draft_ownership.mjs';
 
 export async function runFormalFormLoop() {

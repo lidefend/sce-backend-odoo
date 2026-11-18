@@ -184,26 +184,69 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
       .slice(0, 12);
   });
 
+  const nativeFilterFields = computed(() => {
+    const rows = resolveContractV2SearchContract(options.actionContract.value).fields;
+    if (!Array.isArray(rows)) return [];
+    return rows
+      .map((row) => {
+        const raw = row as Dict;
+        const field = String(raw.field || raw.name || '').trim();
+        const label = String(raw.label || raw.string || field).trim();
+        const type = String(raw.type || '').trim();
+        const occurrenceKey = String(raw.occurrence_key || raw.occurrenceKey || '').trim();
+        if (!field || !label || !type || !occurrenceKey) return null;
+        if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
+        if (!isSelectorEnabled(selectorTokens(`custom_filter.${occurrenceKey}`, `filter.${field}`, field))) return null;
+        return {
+          identity: occurrenceKey,
+          occurrenceKey,
+          field,
+          label,
+          type,
+          relation: String(raw.relation || '').trim(),
+          operator: String(raw.operator || '').trim(),
+          operators: Array.isArray(raw.operators) ? raw.operators : [],
+          choices: Array.isArray(raw.choices) ? raw.choices : [],
+          queryMode: String(raw.query_mode || raw.queryMode || '').trim(),
+          native: true,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, 40);
+  });
+
   const customFilterFields = computed(() => {
     const custom = resolveContractV2SearchContract(options.actionContract.value).custom as Dict | undefined;
     const filterConfig = (custom?.filters || {}) as Dict;
     const rows = filterConfig.enabled === false ? [] : filterConfig.fields;
-    if (!Array.isArray(rows)) return [];
-    return rows
+    const nativeFields = new Set(nativeFilterFields.value.map((row) => String((row as Dict).field || '')));
+    const customRows = Array.isArray(rows) ? rows
       .map((row) => {
         const raw = row as Dict;
         const field = String(raw.field || '').trim();
         const label = String(raw.label || field).trim();
         const type = String(raw.type || 'char').trim();
-        if (!field || !label) return null;
+        if (!field || !label || nativeFields.has(field)) return null;
         if (options.isActionViewNumericToken(field) || options.isActionViewNumericToken(label)) return null;
         if (!isSelectorEnabled(selectorTokens(`custom_filter.${field}`, `filter.${field}`, field))) return null;
         const operators = Array.isArray(raw.operators) ? raw.operators : [];
         const choices = Array.isArray(raw.choices) ? raw.choices : [];
-        return { field, label, type, operators, choices };
+        return {
+          identity: `custom:${field}`,
+          occurrenceKey: '',
+          field,
+          label,
+          type,
+          relation: String(raw.relation || '').trim(),
+          operator: String(operators[0]?.value || '=').trim(),
+          operators,
+          choices,
+          queryMode: 'domain',
+          native: false,
+        };
       })
-      .filter(Boolean)
-      .slice(0, 40);
+      .filter(Boolean) : [];
+    return [...nativeFilterFields.value, ...customRows].slice(0, 40);
   });
 
   const customGroupByChips = computed(() => {
@@ -288,6 +331,7 @@ export function useActionViewFilterComputedRuntime(options: UseActionViewFilterC
     savedFilterPrimaryChips,
     savedFilterOverflowChips,
     contractGroupByChips,
+    nativeFilterFields,
     customFilterFields,
     customGroupByChips,
     routeGroupByChips,
