@@ -79,7 +79,7 @@
         "scripts/verify/be_close_01_workflow_contract_runtime_ids.py"
       ],
       "readback": {
-        "artifact": "artifacts/backend/be_close_01_workflow_contract_samples_v1.json"
+        "artifact": ".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json"
       }
     },
     "payment_state_machine": {

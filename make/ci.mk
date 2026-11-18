@@ -475,7 +475,7 @@ verify.workflow_contract.be_close_01.samples: guard.prod.forbid
 	$(MAKE) --no-print-directory backend.acceptance.up \
 	  SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)"; \
 	runtime_ids_log=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/runtime_ids.log"; \
-	runtime_ids_json="artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json"; \
+	runtime_ids_json=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_runtime_ids_v1.json"; \
 	mkdir -p "$$(dirname "$$runtime_ids_json")"; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 \
 	SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" \
@@ -489,7 +489,7 @@ verify.workflow_contract.be_close_01.samples: guard.prod.forbid
 	SC_ACCEPTANCE_BE_CLOSE01_LOGIN="fixture_role_config_admin" \
 	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
 	SC_ACCEPTANCE_BE_CLOSE01_IDS="$$runtime_ids_json" \
-	SC_ACCEPTANCE_BE_CLOSE01_OUTPUT="artifacts/backend/be_close_01_workflow_contract_samples_v1.json" \
+	SC_ACCEPTANCE_BE_CLOSE01_OUTPUT=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json" \
 	  python3 scripts/verify/be_close_01_workflow_contract_http_probe.py
 
 # Workflow instance company ownership is a source-level fact: the instance
