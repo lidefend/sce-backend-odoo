@@ -3,7 +3,7 @@
   "id": "CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119",
   "branch": "feature/close-03-project-intake-draft-restore-20261119",
   "baseline_sha": "c365db1eae1ae8c4e2efab649c609ea1aebd8a0b",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119.yaml",
   "record": "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
   "scope": [
@@ -73,9 +73,9 @@
     },
     {
       "id": "JOINT-CLOSE-03",
-      "status": "active",
+      "status": "verification_pending",
       "owner": "single_writer",
-      "exit": "Formal project-intake journey, negative boundaries, independent review and current-candidate gates complete"
+      "exit": "Local formal journey and negative boundaries pass; independent review and exact-head PR gates remain"
     }
   ],
   "checks": {
@@ -382,7 +382,7 @@
     }
   },
   "blockers": [
-    "Pre-existing release-surface runtime guard mismatches remain outside CLOSE-03 behavior: cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native delivery with an empty native-nav fixture. The migrated product policy itself reports 132 entries for both construction.standard and construction.preview."
+    "Non-blocking for CLOSE-03: pre-existing release-surface runtime guard mismatches remain outside this behavior: cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native delivery with an empty native-nav fixture. The migrated product policy itself reports 132 entries for both construction.standard and construction.preview."
   ],
-  "next_exact_step": "Run ci.local.iteration to execute or reuse every registered check, then run freeze preparation and publish one exact-head PR for independent review and the four required checks."
+  "next_exact_step": "Publish the clean metadata commit on the existing feature branch as one PR, obtain independent review and the four required exact-head checks, then merge through make pr.merge."
 }

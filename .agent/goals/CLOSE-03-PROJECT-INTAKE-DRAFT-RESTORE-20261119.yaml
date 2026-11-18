@@ -53,7 +53,7 @@ goal:
       - compatibility construction.preview key remains released-equivalent but its product state stays preview
   backend_stage:
     id: BE-CLOSE-03
-    status: active
+    status: completed
     acceptance:
       - Project-intake create contracts carry a complete, schema-valid intakeAutosave policy.
       - The standard intake policy is enabled only for create input with explicit allowed fields, 24-hour retention, storage and recovery semantics.
@@ -62,7 +62,7 @@ goal:
       - Real samples bind menu/action/model/view identities and provide minimal valid create input.
   frontend_stage:
     id: FE-CLOSE-03
-    status: read_only_preparation
+    status: completed
     acceptance:
       - The frontend consumes only complete backend policy and fails closed when enabled declarations are incomplete.
       - Draft keys include tenant, user, company, entry and form-instance identity and use policy compatibility version rather than deployment SHA.

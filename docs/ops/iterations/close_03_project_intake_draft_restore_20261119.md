@@ -67,7 +67,7 @@ Status: surface generated and focused guards passed; complete release-surface ga
 
 ## FE-CLOSE-03
 
-Status: read-only preparation started after backend registration.
+Status: completed on the shared backend candidate.
 
 Consumption points under review:
 
@@ -83,8 +83,25 @@ Consumption points under review:
 - Default hydration/create/dirty/occurrence families pass.
 - The acceptance journey exposed `ONCHANGE_SPEC_INVALID`: the client listed `validation_status` in `changed_fields` while omitting it from values. The common onchange request now filters changed names that are absent or undefined in the serialized values payload; a regression case covers the native intake shape.
 - Browser journey passes: save, refresh, restore prompt, typed/relation restore, local validation failure without create, corrected real create/readback, draft cleanup, new-form absence, payment-create isolation and saved-record isolation. The created synthetic project was removed through the governed unlink intent and readback returned zero.
-- The acceptance backend sample and browser journey were rerun at `337ae1e4d5282a0636d14ae0dd758378333647a7`; both passed.
+- At candidate `3086e339ea3009244ee2597a9632aaa94e372bd4`, the backend sample reports 15 assertions and three schema-valid entries; the browser journey reports one created record and one cleaned record with no failed intent.
+
+## Final local verification
+
+- `make ci.local.iteration`: pass on `3086e339ea3009244ee2597a9632aaa94e372bd4`; log `.runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/ci.local.iteration.3086e339e.log`.
+- Frontend affected receipt: `verificationPassed=true`, `unmappedPathCount=0`; non-zero lint, strict typecheck and affected test families executed or reused under the registered input scope.
+- `make ci.delivery.freeze.prepare`: pass; all content-bound generated evidence is current; log `.runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/ci.delivery.freeze.prepare.3086e339e.log`.
+- Raw intake samples: `.runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/intake_autosave_samples/`.
+- Browser summary and screenshots: `.runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/browser_journey/`.
+- Acceptance identity: database `sc_frontend_acceptance`, login `fixture_role_config_admin`, company `FE Company A`; backend `http://127.0.0.1:18082`, frontend `http://127.0.0.1:5175`.
+- `construction.standard` and compatibility key `construction.preview` each expose 132 released entries with `RELEASED_FOUNDATION` maturity and zero preview-only menu rows.
+
+## Completion boundaries
+
+- Batch verification is locally complete once the generated-evidence commit is clean and frozen.
+- Mainline integration remains pending until independent review, the current PR head's four required checks, and protected merge succeed.
+- Deployment and product-delivery status remain unchanged; this batch does not deploy or claim a released product version.
+- Known non-blocking external mismatches remain the cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native synthetic fixture guard.
 
 ## Results
 
-Run registered. No product implementation or acceptance result is claimed yet.
+Local implementation and batch acceptance evidence are complete. The run remains `verification_pending` for exact-head independent review, PR checks and protected integration.
