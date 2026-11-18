@@ -112,6 +112,7 @@ jobs:
       base_sha: ${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}
       head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       head_ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
+      scope_mode: ${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}
 
   python310_runtime_compatibility:
     name: python310_runtime_compatibility
@@ -318,6 +319,7 @@ jobs:
       - name: Run early static quality owners
         run: |
           set -euo pipefail
+          make architecture.complexity_baseline_lock
           make verify.guard.registry
           python3 scripts/verify/frontend_product_page_header_guard.py
           python3 scripts/verify/frontend_delivery_hardening_guard.py

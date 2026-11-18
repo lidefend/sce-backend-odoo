@@ -2731,11 +2731,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.payment.approval_state_machine.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.payment_execution.form_productization.runtime_guard": {
       "disposition": "candidate",
       "owner": "platform-team",

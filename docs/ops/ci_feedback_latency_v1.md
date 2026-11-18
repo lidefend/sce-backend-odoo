@@ -157,3 +157,71 @@ Use [the integration cycle playbook](integration_cycle_playbook_20261020.md):
 5. collect all remote failures before the next local fix batch;
 6. merge only with required checks and the exact-head Quick receipt, and keep
    `pr.merge` runtime-evidence exclusions explicit.
+
+## Target-scoped Make dependency reuse (2026-11-18)
+
+A local receipt that declares a Make fragment uses the selected target's
+dependency material, not the fragment's whole-file hash. The material includes:
+
+- the active literal `include` closure;
+- every rule block that defines the selected target or a literal prerequisite
+  reached from it;
+- recursive `$(MAKE) <target>` calls;
+- the selected target's `.PHONY` identity;
+- Make variables referenced by that material, including their referenced
+  variables; and
+- the content of file prerequisites outside the target graph.
+
+Editing another target in the same `make/ci.mk` or `make/frontend.mk` therefore
+does not invalidate an unchanged receipt. Editing the selected recipe, a reached
+prerequisite, a relevant variable, or an included target override does.
+
+A receipt written before this mechanism is projected only when all of these are
+provable: Git confirms the recorded whole-file bytes and mode at the receipt
+head, the receipt had no dirty Make source, and the historical target material
+equals the current material. A hash mismatch, dirty Make input, unavailable
+history, or target-material change remains stale. The old whole-file hash is
+never treated as target-specific proof.
+
+## Backend PR execution (2026-11-18)
+
+Changed ORM selectors supplement the full impacted module scope. A focused
+request cannot narrow the module baseline without certified family dependencies
+and reusable baseline evidence. Until that authority exists, focused requests
+resolve to the same complete plan consumed by workers and the coverage collector.
+
+Each module retains `timeout --foreground` around `make test ... | tee`, with
+periodic heartbeat and preserved attempt diagnostics. The full-module limit is
+1200 seconds per attempt, inside the existing 240-minute job limit. The proposed
+25-minute whole-shard timeout was rejected because a shard can contain multiple
+modules and retries. Compose explicitly disables stdin, and dependency-install
+failure stops before Odoo can run.
+
+Make exports only names declared in the environment file. It must not enable
+blanket export of later lazy acceptance/release variables: GNU Make 4.4 exports
+these into shell-function subprocesses too, recursively expanding unrelated
+probes before the test recipe starts.
+
+Authenticated historical receipts remain observation-only unless all existing
+closure authorities pass. They may still supply exact measured module durations
+for shard balancing. Discovery accepts the current
+`backend-execution-<run-id>-<shard>` artifact name and the legacy
+attempt-qualified name for attempt one.
+
+Each focused or full backend shard materializes the event-bound integration base
+as `refs/remotes/origin/main` before consulting the frozen plan or invoking Make.
+That ref is the exact pull-request base SHA when supplied, and the fetched
+authoritative mainline tip for schedule, candidate, and operator full runs. The
+resolved commit is exported as `VIEW_STRUCTURE_BASELINE_SHA` so inherited Make
+guards consume the same identity without independently probing a ref that the
+shard checkout may not have fetched. A missing or mismatched ref fails before
+database or module-test preparation.
+
+The backend suite also disables the generic per-module `pip install` step.
+Repository ORM tests resolve `odoo_test_helper` from the tracked
+`addons/odoo_test_helper` stub, while the runtime image owns its production
+dependencies. This removes a network package-index round trip from every module
+and makes the test entry independent of package-index latency. A named one-off
+test container is retained until the workflow cleanup step, so a module timeout
+can preserve and print its process log instead of deleting the only diagnostic
+carrier with `docker compose run --rm`.

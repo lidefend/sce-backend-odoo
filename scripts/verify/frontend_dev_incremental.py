@@ -127,12 +127,16 @@ RULES = (
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
     ), ("verify.frontend.professional_relation_field.unit",)),
     Rule((
-        "addons/smart_core/tests/test_intent_smoke.py",
         "addons/smart_core/core/platform_minimum_nav_contract.py",
         "addons/smart_core/tests/test_platform_minimum_nav_contract.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_intent_smoke.py",
+    ), (
+        "verify.smart_core.intent_smoke.orm",
     )),
     Rule((
         "frontend/apps/web/scripts/route_authority_guard_test.ts",
@@ -548,7 +552,6 @@ RULES = (
         "addons/smart_core/tests/test_native_config_menu_projection.py",
         "addons/smart_core/tests/test_relation_entry_contract.py",
         "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
-        "addons/smart_core/tests/test_intent_smoke.py",
     ), (
         "verify.backend.navigation_delivery.unit",
         "verify.system_init.menu_boundary.guard",
@@ -741,6 +744,11 @@ RULES = (
         "scripts/verify/backend_contract_fact_readback_probe.py",
         "scripts/verify/test_backend_contract_fact_readback_probe.py",
         "scripts/test/test.sh",
+        "scripts/ci/enforce_complexity_baseline_lock.py",
+        "scripts/ci/test_complexity_baseline_report.py",
+        "docs/engineering_convergence/complexity_baseline_lock.json",
+        "Dockerfile",
+        "docker-compose.test-isolation.yml",
         "scripts/test/dependency_baseline.py",
         "scripts/test/test_dependency_baseline.py",
         ".github/workflows/backend_test_suite.yml",
@@ -774,6 +782,7 @@ RULES = (
     )),
     Rule((
         "scripts/dev/local_test_runner.py",
+        "docker-compose.test-isolation.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
     ), (
@@ -1453,6 +1462,31 @@ RULES = (
         "verify.frontend.contract_header_action.unit",
     )),
     Rule((
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "scripts/verify/test_payment_approval_state_machine.py",
+        "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
+    ), (
+        "verify.workflow_contract.be_close_01.unit",
+        "verify.workflow_contract.be_close_01.orm",
+        "verify.workflow_contract.be_close_01.samples",
+        "verify.payment.approval_state_machine.unit",
+    )),
+    Rule((
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+    ), (
+        "verify.frontend.standard_preview.unit",
+    )),
+    Rule((
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+    ), (
+        "verify.workspace.branch.sync-github.unit",
+    )),
+    Rule((
         "addons/smart_construction_core/services/review_work_item_service.py",
         "addons/smart_construction_core/tests/test_approval_contract_closure.py",
         "scripts/verify/test_general_contract_review_authority.py",
@@ -1707,6 +1741,7 @@ RULES = (
     )),
     Rule((
         "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_test_coverage_registry_audit.py",
     ), (
         "verify.test.coverage.registry",
     )),
@@ -2044,7 +2079,9 @@ def resumable_receipt_results(
     A prior aggregate receipt can contain passed targets even when another
     target was interrupted, or can be a complete passed execution whose source
     later changed. Those target logs remain useful when the source head is still
-    an ancestor and the target set is identical. The caller removes targets
+    an ancestor and the requested target was actually executed. Changes to other
+    paths or to the aggregate target set do not invalidate its log. The caller
+    removes targets
     selected by commits or dirty paths since that head.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
@@ -2055,18 +2092,20 @@ def resumable_receipt_results(
         key=lambda path: path.stat().st_mtime,
         reverse=True,
     )
-    expected_paths = sorted(set(paths))
     expected_targets = sorted(set(targets))
     for receipt_path in receipts:
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             head = str(receipt.get("identity", {}).get("head", ""))
+            source_targets = receipt.get("requiredTargets")
             if (
                 receipt.get("status") not in ("interrupted", "passed", "failed")
                 or not receipt.get("identity", {}).get("worktreeClean")
                 or len(head) != 40
-                or sorted(receipt.get("changedPaths", [])) != expected_paths
-                or sorted(receipt.get("requiredTargets", [])) != expected_targets
+                or not isinstance(source_targets, list)
+                or any(not isinstance(target, str) for target in source_targets)
+                or len(set(source_targets)) != len(source_targets)
+                or not set(expected_targets).intersection(source_targets)
             ):
                 continue
             subprocess.run(
@@ -2078,7 +2117,7 @@ def resumable_receipt_results(
             results: dict[str, dict] = {}
             for row in receipt.get("targetResults", []):
                 target = row.get("target")
-                if target not in expected_targets or target in results:
+                if target not in expected_targets or target not in source_targets or target in results:
                     continue
                 if row.get("status") != "passed" or row.get("returncode") != 0:
                     continue
@@ -2093,7 +2132,7 @@ def resumable_receipt_results(
                     continue
                 carried = dict(row)
                 carried["reusedFrom"] = _json_path(receipt_path, root)
-                carried["reuseReason"] = "verified target prefix from interrupted execution"
+                carried["reuseReason"] = "verified passed target from prior execution"
                 results[target] = carried
             if results:
                 return receipt_path, head, results
@@ -2386,12 +2425,9 @@ def print_plan(
     iteration_baseline_kind: str = "",
 ) -> int:
     required_targets = set(select_targets(paths))
-    grouped: dict[str, list[str]] = {}
-    for check in (checks or {}).values():
-        grouped.setdefault(check["target"], []).append(check["status"])
-    reusable = {target for target, states in grouped.items() if all(state == "reusable" for state in states)}
-    blocked = {target for target, states in grouped.items() if any(state in ("failed", "blocked") for state in states)}
-    targets = required_targets | set(grouped)
+    reusable = reusable_check_targets(checks or {})
+    blocked = blocked_check_targets(checks or {})
+    targets = required_targets | {check["target"] for check in (checks or {}).values()}
     targets.difference_update(reusable | blocked)
     unmapped_paths = [
         path
@@ -2431,6 +2467,30 @@ def print_plan(
     }
     print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
     return 0
+
+
+def reusable_check_targets(checks: dict) -> set[str]:
+    """Targets whose every recorded check is reusable at the current inputs."""
+    grouped: dict[str, list[str]] = {}
+    for check in checks.values():
+        grouped.setdefault(check["target"], []).append(check["status"])
+    return {
+        target
+        for target, states in grouped.items()
+        if all(state == "reusable" for state in states)
+    }
+
+
+def blocked_check_targets(checks: dict) -> set[str]:
+    """Targets carrying an unchanged failed or dependency-blocked check."""
+    grouped: dict[str, list[str]] = {}
+    for check in checks.values():
+        grouped.setdefault(check["target"], []).append(check["status"])
+    return {
+        target
+        for target, states in grouped.items()
+        if any(state in ("failed", "blocked") for state in states)
+    }
 
 
 def write_state(
@@ -2600,13 +2660,20 @@ def execute_targets(
     root: Path = ROOT,
     registered_targets: set[str] | None = None,
     blocked_targets: set[str] | None = None,
+    reusable_targets: set[str] | None = None,
+    non_reusable_targets: set[str] | None = None,
     receipt_dir: Path | None = None,
     worktree_identity: dict | None = None,
     iteration_checkpoint_sha: str = "",
     iteration_checkpoint_kind: str = "",
 ) -> int:
     paths = sorted(set(paths))
-    targets = select_targets(paths)
+    required_targets = select_targets(paths)
+    blocked = sorted(set(required_targets) & (blocked_targets or set()))
+    reusable = sorted(
+        (set(required_targets) & (reusable_targets or set())) - set(blocked)
+    )
+    targets = [target for target in required_targets if target not in reusable]
     identity = worktree_identity or current_execution_identity(root)
     unmapped_paths = [
         path
@@ -2616,11 +2683,10 @@ def execute_targets(
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
     registration_missing = (
-        sorted(set(targets) - registered_targets)
+        sorted(set(required_targets) - registered_targets)
         if registered_targets is not None
         else []
     )
-    blocked = sorted(set(targets) & (blocked_targets or set()))
     environment_missing = environment_blockers(root, targets)
     payload = {
         "schemaVersion": 1,
@@ -2631,8 +2697,9 @@ def execute_targets(
         "registrationMode": "planner_managed",
         "identity": identity,
         "changedPaths": paths,
-        "requiredTargets": targets,
+        "requiredTargets": required_targets,
         "targetOrder": targets,
+        "reusedTargets": reusable,
         "targetResults": [],
         "notRunTargets": [],
         "registrationMissingTargets": registration_missing,
@@ -2682,7 +2749,18 @@ def execute_targets(
         )
         return 2
     if not targets:
-        payload.update(status="not_run", reason="no relevant L2 checks")
+        if reusable:
+            payload.update(
+                status="passed",
+                reason="all required targets reused from unchanged receipts",
+                testsRun=False,
+                verificationPassed=True,
+                executedTargetCount=0,
+                reusedTargetCount=len(reusable),
+                reused=True,
+            )
+        else:
+            payload.update(status="not_run", reason="no relevant L2 checks")
         receipt_directory = _execution_directory(root, receipt_dir)
         receipt = _write_receipt(receipt_directory, payload)
         write_state(
@@ -2693,10 +2771,21 @@ def execute_targets(
             receipt=_json_path(receipt, root),
             reason=payload["reason"],
         )
-        print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
+        if reusable:
+            print(
+                "[frontend.dev.incremental] PASS "
+                f"reused_targets={len(reusable)} receipt={_json_path(receipt, root)}"
+            )
+        else:
+            print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
         return 0
 
-    source_receipt = incremental_verified_receipt(root, paths, targets, identity)
+    # A content-identical aggregate cannot override a declared stale dependency
+    # (for example a changed runtime readback outside the Git source tree).
+    source_receipt = (
+        None if set(required_targets) & (non_reusable_targets or set())
+        else incremental_verified_receipt(root, paths, required_targets, identity)
+    )
     resume_receipt, resume_head, carried_results = (
         resumable_receipt_results(root, paths, targets)
         if source_receipt is None
@@ -2707,7 +2796,7 @@ def execute_targets(
         carried_results = {
             target: row
             for target, row in carried_results.items()
-            if target not in invalidated
+            if target not in invalidated and target not in (non_reusable_targets or set())
         }
     receipt_directory = _execution_directory(root, receipt_dir)
     if source_receipt is not None:
@@ -2716,7 +2805,8 @@ def execute_targets(
             reason="reused identical passed execution",
             reused=True,
             sourceReceipt=_json_path(source_receipt, root),
-            reusedTargetCount=len(targets),
+            reusedTargetCount=len(required_targets),
+            reusedTargets=required_targets,
             notRunTargets=[],
             testsRun=False,
             verificationPassed=True,
@@ -2773,10 +2863,12 @@ def execute_targets(
     payload["testsRun"] = bool(payload["targetResults"])
     payload["verificationPassed"] = payload["status"] == "passed"
     payload["executedTargetCount"] = len(payload["targetResults"]) - len(carried_results)
-    payload["reusedTargetCount"] = len(carried_results)
+    reused = sorted(set(reusable) | set(carried_results))
+    payload["reusedTargets"] = reused
+    payload["reusedTargetCount"] = len(reused)
     if resume_receipt is not None:
         payload["sourceReceipt"] = _json_path(resume_receipt, root)
-    payload["reused"] = bool(carried_results)
+    payload["reused"] = bool(reused)
     receipt = _write_receipt(receipt_directory, payload)
     returncode = {
         "passed": 0,
@@ -2813,19 +2905,20 @@ def execute_worktree(root: Path = ROOT) -> int:
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     required = set(select_targets(paths))
     checks = check_states(root, run)
-    blocked = {
-        target
-        for target in required
-        if any(
-            check["target"] == target and check["status"] in ("failed", "blocked")
-            for check in checks.values()
-        )
-    }
+    reusable = reusable_check_targets(checks) & required
+    blocked = blocked_check_targets(checks) & required
     return execute_targets(
         paths,
         root=root,
         registered_targets=declared_check_targets(run),
         blocked_targets=blocked,
+        reusable_targets=reusable,
+        non_reusable_targets=(required - declared_check_targets(run)) | {
+            check["target"] for check_id, check in checks.items()
+            if check["status"] == "stale"
+            or (run["checks"].get(check_id, {}).get("kind", "runtime") != "offline"
+                and check["status"] != "reusable")
+        },
         iteration_checkpoint_sha=checkpoint,
         iteration_checkpoint_kind=checkpoint_kind,
     )

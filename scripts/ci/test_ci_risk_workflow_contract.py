@@ -900,6 +900,7 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         static = next(step for step in steps if step['name'] == 'Run early static quality owners')
         static_run = static['run']
         for guard in (
+            'make architecture.complexity_baseline_lock',
             'make verify.guard.registry',
             'scripts/verify/frontend_product_page_header_guard.py',
             'scripts/verify/frontend_delivery_hardening_guard.py',

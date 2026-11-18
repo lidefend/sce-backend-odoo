@@ -78,8 +78,11 @@ reusable/stale/not_run split is visible instead of inferred.
 Inputs may name files or bounded directories (new/deleted children are detected).
 Repository root, `.git`, `.runtime`, traversal and external symlinks are rejected.
 Completed/superseded runs report `closed`; they cannot begin/record further checks.
-Include test scripts, lock/config files, Make recipes and shared helpers. A change to
-this declaration invalidates the check. Do not use the whole repository as a dependency.
+Include test scripts, lock/config files, and shared helpers. A declared Make fragment
+is fingerprinted through the selected target's recipe/prerequisite closure and active
+literal includes, so an unrelated target in the same fragment does not invalidate the
+check while a reached recipe, prerequisite or relevant variable does. A change to the
+declaration itself invalidates the check. Do not use the whole repository as a dependency.
 
 Before executing the declared check, run `make agent.run.begin AGENT_CHECK=<id>`
 to capture its input state. Recording rejects any intervening input/identity change.

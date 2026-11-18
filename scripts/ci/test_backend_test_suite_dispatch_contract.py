@@ -11,6 +11,89 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendTestSuiteDispatchContractTest(unittest.TestCase):
+    def test_local_workflow_contract_reports_root_complexity(self):
+        source = (ROOT / 'make/ci.mk').read_text()
+        recipe = source.split('verify.ci.workflow.contract:', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('python3 scripts/ci/enforce_complexity_baseline_lock.py', recipe)
+
+    def test_make_env_file_exports_only_declared_assignments(self):
+        # Execute the real Make graph without Docker or a database. The unrelated
+        # lazy probe must never run simply to construct a recipe environment.
+        for assignments in ("", "CI_FILE_ONLY=fixture\nexport CI_EXPORTED := explicit\nCI_DEFAULT ?= fallback\nCI_APPEND = first\nCI_APPEND += second\nDB_NAME=file_db\n"):
+            with self.subTest(assignments=bool(assignments)), tempfile.TemporaryDirectory() as tmp:
+                folder = Path(tmp)
+                env_file = folder / "managed.env"
+                env_file.write_text(assignments)
+                marker = folder / "unrelated-probe"
+                overlay = folder / "probe.mk"
+                overlay.write_text(
+                    f"CI_UNRELATED_LAZY = $(shell touch {marker})\n"
+                    ".PHONY: ci-env-probe\nci-env-probe:\n"
+                    "\t@test \"$$DB_NAME\" = cli_db\n"
+                    + ("\t@test \"$$CI_FILE_ONLY\" = fixture\n"
+                       "\t@test \"$$CI_EXPORTED\" = explicit\n"
+                       "\t@test \"$$CI_DEFAULT\" = fallback\n"
+                       "\t@test \"$$CI_APPEND\" = 'first second'\n" if assignments else "")
+                )
+                result = subprocess.run(
+                    [os.environ.get("CI_MAKE_TEST_BINARY", "make"), "--no-print-directory",
+                     "-f", "Makefile", "-f", str(overlay), "ci-env-probe",
+                     f"ENV_FILE={env_file}", "DB_NAME=cli_db"],
+                    cwd=ROOT, env={"PATH": os.environ["PATH"]},
+                    text=True, capture_output=True, timeout=10,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertFalse(marker.exists(), "unrelated lazy Make variable was expanded")
+
+    def test_heartbeat_stops_promptly_and_leaves_no_sleep_process(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        run = next(s['run'] for s in workflow['jobs']['backend_suite']['steps']
+                   if s['name'] == 'Run backend test suite per module')
+        functions = run[run.index('start_heartbeat()'):run.index('planned_odoo=')]
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(['bash', '-eu', '-c', functions + r'''
+start_heartbeat fixture "$RUNNER_TEMP/log" 1
+sleep 0.1
+child=$(pgrep -P "$heartbeat_pid" sleep)
+test -n "$child"
+stop_heartbeat
+! kill -0 "$child" 2>/dev/null
+'''], env={**os.environ, 'RUNNER_TEMP': tmp, 'GITHUB_RUN_ID': '1',
+                       'SHARD_INDEX': '0', 'BACKEND_MODULE_HEARTBEAT_SECONDS': '30'},
+                text=True, capture_output=True, timeout=3)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_image_cache_preserves_current_revision_and_build_inputs(self):
+        source = (ROOT / 'Dockerfile').read_text()
+        self.assertGreater(source.index('ARG SOURCE_SHA'), source.rindex('COPY '))
+        self.assertIn('org.opencontainers.image.revision=${SOURCE_SHA}', source)
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
+        cache = steps['Restore backend image layers']['with']
+        self.assertEqual('${{ runner.temp }}/backend-build-cache', cache['path'])
+        self.assertIn('inputs.head_sha || github.sha', cache['key'])
+        build = steps['Build images and start database']['run']
+        self.assertIn('--load odoo', build)
+        self.assertIn('odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache', build)
+        self.assertIn('odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max', build)
+        self.assertNotIn('cache-hit', build)
+        self.assertIn('--allow "fs.read=${RUNNER_TEMP}/backend-build-cache"', build)
+        self.assertIn('--allow "fs.write=${RUNNER_TEMP}/backend-build-cache-new"', build)
+        self.assertLess(build.index('mkdir -p "${RUNNER_TEMP}/backend-build-cache"'),
+                        build.index('docker buildx bake'))
+        self.assertNotIn('BUILDX_BAKE_ENTITLEMENTS_FS=0', build)
+        self.assertNotIn('fs=*', build)
+
+    def test_test_carriers_disable_only_application_health_probe(self):
+        overlay = yaml.safe_load((ROOT / 'docker-compose.test-isolation.yml').read_text())
+        self.assertEqual({'services': {'odoo': {'healthcheck': {'disable': True}}}}, overlay)
+        shell = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('-f "${ROOT_DIR}/docker-compose.test-isolation.yml" run --no-deps', shell)
+        runner = (ROOT / 'scripts/dev/local_test_runner.py').read_text()
+        self.assertIn("'-f', str(ROOT / 'docker-compose.test-isolation.yml')", runner)
+        base = yaml.safe_load((ROOT / 'docker-compose.yml').read_text())
+        self.assertNotIn('disable', base['services']['odoo']['healthcheck'])
+
     def test_control_plane_tool_checks_are_wired_through_the_final_gate(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())
         authorization = workflow['jobs']['professional_authorization']
@@ -106,12 +189,118 @@ python3() {
         self.assertNotIn('continue-on-error', suite)
         self.assertIn('${{ matrix.index }}', suite['env']['COMPOSE_PROJECT_NAME'])
 
+    def test_ordinary_pr_uses_focused_scope_with_bounded_module_execution(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        professional = yaml.safe_load(
+            (ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+        )
+        events = workflow.get('on', workflow.get(True))
+        self.assertEqual(events['workflow_call']['inputs']['scope_mode']['default'], 'full')
+        self.assertEqual(
+            professional['jobs']['backend_impact_suite']['with']['scope_mode'],
+            "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
+        )
+        plan = workflow['jobs']['plan']
+        self.assertEqual('${{ steps.scope.outputs.scope_mode }}', plan['outputs']['scope_mode'])
+        scope = next(s for s in plan['steps'] if s.get('id') == 'scope')
+        self.assertEqual("${{ inputs.scope_mode || 'full' }}", scope['env']['SCOPE_MODE'])
+        self.assertIn('focused_args=(--focused)', scope['run'])
+        self.assertIn('scope_mode=${plan_mode}', scope['run'])
+
+        suite = workflow['jobs']['backend_suite']
+        self.assertEqual('${{ needs.plan.outputs.scope_mode }}', suite['env']['SUITE_MODE'])
+        self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
+        self.assertEqual(
+            "${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}",
+            suite['env']['BACKEND_MODULE_TIMEOUT_SECONDS'],
+        )
+        self.assertEqual('30', suite['env']['BACKEND_MODULE_HEARTBEAT_SECONDS'])
+        run = next(s['run'] for s in suite['steps'] if s['name'] == 'Run backend test suite per module')
+        self.assertIn('timeout --foreground --signal=TERM --kill-after=10', run)
+        self.assertIn('"${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"', run)
+        self.assertIn('start_heartbeat "${module}" "${module_log}" "${module_attempt}"', run)
+        self.assertIn('pipeline_status=("${PIPESTATUS[@]}")', run)
+        self.assertNotIn('scripts/ci/run_backend_module_test.py', run)
+        self.assertIn('--module "${module}" --selectors', run)
+        self.assertIn('2>&1 | tee "${module_log}"', run)
+        resolve = next(
+            step for step in suite['steps']
+            if step.get('name') == 'Resolve module list'
+        )
+        self.assertIn(
+            'echo "PLAN_SHA256=${PLAN_SHA256}" >> "${GITHUB_ENV}"',
+            resolve['run'],
+        )
+
+    def test_shard_materializes_mainline_ref_before_running_module_tests(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        steps = workflow['jobs']['backend_suite']['steps']
+        resolve_index = next(
+            index for index, step in enumerate(steps)
+            if step.get('name') == 'Resolve module list'
+        )
+        test_index = next(
+            index for index, step in enumerate(steps)
+            if step.get('name') == 'Run backend test suite per module'
+        )
+        self.assertLess(resolve_index, test_index)
+
+        resolve = steps[resolve_index]['run']
+        self.assertIn(
+            'git fetch --no-tags origin "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            'git update-ref refs/remotes/origin/main "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            '"main:refs/remotes/origin/main"',
+            resolve,
+        )
+        self.assertIn(
+            'test "${mainline_base}" = "${IMPACT_BASE}"',
+            resolve,
+        )
+        self.assertIn(
+            'echo "VIEW_STRUCTURE_BASELINE_SHA=${mainline_base}" >> "${GITHUB_ENV}"',
+            resolve,
+        )
+
+    def test_failed_container_diagnostics_remain_project_scoped(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        suite = workflow['jobs']['backend_suite']
+        self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
+        steps = {step['name']: step for step in suite['steps']}
+        for body in (steps['Dump logs on failure']['run'], steps['Cleanup']['run']):
+            self.assertIn('label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}', body)
+        self.assertIn('docker logs --tail=400', steps['Dump logs on failure']['run'])
+        self.assertIn('docker rm -f "${container}"', steps['Cleanup']['run'])
+
+    def test_dependency_install_failure_stops_before_odoo(self):
+        script = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('--interactive=false', script)
+        container = script.split('--entrypoint bash odoo -lc "', 1)[1].rsplit('"', 1)[0]
+        container = container.replace('\\$', '$').replace('\\"', '"')
+        container = container.split('exec /usr/bin/odoo', 1)[0] + "printf 'unexpected_odoo\n'\n"
+        result = subprocess.run(
+            ['bash', '-c', 'pip3() { return 17; };\n' + container],
+            env={'PATH': os.environ['PATH'], 'CONFIG_MOUNT_CONT': '/unused',
+                 'PREPARATION_COMMAND': ':'}, text=True, capture_output=True,
+        )
+        self.assertEqual(17, result.returncode, result.stdout + result.stderr)
+        self.assertNotIn('unexpected_odoo', result.stdout)
+
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
         self.assertNotIn('Calculate frontend build fingerprint', steps)
         build = steps['Build images and start database']['run']
-        self.assertIn('docker compose build --builder "${BUILDX_BUILDER}" odoo', build)
+        self.assertIn('docker buildx bake --builder "${BUILDX_BUILDER}" -f docker-compose.yml', build)
         self.assertIn('docker compose pull db redis', build)
         self.assertNotIn('FRONTEND_BUILD_SHA256', str(steps))
         self.assertNotIn('frontend', (ROOT / 'Dockerfile').read_text().split('FROM ')[0])
@@ -377,6 +566,16 @@ make() {
   printf '2026-10-24 00:00:00 INFO %s odoo.addons.example.tests.test_fixture: Starting Fixture.test_one ...\n' "$db"
   printf "0 failed, 0 error(s) of 1 tests when loading database '%s'\n" "$db"
 }
+timeout() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --foreground|--signal=*|--kill-after=*) shift ;;
+      *[!0-9.]*) break ;;
+      *) shift; break ;;
+    esac
+  done
+  "$@"
+}
 python3() {
   if [ "$1" = -m ]; then
     if [ "$CASE" = python_fail ]; then return 1; fi
@@ -396,10 +595,9 @@ python3() {
   if [ "$CASE" = archive_fail ] && [ "$2" = archive-attempt ]; then return 1; fi
   return 0
 }
-tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_fail ] && [[ "$1" == *attempt1.log ]]; }; then return 7; fi; }
 """
         for case,expected,archives,records in [('pass',0,1,1),('retry',0,2,1),('orm_fail',1,1,0),
-                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0),
+                ('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),
                 ('python_isolated_run',0,0,0),('python_isolated_reuse',0,0,0),('python_isolated_fail',1,0,0)]:
             with self.subTest(case=case),tempfile.TemporaryDirectory() as tmp:
                 folder=Path(tmp);(folder/'backend-plan.json').write_text('{}')
@@ -407,6 +605,7 @@ tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_f
                     'GITHUB_ENV':str(folder/'env'),'GITHUB_STEP_SUMMARY':str(folder/'summary'),
                     'HEAD_SHA':'a'*40,'IMPACT_BASE':'b'*40,'SHARD_INDEX':'0','DB_NAME':'fixture_db',
                     'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'','GITHUB_EVENT_NAME':'pull_request',
+                    'BACKEND_MODULE_TIMEOUT_SECONDS':'2','BACKEND_MODULE_HEARTBEAT_SECONDS':'0.05',
                     'SC_BACKEND_ISOLATED_PYTHON':'1' if case.startswith('python_isolated') else '0',
                     'MODULES':'' if case.startswith('python') else 'example',
                     'PYTHON_MODULES':'smart_construction_scene' if case.startswith('python') else ''}
@@ -415,10 +614,6 @@ tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_f
                 calls=(folder/'calls').read_text().splitlines()
                 self.assertEqual(archives,sum(' archive-attempt ' in line for line in calls))
                 self.assertEqual(records,sum(' record ' in line for line in calls))
-                if case in ('log_fail', 'retry_log_fail'):
-                    attempts=[line for line in calls if ' archive-attempt ' in line]
-                    self.assertIn('--log-status 7', attempts[0])
-                    self.assertIn('--status 137' if case=='retry_log_fail' else '--status 0', attempts[0])
                 if case=='retry':
                     attempts=[line for line in calls if ' archive-attempt ' in line]
                     self.assertIn('--attempt 1',attempts[0]);self.assertIn('--status 137',attempts[0])

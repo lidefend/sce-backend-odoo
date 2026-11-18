@@ -63,7 +63,9 @@ export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
 
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
-LOCAL_TEST_REUSE_DATABASE ?= 0
+# Reuse only the identity-keyed clean template, then clone a fresh sc_test from
+# it for every attempt. Set 0 explicitly for a one-off template-free diagnostic.
+LOCAL_TEST_REUSE_DATABASE ?= 1
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
 	-u DB_DATA -u REDIS_DATA -u ODOO_DATA -u ODOO_DB -u ODOO_DBFILTER \

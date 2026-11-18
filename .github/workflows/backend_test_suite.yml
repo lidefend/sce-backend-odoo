@@ -19,6 +19,10 @@ on:
       head_ref:
         required: true
         type: string
+      scope_mode:
+        required: false
+        type: string
+        default: full
   workflow_dispatch:
     inputs:
       head_ref:
@@ -59,6 +63,7 @@ jobs:
       head: ${{ steps.scope.outputs.head }}
       required: ${{ steps.scope.outputs.required }}
       reuse_authority: ${{ steps.scope.outputs.reuse_authority }}
+      scope_mode: ${{ steps.scope.outputs.scope_mode }}
     steps:
       - name: Checkout exact candidate for scope planning
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -75,9 +80,18 @@ jobs:
           TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          SCOPE_MODE: ${{ inputs.scope_mode || 'full' }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          focused_args=()
+          if [ "${SCOPE_MODE}" = focused ]; then
+            test -n "${IMPACT_BASE}" || { echo "focused backend scope requires impact base" >&2; exit 1; }
+            focused_args=(--focused)
+          elif [ "${SCOPE_MODE}" != full ]; then
+            echo "unsupported backend scope mode: ${SCOPE_MODE}" >&2
+            exit 1
+          fi
           discover_args=""
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             discover_args="--discover-receipts"
@@ -85,7 +99,9 @@ jobs:
           python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
             --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}" \
-            ${discover_args}
+            "${focused_args[@]}" ${discover_args}
+          plan_mode="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["scope_mode"])')"
+          echo "scope_mode=${plan_mode}" >> "${GITHUB_OUTPUT}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
 
       # Re-running only failed jobs reuses this artifact from the previous
@@ -124,6 +140,12 @@ jobs:
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
       SC_TEST_DEPENDENCY_PREPARATION: '1'
+      # Preserve the one-off test container so a module timeout can expose its
+      # process output instead of deleting the only diagnostic carrier.
+      KEEP_TEST_CONTAINER: '1'
+      SUITE_MODE: ${{ needs.plan.outputs.scope_mode }}
+      BACKEND_MODULE_TIMEOUT_SECONDS: ${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}
+      BACKEND_MODULE_HEARTBEAT_SECONDS: '30'
 
     defaults:
       run:
@@ -163,9 +185,33 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${IMPACT_BASE}" ]; then
-            git fetch --no-tags origin "${IMPACT_BASE}"
+            for attempt in 1 2 3; do
+              if timeout 60 git fetch --no-tags origin "${IMPACT_BASE}" &&
+                git cat-file -e "${IMPACT_BASE}^{commit}" 2>/dev/null; then
+                break
+              fi
+              sleep "$((attempt * 5))"
+            done
+            if ! git rev-parse --verify --quiet \
+                'refs/remotes/origin/main^{commit}' >/dev/null 2>&1 ||
+              [ "$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')" != "${IMPACT_BASE}" ]; then
+              git update-ref refs/remotes/origin/main "${IMPACT_BASE}"
+            fi
+          else
+            for attempt in 1 2 3; do
+              if timeout 60 git fetch --no-tags origin \
+                "main:refs/remotes/origin/main" &&
+                git rev-parse --verify --quiet 'refs/remotes/origin/main^{commit}' >/dev/null; then
+                break
+              fi
+              sleep "$((attempt * 5))"
+            done
           fi
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          mainline_base="$(git rev-parse --verify 'refs/remotes/origin/main^{commit}')"
+          if [ -n "${IMPACT_BASE}" ]; then
+            test "${mainline_base}" = "${IMPACT_BASE}"
+          fi
           MODULES=""
           PYTHON_MODULES=""
           MIXED_PYTHON_FILES=""
@@ -174,7 +220,13 @@ jobs:
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
             --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" --plan-sha256 "${PLAN_SHA256}" --shard "${SHARD_INDEX}" --input-inventory \
+            $(if [ "${SUITE_MODE:-full}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/backend-plan.json")"
+          echo "PLAN_SHA256=${PLAN_SHA256}" >> "${GITHUB_ENV}"
+          echo "MAINLINE_BASE_SHA=${mainline_base}" >> "${GITHUB_ENV}"
+          # Some inherited Make guards resolve their baseline themselves. Give
+          # them the same authenticated mainline commit materialized above.
+          echo "VIEW_STRUCTURE_BASELINE_SHA=${mainline_base}" >> "${GITHUB_ENV}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
             test_dir=""
@@ -274,6 +326,15 @@ jobs:
           docker buildx inspect --bootstrap
           echo "BUILDX_BUILDER=${CI_PROJECT_NAME}-builder" >> "${GITHUB_ENV}"
 
+      - name: Restore backend image layers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/backend-build-cache
+          key: backend-image-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', 'requirements-odoo.txt') }}-${{ inputs.head_sha || github.sha }}
+          restore-keys: |
+            backend-image-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', 'requirements-odoo.txt') }}-
+            backend-image-v1-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Bind backend source identity
         run: echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
 
@@ -307,7 +368,17 @@ jobs:
           docker --version
           docker compose version
           docker compose pull db redis || true
-          docker compose build --builder "${BUILDX_BUILDER}" odoo
+          # Bake consumes the same Compose build args/image tag. BuildKit checks
+          # current inputs even after a prefix cache restore; no verdict is cached.
+          mkdir -p "${RUNNER_TEMP}/backend-build-cache" "${RUNNER_TEMP}/backend-build-cache-new"
+          docker buildx bake --builder "${BUILDX_BUILDER}" -f docker-compose.yml \
+            --allow "fs.read=${RUNNER_TEMP}/backend-build-cache" \
+            --allow "fs.write=${RUNNER_TEMP}/backend-build-cache-new" \
+            --set "odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache" \
+            --set "odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max" \
+            --load odoo
+          rm -rf "${RUNNER_TEMP}/backend-build-cache"
+          mv "${RUNNER_TEMP}/backend-build-cache-new" "${RUNNER_TEMP}/backend-build-cache"
           docker compose up -d db redis
           for i in $(seq 1 60); do
             if docker compose exec -T db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
@@ -337,6 +408,39 @@ jobs:
           failed=0
           attempted=0
           reused=0
+          heartbeat_done=""
+          heartbeat_pid=""
+          start_heartbeat() {
+            local heartbeat_module="$1"
+            local heartbeat_log="$2"
+            local heartbeat_attempt="$3"
+            heartbeat_done="${RUNNER_TEMP}/backend-module-complete-${GITHUB_RUN_ID}-${SHARD_INDEX}-${heartbeat_module}-${heartbeat_attempt}"
+            rm -f "${heartbeat_done}"
+            (
+              local heartbeat_started=${SECONDS}
+              local heartbeat_sleep=""
+              trap 'if [ -n "${heartbeat_sleep}" ]; then kill "${heartbeat_sleep}" 2>/dev/null || true; wait "${heartbeat_sleep}" 2>/dev/null || true; fi; exit 0' TERM INT
+              while [ ! -e "${heartbeat_done}" ]; do
+                sleep "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}" &
+                heartbeat_sleep=$!
+                wait "${heartbeat_sleep}" || true
+                heartbeat_sleep=""
+                [ -e "${heartbeat_done}" ] && break
+                local heartbeat_line="[backend-module-heartbeat] module=${heartbeat_module} elapsed_seconds=$((SECONDS - heartbeat_started)) timeout_seconds=${BACKEND_MODULE_TIMEOUT_SECONDS:-1200} status=running"
+                printf '%s\n' "${heartbeat_line}" >&2
+                printf '%s\n' "${heartbeat_line}" >> "${heartbeat_log}"
+              done
+            ) &
+            heartbeat_pid=$!
+          }
+          stop_heartbeat() {
+            [ -n "${heartbeat_done}" ] && touch "${heartbeat_done}"
+            if [ -n "${heartbeat_pid}" ]; then
+              kill "${heartbeat_pid}" 2>/dev/null || true
+              wait "${heartbeat_pid}" 2>/dev/null || true
+              heartbeat_pid=""
+            fi
+          }
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
           planned_mixed="$(printf '%s\n' ${MIXED_PYTHON_FILES:-} | wc -w | tr -d ' ')"
@@ -353,7 +457,16 @@ jobs:
             # observe state left behind by earlier modules in the same run.
             module_db="${DB_NAME}_${module}"
             module_test_tags="${TEST_TAGS_INPUT}"
-            if [ -z "${module_test_tags}" ]; then
+            if [ "${SUITE_MODE:-full}" = "focused" ]; then
+              module_test_tags="$(python3 scripts/ci/backend_suite_plan.py \
+                --base "${IMPACT_BASE}" --head "${HEAD_SHA}" --focused \
+                --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+                --plan-sha256 "${PLAN_SHA256}" --module "${module}" --selectors)"
+              test -n "${module_test_tags}" || {
+                echo "focused backend module ${module} has no exact test selectors" >&2
+                exit 1
+              }
+            elif [ -z "${module_test_tags}" ]; then
               # Select only tests owned by this module. Bare sc_gate/sc_smoke
               # tags also select dependency tests and made wrapper modules run
               # smart_construction_core's suite repeatedly.
@@ -402,14 +515,21 @@ jobs:
               fi
               module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}-attempt${module_attempt}.log"
               attempt_started=${SECONDS}
+              start_heartbeat "${module}" "${module_log}" "${module_attempt}"
               if [ -n "${attempt_env_file}" ]; then
-                ENV_FILE="${attempt_env_file}" make test MODULE="${module}" \
-                  TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
+                ENV_FILE="${attempt_env_file}" timeout --foreground --signal=TERM --kill-after=10 \
+                  "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
+                  make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                  DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               else
-                make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                timeout --foreground --signal=TERM --kill-after=10 \
+                  "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
+                  make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
                   DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               fi
-              module_status="${PIPESTATUS[0]}" pipeline_status=("${PIPESTATUS[@]}")
+              pipeline_status=("${PIPESTATUS[@]}")
+              stop_heartbeat
+              module_status="${pipeline_status[0]}"
               module_duration=$((module_duration + SECONDS - attempt_started))
               module_log_status="${pipeline_status[1]}"
               if [ "${module_log_status}" -ne 0 ]; then
@@ -616,10 +736,20 @@ jobs:
         run: |
           docker compose ps || true
           docker compose logs --no-color --tail=200 || true
+          for container in $(docker ps -aq \
+            --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}"); do
+            echo "===== container ${container} ====="
+            docker inspect -f '{{.Name}} {{.State.Status}} exit={{.State.ExitCode}}' "${container}" || true
+            docker logs --tail=400 "${container}" || true
+          done
 
       - name: Cleanup
         if: always()
         run: |
+          for container in $(docker ps -aq \
+            --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}"); do
+            docker rm -f "${container}" >/dev/null || true
+          done
           docker compose down -v --remove-orphans || true
           docker buildx rm "${CI_PROJECT_NAME}-builder" || true
           bash scripts/ci/self_hosted_runner_cleanup.sh
@@ -659,6 +789,7 @@ jobs:
           python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
             --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
             --plan-sha256 "${PLAN_SHA256}" --receipts "${RUNNER_TEMP}/execution-receipts" \
+            $(if [ "${{ needs.plan.outputs.scope_mode }}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/verified-plan.json"
           python3 -c 'import json,os; print(json.dumps(json.load(open(os.environ["RUNNER_TEMP"]+"/verified-plan.json"))["execution_summary"], indent=2))' >> "${GITHUB_STEP_SUMMARY}"
       - name: Verify changed test execution identities

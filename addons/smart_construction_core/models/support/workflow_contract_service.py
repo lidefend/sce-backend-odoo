@@ -181,14 +181,14 @@ class ScWorkflowContractService(models.AbstractModel):
                 "draft": ["save_draft", "submit", "cancel"],
                 "submit": ["approve", "reject", "cancel"],
                 "approve": ["approve", "reject", "cancel"],
-                "approved": ["complete", "cancel"],
+                "approved": ["done", "cancel"],
                 "rejected": ["submit", "cancel"],
             },
             "method_by_action": {
                 "submit": "action_submit",
                 "approve": "action_approval_decision",
                 "reject": "action_approval_reject",
-                "complete": "action_done",
+                "done": "action_done",
                 "cancel": "action_cancel",
             },
             "action_inputs": {
@@ -542,7 +542,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.subcontract.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -550,7 +550,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.subcontract.request": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -558,7 +558,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.safety.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -566,7 +566,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.safety.disclosure": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -574,7 +574,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.material.purchase.request": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -582,7 +582,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.equipment.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -590,7 +590,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.equipment.request": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -598,7 +598,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.labor.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -606,7 +606,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.material.rental.plan": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -614,7 +614,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "sc.labor.request": {
             "state_field": "state",
             "state_phase": {"draft": "draft", "submitted": "under_review", "approved": "approved", "cancel": "cancelled"},
-            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["submit", "cancel"], "cancel": ["reopen"]},
+            "state_actions": {"draft": ["submit", "cancel"], "submitted": ["approve", "cancel"], "cancel": ["reopen"]},
             "action_domains": {"submit": [("validation_status", "not in", ["waiting", "pending", "validated"])]},
             "approval_actions": ["approve", "reject"],
             "method_by_action": {"submit": "action_submit", "approve": "validate_tier", "reject": "reject_tier", "cancel": "action_cancel", "reopen": "action_reset_draft"},
@@ -770,6 +770,16 @@ class ScWorkflowContractService(models.AbstractModel):
             "action_domains": {
                 "submit": [("sc_approval_state", "=", "draft"), ("validation_status", "not in", ["waiting", "pending", "validated"])],
                 "activate": [("sc_approval_state", "=", "approved")],
+            },
+            "action_domain_denials": {
+                "submit": {
+                    "reasonCode": "PROJECT_SUBMISSION_NOT_AVAILABLE",
+                    "message": "当前立项审批状态或审批结果不允许重复提交。",
+                },
+                "activate": {
+                    "reasonCode": "PROJECT_NOT_APPROVED_FOR_START",
+                    "message": "项目立项尚未审批通过，暂不能启动项目。",
+                },
             },
             "method_by_action": {
                 "submit": "action_sc_submit", "activate": "action_sc_start",
@@ -1142,6 +1152,7 @@ class ScWorkflowContractService(models.AbstractModel):
         "reject": {"label": "审批驳回", "intent": "server.object", "kind": "approval", "action_semantics": {"kind": "business", "purpose": "reject", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "activate": {"label": "开始执行", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "start_execution", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "complete": {"label": "完成", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
+        "done": {"label": "完成", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "complete", "executor": "contract.action", "origin": "workflow.contract.service"}},
         "cancel": {"label": "取消", "intent": "server.object", "kind": "transition", "action_semantics": {"kind": "business", "purpose": "cancel_record", "executor": "contract.action", "origin": "workflow.contract.service"}},
         # A separate command from pre-execution cancellation: the model owns
         # reversing the posted ledger before entering the cancelled state.
@@ -1243,18 +1254,23 @@ class ScWorkflowContractService(models.AbstractModel):
         profile = self.profile_by_model().get(model_name)
         if not profile:
             return {}
-        return {
+        contract = {
             "model": model_name,
             "source": {"kind": "sc_backend_workflow_action_catalog", "projection_only": True},
             "availabilityScope": "declaration_only",
             "actions": self._declared_actions(profile),
             "submissionRequirements": list(profile.get("submission_requirements") or []),
         }
+        self._assert_workflow_contract_consistency(contract)
+        return contract
 
     @api.model
     def describe_record(self, record):
         if not record or len(record) != 1:
             return {}
+        # Availability must be evaluated in the requesting user's environment,
+        # even when a caller passes a record previously browsed with elevation.
+        record = record.with_user(self.env.user)
         profile = self.profile_by_model().get(record._name)
         if not profile:
             return {}
@@ -1269,16 +1285,17 @@ class ScWorkflowContractService(models.AbstractModel):
             gate for gate in evidence_gate
             if not gate.get("actionKeys") or current_action_keys.intersection(gate["actionKeys"])
         ]
-        return {
+        contract = {
             "source": self.source_authority_contract(),
             "model": record._name,
             "record_id": record.id,
+            "availabilityScope": "record",
             "stateField": profile["state_field"],
             "rawState": raw_state,
             "businessPhase": business_phase,
             "approvalPhase": approval_phase,
             "editability": editability,
-            "statusbar": self._statusbar_projection(business_phase, approval_phase),
+            "statusbar": self._statusbar_projection(record, profile["state_field"], raw_state),
             "evidenceGate": visible_evidence_gate,
             "submissionRequirements": list(profile.get("submission_requirements") or []),
             # Meaning is stable even when a transition is currently unavailable.
@@ -1287,20 +1304,123 @@ class ScWorkflowContractService(models.AbstractModel):
             "actions": self._declared_actions(profile),
             "availableActions": actions,
         }
+        self._assert_workflow_contract_consistency(contract)
+        return contract
 
     @api.model
     def _declared_actions(self, profile):
         actions = []
-        for key, method in (profile.get("method_by_action") or {}).items():
+        ordered_keys = list((profile.get("method_by_action") or {}).keys())
+        for state_keys in (profile.get("state_actions") or {}).values():
+            for key in state_keys:
+                if key not in ordered_keys:
+                    ordered_keys.append(key)
+        for key in ordered_keys:
             semantics = (self.ACTIONS.get(key) or {}).get("action_semantics")
-            if method and semantics:
-                actions.append({
-                    "key": key,
-                    "method": method,
-                    "action_semantics": dict(semantics),
-                    **self._action_input_contract(profile, key),
-                })
+            spec = dict(self.ACTIONS.get(key) or {})
+            method = (profile.get("method_by_action") or {}).get(key, spec.get("method"))
+            if not semantics and not (spec.get("intent") and spec.get("kind")):
+                continue
+            action = {
+                "key": key,
+                "method": method,
+                "intent": spec.get("intent") or "server.object",
+                "kind": spec.get("kind") or "transition",
+            }
+            if semantics:
+                action["action_semantics"] = dict(semantics)
+            action.update(self._action_input_contract(profile, key))
+            actions.append(action)
         return actions
+
+    @api.model
+    def _assert_workflow_contract_consistency(self, contract):
+        """Fail closed when a produced workflow contract cannot reconcile."""
+        scope = str(contract.get("availabilityScope") or "")
+        declared = contract.get("actions") or []
+        declared_by_key = {}
+        for action in declared:
+            key = str(action.get("key") or "").strip()
+            if not key or key in declared_by_key:
+                raise ValueError("WORKFLOW_ACTION_CATALOG_IDENTITY_INVALID")
+            method = action.get("method")
+            intent = str(action.get("intent") or "").strip()
+            kind = str(action.get("kind") or "").strip()
+            if kind == "save":
+                if intent != "data.write" or method is not None:
+                    raise ValueError("WORKFLOW_SAVE_ACTION_TARGET_INVALID")
+            elif not str(method or "").strip():
+                raise ValueError("WORKFLOW_OBJECT_ACTION_METHOD_MISSING")
+            declared_by_key[key] = action
+
+        if scope == "declaration_only":
+            if "record_id" in contract or "availableActions" in contract:
+                raise ValueError("WORKFLOW_CREATE_CATALOG_SCOPE_LEAK")
+            return
+        if scope != "record":
+            raise ValueError("WORKFLOW_AVAILABILITY_SCOPE_INVALID")
+
+        model = str(contract.get("model") or "").strip()
+        record_id = contract.get("record_id")
+        if not model or type(record_id) is not int or record_id <= 0:
+            raise ValueError("WORKFLOW_RECORD_IDENTITY_INVALID")
+        state_field = str(contract.get("stateField") or "").strip()
+        raw_state = str(contract.get("rawState") or "").strip()
+        statusbar = contract.get("statusbar") or {}
+        if (
+            not state_field
+            or statusbar.get("field") != state_field
+            or statusbar.get("current") != raw_state
+        ):
+            raise ValueError("WORKFLOW_STATUS_FIELD_INCONSISTENT")
+        statusbar_values = []
+        for state in statusbar.get("states") or []:
+            value = str(state.get("value") or "").strip()
+            label = str(state.get("label") or "").strip()
+            if not value or not label or value in statusbar_values:
+                raise ValueError("WORKFLOW_STATUS_STATES_INVALID")
+            statusbar_values.append(value)
+        if raw_state and raw_state not in statusbar_values:
+            raise ValueError("WORKFLOW_STATUS_CURRENT_NOT_LISTED")
+        available = contract.get("availableActions") or []
+        available_by_key = {}
+        for action in available:
+            key = str(action.get("key") or "").strip()
+            if not key or key in available_by_key or key not in declared_by_key:
+                raise ValueError("WORKFLOW_RECORD_ACTION_REFERENCE_INVALID")
+            declaration = declared_by_key[key]
+            for field_name in ("method", "intent", "kind", "action_semantics"):
+                if action.get(field_name) != declaration.get(field_name):
+                    raise ValueError("WORKFLOW_RECORD_ACTION_DECLARATION_MISMATCH")
+            target = action.get("target") or {}
+            if (
+                target.get("model") != model
+                or target.get("id") != record_id
+                or target.get("method") != action.get("method")
+            ):
+                raise ValueError("WORKFLOW_ACTION_TARGET_INVALID")
+            enabled = action.get("enabled")
+            reason = str(action.get("reason_code") or "").strip()
+            message = str(action.get("blocked_message") or "").strip()
+            if enabled is True and (reason != "OK" or message):
+                raise ValueError("WORKFLOW_ENABLED_REASON_INVALID")
+            if enabled is False and (not reason or not message):
+                raise ValueError("WORKFLOW_DISABLED_REASON_MISSING")
+            if type(enabled) is not bool:
+                raise ValueError("WORKFLOW_ACTION_ENABLED_INVALID")
+            available_by_key[key] = action
+
+        for gate in contract.get("evidenceGate") or []:
+            action_keys = gate.get("actionKeys") or []
+            if any(key not in declared_by_key for key in action_keys):
+                raise ValueError("WORKFLOW_GATE_ACTION_REFERENCE_INVALID")
+            if action_keys and not available_by_key.keys() & set(action_keys):
+                raise ValueError("WORKFLOW_GATE_ACTION_SCOPE_INVALID")
+            severity = gate.get("severity")
+            if severity not in {"block", "warn", "info"}:
+                raise ValueError("WORKFLOW_GATE_SEVERITY_INVALID")
+            if gate.get("blocking") is True and severity != "block":
+                raise ValueError("WORKFLOW_GATE_BLOCKING_SEVERITY_INVALID")
 
     @api.model
     def _action_input_contract(self, profile, key):
@@ -1329,16 +1449,24 @@ class ScWorkflowContractService(models.AbstractModel):
         return contract
 
     @api.model
-    def _statusbar_projection(self, business_phase, approval_phase):
-        current = str(business_phase or "").strip()
-        approval = str(approval_phase or "").strip()
-        if current == "submitted" and approval in ("waiting", "pending"):
-            current = "under_review"
-        states = [{"value": value, "label": label} for value, label in self.STATUSBAR_BASE_STATES]
+    def _statusbar_projection(self, record, state_field, raw_state):
+        current = str(raw_state or "").strip()
+        field_info = record.fields_get([state_field]).get(state_field) or {}
+        selection = field_info.get("selection") or []
+        states = [
+            {"value": str(value), "label": str(label)}
+            for value, label in selection
+            if value not in (None, False, "")
+        ]
         if current and current not in {row["value"] for row in states}:
-            states.append({"value": current, "label": self.STATUSBAR_EXTRA_LABELS.get(current, current)})
+            states.append({"value": current, "label": current})
+        if not current and states:
+            current = states[0]["value"]
+        if not current:
+            current = "unknown"
+            states.append({"value": "unknown", "label": "未知"})
         return {
-            "field": "__workflow_phase",
+            "field": state_field,
             "current": current,
             "states": states,
             "readonly": True,
@@ -1420,15 +1548,35 @@ class ScWorkflowContractService(models.AbstractModel):
                 keys.remove("reject")
         method_by_action = profile.get("method_by_action", {})
         actions = []
+        seen_keys = set()
         for key in keys:
-            domain = (profile.get("action_domains") or {}).get(key)
-            if domain and not record.filtered_domain(domain):
+            if key in seen_keys:
                 continue
+            seen_keys.add(key)
+            action_authorizer = getattr(record, "_workflow_action_is_authorized", None)
+            if action_authorizer and not action_authorizer(key):
+                continue
+            domain = (profile.get("action_domains") or {}).get(key)
+            domain_blockers = []
+            if domain:
+                try:
+                    domain_matches = bool(record.filtered_domain(domain))
+                except Exception as exc:
+                    raise ValueError("WORKFLOW_ACTION_DOMAIN_EVALUATION_FAILED:%s" % key) from exc
+                if not domain_matches:
+                    denial = (profile.get("action_domain_denials") or {}).get(key)
+                    if not denial:
+                        continue
+                    domain_blockers.append(self._gate(
+                        denial["reasonCode"],
+                        denial["message"],
+                        action_keys=[key],
+                    ))
             spec = dict(self.ACTIONS.get(key) or {})
             if not spec:
                 continue
             method = method_by_action.get(key, spec.get("method"))
-            blockers = [
+            blockers = domain_blockers + [
                 row for row in evidence_gate
                 if row.get("blocking") and key in (row.get("actionKeys") or [])
             ]
@@ -1453,7 +1601,7 @@ class ScWorkflowContractService(models.AbstractModel):
                     "enabled": enabled,
                     **input_contract,
                     **({"presentation": presentation} if presentation else {}),
-                    "reason_code": blockers[0].get("reasonCode") if blockers else "",
+                    "reason_code": blockers[0].get("reasonCode") if blockers else "OK",
                     "blocked_message": blockers[0].get("message") if blockers else "",
                     "target": {
                         "model": record._name,
@@ -1466,6 +1614,12 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _evidence_gate(self, record):
+        if record._name in {"payment.request", "project.project"}:
+            profile = self.profile_by_model().get(record._name) or {}
+            action_keys = set(profile.get("approval_actions") or [])
+            for state_keys in (profile.get("state_actions") or {}).values():
+                action_keys.update(state_keys)
+            return list(record._workflow_business_blockers(action_keys))
         if record._name == "sc.material.rental.settlement":
             gates = []
             if record.state == "confirmed":
@@ -1549,27 +1703,7 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _payment_request_evidence_gate(self, record):
-        gates = []
-        if not record.project_id:
-            gates.append(self._gate("PAYMENT_MISSING_PROJECT", "付款/收款申请必须关联项目。"))
-        if (record.amount or 0.0) <= 0:
-            gates.append(self._gate("PAYMENT_INVALID_AMOUNT", "付款/收款申请金额必须大于 0。"))
-        try:
-            has_basis = record._has_payment_basis()
-        except Exception:
-            has_basis = bool(record.contract_id or record.settlement_id or record.material_settlement_id)
-        if not has_basis:
-            gates.append(self._gate("PAYMENT_MISSING_BASIS", "请先选择关联合同、结算单、材料结算单或历史关联依据。"))
-        if record.type == "pay":
-            for action in ("submit", "approve"):
-                for advisory in record._collect_payment_advisories(action):
-                    if advisory.get("reason_code") not in {"P0_PAYMENT_OVER_BALANCE", "P0_MATERIAL_PAYMENT_OVER_BALANCE", "P0_MATERIAL_SETTLEMENT_NOT_CONFIRMED"}:
-                        continue
-                    blocking = advisory.get("force_block_enabled") is True
-                    gates.append(self._gate(advisory["reason_code"], advisory["message"],
-                                            action_keys=[action], blocking=blocking,
-                                            severity="block" if blocking else "warning"))
-        return gates
+        return list(record._workflow_business_blockers({"submit", "approve", "done"}))
 
     @api.model
     def _construction_contract_evidence_gate(self, record):

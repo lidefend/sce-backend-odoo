@@ -657,6 +657,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             id = 1
             state = 'done'
             def __len__(self): return 1
+            def with_user(self, user): return self
         gates = [
             {'reasonCode': 'PREPARE_REQUIRED', 'actionKeys': ['submit', 'complete'], 'blocking': True},
             {'reasonCode': 'REVERSAL_REQUIRED', 'actionKeys': ['reverse'], 'blocking': True},
@@ -671,6 +672,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
             _available_actions=lambda *args: observed.append(args[-1]) or actions,
             source_authority_contract=lambda: {}, _statusbar_projection=lambda *args: {},
             _declared_actions=lambda profile: [],
+            _assert_workflow_contract_consistency=lambda contract: None,
+            env=types.SimpleNamespace(user=types.SimpleNamespace(id=1)),
         )
         result = ns['describe_record'](service, Row())
         self.assertEqual(result['evidenceGate'], gates[1:])
@@ -797,7 +800,8 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
         declaration = {'key': 'submit', 'method': 'action_submit', 'action_semantics': {'purpose': 'submit'}}
         service = types.SimpleNamespace(profile_by_model=lambda: {'sc.expense.claim': {'state_field': 'state'}},
-            _declared_actions=lambda profile: [declaration])
+            _declared_actions=lambda profile: [declaration],
+            _assert_workflow_contract_consistency=lambda contract: None)
         catalog = ns['describe_model_actions'](service, 'sc.expense.claim')
         self.assertEqual(catalog['actions'], [declaration])
         self.assertNotIn('availableActions', catalog)
@@ -1421,19 +1425,35 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
 
     def test_project_central_lifecycle_guard_prevents_draft_pause_bypass(self):
         path = MODEL.parent / 'project_core.py'
-        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_validate_lifecycle_transition')
-        namespace = {'ScStateMachine': types.SimpleNamespace(PROJECT='project.project', assert_transition=lambda *a, **kw: None)}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), namespace)
+        method_names = {'_validate_lifecycle_transition', '_workflow_lifecycle_blockers'}
+        methods = [
+            n for n in ast.walk(ast.parse(path.read_text()))
+            if isinstance(n, ast.FunctionDef) and n.name in method_names
+        ]
+        namespace = {
+            'ScStateMachine': types.SimpleNamespace(PROJECT='project.project', assert_transition=lambda *a, **kw: None),
+            'UserError': ValueError,
+            'raise_guard': lambda code, *args, **kwargs: (_ for _ in ()).throw(ValueError(code)),
+        }
+        exec(compile(ast.Module(body=methods, type_ignores=[]), str(path), 'exec'), namespace)
         checks = []
         class Project:
             display_name = 'project'
+            id = 1
             def __iter__(self): return iter([self])
+            def ensure_one(self): return self
             def _assert_initiation_approved(self):
                 checks.append(self.lifecycle_state)
                 raise ValueError('approval required')
             def _guard_project_close_by_settlement(self, state): pass
             def _guard_project_close_by_payment(self, state): pass
         project = Project()
+        empty_model = types.SimpleNamespace(search_count=lambda domain: 0)
+        project.env = {
+            'project.settlement': types.SimpleNamespace(sudo=lambda: empty_model),
+            'payment.request': types.SimpleNamespace(sudo=lambda: empty_model),
+        }
+        project._workflow_lifecycle_blockers = lambda target: namespace['_workflow_lifecycle_blockers'](project, target)
         for current, target, requires in [('draft', 'in_progress', True), ('draft', 'paused', True), ('draft', 'closed', False), ('paused', 'in_progress', False), ('in_progress', 'done', False)]:
             project.lifecycle_state = current
             if requires:
@@ -4373,7 +4393,13 @@ class RedFlushContractBoundaryTests(unittest.TestCase):
         return record
 
     def _service(self):
-        names = {'_gate', '_evidence_gate', '_available_actions'}
+        names = {
+            '_gate',
+            '_evidence_gate',
+            '_action_input_contract',
+            '_available_actions',
+            '_assert_workflow_contract_consistency',
+        }
         service = type('Workflow', (), self._methods(
             'addons/smart_construction_core/models/support/workflow_contract_service.py', names))()
         service.env = {'sc.invoice.registration': types.SimpleNamespace(_has_finance_register_access=lambda: True)}

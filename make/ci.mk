@@ -449,6 +449,57 @@ verify.workflow_action_semantics.guard: guard.prod.forbid
 	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
 
+.PHONY: verify.workflow_contract.be_close_01 verify.workflow_contract.be_close_01.unit verify.workflow_contract.be_close_01.orm verify.workflow_contract.be_close_01.samples verify.workflow_contract.be_close_01.samples.capture
+verify.workflow_contract.be_close_01:
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.unit
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.orm
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.samples.capture
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.samples
+
+verify.workflow_contract.be_close_01.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/be_close_01_workflow_contract_runtime_ids.py scripts/verify/be_close_01_workflow_contract_http_probe.py scripts/verify/test_be_close_01_workflow_contract_http_probe.py
+	@PYTHONPATH=scripts/verify python3 scripts/verify/test_be_close_01_workflow_contract_http_probe.py
+	@$(MAKE) --no-print-directory verify.unified_page_contract.v2.schema
+
+verify.workflow_contract.be_close_01.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=be_close_01_workflow_contract
+
+verify.workflow_contract.be_close_01.samples: guard.prod.forbid
+	@python3 scripts/verify/be_close_01_workflow_contract_http_probe.py --validate-only \
+	  .runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json
+
+verify.workflow_contract.be_close_01.samples.capture: guard.prod.forbid
+	@test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" || { echo "SC_ACCEPTANCE_FIXTURE_PASSWORD is required"; exit 2; }
+	@set -eu; \
+	reset_fixture() { \
+	  SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" \
+	  SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
+	  $(MAKE) --no-print-directory acceptance.frontend.fixture \
+	    SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" \
+	    SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}"; \
+	}; \
+	trap 'status=$$?; if reset_fixture; then exit $$status; else echo "BE-CLOSE-01 fixture reset failed" >&2; exit 2; fi' EXIT; \
+	reset_fixture; \
+	$(MAKE) --no-print-directory backend.acceptance.up \
+	  SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)"; \
+	runtime_ids_log=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/runtime_ids.log"; \
+	runtime_ids_json=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_runtime_ids_v1.json"; \
+	mkdir -p "$$(dirname "$$runtime_ids_json")"; \
+	SC_FRONTEND_RELEASE_CI_ENTRY=1 \
+	SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" \
+	  bash scripts/dev/frontend_acceptance_operation_entry.sh be-close-01-runtime-ids \
+	  > "$$runtime_ids_log"; \
+	runtime_ids="$$(sed -n 's/^BE_CLOSE_01_RUNTIME_IDS=//p' "$$runtime_ids_log" | tail -n 1)"; \
+	test -n "$$runtime_ids" || { cat "$$runtime_ids_log" >&2; echo "BE-CLOSE-01 runtime IDs missing" >&2; exit 2; }; \
+	printf '%s\n' "$$runtime_ids" | jq . > "$$runtime_ids_json"; \
+	SC_ACCEPTANCE_BE_CLOSE01_BASE_URL="http://127.0.0.1:18082" \
+	SC_ACCEPTANCE_BE_CLOSE01_EXPECTED_SHA="$$(git rev-parse HEAD)" \
+	SC_ACCEPTANCE_BE_CLOSE01_LOGIN="fixture_role_config_admin" \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
+	SC_ACCEPTANCE_BE_CLOSE01_IDS="$$runtime_ids_json" \
+	SC_ACCEPTANCE_BE_CLOSE01_OUTPUT=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json" \
+	  python3 scripts/verify/be_close_01_workflow_contract_http_probe.py
+
 # Workflow instance company ownership is a source-level fact: the instance
 # inherits the owning company from the business document, never from the workflow
 # definition or from the caller's environment.  It runs in-process so the rule
@@ -803,6 +854,9 @@ verify.ci.path_ownership.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/ci python3 -m unittest scripts.ci.test_ci_path_ownership
 
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit verify.test.dependency_baseline.unit
+	@python3 scripts/ci/test_complexity_baseline_report.py
+	@python3 scripts/ci/enforce_complexity_baseline_lock.py
+	@python3 scripts/verify/frontend_product_page_header_guard.py
 	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
 	@python3 scripts/ci/test_backend_test_receipt.py
 	@python3 scripts/ci/test_backend_impact_plan.py

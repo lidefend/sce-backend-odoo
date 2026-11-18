@@ -2,15 +2,15 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 218,
+    "odoo_tags": 219,
     "gated": 5,
-    "on_demand": 75,
+    "on_demand": 76,
     "unwired": 138,
-    "odoo_tag_declarations": 448,
+    "odoo_tag_declarations": 449,
     "gated_declarations": 102,
-    "uncovered_declarations": 346,
-    "ci_unit_scripts": 20,
-    "ci_unit_scripts_wired": 20,
+    "uncovered_declarations": 347,
+    "ci_unit_scripts": 21,
+    "ci_unit_scripts_wired": 21,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -165,7 +165,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)",
+        "make:verify.smart_core.intent_smoke.orm :: /TestIntentSmoke (class selection)"
       ],
       "disposition": "wire-pending"
     },
@@ -337,7 +338,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)",
+        "make:verify.smart_core.intent_smoke.orm :: /TestIntentSmoke (class selection)"
       ],
       "disposition": "wire-pending"
     },
@@ -744,6 +746,20 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.baseline.readiness :: baseline_readiness $(MAKE) --no-print-directory local.dev.test"
+      ],
+      "disposition": "class-selected"
+    },
+    {
+      "group": "be_close_01_workflow_contract",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.workflow_contract.be_close_01.orm :: be_close_01_workflow_contract"
       ],
       "disposition": "class-selected"
     },
@@ -3082,6 +3098,19 @@
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_complexity_baseline_report.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_complexity_baseline_report.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
       ]
     },
     {
