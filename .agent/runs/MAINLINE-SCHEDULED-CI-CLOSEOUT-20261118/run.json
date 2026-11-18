@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "baseline_sha": "129df3827f4e8cffbc8302d626ec590ff63c14d9",
+  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
   "scope": [
     ".agent/decisions/ci-path-ownership.yaml",
     ".agent/active-runs.json",
@@ -135,7 +135,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the regenerated post-sync inventory, publish the exact head, re-dispatch ci:candidate, and require all four checks on that head.",
+  "next_exact_step": "Commit the current-main run baseline, rerun affected checks, publish the exact head, re-dispatch ci:candidate, and require all four checks on that head.",
   "id": "MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118",
   "branch": "fix/main-scheduled-ci-20261118",
   "status": "verification_pending",

@@ -105,6 +105,9 @@ routing/tests together. No data or runtime state requires restoration.
   and produced merge head `e9750af33285cb579b24ca4aa960f0b794e7b521`.
 - `make ci.delivery.freeze.prepare` after that merge regenerated the conflicted
   inventory from the synchronized source tree and passed.
+- The run's validation baseline advanced from the failing origin `129df382` to
+  synchronized main `9821a9c6`; the original failing SHA remains recorded as the
+  investigation anchor rather than being treated as candidate-owned diff.
 
 Not run locally: full Quick, ORM and database acceptance. They are not required
 for this ordinary candidate's local gate and the remote required checks remain
