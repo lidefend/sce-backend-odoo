@@ -32,10 +32,10 @@ Generated from repository source files. This report is informational during the 
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3158 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3172 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2896 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2898 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3158 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3172 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2896 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2898 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
