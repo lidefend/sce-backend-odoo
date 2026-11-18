@@ -18,7 +18,7 @@
   ],
   "generatedFromDirtyWorktree": true,
   "generatorDigest": "efa7cd47e50a0c8b732cce71f11dab319dddab0c7cdd33f6113637cbbb5fab8d",
-  "inputDigest": "1f5d8bb3d2d8105884becd92d1240f6f1501b0a647b35d7227a0273ac3e94129",
+  "inputDigest": "f06030e67e12cbb6ab416fa9aa5554902780eb9e2a6a9e93ac8071df9e90e4ba",
   "inputScopes": [
     {
       "path": "frontend/apps/web/src/**/*navigation|menu|shell|route|session|activity*",
@@ -1579,15 +1579,14 @@
       "topics": [
         {
           "lines": [
-            4,
-            11,
-            13,
-            25,
-            29,
-            34,
-            39,
-            47,
-            74
+            10,
+            12,
+            24,
+            28,
+            33,
+            38,
+            46,
+            73
           ],
           "topic": "route_identity"
         }

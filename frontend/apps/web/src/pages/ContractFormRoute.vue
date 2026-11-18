@@ -1,7 +1,6 @@
 <template>
   <section
     v-if="!page && !loadError"
-    class="record-route-state"
     data-product-page-mode="form"
     data-state="loading"
     aria-busy="true"
