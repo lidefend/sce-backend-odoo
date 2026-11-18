@@ -2,7 +2,7 @@
 import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { chromium } from 'playwright';
+const { chromium } = await import('playwright');
 
 if (process.env.CHANGE_SET_STANDARD_LIST_LOOP === '1') {
   const { runStandardListLoop } = await import('./standard_list_lowcode_loop.mjs');

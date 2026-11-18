@@ -29,7 +29,7 @@
     "frontend/apps/web/src/app/routeQuery.ts",
     "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/src/components/action/",
-    "frontend/apps/web/scripts",
+    "frontend/apps/web/scripts/",
     "frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts",
     "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
     "frontend/apps/web/package.json",
@@ -39,12 +39,13 @@
     "make/",
     "make/ci.mk",
     "make/frontend.mk",
-    "scripts/verify",
+    "scripts/verify/",
     "scripts/verify/close_02_backend_contract_samples.mjs",
     "scripts/verify/close_02_backend_contract_samples_validate.py",
     "scripts/verify/close_02_field_query_browser_journeys.mjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_scene_component_bridge_guard.py",
+    "scripts/verify/test_frontend_probe_toolchain_guard.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "config/frontend/probe_toolchain_registry.json",
     "scripts/audit/verification_lane_dispositions.json",
@@ -377,11 +378,32 @@
         "make/frontend.mk"
       ]
     },
+    "delivery_hardening": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "config/frontend/probe_toolchain_registry.json",
+        "frontend/apps/web/src/App.vue",
+        "frontend/apps/web/src/app/activityPageCacheIdentity.ts",
+        "frontend/apps/web/src/pages/ContractFormRoute.vue",
+        "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
+        "frontend/apps/web/scripts/",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "make/frontend.mk"
+      ]
+    },
     "project_profile_write": {
       "target": "verify.local.dev.project_profile_write.unit",
       "kind": "offline",
       "inputs": [
+        "config/frontend/probe_toolchain_registry.json",
+        "frontend/apps/web/scripts/",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
         "scripts/verify/local_dev_project_profile_write_browser.mjs",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
         "scripts/verify/test_local_development_lifecycle.py",
         "make/dev.mk"
       ]

@@ -2,7 +2,7 @@ import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
-import { chromium } from "playwright";
+const { chromium } = await import("playwright");
 import {
   CONFIG_WORKBENCH_OPERATION_COVERAGE as ACCEPTANCE_COVERAGE,
   validateConfigWorkbenchOperationCoverage,

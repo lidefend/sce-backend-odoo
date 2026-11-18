@@ -3,7 +3,7 @@ import '../../../../scripts/verify/lib/probe_toolchain_blocked.mjs';
 import crypto from 'node:crypto';
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { chromium } from 'playwright';
+const { chromium } = await import('playwright');
 
 const BASE_URL = process.env.BASE_URL || 'http://127.0.0.1:18081';
 const DB_NAME = process.env.DB_NAME || 'sc_demo';

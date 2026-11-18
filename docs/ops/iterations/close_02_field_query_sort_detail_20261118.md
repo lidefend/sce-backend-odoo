@@ -159,3 +159,18 @@ Browser journeys:
 ## Results
 
 BE-CLOSE-02 and FE-CLOSE-02 implementation, field semantics, route-state restoration, pagination reset and both bounded browser journeys are complete. Joint acceptance remains pending on clean candidate freeze, independent review, publication and exact-head required checks.
+
+## Current-candidate CI diagnosis
+
+PR #936 (`99afdff4b067a74ee73352d7fff41f6ba9e4d4ce`) reached the remote gates. `professional_quality_checks` failed before any CLOSE-02 product assertion because 13 blocked legacy ESM probes statically imported `playwright`; a clean quality runner intentionally has no frontend dependencies, so Node failed module linking before the first-import fail-closed guard could execute.
+
+Classification: P4 `validation_tool_defect`.
+
+Fix:
+
+- The 13 blocked probes now load `playwright` with a dynamic import after the existing first-import `PROBE_TOOL_UNSUPPORTED` guard.
+- The probe guard rejects any future external static import in a blocked ESM tool.
+- `verify.local.dev.project_profile_write.unit`: 45 + 15 tests plus 11 static contract cases passed after the fix.
+- The run registers `verify.frontend.delivery_hardening.guard` and the complete probe script/registry inputs selected by the incremental planner.
+
+The failed `99afdff4` remote result remains recorded as superseded; no old-head success is carried to the replacement candidate.
