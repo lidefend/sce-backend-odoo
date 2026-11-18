@@ -12,7 +12,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Category | File |
 | ---: | --- | --- |
-| 7088 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7090 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6649 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6152 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5736 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
@@ -258,7 +258,7 @@ Generated from repository source files. This report is informational during the 
 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
-| 7088 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
+| 7090 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
 | 6649 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6152 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5736 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
