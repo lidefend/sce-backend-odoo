@@ -267,6 +267,13 @@ RULES = (
         "verify.github_actions.security",
     )),
     Rule((
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py",
+    ), (
+        "verify.ci.scheduled_gates",
+    )),
+    Rule((
         "make/ci.mk",
         "scripts/verify/frontend_static_release_audit.py",
     ), (

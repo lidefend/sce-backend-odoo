@@ -32,10 +32,10 @@ Generated from repository source files. This report is informational during the 
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3181 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3190 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2901 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2908 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
@@ -251,7 +251,7 @@ Generated from repository source files. This report is informational during the 
 | 278 | Shell script | `scripts/verify/local_dev_payment_request_floorplan_readonly.sh` |
 | 271 | Shell script | `scripts/contract/gate_contract.sh` |
 | 271 | Shell script | `scripts/verify/production_blocker_image.sh` |
-| 252 | Shell script | `scripts/dev/frontend_acceptance_operation_entry.sh` |
+| 257 | Shell script | `scripts/dev/frontend_acceptance_operation_entry.sh` |
 
 ## Largest Files
 
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3181 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3190 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
-| 2901 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2908 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |

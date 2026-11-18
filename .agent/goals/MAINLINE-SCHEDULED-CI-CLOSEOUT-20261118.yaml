@@ -46,6 +46,9 @@ goal:
       - scripts/ci/release_condition.py
       - scripts/ci/test_release_condition.py
       - scripts/ci/test_release_candidate_gate.py
+      - scripts/dev/frontend_acceptance_operation_entry.sh
+      - scripts/verify/frontend_release_ci_guard.py
+      - scripts/verify/test_frontend_release_ci_guard.py
       - scripts/ops/github_published_branch_sync.py
       - scripts/ops/test_github_published_branch_sync.py
       - scripts/verify/frontend_dev_incremental.py
@@ -69,6 +72,9 @@ goal:
     - scripts/ci/release_condition.py
     - scripts/ci/test_release_condition.py
     - scripts/ci/test_release_candidate_gate.py
+    - scripts/dev/frontend_acceptance_operation_entry.sh
+    - scripts/verify/frontend_release_ci_guard.py
+    - scripts/verify/test_frontend_release_ci_guard.py
     - make/ci.mk
     - scripts/ops/github_published_branch_sync.py
     - scripts/ops/test_github_published_branch_sync.py
@@ -94,6 +100,7 @@ goal:
     - Every professional quality lane executes the guard-registry audit.
     - Pull-request synchronize and candidate-label events share one concurrency group per PR.
     - Scheduled success emits an exact-head/tree release-condition artifact with deployment explicitly unset.
+    - The isolated CI acceptance entry executes login-probe instead of denying it.
     - No required workflow, production guard, browser assertion or product behavior is weakened.
   exclusions:
     - Required-check context names, branch rulesets and workflow trigger schedules.

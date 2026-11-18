@@ -695,6 +695,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
 
+    def test_acceptance_login_route_inputs_select_scheduled_gates(self) -> None:
+        for path in (
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+            "scripts/verify/frontend_release_ci_guard.py",
+            "scripts/verify/test_frontend_release_ci_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.ci.scheduled_gates"])
+
     def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
         page_header_paths = (
             "scripts/verify/frontend_product_page_header_guard.py",

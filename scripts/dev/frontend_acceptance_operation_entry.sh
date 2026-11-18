@@ -221,6 +221,11 @@ case "$operation" in
   backend-down)
     echo "[backend.acceptance.down] RETAINED isolated_ci project=$COMPOSE_PROJECT_NAME for workflow cleanup"
     ;;
+  login-probe)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make acceptance.runtime.login_probe.internal
+    ;;
   frontend-up)
     validate_ci_frontend_process_identity
     if [[ -e "$FRONTEND_ACCEPTANCE_PIDFILE" || -L "$FRONTEND_ACCEPTANCE_PIDFILE" ]]; then

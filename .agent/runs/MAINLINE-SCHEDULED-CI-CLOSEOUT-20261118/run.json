@@ -22,6 +22,9 @@
     "scripts/ci/release_condition.py",
     "scripts/ci/test_release_condition.py",
     "scripts/ci/test_release_candidate_gate.py",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/verify/frontend_release_ci_guard.py",
+    "scripts/verify/test_frontend_release_ci_guard.py",
     "scripts/ci/test_merge_policy_gate.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ops/github_published_branch_sync.py",
@@ -91,6 +94,20 @@
         "scripts/ops/test_github_published_branch_sync.py",
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "make/ci.mk",
+        "make/dev.mk",
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py"
       ],
       "kind": "offline"
     },
