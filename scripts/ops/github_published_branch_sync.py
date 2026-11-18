@@ -11,6 +11,7 @@ from gitee_published_branch_sync import git, out, sync, CONFIRM
 URLS = {'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lidefend/sce-backend-odoo.git'}
 INDEX = '.agent/active-runs.json'
 REPORTS = set(GENERATED_EVIDENCE_PATH_SET)
+SYNC_TOOL_PATH = 'scripts/ops/github_published_branch_sync.py'
 
 
 def merge_index(base, ours, theirs):
@@ -37,9 +38,18 @@ def merge_index(base, ours, theirs):
     return {'schema_version': 1, 'branches': merged}
 
 
+def validate_sync_tool_resolution(text):
+    required = (
+        'from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET',
+        'REPORTS = set(GENERATED_EVIDENCE_PATH_SET)',
+    )
+    if any(line not in text for line in required):
+        raise RuntimeError('published-sync tool resolution lost canonical generated-evidence authority')
+
+
 def resolve_metadata(root):
     paths = set(out(root, 'diff', '--name-only', '--diff-filter=U').splitlines())
-    if not paths or not paths <= REPORTS | {INDEX}:
+    if not paths or not paths <= REPORTS | {INDEX, SYNC_TOOL_PATH}:
         raise RuntimeError('unapproved merge conflict; original candidate restored')
     # Compute every resolution before changing the index; only regular files.
     results = {}
@@ -50,6 +60,9 @@ def resolve_metadata(root):
         if path == INDEX:
             docs = [json.loads(out(root, 'show', f':{stage}:{path}')) for stage in (1, 2, 3)]
             results[path] = json.dumps(merge_index(*docs), ensure_ascii=False, indent=2) + '\n'
+        elif path == SYNC_TOOL_PATH:
+            results[path] = git(root, 'show', ':2:' + path).stdout
+            validate_sync_tool_resolution(results[path])
         else:
             # Intermediate merge only: publication preflight requires regeneration.
             results[path] = git(root, 'show', ':2:' + path).stdout

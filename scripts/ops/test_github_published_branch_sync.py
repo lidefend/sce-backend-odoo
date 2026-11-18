@@ -6,7 +6,15 @@ from unittest.mock import patch
 
 from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
 from gitee_published_branch_sync import git, out, sync, CONFIRM
-from github_published_branch_sync import INDEX, REPORTS, merge_index, resolve_metadata, verify_pr
+from github_published_branch_sync import (
+    INDEX,
+    REPORTS,
+    SYNC_TOOL_PATH,
+    merge_index,
+    resolve_metadata,
+    validate_sync_tool_resolution,
+    verify_pr,
+)
 
 
 def index(**branches):
@@ -16,6 +24,12 @@ def index(**branches):
 class IndexTests(unittest.TestCase):
     def test_report_conflict_allowlist_tracks_generated_evidence_authority(self):
         self.assertEqual(REPORTS, set(GENERATED_EVIDENCE_PATH_SET))
+
+    def test_sync_tool_conflict_must_keep_canonical_authority(self):
+        text = Path(__file__).with_name('github_published_branch_sync.py').read_text(encoding='utf-8')
+        validate_sync_tool_resolution(text)
+        with self.assertRaisesRegex(RuntimeError, 'canonical'):
+            validate_sync_tool_resolution('REPORTS = {"manual-list"}')
 
     def test_independent_additions_and_deletion(self):
         self.assertEqual(merge_index(index(old='x'), index(ours='a'), index(old='x', theirs='b')),
@@ -51,7 +65,7 @@ class GithubSyncTests(unittest.TestCase):
         git(self.root, 'init', '-b', 'main')
         git(self.root, 'config', 'user.email', 'test@example.invalid')
         git(self.root, 'config', 'user.name', 'Test')
-        for path in REPORTS | {INDEX}:
+        for path in REPORTS | {INDEX, SYNC_TOOL_PATH}:
             p = self.root / path
             p.parent.mkdir(parents=True, exist_ok=True)
             p.write_text(json.dumps(index(base='base')) if path == INDEX else 'base\n')
@@ -62,12 +76,16 @@ class GithubSyncTests(unittest.TestCase):
         (self.root / INDEX).write_text(json.dumps(index(base='base', ours='ours')))
         for path in REPORTS:
             (self.root / path).write_text('ours\n')
+        (self.root / SYNC_TOOL_PATH).write_text(
+            Path(__file__).with_name('github_published_branch_sync.py').read_text(encoding='utf-8')
+        )
         self.head = self.commit()
         git(self.root, 'push', 'origin', 'fix/test')
         git(self.root, 'switch', 'main')
         (self.root / INDEX).write_text(json.dumps(index(base='base', theirs='theirs')))
         for path in REPORTS:
             (self.root / path).write_text('theirs\n')
+        (self.root / SYNC_TOOL_PATH).write_text('theirs\n')
         self.main = self.commit()
         git(self.root, 'push', 'origin', 'main')
         git(self.root, 'switch', 'fix/test')
@@ -90,7 +108,7 @@ class GithubSyncTests(unittest.TestCase):
         self.assertEqual(out(self.root, 'show', '-s', '--format=%P', 'HEAD'), self.head+' '+self.main)
         self.assertEqual(json.loads((self.root / INDEX).read_text()), index(base='base', ours='ours', theirs='theirs'))
         self.assertTrue(result['generated_reports_refresh_required'])
-        self.assertEqual(set(result['resolved_conflicts']), REPORTS | {INDEX})
+        self.assertEqual(set(result['resolved_conflicts']), REPORTS | {INDEX, SYNC_TOOL_PATH})
         for report in REPORTS:
             self.assertEqual((self.root / report).read_text(), 'ours\n')
         self.assertEqual(out(self.root, 'ls-remote', 'origin', 'refs/heads/fix/test').split()[0], self.head)
