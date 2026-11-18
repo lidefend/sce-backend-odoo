@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5268`
+- Scanned files: `5270`
 - Files requiring split plan: `81`
 - Files above warning threshold: `155`
 
@@ -31,10 +31,10 @@ Generated from repository source files. This report is informational during the 
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3249 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3262 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2980 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2983 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
@@ -90,7 +90,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1094 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 692 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 723 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -142,8 +142,8 @@ Generated from repository source files. This report is informational during the 
 | 1182 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1179 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
+| 1169 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
-| 1159 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
 | 1157 | Python source | `scripts/verify/fact_source_coverage_guard.py` |
 | 1149 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
@@ -164,10 +164,10 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1086 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
+| 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
-| 1040 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
 | 1036 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1029 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
@@ -237,7 +237,7 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 530 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 531 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 499 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3249 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3262 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2980 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2983 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |

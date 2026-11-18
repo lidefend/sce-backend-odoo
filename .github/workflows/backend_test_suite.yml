@@ -19,6 +19,10 @@ on:
       head_ref:
         required: true
         type: string
+      scope_mode:
+        required: false
+        type: string
+        default: full
   workflow_dispatch:
     inputs:
       head_ref:
@@ -59,6 +63,7 @@ jobs:
       head: ${{ steps.scope.outputs.head }}
       required: ${{ steps.scope.outputs.required }}
       reuse_authority: ${{ steps.scope.outputs.reuse_authority }}
+      scope_mode: ${{ steps.scope.outputs.scope_mode }}
     steps:
       - name: Checkout exact candidate for scope planning
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -75,9 +80,18 @@ jobs:
           TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
           GH_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
+          SCOPE_MODE: ${{ inputs.scope_mode || 'full' }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
+          focused_args=()
+          if [ "${SCOPE_MODE}" = focused ]; then
+            test -n "${IMPACT_BASE}" || { echo "focused backend scope requires impact base" >&2; exit 1; }
+            focused_args=(--focused)
+          elif [ "${SCOPE_MODE}" != full ]; then
+            echo "unsupported backend scope mode: ${SCOPE_MODE}" >&2
+            exit 1
+          fi
           discover_args=""
           if [ "${GITHUB_EVENT_NAME}" = "pull_request" ]; then
             discover_args="--discover-receipts"
@@ -85,7 +99,9 @@ jobs:
           python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
             --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}" \
-            ${discover_args}
+            "${focused_args[@]}" ${discover_args}
+          plan_mode="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["scope_mode"])')"
+          echo "scope_mode=${plan_mode}" >> "${GITHUB_OUTPUT}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
 
       # Re-running only failed jobs reuses this artifact from the previous
@@ -124,6 +140,9 @@ jobs:
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
       SC_TEST_DEPENDENCY_PREPARATION: '1'
+      SUITE_MODE: ${{ needs.plan.outputs.scope_mode }}
+      BACKEND_MODULE_TIMEOUT_SECONDS: ${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}
+      BACKEND_MODULE_HEARTBEAT_SECONDS: '30'
 
     defaults:
       run:
@@ -174,6 +193,7 @@ jobs:
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
             --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" --plan-sha256 "${PLAN_SHA256}" --shard "${SHARD_INDEX}" --input-inventory \
+            $(if [ "${SUITE_MODE:-full}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/backend-plan.json")"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
           for module in ${candidates}; do
@@ -353,7 +373,16 @@ jobs:
             # observe state left behind by earlier modules in the same run.
             module_db="${DB_NAME}_${module}"
             module_test_tags="${TEST_TAGS_INPUT}"
-            if [ -z "${module_test_tags}" ]; then
+            if [ "${SUITE_MODE:-full}" = "focused" ]; then
+              module_test_tags="$(python3 scripts/ci/backend_suite_plan.py \
+                --base "${IMPACT_BASE}" --head "${HEAD_SHA}" --focused \
+                --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+                --plan-sha256 "${PLAN_SHA256}" --module "${module}" --selectors)"
+              test -n "${module_test_tags}" || {
+                echo "focused backend module ${module} has no exact test selectors" >&2
+                exit 1
+              }
+            elif [ -z "${module_test_tags}" ]; then
               # Select only tests owned by this module. Bare sc_gate/sc_smoke
               # tags also select dependency tests and made wrapper modules run
               # smart_construction_core's suite repeatedly.
@@ -402,20 +431,21 @@ jobs:
               fi
               module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}-attempt${module_attempt}.log"
               attempt_started=${SECONDS}
+              test_command=(make test MODULE="${module}" TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}")
+              runner_command=(python3 scripts/ci/run_backend_module_test.py \
+                --module "${module}" \
+                --timeout-seconds "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
+                --heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}" \
+                --log "${module_log}" --
+                "${test_command[@]}")
               if [ -n "${attempt_env_file}" ]; then
-                ENV_FILE="${attempt_env_file}" make test MODULE="${module}" \
-                  TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
+                ENV_FILE="${attempt_env_file}" "${runner_command[@]}"
               else
-                make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
-                  DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
+                "${runner_command[@]}"
               fi
-              module_status="${PIPESTATUS[0]}" pipeline_status=("${PIPESTATUS[@]}")
+              module_status=$?
               module_duration=$((module_duration + SECONDS - attempt_started))
-              module_log_status="${pipeline_status[1]}"
-              if [ "${module_log_status}" -ne 0 ]; then
-                module_evidence_failed=1
-                failed=1
-              fi
+              module_log_status=0
               if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
                   --module "${module}" --kind orm --attempt "${module_attempt}" --head "${HEAD_SHA}" \
                   --status "${module_status}" --log-status "${module_log_status}" --database "${attempt_db}" \
@@ -659,6 +689,7 @@ jobs:
           python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
             --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
             --plan-sha256 "${PLAN_SHA256}" --receipts "${RUNNER_TEMP}/execution-receipts" \
+            $(if [ "${{ needs.plan.outputs.scope_mode }}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/verified-plan.json"
           python3 -c 'import json,os; print(json.dumps(json.load(open(os.environ["RUNNER_TEMP"]+"/verified-plan.json"))["execution_summary"], indent=2))' >> "${GITHUB_STEP_SUMMARY}"
       - name: Verify changed test execution identities

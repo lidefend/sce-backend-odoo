@@ -856,6 +856,7 @@ verify.ci.path_ownership.unit: guard.prod.forbid
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit verify.test.dependency_baseline.unit
 	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
 	@python3 scripts/ci/test_backend_test_receipt.py
+	@python3 scripts/ci/test_run_backend_module_test.py
 	@python3 scripts/ci/test_backend_impact_plan.py
 	@python3 scripts/ci/test_backend_suite_plan.py
 	@python3 scripts/ci/test_backend_changed_test_coverage.py

@@ -182,3 +182,24 @@ head, the receipt had no dirty Make source, and the historical target material
 equals the current material. A hash mismatch, dirty Make input, unavailable
 history, or target-material change remains stale. The old whole-file hash is
 never treated as target-specific proof.
+
+## Backend focused PR execution (2026-11-18)
+
+Ordinary pull requests with backend runtime impact now run the exact changed ORM
+test selectors from their impact-safe modules. The complete module baseline
+remains mandatory for scheduled, explicit-candidate and operator full audits.
+If a runtime change has no changed executable test selectors, the planner falls
+back explicitly to complete affected modules rather than producing an empty
+green suite.
+
+Each module process has a hard timeout: ten minutes in the focused PR lane and
+twenty minutes in formal full lanes. A heartbeat reports the current module and
+elapsed time every thirty seconds. Timeout exits with status 124 and preserves
+the partial test log and evidence attempt, so a hung test cannot occupy the
+240-minute workflow ceiling invisibly.
+
+Authenticated historical receipts remain observation-only unless all existing
+closure authorities pass. They may still supply exact measured module durations
+for shard balancing. Discovery accepts the current
+`backend-execution-<run-id>-<shard>` artifact name and the legacy
+attempt-qualified name for attempt one.

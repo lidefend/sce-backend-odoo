@@ -678,6 +678,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ".github/workflows/release_candidate_gate.yml",
             "scripts/ci/scheduled_validation.py",
             "scripts/ci/test_select_authoritative_workflow_run.py",
+            "scripts/ci/run_backend_module_test.py",
+            "scripts/ci/test_run_backend_module_test.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), [
@@ -775,6 +777,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["scripts/db/create.sh"]),
             ["verify.frontend.acceptance.db_preparation.unit"],
         )
+
+    def test_test_coverage_registry_audit_selects_its_executable_check(self) -> None:
+        for path in (
+            "scripts/verify/test_coverage_registry.yaml",
+            "scripts/verify/test_test_coverage_registry_audit.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.test.coverage.registry"],
+                )
 
     def test_native_action_view_set_paths_select_their_runtime_and_contract_l2(self) -> None:
         expected = {

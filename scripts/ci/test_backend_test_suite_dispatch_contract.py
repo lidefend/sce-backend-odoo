@@ -106,6 +106,40 @@ python3() {
         self.assertNotIn('continue-on-error', suite)
         self.assertIn('${{ matrix.index }}', suite['env']['COMPOSE_PROJECT_NAME'])
 
+    def test_ordinary_pr_uses_focused_scope_with_bounded_module_execution(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        professional = yaml.safe_load(
+            (ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+        )
+        events = workflow.get('on', workflow.get(True))
+        self.assertEqual(events['workflow_call']['inputs']['scope_mode']['default'], 'full')
+        self.assertEqual(
+            professional['jobs']['backend_impact_suite']['with']['scope_mode'],
+            "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
+        )
+        plan = workflow['jobs']['plan']
+        self.assertEqual('${{ steps.scope.outputs.scope_mode }}', plan['outputs']['scope_mode'])
+        scope = next(s for s in plan['steps'] if s.get('id') == 'scope')
+        self.assertEqual("${{ inputs.scope_mode || 'full' }}", scope['env']['SCOPE_MODE'])
+        self.assertIn('focused_args=(--focused)', scope['run'])
+        self.assertIn('scope_mode=${plan_mode}', scope['run'])
+
+        suite = workflow['jobs']['backend_suite']
+        self.assertEqual('${{ needs.plan.outputs.scope_mode }}', suite['env']['SUITE_MODE'])
+        self.assertEqual(
+            "${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}",
+            suite['env']['BACKEND_MODULE_TIMEOUT_SECONDS'],
+        )
+        self.assertEqual('30', suite['env']['BACKEND_MODULE_HEARTBEAT_SECONDS'])
+        run = next(s['run'] for s in suite['steps'] if s['name'] == 'Run backend test suite per module')
+        self.assertIn('scripts/ci/run_backend_module_test.py', run)
+        self.assertIn('--timeout-seconds "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"', run)
+        self.assertIn('--heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"', run)
+        self.assertIn('--module "${module}" --selectors', run)
+        self.assertNotIn('| tee "${module_log}"', run)
+
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
@@ -378,6 +412,19 @@ make() {
   printf "0 failed, 0 error(s) of 1 tests when loading database '%s'\n" "$db"
 }
 python3() {
+  if [ "$1" = scripts/ci/run_backend_module_test.py ]; then
+    shift
+    log=''
+    while [ "$#" -gt 0 ] && [ "$1" != -- ]; do
+      if [ "$1" = --log ]; then shift; log="$1"; fi
+      shift
+    done
+    [ "$1" = -- ] && shift
+    "$@" > "$log" 2>&1
+    status=$?
+    cat "$log"
+    return "$status"
+  fi
   if [ "$1" = -m ]; then
     if [ "$CASE" = python_fail ]; then return 1; fi
     printf 'Ran 1 test in 0.001s\n\nOK\n'; return 0
@@ -396,10 +443,9 @@ python3() {
   if [ "$CASE" = archive_fail ] && [ "$2" = archive-attempt ]; then return 1; fi
   return 0
 }
-tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_fail ] && [[ "$1" == *attempt1.log ]]; }; then return 7; fi; }
 """
         for case,expected,archives,records in [('pass',0,1,1),('retry',0,2,1),('orm_fail',1,1,0),
-                ('log_fail',1,1,0),('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),('retry_log_fail',1,2,0),
+                ('python_fail',1,1,0),('python_pass',0,1,1),('archive_fail',1,1,0),
                 ('python_isolated_run',0,0,0),('python_isolated_reuse',0,0,0),('python_isolated_fail',1,0,0)]:
             with self.subTest(case=case),tempfile.TemporaryDirectory() as tmp:
                 folder=Path(tmp);(folder/'backend-plan.json').write_text('{}')
@@ -415,10 +461,6 @@ tee() { command tee "$@"; if [ "$CASE" = log_fail ] || { [ "$CASE" = retry_log_f
                 calls=(folder/'calls').read_text().splitlines()
                 self.assertEqual(archives,sum(' archive-attempt ' in line for line in calls))
                 self.assertEqual(records,sum(' record ' in line for line in calls))
-                if case in ('log_fail', 'retry_log_fail'):
-                    attempts=[line for line in calls if ' archive-attempt ' in line]
-                    self.assertIn('--log-status 7', attempts[0])
-                    self.assertIn('--status 137' if case=='retry_log_fail' else '--status 0', attempts[0])
                 if case=='retry':
                     attempts=[line for line in calls if ' archive-attempt ' in line]
                     self.assertIn('--attempt 1',attempts[0]);self.assertIn('--status 137',attempts[0])
