@@ -887,6 +887,52 @@ RULES = (
         "verify.frontend.contract_basis.unit",
     )),
     Rule((
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+    ), (
+        "verify.project_intake.contract_governance.unit",
+        "verify.intake_autosave.contract.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    ), (
+        "verify.smart_construction_core.close_03.preview_promotion.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
+    ), (
+        "verify.project_intake.contract_governance.unit",
+    )),
+    Rule((
+        "scripts/ops/test_promote_product_ten_center_policy.py",
+    ), (
+        "verify.product.menu.release_manifest_v2.guard",
+    )),
+    Rule((
+        "scripts/verify/close_03_intake_autosave_samples.mjs",
+        "scripts/verify/close_03_intake_autosave_samples_validate.py",
+    ), (
+        "verify.backend.close_03.intake_autosave.samples",
+    )),
+    Rule((
+        "scripts/verify/close_03_project_intake_browser.mjs",
+    ), (
+        "verify.intake_autosave.contract.unit",
+    )),
+    Rule((
+        "scripts/verify/local_dev_native_projection_audit.py",
+        "scripts/verify/test_local_dev_native_projection_audit.py",
+    ), (
+        "verify.local.dev.native_projection.audit.unit",
+    )),
+    Rule((
+        "scripts/verify/product_menu_contract_v1_guard.py",
+        "scripts/verify/test_product_menu_contract_v1_guard.py",
+    ), (
+        "verify.product.menu.contract_v1.guard",
+    )),
+    Rule((
         "frontend/apps/web/src/pages/ContractFormRoute.vue",
         "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
         "frontend/apps/web/src/app/performance/startupTiming.ts",

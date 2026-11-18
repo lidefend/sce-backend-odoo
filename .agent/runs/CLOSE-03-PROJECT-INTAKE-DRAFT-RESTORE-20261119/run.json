@@ -140,6 +140,17 @@
         "scripts/verify/close_03_intake_autosave_samples_validate.py"
       ]
     },
+    "intake_autosave_samples": {
+      "target": "verify.backend.close_03.intake_autosave.samples",
+      "kind": "runtime",
+      "inputs": [
+        "config/acceptance/",
+        "make/ci.mk",
+        "scripts/verify/close_03_intake_autosave_samples.mjs",
+        "scripts/verify/close_03_intake_autosave_samples_validate.py",
+        "scripts/verify/frontend_authenticated_intent.mjs"
+      ]
+    },
     "project_intake_contract_governance": {
       "target": "verify.project_intake.contract_governance.unit",
       "kind": "runtime",
@@ -288,6 +299,15 @@
         "make/ci.mk",
         "scripts/verify/close_03_project_intake_browser.mjs",
         "scripts/verify/close_03_intake_autosave_samples.mjs"
+      ]
+    },
+    "local_dev_native_projection_audit": {
+      "target": "verify.local.dev.native_projection.audit.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/local_dev_native_projection_audit.py",
+        "scripts/verify/test_local_dev_native_projection_audit.py"
       ]
     },
     "frontend_lint": {

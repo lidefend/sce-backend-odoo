@@ -434,6 +434,11 @@ verify.smart_construction_core.close_03.module_baseline: guard.prod.forbid verif
 verify.smart_construction_core.close_03.preview_promotion.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestLockedMenuPolicyInitialization
 
+.PHONY: verify.local.dev.native_projection.audit.unit
+verify.local.dev.native_projection.audit.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/local_dev_native_projection_audit.py scripts/verify/test_local_dev_native_projection_audit.py
+	@python3 -m unittest scripts.verify.test_local_dev_native_projection_audit
+
 SC_CLOSE_03_BASE_URL ?= http://127.0.0.1:18082
 SC_CLOSE_03_LOGIN ?= fixture_role_config_admin
 SC_CLOSE_03_OUTPUT ?= .runtime/agent-runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/intake_autosave_samples

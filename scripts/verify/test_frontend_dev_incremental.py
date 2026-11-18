@@ -1534,8 +1534,41 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py": [
                 "verify.capability.identity_boundary.orm",
             ],
+            "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py": [
+                "verify.smart_construction_core.close_03.preview_promotion.orm",
+            ],
             "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py": [
                 "verify.capability.identity_boundary.orm",
+                "verify.smart_construction_core.close_03.preview_promotion.orm",
+            ],
+            "addons/smart_construction_core/services/contract_governance_overrides.py": [
+                "verify.intake_autosave.contract.unit",
+                "verify.project_intake.contract_governance.unit",
+            ],
+            "addons/smart_construction_core/tests/test_project_intake_contract_governance.py": [
+                "verify.intake_autosave.contract.unit",
+                "verify.project_intake.contract_governance.unit",
+            ],
+            "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py": [
+                "verify.project_intake.contract_governance.unit",
+            ],
+            "scripts/verify/close_03_intake_autosave_samples.mjs": [
+                "verify.backend.close_03.intake_autosave.samples",
+            ],
+            "scripts/verify/close_03_intake_autosave_samples_validate.py": [
+                "verify.backend.close_03.intake_autosave.samples",
+            ],
+            "scripts/verify/close_03_project_intake_browser.mjs": [
+                "verify.intake_autosave.contract.unit",
+            ],
+            "scripts/verify/local_dev_native_projection_audit.py": [
+                "verify.local.dev.native_projection.audit.unit",
+            ],
+            "scripts/verify/product_menu_contract_v1_guard.py": [
+                "verify.product.menu.contract_v1.guard",
+            ],
+            "scripts/verify/test_product_menu_contract_v1_guard.py": [
+                "verify.product.menu.contract_v1.guard",
             ],
             "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py": [
                 "verify.daily_dev.acceptance_fixture.unit",

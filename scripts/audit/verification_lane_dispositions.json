@@ -2,21 +2,6 @@
   "schema_version": "verification-lane-dispositions/v1",
   "note": "僵尸面登记名册（wire-or-retire 的第三条路径：登记理由）。targets/scripts 中每一条都是全仓库零精确引用、且经定性无门禁消费的表面。登记不等于豁免：raw 计数仍受棘轮 max_targets_zero_reference / max_scripts_unreferenced_anywhere 约束，只减不增；而 unregistered 计数必须为 0，任何新增零引用表面在登记前都会让 --check 失败。后续批次对 candidate 类逐条执行接线或真实退役，登记条目随之删除。",
   "targets": {
-    "verify.backend.close_03.intake_autosave.samples": {
-      "disposition": "runtime_audit_probe",
-      "owner": "construction-product-team",
-      "reason": "CLOSE-03 real-contract sample entry. It is invoked manually with the governed local.dev source/session identity to capture the standard-create, saved-record and payment-create contracts; it is not a default lane because it requires a running candidate backend."
-    },
-    "verify.intake_autosave.contract.unit": {
-      "disposition": "product_tooling",
-      "owner": "construction-product-team",
-      "reason": "CLOSE-03 focused validation helper for intake policy source/schema/sample syntax. It supplements the registered schema, assembler and ORM policy tests; current dependency-lane wiring is explicit through ci.local.iteration."
-    },
-    "verify.project_intake.contract_governance.unit": {
-      "disposition": "product_tooling",
-      "owner": "construction-product-team",
-      "reason": "CLOSE-03 focused ORM entry for ProjectIntakeContractGovernanceCase. It is selected by the affected-family plan and is also reusable for a single-family diagnosis without running the whole module."
-    },
     "verify.frontend.close_03.project_intake.browser": {
       "disposition": "browser_acceptance_probe",
       "owner": "construction-product-team",
