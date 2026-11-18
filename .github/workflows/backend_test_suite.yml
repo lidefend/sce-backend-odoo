@@ -494,12 +494,12 @@ jobs:
               attempt_started=${SECONDS}
               start_heartbeat "${module}" "${module_log}" "${module_attempt}"
               if [ -n "${attempt_env_file}" ]; then
-                ENV_FILE="${attempt_env_file}" timeout --signal=TERM --kill-after=10 \
+                ENV_FILE="${attempt_env_file}" timeout --foreground --signal=TERM --kill-after=10 \
                   "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
                   make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
                   DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               else
-                timeout --signal=TERM --kill-after=10 \
+                timeout --foreground --signal=TERM --kill-after=10 \
                   "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
                   make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
                   DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"

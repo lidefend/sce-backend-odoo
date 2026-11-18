@@ -396,5 +396,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the direct-Make timeout repair on PR #933 and verify both focused shards create their Odoo containers and complete."
+  "next_exact_step": "Publish the foreground-timeout process-group repair on PR #933 and verify both focused shards create their Odoo containers and complete."
 }

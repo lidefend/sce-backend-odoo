@@ -136,7 +136,7 @@ python3() {
         )
         self.assertEqual('30', suite['env']['BACKEND_MODULE_HEARTBEAT_SECONDS'])
         run = next(s['run'] for s in suite['steps'] if s['name'] == 'Run backend test suite per module')
-        self.assertIn('timeout --signal=TERM --kill-after=10', run)
+        self.assertIn('timeout --foreground --signal=TERM --kill-after=10', run)
         self.assertIn('"${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"', run)
         self.assertIn('start_heartbeat "${module}" "${module_log}" "${module_attempt}"', run)
         self.assertIn('pipeline_status=("${PIPESTATUS[@]}")', run)
@@ -491,7 +491,7 @@ make() {
 timeout() {
   while [ "$#" -gt 0 ]; do
     case "$1" in
-      --signal=*|--kill-after=*) shift ;;
+      --foreground|--signal=*|--kill-after=*) shift ;;
       *[!0-9.]*) break ;;
       *) shift; break ;;
     esac

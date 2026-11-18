@@ -108,7 +108,7 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
         selection = script[script.index('module_test_tags="${TEST_TAGS_INPUT}"'):
                            script.index('module_env_file=""')]
         consumer = re.search(
-            r'timeout --signal=TERM --kill-after=10 \\\s+'
+            r'timeout --foreground --signal=TERM --kill-after=10 \\\s+'
             r'"\$\{BACKEND_MODULE_TIMEOUT_SECONDS:-1200\}" \\\s+'
             r'make test MODULE="\$\{module\}" TEST_TAGS="\$\{module_test_tags\}" \\\s+'
             r'DB_NAME="\$\{attempt_db\}"',
@@ -140,7 +140,9 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                 # no Odoo process or database is started by this wiring regression.
                 command = ('python3() { return 0; }\n'
                            'make() { printf "%s\\n" "$@"; }\n'
-                           'timeout() { shift 2; shift; "$@"; }\n'
+                           'timeout() { while [ "$#" -gt 0 ]; do case "$1" in '
+                           '--foreground|--signal=*|--kill-after=*) shift ;; '
+                           '*[!0-9.]*) break ;; *) shift; break ;; esac; done; "$@"; }\n'
                            + selection + consumer.group(0) + '\n')
                 outcome = subprocess.run(['bash', '-eu', '-c', command], env={**os.environ,
                     'module': bound['module'], 'TEST_TAGS_INPUT': '', 'RUNNER_TEMP': '/unused',
