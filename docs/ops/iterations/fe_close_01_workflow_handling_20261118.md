@@ -1,12 +1,13 @@
 # FE-CLOSE-01 两入口工作流办理闭环
 
 - 前端分支：`feature/fe-close-01-workflow-handling-20261118`
-- 接受主线：`64f2e68ea1b80464fd080bb93b1a83312decc8c4`
+- 接受主线：`ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9`
 - 后端依赖：`BE-CLOSE-01` PR
   [#933](https://github.com/lidefend/sce-backend-odoo/pull/933)
-- 后端候选：`d3e2f8d4f6a3f3c7250316ee51a690dac470591a`
+- 后端 PR 合并前 head：`f4bf008483bfed462eb72e0f033e2f024c9c308d`
+- 后端合并主线：`ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9`
 - 业务范围：付款申请、项目启停管理
-- 当前状态：批次产品验证通过，等待 PR 发布和远端门禁
+- 当前状态：`ea3d5541` 上的两入口产品验证通过，等待最终本地门禁、提交与 PR 远端门禁
 
 ## 边界
 
@@ -20,7 +21,7 @@
 
 真实 API 样本绑定：
 
-- `served_sha = expected_sha = d3e2f8d4f6a3f3c7250316ee51a690dac470591a`
+- `served_sha = expected_sha = ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9`
 - `database = sc_frontend_acceptance`
 - actor：`fixture_role_config_admin`，公司 `FE Company A`
 - 2 个新建动作目录、4 个记录样本、2 组真实执行回读，共校验 8 份 V2 契约
@@ -75,11 +76,34 @@
 | `verify.frontend.contract_v2_runtime_policy.unit` | PASS，6 |
 | `verify.frontend.contract_basis.unit` | PASS，15，open defects 0 |
 | `verify.frontend.typecheck.strict` | PASS |
-| `verify.frontend.dev.incremental.unit` | PASS，174 |
+| `verify.frontend.dev.incremental.unit` | PASS，183 |
+| `verify.agent.resume.unit` | PASS，66 |
 | `ci.local.iteration` | PASS，退出码 0 |
+| `ci.delivery.freeze.prepare` | PASS，生成证据已刷新并审阅 |
 
 最终后端 API 样本已注入 `verify.frontend.canonical_form_presenter.unit`，输出
 `workflow-contract-sample PASS contracts=8`。
+
+### 运行台账 readback 修复
+
+付款入口首次真实执行通过后，`make agent.run.record` 拒绝回执：运行台账把测试将要
+生成的 runtime readback 与源码一起冻结，导致测试更新 readback 后被误判为输入漂移。
+分类为 `validation_tool_defect`，仅修复 P4 台账工具：
+
+- `begin` 冻结源码、工具、上游回执、candidate 与 environment 声明；
+- 声明的 runtime readback 允许由本次检查创建或刷新；
+- `record` 将刷新后的 readback 写入最终回执，之后 readback 再变化仍会使回执失效；
+- 源码或上游在运行期间变化仍拒绝记录；新增正向和反向单测覆盖该边界。
+
+修复后首次记录尝试仍受验收数据前置状态影响：
+
+- 直接重跑付款入口时记录已在上一轮变为 `approved`，安全失败于
+  “`payment submit action is not contract-declared`”；
+- 通过 `acceptance.frontend.fixture` 恢复夹具后，旧 resolver 产物仍指向重置前的记录
+  ID，再次安全失败于未被前端观察到的旧契约；
+- 通过 `verify.dev.acceptance.record_identity.resolve` 重解析真实记录身份后重跑通过。
+
+原始失败日志均保留；没有放宽入口断言，也没有把夹具污染伪装成产品通过。
 
 ### 付款申请真实办理
 
@@ -93,6 +117,7 @@ SC_ENTRY_BROWSER_MODE=workflow \
 结果：
 
 - `draft`：声明 `save_draft/submit/cancel`。
+- 当前真实记录身份由 resolver 解析为 `payment.request#414`。
 - 注入一次传输失败：备注输入保持，页面显示可读错误，状态保持 `draft`。
 - 重试提交：确认提交提示出现，服务端回读为 `submit`，下一组动作为
   `approve/reject/cancel`。
@@ -126,13 +151,15 @@ make verify.frontend.business_entry.lifecycle.browser
 
 ## 未完成边界
 
-- BE-CLOSE-01 PR #933 的四个远端后端分片和依赖门禁仍在运行；本批不宣称主线
-  集成完成。
-- 本批尚未发布前端 PR；发布时必须以当前前端提交和
-  `d3e2f8d4f6a3f3c7250316ee51a690dac470591a` 后端候选作为同一验收组合。
+- BE-CLOSE-01 PR #933 已合入 `ea3d5541`；前端 #935 已同步该主线，但新 head
+  仍需当前组合的最终验证和远端检查。
+- 发布时必须以同步后的前端提交和 `ea3d5541` 后端主线作为同一验收组合。
+- 浏览器完成后已通过受管 `acceptance.frontend.fixture` 恢复验收夹具；恢复后
+  lifecycle carrier 重新生成，因此其运行时数值 ID 变化不影响已绑定的原始证据。
 - 合并、部署和目标环境产品交付均未宣称。
 
 ## 回滚
 
-回退本批前端工作流消费提交及其浏览器验证入口即可；不需要恢复 schema、数据库迁移
-或部署状态。验收 fixture 已在浏览器完成后通过受管入口恢复。
+回退本批前端工作流消费提交、浏览器验证入口及 runtime readback 记录修复即可；
+不需要恢复 schema、数据库迁移或部署状态。验收 fixture 已在浏览器完成后通过受管
+入口恢复。

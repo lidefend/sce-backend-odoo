@@ -8,6 +8,7 @@ goal:
     plus bounded two-entry browser evidence
   module:
     - frontend/apps/web
+    - scripts/ops
     - scripts/verify
     - docs/ops/iterations
   standard_vs_user_specific: construction_product_standard
@@ -25,8 +26,9 @@ goal:
     task: BE-CLOSE-01
     branch: feature/be-close-01-workflow-contract-20261118
     worktree: /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109-be-close-01-20261118
-    candidate_sha: d3e2f8d4f6a3f3c7250316ee51a690dac470591a
-    accepted_main_sha: 64f2e68ea1b80464fd080bb93b1a83312decc8c4
+    candidate_sha: ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9
+    integrated_pr_head: f4bf008483bfed462eb72e0f033e2f024c9c308d
+    accepted_main_sha: ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9
     required_handoff:
       - exact backend commit SHA
       - one governed acceptance environment
@@ -47,12 +49,15 @@ goal:
       - .agent/active-runs.json
       - .agent/goals/FE-CLOSE-01.yaml
       - .agent/runs/FE-CLOSE-01/run.json
+      - .agent/README.md
       - docs/ops/iterations/fe_close_01_workflow_handling_20261118.md
       - frontend/apps/web/src/app/contracts/v2
       - frontend/apps/web/src/pages/contractForm
       - frontend/apps/web/src/pages/ContractFormPage.vue
       - frontend/apps/web/scripts
+      - scripts/ops/agent_run_context.py
       - scripts/verify
+      - scripts/verify/test_agent_run_context.py
     product_behavior: >-
       payment request and project lifecycle workflow presentation and post-action
       refresh only
@@ -68,6 +73,7 @@ goal:
     - Full 91-entry matrix.
     - Backend workflow production or schema changes.
     - Merge, deployment and user-delivery claims.
+    - Unrelated run-ledger commands or evidence formats beyond runtime readback recording.
   rollback: >-
     Revert the frontend workflow consumption commits and bounded evidence changes;
     no schema, data, deployment or external state requires restoration.
