@@ -2,6 +2,7 @@
   "schema_version": 1,
   "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
   "scope": [
+    "config/ci/path_ownership_v1.json",
     ".agent/decisions/ci-path-ownership.yaml",
     ".agent/active-runs.json",
     ".agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml",
@@ -22,6 +23,7 @@
     "scripts/ci/release_condition.py",
     "scripts/ci/test_release_condition.py",
     "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_ci_path_ownership.py",
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/verify/frontend_release_ci_guard.py",
     "scripts/verify/test_frontend_release_ci_guard.py",
@@ -78,6 +80,7 @@
         "scripts/ci/test_release_condition.py",
         "scripts/ci/test_release_candidate_gate.py",
         "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py",
         "scripts/ci/ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_merge_policy_gate.py",

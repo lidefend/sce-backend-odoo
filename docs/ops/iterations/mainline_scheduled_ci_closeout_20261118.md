@@ -31,6 +31,9 @@ label supersedes the preceding synchronize run instead of scheduling a second
 authoritative suite on the same SHA; push and schedule remain isolated event groups.
 Ordinary synchronize runs keep their short standard lanes. Only the exact candidate
 label switches to the full formal-release lanes required before merge.
+The CI acceptance entry and its guards are registered as non-runtime frontend
+control-plane tooling, so an ordinary PR no longer escalates to backend/ORM suites
+through an unknown-path fail-closed classification.
 
 Successful scheduled and explicit-candidate aggregate runs now emit a machine-readable
 `release-condition.json` bound to the exact head/tree and four authoritative run IDs.
@@ -109,7 +112,7 @@ routing/tests together. No data or runtime state requires restoration.
 - `verify.frontend.lint.src`: PASS, zero errors; four existing warnings remain.
 - `verify.frontend.typecheck.strict`: PASS.
 - `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
-- `verify.ci.workflow.contract`: PASS, 457 tests covering risk classification,
+- `verify.ci.workflow.contract`: PASS, 458 tests covering risk classification,
   candidate/full lane selection, merge-policy enforcement, workflow wiring and
   exact-head release-condition materialization.
 - `release_condition`: PASS, 4 tests covering exact SHA/tree, workflow set,
