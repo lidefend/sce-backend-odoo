@@ -25,6 +25,7 @@
     "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
     "addons/smart_construction_core/tests/test_project_initiation_native_lowcode.py",
     "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
     "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
     "addons/smart_construction_core/data/product_menu_source.json",
@@ -318,5 +319,5 @@
   "blockers": [
     "Pre-existing release-surface runtime guard mismatches remain outside CLOSE-03 behavior: cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native delivery with an empty native-nav fixture. The migrated product policy itself reports 132 entries for both construction.standard and construction.preview."
   ],
-  "next_exact_step": "Commit the frontend consumption and regression fixes, run ci.local.iteration and freeze preparation, then publish one exact-head PR and wait for the four required checks and independent review."
+  "next_exact_step": "Run ci.local.iteration to execute or reuse every registered check, then run freeze preparation and publish one exact-head PR for independent review and the four required checks."
 }
