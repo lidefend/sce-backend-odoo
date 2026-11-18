@@ -267,8 +267,19 @@ function storage(): Storage | null {
 
 function normalizedStoredValue(field: IntakeAutosaveField, value: unknown): { accepted: boolean; value?: unknown } {
   if (value === undefined || value === null) return { accepted: false };
-  if (field.inputKind === 'text' || field.inputKind === 'date' || field.inputKind === 'datetime') {
-    return typeof value === 'string' ? { accepted: true, value } : { accepted: false };
+  if (field.inputKind === 'text') {
+    const maxLength = Number(field.constraints.maxLength || 0);
+    return typeof value === 'string'
+      && (!(maxLength > 0) || value.length <= maxLength)
+      ? { accepted: true, value } : { accepted: false };
+  }
+  if (field.inputKind === 'date') {
+    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)
+      ? { accepted: true, value } : { accepted: false };
+  }
+  if (field.inputKind === 'datetime') {
+    return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)
+      ? { accepted: true, value } : { accepted: false };
   }
   if (field.inputKind === 'boolean') {
     return typeof value === 'boolean' ? { accepted: true, value } : { accepted: false };
@@ -282,7 +293,10 @@ function normalizedStoredValue(field: IntakeAutosaveField, value: unknown): { ac
       ? { accepted: true, value } : { accepted: false };
   }
   if (field.inputKind === 'selection') {
+    const allowedValues = Array.isArray(field.constraints.allowedValues)
+      ? field.constraints.allowedValues : [];
     return ['string', 'number', 'boolean'].includes(typeof value)
+      && (!allowedValues.length || allowedValues.some((allowed) => Object.is(allowed, value)))
       ? { accepted: true, value } : { accepted: false };
   }
   if (field.type === 'many2many') {
@@ -313,6 +327,7 @@ export function persistIntakeAutosavePayload(options: {
     const normalized = normalizedStoredValue(field, options.values[field.name]);
     if (normalized.accepted) values[field.name] = normalized.value;
   }
+  if (!Object.keys(values).length) return 'skipped';
   const identity = Object.fromEntries(options.policy.identity.requiredScopes.map((scope) => [
     scope,
     scope === 'entry_scope' ? options.policy.scope : String(options.identity[scope] ?? ''),

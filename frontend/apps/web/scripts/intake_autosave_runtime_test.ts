@@ -67,7 +67,7 @@ const rawPolicy = {
       readonly: false,
       allowEmpty: true,
       source: 'effective_create_form',
-      constraints: {},
+      constraints: { maxLength: 120 },
     },
     {
       name: 'manager_id',
@@ -194,6 +194,21 @@ assert.equal(
 assert.equal(clearIntakeAutosavePayload(key, { policyVersion: 2, scope: policy.scope, draftToken: 'draft-v1' }), false);
 assert.equal(clearIntakeAutosavePayload(key, { policyVersion: 1, scope: policy.scope, draftToken: 'stale' }), false);
 assert.equal(clearIntakeAutosavePayload(key, { policyVersion: 1, scope: policy.scope, draftToken: 'draft-v1' }), true);
+assert.equal(
+  persistIntakeAutosavePayload({
+    policy,
+    key,
+    identity,
+    draftToken: 'invalid-values',
+    values: {
+      name: 'x'.repeat(121),
+      operation_strategy: 'forged',
+      sequence: 1.5,
+    },
+  }),
+  'skipped',
+);
+assert.equal(restoreIntakeAutosavePayload({ policy, key, identity, now }).status, 'none');
 
 storage.setItem(key, '{broken');
 assert.equal(restoreIntakeAutosavePayload({ policy, key, identity, now }).status, 'invalid');
@@ -267,4 +282,32 @@ discardRuntime.discard();
 assert.equal(discardRuntime.candidate.value, null);
 assert.equal(restoreIntakeAutosavePayload({ policy, key, identity, now }).status, 'none');
 
-console.log('[intake-autosave-runtime] PASS cases=24');
+const createWithoutRestoreRuntime = useIntakeAutosaveRuntime({
+  policy: ref(policy),
+  identity: ref(identity),
+  hasRecord: ref(null),
+  formData: {},
+  isActive: ref(true),
+  isDirty: ref(false),
+  paused,
+  applyRestoredValues: async () => undefined,
+  onNotice: () => undefined,
+});
+persistIntakeAutosavePayload({
+  policy,
+  key,
+  identity,
+  draftToken: 'create-without-restore-v1',
+  values: { name: 'unresolved prompt' },
+});
+assert.equal(createWithoutRestoreRuntime.inspect(), 'recoverable');
+assert.deepEqual(createWithoutRestoreRuntime.capture(), {
+  key,
+  policyVersion: 1,
+  scope: policy.scope,
+  draftToken: 'create-without-restore-v1',
+});
+assert.equal(createWithoutRestoreRuntime.clear(createWithoutRestoreRuntime.capture()), true);
+assert.equal(restoreIntakeAutosavePayload({ policy, key, identity, now }).status, 'none');
+
+console.log('[intake-autosave-runtime] PASS cases=30');
