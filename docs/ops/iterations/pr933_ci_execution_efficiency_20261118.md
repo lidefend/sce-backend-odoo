@@ -109,3 +109,18 @@ inputs. `verify.frontend.dev.incremental.unit`: PASS, 182 tests.
 Revert this repair commit to restore the previous execution behavior. No persistent
 runtime/data changes are part of this repair. Local passes do not establish remote
 CI success, merge readiness, deployment or product delivery.
+
+## Remote static consumer correction
+
+Run `44310371563` at `04c3d81d14ef86a53aef16372ce3fce9d0bb9c4d` passed
+public and frontend gates, but the early static header guard rejected the inline
+`export $(shell sed ...)` as a non-literal Make target. The parser encountered the
+colon in the sed expression. Environment-name extraction is now an explicit
+immediate Make assignment, followed by export of that named list. The real header
+guard and GNU Make 4.4.1 environment regression both pass. The CI workflow contract
+entry now runs this existing Make consumer guard so local CI-tool verification
+will catch this interaction before publication. No business source changed.
+
+Connecting the pure Python header guard locally also makes its old remote-only
+toolchain exemption stale. That one exemption is removed; the lane baseline
+limits remain unchanged. The lane coverage check must pass before publication.

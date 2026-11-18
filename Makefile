@@ -86,7 +86,8 @@ include $(ENV_FILE_RESOLVED)
 # Export only environment-file assignments. A bare export also expands every
 # later lazy Make variable for each recipe (and each $(shell ...) on Make 4.4),
 # recursively evaluating unrelated acceptance/release probes before test starts.
-export $(shell sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*[:?+]?=.*/\2/p' "$(ENV_FILE_RESOLVED)")
+ENV_FILE_EXPORT_NAMES := $(shell sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*[:?+]?=.*/\2/p' "$(ENV_FILE_RESOLVED)")
+export $(ENV_FILE_EXPORT_NAMES)
 endif
 ifneq (,$(filter command line environment environment\ override,$(REQUESTED_ENV_FILE_ORIGIN)))
 ENV_FILE := $(REQUESTED_ENV_FILE)

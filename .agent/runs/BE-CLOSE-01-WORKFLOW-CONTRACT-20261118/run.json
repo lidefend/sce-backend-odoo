@@ -60,7 +60,8 @@
     "scripts/verify/test_test_coverage_registry_audit.py",
     "scripts/ci/run_backend_module_test.py",
     "scripts/ci/test_run_backend_module_test.py",
-    "Makefile"
+    "Makefile",
+    "scripts/audit/verification_lane_exemptions.json"
   ],
   "environment": {
     "kind": "offline",
@@ -182,7 +183,8 @@
         "scripts/ci/ci_risk_classifier.py",
         "scripts/verify/github_actions_security_guard.py",
         "scripts/verify/test_github_actions_security_guard.py",
-        "scripts/verify/test_test_coverage_registry_audit.py"
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "scripts/verify/frontend_product_page_header_guard.py"
       ]
     },
     "github_actions_security": {
