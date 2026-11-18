@@ -904,6 +904,15 @@ RULES = (
         "verify.change_impact.verification.unit",
         "verify.change_impact.acceptance",
     )),
+    # The contract/business research matrix and its generator are one audit
+    # contract. A path-specific edit must run the non-zero matrix test instead
+    # of falling through to a hand-picked L2 target.
+    Rule((
+        "scripts/audit/generate_frontend_contract_business_journey_research.py",
+        "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+    ), (
+        "verify.frontend.contract_business_journey_research.unit",
+    )),
     Rule((
         "scripts/ops/change_impact_planner.py",
         "scripts/ops/change_impact_graph.py",

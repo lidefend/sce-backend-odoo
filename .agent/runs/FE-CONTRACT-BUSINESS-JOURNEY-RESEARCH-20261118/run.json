@@ -18,6 +18,8 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "scripts/audit/generate_frontend_contract_business_journey_research.py",
     "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "make/frontend.mk"
   ],
   "environment": {
@@ -72,11 +74,35 @@
         "make/guards.mk",
         "scripts/audit/generate_frontend_contract_business_journey_research.py",
         "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/audit/verification_lane_coverage.py",
         "scripts/audit/test_verification_lane_coverage.py",
         "scripts/audit/verification_lane_baseline.json",
         "scripts/audit/verification_lane_dispositions.json",
         "scripts/audit/verification_lane_exemptions.json"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/ops/agent_run_context.py",
+        "make/frontend.mk"
+      ]
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json",
+        ".agent/runs/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118/run.json",
+        "make/codex.mk"
       ]
     }
   },

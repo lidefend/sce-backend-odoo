@@ -1355,6 +1355,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_contract_business_journey_research_inputs_route_to_their_audit_unit(self) -> None:
+        for path in (
+            "scripts/audit/generate_frontend_contract_business_journey_research.py",
+            "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.frontend.contract_business_journey_research.unit"],
+                )
+
     def test_change_impact_planner_inputs_route_to_the_planner_unit(self) -> None:
         for path in (
             "scripts/ops/change_impact_planner.py",
