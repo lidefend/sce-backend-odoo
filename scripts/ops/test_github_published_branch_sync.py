@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from unittest.mock import patch
 
+from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
 from gitee_published_branch_sync import git, out, sync, CONFIRM
 from github_published_branch_sync import INDEX, REPORTS, merge_index, resolve_metadata, verify_pr
 
@@ -13,6 +14,9 @@ def index(**branches):
 
 
 class IndexTests(unittest.TestCase):
+    def test_report_conflict_allowlist_tracks_generated_evidence_authority(self):
+        self.assertEqual(REPORTS, set(GENERATED_EVIDENCE_PATH_SET))
+
     def test_independent_additions_and_deletion(self):
         self.assertEqual(merge_index(index(old='x'), index(ours='a'), index(old='x', theirs='b')),
                          index(ours='a', theirs='b'))

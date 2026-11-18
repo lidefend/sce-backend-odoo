@@ -5,16 +5,12 @@ import json
 from pathlib import Path
 import subprocess
 
+from generated_evidence_paths import GENERATED_EVIDENCE_PATH_SET
 from gitee_published_branch_sync import git, out, sync, CONFIRM
 
 URLS = {'https://github.com/lidefend/sce-backend-odoo.git', 'git@github.com:lidefend/sce-backend-odoo.git'}
 INDEX = '.agent/active-runs.json'
-REPORTS = {'docs/engineering_convergence/complexity_budget_report.md',
-           'docs/engineering_convergence/test_inventory.csv',
-           'docs/engineering_convergence/test_inventory_summary.md',
-           'docs/engineering_convergence/split_plan_queue.md',
-           'docs/audit/test_coverage_registry/test_coverage_registry.json',
-           'docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json'}
+REPORTS = set(GENERATED_EVIDENCE_PATH_SET)
 
 
 def merge_index(base, ours, theirs):

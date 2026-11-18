@@ -251,6 +251,7 @@
       "kind": "offline",
       "inputs": [
         "make/codex.mk",
+        "scripts/ops/generated_evidence_paths.py",
         "scripts/ops/gitee_published_branch_sync.py",
         "scripts/ops/github_published_branch_sync.py",
         "scripts/ops/test_gitee_published_branch_sync.py",
