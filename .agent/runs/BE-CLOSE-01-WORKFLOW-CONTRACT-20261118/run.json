@@ -301,5 +301,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the final ci.local.iteration with only the two unregistered planner targets executable, then commit the P4 dependency fingerprint fix and resume BE-CLOSE-01 finalization."
+  "next_exact_step": "Publish the P4 dependency fingerprint commit to backend PR #933, then resume BE-CLOSE-01 final API handoff and frontend integration."
 }
