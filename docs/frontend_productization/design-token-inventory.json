@@ -6492,7 +6492,7 @@
   ],
   "generatedFromDirtyWorktree": true,
   "generatorDigest": "efa7cd47e50a0c8b732cce71f11dab319dddab0c7cdd33f6113637cbbb5fab8d",
-  "inputDigest": "c9a97a37a300004ae5a7d2bc000182f4f4f29cfc235c24844803404131be6509",
+  "inputDigest": "68012dd68b728a3267835978b261d86489b4f6f36161ac06cd1db1a4db16f47b",
   "inputScopes": [
     {
       "path": "frontend/apps/web/src/**/*.{css,scss,sass,vue}",

@@ -154,6 +154,7 @@ const scrollProjection = computed(() => {
       'aria-label': scrollRegion ? `${props.label}，可横向滚动` : undefined,
       'aria-description': scrollRegion ? '聚焦表格区域后，可使用左右方向键查看其余列。' : undefined,
       'data-table-scroll-region': scrollRegion ? 'true' : undefined,
+      'data-table-content': 'ScTable',
     },
   };
 });

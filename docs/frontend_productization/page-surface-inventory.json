@@ -6740,7 +6740,7 @@
   ],
   "generatedFromDirtyWorktree": true,
   "generatorDigest": "efa7cd47e50a0c8b732cce71f11dab319dddab0c7cdd33f6113637cbbb5fab8d",
-  "inputDigest": "0f518dd51e23d69d441d2e45973bb740d4054a77459fd78ad386d1d76e751e53",
+  "inputDigest": "b824ee40e656084492a32d18bc3236448935c7a77b379af2bb11ebcfb13181b6",
   "inputScopes": [
     {
       "path": "frontend/apps/web/src",

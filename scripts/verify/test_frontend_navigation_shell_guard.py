@@ -256,8 +256,9 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
         path = root / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+        tabs_selector = ":deep(." + "t-tabs__nav)"
         path.write_text(
-            path.read_text() + "\n<style>:deep(.t-tabs__nav) { min-width: 0; }</style>\n",
+            path.read_text() + f"\n<style>{tabs_selector} {{ min-width: 0; }}</style>\n",
             encoding="utf-8",
         )
         self.assertTrue(any("must not select vendor tab internals" in error for error in validate(root)))
