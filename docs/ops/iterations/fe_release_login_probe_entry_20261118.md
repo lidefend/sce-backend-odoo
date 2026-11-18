@@ -86,6 +86,20 @@ list children and nested-interactive findings. The candidate now keeps those
 elements as focusable native list items, preserves `aria-disabled`,
 `aria-current` and `aria-expanded`, and handles Enter/Space directly.
 
+### Final matrix
+
+The final clean candidate `3f4788d5dadd23a62c4a257a21249d295b0bba19` passed the
+managed release browser matrix:
+
+- J09 network/conflict recovery, J10 action authority and J11 company-switch work
+  continuity all PASS;
+- 17 accessibility scans over `wcag2a`, `wcag2aa`, `wcag21a` and `wcag21aa`
+  report 0 violations, 0 blocking, 0 critical and 0 serious findings;
+- 68 responsive page/viewport checks report zero horizontal overflow;
+- all seven performance scenarios pass absolute and relative budgets;
+- console, unhandled HTTP, page-error and unhandled runtime error collections are
+  empty.
+
 ## Rollback
 
 Revert this P4 batch. No database or runtime state requires restoration.

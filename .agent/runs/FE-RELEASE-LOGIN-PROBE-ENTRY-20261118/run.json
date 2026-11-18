@@ -59,5 +59,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the corrected navigation semantics, then rerun the managed release browser matrix from the clean candidate."
+  "next_exact_step": "Commit the final evidence record, run independent exact-candidate review, publish the branch, and merge only after protected required checks pass."
 }
