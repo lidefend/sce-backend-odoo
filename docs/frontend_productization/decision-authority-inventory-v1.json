@@ -1236,9 +1236,10 @@
         82
       ],
       "occurrences": 1,
-      "classification": "unclassified",
-      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
-      "ownerLayer": "unresolved"
+      "classification": "excluded-render-interaction",
+      "reason": "browser-local payload compatibility/type validation result; it selects a local warning and never changes permissions or created-record state",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
     },
     {
       "decisionKey": "R4_business_state_literal|recoverable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
@@ -1249,9 +1250,10 @@
         77
       ],
       "occurrences": 1,
-      "classification": "unclassified",
-      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
-      "ownerLayer": "unresolved"
+      "classification": "excluded-render-interaction",
+      "reason": "browser-local intake draft availability result; it selects restore/discard feedback only, while fields, expiry and recovery policy come from the backend contract",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
     },
     {
       "decisionKey": "R4_business_state_literal|unavailable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
@@ -1262,9 +1264,10 @@
         88
       ],
       "occurrences": 1,
-      "classification": "unclassified",
-      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
-      "ownerLayer": "unresolved"
+      "classification": "excluded-render-interaction",
+      "reason": "browser storage availability result; it preserves manual create and selects the local-storage warning presentation",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
     },
     {
       "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/views/ActionView.vue",
@@ -1806,13 +1809,12 @@
     },
     "byClassification": {
       "contract-derived": 66,
-      "excluded-render-interaction": 99,
-      "unclassified": 3
+      "excluded-render-interaction": 102
     },
-    "unclassified": 3,
+    "unclassified": 0,
     "contractDerived": 66,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 99
+    "excludedRenderInteraction": 102
   }
 }

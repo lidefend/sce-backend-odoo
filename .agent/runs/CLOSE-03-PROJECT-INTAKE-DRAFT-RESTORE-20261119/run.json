@@ -52,8 +52,6 @@
     "docs/product/product_menu_blueprint_v1.md",
     "docs/product/product_menu_catalog_v1.md",
     "scripts/audit/verification_lane_baseline.json",
-    "scripts/audit/verification_lane_dispositions.json",
-    "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json"
   ],
   "environment": {
@@ -120,6 +118,18 @@
         "make/frontend.mk",
         "scripts/verify/frontend_contract_basis_guard.py",
         "scripts/verify/test_frontend_contract_basis_guard.py"
+      ]
+    },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "frontend/apps/web/src/",
+        "make/frontend.mk",
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py"
       ]
     },
     "unified_page_contract_assembler": {

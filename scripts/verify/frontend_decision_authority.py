@@ -209,6 +209,30 @@ def _gap(evidence: str, gap: str) -> dict:
 
 # R4 literals that look like business states but are pure UI/edit-session state.
 _EXCLUDED = {
+    "R4_business_state_literal|recoverable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts": {
+        "classification": "excluded-render-interaction",
+        "reason": (
+            "browser-local intake draft availability result; it selects restore/discard "
+            "feedback only, while fields, expiry and recovery policy come from the backend contract"
+        ),
+        "declaredClass": "ui_state_machine",
+    },
+    "R4_business_state_literal|invalid|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts": {
+        "classification": "excluded-render-interaction",
+        "reason": (
+            "browser-local payload compatibility/type validation result; it selects a "
+            "local warning and never changes permissions or created-record state"
+        ),
+        "declaredClass": "ui_state_machine",
+    },
+    "R4_business_state_literal|unavailable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts": {
+        "classification": "excluded-render-interaction",
+        "reason": (
+            "browser storage availability result; it preserves manual create and "
+            "selects the local-storage warning presentation"
+        ),
+        "declaredClass": "ui_state_machine",
+    },
     "R4_business_state_literal|reverted": {
         "classification": "excluded-render-interaction",
         "reason": (
