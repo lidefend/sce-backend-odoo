@@ -787,7 +787,15 @@ import { listColumnVisibilityBlockReason } from '../pages/listPage/listColumnVis
 import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../utils/fieldSemantics.ts';
 import { computed, inject, onActivated, onBeforeUnmount, onDeactivated, onErrorCaptured, onMounted, ref, watch, type Ref } from 'vue';
 import { logger } from '../utils/logger';
-import { applyBusinessListCustomFilter, applyBusinessListGroup, clearBusinessListCustomFilter, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
+import { applyBusinessListGroup, clearBusinessListGroup, clearBusinessListQueryState, countBusinessListConditions } from '../app/runtime/businessListQueryRuntime';
+import {
+  buildActionViewFieldFilter,
+  parseActionViewFieldFilter,
+  sameActionViewFieldFilter,
+  serializeActionViewFieldFilter,
+  type ActionViewFieldFilter,
+  type ActionViewFieldFilterPayload,
+} from '../app/runtime/actionViewFieldFilterRuntime';
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScButton from '../components/design-system/ScButton.vue';
@@ -1186,7 +1194,9 @@ const listAggregates = ref<Record<string, Record<string, unknown>>>({});
 const searchTerm = ref('');
 const toolbarSearchDraft = ref('');
 const toolbarSearchComposing = ref(false);
-const activeCustomFilter = ref<{ label: string; domain: unknown[] } | null>(null);
+const activeCustomFilter = ref<ActionViewFieldFilter | null>(
+  parseActionViewFieldFilter(route.query.field_filter),
+);
 const activeCustomFilterDomain = computed(() => activeCustomFilter.value?.domain || []);
 const activeCustomFilterLabel = computed(() => activeCustomFilter.value?.label || '');
 const activeGroupByDisplayLabel = ref('');
@@ -2151,6 +2161,7 @@ const routePresetRuntime = useActionViewRoutePresetRuntime({
   groupWindowId,
   groupWindowDigest,
   groupWindowIdentityKey,
+  listOffset,
   activeGroupSummaryKey,
   activeGroupSummaryDomain,
   groupSampleLimit,
@@ -2184,7 +2195,10 @@ const routePresetRuntime = useActionViewRoutePresetRuntime({
   buildActionViewPatchedRouteQuery,
   buildActionViewRouteSyncStatePayload,
   buildActionViewSyncedRouteQuery,
-  resolveRouteSyncExtra,
+  resolveRouteSyncExtra: (extra) => resolveRouteSyncExtra({
+    field_filter: serializeActionViewFieldFilter(activeCustomFilter.value),
+    ...(extra || {}),
+  }),
   resolveRouteSyncShouldAwaitLoad,
 });
 
@@ -2200,12 +2214,20 @@ function applyRoutePatchAndReload(patch: Record<string, unknown>): void {
 
 function updateActivityRuntimeQueryFromRoute(): void {
   if (route.name !== 'action') return;
+  const nextFieldFilter = parseActionViewFieldFilter(route.query.field_filter);
+  if (!sameActionViewFieldFilter(activeCustomFilter.value, nextFieldFilter)) {
+    activeCustomFilter.value = nextFieldFilter;
+  }
   session.updateActiveActivityRuntimeQuery(normalizeActivityRuntimeRouteQuery(route.query));
 }
 
 function syncRouteListState(extra?: Record<string, unknown>): void {
   suppressNextRouteReload.value = true;
-  routePresetRuntime.syncRouteListState(extra);
+  const routeExtra = {
+    ...(extra || {}),
+    field_filter: serializeActionViewFieldFilter(activeCustomFilter.value),
+  };
+  routePresetRuntime.syncRouteListState(routeExtra);
   session.updateActiveActivityRuntimeQuery(buildActivityRuntimeRouteState({
     currentQuery: route.query,
     searchTerm: searchTerm.value,
@@ -2214,7 +2236,7 @@ function syncRouteListState(extra?: Record<string, unknown>): void {
     groupBy: activeGroupByField.value,
     groupSampleLimit: groupSampleLimit.value,
     groupSort: groupSort.value,
-    extra,
+    extra: routeExtra,
   }));
 }
 
@@ -2296,12 +2318,21 @@ function clearGroupBy() {
   clearBusinessListGroup(activeGroupByDisplayLabel, clearGroupByRuntime);
 }
 
-function applyCustomFilter(payload: { label: string; domain: unknown[] }) {
-  applyBusinessListCustomFilter(payload, activeCustomFilter, () => { clearSelection(); void requestLoadPage(); });
+function applyCustomFilter(payload: ActionViewFieldFilterPayload) {
+  activeCustomFilter.value = buildActionViewFieldFilter(payload);
+  listOffset.value = 0;
+  groupWindowOffset.value = 0;
+  clearSelection();
+  syncRouteStateAndReload();
 }
 
 function clearCustomFilter() {
-  clearBusinessListCustomFilter(activeCustomFilter, () => { clearSelection(); void requestLoadPage(); });
+  if (!activeCustomFilter.value) return;
+  activeCustomFilter.value = null;
+  listOffset.value = 0;
+  groupWindowOffset.value = 0;
+  clearSelection();
+  syncRouteStateAndReload();
 }
 
 function clearAllListConditions() {

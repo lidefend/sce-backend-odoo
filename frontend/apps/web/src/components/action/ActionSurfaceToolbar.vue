@@ -185,7 +185,7 @@
               <span>{{ customFilterLabel }}</span>
             </ScButton>
             <div v-if="customFilterEnabled && customFilterOpen" class="custom-search-panel">
-              <ScSelect v-model="customFilterField" size="small" :placeholder="uiLabel('select_field', '选择字段')" :options="customFilterFields.map((field) => ({ value: field.field, label: field.label }))" />
+              <ScSelect v-model="customFilterField" size="small" :placeholder="uiLabel('select_field', '选择字段')" :options="customFilterFields.map((field) => ({ value: field.identity, label: field.label }))" />
               <ScSelect v-model="customFilterOperator" size="small" :options="activeCustomFilterOperators.map((operator) => ({ value: operator.value, label: operator.label }))" />
               <ScSelect v-if="activeCustomFilterField?.type === 'selection'" v-model="customFilterValue" size="small" :placeholder="uiLabel('select_value', '选择值')" :options="activeCustomFilterChoices.map((choice) => ({ value: choice.value, label: choice.label }))" />
               <ScSelect v-else-if="activeCustomFilterField?.type === 'boolean'" v-model="customFilterValue" size="small" :options="[{ value: 'true', label: uiLabel('boolean_true', FIELD_VALUE_TRUE_TEXT) }, { value: 'false', label: uiLabel('boolean_false', FIELD_VALUE_FALSE_TEXT) }]" />
@@ -400,9 +400,14 @@ import type { SavedSearchSubmissionResult, SavedSearchDeletionResult, SavedSearc
 type SearchChip = { key: string; label: string };
 type CustomOperator = { value: string; label: string; needs_value?: boolean };
 type CustomFilterField = {
+  identity: string;
+  occurrenceKey?: string;
   field: string;
   label: string;
   type: string;
+  relation?: string;
+  operator?: string;
+  queryMode?: string;
   operators?: CustomOperator[];
   choices?: Array<{ value: string; label: string }>;
 };
@@ -473,7 +478,17 @@ const emit = defineEmits<{
   group: [key: string];
   'clear-group': [];
   'custom-group': [payload: { key: string; label: string }];
-  'custom-filter': [payload: { field: string; label: string; operator: string; value: unknown; domain: unknown[] }];
+  'custom-filter': [payload: {
+    field: string;
+    occurrenceKey?: string;
+    label: string;
+    type: string;
+    relation?: string;
+    operator: string;
+    value: unknown;
+    domain: unknown[];
+    queryMode: string;
+  }];
   'clear-custom-filter': [];
   'clear-all': [];
   create: [];
@@ -542,7 +557,7 @@ const allSavedFilterChips = computed(() => [...props.savedFilterPrimary, ...prop
 const menuGroupChips = computed(() => [...props.groupPrimary, ...props.groupOverflow]);
 const allGroupChips = computed(() => [...menuGroupChips.value, ...props.customGroupFields]);
 const activeCustomFilterField = computed(() =>
-  props.customFilterFields.find((field) => field.field === customFilterField.value) || null,
+  props.customFilterFields.find((field) => field.identity === customFilterField.value) || null,
 );
 const activeCustomFilterOperators = computed<CustomOperator[]>(() => {
   const operators = activeCustomFilterField.value?.operators || [];
@@ -659,6 +674,7 @@ function normalizeCustomValue(value: string): unknown {
   const type = activeCustomFilterField.value?.type;
   if (type === 'boolean') return value === 'true';
   if (type === 'integer') return Number.parseInt(value, 10);
+  if (type === 'many2one') return Number.parseInt(value, 10);
   if (type === 'float' || type === 'monetary') return Number(value);
   return value;
 }
@@ -671,10 +687,14 @@ function applyCustomFilter() {
   searchMenuOpen.value = false;
   emit('custom-filter', {
     field: field.field,
+    occurrenceKey: field.occurrenceKey,
     label: `${field.label} ${customFilterValue.value}`,
+    type: field.type,
+    relation: field.relation,
     operator: customFilterOperator.value,
     value,
     domain,
+    queryMode: field.queryMode || 'domain',
   });
 }
 

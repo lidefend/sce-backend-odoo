@@ -54,6 +54,7 @@ export function normalizeActivityRuntimeRouteQuery(source: Dict): Dict {
     'search',
     'q',
     'active_filter',
+    'field_filter',
     'saved_filter',
     'group_by',
     'group_value',
@@ -150,6 +151,7 @@ type ListStatePatchOptions = {
   groupWindowId: string;
   groupWindowDigest: string;
   groupWindowIdentityKey: string;
+  listOffset?: number;
   extra?: Dict;
 };
 
@@ -164,6 +166,7 @@ export function buildActionViewListStatePatch(options: ListStatePatchOptions): D
     search: options.searchTerm.trim() || undefined,
     order: options.sortValue.trim() || undefined,
     active_filter: options.filterValue !== 'all' ? options.filterValue : undefined,
+    list_offset: Number(options.listOffset || 0) > 0 ? String(Math.trunc(Number(options.listOffset))) : undefined,
     group_by: options.activeGroupByField || undefined,
     group_sample_limit: options.groupSampleLimit !== defaultGroupSampleLimit ? options.groupSampleLimit : undefined,
     group_sort: options.groupSort !== defaultGroupSort ? options.groupSort : undefined,
@@ -201,6 +204,7 @@ export function buildActionViewSyncedRouteQuery(currentQuery: Dict, options: Syn
       groupWindowId: options.groupWindowId,
       groupWindowDigest: options.groupWindowDigest,
       groupWindowIdentityKey: options.groupWindowIdentityKey,
+      listOffset: options.listOffset,
       extra: options.extra,
     }),
   );

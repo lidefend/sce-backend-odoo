@@ -14,6 +14,7 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'search',
   'order',
   'active_filter',
+  'field_filter',
   'saved_filter',
   'group_by',
   'group_value',

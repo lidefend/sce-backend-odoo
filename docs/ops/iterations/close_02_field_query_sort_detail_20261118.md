@@ -105,7 +105,7 @@ Full `/smart_core` tag attempt:
 
 ## FE-CLOSE-02
 
-Status: active; backend handoff accepted on the same delivery branch.
+Status: implementation complete; lint, strict typecheck, focused runtime tests and production build passed. Browser journeys pending.
 
 Acceptance:
 
@@ -114,6 +114,27 @@ Acceptance:
 - Detail return and page reconstruction restore the same confirmed query context.
 - Any changed condition resets request offset, in-memory page and URL page together.
 
+Implemented:
+
+- Root `searchContract.fields` rows now feed the same field/operator/value controls as custom fields.
+- Native occurrences retain their `occurrence_key`; duplicate native occurrences with the same field name stay distinct.
+- Custom fields are merged after native fields and suppressed only when the same field already has a native declaration.
+- Selection/boolean/integer/monetary/many2one input normalization preserves typed values, including legal `false` and `0`.
+- A selected native declaration with a non-`domain` query mode fails closed as a contract gap instead of being evaluated in the frontend.
+- The confirmed field condition is serialized in route query `field_filter` with stable occurrence identity, field, label, type, relation, operator and typed value.
+- Route restoration rebuilds the active filter and its domain without relying on the component instance surviving.
+- `field_filter` is carried through the existing activity runtime query used by detail return.
+- `list_offset` is now part of the shared list-state patch and route-sync payload, so changing a query writes offset zero to the URL at the same time as memory and the next request.
+- The URL page remains untouched when a detail return carries an unchanged confirmed query.
+
+FE implementation validation:
+
+- `verify.frontend.collection_view_semantics.unit`: passed, including the new field-filter runtime test.
+- `verify.frontend.typecheck.strict`: passed.
+- `verify.frontend.lint.src`: passed with existing non-error warnings only.
+- `verify.frontend.contract_basis.unit`: 15 passed, open defects `0`.
+- `verify.frontend.build`: passed.
+
 ## Results
 
-Initial run registration complete. BE-CLOSE-02 closed its implementation and live-sample stage. FE-CLOSE-02 has started; joint browser acceptance remains pending.
+Initial run registration complete. BE-CLOSE-02 closed its implementation and live-sample stage. FE-CLOSE-02 implementation is ready for the two browser journeys; joint acceptance remains pending.

@@ -40,6 +40,7 @@ type UseActionViewRoutePresetRuntimeOptions = {
   groupWindowId: Ref<string>;
   groupWindowDigest: Ref<string>;
   groupWindowIdentityKey: Ref<string>;
+  listOffset: Ref<number>;
   activeGroupSummaryKey: Ref<string>;
   activeGroupSummaryDomain: Ref<unknown[]>;
   groupSampleLimit: Ref<number>;
@@ -239,6 +240,7 @@ export function useActionViewRoutePresetRuntime(options: UseActionViewRoutePrese
         groupWindowId: options.groupWindowId.value,
         groupWindowDigest: options.groupWindowDigest.value,
         groupWindowIdentityKey: options.groupWindowIdentityKey.value,
+        listOffset: options.listOffset.value,
         extra: options.resolveRouteSyncExtra(extra),
       }),
     );

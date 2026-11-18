@@ -871,6 +871,8 @@ verify.frontend.collection_view_semantics.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_navigation_entry_target.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_view_semantics_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-view-semantics-test.mjs >/dev/null
 	@node /tmp/collection-view-semantics-test.mjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/action-view-field-filter-runtime-test.mjs >/dev/null
+	@node /tmp/action-view-field-filter-runtime-test.mjs
 	@python3 addons/smart_core/tests/test_native_view_parser_surfaces.py
 	@python3 scripts/verify/collection_view_semantics_guard.py
 
