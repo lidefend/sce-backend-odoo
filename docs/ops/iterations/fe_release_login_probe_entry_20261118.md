@@ -18,7 +18,7 @@ route, credential or backend behavior is changed.
 
 Why not elsewhere:
 
-- no frontend, contract, business action or permission change;
+- no contract, business action, permission or backend behavior change;
 - no acceptance credential or database mutation;
 - no retry increase, assertion relaxation or browser-result substitution.
 
@@ -55,7 +55,7 @@ verification-lane registrations.
 | `verify.frontend.navigation_shell.unit` | PASS; 29 final shell tests, 227 collected assertions across the target |
 | `verify.frontend.state_dashboard.unit` | PASS; 25 Python tests plus all keyed activity-tab suites |
 | `verify.frontend.standard_preview.unit` | PASS; 139 tests plus 42 policy checks |
-| `ci.local.iteration` | PASS; 8 affected targets, 74 verification-lane tests, strict typecheck and lint |
+| `ci.local.iteration` | PASS; 11 affected targets, 74 verification-lane tests, strict typecheck and lint |
 | `verification lane coverage` | PASS; remote-only allowance remains 85 |
 
 The first modified-tree browser attempt reached the new managed login entry but
