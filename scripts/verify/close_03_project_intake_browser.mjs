@@ -4,6 +4,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
+import { bindAuthenticatedIntent } from './frontend_authenticated_intent.mjs';
 
 const FRONTEND_URL = String(process.env.SC_CLOSE_03_FRONTEND_URL || 'http://127.0.0.1:5175').replace(/\/+$/, '');
 const DATABASE = String(process.env.SC_CLOSE_03_DB || 'sc_frontend_acceptance');
@@ -64,24 +65,18 @@ async function login(page) {
   if (await inputs.nth(2).count()) {
     if (!(await inputs.nth(2).isDisabled())) await inputs.nth(2).fill(DATABASE);
   }
+  const startup = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    const payload = requestPayload(response.request());
+    return payload.intent === 'system.init';
+  }, { timeout: 45000 });
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForURL((url) => !url.pathname.includes('/login'), { timeout: 45000 });
+  return bindAuthenticatedIntent(await startup);
 }
 
-async function browserIntent(page, intent, params) {
-  const result = await page.evaluate(async ({ intentName, requestParams }) => {
-    const tokenKey = Object.keys(sessionStorage).find((key) => key.startsWith('sc_auth_token:'));
-    const token = tokenKey ? sessionStorage.getItem(tokenKey) : '';
-    const response = await fetch('/api/v1/intent', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      },
-      body: JSON.stringify({ intent: intentName, params: requestParams }),
-    });
-    return { status: response.status, body: await response.json() };
-  }, { intentName: intent, requestParams: params });
+async function browserIntent(context, replayIntent, intent, params) {
+  const result = await replayIntent(context, intent, params);
   check(result.status >= 200 && result.status < 300, `${intent} failed`, {
     status: result.status,
     code: result.body?.error?.code || '',
@@ -172,7 +167,7 @@ async function main() {
   });
 
   try {
-    await login(page);
+    const replayIntent = await login(page);
     const createUrl = `${FRONTEND_URL}/a/${intake.action_id}?menu_id=${intake.menu_id}`;
     await page.goto(createUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const name = page.locator('input[id*="field-field-name-occ-"]').first();
@@ -251,7 +246,7 @@ async function main() {
     ));
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'screenshots', '04-created-record.png') });
 
-    const readback = await browserIntent(page, 'api.data', {
+    const readback = await browserIntent(context, replayIntent, 'api.data', {
       op: 'list',
       model: 'project.project',
       fields: ['id', 'name', 'manager_id'],
@@ -295,12 +290,12 @@ async function main() {
     await page.waitForTimeout(2000);
     check(await page.locator('[data-intake-autosave]').count() === 0, 'project detail exposed intake recovery');
 
-    const cleanup = await browserIntent(page, 'api.data.unlink', {
+    const cleanup = await browserIntent(context, replayIntent, 'api.data.unlink', {
       model: 'project.project',
       ids: [createdId],
     });
     check(Number(cleanup?.deleted_count || 0) === 1, 'created project cleanup did not delete one record', cleanup);
-    const afterCleanup = await browserIntent(page, 'api.data', {
+    const afterCleanup = await browserIntent(context, replayIntent, 'api.data', {
       op: 'list',
       model: 'project.project',
       fields: ['id'],
