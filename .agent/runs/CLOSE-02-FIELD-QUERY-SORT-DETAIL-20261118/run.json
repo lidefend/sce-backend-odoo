@@ -45,13 +45,16 @@
   "stages": [
     {
       "id": "BE-CLOSE-02",
-      "status": "active",
+      "status": "completed",
       "owner": "single_writer",
-      "exit": "Clean backend candidate with schema-valid field semantics, consistent order, and raw samples for both entries"
+      "exit": "Clean backend candidate with schema-valid field semantics, consistent order, and raw samples for both entries",
+      "product_sha": "cfb6829c76e9476d61b2abd329809da260ddfb31",
+      "sample_summary_sha256": "ae938d7ff2b79c35dc593de6d01d0fef1bbde58ad4876f31fc4de4486363c6ca",
+      "sample_validation_sha256": "a947bc7fb766dbe9b60ea38cf0a14f1463b2aeae06582e46d00eb1dd65b89be6"
     },
     {
       "id": "FE-CLOSE-02",
-      "status": "planned",
+      "status": "active",
       "owner": "single_writer",
       "exit": "Shared ActionView query state, detail return and page reset behavior close on the backend candidate"
     },
@@ -193,5 +196,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Restart the registered local.dev source mount at HEAD, run the two-entry raw contract/query sample target, then record and commit the clean BE-CLOSE-02 candidate."
+  "next_exact_step": "Implement root native searchContract.fields consumption, route-backed field-filter restoration, and URL/in-memory list offset synchronization in the shared ActionView runtime."
 }

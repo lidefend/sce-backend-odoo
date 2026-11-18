@@ -417,7 +417,7 @@ verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
 
 .PHONY: verify.smart_core.close_02.module_baseline
 verify.smart_core.close_02.module_baseline: guard.prod.forbid
-	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=/smart_core
 
 .PHONY: verify.unified_page_contract.v2.client
 verify.unified_page_contract.v2.client: guard.prod.forbid
