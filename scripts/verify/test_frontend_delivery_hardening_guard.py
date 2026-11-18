@@ -662,6 +662,26 @@ class SettlementComplianceVisibilityTest(unittest.TestCase):
                     self.assertTrue((effective | extra) & set(field.attrib.get('groups', '').split(',')))
 
 
+class FrontendDeliveryHardeningReleaseEntryTest(unittest.TestCase):
+    def test_frontend_http_login_entries_reuse_the_managed_acceptance_probe(self):
+        source = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        for target in (
+            "verify.frontend.page_identity.browser:",
+            "verify.frontend.delivery_hardening.release.browser:",
+        ):
+            with self.subTest(target=target):
+                block = source.rsplit(target, 1)[1].split("\n\n", 1)[0]
+                self.assertIn(
+                    "acceptance.runtime.login_probe "
+                    'SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)"',
+                    block,
+                )
+                self.assertNotIn(
+                    "python3 scripts/verify/frontend_acceptance_login_probe.py",
+                    block,
+                )
+
+
 
 if __name__ == "__main__":
     unittest.main()

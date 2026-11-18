@@ -1,0 +1,102 @@
+{
+  "schema_version": 1,
+  "id": "FE-RELEASE-LOGIN-PROBE-ENTRY-20261118",
+  "branch": "fix/frontend-release-login-probe-entry-20261118",
+  "baseline_sha": "129df3827f4e8cffbc8302d626ec590ff63c14d9",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118.yaml",
+  "record": "docs/ops/iterations/fe_release_login_probe_entry_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118.yaml",
+    ".agent/runs/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_release_login_probe_entry_20261118.md",
+    "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+    "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+    "frontend/apps/web/src/components/product-shell/navigationMenuKeyboard.ts",
+    "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
+    "make/frontend.mk",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_navigation_shell_guard.py",
+    "scripts/verify/test_frontend_release_local_entry.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing Make tools and acceptance profile; no credential or service mutation by the focused guard"
+  },
+  "checks": {
+    "navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue",
+        "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue",
+        "frontend/apps/web/src/components/product-shell/navigationMenuKeyboard.ts",
+        "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py"
+      ]
+    },
+    "delivery_hardening_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/verify/frontend_probe_toolchain_guard.py",
+        "scripts/verify/frontend_navigation_shell_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_probe_toolchain_guard.py",
+        "scripts/verify/test_error_state_contract.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "scripts/verify/test_frontend_release_local_entry.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "runtime_evidence": {
+    "target": "verify.frontend.delivery_hardening.release.browser",
+    "status": "passed",
+    "source_head": "afb3e7029c804dbd9c0774ff4bf792c05387747a",
+    "reusable_check": false,
+    "reuse_policy": "Accepted stage exclusion: this target requires a clean product source and emits new source-bound browser artifacts. The remote frontend_release_gate remains the authoritative reusable system check; the exact local environment and readback hashes are recorded below.",
+    "environment": {
+      "profile": "local",
+      "compose_project": "sc-fe-r2-p1-01",
+      "database": "sc_frontend_acceptance",
+      "frontend_url": "http://127.0.0.1:5175",
+      "actor": "fixture_role_finance"
+    },
+    "result": {
+      "journeys": {
+        "J09": "PASS",
+        "J10": "PASS",
+        "J11": "PASS"
+      },
+      "accessibility_scans": 17,
+      "accessibility_blocking": 0,
+      "responsive_checks": 68,
+      "horizontal_overflow": 0,
+      "performance_budgets": "PASS",
+      "runtime_errors": 0
+    },
+    "readbacks": {
+      "artifacts/frontend-delivery-hardening/accessibility.json": "08c63ac197052d3a437266a04ab1201c1bddb1830af40c96e6c5e58036b58875",
+      "artifacts/frontend-delivery-hardening/report.json": "8bdab522e499f803eda6043b692cb3b6e8818ae667c0085ff28daeae77294a12",
+      "artifacts/frontend-delivery-hardening/responsive.json": "c1708875092763db97a38db5c143a1de6453a8b092af5b1f495b28c8b0889ba1",
+      "artifacts/frontend-delivery-hardening/performance.json": "be00e14790a8a7e376d8fc95f9635feecb0322dc813c8460115cac3917c38525",
+      ".runtime/agent-runs/FE-RELEASE-LOGIN-PROBE-ENTRY-20261118/release-browser-final.log": "3f49fa8bf1504bb08636fbcf448677c296dbe767c91a681b7114e78b133fa3f6"
+    }
+  },
+  "next_exact_step": "Commit the final run/evidence record, obtain independent re-review of the docs-only successor, publish the branch, and merge only after protected required checks pass."
+}

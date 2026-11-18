@@ -32,12 +32,15 @@
             role="tab"
             :aria-label="`切换至${page.title}`"
             :aria-selected="page.key === activeKey"
+            :tabindex="page.key === activeKey ? 0 : -1"
             @click.stop="handleTitleActivate(page)"
           >{{ page.title }}</ScButton>
           <ScIconButton
             class="activity-page-tab-close"
             appearance="activity-tab-close"
             :label="`${closeLabel}“${page.title}”`"
+            tabindex="-1"
+            aria-hidden="true"
             @click.stop="handleExplicitClose(page)"
           ><ScIcon name="close" :size="14" /></ScIconButton>
         </span>
