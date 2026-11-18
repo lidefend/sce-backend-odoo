@@ -364,7 +364,16 @@ def emit_samples() -> None:
 
     session = FinalApiSession(base_url)
     runtime_status, runtime_envelope = session.get_json("/api/runtime-version")
-    runtime_data = _require_ok(runtime_status, runtime_envelope, "runtime-version")
+    if runtime_status != 200:
+        raise RuntimeError("runtime-version failed: status=%s response=%s" % (
+            runtime_status,
+            json.dumps(runtime_envelope, ensure_ascii=False, sort_keys=True),
+        ))
+    runtime_data = (
+        runtime_envelope.get("data")
+        if isinstance(runtime_envelope.get("data"), dict)
+        else runtime_envelope
+    )
     served_sha = str(
         runtime_data.get("git_sha")
         or runtime_data.get("source_sha")
