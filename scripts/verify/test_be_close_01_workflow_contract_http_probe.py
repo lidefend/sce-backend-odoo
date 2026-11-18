@@ -65,6 +65,13 @@ class BEClose01WorkflowContractProbeTest(unittest.TestCase):
         self.assertEqual(request["op"], "model")
         self.assertNotIn("record_id", request)
 
+    def test_entry_identity_headers_are_loaded(self) -> None:
+        headers = PROBE._entry_headers()
+        self.assertEqual(headers["X-SC-Namespace"], "acceptance")
+        self.assertEqual(headers["X-SC-Audience"], "tenant")
+        self.assertTrue(headers["X-SC-Entry-Secret"])
+        self.assertTrue(headers["X-SC-Route-Version"])
+
 
 if __name__ == "__main__":
     unittest.main()

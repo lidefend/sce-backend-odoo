@@ -18,6 +18,7 @@ from jsonschema import Draft202012Validator
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_PATH = ROOT / "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json"
 REQUEST_DECLARATION_PATH = ROOT / "config/acceptance/backend_contract_instance_v1.json"
+ENTRY_IDENTITY_PATH = ROOT / "config/acceptance/isolated_entry_identity.v1.env"
 DEFAULT_IDS_PATH = ROOT / "artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json"
 DEFAULT_OUTPUT_PATH = ROOT / "artifacts/backend/be_close_01_workflow_contract_samples_v1.json"
 
@@ -28,6 +29,7 @@ class FinalApiSession:
         self.timeout = timeout
         self.token = ""
         self.jar = CookieJar()
+        self.entry_headers = _entry_headers()
         self.opener = urllib.request.build_opener(
             urllib.request.HTTPCookieProcessor(self.jar)
         )
@@ -62,7 +64,7 @@ class FinalApiSession:
         return status, envelope
 
     def _headers(self, *, anonymous: bool = False) -> dict[str, str]:
-        headers = {"Content-Type": "application/json"}
+        headers = {"Content-Type": "application/json", **self.entry_headers}
         if anonymous:
             headers["X-Anonymous-Intent"] = "1"
         elif self.token:
@@ -88,6 +90,26 @@ def _loads(raw: str) -> dict[str, Any]:
     if not isinstance(payload, dict):
         raise RuntimeError("final API response must be an object")
     return payload
+
+
+def _entry_headers() -> dict[str, str]:
+    values: dict[str, str] = {}
+    for line in ENTRY_IDENTITY_PATH.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        key, value = line.split("=", 1)
+        values[key.strip()] = value.strip()
+    required = {
+        "SC_ENTRY_NAMESPACE": "X-SC-Namespace",
+        "SC_ENTRY_AUDIENCE": "X-SC-Audience",
+        "SC_ENTRY_SHARED_SECRET": "X-SC-Entry-Secret",
+        "SC_ENTRY_ROUTE_VERSION": "X-SC-Route-Version",
+    }
+    missing = [key for key in required if not values.get(key)]
+    if missing:
+        raise RuntimeError("acceptance entry identity missing: %s" % ", ".join(missing))
+    return {header: values[key] for key, header in required.items()}
 
 
 def _require_ok(status: int, envelope: dict[str, Any], operation: str) -> dict[str, Any]:
