@@ -268,7 +268,13 @@ async function main() {
     const systemData = success({ status: systemStatus, body: systemBody }, 'system.init');
     const runtime = await getRuntime();
     const servedSha = String(runtime.git_sha || runtime.source_revision || '').trim();
-    if (servedSha && EXPECTED_SHA) check('runtime_source_sha', servedSha === EXPECTED_SHA, `${servedSha} != ${EXPECTED_SHA}`);
+    if (servedSha && EXPECTED_SHA) {
+      check(
+        'runtime_source_sha',
+        servedSha === EXPECTED_SHA,
+        `${servedSha} ${servedSha === EXPECTED_SHA ? '==' : '!='} ${EXPECTED_SHA}`,
+      );
+    }
     const actor = systemData?.user || {};
     const recordContext = systemData?.record_context || {};
     const navRows = walkNav(systemData?.navigation?.nav || []);
