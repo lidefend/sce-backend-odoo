@@ -672,6 +672,20 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_required_pr_workflows_select_contract_and_security_checks(self) -> None:
+        for workflow in (
+            ".github/workflows/frontend_release_gate.yml",
+            ".github/workflows/merge_policy_gate.yml",
+            ".github/workflows/professional_quality_gate.yml",
+            ".github/workflows/public_guard.yml",
+            ".github/workflows/release_candidate_gate.yml",
+        ):
+            with self.subTest(workflow=workflow):
+                self.assertEqual(select_targets([workflow]), [
+                    "verify.ci.workflow.contract",
+                    "verify.github_actions.security",
+                ])
+
     def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
         page_header_paths = (
             "scripts/verify/frontend_product_page_header_guard.py",

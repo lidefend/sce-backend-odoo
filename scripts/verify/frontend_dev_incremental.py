@@ -257,6 +257,8 @@ RULES = (
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/release_candidate_gate.yml",
     ), (
         "verify.ci.workflow.contract",
         "verify.github_actions.security",
