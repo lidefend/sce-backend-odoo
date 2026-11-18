@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5263`
+- Scanned files: `5265`
 - Files requiring split plan: `81`
-- Files above warning threshold: `153`
+- Files above warning threshold: `154`
 
 ## Split Plan Required
 
@@ -163,6 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1086 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
+| 1069 | Python source | `scripts/audit/generate_frontend_contract_business_journey_research.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |

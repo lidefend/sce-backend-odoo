@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118",
+  "branch": "audit/frontend-contract-business-journey-research-20261118",
+  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
+  "status": "active",
+  "goal": ".agent/goals/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118.yaml",
+  "record": "docs/frontend_productization/contract-business-journey-research-v1.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118.yaml",
+    ".agent/runs/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118/run.json",
+    "docs/frontend_productization/contract-business-journey-research-v1.md",
+    "docs/frontend_productization/contract-v2-consumption-research-v1.json",
+    "docs/frontend_productization/business-entry-journey-evidence-v1.csv",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "scripts/audit/generate_frontend_contract_business_journey_research.py",
+    "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current repository sources and existing checked evidence; no database, service or external state access"
+  },
+  "checks": {
+    "research_matrix": {
+      "target": "verify.frontend.contract_business_journey_research.unit",
+      "kind": "offline",
+      "inputs": [
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "docs/product/formal_business_operation_capability_matrix_v1.md",
+        "docs/product/system_user_experience_coverage_v1.json",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "docs/frontend_productization/contract-v2-consumption-research-v1.json",
+        "docs/frontend_productization/business-entry-journey-evidence-v1.csv",
+        "scripts/audit/generate_frontend_contract_business_journey_research.py",
+        "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+        "make/frontend.mk"
+      ]
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "kind": "offline",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118.yaml",
+        ".agent/runs/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py",
+        "make/codex.mk"
+      ]
+    },
+    "docs_links": {
+      "target": "verify.docs.links",
+      "kind": "offline",
+      "inputs": [
+        "docs/frontend_productization/contract-business-journey-research-v1.md",
+        "docs/frontend_productization/contract-v2-consumption-research-v1.json",
+        "docs/frontend_productization/business-entry-journey-evidence-v1.csv",
+        "scripts/verify/docs_links.py",
+        "scripts/verify/test_docs_links.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "verification_lane": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "make/guards.mk",
+        "scripts/audit/generate_frontend_contract_business_journey_research.py",
+        "scripts/audit/test_generate_frontend_contract_business_journey_research.py",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Review the P0 order in contract-business-journey-research-v1.md and select the first owning-layer closure: workflow-contract schema, search-panel/field-search, or intake autosave."
+}
