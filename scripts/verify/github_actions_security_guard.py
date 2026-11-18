@@ -173,10 +173,11 @@ def scan(root: Path) -> list[Finding]:
                 findings.add(Finding("GA019", relative, "BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE"))
             test_routing_requirements = (
                 'module_test_tags="sc_smoke/${module},sc_gate/${module}"',
-                'module_status=$?',
-                'python3 scripts/ci/run_backend_module_test.py',
-                '--timeout-seconds "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"',
-                '--heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"',
+                'timeout --signal=TERM --kill-after=10',
+                '"${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"',
+                'start_heartbeat "${module}" "${module_log}" "${module_attempt}"',
+                'pipeline_status=("${PIPESTATUS[@]}")',
+                'module_status="${pipeline_status[0]}"',
                 'for module_attempt in 1 2; do',
                 'attempt_db="${module_db}_retry1"',
                 '[[ ! "${module_status}" =~ ^(137|139)$ ]]',

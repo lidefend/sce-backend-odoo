@@ -108,8 +108,10 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
         selection = script[script.index('module_test_tags="${TEST_TAGS_INPUT}"'):
                            script.index('module_env_file=""')]
         consumer = re.search(
-            r'test_command=\(make test MODULE="\$\{module\}" '
-            r'TEST_TAGS="\$\{module_test_tags\}" DB_NAME="\$\{attempt_db\}"\)',
+            r'timeout --signal=TERM --kill-after=10 \\\s+'
+            r'"\$\{BACKEND_MODULE_TIMEOUT_SECONDS:-1200\}" \\\s+'
+            r'make test MODULE="\$\{module\}" TEST_TAGS="\$\{module_test_tags\}" \\\s+'
+            r'DB_NAME="\$\{attempt_db\}"',
             script,
         )
         self.assertIsNotNone(consumer, 'default module tags must reach the real test runner')
@@ -138,8 +140,8 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                 # no Odoo process or database is started by this wiring regression.
                 command = ('python3() { return 0; }\n'
                            'make() { printf "%s\\n" "$@"; }\n'
-                           + selection + consumer.group(0)
-                           + '\nprintf "%s\\n" "${test_command[@]}"\n')
+                           'timeout() { shift 2; shift; "$@"; }\n'
+                           + selection + consumer.group(0) + '\n')
                 outcome = subprocess.run(['bash', '-eu', '-c', command], env={**os.environ,
                     'module': bound['module'], 'TEST_TAGS_INPUT': '', 'RUNNER_TEMP': '/unused',
                     'attempt_db': 'unused'}, text=True, capture_output=True, check=True)

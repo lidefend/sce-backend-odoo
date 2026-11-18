@@ -192,11 +192,13 @@ If a runtime change has no changed executable test selectors, the planner falls
 back explicitly to complete affected modules rather than producing an empty
 green suite.
 
-Each module process has a hard timeout: ten minutes in the focused PR lane and
-twenty minutes in formal full lanes. A heartbeat reports the current module and
-elapsed time every thirty seconds. Timeout exits with status 124 and preserves
-the partial test log and evidence attempt, so a hung test cannot occupy the
-240-minute workflow ceiling invisibly.
+Each module keeps the original direct `make test ... | tee` execution path.
+GNU `timeout` applies the ten-minute focused-PR or twenty-minute formal-lane
+ceiling without inserting another process/session wrapper into Make's execution
+semantics. A shell heartbeat reports the current module and elapsed time every
+thirty seconds. Timeout exits with status 124 and preserves the partial test
+log and evidence attempt, so a hung test cannot occupy the 240-minute workflow
+ceiling invisibly.
 
 Authenticated historical receipts remain observation-only unless all existing
 closure authorities pass. They may still supply exact measured module durations

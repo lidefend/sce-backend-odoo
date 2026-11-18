@@ -136,11 +136,13 @@ python3() {
         )
         self.assertEqual('30', suite['env']['BACKEND_MODULE_HEARTBEAT_SECONDS'])
         run = next(s['run'] for s in suite['steps'] if s['name'] == 'Run backend test suite per module')
-        self.assertIn('scripts/ci/run_backend_module_test.py', run)
-        self.assertIn('--timeout-seconds "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"', run)
-        self.assertIn('--heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"', run)
+        self.assertIn('timeout --signal=TERM --kill-after=10', run)
+        self.assertIn('"${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"', run)
+        self.assertIn('start_heartbeat "${module}" "${module_log}" "${module_attempt}"', run)
+        self.assertIn('pipeline_status=("${PIPESTATUS[@]}")', run)
+        self.assertNotIn('scripts/ci/run_backend_module_test.py', run)
         self.assertIn('--module "${module}" --selectors', run)
-        self.assertNotIn('| tee "${module_log}"', run)
+        self.assertIn('2>&1 | tee "${module_log}"', run)
         resolve = next(
             step for step in suite['steps']
             if step.get('name') == 'Resolve module list'
@@ -212,7 +214,7 @@ python3() {
                 'label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}',
                 body,
             )
-        self.assertIn('docker logs --no-color --tail=400', failure_logs)
+        self.assertIn('docker logs --tail=400', failure_logs)
         self.assertIn('docker rm -f "${container}"', cleanup)
 
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
@@ -486,20 +488,17 @@ make() {
   printf '2026-10-24 00:00:00 INFO %s odoo.addons.example.tests.test_fixture: Starting Fixture.test_one ...\n' "$db"
   printf "0 failed, 0 error(s) of 1 tests when loading database '%s'\n" "$db"
 }
+timeout() {
+  while [ "$#" -gt 0 ]; do
+    case "$1" in
+      --signal=*|--kill-after=*) shift ;;
+      *[!0-9.]*) break ;;
+      *) shift; break ;;
+    esac
+  done
+  "$@"
+}
 python3() {
-  if [ "$1" = scripts/ci/run_backend_module_test.py ]; then
-    shift
-    log=''
-    while [ "$#" -gt 0 ] && [ "$1" != -- ]; do
-      if [ "$1" = --log ]; then shift; log="$1"; fi
-      shift
-    done
-    [ "$1" = -- ] && shift
-    "$@" > "$log" 2>&1
-    status=$?
-    cat "$log"
-    return "$status"
-  fi
   if [ "$1" = -m ]; then
     if [ "$CASE" = python_fail ]; then return 1; fi
     printf 'Ran 1 test in 0.001s\n\nOK\n'; return 0
@@ -528,6 +527,7 @@ python3() {
                     'GITHUB_ENV':str(folder/'env'),'GITHUB_STEP_SUMMARY':str(folder/'summary'),
                     'HEAD_SHA':'a'*40,'IMPACT_BASE':'b'*40,'SHARD_INDEX':'0','DB_NAME':'fixture_db',
                     'ENV_FILE':str(folder/'managed.env'),'TEST_TAGS_INPUT':'','GITHUB_EVENT_NAME':'pull_request',
+                    'BACKEND_MODULE_TIMEOUT_SECONDS':'2','BACKEND_MODULE_HEARTBEAT_SECONDS':'0.05',
                     'SC_BACKEND_ISOLATED_PYTHON':'1' if case.startswith('python_isolated') else '0',
                     'MODULES':'' if case.startswith('python') else 'example',
                     'PYTHON_MODULES':'smart_construction_scene' if case.startswith('python') else ''}

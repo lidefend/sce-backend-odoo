@@ -392,6 +392,32 @@ jobs:
           failed=0
           attempted=0
           reused=0
+          heartbeat_done=""
+          heartbeat_pid=""
+          start_heartbeat() {
+            local heartbeat_module="$1"
+            local heartbeat_log="$2"
+            local heartbeat_attempt="$3"
+            heartbeat_done="${RUNNER_TEMP}/backend-module-complete-${GITHUB_RUN_ID}-${SHARD_INDEX}-${heartbeat_module}-${heartbeat_attempt}"
+            rm -f "${heartbeat_done}"
+            (
+              local heartbeat_started=${SECONDS}
+              while [ ! -e "${heartbeat_done}" ]; do
+                sleep "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"
+                [ -e "${heartbeat_done}" ] && break
+                local heartbeat_line="[backend-module-heartbeat] module=${heartbeat_module} elapsed_seconds=$((SECONDS - heartbeat_started)) timeout_seconds=${BACKEND_MODULE_TIMEOUT_SECONDS:-1200} status=running"
+                printf '%s\n' "${heartbeat_line}" >&2
+                printf '%s\n' "${heartbeat_line}" >> "${heartbeat_log}"
+              done
+            ) &
+            heartbeat_pid=$!
+          }
+          stop_heartbeat() {
+            [ -n "${heartbeat_done}" ] && touch "${heartbeat_done}"
+            if [ -n "${heartbeat_pid}" ]; then
+              wait "${heartbeat_pid}" 2>/dev/null || true
+            fi
+          }
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
           planned_python="$(printf '%s\n' ${PYTHON_MODULES} | wc -w | tr -d ' ')"
           planned_mixed="$(printf '%s\n' ${MIXED_PYTHON_FILES:-} | wc -w | tr -d ' ')"
@@ -466,21 +492,27 @@ jobs:
               fi
               module_log="${RUNNER_TEMP}/backend-suite-odoo-${module}-${GITHUB_RUN_ID}-attempt${module_attempt}.log"
               attempt_started=${SECONDS}
-              test_command=(make test MODULE="${module}" TEST_TAGS="${module_test_tags}" DB_NAME="${attempt_db}")
-              runner_command=(python3 scripts/ci/run_backend_module_test.py \
-                --module "${module}" \
-                --timeout-seconds "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
-                --heartbeat-seconds "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}" \
-                --log "${module_log}" --
-                "${test_command[@]}")
+              start_heartbeat "${module}" "${module_log}" "${module_attempt}"
               if [ -n "${attempt_env_file}" ]; then
-                ENV_FILE="${attempt_env_file}" "${runner_command[@]}"
+                ENV_FILE="${attempt_env_file}" timeout --signal=TERM --kill-after=10 \
+                  "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
+                  make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                  DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               else
-                "${runner_command[@]}"
+                timeout --signal=TERM --kill-after=10 \
+                  "${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}" \
+                  make test MODULE="${module}" TEST_TAGS="${module_test_tags}" \
+                  DB_NAME="${attempt_db}" 2>&1 | tee "${module_log}"
               fi
-              module_status=$?
+              pipeline_status=("${PIPESTATUS[@]}")
+              stop_heartbeat
+              module_status="${pipeline_status[0]}"
               module_duration=$((module_duration + SECONDS - attempt_started))
-              module_log_status=0
+              module_log_status="${pipeline_status[1]}"
+              if [ "${module_log_status}" -ne 0 ]; then
+                module_evidence_failed=1
+                failed=1
+              fi
               if ! python3 scripts/ci/backend_test_receipt.py archive-attempt \
                   --module "${module}" --kind orm --attempt "${module_attempt}" --head "${HEAD_SHA}" \
                   --status "${module_status}" --log-status "${module_log_status}" --database "${attempt_db}" \
@@ -685,7 +717,7 @@ jobs:
             --filter "label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}"); do
             echo "===== container ${container} ====="
             docker inspect -f '{{.Name}} {{.State.Status}} exit={{.State.ExitCode}}' "${container}" || true
-            docker logs --no-color --tail=400 "${container}" || true
+            docker logs --tail=400 "${container}" || true
           done
 
       - name: Cleanup

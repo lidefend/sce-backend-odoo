@@ -35,6 +35,14 @@ product contract, model, permission, action, frontend behavior or customer data.
   the required `odoo_test_helper` import stub. This made module execution
   depend on package-index availability and hid the stalled phase behind a
   quiet command.
+- Run `44297938455` then proved that the preserved project contained only
+  PostgreSQL and Redis, with no `sc-test-odoo-*` container and no test-entry
+  output. The remaining stall is in the host-side module command startup, before
+  the Odoo test container exists.
+- The startup stall was introduced by the Python process wrapper: it changed
+  the direct `make test ... | tee` execution into a separate session with
+  captured stdout. Run `44297938455` showed no child output and no one-off Odoo
+  container, matching that execution-semantics regression.
 
 ## Correction
 
@@ -43,8 +51,8 @@ product contract, model, permission, action, frontend behavior or customer data.
   modules; fall back to complete modules when no changed tests exist.
 - Keep full module baselines for schedule, explicit candidate and operator full
   audits.
-- Execute every Odoo module through a hard-timeout wrapper with a 30-second
-  heartbeat and preserved partial log.
+- Preserve the original direct Make execution and add GNU `timeout` around it,
+  with a 30-second shell heartbeat and preserved partial log.
 - Use authenticated historical durations for shard balancing even when test
   reuse remains denied by the existing six-dimension closure policy.
 - Before planning or invoking Make, materialize the exact PR base SHA as
@@ -55,6 +63,8 @@ product contract, model, permission, action, frontend behavior or customer data.
 - Backend suite containers skip the generic dependency installation and emit an
   explicit dependency-stage marker. They retain a named one-off container until
   cleanup so timeout diagnostics include the exact process log.
+- Remove the Python process/session wrapper whose captured-stdout execution
+  prevented the original Make path from creating its one-off test container.
 
 ## Acceptance
 
@@ -95,6 +105,9 @@ together. No database or runtime state requires restoration.
 - Exact-head run `44295077001` proved the missing-ref repair and exposed the
   second blocker: both modules timed out with no test output because the
   unconditional dependency install never reached Odoo.
+- Exact-head run `44297938455` proved the dependency-install and container-log
+  changes, and exposed the wrapper regression: no child output and no one-off
+  test container were created before timeout.
 - A full local `ci.local.iteration` was intentionally stopped after fifteen
   targets because it would repeat already-passed PR business ORM work. It is
   not reported as a pass; the exact-head remote PR remains the integration

@@ -104,7 +104,7 @@ def preparation_groups(graph: dict, modules: list[str]) -> list[list[str]]:
 EXECUTION_INPUTS = impact.GLOBAL + ('scripts/ci/backend_suite_plan.py',
     'scripts/ops/evidence_scope.py', 'scripts/ci/backend_changed_test_coverage.py', 'scripts/ci/scheduled_validation.py',
     'scripts/ci/ci_risk_classifier.py', 'config/ci/risk_tiering_v1.json',
-    'scripts/ci/backend_test_receipt.py', 'scripts/ci/run_backend_module_test.py',
+    'scripts/ci/backend_test_receipt.py',
     'scripts/common/**', 'scripts/_lib/**',
     'scripts/render_odoo_conf.py', 'config/requirements-test.txt')
 

@@ -51,15 +51,15 @@
     "scripts/verify/unified_page_contract_v2_schema_guard.py",
     "scripts/ci/backend_test_receipt.py",
     "scripts/ci/backend_suite_plan.py",
-    "scripts/ci/run_backend_module_test.py",
     "scripts/test/test.sh",
     "scripts/ci/test_backend_test_receipt.py",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
-    "scripts/ci/test_run_backend_module_test.py",
     "scripts/verify/github_actions_security_guard.py",
     "scripts/verify/test_github_actions_security_guard.py",
-    "scripts/verify/test_test_coverage_registry_audit.py"
+    "scripts/verify/test_test_coverage_registry_audit.py",
+    "scripts/ci/run_backend_module_test.py",
+    "scripts/ci/test_run_backend_module_test.py"
   ],
   "environment": {
     "kind": "offline",
@@ -171,11 +171,9 @@
         "make/ci.mk",
         "scripts/ci/backend_test_receipt.py",
         "scripts/ci/backend_suite_plan.py",
-        "scripts/ci/run_backend_module_test.py",
         "scripts/ci/test_backend_test_receipt.py",
         "scripts/ci/test_backend_suite_plan.py",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py",
-        "scripts/ci/test_run_backend_module_test.py",
         "scripts/test/test.sh",
         "scripts/ci/backend_impact_plan.py",
         "scripts/ci/ci_path_ownership.py",
@@ -203,11 +201,9 @@
         ".github/workflows/professional_quality_gate.yml",
         "scripts/ci/backend_test_receipt.py",
         "scripts/ci/backend_suite_plan.py",
-        "scripts/ci/run_backend_module_test.py",
         "scripts/ci/test_backend_test_receipt.py",
         "scripts/ci/test_backend_suite_plan.py",
         "scripts/ci/test_backend_test_suite_dispatch_contract.py",
-        "scripts/ci/test_run_backend_module_test.py",
         "scripts/test/test.sh"
       ]
     },
@@ -400,5 +396,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the backend dependency-install and timeout-log repair on PR #933 and verify both focused shards reach and complete Odoo tests."
+  "next_exact_step": "Publish the direct-Make timeout repair on PR #933 and verify both focused shards create their Odoo containers and complete."
 }
