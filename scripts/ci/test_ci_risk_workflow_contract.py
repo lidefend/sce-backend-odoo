@@ -821,22 +821,71 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertTrue(all('checkout' not in step.get('name', '').lower()
                             for step in jobs['professional_quality_gate']['steps']))
 
-    def test_scheduled_backend_cannot_be_skipped_by_empty_impact(self):
+    def test_formal_release_backend_cannot_be_skipped_by_empty_impact(self):
         step = next(s for s in self.jobs()['professional_quality_gate']['steps']
                     if s['name'] == 'Enforce affected backend execution')
-        for impact in ('true', 'false', ''):
-            for result in ('success', 'failure', 'cancelled', 'skipped', ''):
-                outcome = subprocess.run(['bash', '-c', step['run']], capture_output=True,
-                    env={**os.environ, 'EVENT_NAME': 'schedule', 'AUTHORIZATION_RESULT': 'success',
-                         'IMPACT_REQUIRED': impact, 'IMPACT_RESULT': result})
-                self.assertEqual(result == 'success', outcome.returncode == 0)
+        for event, candidate in (
+            ('schedule', 'false'),
+            ('workflow_dispatch', 'true'),
+            ('pull_request', 'true'),
+            ('pull_request', 'false'),
+        ):
+            for impact in ('true', 'false', ''):
+                for result in ('success', 'failure', 'cancelled', 'skipped', ''):
+                    required = (
+                        event == 'schedule'
+                        or candidate == 'true'
+                        or impact == 'true'
+                    )
+                    expected = (
+                        result == 'success'
+                        if required
+                        else result == 'skipped'
+                    )
+                    if event == 'pull_request' and impact not in {'true', 'false'}:
+                        expected = False
+                    outcome = subprocess.run(
+                        ['bash', '-c', step['run']],
+                        capture_output=True,
+                        env={
+                            **os.environ,
+                            'EVENT_NAME': event,
+                            'AUTHORIZATION_RESULT': 'success',
+                            'CANDIDATE_REQUESTED': candidate,
+                            'IMPACT_REQUIRED': impact,
+                            'IMPACT_RESULT': result,
+                        },
+                    )
+                    self.assertEqual(
+                        expected,
+                        outcome.returncode == 0,
+                        (event, candidate, impact, result, outcome.stderr),
+                    )
         quality = self.jobs()['professional_quality_checks']
         baseline = next(s for s in quality['steps'] if s.get('run') == 'make verify.test.baseline')
-        self.assertEqual("github.event_name == 'schedule'", baseline['if'])
-        evidence = next(s for s in quality['steps'] if s.get('name') == 'Preserve scheduled offline baseline evidence')
+        self.assertEqual(
+            "github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'",
+            baseline['if'],
+        )
+        evidence = next(s for s in quality['steps'] if s.get('name') == 'Preserve formal-release offline baseline evidence')
         self.assertEqual('.runtime/test-baseline/offline/', evidence['with']['path'])
         self.assertIn('always()', evidence['if'])
-        self.assertIn("github.event_name == 'schedule' ||", self.jobs()['backend_impact_suite']['if'])
+        self.assertIn(
+            "needs.professional_authorization.outputs.candidate_requested == 'true'",
+            self.jobs()['backend_impact_suite']['if'],
+        )
+        self.assertEqual(
+            "${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}",
+            self.jobs()['backend_impact_suite']['with']['base_sha'],
+        )
+        full_gate = next(
+            step for step in quality['steps']
+            if step.get('name') == 'Run full professional quality gate (serialized artifact writers)'
+        )
+        self.assertIn(
+            '[ "${CANDIDATE_REQUESTED}" != true ]',
+            full_gate['run'],
+        )
         for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',
                      'merge_policy_gate', 'release_candidate_gate'):
             text = (ROOT / '.github/workflows' / (name + '.yml')).read_text()

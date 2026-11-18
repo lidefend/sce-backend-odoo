@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "a043190f5ad7972ae071579d118f840f2fb2aabf",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FORMAL-RELEASE-CI-PARITY-20261118.yaml",
+    ".agent/runs/FORMAL-RELEASE-CI-PARITY-20261118/run.json",
+    ".github/workflows/professional_quality_gate.yml",
+    "docs/ops/iterations/formal_release_ci_parity_20261118.md",
+    "scripts/ci/test_ci_risk_workflow_contract.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets and GitHub Actions exact-head workflows; no product database or deployment mutation"
+  },
+  "checks": {
+    "ci_risk_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/professional_quality_gate.yml",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/professional_quality_gate.yml",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/verify/frontend_release_ci_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        ".github/workflows",
+        "Makefile",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh generated evidence, commit the exact head, publish it, and require the four standard PR checks before protected merge.",
+  "id": "FORMAL-RELEASE-CI-PARITY-20261118",
+  "branch": "fix/formal-ci-parity-20261118",
+  "status": "active",
+  "goal": ".agent/goals/FORMAL-RELEASE-CI-PARITY-20261118.yaml",
+  "record": "docs/ops/iterations/formal_release_ci_parity_20261118.md"
+}

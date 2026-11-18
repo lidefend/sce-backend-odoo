@@ -1,0 +1,55 @@
+schema_version: 1
+goal:
+  id: FORMAL-RELEASE-CI-PARITY-20261118
+  title: Make scheduled and explicit formal-release CI use one condition
+  status: active
+  formal_product_layer: P4
+  layer_target: exact-head formal-release CI aggregation
+  module:
+    - professional quality gate
+    - backend test suite orchestration
+    - scheduled and explicit candidate qualification
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Ensure nightly schedule, explicit candidate and authorized operator full
+    audits all require the same complete backend suite and offline baseline
+    before professional_quality_gate can satisfy the formal-release condition.
+  baseline:
+    branch: main
+    full_sha: a043190f5ad7972ae071579d118f840f2fb2aabf
+  product_boundary:
+    why_here: >-
+      CI aggregation is a P4 delivery mechanism. A formal-release conclusion
+      must bind one exact head to the same complete verification condition
+      regardless of which authorized trigger requested it.
+    why_not_elsewhere:
+      - No product contract, business rule, database data or deployment is changed.
+      - Ordinary PR merge lanes remain risk-selected and do not require the full suite.
+      - The required-check names and protected merge process remain unchanged.
+    blast_radius:
+      - .github/workflows/professional_quality_gate.yml
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - formal-release CI documentation and generated evidence
+  deliverables:
+    - .github/workflows/professional_quality_gate.yml
+    - scripts/ci/test_ci_risk_workflow_contract.py
+    - docs/ops/iterations/formal_release_ci_parity_20261118.md
+    - .agent/active-runs.json
+    - .agent/goals/FORMAL-RELEASE-CI-PARITY-20261118.yaml
+    - .agent/runs/FORMAL-RELEASE-CI-PARITY-20261118/run.json
+  acceptance:
+    - Schedule, ci:candidate and authorized operator full audit all request the nested full backend suite.
+    - Explicit formal-release runs use the complete module scope rather than PR changed-module scope.
+    - Schedule, ci:candidate and authorized operator full audit all execute the registered offline baseline.
+    - Ordinary PR standard lanes keep their existing changed-scope behavior.
+    - professional_quality_gate fails if the formal backend suite or offline baseline fails.
+    - release_candidate_gate continues to emit deployment_ready=false.
+  exclusions:
+    - Product code, contracts, database data, deployment and user acceptance.
+    - Required-check names, branch rulesets and ordinary PR standard-lane behavior.
+  rollback: >-
+    Revert the formal-release condition routing and its contract tests together.
+    No runtime data requires restoration.
+  next_exact_step: >-
+    Implement formal-release trigger parity, run affected non-zero checks, then
+    publish and merge through the protected exact-head PR lane.
