@@ -412,7 +412,10 @@ verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
 	@python3 -m py_compile \
 	  addons/smart_core/app_config_engine/models/app_search_config.py \
 	  addons/smart_core/core/unified_page_contract_v2_assembler.py \
-	  addons/smart_core/tests/test_contract_projection_json_boundaries.py
+	  addons/smart_core/tests/test_contract_projection_json_boundaries.py \
+	  scripts/verify/close_02_backend_contract_samples_validate.py
+	@node --check scripts/verify/close_02_backend_contract_samples.mjs
+	@node --check scripts/verify/close_02_field_query_browser_journeys.mjs
 	@python3 addons/smart_core/tests/test_contract_projection_json_boundaries.py
 
 .PHONY: verify.smart_core.close_02.module_baseline

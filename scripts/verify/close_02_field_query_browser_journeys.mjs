@@ -144,9 +144,8 @@ async function applyExistingFilter(page, label) {
 }
 
 async function goNextPage(page, footer) {
-  const next = footer.locator('.t-pagination__btn-next').first();
-  check(await next.isVisible(), 'pagination next button is missing');
-  check(await next.isEnabled(), 'pagination next button is disabled');
+  const next = footer.getByRole('listitem').filter({ hasText: /^2$/ }).first();
+  check(await next.isVisible(), 'pagination page two is missing');
   const pageTwo = await waitForList(page, async () => {
     await next.click();
   });

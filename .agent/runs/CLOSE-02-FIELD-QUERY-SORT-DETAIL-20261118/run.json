@@ -18,6 +18,8 @@
     "addons/smart_core/tests/",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "frontend/apps/web/src/app/action_runtime",
+    "frontend/apps/web/src/app/action_runtime/useActionViewFilterComputedRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewRoutePresetRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewFieldFilterRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewRouteSyncStateRuntime.ts",
     "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts",
@@ -38,6 +40,8 @@
     "scripts/verify",
     "scripts/verify/close_02_backend_contract_samples.mjs",
     "scripts/verify/close_02_backend_contract_samples_validate.py",
+    "scripts/verify/close_02_field_query_browser_journeys.mjs",
+    "scripts/verify/frontend_dev_incremental.py",
     "config/frontend/probe_toolchain_registry.json",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/audit/verification_lane_baseline.json",
@@ -157,32 +161,220 @@
         "scripts/verify/unified_page_contract_v2_runtime_guard.py"
       ]
     },
-    "close_02_samples": {
-      "target": "verify.backend.close_02.search_contract.samples",
+    "baseline_iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "kind": "offline",
+      "inputs": [
+        "AGENTS.md",
+        "docs/architecture/stable_baseline_iteration_invariants_v1.md",
+        "docs/ops/codex_delivery_collaboration_protocol_v1.md",
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py"
+      ]
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        ".github/workflows/",
+        "config/ci/path_ownership_v1.json",
+        "make/ci.mk",
+        "scripts/ci/"
+      ]
+    },
+    "entry_equivalence": {
+      "target": "verify.contract.entry_equivalence.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/",
+        "docs/contract/exports/",
+        "scripts/verify/contract_v2_entry_equivalence_guard.py"
+      ]
+    },
+    "acceptance_fixture_unit": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "make/dev.mk"
+      ]
+    },
+    "action_view_page_actions": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "action_view_page_size": {
+      "target": "verify.frontend.action_view_page_size_runtime.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/actionViewListPageSizeRuntime.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_list_page_size_runtime_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "action_view_surface_gate": {
+      "target": "verify.frontend.action_view_surface_gate_runtime.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/action_view_surface_gate_runtime_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "collection_action_toolbar": {
+      "target": "verify.frontend.collection_action_toolbar.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue",
+        "frontend/apps/web/scripts/collection_action_settlement_test.ts",
+        "scripts/verify/frontend_collection_action_toolbar_guard.py",
+        "scripts/verify/test_frontend_collection_action_toolbar_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src"
+      ]
+    },
+    "overlay_lifecycle": {
+      "target": "verify.frontend.overlay_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/",
+        "frontend/apps/web/scripts/modal_lifecycle_runtime_test.ts",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "page_pattern_reference_parity": {
+      "target": "verify.frontend.page_pattern_reference_parity.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/action/",
+        "scripts/verify/frontend_page_pattern_reference_parity_guard.py",
+        "scripts/verify/test_frontend_page_pattern_reference_parity_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "project_profile_write": {
+      "target": "verify.local.dev.project_profile_write.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/local_dev_project_profile_write_browser.mjs",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
+      ]
+    },
+    "playwright_vendor_coupling": {
+      "target": "verify.frontend.playwright_vendor_coupling.guard",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/",
+        "scripts/verify/playwright_vendor_coupling_guard.py",
+        "scripts/verify/test_playwright_vendor_coupling_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "native_search_contract_orm": {
+      "target": "verify.native_action.search_view.orm",
       "kind": "runtime",
       "inputs": [
         "addons/smart_core/app_config_engine/models/app_search_config.py",
-        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
-        "config/frontend/probe_toolchain_registry.json",
-        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
-        "make/ci.mk",
-        "scripts/verify/close_02_backend_contract_samples.mjs",
-        "scripts/verify/close_02_backend_contract_samples_validate.py",
-        "scripts/verify/frontend_authenticated_intent.mjs"
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/core/native_action_search_view.py",
+        "addons/smart_core/tests/test_native_action_search_view_integration.py",
+        "make/guards.mk"
       ],
       "readback": {
-        "artifact": ".runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples/summary.json"
+        "artifact": ".runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/native_search_contract_orm_readback.json"
       }
     },
-    "smart_core_module_baseline": {
-      "target": "verify.smart_core.close_02.module_baseline",
-      "kind": "runtime",
+    "unified_page_contract_action": {
+      "target": "verify.unified_page_contract.v2.action",
+      "kind": "offline",
       "inputs": [
-        "addons/smart_core",
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "scripts/verify/unified_page_contract_v2_action_guard.py",
+        "make/ci.mk"
+      ]
+    },
+    "unified_page_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+        "make/ci.mk"
+      ]
+    },
+    "unified_page_contract_status": {
+      "target": "verify.unified_page_contract.v2.status",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_status.py",
+        "scripts/verify/unified_page_contract_v2_status_guard.py",
+        "make/ci.mk"
+      ]
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
         "make/ci.mk",
-        "make/dev.mk",
-        "scripts/dev/local_test_runner.py",
-        "docker-compose.test-isolation.yml"
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/test_verification_lane_coverage.py"
       ]
     },
     "typecheck_strict": {
@@ -201,5 +393,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Implement root native searchContract.fields consumption, route-backed field-filter restoration, and URL/in-memory list offset synchronization in the shared ActionView runtime."
+  "next_exact_step": "Record exact-candidate evidence, complete independent review, publish one protected CLOSE-02 PR and verify all four required checks on its head."
 }

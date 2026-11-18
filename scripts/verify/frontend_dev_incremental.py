@@ -1550,6 +1550,19 @@ RULES = (
         "verify.unified_page_contract.v2.runtime",
     )),
     Rule((
+        "addons/smart_core/tests/test_contract_projection_json_boundaries.py",
+        "scripts/verify/close_02_backend_contract_samples.mjs",
+        "scripts/verify/close_02_backend_contract_samples_validate.py",
+    ), (
+        "verify.smart_core.search_contract.close_02.unit",
+    )),
+    Rule((
+        "scripts/verify/close_02_field_query_browser_journeys.mjs",
+    ), (
+        "verify.frontend.dev.incremental.unit",
+        "verify.frontend.playwright_vendor_coupling.guard",
+    )),
+    Rule((
         "addons/smart_core/core/native_action_view_set.py",
         "addons/smart_core/app_config_engine/services/resolvers/action_resolver.py",
         "addons/smart_core/handlers/ui_contract_preview.py",

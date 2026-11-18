@@ -3405,7 +3405,7 @@
     "verify.backend.close_02.search_contract.samples": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
-      "reason": "CLOSE-02 BE handoff probe: browser-authenticated, tenant-namespace, read-only contract and api.data sampling against the registered acceptance carrier. It is intentionally on demand because it depends on the seeded two-entry fixture runtime.",
+      "reason": "CLOSE-02 BE handoff probe: tenant-namespace, read-only contract and api.data sampling against the registered acceptance carrier. It is intentionally on demand because it requires the seeded two-entry acceptance fixture and exact current source artifact.",
       "review_by": "2027-02-28"
     },
     "verify.smart_core.close_02.module_baseline": {
