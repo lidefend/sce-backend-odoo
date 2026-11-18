@@ -104,7 +104,8 @@ def preparation_groups(graph: dict, modules: list[str]) -> list[list[str]]:
 EXECUTION_INPUTS = impact.GLOBAL + ('scripts/ci/backend_suite_plan.py',
     'scripts/ops/evidence_scope.py', 'scripts/ci/backend_changed_test_coverage.py', 'scripts/ci/scheduled_validation.py',
     'scripts/ci/ci_risk_classifier.py', 'config/ci/risk_tiering_v1.json',
-    'scripts/ci/backend_test_receipt.py', 'scripts/common/**', 'scripts/_lib/**',
+    'scripts/ci/backend_test_receipt.py',
+    'scripts/common/**', 'scripts/_lib/**',
     'scripts/render_odoo_conf.py', 'config/requirements-test.txt')
 
 
@@ -202,7 +203,8 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
                 raise ValueError('override contains a module without runnable tests')
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
     groups = preparation_groups(after, selected['modules'])
-    plan = {**selected, 'base': base, 'head': head, 'preparation_groups': groups,
+    plan = {**selected, 'base': base, 'head': head, 'scope_mode': 'full',
+            'preparation_groups': groups,
             'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
     plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
     if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
@@ -210,6 +212,44 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan
+
+
+def focused_scope(plan: dict, rows: list[dict]) -> tuple[list[str], dict[str, list[str]], str]:
+    """Select exact changed backend tests while retaining the impact-safe module set."""
+    if not isinstance(plan, dict) or not isinstance(plan.get('modules'), list):
+        raise ValueError('focused scope requires a planned module set')
+    by_module: dict[str, set[str]] = {}
+    for row in rows:
+        if not isinstance(row, dict) or row.get('owner') != 'backend_suite':
+            continue
+        module = row.get('module')
+        selector = row.get('execution_selector')
+        if module not in plan['modules']:
+            raise ValueError('focused test module is outside the impact-safe module scope')
+        if (
+            not isinstance(selector, str)
+            or not selector.startswith('*/' + str(module) + ':')
+            or selector.count('.') < 1
+        ):
+            raise ValueError('focused backend test selector is invalid')
+        by_module.setdefault(module, set()).add(selector)
+    modules = sorted(by_module)
+    selectors = {module: sorted(by_module[module]) for module in modules}
+    return modules, selectors, ('focused' if modules else 'full_fallback_no_changed_tests')
+
+
+def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
+    """Retain full impacted modules until baseline/family reuse is certified.
+
+    Changed-test selectors supplement existing families, never replace them.
+    Returning the unchanged complete plan also makes plan/worker/collector
+    recomputation identical when the resolved scope_mode is full.
+    """
+    if not base:
+        raise ValueError('focused backend plan requires an integration base')
+    complete = build_plan(base, head, include_inputs=include_inputs)
+    focused_scope(complete, complete.get('changed_test_coverage') or [])
+    return complete
 
 
 def compare_candidate_history(plan: dict, previous_heads: list[str]) -> dict:
@@ -545,15 +585,22 @@ def main() -> None:
     parser.add_argument('--base', default='')
     parser.add_argument('--head', required=True)
     parser.add_argument('--modules', default='')
-    parser.add_argument('--output', type=Path, required=True)
+    parser.add_argument('--output', type=Path)
     parser.add_argument('--github-output', type=Path)
     parser.add_argument('--shard', type=int)
     parser.add_argument('--input-inventory', action='store_true')
+    parser.add_argument('--focused', action='store_true', help='Request focused scope; retain full modules until baseline reuse is certified')
+    parser.add_argument('--selectors', action='store_true', help='Print exact selectors for one focused module')
+    parser.add_argument('--module')
     parser.add_argument('--previous-candidate', action='append', help='Repeat for exact historical candidates, including same-SHA retry; source comparison only')
     parser.add_argument('--receipt-history', type=Path, help='JSON list of exact remote artifact locators; authenticate and select per target without skipping CI')
     parser.add_argument('--discover-receipts', action='store_true', help='Discover recent successful remote receipts and apply authenticated reuse before partition')
     args = parser.parse_args()
-    plan = build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
+    plan = (
+        build_focused_plan(args.base, args.head, include_inputs=args.input_inventory)
+        if args.focused
+        else build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
+    )
     if args.frozen_plan:
         raw = args.frozen_plan.read_bytes()
         if hashlib.sha256(raw).hexdigest() != args.plan_sha256:
@@ -561,6 +608,16 @@ def main() -> None:
         plan = validate_execution_plan(json.loads(raw), plan)
         if args.input_inventory:
             plan['input_inventory'] = target_input_inventory(plan['head'], impact.snapshot(plan['head']), plan['modules'])
+    if args.selectors:
+        if not args.module or plan.get('scope_mode') != 'focused':
+            raise ValueError('selector lookup requires a focused module plan')
+        values = plan.get('focused_selectors', {}).get(args.module)
+        if not values:
+            raise ValueError('module has no focused selectors')
+        print(','.join(values))
+        return
+    if args.output is None:
+        raise ValueError('output path is required')
     if args.receipts:
         receipts = []
         for path in args.receipts.rglob('receipt.json'):

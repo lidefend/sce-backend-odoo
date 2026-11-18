@@ -88,6 +88,25 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
 - Preserve baseline assertions and ownership boundaries. New behavior needs affected tests and actual collection; changing the baseline requires an explicit scope delta, reviewed evidence and protected integration. Never remove failures, weaken gates or infer ORM reuse to keep a green baseline.
 - Platform-specific GitHub/Gitee gate requirements above remain intact. This protocol adds no deployment authorization and does not claim all collaboration judgments are machine-enforced.
 
+### Stable Baseline Iteration Invariants (2026-11-18, Hard Lock)
+
+- Before the first implementation edit, read
+  `docs/architecture/stable_baseline_iteration_invariants_v1.md` and produce its
+  required/excluded/not_run gate responsibility table for the changed surface.
+- A P0/P1 Odoo model, service, handler, permission, security, workflow or state
+  change requires owning-module baseline coverage for every affected existing test
+  family. Focused tags supplement that coverage; they never replace it.
+- Baseline coverage is reusable. A valid module receipt may satisfy unchanged
+  inputs; changed behavior invalidates only tests declaring a dependency on the
+  changed model, symbol or behavior. If that affected set cannot be proven, run the
+  full owning module ORM baseline.
+- A validation plan that omits a required module baseline or existing test family is
+  invalid. Unknown impact is required, not excluded.
+- The active run must identify the reusable module baseline receipt or register the
+  module baseline target and complete input surface. The local planner must select
+  all affected existing families, and fall back to the full module baseline with
+  fail-closed registration when dependency derivation is incomplete.
+
 ## Baseline Iteration Phase (Hard Lock)
 `BASELINE_ITERATION_EXECUTION_POLICY=v1`
 - This repository is in baseline-backed iteration. Before any mutation, inventory and reuse the registered worktree, Make targets, runtime profile, database, ports, volumes, fixtures, and evidence tools described in `docs/ops/codex_workspace_execution_rules.md`.

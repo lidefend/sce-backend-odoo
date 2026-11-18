@@ -139,6 +139,7 @@ class LayoutAuthorityReadonlyProbeTest(unittest.TestCase):
         with self.assertRaises(ValueError):
             validate(good, "example", 8)
 
+
     def test_editable_selection_is_exact_draft_and_never_resets(self):
         from types import SimpleNamespace
         select = self.functions["select_authority_record"]
@@ -176,6 +177,13 @@ printf 'LOCAL_DEV_PAYMENT_PARITY_JSON={"database":"sc_dev_demo","probe":"%s"}\\n
             payload = json.loads((root / "artifacts/playwright/local-dev-payment-request-floorplan/authority.json").read_text())
             self.assertEqual(payload["probe"], "authority")
             self.assertFalse((root / "artifacts/playwright/local-dev-payment-request-floorplan/declaration-edit.json").exists())
+
+
+class LocalTestTemplateReusePolicyTest(unittest.TestCase):
+    def test_local_test_default_reuses_the_identity_bound_template(self):
+        source = (ROOT / "make/dev.mk").read_text()
+        self.assertIn("LOCAL_TEST_REUSE_DATABASE ?= 1", source)
+        self.assertIn("--reuse-database", source)
 
 
 class FloorplanEvidenceRecordingTest(unittest.TestCase):

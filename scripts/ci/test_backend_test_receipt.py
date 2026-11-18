@@ -678,10 +678,10 @@ class ExecutionReceiptTest(unittest.TestCase):
             args.update(overrides)
             with self.assertRaisesRegex(ValueError,'invalid attempt'):receipt.archive_attempt(**args)
 
-    def platform_fixture(self, scoped=False):
+    def platform_fixture(self, scoped=False, *, attempt=2):
         plan = self.scope_fixture() if scoped else None
         with patch.dict(os.environ, {'GITHUB_REPOSITORY':receipt.REPOSITORY, 'GITHUB_RUN_ID':'10',
-                'GITHUB_RUN_ATTEMPT':'2', 'GITHUB_JOB':'backend_suite'}):
+                'GITHUB_RUN_ATTEMPT':str(attempt), 'GITHUB_JOB':'backend_suite'}):
             observed = self.record(scope_plan=plan)
         stream = io.BytesIO()
         with zipfile.ZipFile(stream, 'w') as archive:
@@ -691,22 +691,23 @@ class ExecutionReceiptTest(unittest.TestCase):
                 archive.writestr('scope-plan.json',plan.read_bytes())
         raw = stream.getvalue()
         repo = {'id':receipt.REPOSITORY_ID,'full_name':receipt.REPOSITORY}
-        run = {'id':10,'run_attempt':2,'head_sha':self.head,'status':'completed','conclusion':'success',
+        run = {'id':10,'run_attempt':attempt,'head_sha':self.head,'status':'completed','conclusion':'success',
                'event':'pull_request','path':'.github/workflows/professional_quality_gate.yml',
                'repository':repo,'head_repository':dict(repo)}
-        artifact = {'id':20,'name':'backend-execution-10-2-0','expired':False,
+        artifact_name = 'backend-execution-10-0' if attempt == 1 else f'backend-execution-10-{attempt}-0'
+        artifact = {'id':20,'name':artifact_name,'expired':False,
                     'digest':'sha256:'+receipt.digest(raw), 'workflow_run':{'id':10,'head_sha':self.head,
                         'repository_id':receipt.REPOSITORY_ID,'head_repository_id':receipt.REPOSITORY_ID}}
-        return {'actions/runs/10/attempts/2':run, 'actions/artifacts/20':artifact,
+        return {f'actions/runs/10/attempts/{attempt}':run, 'actions/artifacts/20':artifact,
                 'actions/artifacts/20/zip':raw,
                 'git/commits/'+self.head:{'sha':self.head,'tree':{'sha':observed['source_tree']}}}
 
-    def origin(self, responses):
+    def origin(self, responses, *, attempt=2):
         def api(endpoint):
             result = responses[endpoint]
             return result if isinstance(result, bytes) else json.dumps(result).encode()
         with patch.object(receipt, 'github_bytes', side_effect=api):
-            return receipt.verify_github_origin(run_id=10,attempt=2,artifact_id=20,shard=0,
+            return receipt.verify_github_origin(run_id=10,attempt=attempt,artifact_id=20,shard=0,
                                                 expected_head=self.head,module='example',now=self.now)
 
     def test_platform_origin_does_not_authorize_reuse(self):
@@ -719,6 +720,11 @@ class ExecutionReceiptTest(unittest.TestCase):
         self.assertEqual(2, result['requested_attempt'])
         self.assertNotIn('attempt', result)
         self.assertIn('fact_scope_readback_missing',result['blockers'])
+
+    def test_platform_origin_accepts_current_attemptless_artifact_for_attempt_one(self):
+        responses = self.platform_fixture(attempt=1)
+        result = self.origin(responses, attempt=1)
+        self.assertEqual('verified', result['platform_origin'])
 
     def test_execution_definition_attested_drops_only_that_blocker(self):
         responses = self.platform_fixture()
@@ -998,7 +1004,7 @@ class ReuseClosureModelTest(unittest.TestCase):
              'run_started_at':datetime.now(timezone.utc).isoformat()},
         ]}
         artifacts={'artifacts':[
-            {'id':100,'name':'backend-execution-10-1-0','expired':False},
+            {'id':100,'name':'backend-execution-10-0','expired':False},
             {'id':101,'name':'backend-execution-10-1-1','expired':False},
             {'id':102,'name':'other','expired':False},
         ]}
@@ -1011,6 +1017,33 @@ class ReuseClosureModelTest(unittest.TestCase):
         self.assertTrue(all(loc['run_id']==10 for loc in locators))
         self.assertEqual({100,101},{loc['artifact_id'] for loc in locators})
         self.assertEqual({'core','scene'},{loc['module'] for loc in locators})
+        self.assertEqual({0,1}, {loc['shard'] for loc in locators})
+        self.assertTrue(all(loc['attempt'] == 1 for loc in locators))
+
+    def test_discover_receipt_locators_reads_current_attemptless_artifact_names(self):
+        runs = {'workflow_runs': [{
+            'id': 20, 'run_attempt': 1, 'head_sha': 'a' * 40,
+            'repository': {'id': receipt.REPOSITORY_ID},
+            'head_repository': {'id': receipt.REPOSITORY_ID},
+            'event': 'workflow_dispatch',
+            'path': '.github/workflows/professional_quality_gate.yml',
+            'run_started_at': datetime.now(timezone.utc).isoformat(),
+        }]}
+        artifacts = {'artifacts': [
+            {'id': 200, 'name': 'backend-execution-20-0', 'expired': False},
+            {'id': 201, 'name': 'backend-execution-20-1', 'expired': False},
+        ]}
+        data = {
+            'actions/runs?status=success&per_page=30': runs,
+            'actions/runs/20/artifacts?per_page=100': artifacts,
+        }
+        locators = receipt.discover_receipt_locators(
+            head='d' * 40,
+            modules=['core'],
+            fetch=lambda path: json.dumps(data[path]).encode(),
+        )
+        self.assertEqual([200, 201], [row['artifact_id'] for row in locators])
+        self.assertEqual([0, 1], [row['shard'] for row in locators])
 
     def test_discover_receipt_locators_degrades_to_empty_on_api_failure(self):
         def fetch(path):

@@ -1,0 +1,6 @@
+# HttpCase owns its request lifecycle and shared test transaction.
+# The service health probe would inject unrelated /web/login requests.
+services:
+  odoo:
+    healthcheck:
+      disable: true

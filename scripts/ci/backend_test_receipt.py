@@ -591,8 +591,12 @@ def verify_github_origin(*, run_id: int, attempt: int, artifact_id: int,
     origin = artifact.get('workflow_run') or {}
     # Artifact names/receipt attempt fields are producer assertions. The API
     # binds only run ID/head; never promote the name to attempt authentication.
-    expected_name = f'backend-execution-{run_id}-{attempt}-{shard}'
-    if (artifact.get('id') != artifact_id or artifact.get('name') != expected_name
+    expected_names = {f'backend-execution-{run_id}-{attempt}-{shard}'}
+    if attempt == 1:
+        # Current uploads intentionally omit run_attempt so a failed-job rerun
+        # can overwrite one stable receipt set for the same run id.
+        expected_names.add(f'backend-execution-{run_id}-{shard}')
+    if (artifact.get('id') != artifact_id or artifact.get('name') not in expected_names
             or artifact.get('expired') is not False or origin.get('id') != run_id
             or origin.get('head_sha') != expected_head
             or origin.get('repository_id') != REPOSITORY_ID
@@ -973,13 +977,19 @@ def discover_receipt_locators(*, head: str, modules: list[str],
         except (ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError):
             continue
         for artifact in artifacts.get('artifacts', []):
-            match = re.fullmatch(r'backend-execution-(\d+)-1-(\d+)', artifact.get('name', ''))
-            if (not match or int(match[1]) != run['id'] or artifact.get('expired') is not False):
+            match = re.fullmatch(
+                r'backend-execution-(\d+)(?:-(\d+))?-(\d+)',
+                artifact.get('name', ''),
+            )
+            if not match or int(match[1]) != run['id'] or artifact.get('expired') is not False:
+                continue
+            artifact_attempt = int(match[2]) if match[2] is not None else int(run['run_attempt'])
+            if artifact_attempt != int(run['run_attempt']):
                 continue
             for module in modules:
                 locators.append({'head': run['head_sha'], 'module': module,
-                                 'run_id': run['id'], 'attempt': 1,
-                                 'artifact_id': artifact['id'], 'shard': int(match[2])})
+                                 'run_id': run['id'], 'attempt': artifact_attempt,
+                                 'artifact_id': artifact['id'], 'shard': int(match[3])})
                 if len(locators) >= MAX_LOCATORS:
                     return locators
     return locators

@@ -201,6 +201,72 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(plan['modules'], ['a', 'b'])
         self.assertEqual(plan['mode'], 'full')
 
+    def test_focused_request_preserves_existing_families_and_dependency_modules(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core', 'scene'],
+            'preparation_groups': [],
+            'changed_test_coverage': [
+                {
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'execution_selector': '*/core:TestFlow.test_one',
+                },
+                {
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'execution_selector': '*/core:TestFlow.test_two',
+                },
+                {
+                    'module': 'fixture',
+                    'owner': 'acceptance.frontend.fixture_orm',
+                    'execution_selector': '*/fixture:TestFixture.test_managed',
+                },
+            ],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete), \
+                patch.object(planner.impact, 'snapshot', return_value={}), \
+                patch.object(planner, 'preparation_groups', return_value=[]):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual(complete, planned)
+        self.assertEqual('full', planned['scope_mode'])
+        self.assertEqual(['core', 'scene'], planned['modules'])
+        self.assertNotIn('focused_selectors', planned)
+
+    def test_focused_plan_falls_back_to_complete_modules_without_changed_tests(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': ['backend_runtime_change'],
+            'modules': ['core'],
+            'preparation_groups': [],
+            'changed_test_coverage': [],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual(complete, planned)
+        self.assertEqual('full', planned['scope_mode'])
+        self.assertEqual(['core'], planned['modules'])
+        self.assertNotIn('focused_selectors', planned)
+
+    def test_focused_plan_rejects_selectors_outside_impact_scope(self):
+        complete = {
+            'modules': ['core'],
+            'changed_test_coverage': [{
+                'module': 'scene',
+                'owner': 'backend_suite',
+                'execution_selector': '*/scene:TestFlow.test_one',
+            }],
+        }
+        with self.assertRaisesRegex(ValueError, 'outside the impact-safe'):
+            planner.focused_scope(complete, complete['changed_test_coverage'])
+
 
 class FrozenExecutionPlanTest(unittest.TestCase):
     def setUp(self):

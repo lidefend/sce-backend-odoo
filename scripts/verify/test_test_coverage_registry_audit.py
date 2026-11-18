@@ -107,8 +107,13 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                       if step.get('name') == 'Run backend test suite per module')
         selection = script[script.index('module_test_tags="${TEST_TAGS_INPUT}"'):
                            script.index('module_env_file=""')]
-        consumer = re.search(r'make test MODULE="\$\{module\}" TEST_TAGS="\$\{module_test_tags\}" '
-                             r'\\\n\s*DB_NAME="\$\{attempt_db\}"', script)
+        consumer = re.search(
+            r'timeout --foreground --signal=TERM --kill-after=10 \\\s+'
+            r'"\$\{BACKEND_MODULE_TIMEOUT_SECONDS:-1200\}" \\\s+'
+            r'make test MODULE="\$\{module\}" TEST_TAGS="\$\{module_test_tags\}" \\\s+'
+            r'DB_NAME="\$\{attempt_db\}"',
+            script,
+        )
         self.assertIsNotNone(consumer, 'default module tags must reach the real test runner')
         for group in ('product_policy_fact_authority', 'scenario_direct_initialization'):
             with self.subTest(group=group):
@@ -134,7 +139,11 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                 # consumer. Only external changed-test lookup and make are stubbed;
                 # no Odoo process or database is started by this wiring regression.
                 command = ('python3() { return 0; }\n'
-                           'make() { printf "%s\\n" "$@"; }\n' + selection + consumer.group(0))
+                           'make() { printf "%s\\n" "$@"; }\n'
+                           'timeout() { while [ "$#" -gt 0 ]; do case "$1" in '
+                           '--foreground|--signal=*|--kill-after=*) shift ;; '
+                           '*[!0-9.]*) break ;; *) shift; break ;; esac; done; "$@"; }\n'
+                           + selection + consumer.group(0) + '\n')
                 outcome = subprocess.run(['bash', '-eu', '-c', command], env={**os.environ,
                     'module': bound['module'], 'TEST_TAGS_INPUT': '', 'RUNNER_TEMP': '/unused',
                     'attempt_db': 'unused'}, text=True, capture_output=True, check=True)

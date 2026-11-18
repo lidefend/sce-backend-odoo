@@ -1,5 +1,14 @@
 version: 1
 entries:
+- group: be_close_01_workflow_contract
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.workflow_contract.be_close_01 :: be_close_01_workflow_contract'
+  reason: Selected by the complete BE-CLOSE-01 contract gate together with its schema/probe unit
+    and authenticated final-API sample capture. The tag is intentionally scoped to payment and
+    project lifecycle; the broader workflow_contract_backend group remains separate.
 - group: acceptance_business_scene_lifecycle
   kind: odoo_tag
   status: on-demand

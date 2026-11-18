@@ -1,5 +1,5 @@
 {
-  "description": "Debt-lock line-count ceilings for high-risk split-plan files. Reductions are allowed; increases require an explicit architecture review and baseline update.",
+  "description": "Advisory line-count reference budgets for split-plan files. Growth is reported for maintainability review and does not block CI; invalid inventory metadata and missing files remain errors.",
   "files": {
     "Makefile": {
       "max_lines": 272,

@@ -5,6 +5,7 @@ from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core import core_extension
+from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
 from odoo.addons.smart_construction_core.models.support.workflow_contract_service import (
     _simple_approval_profiles,
 )
@@ -25,11 +26,25 @@ RESET_TO_DRAFT_ENTRIES = {
 
 
 @tagged("post_install", "-at_install", "workflow_contract_backend")
-class TestWorkflowContractBackend(TransactionCase):
+class TestWorkflowContractBackend(BusinessTransactionCase):
     def setUp(self):
         super().setUp()
-        self.project = self.env["project.project"].create({"name": "Workflow Contract Project"})
-        self.partner = self.env["res.partner"].create({"name": "Workflow Contract Partner"})
+        self.company = self.env.company
+        self.user = self.env.user
+        self.project = self.env["project.project"].create({
+            "name": "Workflow Contract Project",
+            "company_id": self.company.id,
+            "user_id": self.user.id,
+            "manager_id": self.user.id,
+        })
+        self.partner = self.env["res.partner"].create({
+            "name": "Workflow Contract Partner",
+            "company_id": self.company.id,
+        })
+        self.tax_group = self.env["account.tax.group"].create({
+            "name": "Workflow Contract Tax Group",
+            "company_id": self.company.id,
+        })
         self.tax = self.env["account.tax"].create(
             {
                 "name": "Workflow Contract VAT 9%",
@@ -37,7 +52,9 @@ class TestWorkflowContractBackend(TransactionCase):
                 "amount_type": "percent",
                 "type_tax_use": "purchase",
                 "price_include": False,
-                "company_id": self.env.company.id,
+                "country_id": self.env.ref("base.cn").id,
+                "tax_group_id": self.tax_group.id,
+                "company_id": self.company.id,
             }
         )
         self.contract = self.env["construction.contract"].create(
@@ -47,9 +64,20 @@ class TestWorkflowContractBackend(TransactionCase):
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "tax_id": self.tax.id,
+                "company_id": self.company.id,
             }
         )
         self.service = self.env["sc.workflow.contract.service"]
+
+    def _set_record_state(self, record, state, **values):
+        payload = {"state": state, **values}
+        assignments = ", ".join(f"{name} = %s" for name in payload)
+        self.env.cr.execute(
+            f'UPDATE "{record._table}" SET {assignments} WHERE id = %s',
+            [*payload.values(), record.id],
+        )
+        record.invalidate_recordset(list(payload))
+        return record
 
     def test_reset_to_draft_is_declared_where_the_model_accepts_it(self):
         """`声明了必然拒绝的动作` is a control that can only fail.
@@ -216,8 +244,12 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["editability"], "locked")
         self.assertEqual(contract["availableActions"], [])
         self.assertIn(
-            {"value": "legacy_confirmed", "label": "历史确认"},
-            contract["statusbar"]["states"],
+            "legacy_confirmed",
+            {row["value"] for row in contract["statusbar"]["states"]},
+        )
+        self.assertIn(
+            "历史已确认",
+            {row["label"] for row in contract["statusbar"]["states"]},
         )
 
     def test_general_contract_signed_declares_no_transition(self):
@@ -434,7 +466,18 @@ class TestWorkflowContractBackend(TransactionCase):
         )
         if not income_contract_wrapper:
             income_contract_wrapper = self.env["construction.contract.income"].create({"contract_id": income_contract.id})
+        receipt_contract = self.env["construction.contract"].create(
+            {
+                "subject": "Workflow Receipt Schema Contract",
+                "type": "out",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "tax_id": self.tax.id,
+                "company_id": self.company.id,
+            }
+        )
         records = [
+            self.project,
             self.env["payment.request"].create(
                 {
                     "project_id": self.project.id,
@@ -473,7 +516,7 @@ class TestWorkflowContractBackend(TransactionCase):
                 {
                     "project_id": self.project.id,
                     "partner_id": self.partner.id,
-                    "contract_id": self.contract.id,
+                    "contract_id": receipt_contract.id,
                     "amount": 10.0,
                     "receiving_account_no": "receiver-schema",
                 }
@@ -622,15 +665,29 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertFalse(submit["enabled"])
         self.assertEqual(submit["reason_code"], "PAYMENT_MISSING_BASIS")
 
+    def test_create_catalog_is_not_a_record_execution_grant(self):
+        for model_name in ("payment.request", "project.project"):
+            with self.subTest(model=model_name):
+                catalog = self.service.describe_model_actions(model_name)
+                self.assertEqual(catalog["availabilityScope"], "declaration_only")
+                self.assertNotIn("record_id", catalog)
+                self.assertNotIn("availableActions", catalog)
+                self.assertTrue(catalog["actions"])
+                self.assertTrue(all(row["key"] for row in catalog["actions"]))
+                for action in catalog["actions"]:
+                    if action["kind"] == "save":
+                        self.assertIsNone(action["method"])
+                    else:
+                        self.assertTrue(action["method"])
+
     def test_payment_done_contract_is_locked(self):
-        payment = self.env["payment.request"].create(
+        payment = self._set_record_state(self.env["payment.request"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 10.0,
-                "state": "done",
             }
-        )
+        ), "done")
 
         contract = self.service.describe_record(payment)
 
@@ -639,15 +696,13 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["availableActions"], [])
 
     def test_payment_rejected_contract_is_editable_for_correction(self):
-        payment = self.env["payment.request"].create(
+        payment = self._set_record_state(self.env["payment.request"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 10.0,
-                "state": "rejected",
-                "reject_reason": "请修正付款依据",
             }
-        )
+        ), "rejected", reject_reason="请修正付款依据")
 
         contract = self.service.describe_record(payment)
 
@@ -656,15 +711,13 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertIn("submit", {row["key"] for row in contract["availableActions"]})
 
     def test_workflow_editability_never_elevates_readonly_page_authority(self):
-        payment = self.env["payment.request"].create(
+        payment = self._set_record_state(self.env["payment.request"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 10.0,
-                "state": "rejected",
-                "reject_reason": "只读调用者仍不可编辑",
             }
-        )
+        ), "rejected", reject_reason="只读调用者仍不可编辑")
         source_contract = {
             "model": "payment.request",
             "view_type": "form",
@@ -692,7 +745,7 @@ class TestWorkflowContractBackend(TransactionCase):
                 "amount": 10.0,
             }
         )
-        payment.with_context(allow_transition=True).write({"state": "approved"})
+        self._set_record_state(payment, "approved")
         projected = core_extension.smart_core_finalize_unified_page_contract_v2(
             self.env,
             {
@@ -721,15 +774,13 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(global_status["effectiveRenderProfile"], "readonly")
 
     def test_workflow_rejected_editability_preserves_existing_edit_authority(self):
-        payment = self.env["payment.request"].create(
+        payment = self._set_record_state(self.env["payment.request"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 10.0,
-                "state": "rejected",
-                "reject_reason": "允许有能力经办人修正",
             }
-        )
+        ), "rejected", reject_reason="允许有能力经办人修正")
         source_contract = {
             "model": "payment.request",
             "view_type": "form",
@@ -787,9 +838,12 @@ class TestWorkflowContractBackend(TransactionCase):
             {
                 "name": "Workflow Contract User Without Email",
                 "login": "workflow_contract_no_email",
+                "company_id": self.company.id,
+                "company_ids": [(6, 0, [self.company.id])],
                 "groups_id": [
                     (6, 0, [
                         self.env.ref("base.group_user").id,
+                        self.env.ref("smart_construction_core.group_sc_cap_business_initiator").id,
                         self.env.ref("smart_construction_core.group_sc_cap_contract_user").id,
                         self.env.ref("smart_construction_core.group_sc_cap_finance_read").id,
                     ])
@@ -797,6 +851,7 @@ class TestWorkflowContractBackend(TransactionCase):
             }
         )
         self.assertFalse(user.email)
+        self.project.write({"user_id": user.id})
 
         self.contract.with_user(user).action_cancel()
 
@@ -825,7 +880,7 @@ class TestWorkflowContractBackend(TransactionCase):
             execution.action_confirm()
 
     def test_paid_payment_execution_keeps_field_scoped_reversal_editability(self):
-        execution = self.env["sc.payment.execution"].create(
+        execution = self._set_record_state(self.env["sc.payment.execution"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
@@ -833,22 +888,30 @@ class TestWorkflowContractBackend(TransactionCase):
                 "paid_amount": 100.0,
                 "payment_account_no": "payer-001",
                 "receipt_account_no": "payee-001",
-                "state": "paid",
             }
-        )
+        ), "paid")
 
         contract = self.service.describe_record(execution)
 
         self.assertEqual(contract["businessPhase"], "done")
         self.assertEqual(contract["editability"], "editable")
-        self.assertIn("cancel", {row["key"] for row in contract["availableActions"]})
+        self.assertIn("reverse_payment", {row["key"] for row in contract["availableActions"]})
 
     def test_receipt_income_missing_request_disables_submit_and_backend_blocks_confirm(self):
+        receipt_contract = self.env["construction.contract"].create(
+            {
+                "subject": "Workflow Receipt Contract",
+                "type": "out",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "company_id": self.company.id,
+            }
+        )
         receipt = self.env["sc.receipt.income"].create(
             {
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
-                "contract_id": self.contract.id,
+                "contract_id": receipt_contract.id,
                 "amount": 100.0,
                 "receiving_account_no": "receive-001",
             }
@@ -983,13 +1046,14 @@ class TestWorkflowContractBackend(TransactionCase):
         self.assertEqual(contract["source"]["kind"], "sc_backend_workflow_contract")
         self.assertEqual(contract["model"], record._name)
         self.assertEqual(contract["record_id"], record.id)
+        self.assertEqual(contract["availabilityScope"], "record")
         self.assertEqual(contract["stateField"], self.service.PROFILE_BY_MODEL[record._name]["state_field"])
         self.assertIsInstance(contract["rawState"], str)
         self.assertTrue(contract["businessPhase"])
         self.assertTrue(contract["approvalPhase"])
         self.assertIn(contract["editability"], {"editable", "readonly", "locked"})
         self.assertIsInstance(contract["statusbar"], dict)
-        self.assertEqual(contract["statusbar"]["field"], "__workflow_phase")
+        self.assertEqual(contract["statusbar"]["field"], contract["stateField"])
         self.assertTrue(contract["statusbar"]["current"])
         self.assertTrue(contract["statusbar"]["readonly"])
         self.assertTrue(contract["statusbar"]["states"])
@@ -1011,8 +1075,226 @@ class TestWorkflowContractBackend(TransactionCase):
             self.assertEqual(action["target"]["id"], record.id)
             self.assertEqual(action["target"]["method"], action["method"])
             if action["enabled"]:
-                self.assertEqual(action["reason_code"], "")
+                self.assertEqual(action["reason_code"], "OK")
                 self.assertEqual(action["blocked_message"], "")
             else:
                 self.assertTrue(action["reason_code"])
                 self.assertTrue(action["blocked_message"])
+
+
+@tagged("post_install", "-at_install", "be_close_01_workflow_contract")
+class TestBEClose01WorkflowContract(TransactionCase):
+    def setUp(self):
+        super().setUp()
+        self.company = self.env.company
+        self.user = self.env.user
+        self.project = self.env["project.project"].create(
+            {
+                "name": "BE-CLOSE-01 Workflow Project",
+                "company_id": self.company.id,
+                "user_id": self.user.id,
+                "manager_id": self.user.id,
+            }
+        )
+        self.partner = self.env["res.partner"].create(
+            {
+                "name": "BE-CLOSE-01 Workflow Partner",
+                "company_id": self.company.id,
+            }
+        )
+        self.contract = self.env["construction.contract"].create(
+            {
+                "subject": "BE-CLOSE-01 Workflow Contract",
+                "type": "in",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "company_id": self.company.id,
+            }
+        )
+        self.service = self.env["sc.workflow.contract.service"]
+
+    def _action(self, contract, key):
+        for row in contract["availableActions"]:
+            if row["key"] == key:
+                return row
+        self.fail("missing workflow action: %s" % key)
+
+    def test_create_catalog_is_not_a_record_execution_grant(self):
+        for model_name in ("payment.request", "project.project"):
+            with self.subTest(model=model_name):
+                catalog = self.service.describe_model_actions(model_name)
+                self.assertEqual(catalog["availabilityScope"], "declaration_only")
+                self.assertNotIn("record_id", catalog)
+                self.assertNotIn("availableActions", catalog)
+                self.assertTrue(catalog["actions"])
+                self.assertTrue(all(row["key"] for row in catalog["actions"]))
+                for action in catalog["actions"]:
+                    if action["kind"] == "save":
+                        self.assertIsNone(action["method"])
+                    else:
+                        self.assertTrue(action["method"])
+
+    def test_payment_approved_done_names_payment_execution_gate(self):
+        payment = self.env["payment.request"].create(
+            {
+                "name": "BE-CLOSE-01-PAYMENT-001",
+                "type": "pay",
+                "project_id": self.project.id,
+                "partner_id": self.partner.id,
+                "contract_id": self.contract.id,
+                "company_id": self.company.id,
+                "currency_id": self.company.currency_id.id,
+                "amount": 10.0,
+            }
+        )
+        self.env["payment.request.line"].create(
+            {
+                "request_id": payment.id,
+                "legacy_line_id": "BE-CLOSE-01-PAYMENT-LINE",
+                "legacy_parent_id": "BE-CLOSE-01-PAYMENT-PARENT",
+                "contract_id": self.contract.id,
+                "amount": payment.amount,
+                "current_pay_amount": payment.amount,
+            }
+        )
+        self.env.cr.execute(
+            "UPDATE payment_request SET state='approved', validation_status='validated' WHERE id=%s",
+            (payment.id,),
+        )
+        payment.invalidate_recordset(["state", "validation_status", "contract_id"])
+
+        contract = self.service.describe_record(payment)
+        done = self._action(contract, "done")
+
+        self.assertEqual(contract["availabilityScope"], "record")
+        self.assertEqual(contract["rawState"], "approved")
+        self.assertIn(
+            "PAYMENT_EXECUTION_REQUIRED",
+            {row["reasonCode"] for row in contract["evidenceGate"]},
+        )
+        self.assertFalse(done["enabled"])
+        self.assertEqual(done["reason_code"], "PAYMENT_EXECUTION_REQUIRED")
+        self.assertIn("专业付款登记", done["blocked_message"])
+        with self.assertRaises(UserError):
+            payment.action_done()
+
+    def test_project_lifecycle_contract_tracks_action_and_status_readback(self):
+        self.project.action_sc_submit()
+        self.project.action_sc_start()
+
+        self.assertEqual(self.project.lifecycle_state, "in_progress")
+        contract = self.service.describe_record(self.project)
+        by_key = {row["key"]: row for row in contract["availableActions"]}
+
+        self.assertEqual(contract["availabilityScope"], "record")
+        self.assertEqual(contract["rawState"], "in_progress")
+        self.assertEqual(contract["businessPhase"], "effective")
+        self.assertEqual(contract["statusbar"]["field"], "lifecycle_state")
+        self.assertEqual(contract["statusbar"]["current"], "in_progress")
+        self.assertEqual(
+            set(by_key),
+            {"pause", "complete", "advance_closing", "close"},
+        )
+        for action_key, method in {
+            "pause": "action_sc_pause",
+            "complete": "action_sc_mark_done",
+            "advance_closing": "action_sc_begin_closing",
+            "close": "action_sc_close",
+        }.items():
+            self.assertEqual(by_key[action_key]["method"], method)
+            self.assertEqual(by_key[action_key]["target"]["method"], method)
+            self.assertEqual(by_key[action_key]["reason_code"], "OK")
+
+        self.project.action_sc_pause()
+        paused = self.service.describe_record(self.project)
+        paused_by_key = {row["key"]: row for row in paused["availableActions"]}
+        self.assertEqual(paused["rawState"], "paused")
+        self.assertEqual(paused["statusbar"]["current"], "paused")
+        self.assertEqual(set(paused_by_key), {"resume", "close"})
+
+    def test_project_terminal_contract_uses_the_model_blocker(self):
+        self.project.action_sc_submit()
+        self.project.action_sc_start()
+        self.project.action_sc_mark_done()
+        settlement = self.env["project.settlement"].create({
+            "project_id": self.project.id,
+            "partner_id": self.partner.id,
+            "amount": 10.0,
+            "state": "confirmed",
+        })
+        self.assertEqual(settlement.state, "confirmed")
+        self.assertIn(
+            "P0_PROJECT_TERMINAL_BLOCKED",
+            {row["reasonCode"] for row in self.project._workflow_lifecycle_blockers("closed")},
+        )
+
+        contract = self.service.describe_record(self.project)
+        close = self._action(contract, "close")
+
+        self.assertFalse(close["enabled"])
+        self.assertEqual(close["reason_code"], "P0_PROJECT_TERMINAL_BLOCKED")
+        self.assertIn("未完成结算单", close["blocked_message"])
+        self.assertIn(
+            "P0_PROJECT_TERMINAL_BLOCKED",
+            {row["reasonCode"] for row in contract["evidenceGate"]},
+        )
+        with self.assertRaises(UserError):
+            self.project.action_sc_close()
+
+    def test_draft_activate_domain_denial_is_explicit(self):
+        contract = self.service.describe_record(self.project)
+        by_key = {row["key"]: row for row in contract["availableActions"]}
+
+        self.assertFalse(by_key["activate"]["enabled"])
+        self.assertEqual(by_key["activate"]["reason_code"], "PROJECT_NOT_APPROVED_FOR_START")
+
+    def test_record_action_must_match_catalog_identity(self):
+        contract = self.service.describe_record(self.project)
+        by_key = {row["key"]: row for row in contract["availableActions"]}
+        by_key["activate"]["method"] = "action_sc_pause"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "WORKFLOW_RECORD_ACTION_DECLARATION_MISMATCH",
+        ):
+            self.service._assert_workflow_contract_consistency(contract)
+
+    def test_statusbar_must_use_record_state_fact(self):
+        contract = self.service.describe_record(self.project)
+        contract["statusbar"]["current"] = "approved"
+
+        with self.assertRaisesRegex(
+            ValueError,
+            "WORKFLOW_STATUS_FIELD_INCONSISTENT",
+        ):
+            self.service._assert_workflow_contract_consistency(contract)
+
+    def test_record_contract_omits_unauthorized_actions(self):
+        base_group = self.env.ref("base.group_user")
+        payment_read_group = self.env.ref(
+            "smart_construction_core.group_sc_cap_finance_read"
+        )
+        reader = self.env["res.users"].create({
+            "name": "BE-CLOSE-01 Payment Reader",
+            "login": "be_close_01_payment_reader",
+            "company_id": self.company.id,
+            "company_ids": [(6, 0, [self.company.id])],
+            "groups_id": [(6, 0, [base_group.id, payment_read_group.id])],
+        })
+        payment = self.env["payment.request"].create({
+            "name": "BE-CLOSE-01-READER",
+            "type": "pay",
+            "project_id": self.project.id,
+            "partner_id": self.partner.id,
+            "contract_id": self.contract.id,
+            "company_id": self.company.id,
+            "currency_id": self.company.currency_id.id,
+            "amount": 10.0,
+        })
+
+        contract = self.service.with_user(reader).describe_record(payment)
+        by_key = {row["key"]: row for row in contract["availableActions"]}
+
+        self.assertNotIn("submit", by_key)
+        self.assertNotIn("done", by_key)
+        self.assertNotIn("cancel", by_key)

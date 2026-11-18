@@ -28,6 +28,34 @@ class RunError(ValueError):
 
 MAKE_TARGET_RE = re.compile(r'^([A-Za-z0-9][A-Za-z0-9_.-]*)\s*:(?!=)')
 PHONY_RE = re.compile(r'^\s*\.PHONY\s*:(.*)$')
+MAKE_NAME = r'[A-Za-z0-9_][A-Za-z0-9_.-]*'
+MAKE_RULE_RE = re.compile(
+    rf'^\s*(?P<targets>{MAKE_NAME}(?:\s+{MAKE_NAME})*)\s*:(?!=)\s*(?P<rhs>.*)$'
+)
+MAKE_ASSIGN_RE = re.compile(
+    r'^\s*(?:export\s+|override\s+|private\s+)*'
+    r'(?P<name>[A-Za-z_][A-Za-z0-9_.-]*)\s*(?::=|\?=|\+=|=)'
+)
+MAKE_TARGET_ASSIGN_RE = re.compile(
+    r'^[A-Za-z_][A-Za-z0-9_.-]*\s*(?::=|\?=|\+=|=)'
+)
+MAKE_INCLUDE_RE = re.compile(r'^\s*(?:include|-include|sinclude)\s+(.*)$')
+MAKE_VAR_REF_RE = re.compile(
+    r'\$(?:\((?P<paren>[A-Za-z_][A-Za-z0-9_.-]*)\)|'
+    r'\{(?P<brace>[A-Za-z_][A-Za-z0-9_.-]*)\})'
+)
+MAKE_RECURSIVE_CALL_RE = re.compile(
+    rf'\$\(MAKE\)(?:\s+-[A-Za-z-]+(?:\s+\S+)?)*\s+'
+    rf'(?P<targets>{MAKE_NAME}(?:\s+{MAKE_NAME})*)'
+)
+MAKE_FUNCTIONS = frozenset({
+    'abspath', 'addprefix', 'addsuffix', 'and', 'basename', 'call', 'dir',
+    'error', 'eval', 'file', 'filter', 'filter-out', 'findstring', 'firstword',
+    'flavor', 'foreach', 'if', 'info', 'join', 'lastword', 'let', 'notdir',
+    'or', 'origin', 'patsubst', 'realpath', 'shell', 'sort', 'strip', 'subst',
+    'suffix', 'value', 'warning', 'wildcard', 'word', 'wordlist', 'words',
+    'MAKE', 'CURDIR',
+})
 DELIVERY_STAGES = (
     'stage_0_scope_frozen',
     'stage_1_baseline_gates',
@@ -83,6 +111,237 @@ def defined_make_targets(root: Path) -> set[str]:
             if phony:
                 targets.update(phony.group(1).split())
     return targets
+
+
+def join_make_continuations(lines: list[str]) -> list[str]:
+    """Join physical Makefile continuations without interpreting recipes."""
+    joined: list[str] = []
+    pending = ''
+    for line in lines:
+        current = pending + line
+        if current.rstrip().endswith('\\'):
+            pending = current.rstrip()[:-1].rstrip() + ' '
+            continue
+        joined.append(current)
+        pending = ''
+    if pending:
+        joined.append(pending.rstrip())
+    return joined
+
+
+def git_bytes(root: Path, *args: str) -> bytes:
+    result = subprocess.run(['git', '-C', str(root), *args], capture_output=True)
+    if result.returncode:
+        raise RunError(
+            f'git {args[0]} failed: '
+            f'{result.stderr.decode("utf-8", errors="replace").strip()}'
+        )
+    return result.stdout
+
+
+def is_make_source(path: Path) -> bool:
+    return path.name == 'Makefile' or path.suffix == '.mk'
+
+
+def make_source_texts(root: Path, revision: str | None = None) -> dict[str, str]:
+    """Read the literal, repository-local Makefile include closure.
+
+    Dynamic includes (for example an optional ``.env`` file) carry invocation
+    environment, not target recipe authority, and are intentionally not walked.
+    """
+    sources: dict[str, str] = {}
+
+    def read(relative: str) -> str | None:
+        path = Path(relative)
+        if path.is_absolute() or '..' in path.parts:
+            raise RunError(f'make include escapes worktree: {relative}')
+        if not is_make_source(path):
+            return None
+        if revision is not None:
+            try:
+                return git_bytes(root, 'show', f'{revision}:{relative}').decode(
+                    'utf-8', errors='replace'
+                )
+            except RunError:
+                raise RunError(f'make include missing at {revision}: {relative}')
+        candidate = local_path(root, relative)
+        if not candidate.is_file():
+            raise RunError(f'make include missing: {relative}')
+        return candidate.read_text(encoding='utf-8', errors='replace')
+
+    def visit(relative: str) -> None:
+        if relative in sources:
+            return
+        text = read(relative)
+        if text is None:
+            return
+        sources[relative] = text
+        for logical in join_make_continuations(text.splitlines()):
+            include = MAKE_INCLUDE_RE.match(logical)
+            if not include:
+                continue
+            for token in include.group(1).split():
+                if '$' in token or token.startswith('-'):
+                    continue
+                candidate = Path(token)
+                if not is_make_source(candidate):
+                    continue
+                normalized = candidate.as_posix()
+                visit(normalized)
+
+    visit('Makefile')
+    if 'Makefile' not in sources:
+        raise RunError('Makefile is required for target-scoped dependency state')
+    return sources
+
+
+def parse_make_material(sources: dict[str, str]) -> tuple[
+    dict[str, list[dict]], dict[str, list[str]], set[str]
+]:
+    """Index rule blocks, variable definitions and phony target identities."""
+    rules: dict[str, list[dict]] = {}
+    variables: dict[str, list[str]] = {}
+    phony: set[str] = set()
+    for relative, text in sources.items():
+        lines = text.splitlines()
+        index = 0
+        while index < len(lines):
+            raw = lines[index]
+            stripped = raw.strip()
+            phony_match = PHONY_RE.match(raw)
+            if phony_match:
+                phony.update(phony_match.group(1).split('#', 1)[0].split())
+                index += 1
+                continue
+            if not stripped or stripped.startswith('#') or raw.startswith('\t'):
+                index += 1
+                continue
+            assignment = MAKE_ASSIGN_RE.match(raw)
+            if assignment:
+                name = assignment.group('name')
+                block = [f'{relative}:{index + 1}\n', raw]
+                while (block[-1].rstrip().endswith('\\')
+                       and index + 1 < len(lines)):
+                    index += 1
+                    block.append(lines[index])
+                variables.setdefault(name, []).append('\n'.join(block) + '\n')
+                index += 1
+                continue
+            rule = MAKE_RULE_RE.match(raw)
+            if not rule:
+                index += 1
+                continue
+            rhs = rule.group('rhs').split('#', 1)[0].split(';', 1)[0].strip()
+            prerequisites = []
+            if rhs and not MAKE_TARGET_ASSIGN_RE.match(rhs):
+                prerequisites = [
+                    token for token in rhs.split()
+                    if token != '|' and not token.startswith('-')
+                ]
+            block = [f'{relative}:{index + 1}\n', raw]
+            while index + 1 < len(lines):
+                following = lines[index + 1]
+                if not (following.startswith('\t')
+                        or block[-1].rstrip().endswith('\\')):
+                    break
+                index += 1
+                block.append(following)
+            block_text = '\n'.join(block) + '\n'
+            for target in rule.group('targets').split():
+                rules.setdefault(target, []).append({
+                    'text': block_text,
+                    'prerequisites': prerequisites,
+                })
+            index += 1
+    return rules, variables, phony
+
+
+def make_target_material(
+    root: Path,
+    sources: dict[str, str],
+    target: str,
+    *,
+    revision: str | None = None,
+) -> str:
+    """Fingerprint a target's recipe and literal dependency closure.
+
+    Rule blocks from every active include, recursive ``$(MAKE)`` calls, the
+    target's phony identity and every Make variable referenced by that material
+    are included. Unrelated targets and unrelated variables are not.
+    """
+    rules, variables, phony = parse_make_material(sources)
+    if target not in rules:
+        location = f' at {revision}' if revision else ''
+        raise RunError(f'make target {target!r} is not defined in the active include closure{location}')
+
+    closure: list[str] = []
+    pending = [target]
+    while pending:
+        current = pending.pop(0)
+        if current in closure:
+            continue
+        closure.append(current)
+        for block in rules.get(current, []):
+            for dependency in block['prerequisites']:
+                if '$' not in dependency and dependency in rules:
+                    pending.append(dependency)
+            for line in block['text'].splitlines():
+                for call in MAKE_RECURSIVE_CALL_RE.finditer(line):
+                    pending.extend(call.group('targets').split())
+
+    material: list[str] = [f'make-target-closure-v1\t{target}\n']
+    referenced: set[str] = set()
+    for current in closure:
+        blocks = rules.get(current, [])
+        material.append(f'phony\t{current}\t{int(current in phony)}\n')
+        for block in blocks:
+            material.append(block['text'])
+            for dependency in block['prerequisites']:
+                if '$' in dependency:
+                    referenced.update(
+                        match.group('paren') or match.group('brace')
+                        for match in MAKE_VAR_REF_RE.finditer(dependency)
+                    )
+                elif dependency not in rules:
+                    path = Path(dependency)
+                    if path.is_absolute() or '..' in path.parts:
+                        material.append(f'external-prerequisite\t{dependency}\n')
+                        continue
+                    if revision is not None:
+                        try:
+                            content = git_bytes(root, 'show', f'{revision}:{dependency}')
+                        except RunError:
+                            material.append(f'missing-file-prerequisite\t{dependency}\n')
+                            continue
+                    else:
+                        candidate = local_path(root, dependency)
+                        if not candidate.is_file():
+                            material.append(f'missing-file-prerequisite\t{dependency}\n')
+                            continue
+                        content = candidate.read_bytes()
+                    digest = hashlib.sha256(content).hexdigest()
+                    material.append(f'file-prerequisite\t{dependency}\t{digest}\n')
+        for match in MAKE_VAR_REF_RE.finditer('\n'.join(block['text'] for block in blocks)):
+            referenced.add(match.group('paren') or match.group('brace'))
+
+    expanded: set[str] = set()
+    while referenced - expanded:
+        name = sorted(referenced - expanded)[0]
+        expanded.add(name)
+        if name in MAKE_FUNCTIONS:
+            continue
+        definitions = variables.get(name, [])
+        if definitions:
+            material.extend(definitions)
+            for definition in definitions:
+                referenced.update(
+                    match.group('paren') or match.group('brace')
+                    for match in MAKE_VAR_REF_RE.finditer(definition)
+                )
+        else:
+            material.append(f'external-variable\t{name}\n')
+        referenced.discard(name)
+    return ''.join(material)
 
 
 def git(root: Path, *args: str) -> str:
@@ -405,6 +664,89 @@ def comparable_inputs(state) -> dict:
     return {name: value for name, value in state.items() if not is_derived_bytecode(Path(name))}
 
 
+def make_target_dependency_state(
+    root: Path, check: dict, *, revision: str | None = None
+) -> dict:
+    target = check['target']
+    material = make_target_material(
+        root,
+        make_source_texts(root, revision),
+        target,
+        revision=revision,
+    )
+    digest = hashlib.sha256(material.encode('utf-8')).hexdigest()
+    return {f'make-target:{target}#closure': [digest, 0o644]}
+
+
+def make_input_paths(check: dict) -> list[str]:
+    return [value for value in check['inputs'] if is_make_source(Path(value))]
+
+
+def historical_make_file_state(root: Path, revision: str, relative: str) -> list:
+    tree = git(root, 'ls-tree', revision, '--', relative)
+    if not tree:
+        raise RunError(f'make input missing at receipt head: {relative}')
+    metadata = tree.split('\t', 1)[0].split()
+    if len(metadata) != 3 or metadata[1] != 'blob':
+        raise RunError(f'make input is not a regular blob at receipt head: {relative}')
+    content = git_bytes(root, 'show', f'{revision}:{relative}')
+    return [
+        hashlib.sha256(content).hexdigest(),
+        int(metadata[0][-3:], 8),
+    ]
+
+
+def legacy_make_projection(
+    root: Path,
+    receipt: dict,
+    check: dict,
+    current: dict,
+) -> dict | None:
+    """Project a pre-target-scoped receipt onto the current Make fingerprint.
+
+    Legacy receipts hashed the whole Make fragment. They may be carried forward
+    only when Git proves each such file at the receipt head matched the recorded
+    bytes, the receipt had no dirty Make source, and the selected target's
+    material was byte-for-byte identical then and now. Anything less remains
+    stale; this never treats the old whole-file hash as target-specific proof.
+    """
+    make_inputs = make_input_paths(check)
+    if not make_inputs:
+        return None
+    recorded = comparable_inputs(receipt.get('inputs'))
+    head = receipt.get('head')
+    dirty = receipt.get('dirty')
+    if not isinstance(head, str) or not re.fullmatch(r'[0-9a-f]{40}', head):
+        return None
+    if not isinstance(dirty, str):
+        return None
+    historical_sources = make_source_texts(root, head)
+    dirty_paths = {
+        line[3:].strip().split(' -> ')[-1].strip('"')
+        for line in dirty.splitlines()
+        if len(line) > 3
+    }
+    if any(is_make_source(Path(path)) or path in historical_sources for path in dirty_paths):
+        return None
+    for relative in make_inputs:
+        try:
+            recorded_state = recorded[relative]
+            historical_state = historical_make_file_state(root, head, relative)
+        except (KeyError, RunError):
+            return None
+        if recorded_state != historical_state or recorded.get(relative + '/') != 'file':
+            return None
+    historical = make_target_dependency_state(root, check, revision=head)
+    if any(current.get(name) != value for name, value in historical.items()):
+        return None
+    projected = dict(recorded)
+    for relative in make_inputs:
+        projected.pop(relative, None)
+        projected.pop(relative + '/', None)
+    projected.update({name: current[name] for name in historical})
+    return projected
+
+
 def dependency_state(root: Path, check: dict) -> dict:
     state = {}
     if 'readback' in check:
@@ -416,8 +758,12 @@ def dependency_state(root: Path, check: dict) -> dict:
             raise RunError('readback artifact must be a file, not a directory')
         else:
             state[value] = [hashlib.sha256(path.read_bytes()).hexdigest(), path.stat().st_mode & 0o777]
+    make_inputs = []
     for value in check['inputs']:
         path = dependency_path(root, value)
+        if is_make_source(path):
+            make_inputs.append(value)
+            continue
         if not path.exists():
             state[value] = None
             continue
@@ -430,6 +776,8 @@ def dependency_state(root: Path, check: dict) -> dict:
             if file.is_file():
                 name = file.relative_to(root.resolve()).as_posix()
                 state[name] = [hashlib.sha256(file.read_bytes()).hexdigest(), file.stat().st_mode & 0o777]
+    if make_inputs:
+        state.update(make_target_dependency_state(root, check))
     return state
 
 
@@ -451,8 +799,13 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
         if receipt.get('branch') != run['branch'] or receipt.get('run_id') != run['id']:
             raise RunError('receipt identity mismatch')
         git(root, 'merge-base', '--is-ancestor', receipt['head'], 'HEAD')
-        if receipt.get('check') != check or comparable_inputs(receipt.get('inputs')) != comparable_inputs(dependency_state(root, check)):
-            raise RunError('code, tool or dependency inputs changed')
+        current_inputs = dependency_state(root, check)
+        recorded_inputs = comparable_inputs(receipt.get('inputs'))
+        if (receipt.get('check') != check
+                or recorded_inputs != comparable_inputs(current_inputs)):
+            projected = legacy_make_projection(root, receipt, check, current_inputs)
+            if projected is None or comparable_inputs(projected) != comparable_inputs(current_inputs):
+                raise RunError('code, tool or dependency inputs changed')
         if receipt.get('upstream_inputs', {}) != upstream_inputs(root, run, check_id):
             raise RunError('upstream check inputs changed')
         if receipt.get('environment') != run['environment']:
