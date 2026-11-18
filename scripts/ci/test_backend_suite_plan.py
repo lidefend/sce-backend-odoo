@@ -201,11 +201,12 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(plan['modules'], ['a', 'b'])
         self.assertEqual(plan['mode'], 'full')
 
-    def test_focused_plan_selects_only_exact_changed_backend_tests(self):
+    def test_focused_request_preserves_existing_families_and_dependency_modules(self):
         complete = {
             'base': 'b' * 40,
             'head': 'a' * 40,
             'mode': 'incremental',
+            'scope_mode': 'full',
             'reasons': [],
             'modules': ['core', 'scene'],
             'preparation_groups': [],
@@ -231,23 +232,17 @@ class ShardPlanTest(unittest.TestCase):
                 patch.object(planner.impact, 'snapshot', return_value={}), \
                 patch.object(planner, 'preparation_groups', return_value=[]):
             planned = planner.build_focused_plan('b' * 40, 'a' * 40)
-        self.assertEqual('focused', planned['scope_mode'])
-        self.assertEqual(['core'], planned['modules'])
-        self.assertEqual(
-            {
-                'core': [
-                    '*/core:TestFlow.test_one',
-                    '*/core:TestFlow.test_two',
-                ]
-            },
-            planned['focused_selectors'],
-        )
+        self.assertEqual(complete, planned)
+        self.assertEqual('full', planned['scope_mode'])
+        self.assertEqual(['core', 'scene'], planned['modules'])
+        self.assertNotIn('focused_selectors', planned)
 
     def test_focused_plan_falls_back_to_complete_modules_without_changed_tests(self):
         complete = {
             'base': 'b' * 40,
             'head': 'a' * 40,
             'mode': 'incremental',
+            'scope_mode': 'full',
             'reasons': ['backend_runtime_change'],
             'modules': ['core'],
             'preparation_groups': [],
@@ -255,9 +250,10 @@ class ShardPlanTest(unittest.TestCase):
         }
         with patch.object(planner, 'build_plan', return_value=complete):
             planned = planner.build_focused_plan('b' * 40, 'a' * 40)
-        self.assertEqual('full_fallback_no_changed_tests', planned['scope_mode'])
+        self.assertEqual(complete, planned)
+        self.assertEqual('full', planned['scope_mode'])
         self.assertEqual(['core'], planned['modules'])
-        self.assertIn('full_fallback_no_changed_tests', planned['reasons'])
+        self.assertNotIn('focused_selectors', planned)
 
     def test_focused_plan_rejects_selectors_outside_impact_scope(self):
         complete = {

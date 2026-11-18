@@ -239,31 +239,17 @@ def focused_scope(plan: dict, rows: list[dict]) -> tuple[list[str], dict[str, li
 
 
 def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
-    """Build a PR-facing plan from changed tests, falling back to full module scope."""
+    """Retain full impacted modules until baseline/family reuse is certified.
+
+    Changed-test selectors supplement existing families, never replace them.
+    Returning the unchanged complete plan also makes plan/worker/collector
+    recomputation identical when the resolved scope_mode is full.
+    """
     if not base:
         raise ValueError('focused backend plan requires an integration base')
     complete = build_plan(base, head, include_inputs=include_inputs)
-    modules, selectors, scope_mode = focused_scope(
-        complete,
-        complete.get('changed_test_coverage') or [],
-    )
-    if scope_mode != 'focused':
-        return {
-            **complete,
-            'scope_mode': scope_mode,
-            'reasons': [*complete.get('reasons', []), scope_mode],
-        }
-    groups = preparation_groups(impact.snapshot(head), modules)
-    return {
-        **complete,
-        'scope_mode': scope_mode,
-        'mode': 'focused',
-        'reasons': [*complete.get('reasons', []), 'affected_backend_test_selectors'],
-        'modules': modules,
-        'preparation_groups': groups,
-        'shards': partition(modules, groups=groups),
-        'focused_selectors': selectors,
-    }
+    focused_scope(complete, complete.get('changed_test_coverage') or [])
+    return complete
 
 
 def compare_candidate_history(plan: dict, previous_heads: list[str]) -> dict:
@@ -603,7 +589,7 @@ def main() -> None:
     parser.add_argument('--github-output', type=Path)
     parser.add_argument('--shard', type=int)
     parser.add_argument('--input-inventory', action='store_true')
-    parser.add_argument('--focused', action='store_true', help='Plan exact changed backend test selectors')
+    parser.add_argument('--focused', action='store_true', help='Request focused scope; retain full modules until baseline reuse is certified')
     parser.add_argument('--selectors', action='store_true', help='Print exact selectors for one focused module')
     parser.add_argument('--module')
     parser.add_argument('--previous-candidate', action='append', help='Repeat for exact historical candidates, including same-SHA retry; source comparison only')

@@ -183,22 +183,24 @@ equals the current material. A hash mismatch, dirty Make input, unavailable
 history, or target-material change remains stale. The old whole-file hash is
 never treated as target-specific proof.
 
-## Backend focused PR execution (2026-11-18)
+## Backend PR execution (2026-11-18)
 
-Ordinary pull requests with backend runtime impact now run the exact changed ORM
-test selectors from their impact-safe modules. The complete module baseline
-remains mandatory for scheduled, explicit-candidate and operator full audits.
-If a runtime change has no changed executable test selectors, the planner falls
-back explicitly to complete affected modules rather than producing an empty
-green suite.
+Changed ORM selectors supplement the full impacted module scope. A focused
+request cannot narrow the module baseline without certified family dependencies
+and reusable baseline evidence. Until that authority exists, focused requests
+resolve to the same complete plan consumed by workers and the coverage collector.
 
-Each module keeps the original direct `make test ... | tee` execution path.
-GNU `timeout --foreground` applies the ten-minute focused-PR or twenty-minute
-formal-lane ceiling without placing Make in a new process group or inserting
-another process/session wrapper into its execution semantics. A shell heartbeat
-reports the current module and elapsed time every thirty seconds. Timeout exits
-with status 124 and preserves the partial test log and evidence attempt, so a
-hung test cannot occupy the 240-minute workflow ceiling invisibly.
+Each module retains `timeout --foreground` around `make test ... | tee`, with
+periodic heartbeat and preserved attempt diagnostics. The full-module limit is
+1200 seconds per attempt, inside the existing 240-minute job limit. The proposed
+25-minute whole-shard timeout was rejected because a shard can contain multiple
+modules and retries. Compose explicitly disables stdin, and dependency-install
+failure stops before Odoo can run.
+
+Make exports only names declared in the environment file. It must not enable
+blanket export of later lazy acceptance/release variables: GNU Make 4.4 exports
+these into shell-function subprocesses too, recursively expanding unrelated
+probes before the test recipe starts.
 
 Authenticated historical receipts remain observation-only unless all existing
 closure authorities pass. They may still supply exact measured module durations

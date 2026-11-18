@@ -83,7 +83,10 @@ endif
 ENV_FILE := $(ENV_FILE_RESOLVED)
 ifneq ($(and $(strip $(ENV_FILE_RESOLVED)),$(if $(and $(filter true,$(GITHUB_ACTIONS)),$(filter lidefend/sce-backend-odoo,$(GITHUB_REPOSITORY)),$(filter sc-fe-release-$(GITHUB_RUN_ID)-$(GITHUB_RUN_ATTEMPT),$(CI_PROJECT_NAME))),,1)),)
 include $(ENV_FILE_RESOLVED)
-export
+# Export only environment-file assignments. A bare export also expands every
+# later lazy Make variable for each recipe (and each $(shell ...) on Make 4.4),
+# recursively evaluating unrelated acceptance/release probes before test starts.
+export $(shell sed -nE 's/^[[:space:]]*(export[[:space:]]+)?([A-Za-z_][A-Za-z0-9_]*)[[:space:]]*[:?+]?=.*/\2/p' "$(ENV_FILE_RESOLVED)")
 endif
 ifneq (,$(filter command line environment environment\ override,$(REQUESTED_ENV_FILE_ORIGIN)))
 ENV_FILE := $(REQUESTED_ENV_FILE)

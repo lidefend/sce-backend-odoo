@@ -11,6 +11,35 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendTestSuiteDispatchContractTest(unittest.TestCase):
+    def test_make_env_file_exports_only_declared_assignments(self):
+        # Execute the real Make graph without Docker or a database. The unrelated
+        # lazy probe must never run simply to construct a recipe environment.
+        for assignments in ("", "CI_FILE_ONLY=fixture\nexport CI_EXPORTED := explicit\nCI_DEFAULT ?= fallback\nCI_APPEND = first\nCI_APPEND += second\nDB_NAME=file_db\n"):
+            with self.subTest(assignments=bool(assignments)), tempfile.TemporaryDirectory() as tmp:
+                folder = Path(tmp)
+                env_file = folder / "managed.env"
+                env_file.write_text(assignments)
+                marker = folder / "unrelated-probe"
+                overlay = folder / "probe.mk"
+                overlay.write_text(
+                    f"CI_UNRELATED_LAZY = $(shell touch {marker})\n"
+                    ".PHONY: ci-env-probe\nci-env-probe:\n"
+                    "\t@test \"$$DB_NAME\" = cli_db\n"
+                    + ("\t@test \"$$CI_FILE_ONLY\" = fixture\n"
+                       "\t@test \"$$CI_EXPORTED\" = explicit\n"
+                       "\t@test \"$$CI_DEFAULT\" = fallback\n"
+                       "\t@test \"$$CI_APPEND\" = 'first second'\n" if assignments else "")
+                )
+                result = subprocess.run(
+                    [os.environ.get("CI_MAKE_TEST_BINARY", "make"), "--no-print-directory",
+                     "-f", "Makefile", "-f", str(overlay), "ci-env-probe",
+                     f"ENV_FILE={env_file}", "DB_NAME=cli_db"],
+                    cwd=ROOT, env={"PATH": os.environ["PATH"]},
+                    text=True, capture_output=True, timeout=10,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                self.assertFalse(marker.exists(), "unrelated lazy Make variable was expanded")
+
     def test_control_plane_tool_checks_are_wired_through_the_final_gate(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())
         authorization = workflow['jobs']['professional_authorization']
@@ -128,7 +157,6 @@ python3() {
 
         suite = workflow['jobs']['backend_suite']
         self.assertEqual('${{ needs.plan.outputs.scope_mode }}', suite['env']['SUITE_MODE'])
-        self.assertEqual('1', suite['env']['SC_TEST_SKIP_DEPENDENCY_INSTALL'])
         self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
         self.assertEqual(
             "${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}",
@@ -189,33 +217,29 @@ python3() {
             resolve,
         )
 
-    def test_backend_suite_skips_network_install_and_preserves_failed_container(self):
-        workflow = yaml.safe_load(
-            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
-        )
+    def test_failed_container_diagnostics_remain_project_scoped(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         suite = workflow['jobs']['backend_suite']
-        self.assertEqual('1', suite['env']['SC_TEST_SKIP_DEPENDENCY_INSTALL'])
         self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
-        script = (ROOT / 'scripts/test/test.sh').read_text()
-        self.assertIn(
-            'if [ \\"\\${SC_TEST_SKIP_DEPENDENCY_INSTALL:-0}\\" = 1 ]; then',
-            script,
-        )
-        self.assertIn("dependency-install=skip repository-stub-and-runtime-image", script)
-        self.assertIn('dependency-install=start', script)
-        self.assertIn('dependency-install=complete', script)
-        self.assertTrue((ROOT / 'addons/odoo_test_helper/__init__.py').is_file())
-
         steps = {step['name']: step for step in suite['steps']}
-        failure_logs = steps['Dump logs on failure']['run']
-        cleanup = steps['Cleanup']['run']
-        for body in (failure_logs, cleanup):
-            self.assertIn(
-                'label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}',
-                body,
-            )
-        self.assertIn('docker logs --tail=400', failure_logs)
-        self.assertIn('docker rm -f "${container}"', cleanup)
+        for body in (steps['Dump logs on failure']['run'], steps['Cleanup']['run']):
+            self.assertIn('label=com.docker.compose.project=${COMPOSE_PROJECT_NAME}', body)
+        self.assertIn('docker logs --tail=400', steps['Dump logs on failure']['run'])
+        self.assertIn('docker rm -f "${container}"', steps['Cleanup']['run'])
+
+    def test_dependency_install_failure_stops_before_odoo(self):
+        script = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('--interactive=false', script)
+        container = script.split('--entrypoint bash odoo -lc "', 1)[1].rsplit('"', 1)[0]
+        container = container.replace('\\$', '$').replace('\\"', '"')
+        container = container.split('exec /usr/bin/odoo', 1)[0] + "printf 'unexpected_odoo\n'\n"
+        result = subprocess.run(
+            ['bash', '-c', 'pip3() { return 17; };\n' + container],
+            env={'PATH': os.environ['PATH'], 'CONFIG_MOUNT_CONT': '/unused',
+                 'PREPARATION_COMMAND': ':'}, text=True, capture_output=True,
+        )
+        self.assertEqual(17, result.returncode, result.stdout + result.stderr)
+        self.assertNotIn('unexpected_odoo', result.stdout)
 
     def test_orm_suite_does_not_build_unconsumed_frontend(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())

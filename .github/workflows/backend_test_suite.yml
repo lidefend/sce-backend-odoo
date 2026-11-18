@@ -140,9 +140,6 @@ jobs:
       SC_BACKEND_RECEIPT_CAPTURE: '1'
       SC_BACKEND_ISOLATED_PYTHON: '1'
       SC_TEST_DEPENDENCY_PREPARATION: '1'
-      # Backend ORM tests consume the repository's ``odoo_test_helper`` stub.
-      # Do not make every module depend on a network package-index round trip.
-      SC_TEST_SKIP_DEPENDENCY_INSTALL: '1'
       # Preserve the one-off test container so a module timeout can expose its
       # process output instead of deleting the only diagnostic carrier.
       KEEP_TEST_CONTAINER: '1'

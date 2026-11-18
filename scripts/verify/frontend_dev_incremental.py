@@ -2073,7 +2073,9 @@ def resumable_receipt_results(
     A prior aggregate receipt can contain passed targets even when another
     target was interrupted, or can be a complete passed execution whose source
     later changed. Those target logs remain useful when the source head is still
-    an ancestor and the target set is identical. The caller removes targets
+    an ancestor and the requested target was actually executed. Changes to other
+    paths or to the aggregate target set do not invalidate its log. The caller
+    removes targets
     selected by commits or dirty paths since that head.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
@@ -2084,18 +2086,20 @@ def resumable_receipt_results(
         key=lambda path: path.stat().st_mtime,
         reverse=True,
     )
-    expected_paths = sorted(set(paths))
     expected_targets = sorted(set(targets))
     for receipt_path in receipts:
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
             head = str(receipt.get("identity", {}).get("head", ""))
+            source_targets = receipt.get("requiredTargets")
             if (
                 receipt.get("status") not in ("interrupted", "passed", "failed")
                 or not receipt.get("identity", {}).get("worktreeClean")
                 or len(head) != 40
-                or sorted(receipt.get("changedPaths", [])) != expected_paths
-                or sorted(receipt.get("requiredTargets", [])) != expected_targets
+                or not isinstance(source_targets, list)
+                or any(not isinstance(target, str) for target in source_targets)
+                or len(set(source_targets)) != len(source_targets)
+                or not set(expected_targets).intersection(source_targets)
             ):
                 continue
             subprocess.run(
@@ -2107,7 +2111,7 @@ def resumable_receipt_results(
             results: dict[str, dict] = {}
             for row in receipt.get("targetResults", []):
                 target = row.get("target")
-                if target not in expected_targets or target in results:
+                if target not in expected_targets or target not in source_targets or target in results:
                     continue
                 if row.get("status") != "passed" or row.get("returncode") != 0:
                     continue
@@ -2122,7 +2126,7 @@ def resumable_receipt_results(
                     continue
                 carried = dict(row)
                 carried["reusedFrom"] = _json_path(receipt_path, root)
-                carried["reuseReason"] = "verified target prefix from interrupted execution"
+                carried["reuseReason"] = "verified passed target from prior execution"
                 results[target] = carried
             if results:
                 return receipt_path, head, results
@@ -2651,6 +2655,7 @@ def execute_targets(
     registered_targets: set[str] | None = None,
     blocked_targets: set[str] | None = None,
     reusable_targets: set[str] | None = None,
+    non_reusable_targets: set[str] | None = None,
     receipt_dir: Path | None = None,
     worktree_identity: dict | None = None,
     iteration_checkpoint_sha: str = "",
@@ -2769,7 +2774,12 @@ def execute_targets(
             print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
         return 0
 
-    source_receipt = incremental_verified_receipt(root, paths, required_targets, identity)
+    # A content-identical aggregate cannot override a declared stale dependency
+    # (for example a changed runtime readback outside the Git source tree).
+    source_receipt = (
+        None if set(required_targets) & (non_reusable_targets or set())
+        else incremental_verified_receipt(root, paths, required_targets, identity)
+    )
     resume_receipt, resume_head, carried_results = (
         resumable_receipt_results(root, paths, targets)
         if source_receipt is None
@@ -2780,7 +2790,7 @@ def execute_targets(
         carried_results = {
             target: row
             for target, row in carried_results.items()
-            if target not in invalidated
+            if target not in invalidated and target not in (non_reusable_targets or set())
         }
     receipt_directory = _execution_directory(root, receipt_dir)
     if source_receipt is not None:
@@ -2897,6 +2907,12 @@ def execute_worktree(root: Path = ROOT) -> int:
         registered_targets=declared_check_targets(run),
         blocked_targets=blocked,
         reusable_targets=reusable,
+        non_reusable_targets=(required - declared_check_targets(run)) | {
+            check["target"] for check_id, check in checks.items()
+            if check["status"] == "stale"
+            or (run["checks"].get(check_id, {}).get("kind", "runtime") != "offline"
+                and check["status"] != "reusable")
+        },
         iteration_checkpoint_sha=checkpoint,
         iteration_checkpoint_kind=checkpoint_kind,
     )

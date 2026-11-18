@@ -64,19 +64,13 @@ if [[ "${KEEP_TEST_CONTAINER:-0}" == "1" ]]; then
 fi
 
 # shellcheck disable=SC2086
-compose ${COMPOSE_FILES} run --no-deps ${RUN_RM} -T "${RUN_NAME[@]}" \
+compose ${COMPOSE_FILES} run --no-deps ${RUN_RM} -T --interactive=false "${RUN_NAME[@]}" \
   -e PYTHONFAULTHANDLER=1 \
   "${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}" "${PREPARATION_ARGS[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \
   --entrypoint bash odoo -lc "
-    if [ \"\${SC_TEST_SKIP_DEPENDENCY_INSTALL:-0}\" = 1 ]; then
-      echo '[test-container] dependency-install=skip repository-stub-and-runtime-image'
-    else
-      echo '[test-container] dependency-install=start'
-      pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt
-      echo '[test-container] dependency-install=complete'
-    fi
+    pip3 install -q -r ${CONFIG_MOUNT_CONT}/requirements-test.txt || exit \$?
     if [ \"\${SC_BACKEND_RECEIPT_CAPTURE:-0}\" = 1 ]; then
       python3 /tmp/sc-test-tools/scripts/ci/backend_test_receipt.py environment || exit \$?
     fi

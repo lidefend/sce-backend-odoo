@@ -3,7 +3,7 @@
   "id": "BE-CLOSE-01-WORKFLOW-CONTRACT-20261118",
   "branch": "feature/be-close-01-workflow-contract-20261118",
   "baseline_sha": "64f2e68ea1b80464fd080bb93b1a83312decc8c4",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
   "record": "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
   "scope": [
@@ -59,7 +59,8 @@
     "scripts/verify/test_github_actions_security_guard.py",
     "scripts/verify/test_test_coverage_registry_audit.py",
     "scripts/ci/run_backend_module_test.py",
-    "scripts/ci/test_run_backend_module_test.py"
+    "scripts/ci/test_run_backend_module_test.py",
+    "Makefile"
   ],
   "environment": {
     "kind": "offline",
@@ -164,6 +165,7 @@
       "target": "verify.ci.workflow.contract",
       "kind": "offline",
       "inputs": [
+        "Makefile",
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/backend_test_suite.yml",
         ".github/workflows/professional_quality_gate.yml",
@@ -396,5 +398,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the foreground-timeout process-group repair on PR #933 and verify both focused shards create their Odoo containers and complete."
+  "next_exact_step": "Publish the reviewed CI startup/coverage/reuse repair on PR #933 and verify current-head required remote checks."
 }

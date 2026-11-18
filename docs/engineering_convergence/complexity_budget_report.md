@@ -31,10 +31,10 @@ Generated from repository source files. This report is informational during the 
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3260 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3319 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2981 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2997 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
@@ -90,7 +90,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1094 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 800 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 797 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3260 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3319 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
-| 2981 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 2997 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |

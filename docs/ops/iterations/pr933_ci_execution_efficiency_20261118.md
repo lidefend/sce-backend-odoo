@@ -1,123 +1,111 @@
-# PR 933 CI execution efficiency (2026-11-18)
+# PR 933 CI execution repair (2026-11-18)
 
-## Boundary
+## Boundary and identity
 
-- Formal Product Layer: P4
-- Layer Target: backend CI execution selection, timeout, observability and receipt discovery
-- Module: GitHub backend suite workflow and CI verification tools
-- Standard vs User-Specific: platform engineering standard
+- Formal Product Layer: P4; standard engineering tooling.
+- Layer Target / Module: Make environment propagation and backend CI execution.
+- Worktree: `sce-backend-odoo-release-rehearsal`.
+- Starting HEAD: `b8ccee4da2aee2fd063f2c68001eb242178cfca0`.
+- PR base: `64f2e68ea1b80464fd080bb93b1a83312decc8c4`.
+- Product models, contracts, permissions, frontend and persistent environments are
+  excluded from this repair. Their existing PR validation obligations remain.
+- Existing uncommitted CI changes were preserved in
+  `.runtime/pr933-ci-diagnosis/preexisting.patch` before editing.
 
-The PR-specific business files remain owned by PR #933. This batch changes no
-product contract, model, permission, action, frontend behavior or customer data.
+## Observed failure and correction
 
-## Root causes
+Run `44304328637` timed out both backend shards before any test-container output.
+Its downstream coverage collector then correctly rejected missing module receipts.
+The previous claims that pip, Python session handling, GNU timeout process groups,
+or Compose stdin caused that startup stall were hypotheses, not demonstrated causes.
 
-- Workflow uploads `backend-execution-<run-id>-<shard>`, but receipt discovery
-  and origin verification expected the legacy
-  `backend-execution-<run-id>-<attempt>-<shard>` name. Discovery therefore
-  returned zero locators even when successful mainline artifacts existed.
-- Ordinary backend PRs selected the complete module baseline for every
-  dependency-safe module. PR #933 selected 13 modules although its changed
-  executable set contained 50 tests in two modules.
-- Missing receipt discovery also discarded real module durations, so shard
-  planning used unit weights of a few seconds instead of the measured
-  269/24-second values visible on main.
-- A module test had no independent timeout. Four shards could remain stuck in
-  one step until the 240-minute job ceiling, with no live heartbeat.
-- The shard checkout fetched the candidate branch but never materialized the
-  event-bound integration base as `refs/remotes/origin/main`. Both focused
-  shards therefore entered Make with a repository that could not resolve the
-  mainline ref, repeated `fatal: Not a valid object name origin/main`, and were
-  correctly stopped by the new ten-minute module timeout.
-- After the mainline ref was repaired, both modules produced no test output for
-  the full timeout. The backend runner unconditionally performed a network
-  `pip install` before every module even though the repository already carries
-  the required `odoo_test_helper` import stub. This made module execution
-  depend on package-index availability and hid the stalled phase behind a
-  quiet command.
-- Run `44297938455` then proved that the preserved project contained only
-  PostgreSQL and Redis, with no `sc-test-odoo-*` container and no test-entry
-  output. The remaining stall is in the host-side module command startup, before
-  the Odoo test container exists.
-- The startup stall was introduced by the Python process wrapper: it changed
-  the direct `make test ... | tee` execution into a separate session with
-  captured stdout. Run `44297938455` showed no child output and no one-off Odoo
-  container, matching that execution-semantics regression.
-- Removing the Python wrapper was necessary but not sufficient: GNU `timeout`
-  still placed Make in a new process group by default. Run `44301820016` again
-  produced no command output and no Odoo container. The timeout invocation now
-  uses `--foreground`, preserving the caller's process-group semantics while
-  retaining the hard ceiling.
+The reproduced defect is the bare `export` after Make includes `ENV_FILE`.
+It exports all later lazy Make variables, including unrelated acceptance/release
+shell probes. GNU Make 4.4 also exports variables into `$(shell ...)` subprocesses
+(see the upstream 4.4 NEWS `shell-export` change), causing recursive expansion.
 
-## Correction
+A real GNU Make 4.4.1 build reproduced the defect using only
+`make guard.prod.forbid ENV_FILE=/dev/null`: it exceeded a 10-second diagnostic
+limit without starting any Docker process. Without the environment include it
+finished in 0.17 seconds. With the correction, the same environment-file probe
+finished in 0.16 seconds on both Make 4.3 and 4.4.1.
 
-- Fix current and legacy artifact-name discovery and attempt-one verification.
-- Add a focused PR plan that runs exact changed ORM selectors in impact-safe
-  modules; fall back to complete modules when no changed tests exist.
-- Keep full module baselines for schedule, explicit candidate and operator full
-  audits.
-- Preserve the original direct Make execution and add GNU
-  `timeout --foreground` around it, with a 30-second shell heartbeat and
-  preserved partial log.
-- Use authenticated historical durations for shard balancing even when test
-  reuse remains denied by the existing six-dimension closure policy.
-- Before planning or invoking Make, materialize the exact PR base SHA as
-  `refs/remotes/origin/main`; for schedule, candidate, and operator full runs,
-  fetch the authoritative mainline tip. Export the same resolved commit as
-  `VIEW_STRUCTURE_BASELINE_SHA` so inherited guards do not probe a different
-  identity.
-- Backend suite containers skip the generic dependency installation and emit an
-  explicit dependency-stage marker. They retain a named one-off container until
-  cleanup so timeout diagnostics include the exact process log.
-- Remove the Python process/session wrapper whose captured-stdout execution
-  prevented the original Make path from creating its one-off test container.
+Make now exports only assignment names declared in the environment file. Existing
+file values, explicit exports, default/append assignments and command-line database
+precedence are tested against the real Make graph. An unrelated lazy side-effect
+probe must never execute during environment construction.
 
-## Acceptance
+The correction keeps the existing per-module `timeout --foreground`, heartbeat,
+retry and diagnostic receipts, with the 240-minute job ceiling. The inherited
+proposal to cap an entire full shard at 25 minutes was rejected: multiple modules
+and retries must retain their own budgets. Compose stdin is explicitly disabled.
+Dependency installation is restored and fails closed before Odoo execution.
 
-- Artifact discovery returns locators for real current artifact names.
-- PR #933 plans only `smart_construction_core` and `smart_core`, with 50 exact
-  selectors and measured 269/24-second shard weights.
-- A module that emits no output still emits heartbeat lines.
-- A hung module exits 124 within its lane timeout rather than waiting for the
-  job ceiling.
-- Every backend shard starts its test process with a resolvable, verified
-  mainline ref.
-- Backend module execution performs no package-index network operation before
-  starting Odoo.
-- Scheduled and explicit formal-release runs retain complete module scope.
-- CI workflow contract, scheduled gates and GitHub Actions security checks pass.
+Independent review also identified that changed tests had replaced complete
+impacted modules without certified baseline/family reuse. Focused requests now
+return the full impacted plan, preserving unchanged families and dependency
+modules. Changed-test selectors remain additional coverage. The consumer regression
+continues to execute the actual Make-call fragment with external execution stubbed.
 
-## Rollback
+## Evidence reuse repair
 
-Revert the focused planner, wrapper, workflow routing and discovery correction
-together. No database or runtime state requires restoration.
+The CI repair worktree initially lacked the ignored `.runtime` evidence held by
+`sce-backend-odoo-acceptance-scope-20261109-be-close-01-20261118`. Missing original
+receipts, logs and readbacks were copied unchanged into the selected worktree,
+without overwriting existing files. The run evaluator verifies ancestor identity,
+declared input hashes, log hashes and readback dependencies; 17 targets are reusable.
+The initial repeat ORM invocation was interrupted and is not recorded as a pass.
 
-## Execution log
+The aggregate resume path additionally required identical changed-path and target
+sets. Adding a CI check therefore discarded unrelated passed business targets.
+It now selects requested targets that the source actually declared and executed,
+then excludes targets affected by intervening committed/dirty changes. Declared
+stale dependencies cannot be overridden by either exact or partial aggregate reuse.
+Original logs and source receipts remain immutable and hash-verified.
 
-- `verify.ci.workflow.contract`: PASS, 462 tests.
-- `verify.ci.scheduled_gates`: PASS, 97 tests.
-- `verify.github_actions.security`: PASS, 18 tests plus workflow policy audit.
-- `verify.guard.registry`: PASS, 24 tests plus 1636-script audit.
-- `verify.test.coverage.registry`: PASS, 19 tests; generated snapshot refreshed.
-- `verify.frontend.dev.incremental.unit`: PASS, 178 tests.
-- `verify.agent.resume.unit`: PASS, 64 tests.
-- `test_backend_test_suite_dispatch_contract.py`: PASS, 20 tests after adding
-  the shard mainline-ref contract.
-- Real focused planning for PR #933 selected two modules, 50 exact selectors,
-  and authenticated durations of 269/24 seconds.
-- Exact-head run `44292217981` proved the missing-ref defect: both focused
-  shards repeated `fatal: Not a valid object name origin/main` and stopped at
-  the 600-second module timeout with exit 124.
-- Exact-head run `44295077001` proved the missing-ref repair and exposed the
-  second blocker: both modules timed out with no test output because the
-  unconditional dependency install never reached Odoo.
-- Exact-head run `44297938455` proved the dependency-install and container-log
-  changes, and exposed the wrapper regression: no child output and no one-off
-  test container were created before timeout.
-- Exact-head run `44301820016` confirmed the same startup symptom after removing
-  the Python wrapper, isolating default `timeout` process-group isolation as
-  the remaining semantic difference from the original Make path.
-- A full local `ci.local.iteration` was intentionally stopped after fifteen
-  targets because it would repeat already-passed PR business ORM work. It is
-  not reported as a pass; the exact-head remote PR remains the integration
-  authority.
+The revised plan reuses the lane audit from a verified aggregate as well as those
+17 run checks. Runtime/unknown-kind targets without a currently reusable single-check
+receipt cannot borrow aggregate success. The intent-smoke ORM therefore remains
+required: its prior aggregate log lacks the required environment-bound single-check
+receipt. Other remaining targets are CI/tool tests, a profile check and validation
+of an existing sample artifact. Regression coverage includes a new unrelated target, a remaining
+target subset, tampered evidence, changed-target invalidation and explicit stale
+inputs. `verify.frontend.dev.incremental.unit`: PASS, 182 tests.
+
+## Gate responsibility
+
+| Gate | State | Owner / reason |
+| --- | --- | --- |
+| exact base/head and dirty scope | required | PR and local Git identity |
+| existing CI tool families and focused regression | required | `verify.ci.workflow.contract` |
+| workflow security / test coverage consumer | required | `verify.github_actions.security`, `verify.test.coverage.registry` |
+| local iteration | required | `ci.local.iteration` |
+| product module baseline / contract / frontend / browser | excluded from new repair | no P0-P3 source change; existing PR obligations remain |
+| remote required gates | not_run for new candidate | requires published exact SHA |
+
+## Validation
+
+- Make environment regression: PASS on GNU Make 4.3 and 4.4.1, including empty
+  and populated environment files; no database/container execution.
+- `verify.ci.workflow.contract`: PASS; dispatch family includes 23 tests.
+- `verify.github_actions.security`: PASS, 18 tests and policy scan.
+- `verify.test.coverage.registry`: PASS, 19 tests and registry audit.
+- Initial `ci.local.iteration`: failed on undeclared `Makefile` scope; the current
+  run scope has been corrected.
+- Independent review: three findings addressed (baseline scope, per-module timeout,
+  dependency-install failure); recheck found no blocking issues.
+- Exact-tree plan diagnostic: full scope, 14 impacted modules, four shards;
+  76 changed cases across backend and separately managed owners remain declared.
+- `ci.delivery.freeze.prepare`: PASS, including generated evidence preflight.
+- Final `ci.local.iteration`: PASS. Seventeen registered checks and one offline
+  aggregate target reused; ten remaining targets passed, including ten intent-smoke
+  ORM cases. Runtime evidence: `.runtime/test-baseline/1795006732083719988/receipt.json`.
+- Final independent reuse review: no remaining blockers; runtime, unknown-kind and
+  unregistered targets cannot substitute aggregate success for environment evidence.
+- Raw logs: `.runtime/pr933-ci-diagnosis/`.
+
+## Rollback and completion boundary
+
+Revert this repair commit to restore the previous execution behavior. No persistent
+runtime/data changes are part of this repair. Local passes do not establish remote
+CI success, merge readiness, deployment or product delivery.
