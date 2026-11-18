@@ -99,6 +99,10 @@ def validate(root: Path = ROOT) -> list[str]:
     for marker in (
         ':data-navigation-label="node.label"',
         ':aria-label="node.label"',
+        'role="button"',
+        ':tabindex="blocked ? -1 : 0"',
+        '@keydown.enter.prevent="activateFromKeyboard"',
+        '@keydown.space.prevent="activateFromKeyboard"',
         'const showIcon = computed(() => props.depth < 2)',
         'v-if="showIcon" #icon',
         'text-overflow: ellipsis',
@@ -127,6 +131,9 @@ def validate(root: Path = ROOT) -> list[str]:
         "revealActivePageTab",
         "scrollBy({ left:",
         "overflow-x: auto",
+        ':tabindex="page.key === activeKey ? 0 : -1"',
+        'tabindex="-1"',
+        'aria-hidden="true"',
         "min-height: var(--sc-touch-target-min)",
         "width: var(--sc-touch-target-min)",
     ):

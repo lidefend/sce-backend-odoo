@@ -1,30 +1,35 @@
 schema_version: 1
 goal:
   id: FE-RELEASE-LOGIN-PROBE-ENTRY-20261118
-  title: route frontend HTTP login probes through the managed acceptance entry
+  title: establish managed release evidence and close its accessibility blockers
   status: active
-  formal_product_layer: P4 ops delivery tool
-  layer_target: frontend page-identity and delivery-hardening login entries
+  formal_product_layer: P0/P4
+  layer_target: frontend release entry, activity tabs and canonical navigation accessibility
   module:
+    - frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue
+    - frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue
     - make/runtime_ops.mk
+    - scripts/verify/frontend_navigation_shell_guard.py
     - scripts/verify/test_frontend_delivery_hardening_guard.py
+    - scripts/verify/test_frontend_navigation_shell_guard.py
     - scripts/verify/test_frontend_release_local_entry.py
   standard_vs_user_specific: platform delivery verification standard
   objective: >-
-    Remove direct login-script calls from the page-identity and delivery-hardening
-    release browser targets and reuse the governed acceptance.runtime.login_probe
-    entry that validates backend runtime identity before issuing the same
-    credential to the HTTP login path.
+    Restore a truthful managed frontend release browser path, then close the two
+    shared P0 accessibility defects that path exposes: invalid activity-tab
+    tablist ownership and a canonical navigation menu without keyboard-focusable
+    items.
   why_here: >-
-    The failure is in release verification wiring. The same file already uses the
-    managed login entry for the performance probe, while two browser targets bypass
-    it and expose executor-dependent authentication readiness.
+    P4 owns the release entry because it bypassed the managed login path and the
+    verification-lane registration. P0 owns the resulting shared presentation
+    defects because every business page consumes the same activity tabs and shell
+    menu.
   why_not_elsewhere:
-    - No frontend product rendering, contract, business action or permission change.
+    - No business contract, model, action or permission change.
     - No authentication, credential, database or backend runtime mutation.
-    - No browser assertion, accessibility rule or evidence threshold is weakened.
+    - No page-specific accessibility exception, browser assertion or evidence threshold is weakened.
   blast_radius:
-    product_behavior: none
+    product_behavior: shared activity-tabs and canonical-navigation keyboard/ARIA semantics
     verification: frontend page-identity and delivery-hardening browser entries
     exclusions:
       - no acceptance matrix result is inferred before the browser run completes
@@ -35,5 +40,8 @@ goal:
     - The existing release-local entry test verifies cleanup, backend, managed login and frontend ordering.
     - Verification-lane coverage registers the acceptance artifact helper and removes the now-unused direct-probe exemption without changing the remote-only allowance.
     - The delivery-hardening guard passes.
+    - Activity tabs expose one valid tab stop and keep close available by Delete.
+    - Canonical navigation items are focusable and activate with Enter or Space.
     - The managed release browser entry proceeds past login and records its real browser outcomes.
-  rollback: Revert the two verification commits; no data or runtime state requires restoration.
+    - The complete accessibility matrix reports zero blocking findings.
+  rollback: Revert the P4 and P0 commits together; no data or runtime state requires restoration.

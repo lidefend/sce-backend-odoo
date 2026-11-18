@@ -157,6 +157,16 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         )
         self.assertTrue(any("readable deep-label projection" in error for error in validate(root)))
 
+    def test_navigation_nodes_must_be_keyboard_reachable(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/CanonicalNavigationMenuNode.vue"
+        path.write_text(
+            path.read_text().replace(':tabindex="blocked ? -1 : 0"', ""),
+            encoding="utf-8",
+        )
+        self.assertTrue(any("readable deep-label projection" in error for error in validate(root)))
+
     def test_company_context_must_remain_visible_after_activity_rail_retirement(self):
         temporary, root = self.fixture()
         self.addCleanup(temporary.cleanup)
@@ -192,6 +202,16 @@ class FrontendNavigationShellGuardTest(unittest.TestCase):
         self.addCleanup(temporary.cleanup)
         path = root / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
         path.write_text(path.read_text().replace("overflow-x: auto;", "overflow-x: hidden;"), encoding="utf-8")
+        self.assertTrue(any("narrow reachability" in error for error in validate(root)))
+
+    def test_activity_tab_close_must_not_pollute_tablist_accessibility(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        path = root / "frontend/apps/web/src/components/product-shell/ActivityPageTabs.vue"
+        path.write_text(
+            path.read_text().replace('            aria-hidden="true"\n', "", 1),
+            encoding="utf-8",
+        )
         self.assertTrue(any("narrow reachability" in error for error in validate(root)))
 
     def test_active_path_expansion_must_not_reapply_after_user_collapse(self):

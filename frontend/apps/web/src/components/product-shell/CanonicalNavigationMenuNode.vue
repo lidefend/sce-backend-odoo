@@ -12,6 +12,10 @@
     :data-navigation-label="node.label"
     :title="blockedTitle"
     :aria-label="node.label"
+    :tabindex="blocked ? -1 : 0"
+    role="button"
+    @keydown.enter.prevent="activateFromKeyboard"
+    @keydown.space.prevent="activateFromKeyboard"
   >
     <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <template #title>
@@ -43,6 +47,10 @@
     :title="blockedTitle || node.label"
     :aria-label="node.label"
     :aria-current="active ? 'page' : undefined"
+    :tabindex="blocked ? -1 : 0"
+    role="button"
+    @keydown.enter.prevent="activateFromKeyboard"
+    @keydown.space.prevent="activateFromKeyboard"
   >
     <template v-if="showIcon" #icon><ScIcon :name="icon" :size="depth === 0 ? 16 : 14" /></template>
     <span class="navigation-node__label">{{ node.label }}</span>
@@ -73,6 +81,11 @@ const icon = computed<NavigationIconName>(() => {
   const requested = String(props.node.icon || '').trim() as NavigationIconName;
   return knownIcons.has(requested) ? requested : props.node.children.length ? 'folder' : 'file-text';
 });
+
+function activateFromKeyboard(event: KeyboardEvent) {
+  const target = event.currentTarget;
+  if (target instanceof HTMLElement) target.click();
+}
 </script>
 
 <style scoped>
