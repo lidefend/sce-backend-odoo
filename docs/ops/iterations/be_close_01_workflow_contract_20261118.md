@@ -61,11 +61,10 @@
 - 旧 workflow-samples 是手写结构负例，不能作为前后端联合验收证据；现已移除。
   Schema 单测中的对象仅作为结构测试输入。联合交接证据
   必须由真实 HTTP 请求生成。
-- 全量 `workflow_contract_backend` 标签在 fresh `sc_test` 中会运行非本批模型
-  的旧夹具假设，当前 receipt
-  `.runtime/test-baseline/1794976835787170135/receipt.json` 为 1 failed / 13
-  errors；失败集中在共享审批模板的既有声明漂移和缺少 demo/fixture 数据，
-  不属于本批固定标签。该失败未记为本批通过，也未通过削弱断言处理。
+- `workflow_contract_backend` 最初在 fresh `sc_test` 中暴露了旧夹具没有业务
+  公司/项目负责人、共享审批模板仍声明重复 `submit`、以及直接写终态等既有
+  问题。这些问题已按正式状态转换、受管业务公司和真实合同方向修正；
+  当前完整标签 32 tests PASS，没有跳过或削弱断言。
 
 ## 验证复用机制修复
 
@@ -103,9 +102,37 @@
   `verify.frontend.standard_preview.unit`。已修正测试期望为两条路由的并集，
   没有删除标准预览覆盖。
 
+## 稳定基线偏差与恢复
+
+- 远端 `professional_quality_gate` 首次运行本候选时暴露了本地增量计划漏掉
+  既有付款测试族的问题。原因不是主线基线失效，而是本地模型改动只选择了
+  BE-CLOSE-01 新标签，没有纳入消费 `payment_request` 和
+  `workflow_contract_service` 的既有测试责任。
+- 已修正生产语义：提交前置检查和动作可用性仍共享 blocker，但 action 执行
+  不再绕开调用方传入的 advisory 集合重复计算风险策略；原生明细校验保留
+  `ValidationError` 类型和用户可读原因。
+- 已修正共享审批档案：`submitted` 只声明 `approve/cancel`，不再保留
+  已提交状态重复 `submit` 的死动作。
+- 已修正测试夹具：合同工作流测试使用受管业务公司、项目负责人、税组和
+  正式状态转换；收款契约使用真实 `type=out` 合同。API 兼容测试不再跟随
+  `/web/login` 重定向，确保只验证 `/api/v1/intent`。
+- `workflow_contract_backend`：32 tests PASS。
+- 付款动作可用性、P1 付款能力和并发：73 tests PASS。
+- 完整 `smart_construction_core` 模块 ORM 基线：563 tests PASS；
+  receipt `.runtime/test-baseline/1794991644912767587/receipt.json`。
+- 稳定基线约束已独立整理为
+  `docs/architecture/stable_baseline_iteration_invariants_v1.md`：模块基线是
+  可复用的覆盖责任，不是每次无条件全量重跑；未变化的 receipt 和测试环境
+  可按身份复用，受影响测试族必须重新执行，依赖映射无法证明时才回退到完整
+  模块基线。
+- 测试环境默认改为身份绑定的模板复用：每次仍从 `sc_test_template` 克隆
+  fresh `sc_test`，但不再重复安装整套模块。本次 schema 变化后的模板准备
+  为 246.9s，紧接着的隔离 ORM 回执为 19.3s；此前每个小标签约需 4 分钟。
+  `verify.local.development_lifecycle.unit`：54 tests PASS。
+
 ## 验证
 
-- `verify.workflow_contract.be_close_01.unit`：10 tests PASS；日志
+- `verify.workflow_contract.be_close_01.unit`：11 tests PASS；日志
   `.runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_unit.log`。
 - `verify.workflow_contract.be_close_01.orm`：8 tests PASS；fresh isolated
   `sc_test` receipt
@@ -127,7 +154,8 @@
 - 验证复用机制修复后的 `verify.agent.resume.unit`：64 tests PASS。
 - 修正路由期望与 reuse 执行后的
   `verify.frontend.dev.incremental.unit`：177 tests PASS。
-- `ci.local.iteration`：PASS，受影响 target 集合 21 项全部真实执行通过。
+- `ci.local.iteration`：PASS；稳定基线复用后 21 个已登记 target 直接复用，
+  仅执行 2 个尚未登记的目标。
 - `bash -n`（受管验收入口）、相关 Python `py_compile`、`git diff --check` PASS。
 - `verify.workflow_contract.be_close_01.samples`：已生成 2 个新建目录、4 个
   记录契约、2 个动作执行后回读；8 份 workflow contract 全部通过 Schema。

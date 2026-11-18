@@ -3275,8 +3275,12 @@ class PaymentRequest(models.Model):
     def _check_submission_prerequisites(self):
         """Read-only prerequisites shared by preview and the locked submit action."""
         for rec in self:
+            # Native detail validation owns its exception class and message.
+            rec._check_detail_amount_consistency()
             blocking = [
-                row for row in rec._workflow_business_blockers({"submit"})
+                row for row in rec._workflow_business_blockers(
+                    {"submit"}, include_advisories=False, include_detail=False
+                )
                 if row.get("blocking") is True
             ]
             if blocking:
@@ -3286,7 +3290,13 @@ class PaymentRequest(models.Model):
             # force_block_enabled is False (default).
             continue
 
-    def _workflow_business_blockers(self, action_keys=None):
+    def _workflow_business_blockers(
+        self,
+        action_keys=None,
+        *,
+        include_advisories=True,
+        include_detail=True,
+    ):
         """Model-owned availability facts shared by contract and execution."""
         self.ensure_one()
         keys = {str(key or "").strip() for key in (action_keys or {"submit", "approve", "done"})}
@@ -3305,10 +3315,11 @@ class PaymentRequest(models.Model):
             })
 
         if keys & {"submit", "approve"}:
-            try:
-                self._check_detail_amount_consistency()
-            except (UserError, ValidationError) as exc:
-                add("PAYMENT_DETAIL_AMOUNT_INCONSISTENT", str(exc), {"submit", "approve"})
+            if include_detail:
+                try:
+                    self._check_detail_amount_consistency()
+                except (UserError, ValidationError) as exc:
+                    add("PAYMENT_DETAIL_AMOUNT_INCONSISTENT", str(exc), {"submit", "approve"})
             if not self.project_id:
                 add("PAYMENT_MISSING_PROJECT", "付款/收款申请必须关联项目。", {"submit", "approve"})
             if (self.amount or 0.0) <= 0:
@@ -3358,7 +3369,7 @@ class PaymentRequest(models.Model):
                     {"submit"},
                 )
 
-        if keys & {"submit", "approve"} and self.type == "pay":
+        if include_advisories and keys & {"submit", "approve"} and self.type == "pay":
             for action_key in sorted(keys & {"submit", "approve"}):
                 for advisory in self._collect_payment_advisories(action_key):
                     add(

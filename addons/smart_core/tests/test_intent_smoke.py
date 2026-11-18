@@ -105,7 +105,15 @@ class TestIntentSmoke(HttpCase):
         req_headers.update(self._entry_headers())
         if headers:
             req_headers.update(headers)
-        resp = self.url_open("/api/v1/intent", data=json.dumps(payload), headers=req_headers)
+        # API-contract tests inspect the intent endpoint itself. Following a
+        # compatibility redirect into /web/login would replace the API response
+        # and cross Odoo test cursors, producing a false HTTP failure.
+        resp = self.url_open(
+            "/api/v1/intent",
+            data=json.dumps(payload),
+            headers=req_headers,
+            allow_redirects=False,
+        )
         return self._json_response(resp)
 
     def test_anon_login_intent(self):
@@ -166,6 +174,7 @@ class TestIntentSmoke(HttpCase):
             f"/api/v1/intent?db={self.env.cr.dbname}",
             data=json.dumps(payload),
             headers=headers,
+            allow_redirects=False,
         )
         self.assertEqual(resp.status_code, 409)
         data = self._json_response(resp)

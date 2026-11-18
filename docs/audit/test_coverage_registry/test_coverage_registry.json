@@ -165,7 +165,8 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)",
+        "make:verify.smart_core.intent_smoke.orm :: /TestIntentSmoke (class selection)"
       ],
       "disposition": "wire-pending"
     },
@@ -337,7 +338,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestIntentSmoke (class selection)",
+        "make:verify.smart_core.intent_smoke.orm :: /TestIntentSmoke (class selection)"
       ],
       "disposition": "wire-pending"
     },
