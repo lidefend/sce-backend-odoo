@@ -77,6 +77,22 @@
       ]
     },
     {
+      "id": "frontend_acceptance_ci_tooling",
+      "patterns": [
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py"
+      ],
+      "risk": "standard",
+      "frontend": true,
+      "backend": false,
+      "backend_runtime": false,
+      "control_plane": true,
+      "tool_checks": [
+        "verify.ci.scheduled_gates"
+      ]
+    },
+    {
       "id": "security_scan_exception_config",
       "patterns": [
         "config/security/secret_scan_false_positives.v1.json"

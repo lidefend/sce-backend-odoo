@@ -239,6 +239,9 @@ RULES = (
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_workflow_contract.py",
         "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/ci/test_release_candidate_gate.py",
         "scripts/ci/gitee_gate_plan.py",
         "scripts/ci/gitee_formal_executor.py",
         "scripts/verify/test_gitee_gate_plan.py",
@@ -257,9 +260,18 @@ RULES = (
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/release_candidate_gate.yml",
     ), (
         "verify.ci.workflow.contract",
         "verify.github_actions.security",
+    )),
+    Rule((
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py",
+    ), (
+        "verify.ci.scheduled_gates",
     )),
     Rule((
         "make/ci.mk",
@@ -1062,6 +1074,14 @@ RULES = (
         "scripts/ops/test_safe_branch_sync_main.py",
     ), (
         "verify.workspace.branch.sync-main",
+    )),
+    Rule((
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+    ), (
+        "verify.workspace.branch.sync-github.unit",
     )),
     Rule((
         "scripts/ops/branch_cleanup_safe.sh",

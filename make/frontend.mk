@@ -955,6 +955,7 @@ verify.frontend.my_work_approval.guard: guard.prod.forbid
 .PHONY: verify.frontend.style_system.guard
 verify.frontend.style_system.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_inline_style_guard
+	@python3 -m unittest scripts.verify.test_design_token_system
 	@python3 scripts/verify/frontend_style_system_guard.py
 
 .PHONY: verify.frontend.text_containment.guard verify.frontend.inline_style.guard

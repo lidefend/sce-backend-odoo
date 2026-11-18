@@ -15,7 +15,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: frontend-release-gate-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'ci:candidate' && 'ignored-label' || 'validation' }}
+  group: frontend-release-gate-${{ github.event_name == 'pull_request' && 'pull_request' || github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'ci:candidate' && 'ignored-label' || 'validation' }}
   cancel-in-progress: true
 
 jobs:
@@ -81,7 +81,7 @@ jobs:
         run: |
           set -euo pipefail
           mode='${{ steps.risk.outputs.frontend_mode }}'
-          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || { [ "${CANDIDATE_REQUESTED}" = "true" ] && [ '${{ steps.risk.outputs.managed_orm_required }}' = true ]; }; then
+          if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${CANDIDATE_REQUESTED}" = "true" ]; then
             mode='full'
           elif [ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]; then
             mode='standard'

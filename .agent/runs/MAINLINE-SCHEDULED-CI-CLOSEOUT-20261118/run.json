@@ -1,0 +1,175 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
+  "scope": [
+    "config/ci/path_ownership_v1.json",
+    ".agent/decisions/ci-path-ownership.yaml",
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml",
+    ".agent/runs/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118/run.json",
+    "docs/audit/guard_registry/guard_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/mainline_scheduled_ci_closeout_20261118.md",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/public_guard.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+    "make/frontend.mk",
+    "make/ci.mk",
+    "scripts/ci/release_condition.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/dev/frontend_acceptance_operation_entry.sh",
+    "scripts/verify/frontend_release_ci_guard.py",
+    "scripts/verify/test_frontend_release_ci_guard.py",
+    "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/test_github_published_branch_sync.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/registry.yaml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets and locked frontend toolchain; no product database, service, credential, or deployment mutation"
+  },
+  "checks": {
+    "dialog_contract_browser": {
+      "target": "verify.frontend.contract_reason_dialog.browser",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src/components/design-system",
+        "frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue",
+        "frontend/apps/web/src/pages/contractForm/actionExecutionPlan.ts",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        ".github/workflows",
+        "Makefile",
+        "docs/audit/guard_registry/guard_registry.json",
+        "make",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "ci_risk_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "config/ci/path_ownership_v1.json",
+        "config/ci/risk_tiering_v1.json",
+        "make/ci.mk",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "kind": "offline"
+    },
+    "github_published_branch_sync": {
+      "target": "verify.workspace.branch.sync-github.unit",
+      "inputs": [
+        "scripts/ops/gitee_published_branch_sync.py",
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_gitee_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "ci_scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "make/ci.mk",
+        "make/dev.mk",
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/dev/frontend_acceptance_operation_entry.sh",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_style_system": {
+      "target": "verify.frontend.style_system.guard",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/design-tokens",
+        "frontend/packages/ui/src",
+        "make/frontend.mk",
+        "scripts/verify/frontend_style_system_guard.py",
+        "scripts/verify/test_design_token_system.py",
+        "scripts/verify/test_frontend_inline_style_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/.eslintignore",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/dev/pnpm_exec.sh"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk",
+        "scripts/dev/pnpm_exec.sh"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the ordinary-merge/formal-release separation, remove ci:candidate, publish the exact head through make pr.push, and require the four standard PR checks without a candidate dispatch.",
+  "id": "MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118",
+  "branch": "fix/main-scheduled-ci-20261118",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml",
+  "record": "docs/ops/iterations/mainline_scheduled_ci_closeout_20261118.md"
+}

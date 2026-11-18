@@ -38,7 +38,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("sleep 20", wait_job)
         self.assertIn("timeout-minutes: 360", wait_job)
 
-    def test_summary_publishes_effective_daily_vs_candidate_lane(self) -> None:
+    def test_daily_merge_is_not_bound_to_formal_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("needs.classify.outputs.frontend_mode", self.workflow)
@@ -46,9 +46,11 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("needs.classify.outputs.control_plane_changed", self.workflow)
         self.assertIn("needs.classify.outputs.candidate_requested", self.workflow)
         self.assertIn("| Control-plane change | ${CONTROL_PLANE_CHANGED} |", self.workflow)
-        self.assertIn('if [ "${CANDIDATE_REQUESTED}" != "true" ]; then', self.workflow)
+        self.assertNotIn("requires ci:candidate formal-release qualification", self.workflow)
         self.assertIn('effective_professional="governance"', self.workflow)
-        self.assertIn("Ordinary PR governance changes were downgraded", self.workflow)
+        self.assertIn('effective_professional="standard_backend"', self.workflow)
+        self.assertIn('effective_professional="standard_frontend"', self.workflow)
+        self.assertIn("this does not grant formal-release qualification", self.workflow)
         self.assertIn("Explicit candidate validation was requested for this exact head.", self.workflow)
 
     def test_ruleset_requires_each_authoritative_check_without_bypass(self) -> None:

@@ -1,0 +1,121 @@
+schema_version: 1
+goal:
+  id: MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118
+  title: Restore formal-release-equivalent mainline CI checks
+  status: active
+  formal_product_layer: P0/P4
+  layer_target: >-
+    P0 generic dialog state projection and P4 guard-registry lifecycle plus
+    formal-release lane equivalence
+  module:
+    - frontend contract action dialog
+    - frontend style-system guard
+    - scripts/verify guard registry
+    - CI risk lanes and merge policy
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Restore the scheduled mainline quality and frontend release gates by removing
+    a state attribute collision from the generic action-reason dialog and by
+    executing and registering the design-token test through its governed
+    style-system Make target. Make explicit candidate and scheduled execution use
+    the same formal-release lanes while keeping ordinary PR merge validation on
+    risk-selected fast/standard lanes.
+  baseline:
+    branch: main
+    full_sha: 129df3827f4e8cffbc8302d626ec590ff63c14d9
+  product_boundary:
+    why_here: >-
+      ScDialog owns the observable open/closed state; the caller passes descriptive
+      purpose markers through attrs and must not replace that primitive-owned state.
+      The guard registry is the P4 source that records whether verification scripts
+      are wired or orphaned.
+    why_not_elsewhere:
+      - No backend contract, model, permission, business action or customer behavior changes.
+      - No workflow trigger, required-check name, threshold or assertion is removed.
+      - The browser test already captures the state-attribute collision and remains unchanged.
+      - The validated style-system target must execute its selected design-token test instead of merely forwarding incremental selection metadata.
+      - Formal-release equivalence belongs to P4 CI routing and merge policy, not to product contracts or page-specific frontend logic.
+    blast_radius:
+      - frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue
+      - .github/workflows/frontend_release_gate.yml
+      - .github/workflows/professional_quality_gate.yml
+      - .github/workflows/merge_policy_gate.yml
+      - .github/workflows/public_guard.yml
+      - .github/workflows/release_candidate_gate.yml
+      - scripts/ci/test_merge_policy_gate.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/release_condition.py
+      - scripts/ci/test_release_condition.py
+      - scripts/ci/test_release_candidate_gate.py
+      - config/ci/path_ownership_v1.json
+      - scripts/ci/test_ci_path_ownership.py
+      - scripts/dev/frontend_acceptance_operation_entry.sh
+      - scripts/verify/frontend_release_ci_guard.py
+      - scripts/verify/test_frontend_release_ci_guard.py
+      - scripts/ops/github_published_branch_sync.py
+      - scripts/ops/test_github_published_branch_sync.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/registry.yaml
+      - docs/audit/guard_registry/guard_registry.json
+      - generated reports whose source-size or input digests derive from the changed dialog
+      - scheduled professional_quality_gate and frontend_release_gate facts
+  deliverables:
+    - frontend/apps/web/src/pages/contractForm/ContractReasonDialog.vue
+    - scripts/verify/registry.yaml
+    - docs/audit/guard_registry/guard_registry.json
+    - make/frontend.mk
+    - .github/workflows/frontend_release_gate.yml
+    - .github/workflows/professional_quality_gate.yml
+    - .github/workflows/merge_policy_gate.yml
+    - .github/workflows/public_guard.yml
+    - .github/workflows/release_candidate_gate.yml
+    - scripts/ci/test_merge_policy_gate.py
+    - scripts/ci/test_ci_risk_workflow_contract.py
+    - scripts/ci/release_condition.py
+    - scripts/ci/test_release_condition.py
+    - scripts/ci/test_release_candidate_gate.py
+    - config/ci/path_ownership_v1.json
+    - scripts/ci/test_ci_path_ownership.py
+    - scripts/dev/frontend_acceptance_operation_entry.sh
+    - scripts/verify/frontend_release_ci_guard.py
+    - scripts/verify/test_frontend_release_ci_guard.py
+    - make/ci.mk
+    - scripts/ops/github_published_branch_sync.py
+    - scripts/ops/test_github_published_branch_sync.py
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_frontend_dev_incremental.py
+    - .agent/decisions/ci-path-ownership.yaml
+    - docs/engineering_convergence/complexity_budget_report.md
+    - docs/engineering_convergence/split_plan_queue.md
+    - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+    - .agent/active-runs.json
+    - .agent/goals/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118.yaml
+    - .agent/runs/MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118/run.json
+    - docs/ops/iterations/mainline_scheduled_ci_closeout_20261118.md
+  acceptance:
+    - The action-reason browser contract test passes non-zero checks without selector relaxation.
+    - ScDialog continues to project data-state as open or closed while purpose markers remain available.
+    - verify.frontend.style_system.guard executes the design-token tests and passes.
+    - verify.guard.registry reports the design-token test as wired rather than orphan and passes.
+    - Affected frontend lint, strict typecheck and style-system checks pass with non-zero execution.
+    - make ci.local.iteration executes every selected target and records its own result.
+    - A non-FAST pull request can pass merge_policy_gate on its risk-selected standard lane without ci:candidate.
+    - Ordinary PR merge eligibility is not coupled to formal-release qualification.
+    - Ordinary synchronize runs stay on standard lanes while candidate runs are full.
+    - ci:candidate forces full professional and frontend formal-release lanes.
+    - Every professional quality lane executes the guard-registry audit.
+    - Pull-request synchronize and candidate-label events share one concurrency group per PR.
+    - Scheduled success emits an exact-head/tree release-condition artifact with deployment explicitly unset.
+    - The isolated CI acceptance entry executes login-probe instead of denying it.
+    - No required workflow, production guard, browser assertion or product behavior is weakened.
+  exclusions:
+    - Required-check context names, branch rulesets and workflow trigger schedules.
+    - Backend contracts, database state, fixtures, deployment and user acceptance.
+    - Unrelated guard-registry debt and generated inventories not invalidated by this source delta.
+  rollback: >-
+    Revert the dialog state-marker correction, guard-registry repair, and formal
+    lane routing/tests together. No database or runtime state requires restoration.
+  next_exact_step: >-
+    Review the generated diff, commit the exact candidate, publish it through the
+    governed PR lane, and require all four checks on the current remote head.

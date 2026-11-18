@@ -15,7 +15,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: merge-policy-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: merge-policy-${{ github.event_name == 'pull_request' && 'pull_request' || github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'ci:candidate' && 'ignored-label' || 'validation' }}
   cancel-in-progress: true
 
 jobs:
@@ -32,6 +32,7 @@ jobs:
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       managed_orm_required: ${{ steps.risk.outputs.managed_orm_required }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
+      frontend_full_required: ${{ steps.risk.outputs.frontend_full_required }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -165,6 +166,7 @@ jobs:
           CONTROL_PLANE_CHANGED: ${{ needs.classify.outputs.control_plane_changed }}
           MANAGED_ORM_REQUIRED: ${{ needs.classify.outputs.managed_orm_required }}
           PROFESSIONAL_MODE: ${{ needs.classify.outputs.professional_mode }}
+          FRONTEND_FULL_REQUIRED: ${{ needs.classify.outputs.frontend_full_required }}
           CANDIDATE_REQUESTED: ${{ needs.classify.outputs.candidate_requested }}
           FAST_RESULT: ${{ needs.fast.result }}
           FACT_RESULT: ${{ needs.wait_for_fact_checks.result }}
@@ -216,7 +218,7 @@ jobs:
             echo "| Fact workflow result | ${FACT_RESULT} |"
             echo ""
             if [ "${CANDIDATE_REQUESTED}" != "true" ] && { [ "${FRONTEND_MODE}" = "full" ] || [ "${PROFESSIONAL_MODE}" = "full" ]; }; then
-              echo "Ordinary PR governance changes were downgraded from candidate-grade validation to daily iteration lanes."
+              echo "Ordinary PR governance changes use risk-selected daily validation; this does not grant formal-release qualification."
             elif [ "${CANDIDATE_REQUESTED}" = "true" ]; then
               echo "Explicit candidate validation was requested for this exact head."
             else
