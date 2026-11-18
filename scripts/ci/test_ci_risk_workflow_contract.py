@@ -496,11 +496,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         frontend = self.text("frontend_release_gate.yml")
         self.assertIn("github.event_name == 'schedule'", frontend)
         self.assertIn("mode='full'", frontend)
-        # The nightly schedule must not be cancelled by a concurrent main push:
-        # every gate keys its concurrency group by the event kind, so push,
-        # schedule and pull_request runs never share a group, while same-kind
-        # re-runs still collapse. This is the concrete enforcement of the
-        # separation asserted above.
+        # The nightly schedule must not be cancelled by a concurrent main push,
+        # while every pull_request action for one PR/source identity collapses
+        # into the same group. A candidate label therefore supersedes the
+        # preceding synchronize run instead of creating two authoritative suites.
         for workflow in (
             "frontend_release_gate.yml",
             "merge_policy_gate.yml",
@@ -515,6 +514,16 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             ]
             self.assertEqual(len(group_lines), 1, workflow)
             self.assertIn("github.event_name", group_lines[0], workflow)
+            self.assertIn(
+                "github.event_name == 'pull_request' && 'pull_request' || github.event_name",
+                group_lines[0],
+                workflow,
+            )
+            self.assertIn(
+                "github.event.action == 'labeled' && github.event.label.name != 'ci:candidate'",
+                group_lines[0],
+                workflow,
+            )
         self.assertNotIn("github.event_name != 'pull_request' || github.event.action", frontend)
         professional = self.text("professional_quality_gate.yml")
         self.assertEqual(

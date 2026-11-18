@@ -39,6 +39,8 @@ goal:
       - .github/workflows/frontend_release_gate.yml
       - .github/workflows/professional_quality_gate.yml
       - .github/workflows/merge_policy_gate.yml
+      - .github/workflows/public_guard.yml
+      - .github/workflows/release_candidate_gate.yml
       - scripts/ci/test_merge_policy_gate.py
       - scripts/ci/test_ci_risk_workflow_contract.py
       - scripts/ops/github_published_branch_sync.py
@@ -57,6 +59,8 @@ goal:
     - .github/workflows/frontend_release_gate.yml
     - .github/workflows/professional_quality_gate.yml
     - .github/workflows/merge_policy_gate.yml
+    - .github/workflows/public_guard.yml
+    - .github/workflows/release_candidate_gate.yml
     - scripts/ci/test_merge_policy_gate.py
     - scripts/ci/test_ci_risk_workflow_contract.py
     - scripts/ops/github_published_branch_sync.py
@@ -81,6 +85,7 @@ goal:
     - A non-FAST pull request cannot pass merge_policy_gate without ci:candidate.
     - ci:candidate forces full professional and frontend formal-release lanes.
     - Every professional quality lane executes the guard-registry audit.
+    - Pull-request synchronize and candidate-label events share one concurrency group per PR.
     - No required workflow, production guard, browser assertion or product behavior is weakened.
   exclusions:
     - Required-check context names, branch rulesets and workflow trigger schedules.

@@ -26,6 +26,10 @@ scheduled audit. Non-FAST branches cannot pass `merge_policy_gate` without that
 explicit candidate qualification, so a daily standard lane can no longer be mistaken
 for formal-release evidence.
 
+All pull-request actions now share one concurrency group per PR. Adding the candidate
+label supersedes the preceding synchronize run instead of scheduling a second
+authoritative suite on the same SHA; push and schedule remain isolated event groups.
+
 Why not elsewhere:
 
 - no backend contract, model, permission, action or customer behavior changes;
@@ -40,6 +44,7 @@ Why not elsewhere:
   reconcile the guard registry with that executable consumer.
 - Force candidate and scheduled runs through the same full frontend/professional
   lanes, and reject non-FAST merges that lack explicit candidate qualification.
+- Collapse pull-request synchronize and candidate-label events into one group.
 - Execute `verify.guard.registry` in every professional quality lane.
 - Allow the governed published-branch sync to resolve only the known generated
   component-driver inventory conflict, then require full regeneration.
@@ -59,6 +64,7 @@ Why not elsewhere:
 - `verify.guard.registry` passes without weakening or bypassing the audit.
 - Non-FAST merges without `ci:candidate` fail closed.
 - Candidate and scheduled runs both use full frontend and professional lanes.
+- Only one pull-request concurrency run remains authoritative for a source identity.
 - The affected frontend lint, strict typecheck and style-system targets pass.
 - `make ci.local.iteration` executes the registered affected set with truthful
   per-target status and original logs.
