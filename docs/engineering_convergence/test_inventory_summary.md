@@ -4,20 +4,20 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1721`
+- Total assets: `1723`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `245`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1251`
+- PR dedupe candidates: `1253`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
 | governance | 639 |
-| contract | 421 |
+| contract | 423 |
 | unit | 341 |
 | odoo_integration | 159 |
 | e2e | 57 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1470 |
+| pr_candidate | 1472 |
 | integration_candidate | 187 |
 | release_candidate | 55 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1251 |
+| deduplicate_before_required | 1253 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 186 |
 | keep_release_only | 55 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1472 |
+| <5m | 1474 |
 | 10-30m | 188 |
 | 30-60m | 57 |
 | unknown | 3 |
@@ -153,7 +153,7 @@ Generated from `test_inventory.csv`.
 | Owner | Count |
 | --- | ---: |
 | architecture owner | 639 |
-| platform owner | 421 |
+| platform owner | 423 |
 | test owner | 342 |
 | backend owner | 159 |
 | qa owner | 57 |
@@ -169,7 +169,7 @@ Generated from `test_inventory.csv`.
 | scripts/ops | 121 |
 | frontend/apps/web/scripts | 58 |
 | scripts/ci | 37 |
-| scripts/audit | 12 |
+| scripts/audit | 14 |
 | make | 5 |
 | scripts/e2e | 5 |
 | scripts/diag | 4 |
@@ -239,9 +239,11 @@ Generated from `test_inventory.csv`.
 | T-ASSET-beea2cfb | frontend_acceptance | `frontend/apps/web/scripts/user_visible_surface_visual_coverage_summary_guard.mjs` | frontend owner |
 | T-ASSET-e3676e89 | frontend_acceptance | `frontend/apps/web/scripts/weighted_relation_component_test.mjs` | frontend owner |
 | T-ASSET-d3b121fb | governance | `scripts/audit/boundary_audit_smart_core.py` | architecture owner |
+| T-ASSET-0c3c76af | contract | `scripts/audit/generate_frontend_contract_business_journey_research.py` | platform owner |
 | T-ASSET-3953a76f | governance | `scripts/audit/scene_config_audit.js` | architecture owner |
 | T-ASSET-e0902520 | unit | `scripts/audit/test_generate_change_impact_verification_inventory.py` | test owner |
 | T-ASSET-fcc65a7c | unit | `scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py` | test owner |
+| T-ASSET-ade29362 | contract | `scripts/audit/test_generate_frontend_contract_business_journey_research.py` | platform owner |
 | T-ASSET-d1103341 | unit | `scripts/audit/test_generate_frontend_official_design_alignment_inventory.py` | test owner |
 | T-ASSET-00c29c9c | unit | `scripts/audit/test_generate_frontend_professionalization_baseline.py` | test owner |
 | T-ASSET-733f2d2d | unit | `scripts/audit/test_generate_frontend_rendering_detail_inventory.py` | test owner |
@@ -274,9 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-4aeb0d9d | unit | `scripts/ci/test_lane_telemetry.py` | test owner |
 | T-ASSET-d1231964 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
 | T-ASSET-1f405243 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
-| T-ASSET-75503495 | unit | `scripts/ci/test_parallel_scan.py` | test owner |
-| T-ASSET-5667b2a2 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
-| ... | ... | 1171 more | ... |
+| ... | ... | 1173 more | ... |
 
 ## Dedupe Hotspots
 
@@ -287,8 +287,8 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/test_frontend_collection` | 9 |
 | `scripts/verify/test_frontend_professional` | 9 |
 | `scripts/verify/test_frontend_release` | 7 |
+| `scripts/audit/test_generate_frontend` | 6 |
 | `scripts/verify/test_contract_snapshot` | 6 |
-| `scripts/audit/test_generate_frontend` | 5 |
 | `scripts/verify/contract_governance_form` | 5 |
 | `scripts/verify/test_frontend_acceptance` | 5 |
 | `scripts/verify/backend_contract_lifecycle` | 4 |
@@ -322,8 +322,8 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/test_frontend_collection` | 9 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_professional` | 9 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_release` | 7 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/audit/test_generate_frontend` | 6 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_contract_snapshot` | 6 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
-| `scripts/audit/test_generate_frontend` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/contract_governance_form` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_acceptance` | 5 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/backend_contract_lifecycle` | 4 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

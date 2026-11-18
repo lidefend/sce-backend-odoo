@@ -4,9 +4,9 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5263`
+- Scanned files: `5265`
 - Files requiring split plan: `81`
-- Files above warning threshold: `153`
+- Files above warning threshold: `154`
 
 ## Split Plan Required
 
@@ -32,11 +32,11 @@ Generated from repository source files. This report is informational during the 
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3145 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3156 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2897 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2888 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
@@ -163,6 +163,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1086 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
+| 1069 | Python source | `scripts/audit/generate_frontend_contract_business_journey_research.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -276,11 +277,11 @@ Generated from repository source files. This report is informational during the 
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
-| 3145 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3156 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
+| 2897 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2894 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
-| 2888 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |

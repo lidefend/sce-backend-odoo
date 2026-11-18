@@ -1,0 +1,56 @@
+schema_version: 1
+goal:
+  id: FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118
+  status: active
+  formal_product_layer: P0/P1/P4
+  layer_target: >-
+    Contract V2 frontend consumption, formal business-entry journey evidence,
+    and user-visible presentation/interaction audit
+  module:
+    - frontend/apps/web
+    - scripts/audit
+    - docs/frontend_productization
+    - docs/product
+  standard_vs_user_specific: platform_and_construction_product_standard
+  objective: >-
+    Determine whether the current custom frontend consumes every contract
+    semantic that affects presentation, interaction, permissions, workflow and
+    recovery, and whether the 91 formal entries provide efficient, logically
+    complete user journeys.
+  product_result: >-
+    One evidence-bound research record, one reproducible Contract V2 facet
+    consumption matrix, and one 91-entry business-closure evidence matrix that
+    distinguish aligned behavior from projection, expression, consumption,
+    conflict, terminal-capability and evidence gaps.
+  why_here: >-
+    The question crosses P0 contract consumption, P1 business declarations and
+    P4 evidence truth. A single read-only study can join those layers without
+    changing product semantics or asking one layer to compensate for another.
+  why_not_elsewhere:
+    - No backend model, contract, permission, action or business rule change.
+    - No frontend fallback, page-specific workaround or contract inference.
+    - No menu reachability, selector presence or empty-state observation treated as business completion.
+    - No deployment or user-delivery claim.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118.yaml
+      - .agent/runs/FE-CONTRACT-BUSINESS-JOURNEY-RESEARCH-20261118/run.json
+      - docs/frontend_productization/contract-business-journey-research-v1.md
+      - docs/frontend_productization/contract-v2-consumption-research-v1.json
+      - docs/frontend_productization/business-entry-journey-evidence-v1.csv
+      - scripts/audit/generate_frontend_contract_business_journey_research.py
+      - scripts/audit/test_generate_frontend_contract_business_journey_research.py
+      - make/frontend.mk
+    product_behavior: no runtime product behavior change
+  acceptance:
+    - Every researched contract facet states declaration, consumer, behavior evidence and verdict.
+    - Every one of the 91 formal entries has a distinct closure class and evidence-source boundary.
+    - Reachability, empty state, ORM smoke and complete browser handling are never conflated.
+    - Search-panel, workflow-contract and runtime-control-plane concerns are classified by owning layer.
+    - A reproducible non-zero offline audit test verifies matrix counts and stable joins.
+    - The report gives prioritized next actions without changing product code in this research batch.
+  exclusions:
+    - Contract, backend, permission, business-action, runtime deployment and user-acceptance changes.
+  rollback: >-
+    Revert this audit branch. It adds no runtime behavior, schema, data or external state.
