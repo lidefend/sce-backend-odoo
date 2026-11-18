@@ -105,7 +105,7 @@ class TestProjectInitiationNativeLowcode(TransactionCase):
     # Labels the retired declaration pinned.  A label is a rendered fact: if the
     # arch does not restate one, the page silently falls back to the model's own
     # string.
-    RETIRED_FIELD_LABELS = {"manager_id": "项目负责人"}
+    RETIRED_FIELD_LABELS = {"manager_id": "项目经理"}
 
     # Declared facts that were NEVER rendered before the batch, proved by the
     # L0 probe of the delivered surface: nine sections carry no field and every

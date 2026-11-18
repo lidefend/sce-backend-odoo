@@ -39,6 +39,7 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     busyKind,
     busyActionIdentity,
     canSave,
+    captureIntakeAutosave,
     clearIntakeAutosave,
     closeContractPromptAction,
     collectSceneValidationPrecheckErrors,
@@ -170,9 +171,25 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     authorityEpoch.value += 1;
   }, { flush: 'sync' });
 
-  type SaveOperation = { id: number; epoch: number; contextEpoch: number; model: string; recordId: number | null; activityPageKey: string };
+  type SaveOperation = {
+    id: number;
+    epoch: number;
+    contextEpoch: number;
+    model: string;
+    recordId: number | null;
+    activityPageKey: string;
+    intakeAutosave: { key: string; policyVersion: number; scope: string; draftToken: string } | null;
+  };
   let saveOperationSequence = 0;
-  let activeSaveOperation: SaveOperation = { id: 0, epoch: -1, contextEpoch: -1, model: '', recordId: null, activityPageKey: '' };
+  let activeSaveOperation: SaveOperation = {
+    id: 0,
+    epoch: -1,
+    contextEpoch: -1,
+    model: '',
+    recordId: null,
+    activityPageKey: '',
+    intakeAutosave: null,
+  };
   let busyOwnerOperationId = 0;
   let pendingCreatedActivityPageKey = '';
 
@@ -185,6 +202,9 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
       model: String(model.value ?? ''),
       recordId: recordId.value ?? null,
       activityPageKey: String(session.activeActivityPageKey || ''),
+      intakeAutosave: typeof captureIntakeAutosave === 'function'
+        ? captureIntakeAutosave()
+        : null,
     };
     return activeSaveOperation;
   };
@@ -533,6 +553,11 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         }),
       );
       const created = await createContractFormRecord({ model: operation.model, vals: values, context });
+      if (created?.id) {
+        // Creation is the authoritative success boundary. Retire only the
+        // draft captured by this operation; a newer page owns any newer draft.
+        clearIntakeAutosave(operation.intakeAutosave);
+      }
       if (!saveOperationOwnsSurface(operation)) return false;
       if (created?.id) {
         pendingCreatedActivityPageKey = operation.activityPageKey;
@@ -550,7 +575,6 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
         }
         const title = String(v2ContractStore.value?.snapshot.pageInfo.pageName || '').trim();
         submissionFeedback.value = { kind: 'success', message: `${title || '记录'}已创建` };
-        clearIntakeAutosave();
         if (options.navigateAfterCreate === false) {
           return Number(created.id);
         }

@@ -56,6 +56,60 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             ]
             self.assertEqual(rows, [])
 
+    def test_preview_promotion_converges_existing_standard_and_preview_policies(self):
+        policy_model = self.env["sc.product.policy"]
+        target_xmlid = "smart_construction_core.menu_sc_project_quick_create"
+        standard = policy_model.search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        preview = policy_model.search(
+            [("product_key", "=", "construction.preview")], limit=1
+        )
+        standard_groups = deepcopy(standard.menu_groups)
+        for group in standard_groups:
+            group["menus"] = [
+                menu for menu in group.get("menus") or []
+                if menu.get("menu_xmlid") != target_xmlid
+            ]
+        standard.write({"menu_groups": [group for group in standard_groups if group["menus"]]})
+        preview_groups = deepcopy(preview.menu_groups)
+        for group in preview_groups:
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == target_xmlid:
+                    menu.update({
+                        "release_state": "preview",
+                        "capability_maturity": "PREVIEW_FOUNDATION",
+                    })
+        preview.write({"menu_groups": preview_groups})
+        stale_maturity_key = "smart_construction_core.menu_sc_project_project"
+        stale_groups = deepcopy(standard.menu_groups)
+        for group in stale_groups:
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == stale_maturity_key:
+                    menu["capability_maturity"] = "PREVIEW_FOUNDATION"
+        standard.write({"menu_groups": stale_groups})
+
+        result = policy_model.promote_preview_entries_to_standard_release()
+        self.assertIn(target_xmlid, result["standard_added"])
+        for target in (standard, preview):
+            target.invalidate_recordset()
+            rows = [
+                menu
+                for group in target.menu_groups
+                for menu in group.get("menus") or []
+            ]
+            self.assertEqual(len(rows), 132)
+            self.assertTrue(all(menu.get("release_state") == "released" for menu in rows))
+            self.assertTrue(all(
+                menu.get("capability_maturity") == "RELEASED_FOUNDATION"
+                for menu in rows
+            ))
+            self.assertIn(target_xmlid, {menu.get("menu_xmlid") for menu in rows})
+
+        second = policy_model.promote_preview_entries_to_standard_release()
+        self.assertEqual(second["standard_added"], [])
+        self.assertEqual(second["promoted_entry_count"], 0)
+
     def test_policy_migration_adds_my_work_without_overwriting_existing_rows(self):
         policy_model = self.env["sc.product.policy"]
         self.assertFalse(hasattr(policy_model, "merge_locked_formal_menu_additions"))

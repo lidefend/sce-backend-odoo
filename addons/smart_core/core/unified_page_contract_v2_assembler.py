@@ -1737,6 +1737,12 @@ def _assemble_ui_contract(
     widgets = []
     component_keys = set()
     form_layout = _dict(_dict(ui.get("views")).get("form"))
+    intake_autosave = _normalize_intake_autosave_policy(
+        form_layout.get("autosave"),
+        render_profile=render_profile,
+    )
+    if intake_autosave:
+        contract["runtimeContract"]["intakeAutosave"] = intake_autosave
     for field_name, modifiers in _dict(form_layout.get("field_modifiers")).items():
         if not isinstance(modifiers, dict):
             continue
@@ -2229,7 +2235,10 @@ def _assemble_native_form_projection(
         source_type="native_form_projection",
     )
     runtime_extensions = {
-        "intakeAutosave": deepcopy(_dict(runtime.get("intakeAutosave"))),
+        "intakeAutosave": _normalize_intake_autosave_policy(
+            runtime.get("intakeAutosave"),
+            render_profile=_text(page.get("renderProfile")).lower(),
+        ),
         "fieldSemantics": deepcopy(_dict(runtime.get("fieldSemantics"))),
         "validationRules": deepcopy(_list(runtime.get("validationRules"))),
         "governance": deepcopy(_dict(runtime.get("governance"))),
@@ -2325,6 +2334,100 @@ def _canonical_search_native_identity(value: dict[str, Any]) -> dict[str, Any]:
         "authority": _text(value.get("authority")),
         "sourceLocator": _text(value.get("sourceLocator") or value.get("source_locator")),
     }
+
+
+def _normalize_intake_autosave_policy(value: Any, *, render_profile: str) -> dict[str, Any]:
+    """Validate and copy a declared local intake-draft policy."""
+    policy = _dict(value)
+    if not policy:
+        return {}
+    required = (
+        "schemaVersion",
+        "policyVersion",
+        "enabled",
+        "appliesTo",
+        "scope",
+        "storage",
+        "retention",
+        "recovery",
+        "identity",
+        "fields",
+        "coverage",
+    )
+    missing = [key for key in required if key not in policy]
+    if missing:
+        raise ValueError("intakeAutosave policy missing %s" % ", ".join(missing))
+    if _text(policy.get("schemaVersion")) != "intake_autosave_policy.v1":
+        raise ValueError("intakeAutosave policy schemaVersion is unsupported")
+    if _positive_int(policy.get("policyVersion"), 0) <= 0:
+        raise ValueError("intakeAutosave policyVersion must be positive")
+    if not isinstance(policy.get("enabled"), bool):
+        raise ValueError("intakeAutosave enabled must be boolean")
+    if list(policy.get("appliesTo") or []) != ["create"]:
+        raise ValueError("intakeAutosave policy must apply only to create input")
+    if not _text(policy.get("scope")):
+        raise ValueError("intakeAutosave scope is required")
+    storage = _dict(policy.get("storage"))
+    if (
+        _text(storage.get("kind")) != "browser_local_storage"
+        or not _text(storage.get("keyPrefix"))
+        or _positive_int(storage.get("payloadVersion"), 0) <= 0
+    ):
+        raise ValueError("intakeAutosave storage declaration is incomplete")
+    retention = _dict(policy.get("retention"))
+    if (
+        _positive_int(retention.get("seconds"), 0) <= 0
+        or _text(retention.get("basis")) != "last_valid_input"
+    ):
+        raise ValueError("intakeAutosave retention declaration is incomplete")
+    recovery = _dict(policy.get("recovery"))
+    if (
+        _text(recovery.get("strategy")) != "prompt_restore_or_discard"
+        or set(recovery.get("actions") or []) != {"restore", "discard"}
+    ):
+        raise ValueError("intakeAutosave recovery declaration is incomplete")
+    identity = _dict(policy.get("identity"))
+    required_scopes = identity.get("requiredScopes")
+    if not isinstance(required_scopes, list) or not required_scopes:
+        raise ValueError("intakeAutosave identity scopes are required")
+    fields = policy.get("fields")
+    if not isinstance(fields, list):
+        raise ValueError("intakeAutosave fields must be an array")
+    enabled = policy.get("enabled") is True
+    if enabled and render_profile != "create":
+        raise ValueError("intakeAutosave cannot enable on a non-create form")
+    if enabled and not fields:
+        raise ValueError("enabled intakeAutosave requires allowed fields")
+    seen_fields = set()
+    for row in fields:
+        if not isinstance(row, dict):
+            raise ValueError("intakeAutosave field row must be an object")
+        name = _text(row.get("name"))
+        if (
+            not name
+            or name in seen_fields
+            or not _text(row.get("type"))
+            or not _text(row.get("inputKind"))
+            or row.get("readonly") is not False
+            or row.get("allowEmpty") is not True
+            or _text(row.get("source")) != "effective_create_form"
+            or not isinstance(row.get("constraints"), dict)
+        ):
+            raise ValueError("intakeAutosave field declaration is incomplete")
+        seen_fields.add(name)
+    coverage = _dict(policy.get("coverage"))
+    if (
+        coverage.get("fields") is not True
+        or any(coverage.get(key) is not False for key in (
+            "attachments",
+            "binary",
+            "unsavedChildRecords",
+            "workflowState",
+            "serverDefaults",
+        ))
+    ):
+        raise ValueError("intakeAutosave coverage cannot claim unsupported carriers")
+    return deepcopy(policy)
 
 
 def _inject_collaboration_runtime_contract(contract: dict[str, Any], collaboration: dict[str, Any]) -> None:

@@ -303,7 +303,7 @@
       "literal": "/",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        78
+        91
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        574
+        598
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        578
+        602
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -976,7 +976,7 @@
       "literal": "empty",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1372
+        1390
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -990,9 +990,9 @@
       "literal": "error",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        71,
-        77,
-        1372
+        84,
+        90,
+        1390
       ],
       "occurrences": 3,
       "classification": "excluded-render-interaction",
@@ -1007,9 +1007,9 @@
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
         42,
-        79,
-        81,
-        1372
+        92,
+        94,
+        1390
       ],
       "occurrences": 4,
       "classification": "excluded-render-interaction",
@@ -1023,7 +1023,7 @@
       "literal": "success",
       "path": "frontend/apps/web/src/pages/ContractFormPage.vue",
       "lines": [
-        1372
+        1390
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1210,6 +1210,62 @@
       "occurrences": 2,
       "classification": "excluded-render-interaction",
       "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|expired|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "expired",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        85,
+        89
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/auth_credential_policy.py:24",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|invalid|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "invalid",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        85
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "browser-local payload compatibility/type validation result; it selects a local warning and never changes permissions or created-record state",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|recoverable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "recoverable",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        77
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "browser-local intake draft availability result; it selects restore/discard feedback only, while fields, expiry and recovery policy come from the backend contract",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|unavailable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "unavailable",
+      "path": "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+      "lines": [
+        91
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "browser storage availability result; it preserves manual create and selects the local-storage warning presentation",
       "declaredClass": "ui_state_machine",
       "ownerLayer": "P0_frontend_renderer"
     },
@@ -1744,21 +1800,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 163,
-    "distinctDecisions": 117,
+    "totalFindings": 168,
+    "distinctDecisions": 121,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 127
+      "R4_business_state_literal": 132
     },
     "byClassification": {
-      "contract-derived": 64,
-      "excluded-render-interaction": 99
+      "contract-derived": 66,
+      "excluded-render-interaction": 102
     },
     "unclassified": 0,
-    "contractDerived": 64,
+    "contractDerived": 66,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 99
+    "excludedRenderInteraction": 102
   }
 }

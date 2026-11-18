@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Unified Page Contract V2 native search declaration, query execution order,

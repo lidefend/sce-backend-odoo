@@ -248,7 +248,7 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
         self.assertFalse(model.env.su)
 
 
-    def test_preview_publication_and_principal_access_are_independent(self):
+    def test_standard_and_preview_publication_share_released_entries_but_not_principal_access(self):
         from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
         from odoo.addons.smart_core.delivery.menu_fact_service import MenuFactService
         from odoo.addons.smart_core.delivery.runtime_route_authority import published_pairs
@@ -274,12 +274,12 @@ class TestQueryCapabilityNativeAcl(TransactionCase):
                     declared = {row['menu_xmlid'] for group in policy['menu_groups'] for row in group['menus']}
                     for menu in menus:
                         xmlid = menu.get_external_id()[menu.id]
-                        self.assertEqual(xmlid in declared, edition == 'preview')
+                        self.assertIn(xmlid, declared)
                     delivery = engine.build(data={'role_surface': surface, 'scenes': [], 'capabilities': []},
                                             product_key='construction.' + edition, edition_key=edition,
                                             base_product_key='construction', native_nav=facts.tree)
                     pairs = published_pairs(delivery['route_authority'])
-                    if user == full and edition == 'preview':
+                    if user == full:
                         self.assertTrue(expected_pairs <= pairs, expected_pairs - pairs)
                     else:
                         self.assertFalse(expected_pairs & pairs)

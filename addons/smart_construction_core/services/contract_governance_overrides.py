@@ -9,6 +9,37 @@ _PROJECT_INTAKE_SCENE_KEY = "projects.intake"
 _PROJECT_INTAKE_STANDARD_ROUTE = "/s/project.management"
 _PROJECT_INTAKE_STANDARD_MENU_XMLID = "smart_construction_core.menu_sc_project_initiation"
 _PROJECT_INTAKE_QUICK_MENU_XMLID = "smart_construction_core.menu_sc_project_quick_create"
+_PROJECT_INTAKE_AUTOSAVE_SCHEMA_VERSION = "intake_autosave_policy.v1"
+_PROJECT_INTAKE_AUTOSAVE_POLICY_VERSION = 1
+_PROJECT_INTAKE_AUTOSAVE_RETENTION_SECONDS = 24 * 60 * 60
+_PROJECT_INTAKE_STANDARD_AUTOSAVE_FIELDS = (
+    "name",
+    "initiation_date",
+    "manager_id",
+    "operation_strategy",
+    "owner_id",
+    "project_type_id",
+    "location",
+    "start_date",
+    "end_date",
+)
+_PROJECT_INTAKE_QUICK_AUTOSAVE_FIELDS = (
+    "name",
+    "initiation_date",
+    "manager_id",
+    "operation_strategy",
+    "owner_id",
+)
+_PROJECT_INTAKE_IDENTITY_SCOPES = (
+    "tenant",
+    "user",
+    "company",
+    "menu",
+    "action",
+    "form_view",
+    "entry_scope",
+    "form_instance",
+)
 
 
 def _text(value):
@@ -48,6 +79,133 @@ def _resolve_project_intake_mode(data: dict) -> str:
     return "standard"
 
 
+def _project_intake_input_kind(field_type: str, widget: str) -> str:
+    if widget in {"many2one", "many2many", "one2many"}:
+        return "relation"
+    return {
+        "char": "text",
+        "text": "text",
+        "html": "text",
+        "integer": "integer",
+        "float": "decimal",
+        "monetary": "decimal",
+        "boolean": "boolean",
+        "date": "date",
+        "datetime": "datetime",
+        "selection": "selection",
+        "many2one": "relation",
+        "many2many": "relation",
+        "one2many": "relation",
+    }.get(field_type, "text")
+
+
+def _project_intake_field_constraints(field_type: str, descriptor: dict) -> dict:
+    constraints = {}
+    size = descriptor.get("size")
+    if isinstance(size, int) and not isinstance(size, bool) and size > 0:
+        constraints["maxLength"] = size
+    if field_type == "date":
+        constraints["format"] = "YYYY-MM-DD"
+    elif field_type == "datetime":
+        constraints["format"] = "YYYY-MM-DDTHH:mm:ss"
+    elif field_type in {"integer", "float", "monetary"}:
+        constraints["numeric"] = True
+    if field_type in {"many2one", "many2many", "one2many"}:
+        constraints["mustExist"] = True
+    if field_type == "selection":
+        constraints["allowedValues"] = [
+            value
+            for value, _label in (
+                descriptor.get("selection")
+                if isinstance(descriptor.get("selection"), (list, tuple))
+                else []
+            )
+            if value not in (None, False, "")
+        ]
+    return constraints
+
+
+def _project_intake_autosave_policy(data: dict, intake_mode: str) -> dict:
+    """Declare the standard project-intake local draft policy.
+
+    The field list is business-owned here, then intersected with the effective
+    create-form descriptors. It is deliberately not "every writable field":
+    attachments, binaries, child-record commands and workflow state never enter
+    browser-local storage.
+    """
+    fields_map = _as_dict(data.get("fields"))
+    views = _as_dict(data.get("views"))
+    form = _as_dict(views.get("form"))
+    modifiers = _as_dict(form.get("field_modifiers"))
+    fields = []
+    allowed_fields = (
+        _PROJECT_INTAKE_QUICK_AUTOSAVE_FIELDS
+        if intake_mode == "quick"
+        else _PROJECT_INTAKE_STANDARD_AUTOSAVE_FIELDS
+    )
+    for name in allowed_fields:
+        descriptor = _as_dict(fields_map.get(name))
+        if not descriptor:
+            continue
+        field_modifiers = _as_dict(modifiers.get(name))
+        if descriptor.get("readonly") is True or field_modifiers.get("readonly") is True:
+            continue
+        field_type = _text(descriptor.get("type") or "char").lower() or "char"
+        relation = _text(descriptor.get("relation"))
+        if field_type in {"many2one", "many2many", "one2many"} and not relation:
+            raise ValueError("project intake autosave relation field missing model: %s" % name)
+        fields.append({
+            "name": name,
+            "label": _text(descriptor.get("string") or descriptor.get("label") or name) or name,
+            "type": field_type,
+            "relation": relation,
+            "inputKind": _project_intake_input_kind(
+                field_type,
+                _text(_as_dict(descriptor.get("attributes")).get("widget")),
+            ),
+            "required": descriptor.get("required") is True,
+            "readonly": False,
+            "allowEmpty": True,
+            "source": "effective_create_form",
+            "constraints": _project_intake_field_constraints(field_type, descriptor),
+        })
+    if not fields:
+        raise ValueError("project intake autosave has no eligible effective form fields")
+    policy = {
+        "schemaVersion": _PROJECT_INTAKE_AUTOSAVE_SCHEMA_VERSION,
+        "policyVersion": _PROJECT_INTAKE_AUTOSAVE_POLICY_VERSION,
+        "enabled": True,
+        "appliesTo": ["create"],
+        "scope": "project_intake_%s" % intake_mode,
+        "storage": {
+            "kind": "browser_local_storage",
+            "keyPrefix": "sc:intake:autosave",
+            "payloadVersion": 1,
+        },
+        "retention": {
+            "seconds": _PROJECT_INTAKE_AUTOSAVE_RETENTION_SECONDS,
+            "basis": "last_valid_input",
+        },
+        "recovery": {
+            "strategy": "prompt_restore_or_discard",
+            "actions": ["restore", "discard"],
+        },
+        "identity": {
+            "requiredScopes": list(_PROJECT_INTAKE_IDENTITY_SCOPES),
+        },
+        "fields": fields,
+        "coverage": {
+            "fields": True,
+            "attachments": False,
+            "binary": False,
+            "unsavedChildRecords": False,
+            "workflowState": False,
+            "serverDefaults": False,
+        },
+    }
+    return policy
+
+
 def _apply_project_intake_form_governance(data: dict, contract_mode: str) -> None:
     if contract_mode != "user":
         return
@@ -68,6 +226,11 @@ def _apply_project_intake_form_governance(data: dict, contract_mode: str) -> Non
         }
     )
     data["form_governance"] = governance
+    views = _as_dict(data.get("views"))
+    form = _as_dict(views.get("form"))
+    form["autosave"] = _project_intake_autosave_policy(data, intake_mode)
+    views["form"] = form
+    data["views"] = views
 
 
 def _is_project_form_contract(data: dict) -> bool:

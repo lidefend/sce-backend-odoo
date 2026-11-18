@@ -243,7 +243,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.company_project_refund.feedback.config_preview :: /TestContextWorkspaceNativeLowcode (class selection)"
+        "make:verify.company_project_refund.feedback.config_preview :: /TestContextWorkspaceNativeLowcode (class selection)",
+        "make:verify.project_intake.contract_governance.unit :: /ProjectIntakeContractGovernanceCase (class selection)"
       ],
       "disposition": "wire-pending"
     },
@@ -2175,7 +2176,8 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)"
+        "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)",
+        "make:verify.smart_construction_core.close_03.preview_promotion.orm :: /TestLockedMenuPolicyInitialization (class selection)"
       ],
       "disposition": "wire-pending"
     },

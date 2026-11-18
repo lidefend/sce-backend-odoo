@@ -28,15 +28,76 @@ def _payload(scene_key="projects.intake", render_profile="create", menu_xmlid=No
                 "layout": [
                     {"type": "sheet"},
                     {"type": "field", "name": "name"},
+                    {"type": "field", "name": "initiation_date"},
                     {"type": "field", "name": "manager_id"},
+                    {"type": "field", "name": "operation_strategy"},
+                    {"type": "field", "name": "owner_id"},
+                    {"type": "field", "name": "project_type_id"},
+                    {"type": "field", "name": "location"},
+                    {"type": "field", "name": "start_date"},
+                    {"type": "field", "name": "end_date"},
                 ]
             }
         },
         "fields": {
             "name": {"string": "名称", "type": "char", "required": True, "readonly": False},
+            "initiation_date": {
+                "string": "立项日期",
+                "type": "date",
+                "required": True,
+                "readonly": False,
+            },
             "manager_id": {
                 "string": "项目管理员",
                 "type": "many2one",
+                "relation": "res.users",
+                "required": False,
+                "readonly": False,
+            },
+            "operation_strategy": {
+                "string": "经营方式",
+                "type": "selection",
+                "selection": [("direct", "公司直营"), ("joint", "联合经营")],
+                "required": False,
+                "readonly": False,
+            },
+            "owner_id": {
+                "string": "业主单位",
+                "type": "many2one",
+                "relation": "res.partner",
+                "required": False,
+                "readonly": False,
+            },
+            "project_type_id": {
+                "string": "项目类型",
+                "type": "many2one",
+                "relation": "project.type",
+                "required": False,
+                "readonly": False,
+            },
+            "location": {
+                "string": "项目地点",
+                "type": "char",
+                "size": 128,
+                "required": False,
+                "readonly": False,
+            },
+            "start_date": {
+                "string": "计划开始",
+                "type": "date",
+                "required": False,
+                "readonly": False,
+            },
+            "end_date": {
+                "string": "计划结束",
+                "type": "date",
+                "required": False,
+                "readonly": False,
+            },
+            "project_category_id": {
+                "string": "项目分类",
+                "type": "many2one",
+                "relation": "project.category",
                 "required": False,
                 "readonly": False,
             },
@@ -62,6 +123,43 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
             },
         )
         self.assertNotEqual(governance.get("primary_action_label"), "保存草稿")
+        autosave = governed["views"]["form"]["autosave"]
+        self.assertTrue(autosave["enabled"])
+        self.assertEqual(autosave["scope"], "project_intake_standard")
+        self.assertEqual(autosave["appliesTo"], ["create"])
+        self.assertEqual(autosave["policyVersion"], 1)
+        self.assertEqual(autosave["storage"]["kind"], "browser_local_storage")
+        self.assertEqual(autosave["retention"]["seconds"], 86400)
+        self.assertEqual(autosave["retention"]["basis"], "last_valid_input")
+        self.assertEqual(autosave["recovery"]["strategy"], "prompt_restore_or_discard")
+        self.assertEqual(
+            set(autosave["identity"]["requiredScopes"]),
+            {
+                "tenant", "user", "company", "menu", "action",
+                "form_view", "entry_scope", "form_instance",
+            },
+        )
+        fields = {row["name"]: row for row in autosave["fields"]}
+        self.assertEqual(
+            set(fields),
+            {
+                "name", "initiation_date", "manager_id", "operation_strategy",
+                "owner_id", "project_type_id", "location", "start_date", "end_date",
+            },
+        )
+        self.assertEqual(fields["name"]["inputKind"], "text")
+        self.assertEqual(fields["manager_id"]["inputKind"], "relation")
+        self.assertEqual(fields["manager_id"]["relation"], "res.users")
+        self.assertTrue(fields["manager_id"]["constraints"]["mustExist"])
+        self.assertEqual(fields["operation_strategy"]["inputKind"], "selection")
+        self.assertEqual(
+            fields["operation_strategy"]["constraints"]["allowedValues"],
+            ["direct", "joint"],
+        )
+        self.assertEqual(fields["initiation_date"]["constraints"]["format"], "YYYY-MM-DD")
+        self.assertNotIn("project_category_id", fields)
+        self.assertFalse(autosave["coverage"]["attachments"])
+        self.assertFalse(autosave["coverage"]["unsavedChildRecords"])
 
     def test_project_quick_create_contract_receives_quick_governance(self):
         governed = apply_contract_governance(
@@ -84,6 +182,13 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
                 "route": "/s/project.management",
             },
         )
+        autosave = governed["views"]["form"]["autosave"]
+        self.assertTrue(autosave["enabled"])
+        self.assertEqual(autosave["scope"], "project_intake_quick")
+        self.assertEqual(
+            {row["name"] for row in autosave["fields"]},
+            {"name", "initiation_date", "manager_id", "operation_strategy", "owner_id"},
+        )
 
     def test_native_authority_intake_create_still_receives_its_declaration(self):
         """The intake form resolves to a native view, which skips generic governance.
@@ -103,6 +208,7 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
         self.assertEqual(governance.get("create_flow_mode"), "standard")
         self.assertTrue(governance.get("primary_action_label"))
         self.assertNotEqual(governance.get("primary_action_label"), "保存草稿")
+        self.assertTrue(payload["views"]["form"]["autosave"]["enabled"])
 
     def test_native_authority_intake_quick_create_still_receives_its_declaration(self):
         payload = _payload(
@@ -114,6 +220,7 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
         governance = payload.get("form_governance") or {}
         self.assertEqual(governance.get("create_flow_mode"), "quick")
         self.assertTrue(governance.get("primary_action_label"))
+        self.assertTrue(payload["views"]["form"]["autosave"]["enabled"])
 
     def test_native_authority_skip_does_not_leak_into_non_intake_forms(self):
         """Only semantic declarations survive the skip; the predicate still guards it."""
@@ -123,6 +230,7 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
         governance = payload.get("form_governance") or {}
         self.assertIsNone(governance.get("create_flow_mode"))
         self.assertIsNone(governance.get("primary_action_label"))
+        self.assertNotIn("autosave", payload["views"]["form"])
 
     def test_non_intake_project_contract_is_not_overridden(self):
         governed = apply_contract_governance(_payload(scene_key="projects.list"), "user")
@@ -131,6 +239,7 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
         self.assertNotEqual(governance.get("surface"), "project_intake")
         self.assertIsNone(governance.get("create_flow_mode"))
         self.assertIsNone(governance.get("post_create_target"))
+        self.assertNotIn("autosave", governed["views"]["form"])
 
     def test_non_create_project_contract_is_not_overridden(self):
         governed = apply_contract_governance(_payload(render_profile="edit"), "user")
@@ -139,6 +248,25 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
         self.assertNotEqual(governance.get("surface"), "project_intake")
         self.assertIsNone(governance.get("create_flow_mode"))
         self.assertIsNone(governance.get("post_create_target"))
+        self.assertNotIn("autosave", governed["views"]["form"])
+
+    def test_readonly_effective_field_is_excluded_from_standard_draft(self):
+        payload = _payload()
+        payload["fields"]["manager_id"]["readonly"] = True
+
+        governed = apply_contract_governance(payload, "user")
+
+        fields = governed["views"]["form"]["autosave"]["fields"]
+        self.assertNotIn("manager_id", {row["name"] for row in fields})
+
+    def test_payment_create_does_not_inherit_project_intake_draft_policy(self):
+        payload = _payload(scene_key="payments.payment", menu_xmlid="")
+        payload["head"]["model"] = "payment.request"
+        payload["model"] = "payment.request"
+
+        governed = apply_contract_governance(payload, "user")
+
+        self.assertNotIn("autosave", governed["views"]["form"])
 
 
 if __name__ == "__main__":

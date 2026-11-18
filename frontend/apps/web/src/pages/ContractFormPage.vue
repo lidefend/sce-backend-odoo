@@ -66,6 +66,19 @@
       <div>{{ pageDisplayTitle }} · 入口 {{ actionId }} · 公司 {{ session.recordContext?.company_name || session.recordContext?.selected?.company_name || session.recordContext?.company_id || '待验证' }} · 视图 {{ route.query.view_id }} · {{ route.query.preview_role_key }}</div>
       <a :href="configurationDesignerUrl">返回设计器</a>
     </ScInlineState>
+    <ScInlineState
+      v-if="!recordId && intakeAutosavePolicy && (intakeAutosaveCandidate || intakeAutosaveNotice)"
+      :state="intakeAutosaveState"
+      data-intake-autosave
+      :data-intake-autosave-state="intakeAutosaveCandidate ? 'recoverable' : intakeAutosaveNotice?.kind || 'idle'"
+    >
+      <strong>{{ intakeAutosaveCandidate ? '发现可恢复的新建输入' : '' }}</strong>
+      <span>{{ intakeAutosaveCandidate ? intakeAutosaveCoverageText : intakeAutosaveNotice?.message }}</span>
+      <template v-if="intakeAutosaveCandidate" #actions>
+        <ScButton variant="primary" size="small" @click="restoreIntakeAutosaveDraft">恢复</ScButton>
+        <ScButton variant="ghost" size="small" @click="discardIntakeAutosaveDraft">丢弃</ScButton>
+      </template>
+    </ScInlineState>
       </template>
     </ContractFormProductHeader>
     <ScInlineState v-if="isConfigurationPreview && (renderErrorMessage || status === 'error')" state="error" data-configuration-preview-recovery>
@@ -656,7 +669,12 @@ import {
   type LayoutNode,
   type RelationSearchRow,
 } from './contractForm/types';
-import { useIntakeAutosaveRuntime } from './contractForm/useIntakeAutosaveRuntime';
+import { useIntakeAutosaveRuntime, type IntakeAutosaveNotice } from './contractForm/useIntakeAutosaveRuntime';
+import {
+  resolveIntakeAutosavePolicy,
+  type IntakeAutosaveCandidate,
+  type IntakeAutosaveIdentity,
+} from './contractForm/intakeAutosave';
 import { createStandardFormCompositionRuntime } from './contractForm/standardFormCompositionRuntime';
 import { describeRecordActionDenials } from '../app/presentation/recordActionDenialPresentation';
 import { resolveRecordDeleteDecision } from '../app/presentation/recordDeleteAction';
@@ -1436,13 +1454,22 @@ const showNativeCollaborationPanel = computed(() => shouldShowNativeCollaboratio
 // value is `undefined` for a contract that cannot declare them, which is the
 // only case that may fall back to the legacy runtime predicate.
 const formStructureSurfaces = computed(() => resolveContractV2FormStructureSurfaces(v2ContractStore.value));
-const intakeAutosaveKey = computed(() => {
-  if (!isIntakeCreateMode.value) return '';
-  const mode = isQuickIntakeMode.value ? 'quick' : 'standard';
-  const userId = Number(session.user?.id || 0) || 0;
-  return `sc:intake:autosave:${String(model.value || 'record')}:${mode}:u${userId}`;
-});
-const intakeAutosaveFields = computed(() => [] as string[]);
+const intakeAutosavePolicy = computed(() => resolveIntakeAutosavePolicy(
+  resolveContractV2RuntimeContract(v2ContractStore.value),
+));
+const intakeAutosaveIdentity = computed<IntakeAutosaveIdentity>(() => ({
+  tenant: config.entryBasePath || config.tenant,
+  user: Number(session.user?.id || 0) || '',
+  company: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0) || '',
+  menu: menuId.value || String(route.query.menu_id || ''),
+  action: actionId.value || String(route.query.action_id || ''),
+  form_view: Number(v2ContractStore.value?.snapshot.dataContract.dataMeta.sourceContext?.formViewId || 0)
+    || String(route.query.view_id || route.query.viewId || ''),
+  entry_scope: intakeAutosavePolicy.value?.scope || '',
+  form_instance: instanceRouteIdentity.value || formRouteIdentity(),
+}));
+const intakeAutosavePaused = ref(true);
+const intakeAutosaveNotice = ref<IntakeAutosaveNotice | null>(null);
 const quickRequiredReady = computed(() => {
   if (!isQuickIntakeMode.value) return true;
   return intakeRequiredReadyCount.value >= intakeRequiredFields.value.length;
@@ -1700,10 +1727,60 @@ const isIntakeCreateDisabled = computed(() => {
   if (isQuickIntakeMode.value) return isQuickSubmitDisabled.value;
   return isStandardCreateDisabled.value;
 });
+async function applyRestoredIntakeAutosave(candidate: IntakeAutosaveCandidate) {
+  const target = {
+    formData,
+    relationOptions: relationOptions.value,
+    relationKeywords,
+    upsertRelationOption,
+    initOne2manyRows,
+  };
+  for (const policyField of candidate.fields) {
+    if (!Object.prototype.hasOwnProperty.call(candidate.values, policyField.name)) continue;
+    const descriptor = canonicalFormFields.value[policyField.name];
+    if (!descriptor) continue;
+    applyIncomingFormFieldValue({
+      fieldName: policyField.name,
+      descriptor,
+      incoming: candidate.values[policyField.name],
+      target,
+    });
+    markFieldChanged(policyField.name);
+    changedFieldSet.add(policyField.name);
+    dirtyFieldSet.add(policyField.name);
+  }
+  await hydrateSelectedRelationOptions();
+  await runOnchangeRoundtrip();
+  nativeLayoutVisibilityRevision.value += 1;
+}
+
+const intakeAutosaveRuntime = useIntakeAutosaveRuntime({
+  policy: intakeAutosavePolicy,
+  identity: intakeAutosaveIdentity,
+  hasRecord: recordId,
+  formData,
+  isActive: isComponentActive,
+  isDirty: hasChanges,
+  paused: intakeAutosavePaused,
+  applyRestoredValues: applyRestoredIntakeAutosave,
+  onNotice: (notice) => { intakeAutosaveNotice.value = notice; },
+});
 const {
-  persist: persistIntakeAutosave, restore: restoreIntakeAutosave, clear: clearIntakeAutosave,
-} = useIntakeAutosaveRuntime({
-  key: intakeAutosaveKey, hasRecord: recordId, formData, fields: intakeAutosaveFields,
+  key: intakeAutosaveKey,
+  coverageText: intakeAutosaveCoverageText,
+  candidate: intakeAutosaveCandidate,
+  capture: captureIntakeAutosave,
+  inspect: restoreIntakeAutosave,
+  restore: restoreIntakeAutosaveDraft,
+  discard: discardIntakeAutosaveDraft,
+  persist: persistIntakeAutosave,
+  clear: clearIntakeAutosave,
+} = intakeAutosaveRuntime;
+const intakeAutosaveState = computed<'info' | 'success' | 'error'>(() => {
+  if (intakeAutosaveCandidate.value) return 'info';
+  if (intakeAutosaveNotice.value?.kind === 'success') return 'success';
+  if (intakeAutosaveNotice.value?.kind === 'error' || intakeAutosaveNotice.value?.kind === 'warn') return 'error';
+  return 'info';
 });
 const contractMetaLine = computed(() => resolveContractFormMetaLine({
   store: v2ContractStore.value, contractMeta: contractMeta.value, rights: rights.value, renderProfile: renderProfile.value,
@@ -2045,7 +2122,7 @@ const {
   activeContractMode, activeContractModeFieldRows, appendFormConfigOperation,
   buildLowCodeApplyBaseParams, buildLowCodePreviewQuery, buildLowCodeReturnQuery,
   buildSaveRecordPayload, busy, busyKind, busyActionIdentity,
-  canSave, clearIntakeAutosave, closeContractPromptAction,
+  canSave, captureIntakeAutosave, clearIntakeAutosave, closeContractPromptAction,
   collectSceneValidationPrecheckErrors, collectWritableValues,
   comparableFieldValue, contract, contractActionConfirmationPrompt, contractActionRuleKey,
   contractFieldSequenceFromOrder, contractModeFeedback, contractV2ActionRules,

@@ -1274,6 +1274,11 @@ verify.frontend.create_default_hydration.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_default_hydration_test.ts --bundle --platform=node --format=esm --outfile=/tmp/create-default-hydration-test.mjs >/dev/null
 	@node /tmp/create-default-hydration-test.mjs
 
+.PHONY: verify.frontend.intake_autosave.unit
+verify.frontend.intake_autosave.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/intake_autosave_runtime_test.ts --bundle --platform=node --format=esm --outfile=/tmp/intake-autosave-runtime-test.mjs >/dev/null
+	@node /tmp/intake-autosave-runtime-test.mjs
+
 verify.frontend.create_record_user_journey.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/create_record_user_journey_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/create-record-user-journey-test.mjs >/dev/null
 	@node /tmp/create-record-user-journey-test.mjs

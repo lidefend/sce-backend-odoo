@@ -174,3 +174,13 @@ Fix:
 - The run registers `verify.frontend.delivery_hardening.guard` and the complete probe script/registry inputs selected by the incremental planner.
 
 The failed `99afdff4` remote result remains recorded as superseded; no old-head success is carried to the replacement candidate.
+
+## Closure
+
+- Final candidate: `ea60be692fd741450b431fe945e803a0178598d2`
+- PR: `#936`
+- Protected squash merge: `c365db1eae1ae8c4e2efab649c609ea1aebd8a0b`
+- Integrated source tree: `2992f984f80e71efb9219193327d39885c327aca`
+- Independent review: `Leedefend`, exact-head APPROVE, no S0-S2 findings
+- Required checks: `public_guard`, `merge_policy_gate`, `professional_quality_gate`, `frontend_release_gate` and `managed_orm` all passed on `ea60be692`
+- The historical run remains recorded; its branch mapping is removed when CLOSE-03 starts.

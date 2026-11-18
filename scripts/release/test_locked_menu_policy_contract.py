@@ -199,7 +199,9 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         tree = ast.parse(source)
         klass = next(node for node in tree.body if isinstance(node, ast.ClassDef))
         method = next(node for node in klass.body if isinstance(node, ast.FunctionDef) and node.name == "synchronize_locked_formal_menu_policy")
+        normalize = next(node for node in klass.body if isinstance(node, ast.FunctionDef) and node.name == "_normalize_locked_menu_row")
         method.decorator_list = []
+        normalize.decorator_list = []
         namespace = {"_text": lambda value: str(value or "").strip(),
                      "load_locked_menu_policy_contract": lambda **kw: {"products": {"test": {"menu_groups": [{"menus": [{"menu_xmlid": "test.menu", "action_xmlid": "test.action"}]}]}}},
                      "canonical_group_label": lambda value: value,
@@ -207,7 +209,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                      "FORMAL_ACTION_ONLY_MENU_TARGETS": {},
                      "FORMAL_BUSINESS_DECISION_REQUIRED_TARGETS": {},
                      "LockedMenuPolicyContractError": CONTRACT.LockedMenuPolicyContractError}
-        exec(compile(ast.Module(body=[method], type_ignores=[]), "sync_under_test", "exec"), namespace)
+        exec(compile(ast.Module(body=[normalize, method], type_ignores=[]), "sync_under_test", "exec"), namespace)
         reads = []
         class MissingNativeEnvironment:
             def ref(self, key, **kwargs):
@@ -218,6 +220,9 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         policy = types.SimpleNamespace(env=MissingNativeEnvironment(), search=lambda *args, **kwargs: False)
         policy.sudo = lambda: policy
         policy.with_context = lambda **kwargs: policy
+        policy._normalize_locked_menu_row = types.MethodType(
+            namespace["_normalize_locked_menu_row"], policy
+        )
         with self.assertRaisesRegex(CONTRACT.LockedMenuPolicyContractError, "unresolved action"):
             namespace[method.name](policy, "test")
         self.assertEqual(reads, ["test.menu", "test.action"])

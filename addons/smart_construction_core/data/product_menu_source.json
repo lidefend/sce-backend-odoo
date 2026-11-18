@@ -139,9 +139,9 @@
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_project_quick_create",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
@@ -682,237 +682,237 @@
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_plan_report",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_quality_issue",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_quality_rectification",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_quality_recheck",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_quality_standard_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_quality_site_photo_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_plan_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_disclosure_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_risk_library_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_hazard_source_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_patrol_v2",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_rectification",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_safety_recheck",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_tender_registration_fee",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_tender_opening",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_engineering_progress_income",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_project_material_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_purchase_request",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_acceptance",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_rfq",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_transfer",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_loss",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_settlement",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_labor_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_labor_request",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_labor_settlement",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_equipment_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_equipment_request",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_equipment_settlement",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_rental_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_rental_order",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_material_rental_settlement",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_subcontract_plan",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_subcontract_request",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_subcontract_settlement",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_payment_ledger",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_treasury_ledger",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     },
     {
       "menu_xmlid": "smart_construction_core.menu_sc_settlement_order",
-      "delivery": "PREVIEW_FOUNDATION",
+      "delivery": "RELEASED_FOUNDATION",
       "source_kind": "p1_locked_menu_surface_projection",
-      "release_state": "preview"
+      "release_state": "released"
     }
   ],
   "root_menu_xmlid": "smart_construction_core.menu_sc_root",
@@ -920,7 +920,7 @@
     "locked_reason": "single_native_product_fact_authority",
     "policy_strategy": {
       "authority": "native Odoo menu/action facts plus explicit P1 formal-entry selection",
-      "delivery_rule": "standard includes formally released entries; preview includes released plus explicitly preview entries; native ACLs remain authoritative for both",
+      "delivery_rule": "standard now includes every formerly preview entry after the 2026-11-19 promotion; the preview product key remains as a compatibility carrier and native ACLs remain authoritative",
       "excluded_scope": [
         {
           "reason": "legacy duplicate acceptance carrier, not a formal product center",
@@ -936,7 +936,14 @@
         }
       ],
       "mode": "DECLARED_EDITION_RELEASE_SCOPE",
-      "runtime_projection": "derived_product_definition; deployment snapshots record versions and are not menu-definition inputs"
+      "runtime_projection": "derived_product_definition; deployment snapshots record versions and are not menu-definition inputs",
+      "preview_promotion": {
+        "completed_on": "2026-11-19",
+        "promoted_entry_count": 40,
+        "source_release_state": "preview",
+        "target_release_state": "released",
+        "target_product_key": "construction.standard"
+      }
     },
     "role_catalog": {
       "catalog_version": "v1",

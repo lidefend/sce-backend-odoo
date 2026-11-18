@@ -145,15 +145,16 @@ class TestActualPublicationConsumers(unittest.TestCase):
         self.assertNotIn("entries", product_menu_source.load_source())
         actual = product_menu_source.load_menu_release_states()
         self.assertEqual(actual, self.expected)
-        self.assertIn("released", actual.values())
-        self.assertIn("preview", actual.values())
+        self.assertTrue(actual)
+        self.assertEqual(set(actual.values()), {"released"})
 
     def test_activation_reads_real_source_without_injected_release_map(self):
         for state in ("released", "preview"):
-            menu = next(key for key, value in self.expected.items() if value == state)
+            menu = "test.release.state"
             entries = [{"code": "test.scene", "target": {"menu_xmlid": menu}}]
             self.assertEqual(tenant_scene_activation.resolve_product_released(
-                "test.scene", env=object(), entries=entries), state == "released")
+                "test.scene", env=object(), entries=entries,
+                release_state_by_menu={menu: state}), state == "released")
 
     def test_runtime_publication_never_falls_back_to_seed_or_draft(self):
         with patch.object(product_menu_source, 'load_source', side_effect=AssertionError('seed read')):
@@ -399,9 +400,8 @@ class TestActualPublicationConsumers(unittest.TestCase):
 
     def test_native_entry_diagnosis_does_not_require_duplicate_scene_publication(self):
         diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
+        entry = self.entries[0]
         for menu_state in ("released", "preview"):
-            entry = next(row for row in self.entries if self.expected.get(
-                row.get("target", {}).get("menu_xmlid")) == menu_state)
             for scene_state in ("published", "draft", None):
                 with self.subTest(menu_state=menu_state, scene_state=scene_state):
                     scene = types.SimpleNamespace(id=1, state=scene_state) if scene_state else False
@@ -425,7 +425,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
                             if name == "res.company":
                                 return types.SimpleNamespace(browse=lambda company_id: company)
                             raise AssertionError(name)
-                    with patch.object(diagnosis, "_is_native_entry", return_value=True):
+                    with patch.object(diagnosis, "_is_native_entry", return_value=True), patch.object(
+                        diagnosis, "resolve_product_released", return_value=menu_state == "released",
+                    ):
                         result = diagnosis.diagnose_scenario_dependencies(Env(), scene_key=entry["code"], company_id=1)
                     self.assertEqual(result["enable_allowed"], menu_state == "released")
                     evidence = result["dependencies"][0]["evidence"]

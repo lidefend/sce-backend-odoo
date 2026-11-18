@@ -5,37 +5,39 @@
 ## 当前结论
 
 - 正式产品一级中心：`10` 个
-- 正式产品 active 菜单：`260` 个
-- 系统配置菜单：`32` 个，其中 active `30` 个
+- 正式产品 active 菜单：`279` 个
+- 系统配置菜单：`24` 个，其中 active `22` 个
 - 用户配置菜单：`0` 个，其中 active `0` 个
-- 历史验收菜单：`5` 个，其中 active `2` 个
+- 历史验收菜单：`6` 个，其中 active `3` 个
 - 正式中心下 inactive 历史残留：`2` 个
-- 开发治理菜单：`27` 个，其中 active `26` 个
-- 待复核菜单：`0` 个
+- 开发治理菜单：`31` 个，其中 active `30` 个
+- 待复核菜单：`1` 个
 
 ## 正式产品一级中心
 
 | 中心 | 正式子入口 | 历史验收子入口 | 系统配置子入口 | 隐藏项 | XMLID |
 | --- | ---: | ---: | ---: | ---: | --- |
-| 工作台 | 4 | 0 | 0 | 2 | `smart_construction_core.menu_sc_workspace_center` |
-| 项目中心 | 90 | 0 | 0 | 27 | `smart_construction_core.menu_sc_project_center` |
-| 合同中心 | 25 | 0 | 0 | 8 | `smart_construction_core.menu_sc_contract_center` |
-| 成本中心 | 18 | 0 | 0 | 8 | `smart_construction_core.menu_sc_cost_center` |
-| 财务中心 | 64 | 0 | 0 | 29 | `smart_construction_core.menu_sc_finance_center` |
+| 工作台 | 6 | 0 | 0 | 2 | `smart_construction_core.menu_sc_workspace_center` |
+| 项目中心 | 103 | 0 | 0 | 15 | `smart_construction_core.menu_sc_project_center` |
+| 合同中心 | 27 | 0 | 0 | 8 | `smart_construction_core.menu_sc_contract_center` |
+| 成本中心 | 17 | 0 | 0 | 8 | `smart_construction_core.menu_sc_cost_center` |
+| 财务中心 | 66 | 0 | 0 | 29 | `smart_construction_core.menu_sc_finance_center` |
 | 税务中心 | 10 | 0 | 0 | 3 | `smart_construction_core.menu_sc_tax_center` |
 | 会计账务中心 | 3 | 0 | 0 | 0 | `smart_construction_core.menu_sc_accounting_center` |
-| 报表中心 | 23 | 0 | 0 | 9 | `smart_construction_core.menu_sc_data_center` |
+| 报表中心 | 23 | 1 | 0 | 9 | `smart_construction_core.menu_sc_data_center` |
 | 行政中心 | 7 | 2 | 1 | 16 | `smart_construction_core.menu_sc_hr_admin_center` |
-| 产品配置 | 3 | 0 | 9 | 4 | `smart_construction_core.menu_sc_business_config_center` |
+| 产品配置 | 5 | 0 | 9 | 4 | `smart_construction_core.menu_sc_business_config_center` |
 
 ## 正式产品菜单结构
 
 ### 工作台
 
-- formal_active: `4`
+- formal_active: `6`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
+- 我的工作 -> `project.project`
+- 角色首页 -> `scene:workspace.home`
 - 数据总览 -> `sc.operating.metrics.project`
 - 项目看板 -> `project.project`
 - 待办事项 -> `sc.workbench.item`
@@ -43,14 +45,15 @@
 
 ### 项目中心
 
-- formal_active: `90`
+- formal_active: `103`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
 - 项目创建
   - 新项目立项 -> `project.project`
-  - 项目信息编辑 -> `project.project`
+  - 快速创建项目 -> `project.project`
   - 项目启停管理 -> `project.project`
+- 项目列表 -> `project.project`
 - 客商管理
   - 客户档案 -> `res.partner`
   - 供应商档案 -> `res.partner`
@@ -58,16 +61,21 @@
 - 招投标管理
   - 招标信息 -> `tender.opportunity`
   - 投标项目 -> `tender.bid`
+  - 投标报名费申请 -> `tender.doc.purchase`
+  - 开标记录 -> `tender.opening`
   - 标书管理 -> `tender.document`
   - 投标保证金 -> `tender.guarantee`
   - 中标管理 -> `tender.bid`
 - 施工管理
   - 安全检查 -> `sc.safety.issue`
+  - 执行结构 -> `construction.work.breakdown`
   - 质量验收 -> `sc.quality.acceptance`
   - 工程资料 -> `sc.project.document`
   - 施工日志 -> `sc.construction.diary`
   - 施工进度 -> `project.progress.entry`
   - 签证变更 -> `sc.site.variation`
+- 项目台账
+  - 项目台账 -> `project.project`
 - 劳务成本
   - 劳务实名制 -> `sc.labor.worker`
   - 劳务成本登记 -> `sc.labor.usage`
@@ -78,21 +86,75 @@
   - 材料退货 -> `sc.material.supplier.return`
 - 机械成本
   - 机械台班登记 -> `sc.equipment.usage`
+- 进度与施工
+  - 计划管理 -> `sc.plan`
+  - 计划汇报 -> `sc.plan.report`
 - 分包成本
   - 分包成本登记 -> `sc.subcontract.register`
   - 分包签证费用 -> `sc.site.variation`
+- 质量管理
+  - 质量标准 -> `sc.check.standard`
+  - 质量检查 -> `sc.quality.issue`
+  - 质量整改 -> `sc.quality.rectification`
+  - 质量复验 -> `sc.quality.recheck`
+  - 现场影像 -> `sc.site.photo.batch`
+- 安全管理
+  - 安全方案 -> `sc.safety.plan`
+  - 安全交底 -> `sc.safety.disclosure`
+  - 安全整改 -> `sc.safety.rectification`
+  - 风险库 -> `sc.risk.library`
+  - 危险源 -> `sc.hazard.source`
+  - 安全复验 -> `sc.safety.recheck`
+  - 安全巡检 -> `sc.safety.patrol.task`
 - 项目薪资
   - 薪资核算清单 -> `sc.hr.payroll.document`
   - 薪资发放登记 -> `sc.hr.salary.payment`
+- 材料管理
+  - 材料档案 -> `sc.material.catalog`
+  - 材料计划 -> `project.material.plan`
+  - 采购申请 -> `sc.material.purchase.request`
+  - 材料进场验收 -> `sc.material.acceptance`
+  - 采购订单 -> `purchase.order`
+  - 询比价 -> `sc.material.rfq`
+  - 报价单 -> `sc.material.rfq`
+  - 退库办理 -> `sc.material.outbound`
+  - 材料调拨 -> `sc.material.outbound`
+  - 材料损耗 -> `sc.material.outbound`
+  - 材料价格库 -> `sc.material.price`
+  - 材料结算 -> `sc.material.settlement`
 - 班组借/扣款
   - 班组借/扣款登记 -> `sc.team.loan.deduction.workspace`
+- 劳务管理
+  - 劳务计划 -> `sc.labor.plan`
+  - 劳务申请 -> `sc.labor.request`
+  - 考勤记录 -> `sc.attendance.checkin`
+  - 方单 -> `sc.labor.usage`
+  - 零星用工 -> `sc.labor.usage`
+  - 劳务结算 -> `sc.labor.settlement`
+- 机械设备
+  - 设备计划 -> `sc.equipment.plan`
+  - 设备申请 -> `sc.equipment.request`
+  - 设备使用登记 -> `sc.equipment.usage`
+  - 机械台班记录 -> `sc.equipment.usage`
+  - 设备结算 -> `sc.equipment.settlement`
+- 周转材料租赁
+  - 租赁计划 -> `sc.material.rental.plan`
+  - 租赁单 -> `sc.material.rental.order`
+  - 租赁结算 -> `sc.material.rental.settlement`
+- 专业分包
+  - 分包计划 -> `sc.subcontract.plan`
+  - 分包申请 -> `sc.subcontract.request`
+  - 分包方单 -> `sc.subcontract.request`
+  - 分包登记 -> `sc.subcontract.register`
+  - 分包结算 -> `sc.subcontract.settlement`
 
 ### 合同中心
 
-- formal_active: `25`
+- formal_active: `27`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
+- 合同执行态势 -> `sc.contract.execution.position`
 - 收入合同 -> `construction.contract.income`
 - 支出合同 -> `construction.contract.expense`
 - 合同变更 -> `sc.contract.change`
@@ -100,10 +162,11 @@
 - 收入结算 -> `sc.settlement.order`
 - 日常合同结算 -> `sc.settlement.order`
 - 支出结算 -> `sc.settlement.order`
+- 结算单 -> `sc.settlement.order`
 
 ### 成本中心
 
-- formal_active: `18`
+- formal_active: `17`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
@@ -115,13 +178,14 @@
 
 ### 财务中心
 
-- formal_active: `64`
+- formal_active: `66`
 - history_active_under_center: `0`
 - system_config_active_under_center: `0`
 
 - 收款登记 -> `sc.receipt.income`
 - 付款申请 -> `payment.request`
 - 实付登记 -> `sc.payment.execution`
+- 付款分摊审计 -> `payment.ledger.allocation`
 - 费用报销 -> `sc.expense.claim`
 - 往来款登记 -> `sc.current.account.workspace`
 - 公司收入 -> `sc.receipt.income`
@@ -130,6 +194,10 @@
 - 公司&项目退款 -> `sc.company.project.refund.workspace`
 - 备用金 -> `sc.expense.claim`
 - 资金汇总 -> `project.funding.baseline`
+- 支付台账 -> `payment.ledger`
+- 资金计划实际付款分配 -> `project.funding.actual.event.allocation`
+- 资金台账 -> `sc.treasury.ledger`
+- 工程进度款收入登记 -> `sc.receipt.income`
 
 ### 税务中心
 
@@ -160,10 +228,11 @@
 ### 报表中心
 
 - formal_active: `23`
-- history_active_under_center: `0`
+- history_active_under_center: `1`
 - system_config_active_under_center: `0`
 
 - 项目报表 -> `sc.operating.metrics.project`
+- 成本台账 -> `project.cost.ledger`
 - 成本报表 -> `sc.comprehensive.cost.summary`
   - 库存统计表（新） -> `sc.material.stock.summary`
   - 进项发票明细表 -> `sc.invoice.registration`
@@ -191,12 +260,14 @@
 
 ### 产品配置
 
-- formal_active: `3`
+- formal_active: `5`
 - history_active_under_center: `0`
 - system_config_active_under_center: `9`
 
+- 企业初始化 -> `res.company`
 - 表单配置 -> `ui.business.config.contract`
 - 字段管理 -> `ui.form.field.policy`
+- 业务场景 -> `sc.product.scenario`
 - 数据权限 -> `res.users`
 
 ## 系统配置边界
@@ -208,11 +279,11 @@
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 数据字典 | 0 | 0 | `smart_construction_core.menu_sc_dictionary` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 阶段要求配置 | 0 | 0 | `smart_construction_core.menu_sc_project_stage_requirement_items` |
 | 智慧施工管理平台 / 产品配置 / 业务基础数据 / 预算类型 | 0 | 0 | `smart_construction_core.menu_sc_project_cost_code` |
-| 智慧施工管理平台 / 产品配置 / 低代码系统配置 / 菜单配置 | 0 | 0 | `smart_construction_core.menu_ui_menu_config_policy_business_config` |
 | 智慧施工管理平台 / 产品配置 / 流程审批配置 | 0 | 0 | `smart_construction_core.menu_sc_approval_policy` |
 | 智慧施工管理平台 / 产品配置 / 系统参数 | 0 | 0 | `smart_construction_core.menu_sc_product_system_parameter_v1` |
 | 智慧施工管理平台 / 产品配置 / 编码规则 | 0 | 0 | `smart_construction_core.menu_sc_product_numbering_rule_v1` |
-| 智慧施工管理平台 / 系统管理（内部） | 19 | 17 | `smart_construction_core.menu_sc_config_center` |
+| 智慧施工管理平台 / 产品配置 / 菜单配置 | 0 | 0 | `smart_construction_core.menu_ui_menu_config_policy_business_config` |
+| 智慧施工管理平台 / 系统管理（内部） | 11 | 9 | `smart_construction_core.menu_sc_config_center` |
 | 智慧施工管理平台 / 行政中心 / 人员档案 | 0 | 0 | `smart_construction_core.menu_sc_runtime_user_management` |
 
 ### active 明细
@@ -222,10 +293,10 @@
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 数据字典 -> `sc.dictionary`
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 阶段要求配置 -> `sc.project.stage.requirement.item`
 - 智慧施工管理平台 / 产品配置 / 业务基础数据 / 预算类型 -> `project.cost.code`
-- 智慧施工管理平台 / 产品配置 / 低代码系统配置 / 菜单配置 -> `ui.menu.config.policy`
 - 智慧施工管理平台 / 产品配置 / 流程审批配置 -> `sc.approval.policy`
 - 智慧施工管理平台 / 产品配置 / 系统参数 -> `sc.product.system.settings`
 - 智慧施工管理平台 / 产品配置 / 编码规则 -> `ir.sequence`
+- 智慧施工管理平台 / 产品配置 / 菜单配置 -> `ui.menu.config.policy`
 - 智慧施工管理平台 / 系统管理（内部）
 - 智慧施工管理平台 / 系统管理（内部） / 定额字典
 - 智慧施工管理平台 / 系统管理（内部） / 定额字典 / 专业 -> `project.dictionary`
@@ -238,14 +309,6 @@
 - 智慧施工管理平台 / 系统管理（内部） / 定额库 / 定额中心（左树右明细） -> `project.dictionary`
 - 智慧施工管理平台 / 系统管理（内部） / 定额库 / 定额子目 -> `project.dictionary`
 - 智慧施工管理平台 / 系统管理（内部） / 定额库 / 定额层级 -> `project.dictionary`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 -> `sc.norm.item`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 专业维护 -> `sc.norm.specialty`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 定额库 -> `sc.norm.item`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 定额库版本维护 -> `sc.norm.catalog`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 定额项维护 -> `sc.norm.item`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 导入定额 -> `sc.norm.import.wizard`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 章节维护 -> `sc.norm.chapter`
-- 智慧施工管理平台 / 系统管理（内部） / 定额引擎 / 适用地区维护 -> `sc.norm.region`
 - 智慧施工管理平台 / 行政中心 / 人员档案 -> `res.users`
 
 ## 用户配置边界
@@ -256,11 +319,13 @@
 
 | 边界入口 | active 子入口 | action 子入口 | XMLID |
 | --- | ---: | ---: | --- |
+| 智慧施工管理平台 / 报表中心 / 历史业务主体对照 | 0 | 0 | `smart_construction_core.menu_sc_legacy_business_entity_map` |
 | 智慧施工管理平台 / 行政中心 / 油卡管理 / 充值登记 | 0 | 0 | `smart_construction_core.menu_sc_legacy_fuel_card_recharge_fact_acceptance` |
 | 智慧施工管理平台 / 行政中心 / 油卡管理 / 油卡登记 | 0 | 0 | `smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance` |
 
 ### active 明细
 
+- 智慧施工管理平台 / 报表中心 / 历史业务主体对照 -> `sc.business.entity`
 - 智慧施工管理平台 / 行政中心 / 油卡管理 / 充值登记 -> `sc.fund.account.operation`
 - 智慧施工管理平台 / 行政中心 / 油卡管理 / 油卡登记 -> `sc.fund.account.operation`
 
@@ -272,7 +337,7 @@
 | 智慧施工管理平台 / 产品配置 / 工作流运行数据 / 工作流实例 | 0 | 0 | `smart_construction_core.menu_sc_workflow_instance` |
 | 智慧施工管理平台 / 产品配置 / 工作流运行数据 / 工作流日志 | 0 | 0 | `smart_construction_core.menu_sc_workflow_log` |
 | 智慧施工管理平台 / 产品配置 / 工作流运行数据 / 工作项 | 0 | 0 | `smart_construction_core.menu_sc_workflow_workitem` |
-| 智慧施工管理平台 / 系统管理（内部） / 场景与能力 | 6 | 6 | `smart_construction_core.menu_sc_scene_root` |
+| 智慧施工管理平台 / 系统管理（内部） / 场景与能力 | 10 | 9 | `smart_construction_core.menu_sc_scene_root` |
 | 智慧施工管理平台 / 系统管理（内部） / 工作流 | 1 | 1 | `smart_construction_core.menu_sc_workflow_root` |
 | 智慧施工管理平台 / 系统管理（内部） / 项目管理（后台） | 0 | 0 | `smart_construction_core.menu_sc_project_manage` |
 
@@ -295,6 +360,10 @@
 - 智慧施工管理平台 / 产品配置 / 工作流运行数据 / 工作流日志 -> `sc.workflow.log`
 - 智慧施工管理平台 / 产品配置 / 工作流运行数据 / 工作项 -> `sc.workflow.workitem`
 - 智慧施工管理平台 / 系统管理（内部） / 场景与能力
+- 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / Scene Governance
+- 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / Scene Governance / Company Channels -> `sc.scene.company.channel`
+- 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / Scene Governance / Governance Actions -> `sc.scene.governance.wizard`
+- 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / Scene Governance / Governance Logs -> `sc.scene.governance.log`
 - 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / 交付包安装记录 -> `sc.pack.installation`
 - 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / 交付包注册表 -> `sc.pack.registry`
 - 智慧施工管理平台 / 系统管理（内部） / 场景与能力 / 场景版本 -> `sc.scene.version`
@@ -311,6 +380,7 @@
 
 | 中心 | 菜单 | 模型 | XMLID |
 | --- | --- | --- | --- |
+| 报表中心 | 智慧施工管理平台 / 报表中心 / 历史业务主体对照 | `sc.business.entity` | `smart_construction_core.menu_sc_legacy_business_entity_map` |
 | 行政中心 | 智慧施工管理平台 / 行政中心 / 油卡管理 / 充值登记 | `sc.fund.account.operation` | `smart_construction_core.menu_sc_legacy_fuel_card_recharge_fact_acceptance` |
 | 行政中心 | 智慧施工管理平台 / 行政中心 / 油卡管理 / 油卡登记 | `sc.fund.account.operation` | `smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance` |
 
@@ -325,9 +395,10 @@
 
 ## 收口信号
 
-- 当前无待复核菜单。
+- 存在 `1` 个待复核菜单，必须先归类或隐藏。
 - 当前无独立用户配置入口；产品配置中心属于正式产品，受保护的低代码与管理子项仍归入系统配置边界。
+- `报表中心` 下存在非正式产品子入口：history=1 system=0，需要确认是否应继续对业务用户可见。
 - `行政中心` 下存在非正式产品子入口：history=2 system=1，需要确认是否应继续对业务用户可见。
 - `产品配置` 下存在非正式产品子入口：history=0 system=9，需要确认是否应继续对业务用户可见。
-- 共 `2` 个历史入口混在正式产品中心下，建议作为下一轮菜单收口清单。
+- 共 `3` 个历史入口混在正式产品中心下，建议作为下一轮菜单收口清单。
 - 共 `2` 个 inactive 历史入口仍挂在正式产品中心路径下，建议后续迁出正式中心。

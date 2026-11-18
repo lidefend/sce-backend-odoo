@@ -166,6 +166,16 @@ assert.ok(
   lifecycleSource.indexOf('shouldHydrateCreateDefaults') < lifecycleSource.indexOf('await loadAuthoritativeCreateDefaults('),
   'default_get consumption remains inside the create-only branch',
 );
+assert.ok(
+  lifecycleSource.indexOf('await runOnchangeRoundtrip()')
+    < lifecycleSource.indexOf('await restoreIntakeAutosave()'),
+  'authoritative defaults and their onchange complete before intake draft recovery',
+);
+assert.ok(
+  lifecycleSource.indexOf('originalValues.value = snapshotOriginalFormValues(fieldNames, formData)')
+    < lifecycleSource.indexOf('await restoreIntakeAutosave()'),
+  'restored values remain dirty relative to the confirmed server defaults',
+);
 
 const relationBase = { owner_id: [17, 'Authorized owner'] };
 const mergeRelation = (value: unknown, type = 'many2one') => mergeAuthoritativeCreateDefaults({

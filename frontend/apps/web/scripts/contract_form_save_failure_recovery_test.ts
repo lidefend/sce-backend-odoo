@@ -33,6 +33,7 @@ type Harness = {
     creates: CreateCall[];
     reloads: number;
     created: number[];
+    clearedIntakes: Array<{ key: string; policyVersion: number; scope: string; draftToken: string } | null>;
     redirects: unknown[];
     completedActivities: string[];
     completionRedirectCounts: number[];
@@ -51,7 +52,7 @@ function buildHarness(options: {
   uploadFails?: boolean;
 }): Harness {
   const calls: Harness['calls'] = {
-    writes: [], creates: [], reloads: 0, created: [], redirects: [],
+    writes: [], creates: [], reloads: 0, created: [], clearedIntakes: [], redirects: [],
     completedActivities: [], completionRedirectCounts: [],
   };
 
@@ -72,7 +73,10 @@ function buildHarness(options: {
     busy: ref(false),
     busyKind,
     canSave: ref(true),
-    clearIntakeAutosave: () => undefined,
+    captureIntakeAutosave: () => ({ key: 'draft:create-1', policyVersion: 1, scope: 'project_intake_standard', draftToken: 'draft-token-1' }),
+    clearIntakeAutosave: (captured: { key: string; policyVersion: number; scope: string; draftToken: string } | null) => {
+      calls.clearedIntakes.push(captured);
+    },
     collectSceneValidationPrecheckErrors: () => [] as string[],
     // Mirrors the real runtime: a relation draft is handed to the write payload
     // as an Odoo command list, not as a bare id array.
@@ -239,6 +243,7 @@ const businessRejection = () => new ApiError('金额必须大于零', 422, 'trac
   assert.deepEqual(formData, { title: '新建标题', links: [4] }, 'the create draft must survive a rejection');
   assert.equal(calls.creates.length, 1, 'the rejected attempt really reached the create write');
   assert.equal(calls.created.length, 0, 'a rejected create leaves no record behind');
+  assert.deepEqual(calls.clearedIntakes, [], 'a failed create keeps the initiating local draft');
   assert.equal(calls.reloads, 0);
   assert.equal(refs.dirtyFieldSet.has('title'), true, 'the create draft stays dirty');
   assert.equal(refs.submissionFeedback.value?.kind, 'error');
@@ -248,6 +253,7 @@ const businessRejection = () => new ApiError('金额必须大于零', 422, 'trac
   assert.equal(accepted, true, 'a corrected create must succeed');
   assert.equal(calls.creates.length, 2, 'the retry creates exactly once');
   assert.deepEqual(calls.created, [900], 'no duplicate record is created');
+  assert.deepEqual(calls.clearedIntakes, [{ key: 'draft:create-1', policyVersion: 1, scope: 'project_intake_standard', draftToken: 'draft-token-1' }]);
   assert.deepEqual(calls.completedActivities, ['new:x.document:page:create-1'], 'the committed create page is retired');
   assert.deepEqual(calls.completionRedirectCounts, [1], 'retirement follows the completed record navigation');
 }
@@ -285,6 +291,7 @@ console.log('[contract-form-save-failure-recovery] create submit handoff defers 
   const outcome = await harness.actions.saveRecord(undefined, { navigateAfterCreate: false });
   assert.equal(outcome, false, 'upload failure must not proceed to submission');
   assert.deepEqual(harness.calls.created, [900]);
+  assert.deepEqual(harness.calls.clearedIntakes, [{ key: 'draft:create-1', policyVersion: 1, scope: 'project_intake_standard', draftToken: 'draft-token-1' }], 'record identity clears the draft before attachment failure handling');
   assert.equal(harness.calls.creates.length, 1);
   assert.deepEqual(harness.calls.completedActivities, ['new:x.document:page:create-1']);
   assert.deepEqual(harness.calls.completionRedirectCounts, [1]);

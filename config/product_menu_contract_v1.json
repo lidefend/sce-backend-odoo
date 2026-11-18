@@ -69,8 +69,8 @@
             },
             {
               "name": "快速创建项目",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "项目启停管理",
@@ -139,13 +139,13 @@
             },
             {
               "name": "投标报名费申请",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "开标记录",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -279,13 +279,13 @@
           "children": [
             {
               "name": "计划管理",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "计划汇报",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -294,28 +294,28 @@
           "children": [
             {
               "name": "质量检查",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "质量整改",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "质量复验",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "质量标准",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "现场影像",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -324,38 +324,38 @@
           "children": [
             {
               "name": "安全方案",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "安全交底",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "风险库",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "危险源",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "安全巡检",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "安全整改",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "安全复验",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -364,38 +364,38 @@
           "children": [
             {
               "name": "材料计划",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "采购申请",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "材料进场验收",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "询比价",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "材料调拨",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "材料损耗",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "材料结算",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -404,18 +404,18 @@
           "children": [
             {
               "name": "劳务计划",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "劳务申请",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "劳务结算",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -424,18 +424,18 @@
           "children": [
             {
               "name": "设备计划",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "设备申请",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "设备结算",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -444,18 +444,18 @@
           "children": [
             {
               "name": "租赁计划",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "租赁单",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "租赁结算",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         },
@@ -464,18 +464,18 @@
           "children": [
             {
               "name": "分包计划",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "分包申请",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             },
             {
               "name": "分包结算",
-              "delivery": "PREVIEW_FOUNDATION",
-              "release_state": "preview"
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
             }
           ]
         }
@@ -523,8 +523,8 @@
         },
         {
           "name": "结算单",
-          "delivery": "PREVIEW_FOUNDATION",
-          "release_state": "preview"
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
         }
       ]
     },
@@ -617,18 +617,18 @@
         },
         {
           "name": "工程进度款收入登记",
-          "delivery": "PREVIEW_FOUNDATION",
-          "release_state": "preview"
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
         },
         {
           "name": "支付台账",
-          "delivery": "PREVIEW_FOUNDATION",
-          "release_state": "preview"
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
         },
         {
           "name": "资金台账",
-          "delivery": "PREVIEW_FOUNDATION",
-          "release_state": "preview"
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
         }
       ]
     },

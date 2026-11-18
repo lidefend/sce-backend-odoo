@@ -374,11 +374,11 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
       // native onchange; mark the default-set fields so the roundtrip recomputes
       // the dependent fields before the draft is saved.
       presentFields.forEach((name) => changedFieldSet.add(name));
-      void runOnchangeRoundtrip();
+      await runOnchangeRoundtrip();
       prepareVisibleOne2manyHydration();
       originalValues.value = snapshotOriginalFormValues(fieldNames, formData);
       nativeLayoutVisibilityRevision.value += 1;
-      restoreIntakeAutosave();
+      await restoreIntakeAutosave();
       return;
     }
     const storeMainData = resolveContractV2MainData(v2ContractStore.value);
