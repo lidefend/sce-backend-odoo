@@ -51,7 +51,7 @@ Acceptance:
 - Runtime: `sc-fe-r2-p1-01` / database `sc_frontend_acceptance` / served source `cfb6829c76e9476d61b2abd329809da260ddfb31`
 - Actor: `fixture_role_config_admin`, `FE Company A` (`company_id=2`)
 - Raw evidence: `.runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/search_contract_samples/`
-- Summary SHA-256: `ae938d7ff2b79c35dc593de6d01d0fef1bbde58ad4876f31fc4de4486363c6ca`
+- Summary SHA-256: `a255046a5c29c538f81d959d51e2ff6c12239bfd7111c093f8b7ca452b1abf60`
 - Validation SHA-256: `a947bc7fb766dbe9b60ea38cf0a14f1463b2aeae06582e46d00eb1dd65b89be6`
 
 Project ledger:
@@ -95,6 +95,16 @@ Validation:
 - `verify.native_action.contract.orm`: 6 passed.
 - `acceptance.frontend.fixture_orm`: 49 passed.
 - Live two-entry sample target: 52 assertions plus schema validation passed.
+- `make ci.local.iteration`: passed with 34 required targets, 15 executed and 19 input-verified reuse; `notRunTargets=[]` and `registrationMissingTargets=[]`.
+- Final incremental receipt: `.runtime/frontend-dev-validation/executions/20261118T174957Z-3125398-675281340/receipt.json` (`sha256=cadc44e0cb23088bc3a8af1f92b1f9b0d7c07a768168241af0e2fa921b43cfe1`).
+- Final aggregate log: `.runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/ci.local.iteration.final2.log` (`sha256=0ea81a4549e0027ae90a1e2eb3848018a558d683068e868dc5c00ac31029ca58`).
+
+Sample identity recovery:
+
+- A later current-HEAD replay attempt was correctly stopped by the governed acceptance health check because the running backend still reports source `71692e475e3123263ec67f967cc24412d2a0353f`, not the current verification-only HEAD.
+- The collector initializes its output directory before login, so that stopped attempt cleared the untracked sample directory. The same collector was rerun with the HTTP transport and the recorded served SHA against the unchanged `sc_frontend_acceptance` runtime to restore the complete 29-file evidence set.
+- The restored summary still reports 52 passed assertions, two schema-valid V2 contracts, the same two entry identities, totals, orders and second-page IDs. Its generated timestamp changed, so the summary hash is now `a255046a5c29c538f81d959d51e2ff6c12239bfd7111c093f8b7ca452b1abf60`; validation output remains byte-identical.
+- `7e96761494697e8c5cdbba9fa93d6740cb050e26` differs from served `71692e475` only in the P4 statusbar guard and generated planning documents. Product inputs and assertions are unchanged, so the governed runtime evidence is carried forward with that explicit identity boundary.
 
 Full `/smart_core` tag attempt:
 
@@ -129,12 +139,23 @@ Implemented:
 
 FE implementation validation:
 
-- `verify.frontend.collection_view_semantics.unit`: passed, including the new field-filter runtime test.
+- `verify.frontend.collection_view_semantics.unit`: passed, including typed `false`/`0`, invalid value, route serialization and current-page reset assertions.
+- `verify.frontend.cross_model_action_navigation.unit`: passed; same-model actions retain `field_filter`, while cross-model entries clear it.
 - `verify.frontend.typecheck.strict`: passed.
 - `verify.frontend.lint.src`: passed with existing non-error warnings only.
 - `verify.frontend.contract_basis.unit`: 15 passed, open defects `0`.
 - `verify.frontend.build`: passed.
 
+Browser journeys:
+
+- Target: `verify.frontend.close_02.field_query.browser`
+- Runtime: `sc-fe-r2-p1-01` / `sc_frontend_acceptance` / frontend `http://127.0.0.1:5175` / served source `71692e475e3123263ec67f967cc24412d2a0353f`
+- Actor: `fixture_role_config_admin`, `FE Company A` (`company_id=2`)
+- Summary: `.runtime/agent-runs/CLOSE-02-FIELD-QUERY-SORT-DETAIL-20261118/browser_journeys/summary.json`
+- Summary SHA-256: `0fad6f81a82ff1d88f3d3cf2bcc7c778839f8e1c73957e9a7f9e563a2501d22c`
+- Project ledger: text filter total `28`, existing filter total `28`, second page `8`; detail return and reload restored `field_filter`, order and `list_offset=20`; relation change and clear issued offset `0`.
+- Payment request: text filter total `38`, existing filter total `38`, second page `18`; detail return and reload restored `field_filter`, order and `list_offset=20`; relation change and clear issued offset `0`, and the fixed finance entry scope remained active after clearing the user field condition.
+
 ## Results
 
-Initial run registration complete. BE-CLOSE-02 closed its implementation and live-sample stage. FE-CLOSE-02 implementation is ready for the two browser journeys; joint acceptance remains pending.
+BE-CLOSE-02 and FE-CLOSE-02 implementation, field semantics, route-state restoration, pagination reset and both bounded browser journeys are complete. Joint acceptance remains pending on clean candidate freeze, independent review, publication and exact-head required checks.

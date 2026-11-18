@@ -31,6 +31,7 @@
     "frontend/apps/web/src/components/action/",
     "frontend/apps/web/scripts",
     "frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts",
+    "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
     "frontend/apps/web/package.json",
     "frontend/apps/web/tsconfig.json",
     "frontend/apps/web/tsconfig.strict.json",
@@ -43,6 +44,7 @@
     "scripts/verify/close_02_backend_contract_samples_validate.py",
     "scripts/verify/close_02_field_query_browser_journeys.mjs",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_scene_component_bridge_guard.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "config/frontend/probe_toolchain_registry.json",
     "scripts/audit/verification_lane_dispositions.json",
@@ -60,12 +62,12 @@
       "owner": "single_writer",
       "exit": "Clean backend candidate with schema-valid field semantics, consistent order, and raw samples for both entries",
       "product_sha": "cfb6829c76e9476d61b2abd329809da260ddfb31",
-      "sample_summary_sha256": "ae938d7ff2b79c35dc593de6d01d0fef1bbde58ad4876f31fc4de4486363c6ca",
+      "sample_summary_sha256": "a255046a5c29c538f81d959d51e2ff6c12239bfd7111c093f8b7ca452b1abf60",
       "sample_validation_sha256": "a947bc7fb766dbe9b60ea38cf0a14f1463b2aeae06582e46d00eb1dd65b89be6"
     },
     {
       "id": "FE-CLOSE-02",
-      "status": "active",
+      "status": "completed",
       "owner": "single_writer",
       "exit": "Shared ActionView query state, detail return and page reset behavior close on the backend candidate"
     },
@@ -128,6 +130,30 @@
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
         "addons/smart_core/tests/test_contract_projection_json_boundaries.py",
         "make/ci.mk"
+      ]
+    },
+    "business_config_formal_list": {
+      "target": "verify.business_config.formal_list.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/app_config_engine/models/app_view_config.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_load_contract_response_cache.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_view_orchestrator.py",
+        "scripts/verify/test_formal_list_configuration_baseline.py",
+        "make/runtime_ops.mk"
+      ]
+    },
+    "form_structure_authority": {
+      "target": "verify.form_structure_authority_unification.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_v2_policy_projection_guard.py",
+        "scripts/verify/test_form_structure_authority_unification.py",
+        "scripts/verify/test_frontend_v2_policy_projection_guard.py",
+        "make/frontend.mk"
       ]
     },
     "native_search_contract": {
@@ -224,6 +250,39 @@
         "make/frontend.mk"
       ]
     },
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts",
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/app/runtime/actionViewFieldFilterRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewRouteRuntime.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "cross_model_navigation": {
+      "target": "verify.frontend.cross_model_action_navigation.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
+        "frontend/apps/web/src/app/navigationContext.ts",
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/actionContract.ts",
+        "frontend/apps/web/src/pages/contractForm/useActionResponseNavigation.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "contract_record_action_state": {
+      "target": "verify.frontend.contract_record_action_state.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts",
+        "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
+        "scripts/verify/frontend_contract_record_action_state.test.mjs",
+        "make/frontend.mk"
+      ]
+    },
     "action_view_surface_gate": {
       "target": "verify.frontend.action_view_surface_gate_runtime.unit",
       "kind": "offline",
@@ -305,6 +364,16 @@
         "frontend/apps/web/src",
         "frontend/packages/ui/src",
         "scripts/verify/frontend_style_system_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "scene_component_bridge": {
+      "target": "verify.frontend.scene_component_bridge.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_scene_component_bridge_guard.py",
+        "scripts/verify/test_contract_form_semantic_identity_guard.py",
+        "scripts/verify/test_scene_audit_disclosure_guard.py",
         "make/frontend.mk"
       ]
     },

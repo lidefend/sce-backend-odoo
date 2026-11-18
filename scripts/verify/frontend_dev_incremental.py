@@ -85,6 +85,7 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.product_page_pattern.unit": "esbuild",
     "verify.frontend.action_view_surface_gate_runtime.unit": "esbuild",
     "verify.frontend.action_view_page_size_runtime.unit": "esbuild",
+    "verify.frontend.cross_model_action_navigation.unit": "esbuild",
     "verify.frontend.auth_surface.guard": "node",
 }
 
@@ -1620,9 +1621,16 @@ RULES = (
         "frontend/apps/web/src/app/contracts/actionViewSurfaceContract.ts",
         "frontend/apps/web/src/app/action_runtime/useActionViewModeRuntime.ts",
         "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/scripts/action_view_field_filter_runtime_test.ts",
     ), (
         "verify.frontend.contract_record_action_state.unit",
         "verify.frontend.collection_view_semantics.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/cross_model_action_navigation_test.ts",
+        "frontend/apps/web/src/app/navigationContext.ts",
+    ), (
+        "verify.frontend.cross_model_action_navigation.unit",
     )),
     Rule((
         "addons/smart_core/core/native_advisory.py",

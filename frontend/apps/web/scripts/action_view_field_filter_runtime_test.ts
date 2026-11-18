@@ -44,6 +44,18 @@ assert.throws(
   }),
   (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
 );
+assert.throws(
+  () => buildActionViewFieldFilter({
+    field: 'partner_id',
+    occurrenceKey: 'partner@/search[1]/field[4]',
+    label: '客户',
+    type: 'many2one',
+    operator: '=',
+    value: Number.NaN,
+  }),
+  (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
+);
+assert.equal(parseActionViewFieldFilter('{not-json'), null);
 
 const queued = buildActionViewSyncedRouteQuery(
   {

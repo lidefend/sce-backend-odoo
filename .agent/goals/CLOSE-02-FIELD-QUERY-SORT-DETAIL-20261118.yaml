@@ -45,7 +45,7 @@ goal:
       - detail return query context
   backend_stage:
     id: BE-CLOSE-02
-    status: active
+    status: completed
     acceptance:
       - Effective native Search view declarations project field identity, type, constraints and executable semantics.
       - Field occurrences remain distinct and native domain, filter_domain and context uses remain separate.
@@ -54,7 +54,7 @@ goal:
       - Raw authenticated samples cover both entries, hit and valid-zero results, a second page, and preserved entry scope.
   frontend_stage:
     id: FE-CLOSE-02
-    status: planned
+    status: completed
     acceptance:
       - Native root search fields feed the existing field/operator/value controls.
       - Field conditions use the existing domain/context/list request chain and compose with entry scope.
