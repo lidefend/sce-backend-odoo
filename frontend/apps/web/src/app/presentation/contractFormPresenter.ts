@@ -619,18 +619,15 @@ function presentAction(
     ? action.modifiers?.disabled
     : action.modifiers?.readonly;
   const explicitBusinessStateDenial = explicitAuthority
-    && status?.visible === true
-    && status?.disabled === true
-    && status?.visibilityExplanation === 'business_state'
-    && action.authorizationAllowed !== false
-    && typeof action.businessAvailable === 'boolean'
-    && Boolean(text(action.reasonCode));
+    && action.authorizationAllowed === true
+    && action.businessAvailable === false
+    && Boolean(text(action.reasonCode || action.reasonMessage));
   const definitionInvisible = !explicitBusinessStateDenial
     && evaluateNativeModifierValue(invisibleModifier, resolveFieldValue);
   const definitionDisabled = evaluateNativeModifierValue(disabledModifier, resolveFieldValue);
   // A state-derived button status is recomputed from the declared visibility
   // modifier against live form values; every other status stays authoritative.
-  const statusVisibilityDenied = status?.visible === false && !stateDerivedStatus;
+  const statusVisibilityDenied = status?.visible === false && !stateDerivedStatus && !explicitBusinessStateDenial;
   const statusDisabledDenied = status?.disabled === true && !stateDerivedStatus;
   // A declared actor-authorization or business-availability deny is honoured
   // directly, not just through the producer's folded allowed/enabled/disabled.
@@ -674,7 +671,9 @@ function presentAction(
       ...presented,
       enabled: false,
       reasonCode: availability.reasonCode || 'WORKFLOW_ACTION_NOT_AVAILABLE',
-      reasonMessage: '',
+      reasonMessage: availability.kind === 'managed' && availability.row
+        ? availability.message
+        : '',
     };
   if (!settled.reasonMessage) delete settled.reasonMessage;
   // A declared record action cannot run before the record exists.  Presenting it

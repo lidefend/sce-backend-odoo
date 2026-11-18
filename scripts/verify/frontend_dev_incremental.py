@@ -1236,6 +1236,12 @@ RULES = (
         "verify.frontend.delivery_hardening.guard",
     )),
     Rule((
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+    ), (
+        "verify.frontend.canonical_form_presenter.unit",
+        "verify.frontend.product_page_header.unit",
+    )),
+    Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",

@@ -1,0 +1,206 @@
+{
+  "schema_version": 1,
+  "id": "FE-CLOSE-01",
+  "branch": "feature/fe-close-01-workflow-handling-20261118",
+  "baseline_sha": "ea3d5541dd00ac3aaf048c91e685dc60e2ac3ac9",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CLOSE-01.yaml",
+  "record": "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
+  "scope": [
+    ".agent/README.md",
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CLOSE-01.yaml",
+    ".agent/runs/FE-CLOSE-01/run.json",
+    "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
+    "frontend/apps/web/src/app/contracts/v2",
+    "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/src/pages/contractForm",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+    "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/scripts",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "make/frontend.mk",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+    "scripts/verify/test_agent_run_context.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current frontend source, focused static/unit checks, and the governed local acceptance pair sc_frontend_acceptance@ea3d5541 with authenticated fixture identities"
+  },
+  "checks": {
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts"
+      ]
+    },
+    "product_page_header": {
+      "target": "verify.frontend.product_page_header.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/product_page_header_model_test.ts",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/pages/contractForm/ContractFormProductHeader.vue",
+        "frontend/apps/web/src/pages/contractForm/professionalWorkflowModel.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "scripts/verify/test_frontend_product_page_header_guard.py"
+      ]
+    },
+    "contract_header_action": {
+      "target": "verify.frontend.contract_header_action.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_header_action_presentation_test.ts",
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src/app/contracts/v2/workflowActionAvailability.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm/contractActionPresentation.ts",
+        "frontend/apps/web/src/pages/contractForm/contractHeaderActionPresentation.ts"
+      ]
+    },
+    "contract_runtime_policy": {
+      "target": "verify.frontend.contract_v2_runtime_policy.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/runtime.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts"
+      ]
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "scripts/verify/test_frontend_contract_basis_guard.py",
+        "frontend/apps/web/src"
+      ]
+    },
+    "typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/src"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/incremental_execution.py"
+      ]
+    },
+    "agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py"
+      ]
+    },
+    "payment_workflow_browser": {
+      "target": "verify.frontend.business_entry.payment_request.browser",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "scripts/verify/frontend_payment_request_workflow_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FE-CLOSE-01/payment_workflow_browser/summary.json"
+      }
+    },
+    "project_lifecycle_browser": {
+      "target": "verify.frontend.business_entry.lifecycle.browser",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",
+        "make/frontend.mk",
+        "frontend/package.json",
+        "frontend/pnpm-lock.yaml",
+        "frontend/pnpm-workspace.yaml",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/pages/contractForm",
+        "scripts/verify/frontend_business_entry_lifecycle_browser.mjs",
+        "scripts/verify/playwright_runtime.mjs"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FE-CLOSE-01/project_lifecycle_browser/summary.json"
+      }
+    }
+  },
+  "blockers": [
+    "The reviewed candidate is uncommitted; exact-head publication and remote checks are pending"
+  ],
+  "next_exact_step": "Commit the reviewed candidate, publish exact head through PR #935, and wait for current remote checks."
+}

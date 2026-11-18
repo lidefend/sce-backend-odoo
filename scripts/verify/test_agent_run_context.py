@@ -462,12 +462,53 @@ class RunContextTest(unittest.TestCase):
         self.write('.runtime/probe.json', '{"served_sha": "bbbb"}')
         self.assertEqual(self.check()['status'], 'stale')
 
-    def test_runtime_check_missing_readback_blocks_the_run(self):
+    def test_runtime_readback_may_be_generated_during_execution(self):
+        # begin freezes source/tool/upstream identity, not the runtime output that
+        # the check is expected to create or refresh.
         self.run['checks']['unit']['kind'] = 'runtime'
-        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/absent.json'}
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
         self.save()
+        begin(self.root, 'unit')
+        self.write('.runtime/probe.json', '{"served_sha": "after"}')
+        record(self.root, 'unit', 'passed', 2, '.runtime/check.log')
+        receipt = json.loads(
+            (self.root / '.runtime/agent-runs/TEST/unit.json').read_text()
+        )
+        self.assertEqual(
+            receipt['inputs']['.runtime/probe.json'][0],
+            hashlib.sha256(b'{"served_sha": "after"}').hexdigest(),
+        )
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_runtime_passed_receipt_requires_generated_readback(self):
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
+        self.save()
+        begin(self.root, 'unit')
+        with self.assertRaisesRegex(RunError, 'readback was not produced'):
+            record(self.root, 'unit', 'passed', 2, '.runtime/check.log')
+        self.write('.runtime/probe.json', '{"served_sha": "after"}')
+        record(self.root, 'unit', 'passed', 2, '.runtime/check.log')
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_runtime_failure_can_be_recorded_without_a_readback(self):
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
+        self.save()
+        begin(self.root, 'unit')
+        record(self.root, 'unit', 'failed', 0, '.runtime/check.log')
+        self.assertEqual(self.check()['status'], 'failed')
+
+    def test_runtime_readback_update_cannot_hide_a_source_change(self):
+        self.write('.runtime/probe.json', '{"served_sha": "before"}')
+        self.run['checks']['unit']['kind'] = 'runtime'
+        self.run['checks']['unit']['readback'] = {'artifact': '.runtime/probe.json'}
+        self.save()
+        begin(self.root, 'unit')
+        self.write('.runtime/probe.json', '{"served_sha": "after"}')
+        self.write('source/a.py', 'changed during test')
         with self.assertRaises(RunError):
-            begin(self.root, 'unit')
+            record(self.root, 'unit', 'passed', 2, '.runtime/check.log')
 
     def test_readback_outside_the_runtime_evidence_area_is_rejected(self):
         for artifact in ('source/a.py', '.git/config', 'probe.json'):

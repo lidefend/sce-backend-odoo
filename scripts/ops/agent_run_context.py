@@ -781,6 +781,21 @@ def dependency_state(root: Path, check: dict) -> dict:
     return state
 
 
+def execution_input_state(root: Path, check: dict) -> dict:
+    """Inputs that must remain fixed while a check executes.
+
+    A runtime readback is the authoritative output of the run-time environment:
+    a governed check may create or refresh that artifact while it executes. The
+    final receipt still records its new hash, so any later readback change
+    invalidates reuse. Source, tool and upstream dependencies remain frozen
+    between ``begin`` and ``record``.
+    """
+    state = dependency_state(root, check)
+    if 'readback' in check:
+        state.pop(readback_path(root, check['readback']), None)
+    return state
+
+
 def receipt_path(root: Path, run: dict, check_id: str) -> Path:
     if check_id not in run['checks'] or not re.fullmatch(r'[A-Za-z0-9_-]+', check_id):
         raise RunError('unknown check id')
@@ -882,11 +897,11 @@ def begin(root: Path, check_id: str, reverify_reason: str = '') -> None:
     if state['status'] == 'reusable' and not reverify_reason.strip():
         raise RunError('check is reusable; an explicit reverify reason is required')
     check = run['checks'][check_id]
-    inputs = dependency_state(root, check)
-    if any(value is None for value in inputs.values()):
+    declared_inputs = execution_input_state(root, check)
+    if any(value is None for value in declared_inputs.values()):
         raise RunError('declared dependency is missing; reconcile inputs before testing')
     payload = {'head': git(root, 'rev-parse', 'HEAD'), 'branch': run['branch'],
-               'check': check, 'inputs': inputs,
+               'check': check, 'inputs': execution_input_state(root, check),
                'environment': run['environment'], 'started_at': time.time(),
                'reverify_reason': reverify_reason.strip(),
                'upstream_inputs': upstream_inputs(root, run, check_id)}
@@ -911,15 +926,21 @@ def record(root: Path, check_id: str, status: str, count: int, log_path: str) ->
         raise RunError('readable nonempty original log required')
     pending_path = path.with_suffix('.pending.json')
     pending = read_json(pending_path)
+    current_inputs = dependency_state(root, run['checks'][check_id])
+    current_execution_inputs = execution_input_state(root, run['checks'][check_id])
+    if status == 'passed' and 'readback' in run['checks'][check_id]:
+        readback = readback_path(root, run['checks'][check_id]['readback'])
+        if current_inputs.get(readback) is None:
+            raise RunError('authoritative environment readback was not produced')
     if any(pending.get(key) != value for key, value in {
         'head': git(root, 'rev-parse', 'HEAD'), 'branch': run['branch'],
-        'check': run['checks'][check_id], 'inputs': dependency_state(root, run['checks'][check_id]),
+        'check': run['checks'][check_id], 'inputs': current_execution_inputs,
         'environment': run['environment'],
         'upstream_inputs': upstream_inputs(root, run, check_id)}.items()):
         raise RunError('test inputs or identity changed since begin; result cannot be recorded')
     receipt = {'schema_version': 1, 'duration_seconds': time.time() - pending['started_at'], 'run_id': run['id'], 'branch': run['branch'],
                'head': git(root, 'rev-parse', 'HEAD'), 'dirty': git(root, 'status', '--porcelain=v1'),
-               'check': run['checks'][check_id], 'inputs': dependency_state(root, run['checks'][check_id]),
+               'check': run['checks'][check_id], 'inputs': current_inputs,
                'environment': run['environment'], 'status': status, 'test_count': count,
                'log': log_path, 'log_sha256': hashlib.sha256(log.read_bytes()).hexdigest(),
                'reverify_reason': pending.get('reverify_reason', ''),

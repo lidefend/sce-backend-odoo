@@ -214,7 +214,7 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
       actionContract:{actionRuleList:[]},statusContract:{widgetStatus:[
         {widgetId:'state.header',visible:true,readonly:true,required:false,disabled:false,auth:'read'},
         {widgetId:'state.body',visible:false,readonly:false,required:false,disabled:false,auth:'edit'}],buttonStatus:[],containerStatus:[]},
-      dataContract:{mainData:{id:7,state:'draft'},dataMeta:{},dataSource:{primary:{}}},workflowContract:{statusbar:{field:'state',readonly:false}}};
+      dataContract:{mainData:{id:7,state:'draft'},dataMeta:{},dataSource:{primary:{}}},workflowContract:{}};
     const store = ref(null);
     const data = {state:'draft'};
     let layout;
@@ -237,10 +237,17 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     equal(layout.nativeStatusbar.value.readonly,false,'explicit writable selected occurrence remains writable');
     equal(all(n=>n.props['aria-label']==='编辑业务状态').length,1,'writable actual header exposes editing selector');
     layout.setStatusbarValue('done');equal(data.state,'done','explicit writable hook dispatches state change');
-    snapshot.workflowContract.statusbar.readonly=true;store.value=createContractV2Store(structuredClone(snapshot));await tick();
-    equal(layout.nativeStatusbar.value.readonly,true,'same-field workflow readonly cannot be weakened');
-    snapshot.workflowContract.statusbar.field='other';store.value=createContractV2Store(structuredClone(snapshot));await tick();
-    equal(layout.nativeStatusbar.value.readonly,false,'other-field workflow does not control this occurrence');
+    snapshot.workflowContract.statusbar={
+      field:'state',current:'done',readonly:true,source:'workflowContract',
+      states:[{value:'draft',label:'草稿'},{value:'done',label:'完成'}]};
+    store.value=createContractV2Store(structuredClone(snapshot));await tick();
+    equal(layout.nativeStatusbar.value.field,'state','complete workflow statusbar owns the primary status field');
+    equal(layout.nativeStatusbar.value.current,'done','complete workflow statusbar publishes its current business state');
+    equal(layout.nativeStatusbar.value.readonly,true,'workflow statusbar remains readonly for business actions');
+    snapshot.workflowContract.statusbar.field='other';store.value=createContractV2Store(structuredClone(snapshot));
+    assert.throws(() => layout.nativeStatusbar.value, /workflowContract\.statusbar\.field conflicts/,
+      'mismatched native and workflow status fields fail closed');
+    snapshot.workflowContract.statusbar.field='state';store.value=createContractV2Store(structuredClone(snapshot));await tick();
     snapshot.statusContract.widgetStatus[0].visible=false;store.value=createContractV2Store(structuredClone(snapshot));await tick();
     equal(layout.nativeStatusbar.value.visible,false,'hidden selected occurrence cannot publish header');
     equal(all(n=>n.props['data-professional-workflow-component']==='statusbar').length,0,'hidden header absent in actual component');
