@@ -907,7 +907,7 @@ RULES = (
     Rule((
         "scripts/ops/test_promote_product_ten_center_policy.py",
     ), (
-        "verify.product.menu.release_manifest_v2.guard",
+        "verify.product.menu.contract_v1.guard",
     )),
     Rule((
         "scripts/verify/close_03_intake_autosave_samples.mjs",

@@ -1570,6 +1570,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/verify/test_product_menu_contract_v1_guard.py": [
                 "verify.product.menu.contract_v1.guard",
             ],
+            "scripts/ops/test_promote_product_ten_center_policy.py": [
+                "verify.product.menu.contract_v1.guard",
+            ],
             "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py": [
                 "verify.daily_dev.acceptance_fixture.unit",
             ],
