@@ -166,7 +166,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the current-main run baseline, rerun affected checks, publish the exact head, re-dispatch ci:candidate, and require all four checks on that head.",
+  "next_exact_step": "Commit the ordinary-merge/formal-release separation, remove ci:candidate, publish the exact head through make pr.push, and require the four standard PR checks without a candidate dispatch.",
   "id": "MAINLINE-SCHEDULED-CI-CLOSEOUT-20261118",
   "branch": "fix/main-scheduled-ci-20261118",
   "status": "verification_pending",

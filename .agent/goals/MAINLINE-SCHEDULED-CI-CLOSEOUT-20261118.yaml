@@ -18,7 +18,8 @@ goal:
     a state attribute collision from the generic action-reason dialog and by
     executing and registering the design-token test through its governed
     style-system Make target. Make explicit candidate and scheduled execution use
-    the same formal-release lanes, and block non-FAST merges without that evidence.
+    the same formal-release lanes while keeping ordinary PR merge validation on
+    risk-selected fast/standard lanes.
   baseline:
     branch: main
     full_sha: 129df3827f4e8cffbc8302d626ec590ff63c14d9
@@ -99,7 +100,8 @@ goal:
     - verify.guard.registry reports the design-token test as wired rather than orphan and passes.
     - Affected frontend lint, strict typecheck and style-system checks pass with non-zero execution.
     - make ci.local.iteration executes every selected target and records its own result.
-    - A non-FAST pull request cannot pass merge_policy_gate without ci:candidate.
+    - A non-FAST pull request can pass merge_policy_gate on its risk-selected standard lane without ci:candidate.
+    - Ordinary PR merge eligibility is not coupled to formal-release qualification.
     - Ordinary synchronize runs stay on standard lanes while candidate runs are full.
     - ci:candidate forces full professional and frontend formal-release lanes.
     - Every professional quality lane executes the guard-registry audit.

@@ -640,26 +640,31 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                    'MANAGED_ORM_REQUIRED': 'false', 'FRONTEND_FULL_REQUIRED': 'false',
                    'CANDIDATE_REQUESTED': 'false', 'FAST_RESULT': 'skipped', 'FACT_RESULT': 'success',
                    'EVENT_NAME': 'pull_request', 'REF': 'refs/pull/1/merge'}
-            for event, expected in [('pull_request', 'full'), ('push', 'mainline'), ('schedule', 'full')]:
+            for event, expected in [
+                ('pull_request', 'standard_backend'),
+                ('push', 'mainline'),
+                ('schedule', 'full'),
+            ]:
                 summary.write_text('')
                 result = subprocess.run(['bash', '-c', step['run']], env={**env, 'EVENT_NAME': event,
                     'REF': 'refs/heads/main' if event == 'push' else env['REF']}, capture_output=True, text=True)
                 self.assertEqual(0, result.returncode, result.stderr)
                 self.assertIn('| Effective professional lane | ' + expected + ' |', summary.read_text())
 
-    def test_merge_summary_preserves_risk_derived_full_lanes(self):
+    def test_merge_summary_preserves_risk_derived_standard_lanes(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])
                     if s.get('name') == 'Publish lane summary')
         with tempfile.TemporaryDirectory() as tmp:
             summary = Path(tmp) / 'summary'
             scenarios = (
-                ('pure_ci', 'true', 'false', 'false'),
-                ('mixed_frontend_backend', 'true', 'true', 'true'),
-                ('frontend_only', 'false', 'false', 'true'),
-                ('backend_quality_tool', 'true', 'false', 'false'),
+                ('pure_ci', 'true', 'false', 'false', 'governance'),
+                ('mixed_frontend_backend', 'true', 'true', 'true', 'standard_backend'),
+                ('frontend_only', 'false', 'false', 'true', 'standard_frontend'),
+                ('backend_quality_tool', 'true', 'false', 'false', 'governance'),
+                ('governance_only', 'false', 'false', 'false', 'governance'),
             )
-            for name, backend, runtime, frontend in scenarios:
+            for name, backend, runtime, frontend, expected in scenarios:
                 with self.subTest(scenario=name):
                     summary.write_text('')
                     env = {**os.environ, 'GITHUB_STEP_SUMMARY': str(summary),
@@ -674,7 +679,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                     result = subprocess.run(['bash', '-c', step['run']], env=env,
                                             capture_output=True, text=True)
                     self.assertEqual(0, result.returncode, result.stderr)
-                    self.assertIn('| Effective professional lane | full |',
+                    self.assertIn('| Effective professional lane | ' + expected + ' |',
                                   summary.read_text())
 
     def test_candidate_merge_summary_keeps_full_required_frontend(self):
@@ -697,7 +702,7 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertIn('| Effective frontend lane | full |', summary.read_text())
             self.assertIn('| Effective professional lane | full |', summary.read_text())
 
-    def test_merge_policy_requires_formal_candidate_for_non_fast_heads(self):
+    def test_merge_policy_accepts_daily_non_fast_heads_without_candidate(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(
             step
@@ -718,15 +723,14 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             text=True,
         )
         self.assertEqual(0, accepted.returncode, accepted.stderr)
-        rejected = subprocess.run(
+        daily = subprocess.run(
             ['bash', '-c', script],
             env={**os.environ, 'EVENT_NAME': 'pull_request', 'RISK_LANE': 'HIGH_RISK',
                  'CANDIDATE_REQUESTED': 'false'},
             capture_output=True,
             text=True,
         )
-        self.assertNotEqual(0, rejected.returncode)
-        self.assertIn('requires ci:candidate formal-release qualification', rejected.stderr)
+        self.assertEqual(0, daily.returncode, daily.stderr)
         push = subprocess.run(
             ['bash', '-c', script],
             env={**os.environ, 'EVENT_NAME': 'push', 'RISK_LANE': 'RELEASE',

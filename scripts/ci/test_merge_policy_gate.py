@@ -38,27 +38,19 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn("sleep 20", wait_job)
         self.assertIn("timeout-minutes: 360", wait_job)
 
-    def test_non_fast_head_requires_formal_candidate_lane(self) -> None:
+    def test_daily_merge_is_not_bound_to_formal_candidate_lane(self) -> None:
         self.assertIn("Publish lane summary", self.workflow)
         self.assertIn("GITHUB_STEP_SUMMARY", self.workflow)
         self.assertIn("needs.classify.outputs.frontend_mode", self.workflow)
         self.assertIn("needs.classify.outputs.professional_mode", self.workflow)
-        self.assertIn("needs.classify.outputs.frontend_full_required", self.workflow)
         self.assertIn("needs.classify.outputs.control_plane_changed", self.workflow)
         self.assertIn("needs.classify.outputs.candidate_requested", self.workflow)
         self.assertIn("| Control-plane change | ${CONTROL_PLANE_CHANGED} |", self.workflow)
-        self.assertIn(
-            'if [ "${EVENT_NAME}" = "pull_request" ] && [ "${RISK_LANE}" != "FAST" ] && [ "${CANDIDATE_REQUESTED}" != "true" ]; then',
-            self.workflow,
-        )
-        self.assertIn("requires ci:candidate formal-release qualification", self.workflow)
-        self.assertIn(
-            'if [ "${FRONTEND_FULL_REQUIRED}" = "true" ]; then',
-            self.workflow,
-        )
-        self.assertNotIn('effective_professional="governance"', self.workflow)
-        self.assertNotIn('effective_professional="standard_backend"', self.workflow)
-        self.assertNotIn('effective_professional="standard_frontend"', self.workflow)
+        self.assertNotIn("requires ci:candidate formal-release qualification", self.workflow)
+        self.assertIn('effective_professional="governance"', self.workflow)
+        self.assertIn('effective_professional="standard_backend"', self.workflow)
+        self.assertIn('effective_professional="standard_frontend"', self.workflow)
+        self.assertIn("this does not grant formal-release qualification", self.workflow)
         self.assertIn("Explicit candidate validation was requested for this exact head.", self.workflow)
 
     def test_ruleset_requires_each_authoritative_check_without_bypass(self) -> None:

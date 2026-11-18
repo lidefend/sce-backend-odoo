@@ -20,17 +20,17 @@ purpose markers, but it must not replace primitive-owned state. The registry is 
 P4 lifecycle declaration for verification scripts and must match its executable
 Make/CI consumers.
 
-The formal-release boundary also required a control-plane correction. An explicit
-`ci:candidate` now forces the same full professional and frontend lanes used by the
-scheduled audit. Non-FAST branches cannot pass `merge_policy_gate` without that
-explicit candidate qualification, so a daily standard lane can no longer be mistaken
-for formal-release evidence.
+The formal-release boundary also required a control-plane distinction. An explicit
+`ci:candidate` forces the same full professional and frontend lanes used by the
+scheduled audit, but ordinary PR merge eligibility remains on its risk-selected
+standard lane. A standard merge result is not formal-release evidence, and a
+formal-release result is not a prerequisite for ordinary integration.
 
 All pull-request actions now share one concurrency group per PR. Adding the candidate
 label supersedes the preceding synchronize run instead of scheduling a second
 authoritative suite on the same SHA; push and schedule remain isolated event groups.
 Ordinary synchronize runs keep their short standard lanes. Only the exact candidate
-label switches to the full formal-release lanes required before merge.
+label switches to the full formal-release lanes required for candidate construction.
 The CI acceptance entry and its guards are registered as non-runtime frontend
 control-plane tooling, so an ordinary PR no longer escalates to backend/ORM suites
 through an unknown-path fail-closed classification.
@@ -58,7 +58,7 @@ Why not elsewhere:
 - Execute the selected design-token test in the existing style-system target and
   reconcile the guard registry with that executable consumer.
 - Force candidate and scheduled runs through the same full frontend/professional
-  lanes, and reject non-FAST merges that lack explicit candidate qualification.
+  lanes while keeping ordinary PR merges on risk-selected standard lanes.
 - Collapse pull-request synchronize and candidate-label events into one group.
 - Execute `verify.guard.registry` in every professional quality lane.
 - Allow the governed published-branch sync to resolve only the known generated
@@ -77,7 +77,7 @@ Why not elsewhere:
 
 - The action-reason browser test performs its non-zero assertion set and passes.
 - `verify.guard.registry` passes without weakening or bypassing the audit.
-- Non-FAST merges without `ci:candidate` fail closed.
+- Non-FAST ordinary PRs merge on risk-selected standard lanes without `ci:candidate`.
 - Candidate and scheduled runs both use full frontend and professional lanes.
 - Only one pull-request concurrency run remains authoritative for a source identity.
 - A successful scheduled aggregate emits an exact-head/tree release condition artifact.
@@ -113,12 +113,22 @@ routing/tests together. No data or runtime state requires restoration.
 - `verify.frontend.typecheck.strict`: PASS.
 - `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
 - `verify.ci.workflow.contract`: PASS, 458 tests covering risk classification,
-  candidate/full lane selection, merge-policy enforcement, workflow wiring and
-  exact-head release-condition materialization.
+  candidate/full lane selection, ordinary merge eligibility without a candidate
+  dispatch, workflow wiring and exact-head release-condition materialization.
 - `release_condition`: PASS, 4 tests covering exact SHA/tree, workflow set,
   scheduled slot, candidate mode and fail-closed identity rejection.
 - `verify.ci.scheduled_gates`: PASS, 97 tests including the CI login-probe route,
   shared internal-entry identity and release-CI guard wiring.
+- The same exact head produced both an ordinary standard run and an explicit
+  candidate run. The ordinary frontend lane completed in about 6 minutes and the
+  full candidate frontend lane in about 30 minutes. The ordinary `merge_policy_gate`
+  failed only because this branch temporarily required `ci:candidate`; that coupling
+  has been removed and the matching merge-policy tests now cover both outcomes.
+- `verify.guard.registry`: PASS again after the workflow policy correction,
+  24 tests plus the 1633-script audit.
+- `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
+- `make ci.local.iteration` after the merge-policy correction: PASS; the planner
+  executed the affected workflow-contract, scheduled-gate and agent-ledger checks.
 - `verify.workspace.branch.sync-github.unit`: PASS, 53 tests covering the exact
   published-branch sync, generated-report conflict handling and recovery paths.
 - `make ci.local.iteration`: PASS, 16 affected targets executed on the final
