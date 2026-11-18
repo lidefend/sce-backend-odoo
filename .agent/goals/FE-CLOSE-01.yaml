@@ -1,0 +1,71 @@
+schema_version: 1
+goal:
+  id: FE-CLOSE-01
+  status: active
+  formal_product_layer: P0/P4
+  layer_target: >-
+    Contract V2 workflow consumption for payment requests and project lifecycle,
+    plus bounded two-entry browser evidence
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Consume the backend-published workflow state, action identities, availability
+    and denial reasons for payment requests and project lifecycle, execute the
+    declared transitions, and refresh server facts without frontend business
+    inference.
+  product_result: >-
+    Two formal entries render authoritative state and actions, expose correct
+    disabled reasons, execute declared transitions with clear progress feedback,
+    and reload state/actions/editability from the server after success; failed
+    actions retain user input for correction and retry.
+  backend_dependency:
+    task: BE-CLOSE-01
+    branch: feature/be-close-01-workflow-contract-20261118
+    worktree: /home/lidefend/workspace/sce-backend-odoo-acceptance-scope-20261109-be-close-01-20261118
+    required_handoff:
+      - exact backend commit SHA
+      - one governed acceptance environment
+      - create, persisted-actionable, persisted-business-denied contract samples
+      - fields and stable action identities the frontend must consume
+      - affected backend validation results
+  why_here: >-
+    P0 owns generic workflow decoding and presentation consumption; the two
+    specific entries exercise the generic runtime and need bounded browser
+    evidence. Product workflow rules remain backend-owned.
+  why_not_elsewhere:
+    - No new approval or lifecycle rule in the frontend.
+    - No model label or button text used as workflow identity.
+    - No backend schema or service correction in the frontend branch.
+    - No search, intake autosave, renderer or performance batch.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/FE-CLOSE-01.yaml
+      - .agent/runs/FE-CLOSE-01/run.json
+      - docs/ops/iterations/fe_close_01_workflow_handling_20261118.md
+      - frontend/apps/web/src/app/contracts/v2
+      - frontend/apps/web/src/pages/contractForm
+      - frontend/apps/web/src/pages/ContractFormPage.vue
+      - frontend/apps/web/scripts
+      - scripts/verify
+    product_behavior: >-
+      payment request and project lifecycle workflow presentation and post-action
+      refresh only
+  acceptance:
+    - Both entries show the server state and stable declared action identities.
+    - Authorization and business availability remain distinct; disabled actions expose declared reasons.
+    - Confirmation, executing, success and failure feedback are coherent.
+    - Successful actions reload the contract and record before presenting the next step.
+    - Failed actions retain input and can be corrected and retried.
+    - Browser evidence covers only these two entries and binds one backend/frontend candidate pair.
+  exclusions:
+    - Search, search panel, intake autosave, renderer fallback and performance work.
+    - Full 91-entry matrix.
+    - Backend workflow production or schema changes.
+    - Merge, deployment and user-delivery claims.
+  rollback: >-
+    Revert the frontend workflow consumption commits and bounded evidence changes;
+    no schema, data, deployment or external state requires restoration.

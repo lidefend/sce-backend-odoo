@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "id": "FE-CLOSE-01",
+  "branch": "feature/fe-close-01-workflow-handling-20261118",
+  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
+  "status": "active",
+  "goal": ".agent/goals/FE-CLOSE-01.yaml",
+  "record": "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CLOSE-01.yaml",
+    ".agent/runs/FE-CLOSE-01/run.json",
+    "docs/ops/iterations/fe_close_01_workflow_handling_20261118.md",
+    "frontend/apps/web/src/app/contracts/v2",
+    "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+    "frontend/apps/web/src/pages/contractForm",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/scripts",
+    "scripts/verify"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current frontend source and focused static/unit checks; governed runtime waits for BE-CLOSE-01 handoff"
+  },
+  "checks": {},
+  "blockers": [
+    "BE-CLOSE-01 exact-head required checks are still running on d3e2f8d4f6a3f3c7250316ee51a690dac470591a",
+    "current authenticated sample file still reports served_sha=54c0d25a; final API samples must be regenerated on the accepted BE-CLOSE-01 candidate before browser handoff"
+  ],
+  "next_exact_step": "After BE-CLOSE-01 exact-head checks pass, sync this FE branch to accepted main 64f2e68e and then implement the minimal contract-preserving presenter/statusbar reason path for the two entries."
+}
