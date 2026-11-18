@@ -897,7 +897,7 @@ def begin(root: Path, check_id: str, reverify_reason: str = '') -> None:
     if state['status'] == 'reusable' and not reverify_reason.strip():
         raise RunError('check is reusable; an explicit reverify reason is required')
     check = run['checks'][check_id]
-    declared_inputs = dependency_state(root, check)
+    declared_inputs = execution_input_state(root, check)
     if any(value is None for value in declared_inputs.values()):
         raise RunError('declared dependency is missing; reconcile inputs before testing')
     payload = {'head': git(root, 'rev-parse', 'HEAD'), 'branch': run['branch'],
@@ -928,7 +928,7 @@ def record(root: Path, check_id: str, status: str, count: int, log_path: str) ->
     pending = read_json(pending_path)
     current_inputs = dependency_state(root, run['checks'][check_id])
     current_execution_inputs = execution_input_state(root, run['checks'][check_id])
-    if 'readback' in run['checks'][check_id]:
+    if status == 'passed' and 'readback' in run['checks'][check_id]:
         readback = readback_path(root, run['checks'][check_id]['readback'])
         if current_inputs.get(readback) is None:
             raise RunError('authoritative environment readback was not produced')

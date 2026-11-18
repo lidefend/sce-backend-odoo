@@ -87,8 +87,9 @@ declaration itself invalidates the check. Do not use the whole repository as a d
 Before executing the declared check, run `make agent.run.begin AGENT_CHECK=<id>`
 to capture its input state. Recording rejects any intervening source, tool, upstream
 receipt or identity change. A declared runtime readback may be created or refreshed by
-the check itself; the final receipt binds the new readback bytes, and any later change
-still invalidates reuse.
+the check itself. A passed receipt requires that readback to exist and binds its new
+bytes; a failed run may be recorded without one. Any later readback change still
+invalidates reuse.
 Then `make agent.run.record AGENT_CHECK=<id> AGENT_CHECK_STATUS=passed
 AGENT_TEST_COUNT=<nonzero> AGENT_TEST_LOG=<repository-relative-original-log>` records
 an executor-attested result in `.runtime/agent-runs/<goal>/`; use `failed` for failure.
