@@ -596,6 +596,86 @@ def emit_samples() -> None:
     }, sort_keys=True))
 
 
+def validate_samples(path: Path) -> None:
+    payload = json.loads(path.read_text(encoding="utf-8"))
+    if payload.get("schema") != "be_close_01.workflow_contract_final_api_samples.v1":
+        raise RuntimeError("unexpected BE-CLOSE-01 sample schema")
+    if payload.get("served_sha") != payload.get("expected_sha"):
+        raise RuntimeError("sample backend SHA is not self-bound")
+    if payload.get("database") != "sc_frontend_acceptance":
+        raise RuntimeError("sample database is not the managed acceptance database")
+    if not payload.get("actor", {}).get("authenticated"):
+        raise RuntimeError("sample actor is not authenticated")
+
+    creates = payload.get("create_catalog_samples") or []
+    records = payload.get("persisted_record_samples") or []
+    readbacks = payload.get("action_execution_readbacks") or []
+    if len(creates) != 2 or len(records) != 4 or len(readbacks) != 2:
+        raise RuntimeError("BE-CLOSE-01 sample population is incomplete")
+    contracts = [
+        *(sample["contract"] for sample in creates),
+        *(sample["contract"] for sample in records),
+        *(readback["after"]["contract"] for readback in readbacks),
+    ]
+    for contract in contracts:
+        validator.validate(contract)
+    for sample in creates:
+        contract = sample["contract"]
+        if contract.get("availabilityScope") != "declaration_only":
+            raise RuntimeError("create sample claims record scope")
+        if "record_id" in contract or "availableActions" in contract:
+            raise RuntimeError("create sample leaks record execution authority")
+
+    record_by_kind = {sample["kind"]: sample for sample in records}
+    for kind in (
+        "payment_actionable",
+        "payment_business_blocked",
+        "project_lifecycle_actionable",
+        "project_lifecycle_business_blocked",
+    ):
+        if kind not in record_by_kind:
+            raise RuntimeError("missing persisted sample: " + kind)
+    payment_blocked = record_by_kind["payment_business_blocked"]["contract"]
+    payment_done = _workflow_action(payment_blocked, "done")
+    if (
+        not payment_done
+        or payment_done.get("enabled") is not False
+        or payment_done.get("reason_code") != "PAYMENT_EXECUTION_REQUIRED"
+        or not payment_done.get("blocked_message")
+    ):
+        raise RuntimeError("payment business-blocked sample is not explicit")
+    project_blocked = record_by_kind["project_lifecycle_business_blocked"]["contract"]
+    project_close = _workflow_action(project_blocked, "close")
+    if (
+        not project_close
+        or project_close.get("enabled") is not False
+        or project_close.get("reason_code") != "P0_PROJECT_TERMINAL_BLOCKED"
+        or not project_close.get("blocked_message")
+    ):
+        raise RuntimeError("project business-blocked sample is not explicit")
+
+    by_entry = {readback["entry_name"]: readback for readback in readbacks}
+    payment_after = by_entry["payment_request"]["after"]["contract"]
+    if payment_after.get("rawState") != "submit":
+        raise RuntimeError("payment submit did not read back as submitted")
+    project_after = by_entry["project_lifecycle"]["after"]["contract"]
+    if project_after.get("rawState") != "in_progress":
+        raise RuntimeError("project start did not read back as in progress")
+    executed_project_actions = {
+        row.get("action_key") for row in by_entry["project_lifecycle"]["executions"]
+    }
+    if "activate" not in executed_project_actions:
+        raise RuntimeError("project start action was not executed")
+    print("BE_CLOSE_01_WORKFLOW_SAMPLES_VALIDATED=" + json.dumps({
+        "contracts": len(contracts),
+        "create_samples": len(creates),
+        "record_samples": len(records),
+        "post_action_readbacks": len(readbacks),
+        "payment_state": payment_after["rawState"],
+        "project_state": project_after["rawState"],
+    }, sort_keys=True))
+
+
 def _load_validator() -> Draft202012Validator:
     schema = json.loads(SCHEMA_PATH.read_text(encoding="utf-8"))
     return Draft202012Validator({
@@ -610,7 +690,10 @@ validator = _load_validator()
 
 if __name__ == "__main__":
     try:
-        emit_samples()
+        if len(sys.argv) == 3 and sys.argv[1] == "--validate-only":
+            validate_samples(Path(sys.argv[2]))
+        else:
+            emit_samples()
     except Exception as exc:
         print("BE_CLOSE_01_WORKFLOW_SAMPLES_FAILED=" + json.dumps({
             "error": str(exc),

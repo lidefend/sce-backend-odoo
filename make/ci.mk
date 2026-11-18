@@ -449,8 +449,12 @@ verify.workflow_action_semantics.guard: guard.prod.forbid
 	@python3 scripts/verify/workflow_action_semantics_completeness_guard.py
 	@PYTHONPATH=scripts/verify python3 scripts/verify/test_workflow_action_semantics_completeness_guard.py
 
-.PHONY: verify.workflow_contract.be_close_01 verify.workflow_contract.be_close_01.unit verify.workflow_contract.be_close_01.orm verify.workflow_contract.be_close_01.samples
-verify.workflow_contract.be_close_01: verify.workflow_contract.be_close_01.unit verify.workflow_contract.be_close_01.orm verify.workflow_contract.be_close_01.samples
+.PHONY: verify.workflow_contract.be_close_01 verify.workflow_contract.be_close_01.unit verify.workflow_contract.be_close_01.orm verify.workflow_contract.be_close_01.samples verify.workflow_contract.be_close_01.samples.capture
+verify.workflow_contract.be_close_01:
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.unit
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.orm
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.samples.capture
+	@$(MAKE) --no-print-directory verify.workflow_contract.be_close_01.samples
 
 verify.workflow_contract.be_close_01.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/be_close_01_workflow_contract_runtime_ids.py scripts/verify/be_close_01_workflow_contract_http_probe.py scripts/verify/test_be_close_01_workflow_contract_http_probe.py
@@ -461,6 +465,10 @@ verify.workflow_contract.be_close_01.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=be_close_01_workflow_contract
 
 verify.workflow_contract.be_close_01.samples: guard.prod.forbid
+	@python3 scripts/verify/be_close_01_workflow_contract_http_probe.py --validate-only \
+	  .runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json
+
+verify.workflow_contract.be_close_01.samples.capture: guard.prod.forbid
 	@test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}" || { echo "SC_ACCEPTANCE_FIXTURE_PASSWORD is required"; exit 2; }
 	@set -eu; \
 	reset_fixture() { \
