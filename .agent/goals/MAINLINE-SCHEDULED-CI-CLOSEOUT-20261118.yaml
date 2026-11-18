@@ -43,6 +43,9 @@ goal:
       - .github/workflows/release_candidate_gate.yml
       - scripts/ci/test_merge_policy_gate.py
       - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/release_condition.py
+      - scripts/ci/test_release_condition.py
+      - scripts/ci/test_release_candidate_gate.py
       - scripts/ops/github_published_branch_sync.py
       - scripts/ops/test_github_published_branch_sync.py
       - scripts/verify/frontend_dev_incremental.py
@@ -63,6 +66,10 @@ goal:
     - .github/workflows/release_candidate_gate.yml
     - scripts/ci/test_merge_policy_gate.py
     - scripts/ci/test_ci_risk_workflow_contract.py
+    - scripts/ci/release_condition.py
+    - scripts/ci/test_release_condition.py
+    - scripts/ci/test_release_candidate_gate.py
+    - make/ci.mk
     - scripts/ops/github_published_branch_sync.py
     - scripts/ops/test_github_published_branch_sync.py
     - scripts/verify/frontend_dev_incremental.py
@@ -86,6 +93,7 @@ goal:
     - ci:candidate forces full professional and frontend formal-release lanes.
     - Every professional quality lane executes the guard-registry audit.
     - Pull-request synchronize and candidate-label events share one concurrency group per PR.
+    - Scheduled success emits an exact-head/tree release-condition artifact with deployment explicitly unset.
     - No required workflow, production guard, browser assertion or product behavior is weakened.
   exclusions:
     - Required-check context names, branch rulesets and workflow trigger schedules.

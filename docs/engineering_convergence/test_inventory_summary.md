@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1721`
+- Total assets: `1722`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `245`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1251`
+- PR dedupe candidates: `1252`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 639 |
 | contract | 421 |
-| unit | 341 |
+| unit | 342 |
 | odoo_integration | 159 |
 | e2e | 57 |
 | security | 54 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1470 |
+| pr_candidate | 1471 |
 | integration_candidate | 187 |
 | release_candidate | 55 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1251 |
+| deduplicate_before_required | 1252 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 186 |
 | keep_release_only | 55 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1472 |
+| <5m | 1473 |
 | 10-30m | 188 |
 | 30-60m | 57 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 639 |
 | platform owner | 421 |
-| test owner | 342 |
+| test owner | 343 |
 | backend owner | 159 |
 | qa owner | 57 |
 | security owner | 54 |
@@ -168,7 +168,7 @@ Generated from `test_inventory.csv`.
 | scripts/verify | 1477 |
 | scripts/ops | 121 |
 | frontend/apps/web/scripts | 58 |
-| scripts/ci | 37 |
+| scripts/ci | 38 |
 | scripts/audit | 12 |
 | make | 5 |
 | scripts/e2e | 5 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-1f405243 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
 | T-ASSET-75503495 | unit | `scripts/ci/test_parallel_scan.py` | test owner |
 | T-ASSET-5667b2a2 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
-| ... | ... | 1171 more | ... |
+| ... | ... | 1172 more | ... |
 
 ## Dedupe Hotspots
 

@@ -686,6 +686,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.github_actions.security",
                 ])
 
+    def test_release_condition_inputs_select_the_ci_contract(self) -> None:
+        for path in (
+            "scripts/ci/release_condition.py",
+            "scripts/ci/test_release_condition.py",
+            "scripts/ci/test_release_candidate_gate.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+
     def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
         page_header_paths = (
             "scripts/verify/frontend_product_page_header_guard.py",

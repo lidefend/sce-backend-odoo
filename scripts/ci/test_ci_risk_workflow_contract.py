@@ -749,11 +749,27 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
                                            ('failure', 1, 'pending or failed'),
                                            ('cancelled', 1, 'pending or failed')]:
                 summary.write_text('')
-                run = subprocess.run(['bash', '-c', script.replace(
-                    '${{ needs.wait_for_candidate_checks.result }}', result)],
+                rendered = (
+                    script
+                    .replace('${{ needs.wait_for_candidate_checks.result }}', result)
+                    .replace('${{ github.event_name }}', 'pull_request')
+                )
+                run = subprocess.run(['bash', '-c', rendered],
                     env={**os.environ, 'GITHUB_STEP_SUMMARY': str(summary)}, capture_output=True)
                 self.assertEqual(code, run.returncode)
                 self.assertIn(expected, summary.read_text())
+            summary.write_text('')
+            scheduled = (
+                script
+                .replace('${{ needs.wait_for_candidate_checks.result }}', 'success')
+                .replace('${{ github.event_name }}', 'schedule')
+            )
+            run = subprocess.run(['bash', '-c', scheduled],
+                env={**os.environ, 'GITHUB_STEP_SUMMARY': str(summary)}, capture_output=True)
+            self.assertEqual(0, run.returncode, run.stderr)
+            output = summary.read_text()
+            self.assertIn('Formal mainline release condition: satisfied', output)
+            self.assertIn('deployment not authorized', output)
 
     def test_high_risk_policy_contains_mandatory_surfaces(self) -> None:
         policy = json.loads(

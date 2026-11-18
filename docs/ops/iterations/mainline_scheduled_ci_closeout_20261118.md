@@ -30,6 +30,11 @@ All pull-request actions now share one concurrency group per PR. Adding the cand
 label supersedes the preceding synchronize run instead of scheduling a second
 authoritative suite on the same SHA; push and schedule remain isolated event groups.
 
+Successful scheduled and explicit-candidate aggregate runs now emit a machine-readable
+`release-condition.json` bound to the exact head/tree and four authoritative run IDs.
+It sets `candidate_build_eligible=true` and `deployment_ready=false`, preserving the
+separation between code qualification, immutable candidate publication and deployment.
+
 Why not elsewhere:
 
 - no backend contract, model, permission, action or customer behavior changes;
@@ -65,6 +70,8 @@ Why not elsewhere:
 - Non-FAST merges without `ci:candidate` fail closed.
 - Candidate and scheduled runs both use full frontend and professional lanes.
 - Only one pull-request concurrency run remains authoritative for a source identity.
+- A successful scheduled aggregate emits an exact-head/tree release condition artifact.
+- The release condition explicitly does not authorize deployment.
 - The affected frontend lint, strict typecheck and style-system targets pass.
 - `make ci.local.iteration` executes the registered affected set with truthful
   per-target status and original logs.
@@ -95,11 +102,14 @@ routing/tests together. No data or runtime state requires restoration.
 - `verify.frontend.lint.src`: PASS, zero errors; four existing warnings remain.
 - `verify.frontend.typecheck.strict`: PASS.
 - `verify.agent.ledger.unit`: PASS, 18 tests plus ledger consistency.
-- `verify.ci.workflow.contract`: PASS, 453 tests covering risk classification,
-  candidate/full lane selection, merge-policy enforcement and workflow wiring.
+- `verify.ci.workflow.contract`: PASS, 457 tests covering risk classification,
+  candidate/full lane selection, merge-policy enforcement, workflow wiring and
+  exact-head release-condition materialization.
+- `release_condition`: PASS, 4 tests covering exact SHA/tree, workflow set,
+  scheduled slot, candidate mode and fail-closed identity rejection.
 - `verify.workspace.branch.sync-github.unit`: PASS, 53 tests covering the exact
   published-branch sync, generated-report conflict handling and recovery paths.
-- `make ci.local.iteration`: PASS, 15 affected targets executed on the final
+- `make ci.local.iteration`: PASS, 16 affected targets executed on the final
   pre-commit working set.
 - `make ci.delivery.freeze.prepare`: PASS; refreshed the complexity report, split
   queue and component-driver input digest affected by the source delta.
