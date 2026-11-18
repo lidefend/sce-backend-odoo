@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1725`
+- Total assets: `1726`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `245`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1255`
+- PR dedupe candidates: `1256`
 
 ## By Layer
 
@@ -18,7 +18,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | governance | 639 |
 | contract | 424 |
-| unit | 342 |
+| unit | 343 |
 | odoo_integration | 159 |
 | e2e | 57 |
 | security | 54 |
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1474 |
+| pr_candidate | 1475 |
 | integration_candidate | 187 |
 | release_candidate | 55 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1255 |
+| deduplicate_before_required | 1256 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 186 |
 | keep_release_only | 55 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1476 |
+| <5m | 1477 |
 | 10-30m | 188 |
 | 30-60m | 57 |
 | unknown | 3 |
@@ -154,7 +154,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | architecture owner | 639 |
 | platform owner | 424 |
-| test owner | 343 |
+| test owner | 344 |
 | backend owner | 159 |
 | qa owner | 57 |
 | security owner | 54 |
@@ -168,7 +168,7 @@ Generated from `test_inventory.csv`.
 | scripts/verify | 1480 |
 | scripts/ops | 121 |
 | frontend/apps/web/scripts | 58 |
-| scripts/ci | 38 |
+| scripts/ci | 39 |
 | scripts/audit | 12 |
 | make | 5 |
 | scripts/e2e | 5 |
@@ -270,13 +270,13 @@ Generated from `test_inventory.csv`.
 | T-ASSET-a09b0856 | unit | `scripts/ci/test_ci_path_ownership.py` | test owner |
 | T-ASSET-a827439b | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
 | T-ASSET-a49b9b15 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
+| T-ASSET-94353444 | unit | `scripts/ci/test_complexity_baseline_report.py` | test owner |
 | T-ASSET-896df66d | governance | `scripts/ci/test_frontend_professional_extension_guard.py` | architecture owner |
 | T-ASSET-4aeb0d9d | unit | `scripts/ci/test_lane_telemetry.py` | test owner |
 | T-ASSET-d1231964 | unit | `scripts/ci/test_merge_policy_gate.py` | test owner |
 | T-ASSET-1f405243 | unit | `scripts/ci/test_node_syntax_check.py` | test owner |
 | T-ASSET-75503495 | unit | `scripts/ci/test_parallel_scan.py` | test owner |
-| T-ASSET-5667b2a2 | unit | `scripts/ci/test_personal_data_scan.py` | test owner |
-| ... | ... | 1175 more | ... |
+| ... | ... | 1176 more | ... |
 
 ## Dedupe Hotspots
 

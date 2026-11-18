@@ -9,8 +9,8 @@
     "odoo_tag_declarations": 449,
     "gated_declarations": 102,
     "uncovered_declarations": 347,
-    "ci_unit_scripts": 20,
-    "ci_unit_scripts_wired": 20,
+    "ci_unit_scripts": 21,
+    "ci_unit_scripts_wired": 21,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -3098,6 +3098,19 @@
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
         ".github/workflows/public_guard.yml"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_complexity_baseline_report.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_complexity_baseline_report.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
       ]
     },
     {

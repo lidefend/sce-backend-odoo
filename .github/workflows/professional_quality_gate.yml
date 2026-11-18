@@ -319,6 +319,7 @@ jobs:
       - name: Run early static quality owners
         run: |
           set -euo pipefail
+          make architecture.complexity_baseline_lock
           make verify.guard.registry
           python3 scripts/verify/frontend_product_page_header_guard.py
           python3 scripts/verify/frontend_delivery_hardening_guard.py

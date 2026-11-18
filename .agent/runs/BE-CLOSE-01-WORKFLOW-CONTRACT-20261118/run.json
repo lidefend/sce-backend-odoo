@@ -65,7 +65,11 @@
     "Dockerfile",
     "docker-compose.test-isolation.yml",
     "scripts/dev/local_test_runner.py",
-    "scripts/verify/test_local_test_runner.py"
+    "scripts/verify/test_local_test_runner.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/enforce_complexity_baseline_lock.py",
+    "scripts/ci/test_complexity_baseline_report.py",
+    "docs/engineering_convergence/complexity_baseline_lock.json"
   ],
   "environment": {
     "kind": "offline",
@@ -190,7 +194,11 @@
         "scripts/verify/test_test_coverage_registry_audit.py",
         "scripts/verify/frontend_product_page_header_guard.py",
         "Dockerfile",
-        "docker-compose.test-isolation.yml"
+        "docker-compose.test-isolation.yml",
+        "scripts/ci/enforce_complexity_baseline_lock.py",
+        "docs/engineering_convergence/complexity_baseline_lock.json",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_complexity_baseline_report.py"
       ]
     },
     "github_actions_security": {
@@ -413,5 +421,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Validate CI build cache, heartbeat shutdown and test healthcheck isolation; publish reviewed repair to PR #933."
+  "next_exact_step": "Validate owner-requested advisory complexity reporting, publish, and wait for all current-head required CI conclusions."
 }

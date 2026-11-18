@@ -854,6 +854,8 @@ verify.ci.path_ownership.unit: guard.prod.forbid
 	@PYTHONPATH=scripts/ci python3 -m unittest scripts.ci.test_ci_path_ownership
 
 verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit verify.ci.path_ownership.unit verify.test.dependency_baseline.unit
+	@python3 scripts/ci/test_complexity_baseline_report.py
+	@python3 scripts/ci/enforce_complexity_baseline_lock.py
 	@python3 scripts/verify/frontend_product_page_header_guard.py
 	@python3 -m unittest scripts.verify.test_backend_contract_fact_readback_probe
 	@python3 scripts/ci/test_backend_test_receipt.py

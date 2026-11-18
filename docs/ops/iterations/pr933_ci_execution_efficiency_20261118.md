@@ -183,3 +183,21 @@ without allow flags, then built and exported cache successfully with the two sco
 flags. A second build consumed that exported cache and reported CACHED. Logs are
 `.runtime/pr933-ci-diagnosis/bake-entitlement-probe/{denied,allowed,warm}.log`.
 This proves entitlement and cache operation, not full remote suite success.
+
+
+## Owner decision: line-count observations must not block delivery
+
+At eb3343a2 the four backend shards, coverage reconciliation, public_guard and
+frontend_release_gate passed. The final professional quality step failed because
+Makefile had 276 lines against a 272-line reference. The owner explicitly directed
+that this must not block. The proposed cosmetic extraction has been withdrawn.
+
+P4 scope: advisory complexity reporting and early feedback. Existing reference
+budgets remain visible, but exceeding them emits WARNING and returns success.
+Malformed inventory or missing tracked files still fail. No test, coverage, contract,
+security or required workflow is disabled. The existing Make target name is retained
+for callers. The report runs locally and early remotely before expensive ORM work.
+
+Required: behavioral regression for over/under budget and malformed/missing inventory,
+workflow/security/planner checks, generated evidence and final current-head CI.
+Excluded: product semantics, runtime data, environment changes and deployment.

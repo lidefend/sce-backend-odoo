@@ -11,6 +11,11 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class BackendTestSuiteDispatchContractTest(unittest.TestCase):
+    def test_local_workflow_contract_reports_root_complexity(self):
+        source = (ROOT / 'make/ci.mk').read_text()
+        recipe = source.split('verify.ci.workflow.contract:', 1)[1].split('\n\n', 1)[0]
+        self.assertIn('python3 scripts/ci/enforce_complexity_baseline_lock.py', recipe)
+
     def test_make_env_file_exports_only_declared_assignments(self):
         # Execute the real Make graph without Docker or a database. The unrelated
         # lazy probe must never run simply to construct a recipe environment.
