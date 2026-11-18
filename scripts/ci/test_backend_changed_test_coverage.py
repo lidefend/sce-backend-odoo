@@ -376,7 +376,7 @@ class ManagedEvidenceTests(unittest.TestCase):
                     patch.object(coverage.receipts, 'github_bytes', return_value=json.dumps(current).encode()), \
                     patch.object(coverage, 'discover_managed_evidence', return_value={'executed': [row['selector']]}) as discover:
                 coverage.main()
-            discover.assert_called_once_with('a' * 40, schedule_slot='2026-11-04T18:30:00+00:00')
+            discover.assert_called_once_with('a' * 40, schedule_slot='2026-11-04T18:00:00+00:00')
             self.assertEqual([], json.loads(output.read_text())['pending'])
 
     def test_current_successful_managed_evidence_is_bound_to_platform_digest(self):

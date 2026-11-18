@@ -5,7 +5,7 @@ on:
     branches: [main]
     types: [opened, reopened, synchronize, labeled]
   schedule:
-    - cron: '30 18 * * *'
+    - cron: '0 18 * * *'
   workflow_dispatch:
 
 permissions:
@@ -14,7 +14,7 @@ permissions:
   actions: read
 
 concurrency:
-  group: release-candidate-${{ github.event_name }}-${{ github.event.pull_request.number || github.ref }}
+  group: release-candidate-${{ github.event_name == 'pull_request' && 'pull_request' || github.event_name }}-${{ github.event.pull_request.number || github.ref }}-${{ github.event.action == 'labeled' && github.event.label.name != 'ci:candidate' && 'ignored-label' || 'validation' }}
   cancel-in-progress: true
 
 jobs:
@@ -58,8 +58,11 @@ jobs:
         run: |
           set -euo pipefail
           required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml merge_policy_gate.yml)
+          runs_file="${RUNNER_TEMP}/release-condition/required-runs.ndjson"
+          mkdir -p "$(dirname "${runs_file}")"
           for attempt in $(seq 1 1020); do
             pending=0
+            : > "${runs_file}"
             for workflow in "${required[@]}"; do
               runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&per_page=100")"
               latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
@@ -72,6 +75,7 @@ jobs:
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
               test "$status" = completed || { pending=1; continue; }
               test "$conclusion" = success || { echo "candidate workflow failed: $workflow" >&2; exit 1; }
+              printf '%s\n' "${latest}" >> "${runs_file}"
             done
             test "$pending" = 0 && exit 0
             sleep 20
@@ -79,12 +83,49 @@ jobs:
           echo "timed out waiting for exact-head candidate checks" >&2
           exit 1
 
+      - name: Materialize exact formal release condition
+        if: success()
+        env:
+          HEAD_SHA: ${{ needs.classify.outputs.head }}
+        run: |
+          set -euo pipefail
+          condition_root="${RUNNER_TEMP}/release-condition"
+          output="${condition_root}/release-condition.json"
+          tree="$(git rev-parse 'HEAD^{tree}')"
+          args=(
+            --runs "${condition_root}/required-runs.ndjson"
+            --output "${output}"
+            --repository "${GITHUB_REPOSITORY}"
+            --head-sha "${HEAD_SHA}"
+            --tree "${tree}"
+            --event "${GITHUB_EVENT_NAME}"
+          )
+          if [ "${GITHUB_EVENT_NAME}" = schedule ]; then
+            args+=(--scheduled-slot "${SCHEDULED_SLOT}")
+          fi
+          python3 scripts/ci/release_condition.py "${args[@]}"
+          cat "${output}" >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Preserve exact release-condition identity
+        if: success()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: release-condition-${{ github.run_id }}-${{ github.run_attempt }}-${{ needs.classify.outputs.head }}
+          path: ${{ runner.temp }}/release-condition/release-condition.json
+          if-no-files-found: error
+          retention-days: 30
+
       - name: Publish release-candidate summary
         run: |
           {
-            echo "## Release Candidate Gate"
+            echo "## Exact-Head Release Gate"
             echo ""
-            echo "This exact head passed merge eligibility and explicit candidate validation."
+            if [ "${GITHUB_EVENT_NAME}" = schedule ]; then
+              echo "The scheduled mainline release condition is satisfied for this exact head."
+              echo "This authorizes immutable candidate construction; it does not authorize deployment."
+            else
+              echo "This exact head passed explicit candidate validation."
+            fi
             echo ""
             echo "| Field | Value |"
             echo "| --- | --- |"
@@ -102,7 +143,11 @@ jobs:
       - run: |
           result="${{ needs.wait_for_candidate_checks.result }}"
           if [ "$result" = success ]; then
-            echo "Candidate validation: executed and passed" >> "$GITHUB_STEP_SUMMARY"
+            if [ "${{ github.event_name }}" = schedule ]; then
+              echo "Formal mainline release condition: satisfied (candidate-build eligible; deployment not authorized)." >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Candidate validation: executed and passed" >> "$GITHUB_STEP_SUMMARY"
+            fi
           elif [ "$result" = skipped ]; then
             echo "Candidate validation: not applicable (not executed); this status grants no candidate acceptance" >> "$GITHUB_STEP_SUMMARY"
           else

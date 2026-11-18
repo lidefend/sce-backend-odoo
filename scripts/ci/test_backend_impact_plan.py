@@ -301,21 +301,32 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
         block = text.split('- name: Enforce affected backend execution', 1)[1].split('- name:', 1)[0]
         script = textwrap.dedent(block.split('run: |', 1)[1])
-        for auth, required, result, expected in (
-            ('success', 'true', 'success', 0),
-            ('success', 'false', 'skipped', 0),
-            ('failure', '', 'skipped', 1),
-            ('success', '', 'skipped', 1),
-            ('success', 'true', 'failure', 1),
-            ('success', 'true', 'cancelled', 1),
-            ('success', 'true', 'skipped', 1),
-            ('success', 'false', 'success', 1),
+        for event, candidate, required, result, expected in (
+            ('pull_request', 'false', 'true', 'success', 0),
+            ('pull_request', 'false', 'false', 'skipped', 0),
+            ('pull_request', 'false', 'false', 'success', 1),
+            ('pull_request', 'true', 'false', 'success', 0),
+            ('pull_request', 'true', 'false', 'skipped', 1),
+            ('schedule', 'false', 'false', 'success', 0),
+            ('schedule', 'false', 'false', 'skipped', 1),
+            ('workflow_dispatch', 'true', 'false', 'success', 0),
+            ('workflow_dispatch', 'true', 'false', 'failure', 1),
+            ('pull_request', 'false', 'true', 'failure', 1),
+            ('pull_request', 'false', 'true', 'cancelled', 1),
+            ('pull_request', 'false', 'true', 'skipped', 1),
+            ('pull_request', 'false', '', 'skipped', 1),
         ):
-            with self.subTest(auth=auth, required=required, result=result):
+            with self.subTest(event=event, candidate=candidate, required=required, result=result):
                 outcome = subprocess.run(['bash', '-c', script], env={**os.environ,
-                    'AUTHORIZATION_RESULT': auth, 'IMPACT_REQUIRED': required,
-                    'IMPACT_RESULT': result, 'EVENT_NAME': 'pull_request'})
+                    'AUTHORIZATION_RESULT': 'success', 'CANDIDATE_REQUESTED': candidate,
+                    'IMPACT_REQUIRED': required, 'IMPACT_RESULT': result,
+                    'EVENT_NAME': event})
                 self.assertEqual(outcome.returncode, expected)
+        unauthorized = subprocess.run(['bash', '-c', script], env={**os.environ,
+            'AUTHORIZATION_RESULT': 'failure', 'CANDIDATE_REQUESTED': 'false',
+            'IMPACT_REQUIRED': '', 'IMPACT_RESULT': 'skipped',
+            'EVENT_NAME': 'pull_request'})
+        self.assertEqual(1, unauthorized.returncode)
 
     def test_control_plane_tool_checks_are_enforced_by_final_gate(self):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()

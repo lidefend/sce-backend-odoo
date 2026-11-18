@@ -44,10 +44,10 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
         self.assertEqual(11, select_latest_run({'workflow_runs': [old, current]}, **options)['id'])
         current.update(run_attempt=2, run_started_at='2026-11-05T02:49:40Z')
         report = observation(current)
-        self.assertEqual('2026-11-05T02:30:00+08:00', report['nominal_slot_shanghai'])
-        self.assertEqual(398.4, report['trigger_delay_minutes'])
+        self.assertEqual('2026-11-05T02:00:00+08:00', report['nominal_slot_shanghai'])
+        self.assertEqual(428.4, report['trigger_delay_minutes'])
         self.assertEqual(2, report['attempt'])
-        self.assertEqual(scheduled_slot('2026-11-04T18:30:00Z'), options['schedule_slot'])
+        self.assertEqual(scheduled_slot('2026-11-04T18:00:00Z'), options['schedule_slot'])
         with self.assertRaises(ValueError): scheduled_slot('2026-11-04T18:30:00')
 
     def select(self, *rows):

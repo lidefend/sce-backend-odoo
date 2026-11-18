@@ -5,7 +5,7 @@ import json
 import os
 from pathlib import Path
 
-CRON = '30 18 * * *'  # 02:30 Asia/Shanghai, without DST.
+CRON = '0 18 * * *'  # 02:00 Asia/Shanghai, without DST.
 
 
 def scheduled_slot(created_at: str) -> str:
@@ -13,7 +13,7 @@ def scheduled_slot(created_at: str) -> str:
     if created.tzinfo is None:
         raise ValueError('scheduled timestamp requires a timezone')
     created = created.astimezone(timezone.utc)
-    slot = created.replace(hour=18, minute=30, second=0, microsecond=0)
+    slot = created.replace(hour=18, minute=0, second=0, microsecond=0)
     if created < slot:
         slot -= timedelta(days=1)
     return slot.isoformat()
@@ -47,7 +47,7 @@ def main() -> None:
         target.write('### Scheduled full validation\n\n')
         for key, value in result.items():
             target.write(f'- {key}: {value}\n')
-        target.write('\nSlot inferred from the preceding daily 18:30 UTC boundary; '
+        target.write('\nSlot inferred from the preceding daily 18:00 UTC boundary; '
                      'delays of 24 hours or more cannot be identified by GitHub schedule payloads. '
                      'Attempt start includes retries and is not first-run queue time.\n')
     if result['trigger_delay_minutes'] > 30:

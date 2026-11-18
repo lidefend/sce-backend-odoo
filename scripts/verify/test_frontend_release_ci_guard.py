@@ -158,6 +158,26 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         )
         self.assertIn("FRONTEND_ACCEPTANCE_RUNTIME_DIRECT_MAKE_BYPASS", findings(root))
 
+    def test_ci_login_probe_route_is_required(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        operation = root / "scripts/dev/frontend_acceptance_operation_entry.sh"
+        operation.write_text(
+            operation.read_text(encoding="utf-8").replace("  login-probe)\n", "", 1),
+            encoding="utf-8",
+        )
+        self.assertIn("CI_OPERATION_ROUTE_MISSING:login-probe)", findings(root))
+
+    def test_ci_login_probe_route_exports_the_internal_entry_identity(self):
+        operation = (
+            ROOT / "scripts/dev/frontend_acceptance_operation_entry.sh"
+        ).read_text(encoding="utf-8")
+        github_branch = operation.index('if [[ "${GITHUB_ACTIONS:-}" != "true" ]]')
+        export = operation.index(
+            "export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1"
+        )
+        self.assertLess(export, github_branch)
+
     def test_make_targets_cannot_call_lower_acceptance_mutators_directly(self):
         for lower in (
             "backend_acceptance_up.sh",

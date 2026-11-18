@@ -88,6 +88,7 @@ def findings(root: Path = ROOT) -> list[str]:
         "release-snapshot)",
         "backend-up)",
         "backend-down)",
+        "login-probe)",
         "frontend-up)",
         "frontend-down)",
     )

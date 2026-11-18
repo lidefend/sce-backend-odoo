@@ -169,6 +169,25 @@ class PathOwnershipRegistryTest(unittest.TestCase):
             ("verify.candidate.profile.unit",),
         )
 
+    def test_frontend_acceptance_ci_tooling_is_nonruntime_control_plane(self):
+        paths = {
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+            "scripts/verify/frontend_release_ci_guard.py",
+            "scripts/verify/test_frontend_release_ci_guard.py",
+        }
+        result = ownership.classify_paths(paths)
+        self.assertEqual(set(result.assignments.values()), {"frontend_acceptance_ci_tooling"})
+        self.assertTrue(result.frontend_changed)
+        self.assertTrue(result.control_plane_changed)
+        self.assertFalse(result.backend_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        for path in paths:
+            with self.subTest(path=path):
+                self.assertEqual(
+                    result.category_for(path).tool_checks,
+                    ("verify.ci.scheduled_gates",),
+                )
+
     def test_database_lifecycle_tooling_selects_managed_consumer_without_module_shards(self):
         paths = [
             "scripts/db/create.sh",

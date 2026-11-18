@@ -11,9 +11,9 @@ operation="${1:?acceptance operation required}"
 # process identity validator can prove the served frontend carries it.
 source "$ROOT_DIR/config/acceptance/isolated_entry_identity.v1.env"
 export SC_ENTRY_NAMESPACE SC_ENTRY_AUDIENCE SC_ENTRY_SHARED_SECRET SC_ENTRY_ROUTE_VERSION
+export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1
 
 if [[ "${GITHUB_ACTIONS:-}" != "true" ]]; then
-  export SC_FRONTEND_ACCEPTANCE_RUNTIME_ENTRY=operation_entry_v1
   # The managed carrier lifecycle entries are P4 environment entries: they
   # resolve the profile identity themselves so that discard does not depend on
   # the credential container it is about to remove and provision can rebuild
@@ -225,6 +225,11 @@ case "$operation" in
     ;;
   backend-down)
     echo "[backend.acceptance.down] RETAINED isolated_ci project=$COMPOSE_PROJECT_NAME for workflow cleanup"
+    ;;
+  login-probe)
+    validate_frozen_frontend_release_ci_resources "$ROOT_DIR" required
+    source "$ROOT_DIR/scripts/common/frontend_acceptance_make_identity.sh"
+    frontend_acceptance_make acceptance.runtime.login_probe.internal
     ;;
   frontend-up)
     validate_ci_frontend_process_identity

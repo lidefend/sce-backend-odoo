@@ -860,6 +860,7 @@ verify.ci.workflow.contract: guard.prod.forbid verify.ci.orm_selection.unit veri
 	@python3 scripts/ci/test_backend_suite_plan.py
 	@python3 scripts/ci/test_backend_changed_test_coverage.py
 	@python3 scripts/ci/test_select_authoritative_workflow_run.py
+	@python3 scripts/ci/test_release_condition.py
 	@python3 scripts/verify/test_pr_publish_preflight.py
 	@PYTHONPATH=scripts/ci:scripts/verify python3 -m unittest scripts.ci.test_ci_path_ownership scripts.ci.test_ci_risk_workflow_contract scripts.ci.test_merge_policy_gate scripts.verify.test_gitee_gate_plan scripts.verify.test_gitee_formal_executor
 	@python3 -m py_compile scripts/ci/test_backend_test_suite_dispatch_contract.py

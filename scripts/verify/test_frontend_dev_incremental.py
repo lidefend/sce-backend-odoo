@@ -672,6 +672,40 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_required_pr_workflows_select_contract_and_security_checks(self) -> None:
+        for path in (
+            ".github/workflows/frontend_release_gate.yml",
+            ".github/workflows/merge_policy_gate.yml",
+            ".github/workflows/professional_quality_gate.yml",
+            ".github/workflows/public_guard.yml",
+            ".github/workflows/release_candidate_gate.yml",
+            "scripts/ci/scheduled_validation.py",
+            "scripts/ci/test_select_authoritative_workflow_run.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), [
+                    "verify.ci.workflow.contract",
+                    "verify.github_actions.security",
+                ])
+
+    def test_release_condition_inputs_select_the_ci_contract(self) -> None:
+        for path in (
+            "scripts/ci/release_condition.py",
+            "scripts/ci/test_release_condition.py",
+            "scripts/ci/test_release_candidate_gate.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+
+    def test_acceptance_login_route_inputs_select_scheduled_gates(self) -> None:
+        for path in (
+            "scripts/dev/frontend_acceptance_operation_entry.sh",
+            "scripts/verify/frontend_release_ci_guard.py",
+            "scripts/verify/test_frontend_release_ci_guard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), ["verify.ci.scheduled_gates"])
+
     def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
         page_header_paths = (
             "scripts/verify/frontend_product_page_header_guard.py",
@@ -2116,6 +2150,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.workspace.branch.sync-main",
             ],
         )
+
+    def test_published_branch_sync_inputs_route_to_their_unit(self) -> None:
+        for path in (
+            "scripts/ops/gitee_published_branch_sync.py",
+            "scripts/ops/github_published_branch_sync.py",
+            "scripts/ops/test_gitee_published_branch_sync.py",
+            "scripts/ops/test_github_published_branch_sync.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.workspace.branch.sync-github.unit"],
+                )
 
     def test_execution_policy_guard_change_runs_its_own_unit(self) -> None:
         self.assertEqual(
