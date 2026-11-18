@@ -5,15 +5,8 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
 
 
-OUTPUT_PATH = Path(
-    os.environ.get(
-        "SC_ACCEPTANCE_BE_CLOSE01_IDS_OUTPUT",
-        "/mnt/artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json",
-    )
-)
 ACTOR_XMLID = "smart_construction_acceptance_fixture.fe_user_config_admin"
 PAYMENT_MENU = "smart_construction_core.menu_sc_user_payment_apply"
 PAYMENT_ACTION = "smart_construction_core.action_payment_request_user_payment_apply"
@@ -101,16 +94,11 @@ def emit():
             ],
         },
     }
-    OUTPUT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    OUTPUT_PATH.write_text(
-        json.dumps(salary, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-        encoding="utf-8",
-    )
-    print("BE_CLOSE_01_RUNTIME_IDS=" + json.dumps({
-        "output": str(OUTPUT_PATH),
-        "database": salary["runtime"]["database"],
-        "actor": salary["actor"]["login"],
-    }, sort_keys=True))
+    print("BE_CLOSE_01_RUNTIME_IDS=" + json.dumps(
+        salary,
+        ensure_ascii=False,
+        sort_keys=True,
+    ))
 
 
 if "env" not in globals():

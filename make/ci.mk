@@ -474,15 +474,21 @@ verify.workflow_contract.be_close_01.samples: guard.prod.forbid
 	reset_fixture; \
 	$(MAKE) --no-print-directory backend.acceptance.up \
 	  SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)"; \
+	runtime_ids_log=".runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/runtime_ids.log"; \
+	runtime_ids_json="artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json"; \
+	mkdir -p "$$(dirname "$$runtime_ids_json")"; \
 	SC_FRONTEND_RELEASE_CI_ENTRY=1 \
 	SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" \
-	SC_ACCEPTANCE_BE_CLOSE01_IDS_OUTPUT=/mnt/artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json \
-	  bash scripts/dev/frontend_acceptance_operation_entry.sh be-close-01-runtime-ids; \
+	  bash scripts/dev/frontend_acceptance_operation_entry.sh be-close-01-runtime-ids \
+	  > "$$runtime_ids_log"; \
+	runtime_ids="$$(sed -n 's/^BE_CLOSE_01_RUNTIME_IDS=//p' "$$runtime_ids_log" | tail -n 1)"; \
+	test -n "$$runtime_ids" || { cat "$$runtime_ids_log" >&2; echo "BE-CLOSE-01 runtime IDs missing" >&2; exit 2; }; \
+	printf '%s\n' "$$runtime_ids" | jq . > "$$runtime_ids_json"; \
 	SC_ACCEPTANCE_BE_CLOSE01_BASE_URL="http://127.0.0.1:18082" \
 	SC_ACCEPTANCE_BE_CLOSE01_EXPECTED_SHA="$$(git rev-parse HEAD)" \
 	SC_ACCEPTANCE_BE_CLOSE01_LOGIN="fixture_role_config_admin" \
 	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}" \
-	SC_ACCEPTANCE_BE_CLOSE01_IDS="artifacts/backend/be_close_01_workflow_contract_runtime_ids_v1.json" \
+	SC_ACCEPTANCE_BE_CLOSE01_IDS="$$runtime_ids_json" \
 	SC_ACCEPTANCE_BE_CLOSE01_OUTPUT="artifacts/backend/be_close_01_workflow_contract_samples_v1.json" \
 	  python3 scripts/verify/be_close_01_workflow_contract_http_probe.py
 
