@@ -744,6 +744,8 @@ RULES = (
         "scripts/verify/backend_contract_fact_readback_probe.py",
         "scripts/verify/test_backend_contract_fact_readback_probe.py",
         "scripts/test/test.sh",
+        "Dockerfile",
+        "docker-compose.test-isolation.yml",
         "scripts/test/dependency_baseline.py",
         "scripts/test/test_dependency_baseline.py",
         ".github/workflows/backend_test_suite.yml",
@@ -777,6 +779,7 @@ RULES = (
     )),
     Rule((
         "scripts/dev/local_test_runner.py",
+        "docker-compose.test-isolation.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
     ), (

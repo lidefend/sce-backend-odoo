@@ -4,9 +4,6 @@ ARG APT_MIRROR=default
 FROM ${ODOO_BASE_IMAGE}
 
 ARG APT_MIRROR
-ARG SOURCE_SHA
-LABEL org.opencontainers.image.revision=${SOURCE_SHA} \
-      io.sce.runtime.rtl="unsupported-ltr-only"
 
 USER root
 
@@ -60,3 +57,8 @@ COPY --chown=odoo:odoo addons/smart_owner_bundle/ /mnt/product-addons/smart_owne
 COPY --chown=odoo:odoo addons_external/oca_server_ux/ /mnt/addons_external/oca_server_ux/
 
 USER odoo
+
+# Revision metadata must not invalidate dependency installation layers.
+ARG SOURCE_SHA
+LABEL org.opencontainers.image.revision=${SOURCE_SHA} \
+      io.sce.runtime.rtl="unsupported-ltr-only"

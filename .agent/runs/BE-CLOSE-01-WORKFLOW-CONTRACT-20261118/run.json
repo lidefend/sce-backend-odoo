@@ -61,7 +61,11 @@
     "scripts/ci/run_backend_module_test.py",
     "scripts/ci/test_run_backend_module_test.py",
     "Makefile",
-    "scripts/audit/verification_lane_exemptions.json"
+    "scripts/audit/verification_lane_exemptions.json",
+    "Dockerfile",
+    "docker-compose.test-isolation.yml",
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/test_local_test_runner.py"
   ],
   "environment": {
     "kind": "offline",
@@ -184,7 +188,9 @@
         "scripts/verify/github_actions_security_guard.py",
         "scripts/verify/test_github_actions_security_guard.py",
         "scripts/verify/test_test_coverage_registry_audit.py",
-        "scripts/verify/frontend_product_page_header_guard.py"
+        "scripts/verify/frontend_product_page_header_guard.py",
+        "Dockerfile",
+        "docker-compose.test-isolation.yml"
       ]
     },
     "github_actions_security": {
@@ -228,7 +234,11 @@
       "inputs": [
         "addons/smart_core/core/contract_lifecycle.py",
         "addons/smart_core/tests/test_intent_smoke.py",
-        "make/ci.mk"
+        "make/ci.mk",
+        "scripts/dev/local_test_runner.py",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml",
+        "config/requirements-test.txt"
       ]
     },
     "verification_lane_coverage": {
@@ -284,7 +294,10 @@
         "make/dev.mk",
         "scripts/dev/local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
-        "scripts/verify/test_local_test_runner.py"
+        "scripts/verify/test_local_test_runner.py",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml",
+        "config/requirements-test.txt"
       ]
     },
     "be_close_01_samples": {
@@ -400,5 +413,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the reviewed CI startup/coverage/reuse repair on PR #933 and verify current-head required remote checks."
+  "next_exact_step": "Validate CI build cache, heartbeat shutdown and test healthcheck isolation; publish reviewed repair to PR #933."
 }

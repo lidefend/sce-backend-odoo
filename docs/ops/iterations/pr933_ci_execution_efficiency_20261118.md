@@ -124,3 +124,48 @@ will catch this interaction before publication. No business source changed.
 Connecting the pure Python header guard locally also makes its old remote-only
 toolchain exemption stale. That one exemption is removed; the lane baseline
 limits remain unchanged. The lane coverage check must pass before publication.
+
+
+## Follow-up iteration efficiency and test isolation
+
+P4 owner: backend CI orchestration, image build metadata, and the existing disposable
+local.test runner. This changes build preparation and test process isolation; it does
+not change product semantics or select fewer module baseline tests.
+
+| Responsibility | State before new candidate publication |
+| --- | --- |
+| Workflow, image input identity and test launcher regression | required; 42 focused tests passed |
+| CI workflow contract and Actions security guard | required; passed |
+| Actual smart_core HTTP ORM suite | required; passed, 10 tests on the registered sc-local-test profile |
+| Current-head remote required gates | not_run until publication |
+| Product model edits, persistent environments, deployment | excluded |
+
+The four backend shards at 04c3d81d all passed remotely. The remaining known failure
+is the static Make consumer described above. A subsequent local attempt also exposed
+an independent test infrastructure race: the inherited service healthcheck requests
+/web/login every ten seconds while HttpCase shares its test cursor. The failed log
+is `.runtime/test-baseline/1795007694605554419/odoo.log`. Both existing test launchers
+now apply a final test-only Compose overlay disabling only the Odoo health probe;
+Postgres/Redis readiness and persistent-service healthchecks remain enabled. Actual
+container inspection confirms Healthcheck.Test=["NONE"]. No test assertion is removed.
+
+BuildKit layer cache is now restored and exported across remote candidates. Bake
+reads the existing Compose build configuration, with the same image tag and build
+arguments. SOURCE_SHA remains an image label but is applied after dependency and
+source layers, so metadata changes cannot invalidate apt/pip installation. Cache hits
+never skip the build or tests; BuildKit validates current inputs. The cold first run
+still builds normally. Actual Bake --print confirms Dockerfile/context/image/output.
+
+Heartbeat shutdown now interrupts and reaps its sleeping child instead of waiting
+up to 30 seconds per module. The regression uses a real 30-second sleeper and requires
+shutdown within three seconds with no surviving child. Remote wall-time savings are
+not yet measured. Logs: `.runtime/pr933-ci-diagnosis/efficiency-unit.log`,
+`efficiency-contract.log`, and `intent-smoke-health-isolation.log`.
+
+The corrected actual ORM receipt is `.runtime/test-baseline/1795007958933932584/receipt.json`: ten tests passed, original failed attempt preserved. Lifecycle tests and generated-evidence preparation also passed.
+
+Final incremental validation passed all 13 selected targets, with unaffected evidence
+reused. It included a second successful ten-test HTTP ORM execution at
+`.runtime/test-baseline/1795008107482500233/receipt.json`. Dockerfile and the new
+Compose overlay now route to existing tool owners; all 183 planner regressions pass.
+Independent review found no remaining code blockers.

@@ -267,7 +267,7 @@ def main(argv=None):
         profile_sha = hashlib.sha256(PROFILE.read_bytes()).hexdigest()
         env = {k: os.environ[k] for k in ('PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONFIG') if k in os.environ}
         env.update(values, ENV_FILE=str(PROFILE), SC_ENVIRONMENT='test', SC_ALLOW_DEMO_DATA='0')
-        dc = ['docker', 'compose', '--env-file', str(PROFILE), '-p', 'sc-local-test', '-f', str(ROOT / 'docker-compose.yml')]
+        dc = ['docker', 'compose', '--env-file', str(PROFILE), '-p', 'sc-local-test', '-f', str(ROOT / 'docker-compose.yml'), '-f', str(ROOT / 'docker-compose.test-isolation.yml')]
         config = json.loads(command(dc + ['config', '--format', 'json'], env).stdout)
         compose_config(config)
         # A fixed lock in the shared Git directory serializes all linked worktrees.

@@ -40,6 +40,49 @@ class BackendTestSuiteDispatchContractTest(unittest.TestCase):
                 self.assertEqual(0, result.returncode, result.stdout + result.stderr)
                 self.assertFalse(marker.exists(), "unrelated lazy Make variable was expanded")
 
+    def test_heartbeat_stops_promptly_and_leaves_no_sleep_process(self):
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        run = next(s['run'] for s in workflow['jobs']['backend_suite']['steps']
+                   if s['name'] == 'Run backend test suite per module')
+        functions = run[run.index('start_heartbeat()'):run.index('planned_odoo=')]
+        with tempfile.TemporaryDirectory() as tmp:
+            result = subprocess.run(['bash', '-eu', '-c', functions + r'''
+start_heartbeat fixture "$RUNNER_TEMP/log" 1
+sleep 0.1
+child=$(pgrep -P "$heartbeat_pid" sleep)
+test -n "$child"
+stop_heartbeat
+! kill -0 "$child" 2>/dev/null
+'''], env={**os.environ, 'RUNNER_TEMP': tmp, 'GITHUB_RUN_ID': '1',
+                       'SHARD_INDEX': '0', 'BACKEND_MODULE_HEARTBEAT_SECONDS': '30'},
+                text=True, capture_output=True, timeout=3)
+            self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+
+    def test_image_cache_preserves_current_revision_and_build_inputs(self):
+        source = (ROOT / 'Dockerfile').read_text()
+        self.assertGreater(source.index('ARG SOURCE_SHA'), source.rindex('COPY '))
+        self.assertIn('org.opencontainers.image.revision=${SOURCE_SHA}', source)
+        workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
+        steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
+        cache = steps['Restore backend image layers']['with']
+        self.assertEqual('${{ runner.temp }}/backend-build-cache', cache['path'])
+        self.assertIn('inputs.head_sha || github.sha', cache['key'])
+        build = steps['Build images and start database']['run']
+        self.assertIn('--load odoo', build)
+        self.assertIn('odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache', build)
+        self.assertIn('odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max', build)
+        self.assertNotIn('cache-hit', build)
+
+    def test_test_carriers_disable_only_application_health_probe(self):
+        overlay = yaml.safe_load((ROOT / 'docker-compose.test-isolation.yml').read_text())
+        self.assertEqual({'services': {'odoo': {'healthcheck': {'disable': True}}}}, overlay)
+        shell = (ROOT / 'scripts/test/test.sh').read_text()
+        self.assertIn('-f "${ROOT_DIR}/docker-compose.test-isolation.yml" run --no-deps', shell)
+        runner = (ROOT / 'scripts/dev/local_test_runner.py').read_text()
+        self.assertIn("'-f', str(ROOT / 'docker-compose.test-isolation.yml')", runner)
+        base = yaml.safe_load((ROOT / 'docker-compose.yml').read_text())
+        self.assertNotIn('disable', base['services']['odoo']['healthcheck'])
+
     def test_control_plane_tool_checks_are_wired_through_the_final_gate(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())
         authorization = workflow['jobs']['professional_authorization']
@@ -246,7 +289,7 @@ python3() {
         steps = {s['name']: s for s in workflow['jobs']['backend_suite']['steps']}
         self.assertNotIn('Calculate frontend build fingerprint', steps)
         build = steps['Build images and start database']['run']
-        self.assertIn('docker compose build --builder "${BUILDX_BUILDER}" odoo', build)
+        self.assertIn('docker buildx bake --builder "${BUILDX_BUILDER}" -f docker-compose.yml', build)
         self.assertIn('docker compose pull db redis', build)
         self.assertNotIn('FRONTEND_BUILD_SHA256', str(steps))
         self.assertNotIn('frontend', (ROOT / 'Dockerfile').read_text().split('FROM ')[0])

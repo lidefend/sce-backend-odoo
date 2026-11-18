@@ -664,6 +664,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
 
+    def test_build_and_test_isolation_select_existing_tool_owners(self):
+        self.assertEqual(select_targets(["Dockerfile"]), ["verify.ci.workflow.contract"])
+        self.assertEqual(select_targets(["docker-compose.test-isolation.yml"]), [
+            "verify.ci.workflow.contract", "verify.local.development_lifecycle.unit",
+        ])
+
     def test_backend_workflow_selects_security_before_final_delivery(self) -> None:
         self.assertEqual(select_targets([".github/workflows/backend_test_suite.yml"]), [
             "verify.ci.workflow.contract", "verify.github_actions.security",

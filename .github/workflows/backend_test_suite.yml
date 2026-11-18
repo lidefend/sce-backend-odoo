@@ -326,6 +326,15 @@ jobs:
           docker buildx inspect --bootstrap
           echo "BUILDX_BUILDER=${CI_PROJECT_NAME}-builder" >> "${GITHUB_ENV}"
 
+      - name: Restore backend image layers
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830
+        with:
+          path: ${{ runner.temp }}/backend-build-cache
+          key: backend-image-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', 'requirements-odoo.txt') }}-${{ inputs.head_sha || github.sha }}
+          restore-keys: |
+            backend-image-v1-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('Dockerfile', 'requirements-odoo.txt') }}-
+            backend-image-v1-${{ runner.os }}-${{ runner.arch }}-
+
       - name: Bind backend source identity
         run: echo "SOURCE_SHA=${HEAD_SHA}" >> "${GITHUB_ENV}"
 
@@ -359,7 +368,14 @@ jobs:
           docker --version
           docker compose version
           docker compose pull db redis || true
-          docker compose build --builder "${BUILDX_BUILDER}" odoo
+          # Bake consumes the same Compose build args/image tag. BuildKit checks
+          # current inputs even after a prefix cache restore; no verdict is cached.
+          docker buildx bake --builder "${BUILDX_BUILDER}" -f docker-compose.yml \
+            --set "odoo.cache-from=type=local,src=${RUNNER_TEMP}/backend-build-cache" \
+            --set "odoo.cache-to=type=local,dest=${RUNNER_TEMP}/backend-build-cache-new,mode=max" \
+            --load odoo
+          rm -rf "${RUNNER_TEMP}/backend-build-cache"
+          mv "${RUNNER_TEMP}/backend-build-cache-new" "${RUNNER_TEMP}/backend-build-cache"
           docker compose up -d db redis
           for i in $(seq 1 60); do
             if docker compose exec -T db pg_isready -U odoo -d postgres >/dev/null 2>&1; then
@@ -399,8 +415,13 @@ jobs:
             rm -f "${heartbeat_done}"
             (
               local heartbeat_started=${SECONDS}
+              local heartbeat_sleep=""
+              trap 'if [ -n "${heartbeat_sleep}" ]; then kill "${heartbeat_sleep}" 2>/dev/null || true; wait "${heartbeat_sleep}" 2>/dev/null || true; fi; exit 0' TERM INT
               while [ ! -e "${heartbeat_done}" ]; do
-                sleep "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}"
+                sleep "${BACKEND_MODULE_HEARTBEAT_SECONDS:-30}" &
+                heartbeat_sleep=$!
+                wait "${heartbeat_sleep}" || true
+                heartbeat_sleep=""
                 [ -e "${heartbeat_done}" ] && break
                 local heartbeat_line="[backend-module-heartbeat] module=${heartbeat_module} elapsed_seconds=$((SECONDS - heartbeat_started)) timeout_seconds=${BACKEND_MODULE_TIMEOUT_SECONDS:-1200} status=running"
                 printf '%s\n' "${heartbeat_line}" >&2
@@ -412,7 +433,9 @@ jobs:
           stop_heartbeat() {
             [ -n "${heartbeat_done}" ] && touch "${heartbeat_done}"
             if [ -n "${heartbeat_pid}" ]; then
+              kill "${heartbeat_pid}" 2>/dev/null || true
               wait "${heartbeat_pid}" 2>/dev/null || true
+              heartbeat_pid=""
             fi
           }
           planned_odoo="$(printf '%s\n' ${MODULES} | wc -w | tr -d ' ')"
