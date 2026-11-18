@@ -1,7 +1,7 @@
 # BE-CLOSE-01 工作流契约正确性收口
 
 - 分支：`feature/be-close-01-workflow-contract-20261118`
-- 基线：`9821a9c688cbd4abb44f378051fc6c6362c5d8cd`
+- 接受主线：`64f2e68ea1b80464fd080bb93b1a83312decc8c4`
 - 状态：`in_progress`
 - 范围：付款申请、项目启停管理
 - 排除：前端消费、搜索、草稿恢复、Renderer、transitions
@@ -67,6 +67,42 @@
   errors；失败集中在共享审批模板的既有声明漂移和缺少 demo/fixture 数据，
   不属于本批固定标签。该失败未记为本批通过，也未通过削弱断言处理。
 
+## 验证复用机制修复
+
+- 根因：receipt 把每个声明的 Make 片段整体哈希。主线在同一
+  `make/ci.mk` 增加无关目标后，所有声明该片段的检查都被判 stale。
+- 第二个根因：`ci.local.iteration` 的规划报告已经列出 reusable target，
+  但执行入口只计算 blocked，没有把 reusable 传给执行器；因此即使 receipt
+  全量有效，仍会重新运行目标。
+- 修复：`agent_run_context` 对声明片段计算所选目标的 recipe、递归字面
+  prerequisite、相关 `$(MAKE)` 调用、`.PHONY` 身份、被引用变量和活动
+  include 闭包；同片段无关目标变化不再失效。
+- 受保护反例：目标 recipe、到达的前置目标、相关变量、include override
+  仍使 receipt 失效。
+- 旧 whole-file receipt 只在 Git 能证明 receipt head 的片段字节/模式一致、
+  执行时没有 dirty Make 源、历史与当前目标材料一致时投影；非 Make 输入
+  继续逐项比较，不能被 Make 投影掩盖。
+- 修复：规划器和执行器共用同一组 `reusable_check_targets`；执行入口只运行
+  非 reusable、非 blocked 的目标，并分别记录 `requiredTargets`、
+  `reusedTargets` 与实际 `targetResults`。全部可复用时写成未运行测试的
+  `passed` 复用回执，不伪造 target 结果。
+- 修复后的同一 `make ci.local.iteration` 实测：23 个 required target 中
+  18 个直接复用，只执行 5 个目标（2 个未登记目标、3 个 stale 检查）；
+  receipt 为
+  `.runtime/frontend-dev-validation/executions/20261118T071401Z-145006-118439703/receipt.json`。
+- stale 检查完成定向回填后，同一 runtime 候选最终为 21 个 registered target
+  全部复用，只执行 2 个仍未在 run 登记的目标；receipt 为
+  `.runtime/frontend-dev-validation/executions/20261118T072300Z-202686-564824002/receipt.json`。
+  这两个目标不是同文件无关变更造成的重复，而是 planner 明确报告的
+  registration gap。
+- 在本次主线同步场景中，修复后的首次 resume 将 19 个检查中的 17 个恢复为
+  reusable；其余 2 个的原因是原始日志字节被后续命令覆盖，不是模型/工具
+  输入变化。
+- `frontend_dev_incremental` 的另一项既有断言仍要求验收入口只选择
+  `verify.ci.scheduled_gates`，但同一入口已明确同时服务
+  `verify.frontend.standard_preview.unit`。已修正测试期望为两条路由的并集，
+  没有删除标准预览覆盖。
+
 ## 验证
 
 - `verify.workflow_contract.be_close_01.unit`：10 tests PASS；日志
@@ -88,6 +124,9 @@
 - `verify.unified_page_contract.v2.{action,assembler,runtime,schema,status}`：
   178 assertions PASS。
 - `verify.frontend.dev.incremental.unit`：170 tests PASS。
+- 验证复用机制修复后的 `verify.agent.resume.unit`：64 tests PASS。
+- 修正路由期望与 reuse 执行后的
+  `verify.frontend.dev.incremental.unit`：177 tests PASS。
 - `ci.local.iteration`：PASS，受影响 target 集合 21 项全部真实执行通过。
 - `bash -n`（受管验收入口）、相关 Python `py_compile`、`git diff --check` PASS。
 - `verify.workflow_contract.be_close_01.samples`：已生成 2 个新建目录、4 个

@@ -37,10 +37,12 @@ decision:
     - derived_denial_change
     - model_or_probe_assertion_change
     - governed_runtime_identity_change   # base url, database, acting login, candidate order
+    - selected_make_target_recipe_prerequisite_variable_or_include_override_change
 
   does_not_invalidate_a_unit:
     - redeploy_of_an_unchanged_surface
     - documentation_only_change
+    - unrelated_make_target_change_in_a_declared_make_fragment
 
   accepted_risk:
 

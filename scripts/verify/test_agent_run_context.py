@@ -1,4 +1,5 @@
 from __future__ import annotations
+import hashlib
 import json
 import subprocess
 import tempfile
@@ -18,7 +19,21 @@ class RunContextTest(unittest.TestCase):
         self.git('init', '-q', '-b', 'fix/test')
         self.git('config', 'user.name', 'Test')
         self.git('config', 'user.email', 'test@example.invalid')
-        self.write('make/guards.mk', 'verify.test:\n\t@true\n')
+        self.write('Makefile', 'include make/guards.mk\n')
+        self.write(
+            'make/guards.mk',
+            'include make/shared.mk\n'
+            'verify.test: verify.shared\n'
+            '\t@true\n'
+            'verify.other:\n'
+            '\t@echo other\n',
+        )
+        self.write(
+            'make/shared.mk',
+            'TEST_MODE ?= one\n'
+            'verify.shared:\n'
+            '\t@echo $(TEST_MODE)\n',
+        )
         self.write('source/a.py', 'one')
         self.write('tools/test.py', 'tool')
         self.git('add', '.')
@@ -29,9 +44,14 @@ class RunContextTest(unittest.TestCase):
         self.write('record.md', 'record')
         self.run = {'schema_version': 1, 'id': 'TEST', 'branch': 'fix/test',
                     'baseline_sha': self.base, 'status': 'active', 'goal': '.agent/goal.yaml',
-                    'record': 'record.md', 'scope': ['source/', 'tools/', '.agent/', '.gitignore', 'record.md'],
-                    'environment': {'kind': 'offline'}, 'blockers': [], 'next_exact_step': 'run focused check',
-                    'checks': {'unit': {'target': 'verify.test', 'inputs': ['source/', 'tools/test.py'], 'kind': 'offline'}}}
+                    'record': 'record.md',
+                    'scope': ['source/', 'tools/', '.agent/', '.gitignore', 'record.md',
+                              'Makefile', 'make/'],
+                    'environment': {'kind': 'offline'}, 'blockers': [],
+                    'next_exact_step': 'run focused check',
+                    'checks': {'unit': {'target': 'verify.test',
+                                        'inputs': ['source/', 'tools/test.py', 'make/guards.mk'],
+                                        'kind': 'offline'}}}
         self.save()
         self.write('.agent/active-runs.json', json.dumps({'schema_version': 1, 'branches': {'fix/test': '.agent/runs/TEST/run.json'}}))
         self.git('add', '.')
@@ -272,6 +292,93 @@ class RunContextTest(unittest.TestCase):
 
     def test_test_tool_change_invalidates(self):
         self.receipt(); self.write('tools/test.py', 'changed')
+        self.assertEqual(self.check()['status'], 'stale')
+
+    def test_unrelated_make_target_change_preserves_selected_target_material(self):
+        self.receipt()
+        self.write(
+            'make/guards.mk',
+            'include make/shared.mk\n'
+            'verify.test: verify.shared\n'
+            '\t@true\n'
+            'verify.other:\n'
+            '\t@echo changed unrelated target\n',
+        )
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_selected_make_target_recipe_change_invalidates(self):
+        self.receipt()
+        self.write(
+            'make/shared.mk',
+            'TEST_MODE ?= one\n'
+            'verify.shared:\n'
+            '\t@echo changed selected target\n',
+        )
+        self.assertEqual(self.check()['status'], 'stale')
+
+    def test_selected_target_referenced_variable_change_invalidates(self):
+        self.receipt()
+        self.write(
+            'make/shared.mk',
+            'TEST_MODE ?= two\n'
+            'verify.shared:\n'
+            '\t@echo $(TEST_MODE)\n',
+        )
+        self.assertEqual(self.check()['status'], 'stale')
+
+    def test_include_that_overrides_selected_target_invalidates(self):
+        self.receipt()
+        self.write('make/override.mk', 'verify.shared:\n\t@echo override\n')
+        self.write(
+            'make/guards.mk',
+            'include make/shared.mk\n'
+            'include make/override.mk\n'
+            'verify.test: verify.shared\n'
+            '\t@true\n'
+            'verify.other:\n'
+            '\t@echo other\n',
+        )
+        self.assertEqual(self.check()['status'], 'stale')
+
+    def test_clean_legacy_whole_file_receipt_projects_when_target_material_matches(self):
+        self.receipt()
+        receipt_path = self.root / '.runtime/agent-runs/TEST/unit.json'
+        receipt = json.loads(receipt_path.read_text())
+        target_key = 'make-target:verify.test#closure'
+        self.assertIn(target_key, receipt['inputs'])
+        receipt['inputs'].pop(target_key)
+        make_path = self.root / 'make/guards.mk'
+        receipt['inputs']['make/guards.mk'] = [
+            hashlib.sha256(make_path.read_bytes()).hexdigest(),
+            make_path.stat().st_mode & 0o777,
+        ]
+        receipt['inputs']['make/guards.mk/'] = 'file'
+        receipt_path.write_text(json.dumps(receipt))
+        self.write(
+            'make/guards.mk',
+            'include make/shared.mk\n'
+            'verify.test: verify.shared\n'
+            '\t@true\n'
+            'verify.other:\n'
+            '\t@echo changed after receipt\n',
+        )
+        self.git('add', 'make/guards.mk')
+        self.git('commit', '-qm', 'unrelated make target change')
+        self.assertEqual(self.check()['status'], 'reusable')
+
+    def test_legacy_make_projection_does_not_hide_a_source_change(self):
+        self.receipt()
+        receipt_path = self.root / '.runtime/agent-runs/TEST/unit.json'
+        receipt = json.loads(receipt_path.read_text())
+        receipt['inputs'].pop('make-target:verify.test#closure')
+        make_path = self.root / 'make/guards.mk'
+        receipt['inputs']['make/guards.mk'] = [
+            hashlib.sha256(make_path.read_bytes()).hexdigest(),
+            make_path.stat().st_mode & 0o777,
+        ]
+        receipt['inputs']['make/guards.mk/'] = 'file'
+        receipt_path.write_text(json.dumps(receipt))
+        self.write('source/a.py', 'changed after receipt')
         self.assertEqual(self.check()['status'], 'stale')
 
     def test_new_dependency_child_invalidates(self):

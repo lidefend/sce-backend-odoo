@@ -157,3 +157,28 @@ Use [the integration cycle playbook](integration_cycle_playbook_20261020.md):
 5. collect all remote failures before the next local fix batch;
 6. merge only with required checks and the exact-head Quick receipt, and keep
    `pr.merge` runtime-evidence exclusions explicit.
+
+## Target-scoped Make dependency reuse (2026-11-18)
+
+A local receipt that declares a Make fragment uses the selected target's
+dependency material, not the fragment's whole-file hash. The material includes:
+
+- the active literal `include` closure;
+- every rule block that defines the selected target or a literal prerequisite
+  reached from it;
+- recursive `$(MAKE) <target>` calls;
+- the selected target's `.PHONY` identity;
+- Make variables referenced by that material, including their referenced
+  variables; and
+- the content of file prerequisites outside the target graph.
+
+Editing another target in the same `make/ci.mk` or `make/frontend.mk` therefore
+does not invalidate an unchanged receipt. Editing the selected recipe, a reached
+prerequisite, a relevant variable, or an included target override does.
+
+A receipt written before this mechanism is projected only when all of these are
+provable: Git confirms the recorded whole-file bytes and mode at the receipt
+head, the receipt had no dirty Make source, and the historical target material
+equals the current material. A hash mismatch, dirty Make input, unavailable
+history, or target-material change remains stale. The old whole-file hash is
+never treated as target-specific proof.

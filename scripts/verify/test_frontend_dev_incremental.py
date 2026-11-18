@@ -699,12 +699,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_acceptance_login_route_inputs_select_scheduled_gates(self) -> None:
         for path in (
-            "scripts/dev/frontend_acceptance_operation_entry.sh",
             "scripts/verify/frontend_release_ci_guard.py",
             "scripts/verify/test_frontend_release_ci_guard.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.ci.scheduled_gates"])
+        self.assertEqual(
+            select_targets(["scripts/dev/frontend_acceptance_operation_entry.sh"]),
+            ["verify.ci.scheduled_gates", "verify.frontend.standard_preview.unit"],
+        )
 
     def test_current_static_guard_consumers_select_their_owning_checks(self) -> None:
         page_header_paths = (
@@ -2398,6 +2401,7 @@ class IncrementalExecutionTest(unittest.TestCase):
         *,
         registered=None,
         blocked=None,
+        reusable=None,
         paths=None,
         identity=None,
     ) -> tuple[int, dict]:
@@ -2409,6 +2413,7 @@ class IncrementalExecutionTest(unittest.TestCase):
                 root=self.root,
                 registered_targets=registered,
                 blocked_targets=blocked,
+                reusable_targets=reusable,
                 receipt_dir=receipt_dir,
                 worktree_identity=identity or {
                     "head": "a" * 40,
@@ -2432,6 +2437,37 @@ class IncrementalExecutionTest(unittest.TestCase):
             self.assertEqual(row["returncode"], 0)
             self.assertEqual(len(row["logSha256"]), 64)
             self.assertTrue((self.root / row["log"]).is_file())
+
+    def test_reusable_check_targets_are_not_executed(self) -> None:
+        code, receipt = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            reusable={BASE_FRONTEND_TARGETS[0]},
+        )
+        self.assertEqual(code, 0)
+        self.assertEqual(
+            [row["target"] for row in receipt["targetResults"]],
+            [BASE_FRONTEND_TARGETS[1]],
+        )
+        self.assertEqual(receipt["requiredTargets"], list(BASE_FRONTEND_TARGETS))
+        self.assertEqual(receipt["reusedTargets"], [BASE_FRONTEND_TARGETS[0]])
+        self.assertEqual(receipt["reusedTargetCount"], 1)
+        self.assertTrue(receipt["verificationPassed"])
+
+    def test_all_reusable_check_targets_pass_without_running_make(self) -> None:
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            side_effect=AssertionError("reusable checks must not rerun"),
+        ):
+            code, receipt = self.execute(
+                registered=set(BASE_FRONTEND_TARGETS),
+                reusable=set(BASE_FRONTEND_TARGETS),
+            )
+        self.assertEqual(code, 0)
+        self.assertEqual(receipt["status"], "passed")
+        self.assertEqual(receipt["targetResults"], [])
+        self.assertEqual(receipt["reusedTargets"], list(BASE_FRONTEND_TARGETS))
+        self.assertFalse(receipt["testsRun"])
+        self.assertTrue(receipt["verificationPassed"])
 
     def test_tsx_execution_uses_the_same_base_targets(self) -> None:
         path = "frontend/apps/web/src/NewSurface.tsx"
@@ -3158,6 +3194,30 @@ class RunScopedPlannerTest(unittest.TestCase):
         payload = json.loads(output.getvalue().split('] ', 1)[1])
         self.assertIn('verify.test', payload['reusedTargets'])
         self.assertNotIn('verify.test', payload['targets'])
+
+    def test_worktree_execution_passes_reusable_checks_to_the_executor(self):
+        fixture = self.fixture
+        with (
+            mock.patch.object(
+                incremental,
+                "resolve_run",
+                return_value=(".agent/runs/TEST/run.json", fixture.run),
+            ),
+            mock.patch.object(
+                incremental,
+                "iteration_scope",
+                return_value=(fixture.run["baseline_sha"], "run_baseline", ["source/a.py"]),
+            ),
+            mock.patch.object(incremental, "select_targets", return_value=["verify.test"]),
+            mock.patch.object(
+                incremental,
+                "check_states",
+                return_value={"unit": {"target": "verify.test", "status": "reusable"}},
+            ),
+            mock.patch.object(incremental, "execute_targets", return_value=0) as execute,
+        ):
+            self.assertEqual(incremental.execute_worktree(fixture.root), 0)
+        self.assertEqual(execute.call_args.kwargs["reusable_targets"], {"verify.test"})
 
     def test_unchanged_failure_is_blocked_not_blindly_retried(self):
         self.fixture.receipt('failed', 2)

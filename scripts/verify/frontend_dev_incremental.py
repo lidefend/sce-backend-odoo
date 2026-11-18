@@ -2411,12 +2411,9 @@ def print_plan(
     iteration_baseline_kind: str = "",
 ) -> int:
     required_targets = set(select_targets(paths))
-    grouped: dict[str, list[str]] = {}
-    for check in (checks or {}).values():
-        grouped.setdefault(check["target"], []).append(check["status"])
-    reusable = {target for target, states in grouped.items() if all(state == "reusable" for state in states)}
-    blocked = {target for target, states in grouped.items() if any(state in ("failed", "blocked") for state in states)}
-    targets = required_targets | set(grouped)
+    reusable = reusable_check_targets(checks or {})
+    blocked = blocked_check_targets(checks or {})
+    targets = required_targets | {check["target"] for check in (checks or {}).values()}
     targets.difference_update(reusable | blocked)
     unmapped_paths = [
         path
@@ -2456,6 +2453,30 @@ def print_plan(
     }
     print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
     return 0
+
+
+def reusable_check_targets(checks: dict) -> set[str]:
+    """Targets whose every recorded check is reusable at the current inputs."""
+    grouped: dict[str, list[str]] = {}
+    for check in checks.values():
+        grouped.setdefault(check["target"], []).append(check["status"])
+    return {
+        target
+        for target, states in grouped.items()
+        if all(state == "reusable" for state in states)
+    }
+
+
+def blocked_check_targets(checks: dict) -> set[str]:
+    """Targets carrying an unchanged failed or dependency-blocked check."""
+    grouped: dict[str, list[str]] = {}
+    for check in checks.values():
+        grouped.setdefault(check["target"], []).append(check["status"])
+    return {
+        target
+        for target, states in grouped.items()
+        if any(state in ("failed", "blocked") for state in states)
+    }
 
 
 def write_state(
@@ -2625,13 +2646,19 @@ def execute_targets(
     root: Path = ROOT,
     registered_targets: set[str] | None = None,
     blocked_targets: set[str] | None = None,
+    reusable_targets: set[str] | None = None,
     receipt_dir: Path | None = None,
     worktree_identity: dict | None = None,
     iteration_checkpoint_sha: str = "",
     iteration_checkpoint_kind: str = "",
 ) -> int:
     paths = sorted(set(paths))
-    targets = select_targets(paths)
+    required_targets = select_targets(paths)
+    blocked = sorted(set(required_targets) & (blocked_targets or set()))
+    reusable = sorted(
+        (set(required_targets) & (reusable_targets or set())) - set(blocked)
+    )
+    targets = [target for target in required_targets if target not in reusable]
     identity = worktree_identity or current_execution_identity(root)
     unmapped_paths = [
         path
@@ -2641,11 +2668,10 @@ def execute_targets(
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
     registration_missing = (
-        sorted(set(targets) - registered_targets)
+        sorted(set(required_targets) - registered_targets)
         if registered_targets is not None
         else []
     )
-    blocked = sorted(set(targets) & (blocked_targets or set()))
     environment_missing = environment_blockers(root, targets)
     payload = {
         "schemaVersion": 1,
@@ -2656,8 +2682,9 @@ def execute_targets(
         "registrationMode": "planner_managed",
         "identity": identity,
         "changedPaths": paths,
-        "requiredTargets": targets,
+        "requiredTargets": required_targets,
         "targetOrder": targets,
+        "reusedTargets": reusable,
         "targetResults": [],
         "notRunTargets": [],
         "registrationMissingTargets": registration_missing,
@@ -2707,7 +2734,18 @@ def execute_targets(
         )
         return 2
     if not targets:
-        payload.update(status="not_run", reason="no relevant L2 checks")
+        if reusable:
+            payload.update(
+                status="passed",
+                reason="all required targets reused from unchanged receipts",
+                testsRun=False,
+                verificationPassed=True,
+                executedTargetCount=0,
+                reusedTargetCount=len(reusable),
+                reused=True,
+            )
+        else:
+            payload.update(status="not_run", reason="no relevant L2 checks")
         receipt_directory = _execution_directory(root, receipt_dir)
         receipt = _write_receipt(receipt_directory, payload)
         write_state(
@@ -2718,10 +2756,16 @@ def execute_targets(
             receipt=_json_path(receipt, root),
             reason=payload["reason"],
         )
-        print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
+        if reusable:
+            print(
+                "[frontend.dev.incremental] PASS "
+                f"reused_targets={len(reusable)} receipt={_json_path(receipt, root)}"
+            )
+        else:
+            print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
         return 0
 
-    source_receipt = incremental_verified_receipt(root, paths, targets, identity)
+    source_receipt = incremental_verified_receipt(root, paths, required_targets, identity)
     resume_receipt, resume_head, carried_results = (
         resumable_receipt_results(root, paths, targets)
         if source_receipt is None
@@ -2741,7 +2785,8 @@ def execute_targets(
             reason="reused identical passed execution",
             reused=True,
             sourceReceipt=_json_path(source_receipt, root),
-            reusedTargetCount=len(targets),
+            reusedTargetCount=len(required_targets),
+            reusedTargets=required_targets,
             notRunTargets=[],
             testsRun=False,
             verificationPassed=True,
@@ -2798,10 +2843,12 @@ def execute_targets(
     payload["testsRun"] = bool(payload["targetResults"])
     payload["verificationPassed"] = payload["status"] == "passed"
     payload["executedTargetCount"] = len(payload["targetResults"]) - len(carried_results)
-    payload["reusedTargetCount"] = len(carried_results)
+    reused = sorted(set(reusable) | set(carried_results))
+    payload["reusedTargets"] = reused
+    payload["reusedTargetCount"] = len(reused)
     if resume_receipt is not None:
         payload["sourceReceipt"] = _json_path(resume_receipt, root)
-    payload["reused"] = bool(carried_results)
+    payload["reused"] = bool(reused)
     receipt = _write_receipt(receipt_directory, payload)
     returncode = {
         "passed": 0,
@@ -2838,19 +2885,14 @@ def execute_worktree(root: Path = ROOT) -> int:
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     required = set(select_targets(paths))
     checks = check_states(root, run)
-    blocked = {
-        target
-        for target in required
-        if any(
-            check["target"] == target and check["status"] in ("failed", "blocked")
-            for check in checks.values()
-        )
-    }
+    reusable = reusable_check_targets(checks) & required
+    blocked = blocked_check_targets(checks) & required
     return execute_targets(
         paths,
         root=root,
         registered_targets=declared_check_targets(run),
         blocked_targets=blocked,
+        reusable_targets=reusable,
         iteration_checkpoint_sha=checkpoint,
         iteration_checkpoint_kind=checkpoint_kind,
     )

@@ -12,6 +12,7 @@ goal:
   module:
     - addons/smart_construction_core
     - docs/architecture/unified_page_contract_v2
+    - scripts/ops
     - scripts/verify
   standard_vs_user_specific: construction_product_standard
   objective: >-
@@ -44,6 +45,7 @@ goal:
       - workflow statusbar
       - action denial reason and message
       - contract readback after declared action
+      - target-scoped Make dependency reuse for local validation receipts
   acceptance:
     - Both entries produce schema-valid create and persisted workflow contracts.
     - Persisted records expose one stable identity and one truthful availability row per declared action that remains applicable.

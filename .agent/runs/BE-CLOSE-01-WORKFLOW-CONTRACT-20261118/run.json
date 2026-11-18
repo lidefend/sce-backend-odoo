@@ -2,15 +2,18 @@
   "schema_version": 1,
   "id": "BE-CLOSE-01-WORKFLOW-CONTRACT-20261118",
   "branch": "feature/be-close-01-workflow-contract-20261118",
-  "baseline_sha": "9821a9c688cbd4abb44f378051fc6c6362c5d8cd",
+  "baseline_sha": "64f2e68ea1b80464fd080bb93b1a83312decc8c4",
   "status": "active",
   "goal": ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
   "record": "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/README.md",
+    ".agent/decisions/evidence-reuse-identity.yaml",
     ".agent/goals/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118.yaml",
     ".agent/runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/run.json",
     "docs/ops/iterations/be_close_01_workflow_contract_20261118.md",
+    "docs/ops/ci_feedback_latency_v1.md",
     "docs/architecture/unified_page_contract_v2/workflow-contract-interface-v1.md",
     "addons/smart_construction_core/models/core/project_core.py",
     "addons/smart_construction_core/models/core/payment_request.py",
@@ -23,6 +26,7 @@
     "scripts/dev/frontend_acceptance_operation_entry.sh",
     "scripts/dev/frontend_acceptance_runtime.sh",
     "scripts/ops/github_published_branch_sync.py",
+    "scripts/ops/agent_run_context.py",
     "scripts/ops/test_github_published_branch_sync.py",
     "scripts/audit/workflow_state_inventory.py",
     "scripts/audit/verification_lane_dispositions.json",
@@ -33,6 +37,8 @@
     "scripts/verify/test_unified_page_contract_v2_schema_guard.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_agent_run_context.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/unified_page_contract_v2_schema_guard.py"
   ],
   "environment": {
@@ -48,6 +54,17 @@
         "make/codex.mk",
         "scripts/verify/agent_ledger_consistency_guard.py",
         "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ]
+    },
+    "agent_resume_unit": {
+      "target": "verify.agent.resume.unit",
+      "kind": "offline",
+      "inputs": [
+        "Makefile",
+        "make/codex.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/generated_evidence_paths.py",
+        "scripts/verify/test_agent_run_context.py"
       ]
     },
     "approval_contract_closure_orm": {
@@ -156,6 +173,19 @@
         "scripts/verify/test_frontend_release_local_entry.py",
         "scripts/verify/test_frontend_standard_preview.py",
         "scripts/verify/test_frontend_standard_preview_candidate.py"
+      ]
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/generated_evidence_paths.py",
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_agent_run_context.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
     "be_close_01_samples": {
@@ -271,5 +301,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Bind FE-CLOSE-01 to backend product candidate a94d6c093595019f97e1e1c14690cba32f8d80c9 and the authenticated sample at .runtime/agent-runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/be_close_01_workflow_contract_samples_v1.json; then implement and verify the two frontend entries."
+  "next_exact_step": "Run the final ci.local.iteration with only the two unregistered planner targets executable, then commit the P4 dependency fingerprint fix and resume BE-CLOSE-01 finalization."
 }
