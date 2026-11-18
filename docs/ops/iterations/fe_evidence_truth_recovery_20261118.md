@@ -91,7 +91,7 @@ state requires restoration.
 
 | Check | Result |
 | --- | --- |
-| `make ci.local.iteration` | PASS; 31 affected targets executed |
+| `make ci.local.iteration` | PASS; 33 affected targets executed |
 | `verify.frontend.rendering_detail_state.unit` | PASS; 79 tests |
 | `verify.frontend.view_type_render_coverage.guard` | PASS; 9 tests |
 | `verify.frontend.project_domain_rollout.unit` | PASS; 10 tests |
