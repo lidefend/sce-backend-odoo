@@ -1450,6 +1450,12 @@ RULES = (
         "verify.frontend.standard_preview.unit",
     )),
     Rule((
+        "scripts/ops/github_published_branch_sync.py",
+        "scripts/ops/test_github_published_branch_sync.py",
+    ), (
+        "verify.workspace.branch.sync-github.unit",
+    )),
+    Rule((
         "addons/smart_construction_core/services/review_work_item_service.py",
         "addons/smart_construction_core/tests/test_approval_contract_closure.py",
         "scripts/verify/test_general_contract_review_authority.py",
