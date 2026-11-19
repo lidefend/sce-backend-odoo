@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120
-  status: active
+  status: completed
   formal_product_layer: P0/P1
   layer_target: >-
     Platform management projections and construction business-scenario maintenance
@@ -47,3 +47,12 @@ goal:
   rollback: >-
     Revert the P0/P1 and frontend candidate together. Existing release snapshots
     remain immutable and no schema or database migration is introduced.
+  completion:
+    batch: contract_only_implementation_and_independent_review_completed
+    mainline_integration: completed
+    pr: 946
+    candidate_head: 214b71fa4d2643ceda24202b6e18960dad70df4b
+    merge_commit: d10d2b42d747c89be39abb89dac25bd6051812eb
+    mainline_sha: d10d2b42d747c89be39abb89dac25bd6051812eb
+    deployment: not_run
+    user_acceptance: not_run

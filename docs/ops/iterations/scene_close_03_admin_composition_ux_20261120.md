@@ -72,3 +72,18 @@ Python/Node 无依赖的控制面检查范围不变。
 `verify.daily.permission_truth.capability.orm` 处被立即中断，日志只有
 `STATUS: interrupted`，未产生测试结论。该目标、页面冻结目标和项目冻结目标已加入本轮
 明确排除集合；中断结果不计为通过。
+
+## 主线集成
+
+- PR：#946
+- 候选 HEAD：`214b71fa4d2643ceda24202b6e18960dad70df4b`
+- Base：`630c3338274cf3906522f06f7011cf5ba9958f66`
+- 合并提交 / 当前 main：`d10d2b42d747c89be39abb89dac25bd6051812eb`
+- 候选树：`609f1573d3fb323f1ce67d689b0afea38e6d97a0`
+- 合并树：`609f1573d3fb323f1ce67d689b0afea38e6d97a0`
+
+`public_guard`、`professional_quality_gate`、`merge_policy_gate` 和
+`frontend_release_gate` 均在上述候选 HEAD 上成功。PR 经受保护 squash 流程合并；
+候选与主线源码树逐字节一致。
+
+本批次状态为批次验收完成、主线集成完成。版本发布和产品交付验收未执行。

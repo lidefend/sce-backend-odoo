@@ -3,7 +3,7 @@
   "id": "SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120",
   "branch": "feature/scene-close-03-admin-composition-ux-20261120",
   "baseline_sha": "630c3338274cf3906522f06f7011cf5ba9958f66",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
   "record": "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
   "scope": [
@@ -82,9 +82,9 @@
     },
     {
       "id": "CANDIDATE-CLOSE",
-      "status": "planned",
+      "status": "completed",
       "owner": "integration_writer",
-      "exit": "Generated evidence, exact-head publication, required CI and independent review are complete"
+      "exit": "Exact-head publication, required CI, independent review and protected mainline integration are complete"
     }
   ],
   "checks": {
@@ -221,7 +221,7 @@
       "verify.daily.published_face.target.unit: passed; 8 tests",
       "verify.product_center.policy.unit: passed; 15 tests",
       "verify.navigation.publication_consumers.unit: passed; affected scenario and navigation consumers, 276 tests",
-      "verify.frontend.platform_capability_explorer.unit: passed; Python/node/frontend contract cases incl. 100 platform explorer assertions",
+      "verify.frontend.platform_capability_explorer.unit: passed; Python/node/frontend contract cases incl. 101 platform explorer assertions",
       "verify.frontend.typecheck.strict: passed",
       "verify.frontend.lint.src: passed with pre-existing warnings only",
       "verify.frontend.dev.incremental.unit: 186 tests passed",
@@ -232,8 +232,7 @@
       "freeze and release-operator draft consume the same maintained composition assembler",
       "candidate and active compositions are projected from their own immutable snapshots",
       "name/sequence/intent-only changes are recognized by backend-owned composition comparison",
-      "native shared maintenance entry is disabled by missing action/menu/model or read/write denial"
-      ,
+      "native shared maintenance entry is disabled by missing action/menu/model or read/write denial",
       "maintenance entry uses ordinary current-user access and native menu/action group restrictions; sudo is metadata-only",
       "P1 declares the construction maintenance provider and product applicability; platform/other products receive not-applicable state",
       "maintenance return context survives generic action/form navigation and rebinds to the backend-declared readback product",
@@ -253,5 +252,24 @@
     ]
   },
   "blockers": [],
-  "next_exact_step": "Run ci.delivery.freeze.prepare, review generated changes, commit the exact candidate and publish the single SCENE-CLOSE-03 PR."
+  "completion": {
+    "batch_acceptance": "completed",
+    "mainline_integration": "completed",
+    "pr": 946,
+    "candidate_head": "214b71fa4d2643ceda24202b6e18960dad70df4b",
+    "candidate_tree": "609f1573d3fb323f1ce67d689b0afea38e6d97a0",
+    "merge_commit": "d10d2b42d747c89be39abb89dac25bd6051812eb",
+    "mainline_sha": "d10d2b42d747c89be39abb89dac25bd6051812eb",
+    "merge_tree": "609f1573d3fb323f1ce67d689b0afea38e6d97a0",
+    "merged_at": "2026-11-19T23:29:26Z",
+    "required_checks": {
+      "public_guard": "success",
+      "professional_quality_gate": "success",
+      "merge_policy_gate": "success",
+      "frontend_release_gate": "success"
+    },
+    "deployment": "not_run",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Completed; start the next product task from main d10d2b42d747c89be39abb89dac25bd6051812eb. This post-merge bookkeeping commit is local and must ride with that next product candidate instead of being published alone."
 }
