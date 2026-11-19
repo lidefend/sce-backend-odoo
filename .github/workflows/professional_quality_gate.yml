@@ -28,7 +28,7 @@ jobs:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
     outputs:
-      backend_impact_required: ${{ steps.backend_impact.outputs.required }}
+      backend_impact_required: ${{ steps.backend_impact.outputs.required || 'false' }}
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
@@ -41,7 +41,7 @@ jobs:
       contract_only_scope: ${{ steps.risk.outputs.contract_only_scope }}
       contract_only_targets_json: ${{ steps.risk.outputs.contract_only_targets_json }}
       contract_only_excluded_targets_json: ${{ steps.risk.outputs.contract_only_excluded_targets_json }}
-      tool_checks: ${{ steps.backend_impact.outputs.tool_checks }}
+      tool_checks: ${{ steps.backend_impact.outputs.tool_checks || '' }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
       - name: Deny forks and non-owner actors
