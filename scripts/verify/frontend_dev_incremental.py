@@ -1423,6 +1423,7 @@ RULES = (
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
         "addons/smart_construction_scene/services/scenario_activation_catalog.py",
         "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
     ), (

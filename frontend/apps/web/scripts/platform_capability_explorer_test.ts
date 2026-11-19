@@ -18,6 +18,7 @@ import {
 } from '../src/app/platformCapabilityExplorerPresentation';
 import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
+import { decodeReleaseOperatorSurface } from '../src/app/releaseOperatorActionContract';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -316,6 +317,96 @@ assert.throws(
   () => decodeCapabilityExplorerListResponse({ ...listResponse, meta: baseMeta }),
   (error) => isContractGapError(error),
   'list still requires pagination metadata',
+);
+cases += 1;
+
+const promotionSurface = {
+  identity: { product_key: 'construction.standard' },
+  actor_scope: { user_id: 7, login: 'platform.admin', name: 'Platform Admin' },
+  candidate_snapshots: [{ id: 31, version: 'v31', state: 'approved' }],
+  available_actions: {
+    promote: [{
+      key: 'promote:31',
+      label: '发布产品版本 v31',
+      intent: 'release.operator.promote',
+      enabled: true,
+      reason_code: 'OK',
+      params: { product_key: 'construction.standard', snapshot_id: 31, replace_active: true },
+      actor: {
+        user_id: 7,
+        login: 'platform.admin',
+        name: 'Platform Admin',
+        operator_kind: 'authorized_release_operator',
+        roles: ['admin'],
+      },
+      target_scope: {
+        kind: 'product_release',
+        scope_key: 'construction.standard',
+        product_key: 'construction.standard',
+        company_ids: [],
+        target_role_codes: [],
+        is_global_product_release: true,
+        meaning: 'all authorized enterprises',
+      },
+      operation_object: {
+        kind: 'release_snapshot',
+        product_key: 'construction.standard',
+        snapshot_id: 31,
+      },
+      prerequisites: {
+        satisfied: true,
+        reason_code: 'OK',
+        confirmation_required: true,
+      },
+      readback: {
+        source: 'release.operator.surface',
+        mode: 'authoritative_after_write',
+        fields: ['current_release_state.active_snapshot'],
+      },
+    }],
+  },
+  operation_readback: {
+    product_key: 'construction.standard',
+    active_snapshot: { id: 30, version: 'v30', state: 'released' },
+    rollback_target_snapshot_id: 29,
+  },
+};
+const decodedPromotion = decodeReleaseOperatorSurface(promotionSurface);
+check(
+  decodedPromotion.available_actions.promote[0].operation_object.snapshot_id,
+  31,
+  'complete promotion contract consumed',
+);
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    available_actions: {
+      promote: [{
+        ...promotionSurface.available_actions.promote[0],
+        operation_object: undefined,
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'missing promotion operation object stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    available_actions: {
+      promote: [{
+        ...promotionSurface.available_actions.promote[0],
+        prerequisites: {
+          ...promotionSurface.available_actions.promote[0].prerequisites,
+          satisfied: false,
+          reason_code: 'RELEASE_EXECUTOR_NOT_ALLOWED',
+        },
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'promotion enabled state must agree with prerequisites',
 );
 cases += 1;
 

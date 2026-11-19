@@ -11,6 +11,7 @@ const CONFIG_LOGIN = String(process.env.ADMIN_CLOSE_01_CONFIG_LOGIN || 'sc_demo_
 const CONFIG_PASSWORD = String(process.env.ADMIN_CLOSE_01_CONFIG_PASSWORD || PASSWORD).trim();
 const BUSINESS_LOGIN = String(process.env.ADMIN_CLOSE_01_BUSINESS_LOGIN || 'wutao').trim();
 const BUSINESS_PASSWORD = String(process.env.ADMIN_CLOSE_01_BUSINESS_PASSWORD || PASSWORD).trim();
+const REQUIRE_POSITIVE = process.env.ADMIN_CLOSE_01_REQUIRE_POSITIVE === '1';
 const ARTIFACT_DIR = path.resolve(
   process.cwd(),
   process.env.ARTIFACTS_DIR || 'artifacts/playwright/admin-close-01-management',
@@ -51,6 +52,17 @@ function intentData(body) {
   return body;
 }
 
+function watchPage(page, label) {
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
+      report.errors.push({ type: 'console', page: label, text: message.text(), url: page.url() });
+    }
+  });
+  page.on('pageerror', (error) => report.errors.push({
+    type: 'pageerror', page: label, text: error.message, url: page.url(),
+  }));
+}
+
 async function screenshot(page, name) {
   const file = path.join(ARTIFACT_DIR, `${name}.png`);
   await page.screenshot({ path: file, fullPage: true });
@@ -66,17 +78,55 @@ async function login(page, loginName, password) {
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
 }
 
+function checkActivationReadback(payload, expected, label) {
+  const readback = payload?.readback || {};
+  check(payload?.scene_key === expected.sceneKey, `${label} returns requested scene`, payload);
+  check(payload?.enabled === expected.targetState, `${label} returns target state`, payload);
+  check(readback?.company_id === expected.companyId, `${label} binds target company`, readback);
+  check(readback?.requested_scene_key === expected.sceneKey, `${label} binds requested scene`, readback);
+  check(readback?.enabled === expected.targetState, `${label} binds persisted state`, readback);
+  check(readback?.target_state === expected.targetState, `${label} declares target state`, readback);
+  check(readback?.enablement_scope === expected.scope, `${label} binds enablement scope`, readback);
+  check(readback?.source === 'ir.config_parameter', `${label} declares storage source`, readback);
+  check(Boolean(readback?.storage_key), `${label} declares storage key`, readback);
+  check(readback?.write_committed === true, `${label} confirms committed write`, readback);
+  check(readback?.access_granted === false, `${label} does not grant user access`, readback);
+}
+
+async function executeScenarioAction(configPage, scenario, actionKey) {
+  const actionLabel = actionKey === 'enable' ? '启用' : '停用';
+  const panel = configPage.locator('#enterprise-scenario-activation[data-state="ready"]');
+  const row = panel.locator('li').filter({ hasText: scenario.name }).first();
+  const button = row.getByRole('button', { name: actionLabel, exact: true });
+  const writeResponse = configPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'scenario.activation.set'
+    && response.status() === 200
+  ));
+  const refreshResponse = configPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'scenario.activation.catalog.get'
+    && response.status() === 200
+  ));
+  await button.click();
+  const payload = intentData(await (await writeResponse).json());
+  checkActivationReadback(payload, {
+    companyId: Number(scenario.company_id),
+    sceneKey: scenario.scene_key,
+    scope: scenario.enablement_scope,
+    targetState: actionKey === 'enable',
+  }, `enterprise ${actionLabel}`);
+  const refreshed = intentData(await (await refreshResponse).json());
+  await panel.waitFor({ state: 'visible', timeout: 60000 });
+  return { payload, refreshed };
+}
+
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const page = await context.newPage();
-  page.on('console', (message) => {
-    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
-      report.errors.push({ type: 'console', text: message.text(), url: page.url() });
-    }
-  });
-  page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', text: error.message, url: page.url() }));
+  watchPage(page, 'platform');
 
   await login(page, LOGIN, PASSWORD);
   const initialExplorer = page.waitForResponse((response) => (
@@ -100,6 +150,9 @@ try {
   ));
   const selectedRow = projectRow || (initialPayload.rows || [])[0];
   check(selectedRow, 'governed catalog exposes at least one capability entry');
+  if (REQUIRE_POSITIVE) {
+    check(projectRow, 'positive journey exposes the project-ledger capability', filteredPayload.rows);
+  }
   if (!projectRow) {
     report.api.project_ledger_browser_available = false;
     report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
@@ -138,6 +191,9 @@ try {
   });
   const releaseResponse = await releaseResponsePromise;
   if (!releaseResponse) {
+    if (REQUIRE_POSITIVE) {
+      check(false, 'positive journey opens the platform release console', { url: page.url() });
+    }
     check(
       page.url().includes('/access-denied') || page.url().includes('/s/workspace.home'),
       'tenant identity is routed away from the platform-control surface',
@@ -155,6 +211,40 @@ try {
     for (const label of ['操作身份与影响范围', '发布后回读', '当前生效版本', '回滚目标']) {
       check(releaseText.includes(label), `release console exposes ${label}`);
     }
+    const promotionActions = Array.isArray(release.available_actions?.promote)
+      ? release.available_actions.promote
+      : [];
+    if (REQUIRE_POSITIVE) {
+      check(promotionActions.length > 0, 'positive journey exposes a candidate promotion contract');
+      const action = promotionActions.find((item) => (
+        item?.enabled === true
+        && item?.actor?.user_id === release.actor_scope?.user_id
+        && item?.target_scope?.product_key === 'construction.standard'
+        && item?.operation_object?.kind === 'release_snapshot'
+        && item?.prerequisites?.satisfied === true
+        && item?.readback?.mode === 'authoritative_after_write'
+      ));
+      check(action, 'candidate promotion declares complete executable contract', promotionActions);
+      const promotedSnapshotId = Number(action.params?.snapshot_id || 0);
+      const writeResponse = page.waitForResponse((response) => (
+        response.url().includes('/api/v1/intent')
+        && intentOf(response.request()) === 'release.operator.promote'
+        && response.status() === 200
+      ));
+      await page.getByRole('button', { name: action.label, exact: true }).first().click();
+      const dialog = page.getByRole('dialog');
+      await dialog.waitFor({ state: 'visible', timeout: 30000 });
+      await dialog.getByRole('button', { name: `确认${action.label}`, exact: true }).click();
+      const result = intentData(await (await writeResponse).json());
+      const promotedReadback = result?.surface?.operation_readback || result?.operation_readback || {};
+      check(
+        Number(promotedReadback?.active_snapshot?.id || 0) === promotedSnapshotId,
+        'promotion is confirmed by authoritative snapshot readback',
+        promotedReadback,
+      );
+      report.api.promoted_snapshot_id = promotedSnapshotId;
+      report.api.promotion_readback = promotedReadback;
+    }
     report.api.release = {
       browser_status: 'platform_admin_surface_available',
       actor: release.actor_scope,
@@ -166,6 +256,7 @@ try {
 
   const configContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const configPage = await configContext.newPage();
+  watchPage(configPage, 'enterprise');
   await login(configPage, CONFIG_LOGIN, CONFIG_PASSWORD);
   const activationResponse = configPage.waitForResponse((response) => (
     response.url().includes('/api/v1/intent')
@@ -192,6 +283,28 @@ try {
     target_scope: activation.target_scope,
     row_count: activation.business_scenarios?.length || 0,
   };
+  let positiveScenario = null;
+  if (REQUIRE_POSITIVE) {
+    const sceneKey = String(projectRow?.business_domain?.key || '').trim();
+    positiveScenario = (activation.business_scenarios || []).find((scenario) => (
+      scenario.scene_key === sceneKey
+      && scenario.enable_allowed === true
+      && Array.isArray(scenario.actions)
+      && scenario.actions.some((action) => action.key === 'enable' || action.key === 'disable')
+    ));
+    check(positiveScenario, 'project-ledger scene exposes an executable enterprise action', {
+      sceneKey,
+      rows: activation.business_scenarios,
+    });
+    positiveScenario.company_id = activation.company_id;
+    if (positiveScenario.tenant_enabled) {
+      await executeScenarioAction(configPage, positiveScenario, 'disable');
+      positiveScenario.tenant_enabled = false;
+    }
+    const enabled = await executeScenarioAction(configPage, positiveScenario, 'enable');
+    positiveScenario.tenant_enabled = true;
+    report.api.enterprise_activation.enable_readback = enabled.payload;
+  }
   await configPage.screenshot({
     path: path.join(ARTIFACT_DIR, '03-enterprise-activation.png'),
     fullPage: true,
@@ -201,16 +314,17 @@ try {
     file: path.join(ARTIFACT_DIR, '03-enterprise-activation.png'),
     url: configPage.url(),
   });
-  await configContext.close();
-
   const businessContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const businessPage = await businessContext.newPage();
+  watchPage(businessPage, 'business');
   await login(businessPage, BUSINESS_LOGIN, BUSINESS_PASSWORD);
   await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
   const ledgerMenu = businessPage.getByText('项目台账', { exact: true }).first();
   const dashboardMenu = businessPage.getByText('项目看板', { exact: true }).first();
   if (await ledgerMenu.count()) {
     await ledgerMenu.click();
+  } else if (REQUIRE_POSITIVE) {
+    check(false, 'positive journey reaches the project-ledger formal menu');
   } else {
     const navigationMenuId = await dashboardMenu.evaluate((element) => (
       element.closest('li[data-navigation-menu-id]')?.getAttribute('data-navigation-menu-id') || ''
@@ -227,7 +341,9 @@ try {
   }, null, { timeout: 60000 });
   const businessText = await businessPage.locator('body').innerText();
   check(
-    businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
+    REQUIRE_POSITIVE
+      ? businessText.includes('项目台账')
+      : businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
     'ordinary business user receives an explicit formal project result',
   );
   report.api.business_entry = {
@@ -241,6 +357,25 @@ try {
   };
   await businessPage.screenshot({ path: path.join(ARTIFACT_DIR, '04-business-entry.png'), fullPage: true });
   await businessContext.close();
+
+  if (positiveScenario) {
+    const disabled = await executeScenarioAction(configPage, positiveScenario, 'disable');
+    report.api.enterprise_activation.disable_readback = disabled.payload;
+    const afterDisable = (disabled.refreshed.business_scenarios || []).find(
+      (scenario) => scenario.scene_key === positiveScenario.scene_key,
+    );
+    check(afterDisable?.tenant_enabled === false, 'enterprise disable is read back as disabled');
+    await configPage.screenshot({
+      path: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
+      fullPage: true,
+    });
+    report.screenshots.push({
+      name: '05-enterprise-readback',
+      file: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
+      url: configPage.url(),
+    });
+  }
+  await configContext.close();
 
   check(report.errors.length === 0, 'management journey has no browser errors', report.errors);
   report.pass = true;

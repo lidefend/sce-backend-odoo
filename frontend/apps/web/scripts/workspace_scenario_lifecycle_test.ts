@@ -535,7 +535,62 @@ console.log('[workspace_scenario_lifecycle_test] PASS cases=11 transport=control
 
 // Actual business management consumer: server-declared actions, explicit company
 // scope, refresh after commit and stale transport completion rejection.
-const { useScenarioActivation } = await import('../src/composables/useScenarioActivation.ts');
+const {
+  requireScenarioReadback,
+  useScenarioActivation,
+} = await import('../src/composables/useScenarioActivation.ts');
+const validReadback = (enabled: boolean, sceneKey = 'project.management') => ({
+  scene_key: sceneKey,
+  stored_scene_key: `business.v1:${sceneKey}`,
+  enablement_scope: 'business.v1',
+  enabled,
+  target_scope: {
+    kind: 'enterprise_scenario_enablement',
+    company_id: 1,
+    company_name: 'Company 1',
+    is_global_product_release: false,
+    source: 'res.company + ir.config_parameter',
+    target_role_scope: {
+      mode: 'not_role_scoped',
+      target_role_key: '',
+      reason_code: 'SCENARIO_ENABLEMENT_COMPANY_SCOPED',
+      meaning: 'company scoped',
+    },
+  },
+  readback: {
+    enabled,
+    company_id: 1,
+    requested_scene_key: sceneKey,
+    stored_scene_key: `business.v1:${sceneKey}`,
+    enablement_scope: 'business.v1',
+    target_state: enabled,
+    source: 'ir.config_parameter',
+    storage_key: `sc.scene.tenant.enablement.1.business.v1:${sceneKey}`,
+    write_committed: true,
+    access_granted: false,
+  },
+});
+const disabledReadback = requireScenarioReadback(validReadback(false), {
+  companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: false,
+});
+assert.equal(disabledReadback.readback.target_state, false);
+assert.throws(
+  () => requireScenarioReadback(validReadback(true), {
+    companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: false,
+  }),
+  /回读.*不一致/,
+  'target-state mismatch never reports success',
+);
+assert.throws(
+  () => requireScenarioReadback({
+    ...validReadback(true),
+    readback: { ...validReadback(true).readback, storage_key: '' },
+  }, {
+    companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: true,
+  }),
+  /回读.*不一致/,
+  'missing storage identity is a contract gap',
+);
 session.initStatus = 'ready';
 session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
 const managementScope = effectScope();
@@ -573,7 +628,10 @@ const catalogResponse = (company = 1, actions = true) => ({
     },
     enablement_blockers: [],
     enable_allowed: true,
-    actions: actions ? [{ key: 'enable', label: '启用', enabled: true }] : [],
+    actions: actions ? [
+      { key: 'enable', label: '启用', enabled: true },
+      { key: 'disable', label: '停用', enabled: false },
+    ] : [],
   }],
 });
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -605,21 +663,7 @@ assert.deepEqual(mutationRequest.request.params, { company_id: 1, scene_key: 'pr
 const countDuringMutation = pending.length;
 await management.execute(row, row.actions[0]);
 assert.equal(pending.length, countDuringMutation, 'double-click cannot submit twice');
-mutationRequest.request.settle({
-  scene_key: row.scene_key,
-  stored_scene_key: 'business.v1:project.management',
-  enablement_scope: 'business.v1',
-  enabled: true,
-  target_scope: catalogResponse(1).target_scope,
-  readback: {
-    enabled: true,
-    company_id: 1,
-    stored_scene_key: 'business.v1:project.management',
-    source: 'sc.scene.company.enablement',
-    write_committed: true,
-    access_granted: false,
-  },
-});
+mutationRequest.request.settle(validReadback(true));
 await flush();
 assert.equal(management.readback.value?.readback.access_granted, false);
 assert.equal(bootstraps, 1);
@@ -692,7 +736,7 @@ const failBootstrap = async () => {
 session.loadAppInit = failBootstrap;
 const committedRow = management.rows.value[0];
 const committed = await nextRequest(() => management.execute(committedRow, committedRow.actions[0]));
-committed.request.settle({ enabled: true });
+committed.request.settle(validReadback(true));
 await committed.result;
 assert.equal(management.state.value, 'error');
 assert.match(management.errorMessage.value, /状态已保存.*导航刷新失败/);
