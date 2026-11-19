@@ -387,6 +387,8 @@ import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { contractGapError } from '../app/contract/contractGap';
 import {
+  buildConfiguredOperatorParams,
+  decodeConfiguredActionResult,
   decodeReleaseOperatorSurface,
   decodeProductCenterWriteEnvelope,
   type OperatorAction,
@@ -1218,37 +1220,6 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
   }
 }
 
-function configuredActionParams(action: OperatorAction, overrides: AnyRecord) {
-  const accepted = new Set(
-    Array.isArray((action as unknown as AnyRecord).accepted_fields)
-      ? ((action as unknown as AnyRecord).accepted_fields as unknown[])
-        .map(field => String(field || '').trim())
-      : [],
-  );
-  for (const field of Object.keys(overrides)) {
-    if (!accepted.has(field)) {
-      throw contractGapError({
-        kind: 'contract_defect',
-        missing: `${action.key}.accepted_fields.${field}`,
-        requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
-      }, `平台动作 ${action.key} 未声明输入字段 ${field}`);
-    }
-  }
-  for (const field of action.editable_fields || []) {
-    if (field.options && Object.hasOwn(overrides, field.key)) {
-      const value = String(overrides[field.key] ?? '');
-      if (!field.options.some(option => option.value === value)) {
-        throw contractGapError({
-          kind: 'contract_defect',
-          missing: `${action.key}.editable_fields.${field.key}.options`,
-          requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
-        }, `平台动作 ${action.key} 的 ${field.key} 值不在后端声明中`);
-      }
-    }
-  }
-  return { ...action.params, ...overrides };
-}
-
 async function runConfiguredAction(
   action: OperatorAction | null | undefined,
   overrides: AnyRecord,
@@ -1268,22 +1239,18 @@ async function runConfiguredAction(
   busyKey.value = busy;
   error.value = '';
   try {
-    const params = configuredActionParams(action, overrides);
+    const params = buildConfiguredOperatorParams(action, overrides);
     const result = await intentRequest<AnyRecord>({
       intent: action.intent,
       params,
     });
-    for (const field of action.readback.fields) {
-      if (!Object.hasOwn(result, field)) {
-        throw contractGapError({
-          kind: 'contract_defect',
-          missing: `${action.key}.readback.${field}`,
-          requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
-        }, `平台动作 ${action.key} 缺少权威回读字段 ${field}`);
-      }
-    }
+    const writeReadback = decodeConfiguredActionResult(
+      result,
+      action,
+      action.target_scope.product_key,
+    );
     const decoded = decodeReleaseOperatorSurface(
-      result.surface as AnyRecord,
+      writeReadback.surface,
     ) as unknown as ReleaseOperatorSurface;
     if (
       String(decoded.identity?.product_key || '')

@@ -136,11 +136,19 @@ class ReleaseOperatorReadModelService:
         actor: dict[str, Any],
         target_scope: dict[str, Any],
         operation_object: dict[str, Any],
-        confirm_required: bool = False,
+        confirm_required: bool | None = None,
     ) -> dict[str, Any]:
         result = dict(action)
         enabled = bool(result.get("enabled"))
         reason_code = _text(result.get("reason_code")) or ("OK" if enabled else "ACTION_BLOCKED")
+        declared_confirmation = _dict(result.get("prerequisites")).get(
+            "confirmation_required"
+        )
+        confirmation_required = (
+            bool(declared_confirmation)
+            if declared_confirmation is not None
+            else bool(confirm_required)
+        )
         result.update(
             {
                 "actor": actor,
@@ -149,7 +157,14 @@ class ReleaseOperatorReadModelService:
                 "prerequisites": {
                     "satisfied": enabled,
                     "reason_code": reason_code,
-                    "confirmation_required": bool(confirm_required),
+                    "confirmation_required": confirmation_required,
+                    "confirmation_source": (
+                        "platform_action_definition"
+                        if declared_confirmation is not None
+                        else "dynamic_state"
+                        if confirm_required is not None
+                        else "none"
+                    ),
                 },
                 "readback": {
                     "source": "release.operator.surface",
@@ -495,22 +510,24 @@ class ReleaseOperatorReadModelService:
             snapshot_id = int(row.get("id") or 0)
             if snapshot_id <= 0:
                 continue
-            actions.append(
-                {
-                    "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                    "key": f"promote:{snapshot_id}",
-                    "label": f"发布产品版本 {row.get('version') or 'v1'}",
-                    "intent": "release.operator.promote",
-                    "enabled": bool(allowed),
-                    "reason_code": "OK" if allowed else "RELEASE_EXECUTOR_NOT_ALLOWED",
-                    "role_context": role_context,
-                    "params": {
-                        "product_key": product_key,
-                        "snapshot_id": snapshot_id,
-                        "replace_active": True,
-                    },
-                }
+            action = configured_management_action(
+                "promote",
+                action_key=f"promote:{snapshot_id}",
+                enabled=bool(allowed),
+                reason_code=(
+                    "OK" if allowed else "RELEASE_EXECUTOR_NOT_ALLOWED"
+                ),
+                role_context=role_context,
+                params={
+                    "product_key": product_key,
+                    "snapshot_id": snapshot_id,
+                    "replace_active": True,
+                },
             )
+            action["label"] = (
+                f"发布产品版本 {row.get('version') or 'v1'}"
+            )
+            actions.append(action)
         return actions
 
     def _build_pending_approval_queue(self, *, product_key: str) -> dict[str, Any]:
@@ -529,6 +546,28 @@ class ReleaseOperatorReadModelService:
         for action in actions:
             payload = action.to_runtime_dict()
             allowed, reason_code, diagnostics = self.approval_policy_service.can_approve(action=action, user=self.env.user)
+            if _text(payload.get("action_type")) == "rollback_snapshot":
+                target_ready, target_reason = self._rollback_target_status(
+                    _text(payload.get("product_key")),
+                    int(payload.get("target_snapshot_id") or 0),
+                )
+                allowed = bool(allowed and target_ready)
+                reason_code = (
+                    target_reason
+                    if reason_code == "OK" and not target_ready
+                    else reason_code
+                )
+                diagnostics = {
+                    **diagnostics,
+                    "execution_target": {
+                        "kind": "release_snapshot",
+                        "snapshot_id": int(
+                            payload.get("target_snapshot_id") or 0
+                        ),
+                        "eligible": target_ready,
+                        "reason_code": target_reason,
+                    },
+                }
             rows.append(
                 {
                     **payload,
@@ -554,31 +593,47 @@ class ReleaseOperatorReadModelService:
             "actions": rows,
         }
 
+    def _rollback_target_status(
+        self,
+        product_key: str,
+        snapshot_id: int,
+    ) -> tuple[bool, str]:
+        if snapshot_id <= 0:
+            return False, "ROLLBACK_TARGET_NOT_FOUND"
+        try:
+            target = self.env["sc.edition.release.snapshot"].sudo().browse(
+                snapshot_id
+            ).exists()
+        except (KeyError, AttributeError):
+            return False, "ROLLBACK_TARGET_NOT_FOUND"
+        if not target:
+            return False, "ROLLBACK_TARGET_NOT_FOUND"
+        if not target.active:
+            return False, "ROLLBACK_TARGET_INACTIVE"
+        if _text(target.product_key) != _text(product_key):
+            return False, "ROLLBACK_TARGET_PRODUCT_MISMATCH"
+        if _text(target.state) not in {"approved", "released", "superseded"}:
+            return False, "ROLLBACK_TARGET_NOT_RELEASEABLE"
+        return True, "OK"
+
     def _build_rollback_action(self, *, product_key: str, active_snapshot: dict[str, Any]) -> dict[str, Any]:
         policy = self.approval_policy_service.resolve_policy(action_type="rollback_snapshot", product_key=product_key)
         role_context = self.approval_policy_service.resolve_actor_role_context(self.env.user)
         actor_roles = list(role_context.get("actor_role_codes") or [])
         allowed = self.approval_policy_service.roles_match(actor_roles, list(_list(policy.get("allowed_executor_role_codes"))))
         rollback_target_snapshot_id = int(active_snapshot.get("rollback_target_snapshot_id") or 0)
-        target_active = False
-        if rollback_target_snapshot_id > 0:
-            try:
-                target = self.env["sc.edition.release.snapshot"].sudo().browse(
-                    rollback_target_snapshot_id
-                ).exists()
-                target_active = bool(target and target.active)
-            except (KeyError, AttributeError):
-                target_active = False
+        target_ready, target_reason = self._rollback_target_status(
+            product_key,
+            rollback_target_snapshot_id,
+        )
         enabled = bool(
-            allowed and rollback_target_snapshot_id > 0 and target_active
+            allowed and target_ready
         )
         reason_code = (
             "OK"
             if enabled
-            else "ROLLBACK_TARGET_NOT_FOUND"
-            if rollback_target_snapshot_id <= 0
-            else "ROLLBACK_TARGET_INACTIVE"
-            if not target_active
+            else target_reason
+            if not target_ready
             else "RELEASE_EXECUTOR_NOT_ALLOWED"
         )
         return configured_management_action(
@@ -1031,7 +1086,7 @@ class ReleaseOperatorReadModelService:
                         "product_key": identity["product_key"],
                         "action_id": int(row.get("id") or 0),
                     },
-                    confirm_required=True,
+                    confirm_required=None,
                 )
         available_operator_actions = {
             "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
@@ -1131,7 +1186,7 @@ class ReleaseOperatorReadModelService:
                             ),
                             "product_key": identity["product_key"],
                         },
-                        confirm_required=True,
+                        confirm_required=None,
                     )
                     for item in action
                     if isinstance(item, dict)
@@ -1156,7 +1211,7 @@ class ReleaseOperatorReadModelService:
                     ),
                     "page_key": _text((action.get("params") or {}).get("page_key")),
                 },
-                confirm_required=key in {"rollback", "update_policy"},
+                confirm_required=None,
             )
         surface_copy = self._build_surface_copy(product_key=identity["product_key"])
         return {

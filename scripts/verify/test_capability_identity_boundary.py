@@ -205,7 +205,7 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
                 "menu_id": 10,
                 "action_id": 20,
                 "label": "Maintained payment label",
-                "sequence": 7,
+                "sequence": 0,
                 "access_level": "role_restricted",
                 "entry_intent": "finance",
                 "allowed_role_codes": ["finance_manager"],
@@ -228,7 +228,7 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
             },
         )
         self.assertEqual(merged["label"], "Maintained payment label")
-        self.assertEqual(merged["sequence"], 7)
+        self.assertEqual(merged["sequence"], 0)
         self.assertEqual(merged["access_level"], "role_restricted")
         self.assertEqual(merged["entry_intent"], "finance")
         self.assertEqual(merged["allowed_role_codes"], ["finance_manager"])

@@ -23,8 +23,11 @@ import {
 import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import {
+  buildConfiguredOperatorParams,
+  decodeConfiguredActionResult,
   decodeProductCenterWriteEnvelope,
   decodeReleaseOperatorSurface,
+  type OperatorAction,
 } from '../src/app/releaseOperatorActionContract';
 
 let cases = 0;
@@ -757,6 +760,7 @@ const promotionSurface = {
       enabled: true,
       reason_code: 'OK',
       params: { product_key: 'construction.standard', snapshot_id: 31, replace_active: true },
+      accepted_fields: ['product_key', 'snapshot_id', 'replace_active'],
       actor: {
         user_id: 7,
         login: 'platform.admin',
@@ -809,6 +813,12 @@ const promotionSurface = {
         ['action_id'],
         ['action', 'surface'],
         {
+          operation_object: {
+            kind: 'release_action',
+            product_key: 'construction.standard',
+            snapshot_id: 0,
+            action_id: 31,
+          },
           prerequisites: {
             satisfied: true,
             reason_code: 'OK',
@@ -904,6 +914,75 @@ check(
   31,
   'pending approval uses backend action object',
 );
+check(
+  buildConfiguredOperatorParams(
+    (decodedPromotion.available_actions as Record<string, OperatorAction>).update_policy,
+    { state: 'stable', access_level: 'public' },
+  ),
+  {
+    product_key: 'construction.standard',
+    state: 'stable',
+    access_level: 'public',
+  },
+  'decoded product policy action builds a valid request',
+);
+check(
+  buildConfiguredOperatorParams(
+    (decodedPromotion.available_actions as Record<string, OperatorAction>).update_page_policy,
+    { page_key: 'project.list', release_state: 'preview', access_level: 'internal' },
+  ),
+  {
+    product_key: 'construction.standard',
+    page_key: 'project.list',
+    release_state: 'preview',
+    access_level: 'internal',
+  },
+  'decoded page policy action builds a valid request',
+);
+assert.throws(
+  () => decodeConfiguredActionResult(
+    {
+      snapshot: null,
+      surface: promotionSurface,
+    },
+    (decodedPromotion.available_actions as Record<string, OperatorAction>).freeze,
+    'construction.standard',
+  ),
+  (error) => isContractGapError(error),
+  'null freeze snapshot readback is rejected',
+);
+cases += 1;
+assert.throws(
+  () => decodeConfiguredActionResult(
+    {
+      policy: null,
+      surface: promotionSurface,
+    },
+    (decodedPromotion.available_actions as Record<string, OperatorAction>).sync_policy,
+    'construction.standard',
+  ),
+  (error) => isContractGapError(error),
+  'null policy readback is rejected',
+);
+cases += 1;
+assert.throws(
+  () => decodeConfiguredActionResult(
+    {
+      action: {
+        id: 99,
+        product_key: 'construction.standard',
+      },
+      surface: promotionSurface,
+    },
+    (decodedPromotion.pending_approval as Record<string, unknown> & {
+      actions: Array<{ approve_action: OperatorAction }>;
+    }).actions[0].approve_action,
+    'construction.standard',
+  ),
+  (error) => isContractGapError(error),
+  'approval readback action identity mismatch is rejected',
+);
+cases += 1;
 assert.throws(
   () => decodeReleaseOperatorSurface({
     ...promotionSurface,
@@ -993,6 +1072,27 @@ assert.throws(
   }),
   (error) => isContractGapError(error),
   'pending approval without a complete action object stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    pending_approval: {
+      count: 1,
+      actions: [{
+        ...promotionSurface.pending_approval.actions[0],
+        approve_action: {
+          ...promotionSurface.pending_approval.actions[0].approve_action,
+          params: {
+            ...promotionSurface.pending_approval.actions[0].approve_action.params,
+            action_id: 99,
+          },
+        },
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'approval row, request parameter and operation object identities must agree',
 );
 cases += 1;
 assert.throws(

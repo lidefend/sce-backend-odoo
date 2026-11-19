@@ -173,3 +173,32 @@ configuration facts:
 
 The platform action registry entry identifies the contract version. The
 definitions and the current dynamic binding remain separate facts.
+
+## Third review and exact-head CI remediation
+
+The next owner review identified information loss in the unified action
+consumer:
+
+- `accepted_fields` is now retained by both promotion and configured-action
+  decoders and is the only source used to build request parameters.
+- Readback fields are decoded as required objects, not accepted merely because
+  their keys exist. Snapshot, policy, action, product and version identities are
+  checked before the page updates.
+- Approval row ID, request parameter, operation object and action readback ID
+  must agree.
+- Pending approval of a rollback action shares the same target-status assessment
+  as the main rollback action; inactive, mismatched or non-releasable targets
+  disable both.
+- Confirmation requirements come from the platform action definition. Dynamic
+  confirmation is used only when a definition does not declare the property.
+- Re-admission preserves an explicitly maintained menu sequence of `0`.
+
+The `fb912a58…` exact-head CI failures were also classified:
+
+- acceptance fixture expected the contract center after moving the project
+  menu; the stable expected identity is the project center;
+- preview promotion migration now permits derived center fields while preserving
+  all maintained menu fields under exact equality on their declared values.
+
+Both corrections are test-baseline updates; product execution authorities and
+the unified action architecture remain unchanged.

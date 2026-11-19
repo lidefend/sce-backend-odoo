@@ -185,7 +185,13 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             ]
             self.assertEqual(len(rows), 133)
             by_xmlid = {menu.get("menu_xmlid"): menu for menu in rows}
-            self.assertEqual(by_xmlid[extra_xmlid], extra_row)
+            self.assertEqual(
+                {
+                    key: by_xmlid[extra_xmlid].get(key)
+                    for key in extra_row
+                },
+                extra_row,
+            )
             self.assertEqual(by_xmlid[hidden_xmlid], hidden_before[target.product_key])
             self.assertTrue(all(
                 menu.get("release_state") == "released"

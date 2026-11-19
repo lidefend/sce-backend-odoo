@@ -31,6 +31,7 @@ export interface OperatorAction {
     kind: string;
     product_key: string;
     snapshot_id: number;
+    action_id?: number;
   };
   prerequisites: {
     satisfied: boolean;
@@ -42,6 +43,7 @@ export interface OperatorAction {
     mode: string;
     fields: string[];
   };
+  accepted_fields: string[];
   editable_fields?: Array<{
     key: string;
     type: string;
@@ -165,6 +167,10 @@ export function decodePromotionAction(value: unknown, expectedProductKey: string
   const operation = record(action.operation_object, `${key}.operation_object`);
   const prerequisites = record(action.prerequisites, `${key}.prerequisites`);
   const readback = record(action.readback, `${key}.readback`);
+  const acceptedFields = stringList(
+    action.accepted_fields,
+    `${key}.accepted_fields`,
+  );
   const snapshotId = positiveInt(params.snapshot_id, `${key}.params.snapshot_id`);
   const productKey = text(params.product_key, `${key}.params.product_key`);
   const operationSnapshotId = positiveInt(
@@ -243,6 +249,7 @@ export function decodePromotionAction(value: unknown, expectedProductKey: string
       mode: text(readback.mode, `${key}.readback.mode`),
       fields: fields.map(field => String(field)),
     },
+    accepted_fields: acceptedFields,
   };
 }
 
@@ -280,12 +287,10 @@ export function decodeConfiguredOperatorAction(
   if (!Array.isArray(fields) || !fields.length || fields.some(field => !String(field || '').trim())) {
     gap(`${path}.readback.fields`, `${path} 缺少权威回读字段`);
   }
-  if (!Array.isArray(action.accepted_fields) || !action.accepted_fields.length) {
-    gap(`${path}.accepted_fields`, `${path} 缺少输入字段声明`);
-  }
-  action.accepted_fields.forEach((field, index) => {
-    text(field, `${path}.accepted_fields[${index}]`);
-  });
+  const acceptedFields = stringList(
+    action.accepted_fields,
+    `${path}.accepted_fields`,
+  );
   const editableFields = Array.isArray(action.editable_fields)
     ? action.editable_fields.map((value, index) => {
       const field = record(value, `${path}.editable_fields[${index}]`);
@@ -372,6 +377,14 @@ export function decodeConfiguredOperatorAction(
         operation.snapshot_id,
         `${path}.operation_object.snapshot_id`,
       ),
+      ...(operation.action_id === undefined
+        ? {}
+        : {
+          action_id: integer(
+            operation.action_id,
+            `${path}.operation_object.action_id`,
+          ),
+        }),
     },
     prerequisites: {
       satisfied,
@@ -386,8 +399,120 @@ export function decodeConfiguredOperatorAction(
       mode: text(readback.mode, `${path}.readback.mode`),
       fields: fields.map(field => String(field || '').trim()),
     },
+    accepted_fields: acceptedFields,
     ...(editableFields ? { editable_fields: editableFields } : {}),
   };
+}
+
+export function buildConfiguredOperatorParams(
+  action: OperatorAction,
+  overrides: AnyRecord,
+): AnyRecord {
+  const accepted = new Set(action.accepted_fields);
+  for (const field of Object.keys(overrides)) {
+    if (!accepted.has(field)) {
+      gap(`${action.key}.accepted_fields.${field}`, `平台动作未声明输入字段 ${field}`);
+    }
+  }
+  for (const field of action.editable_fields || []) {
+    if (field.options && Object.hasOwn(overrides, field.key)) {
+      const value = String(overrides[field.key] ?? '');
+      if (!field.options.some(option => option.value === value)) {
+        gap(
+          `${action.key}.editable_fields.${field.key}.options`,
+          `平台动作 ${field.key} 的值不在后端声明中`,
+        );
+      }
+    }
+  }
+  return { ...action.params, ...overrides };
+}
+
+export function decodeConfiguredActionResult(
+  value: unknown,
+  action: OperatorAction,
+  expectedProductKey: string,
+): {
+  surface: AnyRecord;
+  readback: Record<string, AnyRecord>;
+} {
+  const result = record(value, `${action.key}.write_result`);
+  const readback: Record<string, AnyRecord> = {};
+  for (const field of action.readback.fields) {
+    readback[field] = record(
+      result[field],
+      `${action.key}.write_result.${field}`,
+    );
+  }
+  const surface = record(
+    result.surface,
+    `${action.key}.write_result.surface`,
+  );
+  const surfaceIdentity = record(
+    surface.identity,
+    `${action.key}.write_result.surface.identity`,
+  );
+  if (text(
+    surfaceIdentity.product_key,
+    `${action.key}.write_result.surface.identity.product_key`,
+  ) !== expectedProductKey) {
+    gap(`${action.key}.write_result.surface.product_key`, '执行回读页面属于另一产品');
+  }
+  if (action.intent === 'release.operator.freeze') {
+    const snapshot = readback.snapshot;
+    if (text(snapshot.product_key, `${action.key}.readback.snapshot.product_key`) !== expectedProductKey) {
+      gap(`${action.key}.readback.snapshot.product_key`, '冻结快照属于另一产品');
+    }
+    positiveInt(snapshot.id, `${action.key}.readback.snapshot.id`);
+  }
+  if ([
+    'release.operator.sync_policy',
+    'release.operator.set_page_enabled',
+    'release.operator.update_page_policy',
+    'release.operator.update_policy',
+  ].includes(action.intent)) {
+    const policy = readback.policy;
+    if (text(policy.product_key, `${action.key}.readback.policy.product_key`) !== expectedProductKey) {
+      gap(`${action.key}.readback.policy.product_key`, '策略回读属于另一产品');
+    }
+  }
+  if (action.intent === 'release.operator.update_policy') {
+    const operationReadback = readback.readback;
+    if (text(
+      operationReadback.product_key,
+      `${action.key}.readback.readback.product_key`,
+    ) !== expectedProductKey) {
+      gap(`${action.key}.readback.readback.product_key`, '策略回读身份属于另一产品');
+    }
+    text(
+      operationReadback.draft_policy_sha256,
+      `${action.key}.readback.readback.draft_policy_sha256`,
+    );
+    text(
+      operationReadback.draft_fingerprint,
+      `${action.key}.readback.readback.draft_fingerprint`,
+    );
+  }
+  if (['release.operator.approve', 'release.operator.rollback'].includes(action.intent)) {
+    const actionResult = readback.action;
+    if (text(
+      actionResult.product_key,
+      `${action.key}.readback.action.product_key`,
+    ) !== expectedProductKey) {
+      gap(`${action.key}.readback.action.product_key`, '审批或回滚动作属于另一产品');
+    }
+    const resultActionId = positiveInt(
+      actionResult.id,
+      `${action.key}.readback.action.id`,
+    );
+    if (
+      action.intent === 'release.operator.approve'
+      && resultActionId !== Number(action.params.action_id)
+    ) {
+      gap(`${action.key}.readback.action.id`, '审批回读动作与本次审批对象不一致');
+    }
+  }
+  return { surface, readback };
 }
 
 export function decodeProductCenterEditor(
@@ -659,14 +784,28 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
   const pendingActions = pending && Array.isArray(pending.actions)
     ? pending.actions.map((value, index) => {
       const row = record(value, `pending_approval.actions[${index}]`);
+      const rowId = positiveInt(
+        row.id,
+        `pending_approval.actions[${index}].id`,
+      );
+      const approveAction = decodeConfiguredOperatorAction(
+        row.approve_action,
+        'release.operator.approve',
+        productKey,
+        `pending_approval.actions[${index}].approve_action`,
+      );
+      if (
+        Number(approveAction.params.action_id) !== rowId
+        || approveAction.operation_object.action_id !== rowId
+      ) {
+        gap(
+          `pending_approval.actions[${index}].approve_action.operation_object.action_id`,
+          '审批动作对象与待审批行不一致',
+        );
+      }
       return {
         ...row,
-        approve_action: decodeConfiguredOperatorAction(
-          row.approve_action,
-          'release.operator.approve',
-          productKey,
-          `pending_approval.actions[${index}].approve_action`,
-        ),
+        approve_action: approveAction,
       };
     })
     : [];

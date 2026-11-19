@@ -483,6 +483,13 @@
       "center save readback is bound to the submitted product",
       "backend numeric declarations reject null and boolean values",
       "inactive rollback targets are rejected before execution"
+      ,
+      "decoded configured actions retain accepted_fields for request construction",
+      "configured action readback requires product-bound snapshot, policy and action objects",
+      "pending approval row, parameter, operation object and readback action identities must agree",
+      "pending rollback approvals share target validity with the main rollback action",
+      "platform action definitions own confirmation requirements",
+      "repeated admission preserves an explicit zero sequence"
     ],
     "not_run": [
       "ORM, module upgrade and browser checks remain excluded by owner direction"

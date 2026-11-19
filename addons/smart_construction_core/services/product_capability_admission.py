@@ -120,6 +120,9 @@ def merge_admitted_menu_entry(
         if field in generated_entry:
             merged[field] = deepcopy(generated_entry[field])
     for field in MENU_ADMISSION_DEFAULT_FIELDS:
-        if not merged.get(field) and generated_entry.get(field):
+        if (
+            field not in merged
+            or merged.get(field) in (None, "")
+        ) and generated_entry.get(field) is not None:
             merged[field] = deepcopy(generated_entry[field])
     return merged

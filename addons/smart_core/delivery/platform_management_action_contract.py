@@ -139,6 +139,17 @@ ACTION_DEFINITIONS: dict[str, dict[str, Any]] = {
         "readback_fields": ["action", "surface"],
         "confirmation_required": True,
     },
+    "promote": {
+        "label": "发布产品版本",
+        "intent": "release.operator.promote",
+        "accepted_fields": [
+            "product_key",
+            "snapshot_id",
+            "replace_active",
+        ],
+        "readback_fields": ["action", "surface"],
+        "confirmation_required": True,
+    },
 }
 
 

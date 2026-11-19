@@ -64,6 +64,9 @@ _load_module(
 MANAGEMENT_ACTIONS = sys.modules[
     "odoo.addons.smart_core.delivery.platform_management_action_contract"
 ]
+READ_MODEL = sys.modules[
+    "odoo.addons.smart_core.delivery.release_operator_read_model_service"
+].ReleaseOperatorReadModelService
 TARGET = _load_module(
     "odoo.addons.smart_core.delivery.release_operator_surface_service",
     "addons/smart_core/delivery/release_operator_surface_service.py",
@@ -148,6 +151,7 @@ class _ReleaseActionRow:
             "id": 31,
             "action_type": "rollback_snapshot",
             "product_key": "construction.standard",
+            "target_snapshot_id": 7,
             "approval_state": "pending_approval",
             "state": "pending",
         }
@@ -235,6 +239,29 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             ["public", "internal", "role_restricted"],
         )
 
+    def test_declared_confirmation_is_not_overridden_by_dynamic_default(self):
+        decorated = READ_MODEL._decorate_operator_action(
+            {
+                "key": "freeze:test",
+                "label": "Freeze",
+                "intent": "release.operator.freeze",
+                "enabled": True,
+                "reason_code": "OK",
+                "prerequisites": {"confirmation_required": False},
+            },
+            actor={"user_id": 7},
+            target_scope={"product_key": "construction.standard"},
+            operation_object={"product_key": "construction.standard"},
+            confirm_required=True,
+        )
+        self.assertFalse(
+            decorated["prerequisites"]["confirmation_required"]
+        )
+        self.assertEqual(
+            decorated["prerequisites"]["confirmation_source"],
+            "platform_action_definition",
+        )
+
     def test_rollback_action_uses_dedicated_snapshot_rollback_authority(self):
         source = (
             ROOT / "addons/smart_core/handlers/release_operator.py"
@@ -261,14 +288,20 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         service.read_model_service.audit_service = _AuditTrailService()
         service.read_model_service.approval_policy_service = _ApprovalPolicyService()
 
-        rollback = (
-            service.build_surface(
-                product_key="construction.standard",
-                action_limit=5,
-            ).get("available_actions") or {}
-        ).get("rollback") or {}
+        surface = service.build_surface(
+            product_key="construction.standard",
+            action_limit=5,
+        )
+        rollback = (surface.get("available_actions") or {}).get("rollback") or {}
         self.assertFalse(rollback.get("enabled"))
         self.assertEqual(rollback.get("reason_code"), "ROLLBACK_TARGET_INACTIVE")
+        pending = (surface.get("pending_approval") or {}).get("actions") or []
+        approve_action = pending[0].get("approve_action") or {}
+        self.assertFalse(approve_action.get("enabled"))
+        self.assertEqual(
+            approve_action.get("reason_code"),
+            "ROLLBACK_TARGET_INACTIVE",
+        )
 
     def test_surface_build_includes_backend_owned_copy_payload(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

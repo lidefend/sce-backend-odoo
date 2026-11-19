@@ -24,6 +24,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.Param = self.env["ir.config_parameter"].sudo()
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_config_admin")
         self.project_menu = self.env.ref("smart_construction_core.menu_sc_project_project")
+        self.project_center = self.env.ref("smart_construction_core.menu_sc_project_center")
         self.contract_center = self.env.ref("smart_construction_core.menu_sc_contract_center")
         self.account_menu = self.env.ref("account.menu_action_move_journal_line_form")
         self.account_center = self.env.ref("smart_construction_core.menu_sc_accounting_center")
@@ -220,7 +221,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         after = self._locations(self._navigation_surface())
         self.assertEqual(set(after), set(before), "placement must not change authorization")
         center = after[self.project_menu.id][0]
-        self.assertEqual(center["key"], self._stable_center_key(self.contract_center))
+        self.assertEqual(center["key"], self._stable_center_key(self.project_center))
 
     def test_system_init_external_center_rename_and_binding_deletion(self):
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_activity_accounting")
