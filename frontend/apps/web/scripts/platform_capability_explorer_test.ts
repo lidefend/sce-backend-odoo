@@ -409,5 +409,44 @@ assert.throws(
   'promotion enabled state must agree with prerequisites',
 );
 cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    candidate_snapshots: [{ id: 31, version: 'v31', state: 'approved' }],
+    available_actions: {},
+  }),
+  (error) => isContractGapError(error),
+  'missing promote declaration stops before display',
+);
+cases += 1;
+const emptyPromotion = decodeReleaseOperatorSurface({
+  ...promotionSurface,
+  candidate_snapshots: [],
+  available_actions: { promote: [] },
+});
+check(
+  emptyPromotion.available_actions.promote.length,
+  0,
+  'complete metadata with an empty promote array is valid',
+);
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    identity: undefined,
+    available_actions: { promote: [] },
+  }),
+  (error) => isContractGapError(error),
+  'empty promote still requires product identity',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    operation_readback: undefined,
+    available_actions: { promote: [] },
+  }),
+  (error) => isContractGapError(error),
+  'empty promote still requires authoritative readback',
+);
+cases += 1;
 
 console.log(`[platform_capability_explorer_test] PASS cases=${cases}`);

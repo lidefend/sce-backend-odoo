@@ -481,7 +481,7 @@ const controlDefinitions = computed(() => {
 const releaseState = computed(() => surface.value?.release_state || {});
 const activeSnapshot = computed(() => (releaseState.value.active_snapshot || {}) as AnyRecord);
 const actorScope = computed(() => surface.value?.actor_scope || {});
-const operationReadback = computed(() => surface.value?.operation_readback || {});
+const operationReadback = computed(() => surface.value?.operation_readback ?? null);
 const runtimeSummary = computed(() => (releaseState.value.runtime_summary || {}) as AnyRecord);
 const candidateSnapshots = computed(() => surface.value?.candidate_snapshots || []);
 const pendingActions = computed(() => surface.value?.pending_approval?.actions || []);
@@ -565,7 +565,7 @@ const operationScopeItems = computed<DescriptionItem[]>(() => [
   {
     key: 'target_scope',
     label: '目标范围',
-    value: String(operationReadback.value.product_key || identity.value.product_key || '—'),
+    value: String(operationReadback.value?.product_key || identity.value.product_key || '—'),
   },
   {
     key: 'scope_meaning',
@@ -578,32 +578,32 @@ const operationReadbackItems = computed<DescriptionItem[]>(() => [
   {
     key: 'readback_product',
     label: '产品',
-    value: String(operationReadback.value.product_key || '—'),
+    value: String(operationReadback.value?.product_key || '—'),
   },
   {
     key: 'readback_version',
     label: '当前生效版本',
-    value: String((operationReadback.value.active_snapshot || {}).version || activeSnapshot.value.version || '无'),
+    value: String(operationReadback.value?.active_snapshot?.version || activeSnapshot.value.version || '无'),
   },
   {
     key: 'readback_state',
     label: '版本状态',
-    value: String((operationReadback.value.active_snapshot || {}).state || '—'),
+    value: String(operationReadback.value?.active_snapshot?.state || '—'),
   },
   {
     key: 'readback_rollback',
     label: '回滚目标',
-    value: String(operationReadback.value.rollback_target_snapshot_id || '无'),
+    value: String(operationReadback.value?.rollback_target_snapshot_id || '无'),
   },
   {
     key: 'readback_draft',
     label: '草案页数',
-    value: String((operationReadback.value.draft || {}).page_count ?? '—'),
+    value: String(operationReadback.value?.draft?.page_count ?? '—'),
   },
   {
     key: 'readback_delta',
     label: '页面差异',
-    value: String((operationReadback.value.change_summary || {}).page_count_delta ?? '—'),
+    value: String(operationReadback.value?.change_summary?.page_count_delta ?? '—'),
   },
 ]);
 

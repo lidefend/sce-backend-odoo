@@ -740,6 +740,7 @@ committed.request.settle(validReadback(true));
 await committed.result;
 assert.equal(management.state.value, 'error');
 assert.match(management.errorMessage.value, /状态已保存.*导航刷新失败/);
+assert.equal(management.readback.value?.readback.enabled, true);
 assert.deepEqual(management.rows.value, []);
 const writesAfterCommit = pending.filter(item => item.intent === 'scenario.activation.set').length;
 
@@ -816,6 +817,49 @@ assert.equal(pending.filter(item => item.intent === 'scenario.activation.set').l
 managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
+
+// A later unconfirmed write cannot reuse the previous mutation's success.
+session.initStatus = 'ready';
+const previousReadbackCompanyId = session.recordContext?.company_id;
+session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
+const staleReadbackScope = effectScope();
+const staleReadback = staleReadbackScope.run(() => useScenarioActivation())!;
+await flush();
+pending.at(-1)!.settle(catalogResponse());
+await flush();
+const staleBootstrap = session.loadAppInit;
+let staleBootstraps = 0;
+session.loadAppInit = async () => {
+  staleBootstraps += 1;
+  session.initStatus = 'loading';
+  await nextTick();
+  session.initStatus = 'ready';
+  await nextTick();
+};
+const firstMutation = await nextRequest(() => staleReadback.execute(
+  staleReadback.rows.value[0],
+  staleReadback.rows.value[0].actions.find(action => action.key === 'enable')!,
+));
+firstMutation.request.settle(validReadback(true));
+await flush();
+pending.at(-1)!.settle(catalogResponse());
+await firstMutation.result;
+assert.equal(staleReadback.readback.value?.readback.enabled, true);
+const disableAction = staleReadback.rows.value[0].actions.find(action => action.key === 'disable')!;
+const secondMutation = await nextRequest(() => staleReadback.execute(staleReadback.rows.value[0], disableAction));
+secondMutation.request.settle({ enabled: false });
+await secondMutation.result;
+assert.equal(staleReadback.state.value, 'error');
+assert.equal(staleReadback.readback.value, null, 'old success receipt cannot survive an unconfirmed later write');
+assert.match(staleReadback.errorMessage.value, /尚未确认/);
+assert.equal(staleBootstraps, 1, 'unconfirmed response must not trigger navigation refresh');
+staleReadbackScope.stop();
+session.loadAppInit = staleBootstrap;
+session.recordContext = {
+  ...session.recordContext,
+  company_id: previousReadbackCompanyId,
+} as NonNullable<typeof session.recordContext>;
+console.log('[business_scenario_mutation_receipt_isolation_test] PASS cases=4');
 
 // Readiness consumes native remediation and never displays another company's late response.
 const { useEnterpriseReadiness } = await import('../src/composables/useEnterpriseReadiness.ts');

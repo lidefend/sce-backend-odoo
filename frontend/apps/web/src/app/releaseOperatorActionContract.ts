@@ -173,7 +173,6 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
   const surface = record(value, 'release.operator.surface');
   const actions = record(surface.available_actions, 'available_actions');
   const promoteValues = actions.promote;
-  if (promoteValues === undefined) return surface as T;
   if (!Array.isArray(promoteValues)) {
     gap('available_actions.promote', '候选发布动作必须是数组');
   }

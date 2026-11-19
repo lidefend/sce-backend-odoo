@@ -210,6 +210,8 @@ export function useScenarioActivation() {
     const operation = ++mutation;
     busy.value = true;
     errorMessage.value = '';
+    readback.value = null;
+    let verifiedReadback: ScenarioReadback | null = null;
     try {
       const expected = { companyId, sceneKey: row.scene_key,
         enablementScope: row.enablement_scope, targetState: action.enabled };
@@ -217,7 +219,8 @@ export function useScenarioActivation() {
         scene_key: row.scene_key, enablement_scope: row.enablement_scope, enabled: action.enabled } });
       if (!current(key, epoch) || operation !== mutation) return;
       refreshRequired = true;
-      readback.value = requireScenarioReadback(response, expected);
+      verifiedReadback = requireScenarioReadback(response, expected);
+      readback.value = verifiedReadback;
       await session.loadAppInit({ force: true });
       if (current(key, epoch) && operation === mutation) {
         refreshRequired = false;
@@ -226,10 +229,10 @@ export function useScenarioActivation() {
     } catch (error) {
       if (!current(key, epoch) || operation !== mutation) return;
       rows.value = [];
-      readback.value = refreshRequired ? readback.value : null;
+      readback.value = verifiedReadback;
       state.value = 'error';
       const message = error instanceof Error ? error.message : '场景操作失败';
-      errorMessage.value = refreshRequired && readback.value
+      errorMessage.value = refreshRequired && verifiedReadback
         ? `场景状态已保存，但导航刷新失败。请点击刷新恢复：${message}`
         : refreshRequired
           ? `场景写入结果尚未确认，请点击刷新只读恢复：${message}`

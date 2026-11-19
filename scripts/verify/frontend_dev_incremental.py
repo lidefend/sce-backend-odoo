@@ -607,6 +607,8 @@ RULES = (
         "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/app/adminRouteAccess.ts",
         "frontend/apps/web/scripts/admin_route_access_test.ts",
@@ -616,6 +618,13 @@ RULES = (
         "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
     ), (
         "verify.frontend.platform_capability_explorer.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    ), (
+        "verify.frontend.workspace_scenario_lifecycle.unit",
     )),
     Rule((
         "addons/smart_core/core/page_contracts_builder.py",
@@ -1422,6 +1431,11 @@ RULES = (
     Rule((
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
+        "verify.daily.permission_truth.capability.orm",
+    )),
+    Rule((
         "addons/smart_construction_scene/handlers/scenario_activation.py",
         "addons/smart_construction_scene/services/tenant_scene_activation.py",
         "addons/smart_construction_scene/services/scenario_activation_catalog.py",
@@ -1429,6 +1443,7 @@ RULES = (
     ), (
         "verify.navigation.publication_consumers.unit",
         "verify.daily.permission_truth.capability.orm",
+        "verify.admin_close_01.runtime.orm",
     )),
     Rule((
         "addons/smart_construction_core/core_extension_policy_maps.py",

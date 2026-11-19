@@ -56,6 +56,14 @@ function intentOf(request) {
   }
 }
 
+function intentParams(request) {
+  try {
+    return request.postDataJSON()?.params || {};
+  } catch {
+    return {};
+  }
+}
+
 function intentData(body) {
   if (body?.data?.data !== undefined) return body.data.data;
   if (body?.data !== undefined) return body.data;
@@ -141,6 +149,39 @@ async function executeScenarioAction(configPage, scenario, actionKey) {
   return { payload, refreshed };
 }
 
+async function loadScenarioCatalog(configPage) {
+  const response = configPage.waitForResponse((item) => (
+    item.url().includes('/api/v1/intent')
+    && intentOf(item.request()) === 'scenario.activation.catalog.get'
+    && item.status() === 200
+  ));
+  await configPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
+  return intentData(await (await response).json());
+}
+
+async function restoreScenarioState(configPage, restoration) {
+  const catalog = await loadScenarioCatalog(configPage);
+  const scenario = (catalog.business_scenarios || []).find(
+    row => row.scene_key === restoration.sceneKey,
+  );
+  if (!scenario) throw new Error(`restore scenario missing: ${restoration.sceneKey}`);
+  if (scenario.tenant_enabled === restoration.initialEnabled) return;
+  scenario.company_id = catalog.company_id;
+  const result = await executeScenarioAction(
+    configPage,
+    scenario,
+    restoration.initialEnabled ? 'enable' : 'disable',
+  );
+  const restored = (result.refreshed.business_scenarios || []).find(
+    row => row.scene_key === restoration.sceneKey,
+  );
+  if (restored?.tenant_enabled !== restoration.initialEnabled) {
+    throw new Error('restore scenario readback mismatch');
+  }
+}
+
+let restorationTarget = null;
+let restorationPage = null;
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
@@ -324,6 +365,11 @@ try {
       rows: activation.business_scenarios,
     });
     positiveScenario.company_id = activation.company_id;
+    restorationTarget = {
+      sceneKey: positiveScenario.scene_key,
+      initialEnabled: positiveScenario.tenant_enabled === true,
+    };
+    restorationPage = configPage;
     if (positiveScenario.tenant_enabled) {
       await executeScenarioAction(configPage, positiveScenario, 'disable');
       positiveScenario.tenant_enabled = false;
@@ -351,10 +397,19 @@ try {
   ));
   await login(businessPage, BUSINESS_LOGIN, BUSINESS_PASSWORD);
   const businessStartup = intentData(await (await businessStartupResponse).json());
+  check(
+    Number(businessStartup?.record_context?.company_id || 0) === Number(activation.company_id),
+    'ordinary business user remains in the enterprise target company',
+  );
   const ledgerNode = findNavigationNode(businessStartup?.navigation?.nav || [], (node) => (
     node.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
     || node.meta?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
   ));
+  const ledgerActionXmlid = String(
+    ledgerNode?.action_xmlid
+    || ledgerNode?.meta?.action_xmlid
+    || '',
+  ).trim();
   const ledgerMenuId = Number(
     ledgerNode?.menu_id
     || ledgerNode?.meta?.menu_id
@@ -363,10 +418,22 @@ try {
   );
   let businessPositiveFailure = '';
   if (ledgerMenuId > 0) {
+    check(
+      ledgerActionXmlid === 'smart_construction_core.action_sc_project_list',
+      'project-ledger navigation binds the expected action identity',
+      { menuId: ledgerMenuId, actionXmlid: ledgerActionXmlid },
+    );
+    const listResponse = businessPage.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'api.data'
+      && ['list', 'search'].includes(String(intentParams(response.request()).op || ''))
+      && response.status() === 200
+    ));
     await businessPage.goto(
       `${BASE_URL}/t/${ENTRY_NAMESPACE}/m/${ledgerMenuId}`,
       { waitUntil: 'domcontentloaded' },
     );
+    await listResponse;
   } else {
     await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
   }
@@ -388,11 +455,9 @@ try {
       { waitUntil: 'domcontentloaded' },
     );
   }
-  await businessPage.waitForFunction(() => {
-    const text = document.body?.textContent || '';
-    return text.includes('项目台账') || text.includes('项目看板') || text.includes('访问被拒绝') || text.includes('权限');
-  }, null, { timeout: 60000 });
-  const businessText = await businessPage.locator('body').innerText();
+  const businessSurface = businessPage.locator('main').first();
+  await businessSurface.waitFor({ state: 'visible', timeout: 60000 });
+  const businessText = await businessSurface.innerText();
   if (REQUIRE_ENTERPRISE_POSITIVE) {
     if (!businessText.includes('项目台账')) {
       businessPositiveFailure = 'ordinary business user opens the enabled project ledger';
@@ -416,7 +481,6 @@ try {
         : 'explicit_denial',
   };
   await businessPage.screenshot({ path: path.join(ARTIFACT_DIR, '04-business-entry.png'), fullPage: true });
-  await businessContext.close();
 
   if (positiveScenario) {
     const disabled = await executeScenarioAction(configPage, positiveScenario, 'disable');
@@ -425,6 +489,25 @@ try {
       (scenario) => scenario.scene_key === positiveScenario.scene_key,
     );
     check(afterDisable?.tenant_enabled === false, 'enterprise disable is read back as disabled');
+    const afterDisableStartupResponse = businessPage.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'system.init'
+      && response.status() === 200
+    ));
+    await businessPage.reload({ waitUntil: 'domcontentloaded' });
+    const afterDisableStartup = intentData(await (await afterDisableStartupResponse).json());
+    const afterDisableLedger = findNavigationNode(afterDisableStartup?.navigation?.nav || [], (node) => (
+      node.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+      || node.meta?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    ));
+    check(
+      !afterDisableLedger,
+      'disabled enterprise scenario is removed from the same user formal navigation',
+    );
+    check(
+      Number(afterDisableStartup?.record_context?.company_id || 0) === Number(activation.company_id),
+      'same business user remains bound to the enterprise target company after disable',
+    );
     await configPage.screenshot({
       path: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
       fullPage: true,
@@ -435,7 +518,10 @@ try {
       url: configPage.url(),
     });
     if (businessPositiveFailure) check(false, businessPositiveFailure);
+    await restoreScenarioState(configPage, restorationTarget);
+    restorationTarget = null;
   }
+  await businessContext.close();
   await configContext.close();
 
   check(report.errors.length === 0, 'management journey has no browser errors', report.errors);
@@ -443,6 +529,20 @@ try {
   await fs.writeFile(path.join(ARTIFACT_DIR, 'summary.json'), JSON.stringify(report, null, 2));
   console.log(`[admin_close_01.management_browser] PASS assertions=${report.assertions.length}`);
 } catch (error) {
+  if (restorationTarget && restorationPage && !restorationPage.isClosed()) {
+    try {
+      await restoreScenarioState(restorationPage, restorationTarget);
+      report.assertions.push({
+        pass: true,
+        message: 'enterprise scenario initial state restored after journey failure',
+      });
+    } catch (restoreError) {
+      report.errors.push({
+        type: 'restore',
+        text: restoreError instanceof Error ? restoreError.message : String(restoreError),
+      });
+    }
+  }
   report.errors.push({ type: 'journey', text: error instanceof Error ? error.message : String(error) });
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
   await fs.writeFile(path.join(ARTIFACT_DIR, 'summary.json'), JSON.stringify(report, null, 2));

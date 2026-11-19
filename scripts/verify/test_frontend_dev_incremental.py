@@ -526,6 +526,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
         for path in (
             "addons/smart_construction_scene/handlers/scenario_activation.py",
+            "addons/smart_construction_scene/services/tenant_scene_activation.py",
             "addons/smart_construction_scene/services/scenario_activation_catalog.py",
             "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
         ):
@@ -533,6 +534,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertEqual(
                     select_targets([path]),
                     [
+                        "verify.admin_close_01.runtime.orm",
                         "verify.daily.permission_truth.capability.orm",
                         "verify.navigation.publication_consumers.unit",
                     ],
