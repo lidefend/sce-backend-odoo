@@ -102,7 +102,7 @@ try {
   check(selectedRow, 'governed catalog exposes at least one capability entry');
   if (!projectRow) {
     report.api.project_ledger_browser_available = false;
-    report.api.project_ledger_browser_reason = 'ACTIVE_LOCAL_DEV_MENU_SET_EXCLUDES_PROJECT_LEDGER';
+    report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
   } else {
     report.api.project_ledger_browser_available = true;
   }
@@ -212,8 +212,14 @@ try {
   if (await ledgerMenu.count()) {
     await ledgerMenu.click();
   } else {
-    await dashboardMenu.waitFor({ timeout: 60000 });
-    await dashboardMenu.click();
+    const navigationMenuId = await dashboardMenu.evaluate((element) => (
+      element.closest('li[data-navigation-menu-id]')?.getAttribute('data-navigation-menu-id') || ''
+    ));
+    check(navigationMenuId, 'project dashboard formal navigation node declares its menu identity');
+    await businessPage.goto(
+      `${BASE_URL}/t/${ENTRY_NAMESPACE}/m/${encodeURIComponent(navigationMenuId)}`,
+      { waitUntil: 'domcontentloaded' },
+    );
   }
   await businessPage.waitForFunction(() => {
     const text = document.body?.textContent || '';
