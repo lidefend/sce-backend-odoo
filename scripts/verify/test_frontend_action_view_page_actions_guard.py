@@ -27,6 +27,15 @@ class ActionViewPageActionsGuardTest(unittest.TestCase):
         altered = self.source.replace('@close="closeBusinessCategoryCreatePicker"', '@close="legacyClose"')
         self.assertTrue(any("closeBusinessCategoryCreatePicker" in error for error in validate(altered)))
 
+    def test_standard_list_keeps_context_return_control(self):
+        altered = self.source.replace(
+            '<ScLinkButton v-if="standardListOperationsInCard && contextReturnHref"',
+            '<ScLinkButton v-if="false"',
+        )
+        self.assertTrue(
+            any("contextReturnHref" in error for error in validate(altered))
+        )
+
     def test_stateful_filter_chip_cannot_be_erased(self):
         altered = self.source.replace('v-for="chip in vm.filters.quickFilters.primary"', 'v-for="item in genericActions"')
         self.assertTrue(any("stateful native control" in error for error in validate(altered)))

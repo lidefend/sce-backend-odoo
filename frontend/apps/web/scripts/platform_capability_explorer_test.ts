@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { ApiError } from '../src/api/client';
 import {
   buildCapabilityCatalogEntryAddParams,
@@ -1093,6 +1094,20 @@ check(
   contextReturnHref(previewTarget?.query || {}),
   '/admin/release-operator?product_key=construction.preview',
   'generic action navigation consumes the backend-bound return product',
+);
+const platformRouter = createRouter({
+  history: createMemoryHistory('/platform-admin'),
+  routes: [{
+    path: '/admin/release-operator',
+    component: {},
+  }],
+});
+check(
+  platformRouter.resolve(
+    contextReturnHref(previewTarget?.query || {}),
+  ).href,
+  '/platform-admin/admin/release-operator?product_key=construction.preview',
+  'router resolution preserves the platform entry prefix',
 );
 check(
   decodedPromotion.business_scene_composition_states.draft.scenarios[0].entries[0].sequence,

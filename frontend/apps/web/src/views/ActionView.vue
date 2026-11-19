@@ -472,6 +472,7 @@
       @column-preferences-reset="handleListColumnPreferencesReset"
     >
       <template #leading>
+        <ScLinkButton v-if="standardListOperationsInCard && contextReturnHref" :href="contextReturnHref" variant="ghost">{{ contextReturnLabel }}</ScLinkButton>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
         <ScButton
           v-for="action in collectionActions"
@@ -2009,7 +2010,8 @@ const toolbarUiLabels = computed<Record<string, string>>(() => {
 function toolbarUiLabel(key: string, fallback: string) { return toolbarUiLabels.value[key] || fallback; }
 
 const contextReturnHref = computed(() => {
-  return resolveContextReturnHref(route.query as Record<string, unknown>);
+  const target = resolveContextReturnHref(route.query as Record<string, unknown>);
+  return target ? router.resolve(target).href : '';
 });
 
 const contextReturnLabel = computed(() => {

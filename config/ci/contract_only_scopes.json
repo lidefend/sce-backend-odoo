@@ -95,6 +95,7 @@
         "addons/smart_core/tests/test_platform_capability_explorer.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "addons/smart_construction_core/__init__.py",
         "addons/smart_construction_core/core_extension.py",
         "config/ci/contract_only_scopes.json",
         "contracts/generated/contract_structure_fingerprint.json",
@@ -121,6 +122,8 @@
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+        "scripts/verify/frontend_action_view_page_actions_guard.py",
+        "scripts/verify/test_frontend_action_view_page_actions_guard.py",
         "scripts/verify/frontend_dev_incremental.py"
       ],
       "targets": [

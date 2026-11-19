@@ -21,6 +21,7 @@
     "addons/smart_core/tests/test_platform_capability_explorer.py",
     "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_construction_core/__init__.py",
     "addons/smart_construction_core/core_extension.py",
     "config/ci/contract_only_scopes.json",
     "contracts/generated/contract_structure_fingerprint.json",
@@ -47,6 +48,8 @@
     "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
     "frontend/apps/web/src/views/ReleaseOperatorView.vue",
     "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+    "scripts/verify/frontend_action_view_page_actions_guard.py",
+    "scripts/verify/test_frontend_action_view_page_actions_guard.py",
     "scripts/verify/frontend_dev_incremental.py"
   ],
   "environment": {
@@ -133,6 +136,7 @@
         "addons/smart_core/delivery/release_operator_surface_service.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "addons/smart_construction_core/__init__.py",
         "addons/smart_construction_core/core_extension.py",
         "make/guards.mk"
       ],
@@ -213,7 +217,7 @@
     "scope": "Contract-only P0/P1 source behavior and affected frontend consumers",
     "passed": [
       "verify.platform.capability_explorer.unit: passed; 40 backend capability tests",
-      "verify.admin_close_01.backend.unit: passed; release-operator and adjacent backend suites, 159 tests",
+      "verify.admin_close_01.backend.unit: passed; release-operator and adjacent backend suites, 160 tests",
       "verify.daily.published_face.target.unit: passed; 8 tests",
       "verify.product_center.policy.unit: passed; 15 tests",
       "verify.navigation.publication_consumers.unit: passed; affected scenario and navigation consumers, 276 tests",
@@ -234,7 +238,9 @@
       "P1 declares the construction maintenance provider and product applicability; platform/other products receive not-applicable state",
       "maintenance return context survives generic action/form navigation and rebinds to the backend-declared readback product",
       "scenario and entry sequences accept signed integers; explicit zero center sequence is preserved and participates in diffs",
-      "snapshot release-draft metadata is read from snapshot_json when meta.release_draft is absent"
+      "snapshot release-draft metadata is read from snapshot_json when meta.release_draft is absent",
+      "the registered smart_construction_core root exports both the maintenance provider and maintained-composition hook through the actual extension loader",
+      "the context-return control is visible in standard list leading actions and router resolution preserves the active platform entry base"
     ],
     "p4_correction": [
       "The first remote contract-only run attempted the esbuild-dependent frontend capability-explorer target without frontend dependencies. The target remains an owning check in frontend_release_gate and was removed from the contract-only list; the Python/node-independent control-plane scope is unchanged."

@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+import ast
 import importlib.util
 import json
 import sys
@@ -74,6 +75,9 @@ READ_MODEL_MODULE = sys.modules[
 ]
 COMPOSITION = sys.modules[
     "odoo.addons.smart_core.delivery.product_scene_composition"
+]
+EXTENSION_HOOKS = sys.modules[
+    "odoo.addons.smart_core.utils.extension_hooks"
 ]
 TARGET = _load_module(
     "odoo.addons.smart_core.delivery.release_operator_surface_service",
@@ -272,6 +276,69 @@ class _ConfigParameter:
 
 
 class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
+    def test_registered_extension_root_exports_business_scenario_hooks(self):
+        extension_path = (
+            ROOT / "addons/smart_construction_core/core_extension.py"
+        )
+        extension_tree = ast.parse(extension_path.read_text(encoding="utf-8"))
+        extension_functions = {
+            node.name
+            for node in extension_tree.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        init_path = ROOT / "addons/smart_construction_core/__init__.py"
+        init_tree = ast.parse(init_path.read_text(encoding="utf-8"))
+        exported = {
+            alias.name
+            for node in init_tree.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "core_extension"
+            for alias in node.names
+        }
+        required = {
+            "smart_core_business_scenario_maintenance",
+            "smart_core_product_scene_composition",
+        }
+        self.assertTrue(required.issubset(extension_functions))
+        self.assertTrue(required.issubset(exported))
+
+        root_module = types.ModuleType(
+            "odoo.addons.smart_construction_core"
+        )
+        for hook_name in required:
+            setattr(
+                root_module,
+                hook_name,
+                lambda *_args, _name=hook_name, **_kwargs: _name,
+            )
+
+        class Env(dict):
+            def __init__(self):
+                super().__init__({
+                    "ir.config_parameter": _ConfigParameter(
+                        "",
+                        params={
+                            "sc.core.extension_modules": (
+                                "smart_construction_core"
+                            )
+                        },
+                    )
+                })
+
+        with patch.object(
+            EXTENSION_HOOKS.importlib,
+            "import_module",
+            return_value=root_module,
+        ):
+            for hook_name in sorted(required):
+                self.assertEqual(
+                    EXTENSION_HOOKS.call_extension_hook_first(
+                        Env(),
+                        hook_name,
+                    ),
+                    hook_name,
+                )
+
     def test_platform_action_definitions_declare_complete_policy_inputs(self):
         definition = MANAGEMENT_ACTIONS.management_action_definition(
             "update_policy"

@@ -65,6 +65,8 @@ Python/Node 无依赖的控制面检查范围不变。
 - `return_url`、`return_label`、`return_product_key` 已进入通用导航保留字段，ActionView 实际消费并生成返回控制台链接。
 - 场景与入口排序使用有符号整数；中心顺序显式 `0` 不再被默认成 `10`，`0 -> 10` 会产生差异。
 - 冻结候选的业务场景摘要和数量优先读取 `snapshot_json.release_draft`，不再只依赖 `meta.release_draft`。
+- `smart_construction_core` 根包显式导出维护提供者和业务组合 hook，实际扩展 loader 能命中施工产品；平台产品仍返回不适用。
+- 返回控件在标准列表 leading 区也可见；返回 href 经 Vue Router 解析，保留 `/platform-admin` 等入口前缀。
 
 一次增量规划因新增 P1 扩展文件自动选中页面冻结和权限真值 ORM；运行在首个
 `verify.daily.permission_truth.capability.orm` 处被立即中断，日志只有
