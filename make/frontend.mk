@@ -1467,8 +1467,8 @@ SC_LIST_PREVIEW_URL_KEYS := SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_B
 SC_LIST_PREVIEW_DB_KEYS := SC_ACCEPTANCE_DATABASE E2E_DB FRONTEND_ACCEPTANCE_DB
 SC_LIST_PREVIEW_FRONTEND_URL := $(if $(filter candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:5178,$(if $(filter navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:18091/t/clean,http://127.0.0.1:5180))
 SC_LIST_PREVIEW_DB := $(if $(filter candidate navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),sc_frontend_acceptance_candidate,sc_frontend_acceptance)
-ifeq ($(filter local candidate navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),)
-$(error DENY standard list surface profile: SC_ACCEPTANCE_RUNTIME_PROFILE must be local, candidate or navux_branch)
+ifeq ($(filter local candidate navux_branch disposable,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),)
+$(error DENY standard list surface profile: SC_ACCEPTANCE_RUNTIME_PROFILE must be local, candidate, navux_branch or disposable)
 endif
 # Arguments: diagnostic name, origin, value, exact registered value.
 define sc_list_preview_explicit_input

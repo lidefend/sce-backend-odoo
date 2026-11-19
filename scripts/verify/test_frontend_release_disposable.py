@@ -14,6 +14,12 @@ import frontend_release_disposable as runner
 
 
 class DisposableReleaseTest(unittest.TestCase):
+    def test_make_accepts_disposable_profile_before_runtime(self):
+        result = subprocess.run(["make", "-n", "acceptance.runtime.carrier.provision",
+                                 "SC_ACCEPTANCE_RUNTIME_PROFILE=disposable"],
+                                cwd=ROOT, text=True, capture_output=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+
     def test_resources_do_not_alias_registered_persistent_profiles(self):
         disposable = runner.resolve('disposable')
         for name in ('local', 'candidate'):
