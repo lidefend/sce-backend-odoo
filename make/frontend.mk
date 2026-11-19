@@ -1851,7 +1851,7 @@ verify.frontend.release.unit: verify.frontend.scene_primitive_adapter.unit verif
 
 .PHONY: verify.frontend.release.disposable
 verify.frontend.release.disposable: guard.prod.forbid confirm.frontend.release.audit
-	@python3 scripts/dev/frontend_release_disposable.py
+	@python3 scripts/dev/frontend_release_disposable.py $(if $(filter 1,$(FRONTEND_RELEASE_FAILURE_PROBE)),--probe,)
 
 .PHONY: verify.acceptance.disposable.unit
 verify.acceptance.disposable.unit:

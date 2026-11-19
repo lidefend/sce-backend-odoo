@@ -89,7 +89,7 @@ def offline_stage(stage, args):
     return status
 
 
-def main():
+def main(probe=False):
     env = {key: os.environ[key] for key in ('PATH', 'HOME', 'DOCKER_CONFIG', 'XDG_RUNTIME_DIR')
            if key in os.environ}
     if command(['git', 'status', '--porcelain'], env, capture=True).stdout.strip():
@@ -155,9 +155,10 @@ def main():
                 owner['provisioned'] = True
                 owner_path.write_text(json.dumps(owner, indent=2) + '\n')
             command(['make', '--no-print-directory', 'acceptance.runtime.preflight'], env)
-            result = command(['make', '--no-print-directory', 'verify.frontend.release.local'],
+            target = 'verify.frontend.delivery_hardening.release.browser' if probe else 'verify.frontend.release.local'
+            result = command(['make', '--no-print-directory', target],
                              env, check=False).returncode
-            if result == 0:
+            if result == 0 and not probe:
                 result = command(['make', '--no-print-directory', 'acceptance.frontend.fixture_orm'],
                                  env, check=False).returncode
         finally:
@@ -166,27 +167,27 @@ def main():
             if not unchanged:
                 result = 1
             targets = ('frontend.acceptance.down', 'backend.acceptance.down',
-                       'acceptance.runtime.carrier.discard') if result == 0 else ()
+                       'acceptance.runtime.carrier.discard') if result == 0 and not probe else ()
             for target in targets:
                 status = command(['make', '--no-print-directory', target], env, check=False).returncode
                 cleanup.append(dict(target=target, status=status))
             absent = False
-            if result == 0:
+            if result == 0 and not probe:
                 try:
                     require_absent(profile, env)
                     absent = True
                 except (ValueError, OSError):
                     pass
             receipt = dict(head=head, project=profile['COMPOSE_PROJECT_NAME'],
-                           database=profile['DB_NAME'], release_status=result,
+                           database=profile['DB_NAME'], release_status=result, probe_only=probe,
                            cleanup=cleanup, resources_absent=absent, source_unchanged=unchanged)
             (STATE / 'receipt.json').write_text(json.dumps(receipt, indent=2) + '\n')
             if absent:
                 credential_path.unlink()
                 owner_path.unlink()
-            elif result != 0:
+            elif result != 0 or probe:
                 print('[release.disposable] RETAINED environment and credentials for retry', flush=True)
-            if not unchanged or (result == 0 and (not absent or any(item['status'] for item in cleanup))):
+            if not unchanged or (result == 0 and not probe and (not absent or any(item['status'] for item in cleanup))):
                 result = 1
             print('[release.disposable] receipt=' + str(STATE / 'receipt.json'), flush=True)
         return result
@@ -196,7 +197,7 @@ if __name__ == '__main__':
     try:
         if len(sys.argv) > 2 and sys.argv[1] == '--stage':
             raise SystemExit(offline_stage(sys.argv[2], sys.argv[3:]))
-        raise SystemExit(main())
+        raise SystemExit(main(probe=sys.argv[1:] == ["--probe"]))
     except (ValueError, OSError, subprocess.CalledProcessError) as exc:
         # Never print subprocess argv/environment: it can contain credentials.
         print('[release.disposable] FAIL ' + (str(exc) if isinstance(exc, ValueError) else type(exc).__name__))
