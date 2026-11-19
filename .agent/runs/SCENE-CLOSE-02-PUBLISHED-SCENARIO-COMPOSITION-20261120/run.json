@@ -269,7 +269,7 @@
       "make verify.ci.workflow.contract: passed",
       "explicit risk classifier probe: contract-only scope matched exact branch/base/path set; orm_required=false and managed_orm_required=false",
       "make verify.frontend.dev.incremental.unit: 186 tests passed",
-      "make verify.product.entry_publication.unit: 15 tests passed"
+      "make verify.product.entry_publication.unit: 19 tests passed"
     ],
     "review_remediation": [
       "native execution authority no longer consumes product page publication as an allowlist",
