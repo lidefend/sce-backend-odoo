@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120
-  status: active
+  status: completed
   formal_product_layer: P0/P1
   layer_target: >-
     Product release snapshot carrier for business-navigation scenario composition

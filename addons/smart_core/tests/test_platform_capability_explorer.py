@@ -486,9 +486,56 @@ class ProjectionContractTests(unittest.TestCase):
         self.assertEqual(detail["release"]["state"], "released")
         self.assertEqual(
             detail["diagnostics"]["visibility_reason"],
+            "CURRENT_USER_ENTRY_AVAILABLE",
+        )
+        self.assertEqual(
+            detail["diagnostics"]["current_user_access"][
+                "product_composition_facts"
+            ]["qualification_reason_code"],
             "PRODUCT_QUALIFICATION_NOT_VERIFIED",
         )
-        self.assertFalse(detail["visibility"]["can_use"])
+        self.assertTrue(detail["visibility"]["can_use"])
+        self.assertFalse(
+            detail["diagnostics"]["current_user_access"][
+                "product_composition_facts"
+            ]["qualified"]
+        )
+
+    def test_product_and_enterprise_facts_do_not_block_native_access(self):
+        assessment = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=[11],
+            acl_rows=[{"read": True, "group_id": 0}],
+            standard_qualified="not_qualified",
+            product_release_state="hidden",
+            enterprise_enablement={
+                "status": "disabled",
+                "reason_code": "ENTERPRISE_SCENARIO_NOT_ENABLED",
+            },
+            menu_group_ids=[11],
+            action_group_ids=[],
+        )
+        self.assertTrue(assessment["entry_groups_allowed"])
+        self.assertTrue(assessment["model_read_allowed"])
+        self.assertEqual(
+            assessment["reason_code"],
+            "CURRENT_USER_ENTRY_AVAILABLE",
+        )
+        self.assertEqual(assessment["blockers"], [])
+        self.assertEqual(
+            assessment["product_composition_facts"],
+            {
+                "qualification_status": "not_qualified",
+                "qualified": False,
+                "qualification_reason_code": "PRODUCT_NOT_QUALIFIED",
+                "release_state": "hidden",
+                "reviewed_by_product_release": False,
+                "enterprise_enablement_status": "disabled",
+                "enterprise_enabled": False,
+            },
+        )
 
     def test_access_layers_report_group_and_acl_denials_independently(self):
         denied = MODULE.access_layer_assessment(

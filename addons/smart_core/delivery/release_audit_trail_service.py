@@ -119,6 +119,10 @@ class ReleaseAuditTrailService:
             "promotion_note": _text(payload.get("promotion_note")),
             "note": _text(payload.get("note")),
             "freeze_surface": self._freeze_surface_summary(snapshot_json),
+            "business_scene_composition": deepcopy(
+                _dict(snapshot_json.get("business_scene_composition"))
+            ),
+            "policy_sha256": _text(snapshot_json.get("policy_sha256")),
             "meta": deepcopy(meta_json),
         }
 

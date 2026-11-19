@@ -74,6 +74,73 @@
         "acceptance.frontend.fixture",
         "acceptance.frontend.fixture_orm"
       ]
+    },
+    {
+      "id": "SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120",
+      "branch": "feature/scene-close-03-admin-composition-ux-20261120",
+      "base_sha": "630c3338274cf3906522f06f7011cf5ba9958f66",
+      "reason": "Owner-approved contract-only validation for capability availability facts, business-scenario composition management and frontend consumption.",
+      "allowed_paths": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+        ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+        ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+        ".agent/runs/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120/run.json",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
+        "addons/smart_core/delivery/release_audit_trail_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "config/ci/contract_only_scopes.json",
+        "contracts/generated/contract_structure_fingerprint.json",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/e2e_journey_matrix.md",
+        "docs/engineering_convergence/github_remote_execute.sh",
+        "docs/engineering_convergence/github_remote_execution_plan.md",
+        "docs/engineering_convergence/module_dependency_map.md",
+        "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "targets": [
+        "verify.agent.resume.unit",
+        "verify.agent.ledger.unit",
+        "verify.platform.capability_explorer.unit",
+        "verify.admin_close_01.backend.unit",
+        "verify.product_center.policy.unit",
+        "verify.daily.published_face.target.unit",
+        "verify.navigation.publication_consumers.unit",
+        "verify.frontend.platform_capability_explorer.unit",
+        "verify.frontend.dev.incremental.unit",
+        "verify.ci.workflow.contract",
+        "verify.github_actions.security"
+      ],
+      "excluded_targets": [
+        "verify.platform.capability_explorer.orm",
+        "verify.release.operator.runtime.orm",
+        "verify.product_center.policy.orm",
+        "verify.admin_close_01.runtime.orm",
+        "verify.admin_close_01.scene.module_baseline",
+        "acceptance.frontend.fixture",
+        "acceptance.frontend.fixture_orm"
+      ]
     }
   ]
 }

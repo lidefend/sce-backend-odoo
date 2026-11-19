@@ -3,7 +3,7 @@
   "id": "SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120",
   "branch": "feature/scene-close-02-published-scenario-composition-20261120",
   "baseline_sha": "f0df3409eca16f0852764aca4632307b026873a4",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
   "record": "docs/ops/iterations/scene_close_02_published_scenario_composition_20261120.md",
   "scope": [
@@ -76,7 +76,7 @@
     },
     {
       "id": "ROLLBACK-AND-REVIEW",
-      "status": "planned",
+      "status": "completed",
       "owner": "owner_review",
       "exit": "Rollback source selection, exact-head validation and review are closed"
     }
@@ -309,5 +309,15 @@
     "L4": "Not applicable by owner continuation: no browser matrix or environment rebuild",
     "L5": "Exact-head owner review and required remote checks at publication"
   },
-  "next_exact_step": "Commit the P1 execution-identity scenario reference fix and publish the amended PR #945 exact head"
+  "completion": {
+    "mainline_sha": "630c3338274cf3906522f06f7011cf5ba9958f66",
+    "candidate_head": "375c006599105b2a2877eb4a3bf0e647e6fda1c3",
+    "candidate_tree": "d5ca15b72b95383f75189606d87e176d72cd034a",
+    "merge_tree": "d5ca15b72b95383f75189606d87e176d72cd034a",
+    "merged_at": "2026-11-19T18:37:47Z",
+    "status": "mainline_integration_completed",
+    "deployment": "not_run",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Historical batch is closed; start the next product task from main 630c3338274cf3906522f06f7011cf5ba9958f66."
 }

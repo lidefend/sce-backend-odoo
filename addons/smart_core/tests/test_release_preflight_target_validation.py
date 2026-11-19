@@ -68,6 +68,9 @@ TARGET = _load_module(
     "odoo.addons.smart_core.delivery.edition_release_snapshot_service",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
 )
+COMPOSITION = sys.modules[
+    "odoo.addons.smart_core.delivery.product_scene_composition"
+]
 
 
 class TestReleasePreflightTargetValidation(unittest.TestCase):
@@ -89,10 +92,10 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
         second = deepcopy(first)
         second["scenarios"][0]["name"] = "Project renamed"
 
-        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)):
-            with patch.object(TARGET, "call_extension_hook_first", return_value=first):
+        with patch.object(COMPOSITION, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)):
+            with patch.object(COMPOSITION, "call_extension_hook_first", return_value=first):
                 first_policy = service._compose_policy_draft(policy)
-            with patch.object(TARGET, "call_extension_hook_first", return_value=second):
+            with patch.object(COMPOSITION, "call_extension_hook_first", return_value=second):
                 second_policy = service._compose_policy_draft(policy)
 
         self.assertEqual(
@@ -196,8 +199,8 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             }
         )
 
-        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
-            TARGET,
+        with patch.object(COMPOSITION, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            COMPOSITION,
             "call_extension_hook_first",
             return_value=composition,
         ):
@@ -332,8 +335,8 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             promote_to_released=lambda record_id, **kwargs: model.created[0].to_runtime_dict(),
         )
 
-        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
-            TARGET,
+        with patch.object(COMPOSITION, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            COMPOSITION,
             "call_extension_hook_first",
             return_value=composition,
         ):

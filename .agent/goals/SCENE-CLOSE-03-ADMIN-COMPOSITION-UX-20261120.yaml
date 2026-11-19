@@ -1,0 +1,49 @@
+schema_version: 1
+goal:
+  id: SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120
+  status: active
+  formal_product_layer: P0/P1
+  layer_target: >-
+    Platform management projections and construction business-scenario maintenance
+    consumed by the release operator and capability explorer.
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - scripts/ci
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_shared_runtime_maintenance
+  objective: >-
+    Let an administrator distinguish native capability availability from product
+    composition facts, inspect draft/candidate/active business-scenario
+    compositions from their authoritative sources, and enter the existing native
+    shared maintenance surface without widening permissions.
+  product_result: >-
+    The capability explorer reports native entry availability and product
+    composition/enablement as independent facts. The release operator shows the
+    current draft, frozen candidate and active composition with their identities
+    and differences, and provides an authorized route to the existing shared
+    sc.product.scenario maintenance views.
+  why_here: >-
+    smart_core owns generic release/capability projections; smart_construction_core
+    owns the existing shared construction scenario definitions. The Vue surface
+    consumes these declarations without inventing product or permission semantics.
+  why_not_elsewhere:
+    - Product publication must not revoke an installed native capability.
+    - The frontend must not read maintenance records to synthesize candidate or active compositions.
+    - The shared scenario model must not be presented as product-private or tenant-private.
+    - This batch does not widen scenario write permissions.
+  blast_radius:
+    behavior:
+      - platform capability availability and product composition facts
+      - release-operator business-scenario composition projection
+      - native shared scenario maintenance entry and return context
+      - capability explorer, release operator and business-configuration copy
+  exclusions:
+    - ORM, module baselines, module upgrade and environment rebuild
+    - browser matrix and deployment
+    - rewriting sc.product.scenario ACL or introducing product/company fields
+    - multi-product enterprise runtime context
+  rollback: >-
+    Revert the P0/P1 and frontend candidate together. Existing release snapshots
+    remain immutable and no schema or database migration is introduced.

@@ -227,11 +227,11 @@
           />
         </header>
 
-        <ScSection title="最终可用性">
+        <ScSection title="原生当前可用性">
           <div class="capability-explorer__availability-head">
             <ScStatusBadge
               :value="detail.visibility.can_use ? 'available' : 'denied'"
-              :label="detail.visibility.can_use ? '当前用户可用' : '当前用户不可用'"
+              :label="detail.visibility.can_use ? '当前用户原生可用' : '当前用户原生不可用'"
               :semantic="detail.visibility.can_use ? 'success' : 'danger'"
             />
             <code>{{ detail.visibility.reason_code }}</code>
@@ -245,7 +245,7 @@
           <ScInlineState
             v-else
             state="success"
-            label="原生来源、产品资格、版本、企业启用和当前用户权限均未返回阻断。"
+            label="原生来源、消费者支持、菜单/动作组和模型 ACL 均通过；产品组合与企业启用在下方独立呈现。"
           />
         </ScSection>
 
@@ -755,14 +755,24 @@ const availabilityItems = computed(() => {
   if (!detail.value) return [];
   const actor = detail.value.visibility.actor;
   const enterprise = detail.value.enterprise_enablement;
+  const productFacts = detail.value.current_user_access.product_composition_facts;
   return [
     { key: 'actor', label: '操作者身份', value: `${actor.name || actor.login || '—'} (${actor.login || actor.user_id})` },
     { key: 'actor_company', label: '操作者公司', value: actor.company_name || String(actor.company_id || '—') },
     { key: 'target_company', label: '本次目标公司', value: enterprise.company_name || String(enterprise.company_id || '—') },
-    { key: 'enterprise', label: '企业启用', value: `${enterprise.status} · ${enterprise.reason_code}` },
     { key: 'group', label: '入口组权限', value: detail.value.current_user_access.entry_groups_allowed ? '满足' : '不满足' },
     { key: 'acl', label: '模型读取', value: detail.value.current_user_access.model_read_allowed ? '满足' : '不满足' },
     { key: 'record', label: '记录范围', value: detail.value.current_user_access.record_scope },
+    {
+      key: 'product_composition',
+      label: '产品组合事实',
+      value: `${productFacts.qualified ? '已取得资格' : '未取得资格'} · ${productFacts.qualification_reason_code} · 入口状态 ${productFacts.release_state}`,
+    },
+    {
+      key: 'enterprise',
+      label: '企业场景事实',
+      value: `${productFacts.enterprise_enablement_status} · ${enterprise.reason_code}`,
+    },
   ];
 });
 

@@ -16,6 +16,7 @@ from .release_operator_contract_versions import (
 )
 from .platform_catalog_action_contract import add_catalog_entry_action_contract
 from .platform_management_action_contract import configured_management_action
+from .product_scene_composition import canonical_sha256, compose_product_policy
 from .product_identity import (
     LEGACY_DEFAULT_BASE_PRODUCT_KEY,
     default_operator_product_keys,
@@ -42,6 +43,172 @@ PAGE_CONTROL_DEFINITION = [
     {"key": "access_level", "label": "可见范围", "meaning": "public 全部授权用户；internal 内部；role_restricted 后续按角色策略限制。"},
     {"key": "source_identity", "label": "来源证据", "meaning": "记录真实 ir.ui.menu、action、res_model 与源数据库，保证平台管控对象与用户入口一致。"},
 ]
+
+BUSINESS_SCENE_COMPOSITION_MANAGEMENT_VERSION = (
+    "business_scene_composition_management.v1"
+)
+SCENARIO_INTENT_LABELS = {
+    "handle": "办理",
+    "view": "查看",
+    "approve": "审批",
+    "report": "报表",
+    "master_data": "基础信息维护",
+}
+
+
+def _project_business_scene_composition(
+    composition: dict[str, Any] | None,
+    *,
+    status: str,
+    identity: dict[str, Any] | None = None,
+) -> dict[str, Any]:
+    status_labels = {
+        "draft": "当前维护草稿",
+        "candidate": "冻结候选",
+        "active": "当前生效版本",
+        "not_frozen": "尚未冻结候选",
+        "no_active_release": "尚无生效版本",
+    }
+    if composition is None:
+        return {
+            "contract_version": BUSINESS_SCENE_COMPOSITION_MANAGEMENT_VERSION,
+            "status": status,
+            "status_label": status_labels.get(status, status),
+            "available": False,
+            "reason_code": (
+                "BUSINESS_SCENE_COMPOSITION_NOT_FROZEN"
+                if status == "not_frozen"
+                else "BUSINESS_SCENE_COMPOSITION_NO_ACTIVE_RELEASE"
+            ),
+            "identity": dict(identity or {}),
+            "source_db": "",
+            "runtime_scope": "",
+            "scenario_count": 0,
+            "entry_count": 0,
+            "empty": False,
+            "digest": "",
+            "scenarios": [],
+        }
+    payload = dict(composition)
+    scenarios = []
+    entry_count = 0
+    for scenario in sorted(
+        [row for row in _list(payload.get("scenarios")) if isinstance(row, dict)],
+        key=lambda row: (
+            int(row.get("sequence") or 0),
+            _text(row.get("key")),
+        ),
+    ):
+        entries = []
+        for binding in sorted(
+            [
+                row
+                for row in _list(scenario.get("bindings"))
+                if isinstance(row, dict)
+            ],
+            key=lambda row: (
+                int(row.get("sequence") or 0),
+                _text(row.get("intent")),
+                _text(row.get("menu_key")),
+                int(row.get("entry_id") or 0),
+            ),
+        ):
+            intent = _text(binding.get("intent"))
+            entries.append(
+                {
+                    "entry_id": int(binding.get("entry_id") or 0),
+                    "menu_key": _text(binding.get("menu_key")),
+                    "menu_id": int(binding.get("menu_id") or 0),
+                    "intent": intent,
+                    "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+                    "sequence": int(binding.get("sequence") or 0),
+                    "center_key": _text(binding.get("center_key")),
+                    "center_name": _text(binding.get("center_name")),
+                    "center_sequence": int(binding.get("center_sequence") or 10),
+                    "source_db": _text(binding.get("source_db")),
+                }
+            )
+        entry_count += len(entries)
+        scenarios.append(
+            {
+                "key": _text(scenario.get("key")),
+                "name": _text(scenario.get("name"))
+                or _text(scenario.get("key")),
+                "active": bool(scenario.get("active", True)),
+                "sequence": int(scenario.get("sequence") or 0),
+                "source_db": _text(
+                    scenario.get("source_db") or payload.get("source_db")
+                ),
+                "entries": entries,
+            }
+        )
+    scenario_count = len(scenarios)
+    return {
+        "contract_version": BUSINESS_SCENE_COMPOSITION_MANAGEMENT_VERSION,
+        "status": status,
+        "status_label": status_labels.get(status, status),
+        "available": True,
+        "reason_code": (
+            "BUSINESS_SCENE_COMPOSITION_EMPTY"
+            if scenario_count == 0
+            else "BUSINESS_SCENE_COMPOSITION_AVAILABLE"
+        ),
+        "identity": dict(identity or {}),
+        "schema": _text(payload.get("schema")),
+        "source_db": _text(payload.get("source_db")),
+        "runtime_scope": _text(payload.get("runtime_scope")),
+        "scenario_count": scenario_count,
+        "entry_count": entry_count,
+        "empty": scenario_count == 0,
+        "digest": canonical_sha256(payload),
+        "scenarios": scenarios,
+    }
+
+
+def _business_scene_composition_diff(
+    left: dict[str, Any],
+    right: dict[str, Any],
+) -> dict[str, Any]:
+    if not left.get("available") or not right.get("available"):
+        return {
+            "state": "unavailable",
+            "changed_scenario_keys": [],
+            "changed_entry_keys": [],
+            "change_count": 0,
+        }
+    left_scenarios = {
+        row["key"]: row for row in _list(left.get("scenarios")) if isinstance(row, dict)
+    }
+    right_scenarios = {
+        row["key"]: row for row in _list(right.get("scenarios")) if isinstance(row, dict)
+    }
+    changed_scenarios = []
+    changed_entries = []
+    for key in sorted(set(left_scenarios) | set(right_scenarios)):
+        before = left_scenarios.get(key) or {}
+        after = right_scenarios.get(key) or {}
+        if before != after:
+            changed_scenarios.append(key)
+        before_entries = {
+            (_text(row.get("menu_key")), _text(row.get("intent")), int(row.get("sequence") or 0)): row
+            for row in _list(before.get("entries"))
+            if isinstance(row, dict)
+        }
+        after_entries = {
+            (_text(row.get("menu_key")), _text(row.get("intent")), int(row.get("sequence") or 0)): row
+            for row in _list(after.get("entries"))
+            if isinstance(row, dict)
+        }
+        for entry_key in sorted(set(before_entries) | set(after_entries)):
+            if before_entries.get(entry_key) != after_entries.get(entry_key):
+                changed_entries.append(f"{key}:{entry_key[0]}:{entry_key[1]}")
+    changed = bool(changed_scenarios or changed_entries)
+    return {
+        "state": "changed" if changed else "identical",
+        "changed_scenario_keys": changed_scenarios,
+        "changed_entry_keys": changed_entries,
+        "change_count": len(changed_scenarios) + len(changed_entries),
+    }
 
 
 class ReleaseOperatorReadModelService:
@@ -358,6 +525,7 @@ class ReleaseOperatorReadModelService:
         except Exception:
             rec = None
         payload = rec.to_runtime_dict() if rec else {}
+        payload = compose_product_policy(self.env, payload)
         menu_groups = _list(payload.get("menu_groups"))
         scenes = _list(payload.get("scenes"))
         capabilities = _list(payload.get("capabilities"))
@@ -462,6 +630,17 @@ class ReleaseOperatorReadModelService:
             "control_definition": _list(payload.get("control_definition")) or list(PAGE_CONTROL_DEFINITION),
             "scenes": scenes,
             "business_scene_composition": business_scene_composition,
+            "business_scene_composition_digest": canonical_sha256(
+                business_scene_composition
+            ),
+            "draft_identity": {
+                "product_key": product_key,
+                "policy_id": int(payload.get("id") or 0),
+                "policy_state": _text(payload.get("state")),
+                "version": _text(payload.get("version")) or "v1",
+                "base_product_key": _text(payload.get("base_product_key")),
+                "edition_key": _text(payload.get("edition_key")),
+            },
             "capabilities": capabilities,
         }
 
@@ -472,6 +651,12 @@ class ReleaseOperatorReadModelService:
         release_draft = _dict(meta.get("release_draft"))
         release_diff = _dict(meta.get("release_diff"))
         preflight_checks = _list(meta.get("preflight_checks"))
+        composition = _dict(row.get("business_scene_composition"))
+        if not composition:
+            composition = _dict(
+                row.get("business_scene_composition")
+                or freeze_surface.get("business_scene_composition")
+            )
         return {
             "id": int(row.get("id") or 0),
             "product_key": _text(row.get("product_key")),
@@ -486,6 +671,10 @@ class ReleaseOperatorReadModelService:
             "label": _text(row.get("label")) or _text(identity.get("label")) or _text(row.get("product_key")),
             "channel": _text(row.get("channel")) or "stable",
             "state_reason": _text(row.get("state_reason")),
+            "business_scene_composition": composition,
+            "business_scene_composition_digest": (
+                canonical_sha256(composition) if composition else ""
+            ),
             "release_draft": {
                 "fingerprint": _text(release_draft.get("fingerprint")),
                 "page_count": int(release_draft.get("page_count") or 0),
@@ -493,6 +682,12 @@ class ReleaseOperatorReadModelService:
                 "preview_page_count": int(release_draft.get("preview_page_count") or 0),
                 "hidden_page_count": int(release_draft.get("hidden_page_count") or 0),
                 "blocking_issue_count": int(release_draft.get("blocking_issue_count") or 0),
+                "business_scene_composition_sha256": _text(
+                    release_draft.get("business_scene_composition_sha256")
+                ),
+                "business_scenario_count": int(
+                    release_draft.get("business_scenario_count") or 0
+                ),
             },
             "release_diff": {
                 "base_snapshot_id": int(release_diff.get("base_snapshot_id") or 0),
@@ -798,6 +993,12 @@ class ReleaseOperatorReadModelService:
                 "hidden_page_count": hidden_page_count,
                 "policy_state": _text(control_scope.get("policy_state")),
                 "access_level": _text(control_scope.get("access_level")),
+                "business_scene_composition_digest": _text(
+                    control_scope.get("business_scene_composition_digest")
+                ),
+                "business_scenario_count": int(
+                    control_scope.get("business_scenario_count") or 0
+                ),
             },
             "change_summary": {
                 "active_page_count": active_page_count,
@@ -806,6 +1007,9 @@ class ReleaseOperatorReadModelService:
                 "preview_page_count": preview_page_count,
                 "hidden_page_count": hidden_page_count,
                 "candidate_snapshot_count": candidate_count,
+                "business_scene_composition_digest": _text(
+                    control_scope.get("business_scene_composition_digest")
+                ),
             },
             "stages": [
                 {"key": "source", "label": "真实菜单源", "status": "done", "count": int(control_scope.get("total_page_count") or 0)},
@@ -1035,6 +1239,198 @@ class ReleaseOperatorReadModelService:
             "config_ref": config_ref,
         }
 
+    def _build_business_scene_composition_states(
+        self,
+        *,
+        product_key: str,
+        control_scope: dict[str, Any],
+        candidate_snapshots: list[dict[str, Any]],
+        current_release_state: dict[str, Any],
+    ) -> dict[str, Any]:
+        draft_identity = {
+            **_dict(control_scope.get("draft_identity")),
+            "product_key": product_key,
+        }
+        draft = _project_business_scene_composition(
+            _dict(control_scope.get("business_scene_composition")),
+            status="draft",
+            identity=draft_identity,
+        )
+        candidate_snapshot = next(
+            (
+                row
+                for row in candidate_snapshots
+                if _text(row.get("product_key")) == product_key
+            ),
+            None,
+        )
+        candidate = (
+            _project_business_scene_composition(
+                _dict(candidate_snapshot.get("business_scene_composition")),
+                status="candidate",
+                identity={
+                    "product_key": product_key,
+                    "snapshot_id": int(candidate_snapshot.get("id") or 0),
+                    "version": _text(candidate_snapshot.get("version")),
+                    "state": _text(candidate_snapshot.get("state")),
+                    "frozen_at": _text(candidate_snapshot.get("frozen_at")),
+                },
+            )
+            if candidate_snapshot
+            else _project_business_scene_composition(
+                None,
+                status="not_frozen",
+                identity={"product_key": product_key},
+            )
+        )
+        active_snapshot = _dict(current_release_state.get("active_snapshot"))
+        active = (
+            _project_business_scene_composition(
+                _dict(active_snapshot.get("business_scene_composition")),
+                status="active",
+                identity={
+                    "product_key": product_key,
+                    "snapshot_id": int(active_snapshot.get("id") or 0),
+                    "version": _text(active_snapshot.get("version")),
+                    "state": _text(active_snapshot.get("state")),
+                    "released_at": _text(active_snapshot.get("released_at")),
+                },
+            )
+            if int(active_snapshot.get("id") or 0) > 0
+            else _project_business_scene_composition(
+                None,
+                status="no_active_release",
+                identity={"product_key": product_key},
+            )
+        )
+        return {
+            "contract_version": BUSINESS_SCENE_COMPOSITION_MANAGEMENT_VERSION,
+            "product_key": product_key,
+            "scope": "maintained_business_scenario_composition",
+            "draft": draft,
+            "candidate": candidate,
+            "active": active,
+            "comparisons": {
+                "draft_vs_candidate": _business_scene_composition_diff(
+                    draft, candidate
+                ),
+                "draft_vs_active": _business_scene_composition_diff(draft, active),
+                "candidate_vs_active": _business_scene_composition_diff(
+                    candidate, active
+                ),
+            },
+        }
+
+    def _build_business_scenario_maintenance(
+        self,
+        *,
+        product_key: str,
+    ) -> dict[str, Any]:
+        action_xmlid = "smart_construction_core.action_sc_product_scenario"
+        menu_xmlid = (
+            "smart_construction_core.menu_sc_product_scenario_business_config"
+        )
+        blockers: list[str] = []
+        action = None
+        menu = None
+        model = None
+        try:
+            action = self.env.ref(action_xmlid, raise_if_not_found=False)
+        except Exception:
+            action = None
+        try:
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+        except Exception:
+            menu = None
+        try:
+            model = self.env["sc.product.scenario"].sudo()
+        except (KeyError, AttributeError):
+            model = None
+        if not action:
+            blockers.append("SCENARIO_MAINTENANCE_ACTION_NOT_FOUND")
+        if not menu:
+            blockers.append("SCENARIO_MAINTENANCE_MENU_NOT_FOUND")
+        if action and menu:
+            menu_action = getattr(menu, "action", None)
+            if int(
+                getattr(menu_action, "id", 0) or 0
+            ) != int(getattr(action, "id", 0) or 0):
+                blockers.append("SCENARIO_MAINTENANCE_MENU_ACTION_MISMATCH")
+        if model is None:
+            blockers.append("SCENARIO_MAINTENANCE_MODEL_NOT_FOUND")
+        access = {
+            "read_allowed": False,
+            "write_allowed": False,
+        }
+        if model is not None:
+            for operation in ("read", "write"):
+                allowed = False
+                try:
+                    checker = getattr(model, "check_access_rights", None)
+                    if callable(checker):
+                        allowed = bool(
+                            checker(operation, raise_exception=False)
+                        )
+                    else:
+                        accessor = getattr(model, "has_access", None)
+                        allowed = bool(
+                            accessor(operation)
+                            if callable(accessor)
+                            else False
+                        )
+                except Exception:
+                    allowed = False
+                access[f"{operation}_allowed"] = allowed
+                if not allowed:
+                    blockers.append(
+                        f"SCENARIO_MAINTENANCE_{operation.upper()}_DENIED"
+                    )
+        blockers = list(dict.fromkeys(blockers))
+        enabled = not blockers
+        fields = getattr(model, "_fields", {}) if model is not None else {}
+        return {
+            "contract_version": "business_scenario_maintenance_entry.v1",
+            "product_key": product_key,
+            "enabled": enabled,
+            "reason_code": (
+                "SCENARIO_MAINTENANCE_AVAILABLE"
+                if enabled
+                else blockers[0]
+            ),
+            "blockers": blockers,
+            "action": {
+                "xmlid": action_xmlid,
+                "id": int(getattr(action, "id", 0) or 0),
+                "name": _text(getattr(action, "name", "")),
+                "res_model": _text(getattr(action, "res_model", "")),
+                "view_mode": _text(getattr(action, "view_mode", "")),
+            },
+            "menu": {
+                "xmlid": menu_xmlid,
+                "id": int(getattr(menu, "id", 0) or 0),
+                "name": _text(getattr(menu, "name", "")),
+            },
+            "scope": {
+                "kind": "shared_maintenance_library",
+                "label": "当前维护库共享业务场景定义",
+                "model": "sc.product.scenario",
+                "has_product_key": "product_key" in fields,
+                "has_company_id": "company_id" in fields,
+                "applies_to": "all_product_drafts_frozen_from_this_maintenance_database",
+                "filter_by_current_product": False,
+            },
+            "future_freeze_product_key": product_key,
+            "access": access,
+            "return_readback": {
+                "intent": "release.operator.read",
+                "product_key": product_key,
+                "fields": [
+                    "business_scene_composition_states.draft",
+                    "business_scene_composition_states.comparisons",
+                ],
+            },
+        }
+
     def build_read_model(self, *, product_key: str = "", action_limit: int = 20) -> dict[str, Any]:
         from .release_operator_contract_registry import build_release_operator_contract_registry
 
@@ -1070,6 +1466,19 @@ class ReleaseOperatorReadModelService:
             active_snapshot_raw=active_snapshot,
             pending_approval_queue=pending_approval_queue,
             candidate_snapshots=candidate_snapshots,
+        )
+        business_scene_composition_states = (
+            self._build_business_scene_composition_states(
+                product_key=identity["product_key"],
+                control_scope=control_scope,
+                candidate_snapshots=candidate_snapshots,
+                current_release_state=current_release_state,
+            )
+        )
+        business_scenario_maintenance = (
+            self._build_business_scenario_maintenance(
+                product_key=identity["product_key"],
+            )
         )
         product_delivery_console = self._build_product_delivery_console(
             identity=identity,
@@ -1241,6 +1650,10 @@ class ReleaseOperatorReadModelService:
             "actor_scope": actor,
             "control_scope": control_scope,
             "product_center_editor": product_center_editor,
+            "business_scene_composition_states": (
+                business_scene_composition_states
+            ),
+            "business_scenario_maintenance": business_scenario_maintenance,
             "product_delivery_console": product_delivery_console,
             "release_pipeline": release_pipeline,
             "current_release_state": current_release_state,
@@ -1260,12 +1673,19 @@ class ReleaseOperatorReadModelService:
                     or 0
                 ),
                 "audience": release_pipeline.get("audience_simulation") or {},
+                "business_scene_composition_states": (
+                    business_scene_composition_states
+                ),
+                "business_scenario_maintenance": (
+                    business_scenario_maintenance
+                ),
                 "source_authority": {
                     "kind": "release_operator_operation_readback",
                     "authorities": [
                         "sc.edition.release.snapshot",
                         "sc.release.action",
                         "sc.product.policy",
+                        "smart_construction_core.sc.product.scenario",
                     ],
                     "projection_only": True,
                 },
