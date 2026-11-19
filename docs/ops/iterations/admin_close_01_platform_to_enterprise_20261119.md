@@ -84,9 +84,10 @@ tests or governed runtime identity change.
 
 ## Current state
 
-- Baseline: `0dc7778132a6814e3cb18eb7cecb3ba39ac5df71`
+- Baseline: `d5b87e5847ee301dcf5289931ac5643333bad41b`
 - Backend stage: completed on the delivery branch
-- Frontend writer: active after backend handoff
+- Frontend stage: completed on the delivery branch
+- Independent review: pending on the frozen commit
 - Production: not touched
 - Deployment and user acceptance: separate from PR merge
 
@@ -189,6 +190,35 @@ management suites (20 management assertions):
 
 Raw browser summary and screenshots:
 `.runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/candidate_browser_journey/`.
+
+### Current-main rerun
+
+After rebasing onto `d5b87e58`, the candidate was rebuilt in the existing
+isolated `candidate` profile (`sc-fe-candidate-770` /
+`sc_frontend_acceptance_candidate`, frontend `127.0.0.1:5178`, backend
+`127.0.0.1:18088`). No daily-development database or deployment environment
+was used.
+
+The current source identity was `bf3dcec2542e52b69d84c858636670a965fa52e2`
+with only the run baseline/record corrections dirty. `make ci.local.iteration`
+passed all 16 affected targets, including the fresh non-zero ORM groups (71 and
+6 tests), strict frontend typecheck, lint with warnings only, static proxy and
+contract guards.
+
+The rebuilt candidate browser target passed:
+
+- 33 capability-explorer assertions, including 17 governed entries, stale
+  catalog-token recovery, detail layers and an exact 403 permission denial;
+- 20 platform-to-enterprise management assertions, including tenant routing,
+  explicit company scope, ordinary business entry and zero browser errors.
+
+The rejection-probe input was bound to the acceptance carrier's actual
+`x-tenant: default` value. This corrected the probe invocation only; no product,
+assertion or tenant-scope rule was weakened.
+
+Current raw readback:
+`.runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/candidate_browser_journey/current-bf3dcec/browser_readback.json`
+(SHA-256 `92c6b0ebee0c450c76db10742fc07c4c9fbd6a672ff725e1116c6423640ad0c4`).
 
 The isolated candidate tenant's active capability set excludes the project
 ledger and is not the declared `sc_platform_control` instance. Therefore the

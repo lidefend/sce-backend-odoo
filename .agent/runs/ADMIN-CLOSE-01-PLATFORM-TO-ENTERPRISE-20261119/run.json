@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119",
   "branch": "feature/admin-close-01-platform-to-enterprise-20261119",
-  "baseline_sha": "0dc7778132a6814e3cb18eb7cecb3ba39ac5df71",
+  "baseline_sha": "d5b87e5847ee301dcf5289931ac5643333bad41b",
   "status": "verification_pending",
   "goal": ".agent/goals/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119.yaml",
   "record": "docs/ops/iterations/admin_close_01_platform_to_enterprise_20261119.md",
@@ -50,7 +50,7 @@
       "status": "completed",
       "owner": "single_writer_frontend_after_backend_handoff",
       "exit": "Existing platform and enterprise administration screens complete the prepared flow and display backend-owned scope, versions, blockers and readback",
-      "browser_summary": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/browser_journey/summary.json"
+      "browser_summary": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/candidate_browser_journey/current-bf3dcec/browser_readback.json"
     },
     {
       "id": "REVIEW-ADMIN-CLOSE-01",
@@ -190,6 +190,9 @@
     "frontend_management_browser": {
       "target": "verify.frontend.platform_capability_explorer.browser",
       "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/candidate_browser_journey/current-bf3dcec/browser_readback.json"
+      },
       "inputs": [
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/views/ReleaseOperatorView.vue",
@@ -234,5 +237,5 @@
     "The governed local test database intentionally deactivates demo-facing menus. The project-ledger runtime sample activates only its own rolled-back native menu path and exercises the real native records, metadata loaders, contribution provider, release snapshot service, scenario catalog and ACL projection; it is not a daily-demo acceptance claim.",
     "The isolated candidate tenant does not expose the project-ledger menu in its active capability catalog, and it is not the declared platform-control instance. Its browser journey therefore uses an active capability entry for detail verification, verifies that a tenant identity is routed away from the platform-control surface, verifies the enterprise configuration administrator and company scope, and verifies the ordinary project dashboard. The positive platform release and project-ledger contracts are covered by the governed ORM sample rather than claimed as candidate-tenant browser delivery."
   ],
-  "next_exact_step": "Record the isolated candidate browser and static-proxy checks in the run, rerun the final affected local iteration, obtain independent review on the exact candidate, and publish through the protected PR entrypoint."
+  "next_exact_step": "Run ci.delivery.freeze.prepare, commit the current candidate, obtain independent review on the exact commit, then publish and merge through the protected exact-head PR entrypoint."
 }
