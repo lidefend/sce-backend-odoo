@@ -69,6 +69,21 @@ existing `scenes` and `scene_version_bindings` carrier.
   Installation plus platform SEC/ACL determines their availability; product
   publication controls the business scenario composition.
 
+## Review remediation
+
+- Runtime authority no longer applies the product page publication allowlist to
+  native execution. `PRODUCT_ENTRY_NOT_RELEASED` cannot originate from an
+  installed, SEC-qualified action merely because the old page list omitted it.
+- Release preflight accepts a valid business-scene composition even when the
+  legacy `menu_groups` page list is empty. The composition's active bindings are
+  checked for stable menu/action/model references before the snapshot is written.
+- When no active release snapshot exists, the runtime surface is an explicit
+  empty published composition. Retained company enablement keys cannot select
+  maintained draft scenes, and `load_maintained_runtime_surface` is restricted to
+  editing and freezing.
+- Directed regression includes native denial control, composition-only freeze,
+  draft isolation, publication, rollback and immutable snapshot behavior.
+
 ## Validation
 
 | Check | Result |

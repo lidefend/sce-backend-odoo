@@ -12,11 +12,13 @@
     ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
     "addons/smart_core/delivery/delivery_engine.py",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
     "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
     "addons/smart_core/delivery/product_policy_service.py",
     "addons/smart_core/delivery/release_operator_read_model_service.py",
     "addons/smart_core/models/release_management.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
     "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "addons/smart_construction_scene/core_extension.py",
@@ -220,6 +222,7 @@
     "status": "passed",
     "scope": "Contract-only P0/P1 source behavior and existing consumers",
     "passed": [
+      "make verify.ci.workflow.contract: passed; contract-only risk scope disables managed ORM only for exact branch/base/path match",
       "make verify.navigation.publication_consumers.unit: passed; tenant activation 94, center projection 9, scenario surface 24, capability authority 40 and adjacent suites non-zero",
       "make verify.daily.published_face.target.unit: 6 tests",
       "make verify.admin_close_01.backend.unit: aggregate passed, including tenant activation 94 tests",
@@ -229,6 +232,14 @@
       "make verify.product_center.policy.unit: 15 tests",
       "make verify.scene.fact_data.boundary.unit: 1 test",
       "make ci.local.iteration: exit 0; 11 affected non-ORM targets passed"
+    ],
+    "review_remediation": [
+      "native execution authority no longer consumes product page publication as an allowlist",
+      "route.authority.validate receives installed/SEC-qualified native authority without PRODUCT_ENTRY_NOT_RELEASED from product page absence",
+      "freeze preflight accepts a valid active business-scene composition with empty legacy menu_groups and validates referenced native entries before release",
+      "no active release snapshot yields an explicit empty published composition at runtime; maintained draft is reserved for editing/freezing",
+      "old company enablement keys cannot activate an unpublished maintained scenario",
+      "contract-only risk scope matches exact branch/base/path set and fails closed on wildcard or outside paths"
     ],
     "interrupted_not_passed": [
       "Two early ci.local.iteration attempts were interrupted after path analysis selected ORM targets outside the declared contract-only boundary; neither interrupted run is counted as a pass"
@@ -249,5 +260,5 @@
     "L4": "Not applicable by owner continuation: no browser matrix or environment rebuild",
     "L5": "Exact-head owner review and required remote checks at publication"
   },
-  "next_exact_step": "Run delivery freeze preparation, commit and publish the exact SCENE-CLOSE-02 candidate for owner review"
+  "next_exact_step": "Commit the product contract fix, then commit the P4 contract-only remote planner change and republish PR #945"
 }

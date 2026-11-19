@@ -146,6 +146,10 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             "standard",
         )
         service.policy_service.get_policy = lambda **kwargs: deepcopy(policy)
+        service.policy_service.center_index = lambda payload: {
+            "centers": [],
+            "by_menu": {},
+        }
         service._default_requested_role_context = lambda **kwargs: {
             "role_code": "owner",
             "source": "explicit",
@@ -177,6 +181,117 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             composition,
         )
         self.assertEqual(payload["business_scene_composition"], composition)
+
+    def test_freeze_accepts_valid_scene_composition_without_legacy_pages(self):
+        composition = {
+            "schema": "construction.scenario_product_surface.v1",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "project.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        policy = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+
+        class SnapshotRecord:
+            id = 91
+
+            def __init__(self, values):
+                self.values = values
+
+            def to_runtime_dict(self):
+                return {
+                    "id": self.id,
+                    "product_key": self.values["product_key"],
+                    "version": self.values["version"],
+                    "snapshot_json": self.values["snapshot_json"],
+                    "meta_json": self.values["meta_json"],
+                }
+
+        class SnapshotModel:
+            def __init__(self):
+                self.created = []
+
+            def search(self, *args, **kwargs):
+                return []
+
+            def create(self, values):
+                record = SnapshotRecord(deepcopy(values))
+                self.created.append(record)
+                return record
+
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        model = SnapshotModel()
+        service._model = lambda: model
+        service._model_registered = lambda model_name: False
+        service.now = lambda: "2026-11-20 00:00:00"
+        service.policy_service.resolve_policy_identity = lambda **kwargs: (
+            "construction.standard",
+            "construction",
+            "standard",
+        )
+        service.policy_service.get_policy = lambda **kwargs: deepcopy(policy)
+        service.policy_service.center_index = lambda payload: {
+            "centers": [],
+            "by_menu": {},
+        }
+        service._default_requested_role_context = lambda **kwargs: {
+            "role_code": "owner",
+            "source": "explicit",
+        }
+        service.delivery_engine = SimpleNamespace(
+            build=lambda **kwargs: {
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+                "nav": [],
+                "capabilities": [],
+                "scenes": [],
+                "meta": {},
+            }
+        )
+        service.promotion_service = SimpleNamespace(
+            promote_to_approved=lambda record_id, **kwargs: {},
+            promote_to_released=lambda record_id, **kwargs: model.created[0].to_runtime_dict(),
+        )
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            TARGET,
+            "call_extension_hook_first",
+            return_value=composition,
+        ):
+            result = service.freeze_release_surface(
+                product_key="construction.standard",
+                version="v2",
+            )
+
+        self.assertEqual(result["id"], 91)
+        self.assertEqual(len(model.created), 1)
+        frozen_policy = model.created[0].values["snapshot_json"]["policy"]
+        self.assertEqual(
+            frozen_policy["business_scene_composition"],
+            composition,
+        )
+        self.assertEqual(frozen_policy["menu_groups"], [])
 
     def test_action_menu_with_fake_scene_key_blocks_release(self):
         service = TARGET.EditionReleaseSnapshotService(env={})

@@ -691,13 +691,7 @@ def load_published_runtime_surface(
     except Exception:
         return empty
     if policy is None:
-        return (
-            empty
-            if policy_service.has_active_release_snapshot(
-                product_key=_text(product_key)
-            )
-            else None
-        )
+        return empty
     if not isinstance(policy, dict):
         return empty
     composition = policy.get("business_scene_composition")
@@ -714,7 +708,7 @@ def load_published_runtime_surface(
 
 
 def load_runtime_surface(env):
-    """Read published composition, with live maintenance only for legacy state."""
+    """Read the published composition; never expose draft scenes at runtime."""
     published = load_published_runtime_surface(env)
     return published if published is not None else load_maintained_runtime_surface(env)
 

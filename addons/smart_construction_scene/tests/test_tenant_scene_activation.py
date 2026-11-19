@@ -2002,6 +2002,30 @@ class TestMaintainedScenarioScope(unittest.TestCase):
             },
         )
 
+        class NoSnapshotPolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                return None
+
+        policy_module.ProductPolicyService = NoSnapshotPolicyService
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            no_snapshot_surface = scenario_surface.load_published_runtime_surface(Env())
+        self.assertEqual(
+            no_snapshot_surface,
+            {
+                "schema": scenario_surface.SCHEMA,
+                "scenarios": [],
+                "runtime_scope": "published_release_without_composition",
+            },
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

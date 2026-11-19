@@ -13,7 +13,7 @@ from ..utils.extension_hooks import call_extension_hook_first
 from ..core.platform_duty_contract import build_platform_duty_surface, merge_platform_duty_route_authority
 from ..core.platform_minimum_nav_contract import merge_authenticated_safe_landing
 from .delivery_engine import DeliveryEngine
-from .effective_delivery_inputs import _resolve_startup_delivery_identity, _load_platform_release_gate, _filter_nav_by_release_gate
+from .effective_delivery_inputs import _resolve_startup_delivery_identity, _load_platform_release_gate
 
 
 @dataclass(frozen=True)
@@ -46,6 +46,22 @@ class EffectiveDeliveryService:
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
             walk(authority.get(bucket) or [])
         return scene_keys
+
+    @staticmethod
+    def _native_execution_surface(payload: dict) -> tuple[list, dict]:
+        """Return installed/SEC-qualified native navigation and authority.
+
+        Product publication does not re-authorize installed native actions.
+        Business-scene composition is applied later by the P1 authority hook.
+        """
+        source = payload if isinstance(payload, dict) else {}
+        nav = source.get("nav") if isinstance(source.get("nav"), list) else []
+        authority = (
+            source.get("route_authority")
+            if isinstance(source.get("route_authority"), dict)
+            else {}
+        )
+        return deepcopy(nav), deepcopy(authority)
 
     def _internal_actions(self, nav, authority, menu_service, role):
         sources = call_extension_hook_first(self.env, "smart_core_delivery_scene_declarations", self.env)
@@ -92,16 +108,11 @@ class EffectiveDeliveryService:
             **{key: identity[key] for key in ("product_key", "base_product_key", "edition_key")},
         )
         gate = _load_platform_release_gate(env, product_key=payload["product_key"])
-
-        def released(nodes):
-            if gate.get("fail_closed"):
-                return []
-            return _filter_nav_by_release_gate(nodes, gate, env=env)[0]
-
-        nav = released(payload["nav"])
-        authority = engine.menu_service.filter_route_authority_by_publication(
-            payload["route_authority"], filter_nodes=released,
-        )
+        # Native capability execution is installed/SEC/ACL authority. A
+        # product release owns business-scenario composition, not a second
+        # native capability allowlist; never convert a missing product page
+        # record into a route-authority denial here.
+        nav, authority = self._native_execution_surface(payload)
         duty = build_platform_duty_surface(
             is_platform_control_admin=bool(role.get("is_platform_admin")),
             is_tenant_config_admin=bool(role.get("is_tenant_config_admin")),
