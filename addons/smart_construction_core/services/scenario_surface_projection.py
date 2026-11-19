@@ -12,6 +12,7 @@ caller can fall back to the legacy navigation instead of emitting a broken tree.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -109,6 +110,7 @@ def build_menu_assignments(
             "center_key": _text(meta.get("center_key")),
             "center_name": _text(meta.get("center_name")),
             "center_sequence": _int_or(meta.get("center_sequence"), 10),
+            "source_db": _text(meta.get("source_db")),
         }
         existing = assignments.setdefault(key, [])
         if location != "scenario":
@@ -172,6 +174,11 @@ def build_menu_assignments(
                     center_key=binding.get("center_key"),
                     center_name=binding.get("center_name"),
                     center_sequence=binding.get("center_sequence"),
+                    source_db=_first_declared(
+                        binding.get("source_db"),
+                        scenario.get("source_db"),
+                        default="",
+                    ),
                 )
             continue
         for intent, menus in (scenario.get("intents") or {}).items():
@@ -622,7 +629,7 @@ def legacy_native_center_seed(env, menu) -> dict[str, Any]:
     }
 
 
-def load_runtime_surface(env):
+def load_maintained_runtime_surface(env):
     """Read maintained scenario facts; files are never a runtime fallback.
 
     Archived bindings remain present so authorization cannot mistake them for
@@ -632,6 +639,7 @@ def load_runtime_surface(env):
         raise ValueError("scenario runtime requires an Odoo environment")
     scenarios = env["sc.product.scenario"].sudo().with_context(active_test=False).search([])
     menu_xmlids = _menu_external_ids(scenarios.mapped("entry_ids.menu_id"))
+    source_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
     rows = []
     for scenario in scenarios:
         intents = {}
@@ -650,11 +658,146 @@ def load_runtime_surface(env):
                 "center_key": getattr(entry, "center_key", ""),
                 "center_name": getattr(entry, "center_name", ""),
                 "center_sequence": getattr(entry, "center_sequence", 10),
+                "source_db": source_db,
             })
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
-    return {"schema": SCHEMA, "scenarios": rows}
+    return {
+        "schema": SCHEMA,
+        "scenarios": rows,
+        "source_db": source_db,
+        "runtime_scope": "maintained_draft",
+    }
+
+
+def load_published_runtime_surface(
+    env,
+    *,
+    product_key: str = "construction.standard",
+) -> dict[str, Any] | None:
+    """Return composition fixed by the active released product snapshot."""
+    if env is None:
+        return None
+    empty = {
+        "schema": SCHEMA,
+        "scenarios": [],
+        "runtime_scope": "published_release_without_composition",
+    }
+    registry_models = getattr(getattr(env, "registry", None), "models", {})
+    if "sc.edition.release.snapshot" not in registry_models:
+        return None
+    try:
+        from odoo.addons.smart_core.delivery.product_policy_service import (
+            ProductPolicyService,
+        )
+
+        policy_service = ProductPolicyService(env)
+        policy = policy_service.get_published_policy(
+            product_key=_text(product_key),
+            require_current_schema=False,
+        )
+    except Exception:
+        return empty
+    if policy is None:
+        return empty
+    if not isinstance(policy, dict):
+        return empty
+    composition = policy.get("business_scene_composition")
+    if (
+        not isinstance(composition, dict)
+        or not isinstance(composition.get("scenarios"), list)
+    ):
+        return empty
+    if _text(composition.get("schema")) != SCHEMA:
+        return empty
+    published = deepcopy(composition)
+    published["runtime_scope"] = "published_release"
+    return published
+
+
+def load_runtime_surface(env):
+    """Read the published composition; never expose draft scenes at runtime."""
+    published = load_published_runtime_surface(env)
+    return published if published is not None else load_maintained_runtime_surface(env)
+
+
+def _execution_database(env) -> str:
+    return _text(getattr(getattr(env, "cr", None), "dbname", ""))
+
+
+def _resolved_scenario_menu_id(
+    env,
+    menu_key: str,
+    location: dict[str, Any],
+    surface: dict[str, Any],
+) -> int:
+    """Resolve one scenario reference to the menu ID used by the current DB."""
+    reference = _text(menu_key)
+    source_db = _text(location.get("source_db") or surface.get("source_db"))
+    execution_db = _execution_database(env)
+    if reference.startswith("menu:"):
+        if execution_db and source_db != execution_db:
+            return 0
+        return _int_or(reference.split(":", 1)[1], 0)
+    if "." in reference:
+        ref = getattr(env, "ref", None)
+        if callable(ref):
+            try:
+                menu = ref(reference, raise_if_not_found=False)
+            except Exception:
+                menu = None
+            return int(getattr(menu, "id", 0) or 0)
+    return _int_or(location.get("menu_id"), 0)
+
+
+def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Normalize declared menu references to execution-database identities.
+
+    XMLIDs are stable across databases and resolve through ``env.ref``. Numeric
+    identities are executable only when their declared source is the current
+    database; a coincident number in a foreign database is not a mapping.
+    """
+    index: dict[str, dict[str, Any]] = {}
+    for menu_key, location in build_menu_index(surface).items():
+        numeric_reference = _text(menu_key).startswith("menu:")
+        declared_locations = _scenario_locations(location)
+        resolved_locations = []
+        for declared_location in declared_locations:
+            menu_id = _resolved_scenario_menu_id(
+                env,
+                menu_key,
+                declared_location,
+                surface,
+            )
+            if menu_id <= 0:
+                continue
+            resolved_locations.append({
+                **deepcopy(declared_location),
+                "menu_id": menu_id,
+            })
+
+        menu_id = _resolved_scenario_menu_id(env, menu_key, location, surface)
+        if menu_id <= 0 and resolved_locations:
+            menu_id = int(resolved_locations[0]["menu_id"])
+        if numeric_reference and menu_id <= 0:
+            continue
+        if numeric_reference and declared_locations and not resolved_locations:
+            continue
+
+        resolved = {
+            **deepcopy(location),
+            "menu_id": menu_id,
+        }
+        if resolved_locations:
+            resolved["scenario_locations"] = resolved_locations
+            resolved.update({
+                key: value
+                for key, value in resolved_locations[0].items()
+                if key != "menu_id"
+            })
+        index[menu_key] = resolved
+    return index
 
 
 def runtime_menu_scope(env, surface=None):
@@ -664,7 +807,12 @@ def runtime_menu_scope(env, surface=None):
     The index and ID/action maps share the same current native identities.
     """
     surface = load_runtime_surface(env) if surface is None else surface
-    index = build_menu_index(surface)
+    index = _resolved_menu_index(env, surface)
+    declared_keys_by_menu_id: dict[int, list[str]] = {}
+    for menu_key, location in index.items():
+        menu_id = _int_or(location.get("menu_id"), 0)
+        if menu_id > 0:
+            declared_keys_by_menu_id.setdefault(menu_id, []).append(menu_key)
     by_id, by_action = {}, {}
     # The scene-fact index must cover every native menu, not just the menus the
     # current principal may see. Odoo filters ir.ui.menu search by the caller's
@@ -681,9 +829,10 @@ def runtime_menu_scope(env, surface=None):
         by_id[menu.id] = key
         if menu.action:
             by_action.setdefault(menu.action.id, []).append(key)
-        if key in index:
-            index[key]["menu_id"] = menu.id
-        else:
+        declared_keys = (
+            [key] if key in index else declared_keys_by_menu_id.get(menu.id, [])
+        )
+        if not declared_keys:
             index[key] = {
                 "location": (
                     "exempt"
@@ -697,32 +846,100 @@ def runtime_menu_scope(env, surface=None):
                 "scenario_locations": [],
                 "menu_id": menu.id,
             }
+            continue
+        for declared_key in declared_keys:
+            location = index.pop(declared_key)
+            location["menu_id"] = menu.id
+            for scenario_location in location.get("scenario_locations") or []:
+                scenario_location["menu_id"] = menu.id
+            existing = index.get(key)
+            if not existing or existing.get("location") != "scenario":
+                index[key] = location
+                continue
+            existing.setdefault("scenario_locations", []).extend(
+                location.get("scenario_locations") or []
+            )
+    local_menu_ids = {int(menu.id) for menu in menus}
+    index = {
+        key: location
+        for key, location in index.items()
+        if int(location.get("menu_id") or 0) in local_menu_ids
+    }
     return index, by_id, by_action
 
 
-def _scenario_entries_by_menu(env) -> dict[int, list[dict[str, Any]]]:
-    """Load every maintainable scenario reference for each native menu."""
-    if env is None:
-        return {}
-    Entry = env["sc.product.scenario.entry"].sudo()
+def _scenario_locations(location: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = location.get("scenario_locations")
+    if isinstance(candidates, list) and candidates:
+        return [row for row in candidates if isinstance(row, dict)]
+    if location.get("location") == "scenario":
+        return [location]
+    return []
+
+
+def _scenario_entries_by_menu(
+    env,
+    *,
+    surface: dict[str, Any] | None = None,
+) -> dict[int, list[dict[str, Any]]]:
+    """Index published/maintained scenario references by native menu ID."""
+    if surface is None:
+        try:
+            surface = load_runtime_surface(env)
+        except (KeyError, AttributeError):
+            surface = None
+    if surface is None:
+        if env is None:
+            return {}
+        Entry = env["sc.product.scenario.entry"].sudo()
+        result: dict[int, list[dict[str, Any]]] = {}
+        for entry in Entry.search([]):
+            if not entry.menu_id or not entry.scenario_id:
+                continue
+            intent = _text(entry.intent)
+            result.setdefault(int(entry.menu_id.id), []).append({
+                "entry_id": int(getattr(entry, "id", 0) or 0),
+                "scenario_key": _text(entry.scenario_id.code),
+                "scenario_name": _text(entry.scenario_id.name),
+                "scenario_active": bool(entry.scenario_id.active),
+                "scenario_sequence": int(entry.scenario_id.sequence),
+                "sequence": int(entry.sequence),
+                "intent": intent,
+                "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+                "center_key": _text(entry.center_key),
+                "center_name": _text(entry.center_name),
+                "center_sequence": _int_or(entry.center_sequence, 10),
+            })
+        for bindings in result.values():
+            bindings.sort(key=lambda item: (
+                item["scenario_sequence"],
+                item["sequence"],
+                item["scenario_key"],
+                item["intent"],
+                item["entry_id"],
+            ))
+        return result
+    index = _resolved_menu_index(env, surface)
     result: dict[int, list[dict[str, Any]]] = {}
-    for entry in Entry.search([]):
-        if not entry.menu_id or not entry.scenario_id:
+    for menu_key, location in index.items():
+        menu_id = _int_or(location.get("menu_id"), 0)
+        if menu_id <= 0:
             continue
-        intent = _text(entry.intent)
-        result.setdefault(int(entry.menu_id.id), []).append({
-            "entry_id": int(getattr(entry, "id", 0) or 0),
-            "scenario_key": _text(entry.scenario_id.code),
-            "scenario_name": _text(entry.scenario_id.name),
-            "scenario_active": bool(entry.scenario_id.active),
-            "scenario_sequence": int(entry.scenario_id.sequence),
-            "sequence": int(entry.sequence),
-            "intent": intent,
-            "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
-            "center_key": _text(entry.center_key),
-            "center_name": _text(entry.center_name),
-            "center_sequence": _int_or(entry.center_sequence, 10),
-        })
+        for row in _scenario_locations(location):
+            intent = _text(row.get("intent"))
+            result.setdefault(menu_id, []).append({
+                "entry_id": _int_or(row.get("entry_id"), 0),
+                "scenario_key": _text(row.get("scenario_key")),
+                "scenario_name": _text(row.get("scenario_name")),
+                "scenario_active": bool(row.get("scenario_active", True)),
+                "scenario_sequence": _int_or(row.get("scenario_sequence"), 10),
+                "sequence": _int_or(row.get("sequence"), 10),
+                "intent": intent,
+                "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+                "center_key": _text(row.get("center_key")),
+                "center_name": _text(row.get("center_name")),
+                "center_sequence": _int_or(row.get("center_sequence"), 10),
+            })
     for bindings in result.values():
         bindings.sort(key=lambda item: (
             item["scenario_sequence"],
@@ -961,6 +1178,35 @@ def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     return by_pair, sorted(ambiguous)
 
 
+def _apply_scene_target_projection(
+    leaf: dict[str, Any],
+    scene_targets: dict[tuple[int, int], str],
+) -> None:
+    pair = (
+        int(leaf.get("menu_id") or 0),
+        int(leaf.get("action_id") or 0),
+    )
+    scene_key = scene_targets.get(pair)
+    if not scene_key:
+        return
+    leaf["scene_key"] = scene_key
+    leaf["entry_target"] = {
+        "type": "scene",
+        "scene_key": scene_key,
+        "compatibility_refs": {
+            key: value
+            for key, value in {
+                "menu_id": pair[0],
+                "action_id": pair[1],
+                "model": leaf.get("model"),
+                "view_modes": leaf.get("view_modes"),
+            }.items()
+            if value not in (None, "", [])
+        },
+    }
+    leaf["route"] = ""
+
+
 def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, Any]]:
     """Project scenario centers into the final canonical navigation contract."""
     try:
@@ -1060,27 +1306,74 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         }
     scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
     for leaf in leaves:
-        pair = (int(leaf.get("menu_id") or 0), int(leaf.get("action_id") or 0))
-        scene_key = scene_targets.get(pair)
-        if not scene_key:
-            continue
-        leaf["scene_key"] = scene_key
-        leaf["entry_target"] = {
-            "type": "scene",
-            "scene_key": scene_key,
-            "compatibility_refs": {
-                key: value
-                for key, value in {
-                    "menu_id": pair[0],
-                    "action_id": pair[1],
-                    "model": leaf.get("model"),
-                    "view_modes": leaf.get("view_modes"),
-                }.items()
-                if value not in (None, "", [])
-            },
-        }
-        leaf["route"] = ""
-    scenario_by_menu = _scenario_entries_by_menu(env)
+        _apply_scene_target_projection(leaf, scene_targets)
+    published_surface = (
+        route_authority.get("business_scene_composition")
+        if isinstance(route_authority, dict)
+        and isinstance(route_authority.get("business_scene_composition"), dict)
+        and isinstance(
+            route_authority.get("business_scene_composition", {}).get("scenarios"),
+            list,
+        )
+        else None
+    )
+    scenario_by_menu = _scenario_entries_by_menu(
+        env,
+        surface=published_surface,
+    )
+    represented_pairs = {
+        (
+            int(leaf.get("menu_id") or 0),
+            int(leaf.get("action_id") or 0),
+        )
+        for leaf in leaves
+        if int(leaf.get("menu_id") or 0) > 0
+    }
+    for bucket in (
+        "primary_actions",
+        "role_home_actions",
+        "contextual_actions",
+        "admin_actions",
+    ):
+        for row in (
+            route_authority.get(bucket)
+            if isinstance(route_authority, dict)
+            else []
+        ) or []:
+            if not isinstance(row, dict):
+                continue
+            pair = (
+                int(row.get("menu_id") or 0),
+                int(row.get("action_id") or 0),
+            )
+            if pair in represented_pairs or pair[0] <= 0 or pair[1] <= 0:
+                continue
+            bindings = scenario_by_menu.get(pair[0]) or []
+            if not bindings:
+                continue
+            binding = _selected_scenario_binding(
+                bindings,
+                route_authority,
+                pair[0],
+            )
+            if not binding or not binding.get("scenario_active"):
+                continue
+            menu_xmlid = _text(row.get("menu_xmlid") or row.get("menu_key"))
+            if not menu_xmlid:
+                menu_xmlid = f"menu:{pair[0]}"
+            leaf = {
+                **row,
+                "menu_id": pair[0],
+                "action_id": pair[1],
+                "menu_xmlid": menu_xmlid,
+                "label": _text(row.get("name") or row.get("label")) or menu_xmlid,
+                "route": _text(row.get("route")) or f"/a/{pair[1]}?menu_id={pair[0]}",
+                "sequence": _int_or(binding.get("sequence"), 1000),
+                "children": [],
+            }
+            _apply_scene_target_projection(leaf, scene_targets)
+            leaves.append(leaf)
+            represented_pairs.add(pair)
     composition = (
         route_authority.get("scenario_composition")
         if isinstance(route_authority, dict)

@@ -3,8 +3,10 @@ import importlib.util
 import sys
 import types
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -69,6 +71,315 @@ TARGET = _load_module(
 
 
 class TestReleasePreflightTargetValidation(unittest.TestCase):
+    def test_business_scene_composition_changes_draft_identity(self):
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        policy = {
+            "product_key": "construction.standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+        first = {
+            "schema": "construction.scenario_product_surface.v1",
+            "scenarios": [{"key": "project", "name": "Project", "sequence": 10}],
+        }
+        second = deepcopy(first)
+        second["scenarios"][0]["name"] = "Project renamed"
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)):
+            with patch.object(TARGET, "call_extension_hook_first", return_value=first):
+                first_policy = service._compose_policy_draft(policy)
+            with patch.object(TARGET, "call_extension_hook_first", return_value=second):
+                second_policy = service._compose_policy_draft(policy)
+
+        self.assertEqual(
+            first_policy["business_scene_composition"],
+            first,
+        )
+        self.assertNotEqual(
+            TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+                policy=first_policy,
+                pages=[],
+            ),
+            TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+                policy=second_policy,
+                pages=[],
+            ),
+        )
+
+    def test_freeze_surface_carries_published_scene_composition(self):
+        composition = {
+            "schema": "construction.scenario_product_surface.v1",
+            "source_db": "product_db",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "menu:7",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        policy = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+        action = SimpleNamespace(res_model="project.project")
+        menu = SimpleNamespace(
+            id=7,
+            _name="ir.ui.menu",
+            action=action,
+            get_external_id=lambda: {},
+        )
+        menu_model = SimpleNamespace(
+            sudo=lambda: menu_model,
+            browse=lambda menu_id: SimpleNamespace(
+                exists=lambda: menu if menu_id == 7 else [],
+            ),
+        )
+        class Env:
+            cr = SimpleNamespace(dbname="product_db")
+
+            def __getitem__(self, model_name):
+                if model_name == "ir.ui.menu":
+                    return menu_model
+                raise KeyError(model_name)
+
+            def ref(self, *args, **kwargs):
+                return None
+
+        env = Env()
+        service = TARGET.EditionReleaseSnapshotService(env=env)
+        service.policy_service.resolve_policy_identity = lambda **kwargs: (
+            "construction.standard",
+            "construction",
+            "standard",
+        )
+        service.policy_service.get_policy = lambda **kwargs: deepcopy(policy)
+        service.policy_service.center_index = lambda payload: {
+            "centers": [],
+            "by_menu": {},
+        }
+        service._default_requested_role_context = lambda **kwargs: {
+            "role_code": "owner",
+            "source": "explicit",
+        }
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "project.project",
+        }
+        service.delivery_engine = SimpleNamespace(
+            build=lambda **kwargs: {
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+                "nav": [],
+                "capabilities": [],
+                "scenes": [],
+                "meta": {},
+            }
+        )
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            TARGET,
+            "call_extension_hook_first",
+            return_value=composition,
+        ):
+            payload = service.build_freeze_surface(
+                product_key="construction.standard",
+            )
+
+        self.assertEqual(
+            payload["policy"]["business_scene_composition"],
+            composition,
+        )
+        self.assertEqual(payload["business_scene_composition"], composition)
+
+    def test_freeze_accepts_valid_scene_composition_without_legacy_pages(self):
+        composition = {
+            "schema": "construction.scenario_product_surface.v1",
+            "source_db": "product_db",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "menu:7",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        policy = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+
+        class SnapshotRecord:
+            id = 91
+
+            def __init__(self, values):
+                self.values = values
+
+            def to_runtime_dict(self):
+                return {
+                    "id": self.id,
+                    "product_key": self.values["product_key"],
+                    "version": self.values["version"],
+                    "snapshot_json": self.values["snapshot_json"],
+                    "meta_json": self.values["meta_json"],
+                }
+
+        class SnapshotModel:
+            def __init__(self):
+                self.created = []
+
+            def search(self, *args, **kwargs):
+                return []
+
+            def create(self, values):
+                record = SnapshotRecord(deepcopy(values))
+                self.created.append(record)
+                return record
+
+        action = SimpleNamespace(res_model="project.project")
+        menu = SimpleNamespace(
+            id=7,
+            _name="ir.ui.menu",
+            action=action,
+            get_external_id=lambda: {},
+        )
+        menu_model = SimpleNamespace(
+            sudo=lambda: menu_model,
+            browse=lambda menu_id: SimpleNamespace(
+                exists=lambda: menu if menu_id == 7 else [],
+            ),
+        )
+
+        class Env:
+            cr = SimpleNamespace(dbname="product_db")
+
+            def __getitem__(self, model_name):
+                if model_name == "ir.ui.menu":
+                    return menu_model
+                raise KeyError(model_name)
+
+            def ref(self, *args, **kwargs):
+                return None
+
+        service = TARGET.EditionReleaseSnapshotService(env=Env())
+        model = SnapshotModel()
+        service._model = lambda: model
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "project.project",
+        }
+        service.now = lambda: "2026-11-20 00:00:00"
+        service.policy_service.resolve_policy_identity = lambda **kwargs: (
+            "construction.standard",
+            "construction",
+            "standard",
+        )
+        service.policy_service.get_policy = lambda **kwargs: deepcopy(policy)
+        service.policy_service.center_index = lambda payload: {
+            "centers": [],
+            "by_menu": {},
+        }
+        service._default_requested_role_context = lambda **kwargs: {
+            "role_code": "owner",
+            "source": "explicit",
+        }
+        service.delivery_engine = SimpleNamespace(
+            build=lambda **kwargs: {
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+                "nav": [],
+                "capabilities": [],
+                "scenes": [],
+                "meta": {},
+            }
+        )
+        service.promotion_service = SimpleNamespace(
+            promote_to_approved=lambda record_id, **kwargs: {},
+            promote_to_released=lambda record_id, **kwargs: model.created[0].to_runtime_dict(),
+        )
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            TARGET,
+            "call_extension_hook_first",
+            return_value=composition,
+        ):
+            result = service.freeze_release_surface(
+                product_key="construction.standard",
+                version="v2",
+            )
+
+        self.assertEqual(result["id"], 91)
+        self.assertEqual(len(model.created), 1)
+        frozen_policy = model.created[0].values["snapshot_json"]["policy"]
+        self.assertEqual(
+            frozen_policy["business_scene_composition"],
+            composition,
+        )
+        self.assertEqual(frozen_policy["menu_groups"], [])
+
+    def test_numeric_scene_reference_rejects_cross_database_source(self):
+        class Env:
+            cr = SimpleNamespace(dbname="execution_db")
+
+            def __getitem__(self, model_name):
+                raise KeyError(model_name)
+
+        service = TARGET.EditionReleaseSnapshotService(env=Env())
+        service._model_registered = lambda model_name: model_name == "ir.ui.menu"
+
+        check = service._business_scene_composition_check({
+            "business_scene_composition": {
+                "schema": "construction.scenario_product_surface.v1",
+                "source_db": "catalog_db",
+                "scenarios": [{
+                    "key": "project",
+                    "active": True,
+                    "bindings": [{
+                        "menu_key": "menu:21",
+                        "menu_id": 21,
+                        "source_db": "catalog_db",
+                    }],
+                }],
+            },
+        })
+
+        self.assertTrue(check["blocking"])
+        self.assertEqual(check["issues"][0]["code"], "BUSINESS_SCENE_MENU_UNRESOLVED")
+
     def test_action_menu_with_fake_scene_key_blocks_release(self):
         service = TARGET.EditionReleaseSnapshotService(env={})
         check = service._target_integrity_check(

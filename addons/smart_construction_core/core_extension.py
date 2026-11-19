@@ -1463,6 +1463,20 @@ def smart_core_scenario_surface_projection(env, nav, route_authority=None):
         return None
 
 
+def smart_core_product_scene_composition(env, policy):
+    """Return the maintained P1 business-scenario composition for a product draft."""
+    if not isinstance(policy, dict):
+        return None
+    product_key = str(policy.get("product_key") or "").strip()
+    base_key = str(policy.get("base_product_key") or "").strip()
+    if base_key != "construction" and not product_key.startswith("construction."):
+        return None
+    from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+        load_maintained_runtime_surface,
+    )
+    return load_maintained_runtime_surface(env)
+
+
 def smart_core_server_action_window_map(env):
     return get_server_action_window_map_contributions(env)
 

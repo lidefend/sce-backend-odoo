@@ -45,6 +45,7 @@ DEFAULT_PRODUCT_POLICY = {
     "scene_version_bindings": {},
     "menu_groups": [],
     "scenes": [],
+    "business_scene_composition": {},
     "capabilities": [],
 }
 
@@ -67,6 +68,7 @@ def _minimal_default_product_policy(*, base_product_key: str, edition_key: str) 
         "scene_version_bindings": {},
         "menu_groups": [],
         "scenes": [],
+        "business_scene_composition": {},
         "capabilities": [],
         "policy_source_authority": {
             "kind": "minimal_default_product_policy_provider",
@@ -227,6 +229,54 @@ class ProductPolicyService:
             return None
         with Registry(platform_db).cursor() as cr:
             return read(api.Environment(cr, SUPERUSER_ID, dict(getattr(self.env, "context", {}) or {})))
+
+    def get_published_policy(
+        self,
+        *,
+        product_key: str,
+        require_current_schema: bool = True,
+    ) -> dict | None:
+        """Read the active released policy without draft fallback."""
+        return self._load_published_policy(
+            product_key=str(product_key or "").strip(),
+            require_current_schema=require_current_schema,
+        )
+
+    def has_active_release_snapshot(self, *, product_key: str) -> bool:
+        """Return whether an active released snapshot exists, including legacy shape."""
+        def read(read_env):
+            rec = read_env["sc.edition.release.snapshot"].sudo().search(
+                [
+                    ("product_key", "=", str(product_key or "").strip()),
+                    ("state", "=", "released"),
+                    ("is_active", "=", True),
+                    ("active", "=", True),
+                ],
+                order="released_at desc, activated_at desc, id desc",
+                limit=1,
+            )
+            return bool(rec)
+
+        registry_models = getattr(getattr(self.env, "registry", None), "models", {})
+        if "sc.edition.release.snapshot" not in registry_models:
+            return False
+        platform_db = self._platform_policy_db()
+        current = str(getattr(getattr(self.env, "cr", None), "dbname", "") or "")
+        try:
+            if platform_db == current:
+                return read(self.env)
+            if not platform_db or Registry is None or api is None:
+                return False
+            with Registry(platform_db).cursor() as cr:
+                return read(
+                    api.Environment(
+                        cr,
+                        SUPERUSER_ID,
+                        dict(getattr(self.env, "context", {}) or {}),
+                    )
+                )
+        except Exception:
+            return False
 
     def _default_product_policy(self) -> dict:
         if callable(call_extension_hook_first):

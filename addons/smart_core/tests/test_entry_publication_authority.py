@@ -85,6 +85,98 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(result["primary_actions"], [])
         self.assertEqual(result["admin_actions"], [])
 
+    def test_native_execution_surface_is_not_filtered_by_product_page_release(self):
+        path = ROOT / "delivery/effective_delivery_service.py"
+        cls = next(
+            node
+            for node in ast.parse(path.read_text()).body
+            if isinstance(node, ast.ClassDef)
+            and node.name == "EffectiveDeliveryService"
+        )
+        method = next(
+            node
+            for node in cls.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_native_execution_surface"
+        )
+        method.decorator_list = []
+        scope = {"deepcopy": deepcopy}
+        exec(
+            compile(ast.Module(body=[method], type_ignores=[]), str(path), "exec"),
+            scope,
+        )
+        payload = {
+            "nav": [{"menu_id": 507, "action_id": 655}],
+            "route_authority": deepcopy(self.authority),
+        }
+
+        nav, authority = scope[method.name](payload)
+
+        self.assertEqual(nav, payload["nav"])
+        self.assertEqual(
+            [row["action_id"] for row in authority["primary_actions"]],
+            [655, 775],
+        )
+        self.assertNotIn(
+            "PRODUCT_ENTRY_NOT_RELEASED",
+            {row.get("reason_code") for row in authority["denied_actions"]},
+        )
+
+    def test_delivery_engine_builds_native_authority_before_product_nav_intersection(self):
+        source = (ROOT / "delivery" / "delivery_engine.py").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "native_authority = self.menu_service.build_route_authority(role_surface)",
+            source,
+        )
+        self.assertIn(
+            "route_authority = self._merge_execution_targets(",
+            source,
+        )
+        self.assertIn(
+            "nav = self.menu_service.filter_nav_by_route_authority(\n"
+            "                nav,\n"
+            "                product_authority,\n"
+            "            )",
+            source,
+        )
+
+    def test_native_authority_merge_keeps_actions_outside_product_nav(self):
+        path = ROOT / "delivery" / "delivery_engine.py"
+        cls = next(
+            node
+            for node in ast.parse(path.read_text()).body
+            if isinstance(node, ast.ClassDef) and node.name == "DeliveryEngine"
+        )
+        method = next(
+            node
+            for node in cls.body
+            if isinstance(node, ast.FunctionDef)
+            and node.name == "_merge_execution_targets"
+        )
+        method.decorator_list = []
+        scope = {"deepcopy": deepcopy}
+        exec(
+            compile(ast.Module(body=[method], type_ignores=[]), str(path), "exec"),
+            scope,
+        )
+        result = scope[method.name](
+            self.authority,
+            {
+                "primary_actions": [{
+                    "menu_id": 545,
+                    "action_id": 775,
+                    "route": "/a/775?menu_id=545",
+                }],
+            },
+        )
+        self.assertEqual(
+            [row["action_id"] for row in result["primary_actions"]],
+            [655, 775],
+        )
+        self.assertEqual(result["primary_actions"][1]["route"], "/a/775?menu_id=545")
+
     def test_projection_preserves_scene_and_target_identity(self):
         self.authority["primary_actions"][1].update(scene_key="published.page", entry_target={"type": "scene"})
         seen = []

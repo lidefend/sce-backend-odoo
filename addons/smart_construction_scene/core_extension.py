@@ -606,7 +606,13 @@ def smart_core_navigation_authority_filter(env, authority):
         read_tenant_enablement,
     )
 
-    surface = load_runtime_surface(env)
+    published_surface = authority.get("business_scene_composition")
+    surface = (
+        published_surface
+        if isinstance(published_surface, dict)
+        and isinstance(published_surface.get("scenarios"), list)
+        else load_runtime_surface(env)
+    )
     index, menu_xmlids_by_id, menu_xmlids_by_action = runtime_menu_scope(env, surface)
     company_id = int(env.company.id or 0)
     stored = {

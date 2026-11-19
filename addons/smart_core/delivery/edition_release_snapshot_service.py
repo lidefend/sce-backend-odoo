@@ -110,6 +110,24 @@ class EditionReleaseSnapshotService:
                 return value
         return PLATFORM_DEFAULT_RELEASE_ROLE_CODE
 
+    def _compose_policy_draft(self, policy: dict[str, Any]) -> dict[str, Any]:
+        payload = normalize_product_policy_for_env(self.env, deepcopy(_dict(policy)))
+        if callable(call_extension_hook_first):
+            composition = call_extension_hook_first(
+                self.env,
+                "smart_core_product_scene_composition",
+                self.env,
+                payload,
+            )
+            if composition is not None:
+                if not isinstance(composition, dict):
+                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
+                scenarios = composition.get("scenarios")
+                if not isinstance(scenarios, list):
+                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
+                payload["business_scene_composition"] = deepcopy(composition)
+        return payload
+
     def _freeze_role_code(self, policy: dict[str, Any], explicit_role_code: str = "") -> str:
         if _text(explicit_role_code):
             return _text(explicit_role_code)
@@ -188,7 +206,7 @@ class EditionReleaseSnapshotService:
                 use_published_policy=False,
             )
         )
-        policy = normalize_product_policy_for_env(self.env, _dict(policy))
+        policy = self._compose_policy_draft(_dict(policy))
         freeze_role_code = self._freeze_role_code(policy, explicit_role_code=requested_role_code)
         delivery = self.delivery_engine.build(
             data={"role_surface": {"role_code": freeze_role_code}, "scenes": [], "capabilities": []},
@@ -245,6 +263,9 @@ class EditionReleaseSnapshotService:
             "identity": identity,
             "policy_snapshot_schema": "maintained_product_policy.v1",
             "policy": deepcopy(resolved_policy),
+            "business_scene_composition": deepcopy(
+                _dict(resolved_policy.get("business_scene_composition"))
+            ),
             "nav": deepcopy(_list(resolved_delivery.get("nav"))),
             "capabilities": deepcopy(_list(resolved_delivery.get("capabilities"))),
             "scenes": deepcopy(_list(resolved_delivery.get("scenes"))),
@@ -332,21 +353,191 @@ class EditionReleaseSnapshotService:
             "state": _text(policy.get("state")),
             "access_level": _text(policy.get("access_level")),
             "allowed_role_codes": sorted(_text(item) for item in _list(policy.get("allowed_role_codes")) if _text(item)),
+            "business_scene_composition": _dict(
+                policy.get("business_scene_composition")
+            ),
             "pages": normalized_pages,
         }
         return hashlib.sha256(_stable_json(payload).encode("utf-8")).hexdigest()
 
-    def _preflight_checks_from_pages(self, *, pages: list[dict[str, Any]], active_snapshot_id: int) -> list[dict[str, Any]]:
+    def _business_scene_composition_check(
+        self,
+        policy: dict[str, Any],
+    ) -> dict[str, Any]:
+        composition = _dict(policy.get("business_scene_composition"))
+        scenarios = _list(composition.get("scenarios"))
+        if not scenarios:
+            return {
+                "key": "business_scene_composition",
+                "label": "业务场景组合",
+                "status": "not_configured",
+                "message": "未声明业务场景组合",
+                "blocking": False,
+                "ready_binding_count": 0,
+                "issues": [],
+            }
+        issues: list[dict[str, Any]] = []
+        seen_scenarios: set[str] = set()
+        ready_bindings = 0
+        validate_native = self._model_registered("ir.ui.menu")
+        for index, scenario in enumerate(scenarios):
+            if not isinstance(scenario, dict):
+                issues.append({
+                    "code": "BUSINESS_SCENE_INVALID",
+                    "message": f"scenario index {index} is not an object",
+                })
+                continue
+            scenario_key = _text(scenario.get("key"))
+            if not scenario_key:
+                issues.append({
+                    "code": "BUSINESS_SCENE_KEY_MISSING",
+                    "message": f"scenario index {index} has no stable key",
+                })
+                continue
+            if scenario_key in seen_scenarios:
+                issues.append({
+                    "code": "BUSINESS_SCENE_DUPLICATE",
+                    "message": scenario_key,
+                })
+            seen_scenarios.add(scenario_key)
+            bindings = scenario.get("bindings")
+            if not isinstance(bindings, list):
+                issues.append({
+                    "code": "BUSINESS_SCENE_BINDINGS_INVALID",
+                    "message": scenario_key,
+                })
+                continue
+            active = bool(scenario.get("active", True))
+            for binding_index, binding in enumerate(bindings):
+                if not isinstance(binding, dict):
+                    issues.append({
+                        "code": "BUSINESS_SCENE_BINDING_INVALID",
+                        "message": f"{scenario_key}[{binding_index}]",
+                    })
+                    continue
+                menu_xmlid = _text(binding.get("menu_key"))
+                if not menu_xmlid:
+                    issues.append({
+                        "code": "BUSINESS_SCENE_MENU_MISSING",
+                        "message": f"{scenario_key}[{binding_index}]",
+                    })
+                    continue
+                if validate_native:
+                    try:
+                        menu = self._resolve_business_scene_menu(
+                            menu_key=menu_xmlid,
+                            binding=binding,
+                            composition_source_db=_text(
+                                composition.get("source_db")
+                            ),
+                        )
+                    except Exception:
+                        menu = None
+                    if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+                        issues.append({
+                            "code": "BUSINESS_SCENE_MENU_UNRESOLVED",
+                            "message": menu_xmlid,
+                        })
+                        continue
+                    action = getattr(menu, "action", None)
+                    if not action:
+                        issues.append({
+                            "code": "BUSINESS_SCENE_ACTION_MISSING",
+                            "message": menu_xmlid,
+                        })
+                        continue
+                    res_model = _text(getattr(action, "res_model", ""))
+                    if res_model and not self._model_registered(res_model):
+                        issues.append({
+                            "code": "BUSINESS_SCENE_MODEL_MISSING",
+                            "message": res_model,
+                        })
+                        continue
+                if active:
+                    ready_bindings += 1
+        return {
+            "key": "business_scene_composition",
+            "label": "业务场景组合",
+            "status": "fail" if issues else ("pass" if ready_bindings else "not_configured"),
+            "message": (
+                f"业务组合问题 {len(issues)} 个"
+                if issues
+                else f"有效业务组合入口 {ready_bindings} 个"
+            ),
+            "blocking": bool(issues),
+            "ready_binding_count": ready_bindings,
+            "issues": issues[:20],
+        }
+
+    def _resolve_business_scene_menu(
+        self,
+        *,
+        menu_key: str,
+        binding: dict[str, Any],
+        composition_source_db: str = "",
+    ):
+        """Resolve a stable XMLID or same-database ``menu:<id>`` reference."""
+        reference = _text(menu_key)
+        execution_db = _text(
+            getattr(getattr(self.env, "cr", None), "dbname", "")
+        )
+        source_db = _text(
+            binding.get("source_db") or composition_source_db
+        )
+        if reference.startswith("menu:"):
+            if not execution_db or not source_db or source_db != execution_db:
+                return None
+            try:
+                menu_id = int(reference.split(":", 1)[1])
+            except (TypeError, ValueError):
+                return None
+            declared_id = _to_int(binding.get("menu_id"))
+            if declared_id and declared_id != menu_id:
+                return None
+            menu = self.env["ir.ui.menu"].sudo().browse(menu_id).exists()
+            if not menu:
+                return None
+            actual_xmlid = _text(menu.get_external_id().get(menu.id))
+            if actual_xmlid:
+                return None
+            return menu
+        menu = self.env.ref(reference, raise_if_not_found=False)
+        declared_id = _to_int(binding.get("menu_id"))
+        if (
+            declared_id
+            and execution_db
+            and (not source_db or source_db == execution_db)
+            and int(getattr(menu, "id", 0) or 0) != declared_id
+        ):
+            return None
+        return menu
+
+    def _preflight_checks_from_pages(
+        self,
+        *,
+        pages: list[dict[str, Any]],
+        active_snapshot_id: int,
+        policy: dict[str, Any] | None = None,
+    ) -> list[dict[str, Any]]:
         effective_pages = [row for row in pages if bool(row.get("enabled")) and _text(row.get("release_state")) in {"released", "preview"}]
         preview_pages = [row for row in effective_pages if _text(row.get("release_state")) == "preview"]
         hidden_pages = [row for row in pages if not bool(row.get("enabled")) or _text(row.get("release_state")) in {"hidden", "retired"}]
+        composition_check = self._business_scene_composition_check(
+            _dict(policy)
+        )
+        has_release_surface = bool(effective_pages) or (
+            composition_check.get("status") == "pass"
+        )
         checks = [
             {
                 "key": "has_product_pages",
-                "label": "产品页面范围",
-                "status": "pass" if effective_pages else "fail",
-                "message": f"有效发布页面 {len(effective_pages)}/{len(pages)}",
-                "blocking": not bool(effective_pages),
+                "label": "产品发布范围",
+                "status": "pass" if has_release_surface else "fail",
+                "message": (
+                    f"有效发布页面 {len(effective_pages)}/{len(pages)}；"
+                    f"业务组合入口 {int(composition_check.get('ready_binding_count') or 0)}"
+                ),
+                "blocking": not has_release_surface,
             },
             {
                 "key": "preview_pages",
@@ -370,6 +561,7 @@ class EditionReleaseSnapshotService:
                 "blocking": False,
             },
         ]
+        checks.append(composition_check)
         checks.append(self._target_integrity_check(effective_pages))
         checks.append(self._source_target_check(effective_pages))
         return checks
@@ -601,7 +793,7 @@ class EditionReleaseSnapshotService:
             if policy_rec
             else {}
         )
-        policy = normalize_product_policy_for_env(self.env, policy)
+        policy = self._compose_policy_draft(policy)
         pages = self._draft_pages_from_policy(policy)
         center_index = self.policy_service.center_index(policy)
         effective_pages = [row for row in pages if bool(row.get("enabled")) and _text(row.get("release_state")) in {"released", "preview"}]
@@ -618,7 +810,11 @@ class EditionReleaseSnapshotService:
                 order="released_at desc, activated_at desc, id desc",
                 limit=1,
             )
-        preflight = self._preflight_checks_from_pages(pages=pages, active_snapshot_id=int(active.id) if active else 0)
+        preflight = self._preflight_checks_from_pages(
+            pages=pages,
+            active_snapshot_id=int(active.id) if active else 0,
+            policy=policy,
+        )
         return {
             "policy_id": int(policy_rec.id) if policy_rec else 0,
             "policy_sha256": hashlib.sha256(_stable_json(policy).encode("utf-8")).hexdigest(),
@@ -723,6 +919,18 @@ class EditionReleaseSnapshotService:
         payload["release_draft"] = {
             "fingerprint": _text(draft_contract.get("fingerprint")),
             "policy_sha256": _text(draft_contract.get("policy_sha256")),
+            "business_scene_composition_sha256": hashlib.sha256(
+                _stable_json(
+                    _dict(payload["policy"].get("business_scene_composition"))
+                ).encode("utf-8")
+            ).hexdigest(),
+            "business_scenario_count": len(
+                _list(
+                    _dict(
+                        payload["policy"].get("business_scene_composition")
+                    ).get("scenarios")
+                )
+            ),
             "page_count": int(draft_contract.get("page_count") or 0),
             "total_page_count": int(draft_contract.get("total_page_count") or 0),
             "preview_page_count": int(draft_contract.get("preview_page_count") or 0),
@@ -811,8 +1019,13 @@ class EditionReleaseSnapshotService:
         if self._draft_fingerprint(policy=policy, pages=pages) != _text(draft.get("fingerprint")):
             raise ValueError("RELEASE_SNAPSHOT_FINGERPRINT_MISMATCH")
         effective = [row for row in pages if row.get("enabled") and row.get("release_state") in {"released", "preview"}]
+        composition_check = self._business_scene_composition_check(policy)
+        if composition_check.get("blocking"):
+            raise ValueError("RELEASE_SNAPSHOT_BUSINESS_SCENE_COMPOSITION_INVALID")
+        if not effective and composition_check.get("status") != "pass":
+            raise ValueError("RELEASE_SNAPSHOT_HAS_NO_RELEASE_SURFACE")
         keys = [_text(row.get("page_key")) for row in pages]
-        if not effective or len(set(keys)) != len(keys) or "" in keys:
+        if (effective and (len(set(keys)) != len(keys) or "" in keys)):
             raise ValueError("RELEASE_SNAPSHOT_PAGE_IDENTITIES_INVALID")
         if len(effective) != int(draft.get("page_count") or 0):
             raise ValueError("RELEASE_SNAPSHOT_PAGE_COUNT_MISMATCH")

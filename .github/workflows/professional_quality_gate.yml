@@ -28,7 +28,7 @@ jobs:
       CHECKOUT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
     outputs:
-      backend_impact_required: ${{ steps.backend_impact.outputs.required }}
+      backend_impact_required: ${{ steps.risk.outputs.contract_only_scope != '' && 'false' || steps.backend_impact.outputs.required }}
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
@@ -38,6 +38,9 @@ jobs:
       orm_required: ${{ steps.risk.outputs.orm_required }}
       orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
       payment_orm_required: ${{ steps.risk.outputs.payment_orm_required }}
+      contract_only_scope: ${{ steps.risk.outputs.contract_only_scope }}
+      contract_only_targets_json: ${{ steps.risk.outputs.contract_only_targets_json }}
+      contract_only_excluded_targets_json: ${{ steps.risk.outputs.contract_only_excluded_targets_json }}
       tool_checks: ${{ steps.backend_impact.outputs.tool_checks }}
       candidate_requested: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
     steps:
@@ -88,6 +91,7 @@ jobs:
             --base "${BASE_SHA}" \
             --head "${CHECKOUT_SHA}" \
             --event "${GITHUB_EVENT_NAME}" \
+            --head-ref "${{ github.event.pull_request.head.ref || '' }}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
@@ -100,6 +104,51 @@ jobs:
             --head "${CHECKOUT_SHA}" --output "${RUNNER_TEMP}/backend-impact.json" \
             --github-output "${GITHUB_OUTPUT}"
           cat "${RUNNER_TEMP}/backend-impact.json" >> "${GITHUB_STEP_SUMMARY}"
+
+  contract_checks:
+    name: contract_only_checks
+    needs: professional_authorization
+    if: >-
+      needs.professional_authorization.result == 'success' &&
+      needs.professional_authorization.outputs.contract_only_scope != ''
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+          persist-credentials: false
+      - name: Execute owner-approved pure contract targets
+        env:
+          CONTRACT_ONLY_TARGETS_JSON: ${{ needs.professional_authorization.outputs.contract_only_targets_json }}
+          CONTRACT_ONLY_EXCLUDED_TARGETS_JSON: ${{ needs.professional_authorization.outputs.contract_only_excluded_targets_json }}
+        run: |
+          set -euo pipefail
+          test "$(git rev-parse HEAD)" = "${{ github.event.pull_request.head.sha }}"
+          mapfile -t targets < <(python3 - <<'PY'
+          import json, os
+          print('\n'.join(json.loads(os.environ['CONTRACT_ONLY_TARGETS_JSON'])))
+          PY
+          )
+          test "${#targets[@]}" -gt 0
+          for target in "${targets[@]}"; do
+            echo "::group::${target}"
+            make --no-print-directory "${target}"
+            echo "::endgroup::"
+          done
+          {
+            echo "## Contract-only validation"
+            echo ""
+            echo "Executed ${#targets[@]} owner-approved pure targets."
+            echo ""
+            echo "Excluded scope:"
+            python3 - <<'PY'
+          import json, os
+          for target in json.loads(os.environ['CONTRACT_ONLY_EXCLUDED_TARGETS_JSON']):
+              print(f"- {target}")
+          PY
+          } >> "${GITHUB_STEP_SUMMARY}"
 
   backend_impact_suite:
     needs: professional_authorization
@@ -146,6 +195,7 @@ jobs:
             --base "${BASE_SHA}" \
             --head "${CHECKOUT_SHA}" \
             --event "${GITHUB_EVENT_NAME}" \
+            --head-ref "${{ github.event.pull_request.head.ref || '' }}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 
@@ -472,7 +522,7 @@ jobs:
   # only this small verdict waits for all required evidence.
   professional_quality_gate:
     name: professional_quality_gate
-    needs: [professional_authorization, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]
+    needs: [professional_authorization, contract_checks, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]
     if: >-
       always() && !cancelled() &&
       (github.event.action != 'labeled' || github.event.label.name == 'ci:candidate') &&
@@ -505,6 +555,18 @@ jobs:
             test "${IMPACT_RESULT}" = success
           else
             test "${IMPACT_RESULT}" = skipped
+          fi
+
+      - name: Enforce contract-only execution
+        env:
+          CONTRACT_SCOPE: ${{ needs.professional_authorization.outputs.contract_only_scope }}
+          CONTRACT_RESULT: ${{ needs.contract_checks.result }}
+        run: |
+          set -euo pipefail
+          if [ -n "${CONTRACT_SCOPE}" ]; then
+            test "${CONTRACT_RESULT}" = success
+          else
+            test "${CONTRACT_RESULT}" = skipped
           fi
 
       - name: Enforce quality and compatibility execution

@@ -362,6 +362,10 @@ class ReleaseOperatorReadModelService:
         scenes = _list(payload.get("scenes"))
         capabilities = _list(payload.get("capabilities"))
         scene_bindings = _dict(payload.get("scene_version_bindings"))
+        business_scene_composition = _dict(
+            payload.get("business_scene_composition")
+        )
+        business_scenarios = _list(business_scene_composition.get("scenarios"))
         menu_count = 0
         enabled_menu_count = 0
         released_page_count = 0
@@ -436,6 +440,7 @@ class ReleaseOperatorReadModelService:
             "preview_page_count": preview_page_count,
             "hidden_page_count": hidden_page_count,
             "scene_count": enabled_scene_count,
+            "business_scenario_count": len(business_scenarios),
             "capability_count": enabled_capability_count,
             "scene_binding_count": len(scene_bindings),
             "menu_groups": menu_groups,
@@ -456,6 +461,7 @@ class ReleaseOperatorReadModelService:
             "pages": page_rows,
             "control_definition": _list(payload.get("control_definition")) or list(PAGE_CONTROL_DEFINITION),
             "scenes": scenes,
+            "business_scene_composition": business_scene_composition,
             "capabilities": capabilities,
         }
 

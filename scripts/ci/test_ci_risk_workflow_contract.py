@@ -806,13 +806,55 @@ class ParallelQualityExecutionTest(unittest.TestCase):
     def jobs(self):
         return yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())['jobs']
 
+    def test_every_risk_classifier_invocation_receives_the_pr_head_ref(self):
+        for path in sorted((ROOT / ".github/workflows").glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            marker = "python3 scripts/ci/ci_risk_classifier.py"
+            offset = 0
+            invocations = 0
+            while True:
+                index = text.find(marker, offset)
+                if index < 0:
+                    break
+                invocations += 1
+                body = text[index:index + 700]
+                self.assertIn(
+                    '--head-ref "${{ github.event.pull_request.head.ref || \'\' }}"',
+                    body,
+                    f"{path.name} classifier invocation {invocations}",
+                )
+                offset = index + len(marker)
+
     def test_independent_work_is_parallel_and_protected_name_is_unique(self):
         jobs = self.jobs()
         self.assertEqual(jobs['professional_quality_checks']['needs'], 'professional_authorization')
         self.assertEqual(jobs['backend_impact_suite']['needs'], 'professional_authorization')
         self.assertEqual(set(jobs['professional_quality_gate']['needs']), {
-            'professional_authorization', 'backend_impact_suite',
+            'professional_authorization', 'contract_checks', 'backend_impact_suite',
             'professional_quality_checks', 'python310_runtime_compatibility'})
+        self.assertEqual(
+            jobs['contract_checks']['needs'],
+            'professional_authorization',
+        )
+        self.assertIn(
+            "needs.professional_authorization.outputs.contract_only_scope != ''",
+            jobs['contract_checks']['if'],
+        )
+        authorization = jobs['professional_authorization']
+        planner = next(
+            step
+            for step in authorization['steps']
+            if step.get('name') == 'Plan affected backend modules from exact trees'
+        )
+        self.assertEqual(planner['if'], "github.event_name == 'pull_request'")
+        self.assertEqual(
+            authorization['outputs']['backend_impact_required'],
+            "${{ steps.risk.outputs.contract_only_scope != '' && 'false' || steps.backend_impact.outputs.required }}",
+        )
+        self.assertEqual(
+            authorization['outputs']['tool_checks'],
+            '${{ steps.backend_impact.outputs.tool_checks }}',
+        )
         self.assertEqual(sum(job.get('name') == 'professional_quality_gate' for job in jobs.values()), 1)
         self.assertIn('!cancelled()', jobs['professional_quality_checks']['if'])
         self.assertIn("needs.professional_authorization.result == 'success'", jobs['professional_quality_checks']['if'])

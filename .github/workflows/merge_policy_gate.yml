@@ -48,6 +48,7 @@ jobs:
           --base "${{ github.event.pull_request.base.sha || github.event.before || github.sha }}"
           --head "${{ github.event.pull_request.head.sha || github.sha }}"
           --event "$GITHUB_EVENT_NAME"
+          --head-ref "${{ github.event.pull_request.head.ref || '' }}"
           --ref "$GITHUB_REF" --github-output "$GITHUB_OUTPUT"
 
   fast:

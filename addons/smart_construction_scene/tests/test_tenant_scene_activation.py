@@ -290,7 +290,16 @@ class TestActualPublicationConsumers(unittest.TestCase):
         for allowed in (False, True):
             with self.subTest(allowed=allowed):
                 handlers, env = self._handlers_and_env(can_manage=allowed)
-                result = handlers._catalog(env, company_id=1)
+                published = {
+                    **scenario_surface.load_surface(),
+                    "runtime_scope": "published_release",
+                }
+                with patch.object(
+                    scenario_surface,
+                    "load_runtime_surface",
+                    return_value=published,
+                ):
+                    result = handlers._catalog(env, company_id=1)
                 self.assertEqual(result["company_id"], 1)
                 self.assertEqual(len(result["business_scenarios"]), 17)
                 actions = [action for row in result["business_scenarios"] for action in row["actions"]]
@@ -1304,8 +1313,20 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         key = next(row["scene_key"] for row in rows if row["product_released"])
         rows = business_enablement.business_catalog(surface, release, {business_enablement.business_key(key): True})
         self.assertEqual([row["scene_key"] for row in rows if row["tenant_enabled"]], [key])
-        self.assertTrue(tenant_scene_activation.resolve_product_released(business_enablement.business_key(key), env=TestActualPublicationConsumers()._handlers_and_env()[1]))
-        self.assertFalse(tenant_scene_activation.resolve_product_released("business.v1:unknown", env=TestActualPublicationConsumers()._handlers_and_env()[1]))
+        published = {**surface, "runtime_scope": "published_release"}
+        with patch.object(
+            scenario_surface,
+            "load_runtime_surface",
+            return_value=published,
+        ):
+            self.assertTrue(tenant_scene_activation.resolve_product_released(
+                business_enablement.business_key(key),
+                env=TestActualPublicationConsumers()._handlers_and_env()[1],
+            ))
+            self.assertFalse(tenant_scene_activation.resolve_product_released(
+                "business.v1:unknown",
+                env=TestActualPublicationConsumers()._handlers_and_env()[1],
+            ))
 
     def test_workspace_uses_same_business_decision_without_native_grants(self):
         release = {menu: "released" for menu in self.index}
@@ -1418,6 +1439,32 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                         if actions:
                             self.assertIs(actions[0]["enabled"], not enabled)
                             self.assertEqual(actions[0]["label"], "停用" if enabled else "启用")
+
+    def test_business_catalog_uses_published_composition_not_native_release_state(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "intents": {"view": ["project.menu"]},
+            }],
+        }
+        rows = business_enablement.business_catalog(
+            surface,
+            {"project.menu": "hidden"},
+            {},
+        )
+        self.assertTrue(rows[0]["product_released"])
+        self.assertEqual(rows[0]["released_menu_count"], 1)
+
+        draft = {**surface, "runtime_scope": "maintained_draft"}
+        draft_rows = business_enablement.business_catalog(
+            draft,
+            {"project.menu": "released"},
+            {},
+        )
+        self.assertFalse(draft_rows[0]["product_released"])
 
     def test_published_authority_is_final_without_company_refilter(self):
         policy = types.SimpleNamespace(published_route_authority=lambda: self.authority)
@@ -1797,6 +1844,408 @@ class TestMaintainedScenarioScope(unittest.TestCase):
         self.assertFalse(index["menu:7"]["scenario_active"])
         with self.assertRaises(ValueError):
             scenario_surface.load_runtime_surface(None)
+
+    def test_runtime_reader_prefers_published_composition_and_empty_is_authoritative(self):
+        published = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published name",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "test.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        with patch.object(
+            scenario_surface,
+            "load_published_runtime_surface",
+            return_value=published,
+        ), patch.object(
+            scenario_surface,
+            "load_maintained_runtime_surface",
+            side_effect=AssertionError("live maintenance read"),
+        ):
+            self.assertEqual(scenario_surface.load_runtime_surface(object()), published)
+
+        empty = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [],
+            "runtime_scope": "published_release_without_composition",
+        }
+        with patch.object(
+            scenario_surface,
+            "load_published_runtime_surface",
+            return_value=empty,
+        ), patch.object(
+            scenario_surface,
+            "load_maintained_runtime_surface",
+            side_effect=AssertionError("live maintenance read"),
+        ):
+            self.assertEqual(scenario_surface.load_runtime_surface(object()), empty)
+
+    def test_published_composition_indexes_without_live_scenario_records(self):
+        surface = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published",
+                "active": True,
+                "sequence": 4,
+                "bindings": [{
+                    "menu_key": "test.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                    "center_key": "construction.center.project",
+                    "center_name": "Project",
+                    "center_sequence": 20,
+                }],
+            }],
+        }
+
+        indexed = scenario_surface._scenario_entries_by_menu(
+            None,
+            surface=surface,
+        )
+
+        self.assertEqual(indexed[7][0]["scenario_key"], "published")
+        self.assertEqual(indexed[7][0]["sequence"], 0)
+
+    def test_published_runtime_surface_reads_active_release_policy(self):
+        composition = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published",
+                "active": True,
+                "sequence": 0,
+                "bindings": [],
+            }],
+        }
+
+        class PolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                return {
+                    "product_key": kwargs["product_key"],
+                    "business_scene_composition": composition,
+                }
+
+            def has_active_release_snapshot(self, **kwargs):
+                return True
+
+        policy_module = types.ModuleType(
+            "odoo.addons.smart_core.delivery.product_policy_service"
+        )
+        policy_module.ProductPolicyService = PolicyService
+        active = types.SimpleNamespace(id=31)
+        snapshot_model = types.SimpleNamespace(
+            search=lambda *args, **kwargs: types.SimpleNamespace(
+                __bool__=lambda self: True,
+            )
+        )
+        snapshot_model.sudo = lambda: snapshot_model
+
+        class Env:
+            registry = types.SimpleNamespace(
+                models={"sc.edition.release.snapshot": object()}
+            )
+
+            def __getitem__(self, name):
+                if name == "sc.edition.release.snapshot":
+                    return snapshot_model
+                raise KeyError(name)
+
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            surface = scenario_surface.load_published_runtime_surface(Env())
+
+        self.assertEqual(
+            surface,
+            {**composition, "runtime_scope": "published_release"},
+        )
+        class LegacyPolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                raise ValueError("LEGACY_PUBLISHED_POLICY_REQUIRES_REFREEZE")
+
+            def has_active_release_snapshot(self, **kwargs):
+                return True
+
+        policy_module.ProductPolicyService = LegacyPolicyService
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            legacy_surface = scenario_surface.load_published_runtime_surface(Env())
+        self.assertEqual(
+            legacy_surface,
+            {
+                "schema": scenario_surface.SCHEMA,
+                "scenarios": [],
+                "runtime_scope": "published_release_without_composition",
+            },
+        )
+
+        class NoSnapshotPolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                return None
+
+        policy_module.ProductPolicyService = NoSnapshotPolicyService
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            no_snapshot_surface = scenario_surface.load_published_runtime_surface(Env())
+        self.assertEqual(
+            no_snapshot_surface,
+            {
+                "schema": scenario_surface.SCHEMA,
+                "scenarios": [],
+                "runtime_scope": "published_release_without_composition",
+            },
+        )
+
+    def test_scenario_identity_uses_xmlid_cross_db_and_rejects_numeric_cross_db(self):
+        menu = types.SimpleNamespace(id=121)
+
+        class Env:
+            cr = types.SimpleNamespace(dbname="execution_db")
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return menu if xmlid == "project.menu_ledger" else None
+
+        xmlid_surface = {
+            "schema": scenario_surface.SCHEMA,
+            "source_db": "catalog_db",
+            "scenarios": [{
+                "key": "project",
+                "bindings": [{
+                    "menu_key": "project.menu_ledger",
+                    "menu_id": 21,
+                    "intent": "view",
+                    "source_db": "catalog_db",
+                }],
+            }],
+        }
+        indexed = scenario_surface._scenario_entries_by_menu(
+            Env(),
+            surface=xmlid_surface,
+        )
+        self.assertIn(121, indexed)
+        self.assertNotIn(21, indexed)
+
+        numeric_surface = copy.deepcopy(xmlid_surface)
+        numeric_surface["scenarios"][0]["bindings"][0]["menu_key"] = "menu:21"
+        indexed = scenario_surface._scenario_entries_by_menu(
+            Env(),
+            surface=numeric_surface,
+        )
+        self.assertEqual(indexed, {})
+
+    def test_scenario_selection_uses_the_same_resolved_menu_identity(self):
+        def env_for(menu):
+            class MenuModel:
+                def sudo(self):
+                    return self
+
+                def with_context(self, **kwargs):
+                    return self
+
+                def search(self, domain):
+                    return [menu]
+
+            class Env:
+                cr = types.SimpleNamespace(dbname="tenant_db")
+
+                def __getitem__(self, model_name):
+                    if model_name == "ir.ui.menu":
+                        return MenuModel()
+                    raise KeyError(model_name)
+
+                def ref(self, xmlid, raise_if_not_found=False):
+                    return menu if xmlid == "project.menu_ledger" else None
+
+            return Env()
+
+        def surface(source_db, menu_key="menu:21"):
+            return {
+                "schema": scenario_surface.SCHEMA,
+                "source_db": source_db,
+                "scenarios": [{
+                    "key": "project",
+                    "name": "Project",
+                    "active": True,
+                    "sequence": 0,
+                    "bindings": [{
+                        "menu_key": menu_key,
+                        "menu_id": 21,
+                        "source_db": source_db,
+                        "intent": "view",
+                        "sequence": 0,
+                    }],
+                }],
+            }
+
+        local_menu = types.SimpleNamespace(
+            id=21,
+            action=types.SimpleNamespace(id=99),
+            child_id=[],
+            sc_scenario_exempt=False,
+            get_external_id=lambda: {},
+        )
+        local_env = env_for(local_menu)
+        for source_db in ("platform_db", ""):
+            with self.subTest(source_db=source_db):
+                rejected_surface = surface(source_db)
+                index, by_id, by_action = scenario_surface.runtime_menu_scope(
+                    local_env,
+                    rejected_surface,
+                )
+                self.assertEqual(index["menu:21"]["location"], "missing")
+                self.assertEqual(
+                    scenario_surface._scenario_entries_by_menu(
+                        local_env,
+                        surface=rejected_surface,
+                    ),
+                    {},
+                )
+                filtered = business_enablement.filter_business_authority(
+                    {
+                        "primary_actions": [{
+                            "menu_id": 21,
+                            "action_id": 99,
+                            "allowed": True,
+                        }]
+                    },
+                    surface_index=index,
+                    enabled={"project": True},
+                    entries=[],
+                    menu_xmlids_by_id=by_id,
+                    menu_xmlids_by_action=by_action,
+                    company_id=9,
+                )
+                self.assertFalse(filtered["primary_actions"])
+                self.assertNotIn(
+                    "21",
+                    filtered["scenario_composition"]["selected_by_menu"],
+                )
+
+        same_db_surface = surface("tenant_db")
+        index, by_id, by_action = scenario_surface.runtime_menu_scope(
+            local_env,
+            same_db_surface,
+        )
+        self.assertEqual(index["menu:21"]["location"], "scenario")
+        self.assertEqual(
+            scenario_surface._scenario_entries_by_menu(
+                local_env,
+                surface=same_db_surface,
+            )[21][0]["scenario_key"],
+            "project",
+        )
+        filtered = business_enablement.filter_business_authority(
+            {
+                "primary_actions": [{
+                    "menu_id": 21,
+                    "action_id": 99,
+                    "allowed": True,
+                }]
+            },
+            surface_index=index,
+            enabled={"project": True},
+            entries=[],
+            menu_xmlids_by_id=by_id,
+            menu_xmlids_by_action=by_action,
+            company_id=9,
+        )
+        self.assertTrue(filtered["primary_actions"])
+        self.assertEqual(
+            filtered["scenario_composition"]["selected_by_menu"]["21"]["scenario_key"],
+            "project",
+        )
+
+        xmlid_menu = types.SimpleNamespace(
+            id=121,
+            action=types.SimpleNamespace(id=331),
+            child_id=[],
+            sc_scenario_exempt=False,
+            get_external_id=lambda: {121: "project.menu_ledger"},
+        )
+        xmlid_env = env_for(xmlid_menu)
+        xmlid_surface = surface("platform_db", "project.menu_ledger")
+        index, by_id, by_action = scenario_surface.runtime_menu_scope(
+            xmlid_env,
+            xmlid_surface,
+        )
+        self.assertEqual(index["project.menu_ledger"]["location"], "scenario")
+        self.assertEqual(
+            scenario_surface._scenario_entries_by_menu(
+                xmlid_env,
+                surface=xmlid_surface,
+            )[121][0]["scenario_key"],
+            "project",
+        )
+        filtered = business_enablement.filter_business_authority(
+            {
+                "primary_actions": [{
+                    "menu_id": 121,
+                    "action_id": 331,
+                    "menu_xmlid": "project.menu_ledger",
+                    "allowed": True,
+                }]
+            },
+            surface_index=index,
+            enabled={"project": True},
+            entries=[],
+            menu_xmlids_by_id=by_id,
+            menu_xmlids_by_action=by_action,
+            company_id=9,
+        )
+        self.assertTrue(filtered["primary_actions"])
+        self.assertEqual(
+            filtered["scenario_composition"]["selected_by_menu"]["121"]["scenario_key"],
+            "project",
+        )
+
+    def test_added_and_existing_leaves_share_scene_target_projection(self):
+        scene_targets = {(21, 31): "finance.operating_metrics"}
+        existing = {
+            "menu_id": 21,
+            "action_id": 31,
+            "route": "/a/31?menu_id=21",
+        }
+        added = copy.deepcopy(existing)
+
+        scenario_surface._apply_scene_target_projection(existing, scene_targets)
+        scenario_surface._apply_scene_target_projection(added, scene_targets)
+
+        self.assertEqual(existing["entry_target"], added["entry_target"])
+        self.assertEqual(existing["entry_target"]["type"], "scene")
+        self.assertEqual(
+            existing["entry_target"]["scene_key"],
+            "finance.operating_metrics",
+        )
 
 
 if __name__ == "__main__":

@@ -236,6 +236,58 @@ class DeliveryEngine:
             self._normalize_delivery_nav_node_refs(node)
         return nav
 
+    @staticmethod
+    def _merge_execution_targets(
+        native_authority: dict,
+        product_authority: dict,
+    ) -> dict:
+        """Keep every native grant while borrowing released target metadata."""
+        result = deepcopy(
+            native_authority if isinstance(native_authority, dict) else {}
+        )
+        targets = {}
+        for bucket in (
+            "primary_actions",
+            "role_home_actions",
+            "contextual_actions",
+            "admin_actions",
+        ):
+            for row in (product_authority or {}).get(bucket) or []:
+                if not isinstance(row, dict):
+                    continue
+                pair = (
+                    int(row.get("menu_id") or 0),
+                    int(row.get("action_id") or 0),
+                )
+                if pair[0] > 0 and pair[1] > 0:
+                    targets[pair] = row
+        for bucket in (
+            "primary_actions",
+            "role_home_actions",
+            "contextual_actions",
+            "admin_actions",
+        ):
+            for row in result.get(bucket) or []:
+                if not isinstance(row, dict):
+                    continue
+                pair = (
+                    int(row.get("menu_id") or 0),
+                    int(row.get("action_id") or 0),
+                )
+                target = targets.get(pair) or {}
+                for field in (
+                    "route",
+                    "scene_key",
+                    "entry_target",
+                    "menu_key",
+                    "business_category_options",
+                    "context_requirements",
+                ):
+                    value = target.get(field)
+                    if value not in (None, "", [], {}):
+                        row[field] = deepcopy(value)
+        return result
+
     def build(
         self,
         *,
@@ -269,14 +321,33 @@ class DeliveryEngine:
         )
         nav = self._normalize_delivery_nav_refs(nav)
         contextual_routes = self.menu_service.build_contextual_routes(role_surface)
-        route_authority = self.menu_service.build_route_authority(role_surface, nav=nav)
+        product_authority = self.menu_service.build_route_authority(
+            role_surface,
+            nav=nav,
+        )
+        native_authority = self.menu_service.build_route_authority(role_surface)
+        route_authority = self._merge_execution_targets(
+            native_authority,
+            product_authority,
+        )
+        business_scene_composition = (
+            policy.get("business_scene_composition")
+            if isinstance(policy.get("business_scene_composition"), dict)
+            else {}
+        )
+        route_authority["business_scene_composition"] = deepcopy(
+            business_scene_composition
+        )
         principal_scope = (
             route_authority.get("principal_scope")
             if isinstance(route_authority.get("principal_scope"), dict)
             else {}
         )
         if int(principal_scope.get("user_id") or 0) > 0:
-            nav = self.menu_service.filter_nav_by_route_authority(nav, route_authority)
+            nav = self.menu_service.filter_nav_by_route_authority(
+                nav,
+                product_authority,
+            )
         scenes = self.scene_service.build_entries(policy=policy, scenes=runtime.get("scenes") or [])
         capabilities = self.capability_service.build_entries(policy=policy, capabilities=runtime.get("capabilities") or [])
         nav_meta = self.menu_service.describe_nav(nav)
@@ -328,6 +399,7 @@ class DeliveryEngine:
                 "scene_version_bindings": policy.get("scene_version_bindings") if isinstance(policy.get("scene_version_bindings"), dict) else {},
                 "scene_binding_diagnostics": policy.get("scene_binding_diagnostics") if isinstance(policy.get("scene_binding_diagnostics"), dict) else {},
                 "edition_diagnostics": policy.get("edition_diagnostics") if isinstance(policy.get("edition_diagnostics"), dict) else {},
+                "business_scene_composition": deepcopy(business_scene_composition),
                 "capability_keys": [
                     str(row.get("capability_key") or row.get("key") or "").strip()
                     for row in policy.get("capabilities") or []

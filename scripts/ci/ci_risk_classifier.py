@@ -10,14 +10,16 @@ import os
 import re
 import subprocess
 import sys
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path, PurePosixPath
 from typing import Iterable
 
 try:
     from scripts.ci import ci_path_ownership
+    from scripts.ci import contract_only_scope
 except ImportError:  # Direct script execution adds scripts/ci to sys.path.
     import ci_path_ownership
+    import contract_only_scope
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -38,6 +40,9 @@ class Classification:
     frontend_full_required: bool
     orm_required: bool = True
     database_lifecycle_paths: tuple[str, ...] = ()
+    contract_only_scope: str = ""
+    contract_only_targets: tuple[str, ...] = ()
+    contract_only_excluded_targets: tuple[str, ...] = ()
 
     @property
     def frontend_mode(self) -> str:
@@ -121,6 +126,13 @@ class Classification:
             "changed_path_count": str(len(self.paths)),
             "changed_paths_json": json.dumps(self.paths, separators=(",", ":")),
             "reasons_json": json.dumps(self.reasons, separators=(",", ":")),
+            "contract_only_scope": self.contract_only_scope,
+            "contract_only_targets_json": json.dumps(
+                self.contract_only_targets, separators=(",", ":")
+            ),
+            "contract_only_excluded_targets_json": json.dumps(
+                self.contract_only_excluded_targets, separators=(",", ":")
+            ),
         }
 
 
@@ -220,6 +232,7 @@ def classify(
     *,
     event_name: str,
     ref: str = "",
+    head_ref: str = "",
     policy: dict | None = None,
     base: str = '',
     head: str = '',
@@ -234,6 +247,15 @@ def classify(
             or not all(isinstance(path, str) and path for path in context_paths)):
         raise ValueError("ORM dependency policy requires bounded string lists")
     changed = _normalize_paths(paths)
+    matched_scope = (
+        contract_only_scope.match_scope(
+            changed,
+            branch=head_ref,
+            base_sha=base,
+        )
+        if event_name == "pull_request"
+        else None
+    )
     ownership = ci_path_ownership.classify_paths(
         changed,
         registry_path=POLICY_ROOT / ownership_registry,
@@ -267,7 +289,7 @@ def classify(
             True,
         )
     if not changed:
-        return Classification(
+        result = Classification(
             "HIGH_RISK",
             changed,
             ("empty_change_set_fail_closed",),
@@ -278,6 +300,7 @@ def classify(
             (),
             True,
         )
+        return _apply_contract_scope(result, matched_scope)
 
     frontend = ownership.frontend_changed
     backend = ownership.backend_changed
@@ -324,7 +347,7 @@ def classify(
             reasons.append("unknown_path_fail_closed")
         if recipe_scoped:
             reasons.append('make_ci_backend_recipe_only_exact_git_scope')
-        return Classification(
+        result = Classification(
             "HIGH_RISK",
             changed,
             tuple(reasons),
@@ -337,8 +360,9 @@ def classify(
             orm_required,
             database_lifecycle_paths,
         )
+        return _apply_contract_scope(result, matched_scope)
     if frontend or backend:
-        return Classification(
+        result = Classification(
             "STANDARD",
             changed,
             ("standard_runtime_change",),
@@ -351,6 +375,7 @@ def classify(
             orm_required,
             database_lifecycle_paths,
         )
+        return _apply_contract_scope(result, matched_scope)
     return Classification(
         "FAST",
         changed,
@@ -363,6 +388,24 @@ def classify(
         frontend_full,
         False,
         database_lifecycle_paths,
+    )
+
+
+def _apply_contract_scope(
+    result: Classification,
+    scope: dict | None,
+) -> Classification:
+    if not scope:
+        return result
+    return replace(
+        result,
+        orm_required=False,
+        database_lifecycle_paths=(),
+        contract_only_scope=str(scope.get("id") or ""),
+        contract_only_targets=tuple(scope.get("targets") or ()),
+        contract_only_excluded_targets=tuple(
+            scope.get("excluded_targets") or ()
+        ),
     )
 
 
@@ -388,6 +431,7 @@ def main() -> int:
     parser.add_argument("--head")
     parser.add_argument("--event", required=True)
     parser.add_argument("--ref", default="")
+    parser.add_argument("--head-ref", default="")
     parser.add_argument("--path", action="append", dest="paths")
     parser.add_argument("--github-output", type=Path)
     args = parser.parse_args()
@@ -395,8 +439,9 @@ def main() -> int:
     if not paths and args.event != "workflow_dispatch":
         paths = changed_paths(args.base or "", args.head or "")
     result = classify(paths, event_name=args.event, ref=args.ref,
-                      base=(args.base or '') if not args.paths else '',
-                      head=(args.head or '') if not args.paths else '')
+                      head_ref=args.head_ref,
+                      base=args.base or '',
+                      head=args.head or '')
     outputs = result.outputs()
     report = {
         "schema_version": "ci-risk-classification/v1",
