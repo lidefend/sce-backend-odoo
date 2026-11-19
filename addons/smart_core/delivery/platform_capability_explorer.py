@@ -1288,6 +1288,10 @@ class PlatformCapabilityExplorerService:
         )
         preview_qualified = _text(qualification.get("preview")) or "not_verified"
         standard_qualified = _text(qualification.get("standard")) or "not_verified"
+        qualification_reason = (
+            _text(qualification.get("reason_code"))
+            or "PRODUCT_QUALIFICATION_UNVERIFIED"
+        )
         qualification_evidence = [
             dict(item)
             for item in _list(qualification.get("evidence"))
@@ -1380,8 +1384,7 @@ class PlatformCapabilityExplorerService:
                 "key": "product_qualification",
                 "label": "产品资格",
                 "status": standard_qualified,
-                "reason_code": _text(qualification.get("reason_code"))
-                or "PRODUCT_QUALIFICATION_UNVERIFIED",
+                "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
             {
@@ -1457,7 +1460,7 @@ class PlatformCapabilityExplorerService:
             "product_qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
-                "reason_code": _text(qualification.get("reason_code")),
+                "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
             "fact_layers": fact_layers,
@@ -1540,7 +1543,7 @@ class PlatformCapabilityExplorerService:
             "qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
-                "reason_code": _text(qualification.get("reason_code")),
+                "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
             "enterprise_enablement": enterprise_enablement or {

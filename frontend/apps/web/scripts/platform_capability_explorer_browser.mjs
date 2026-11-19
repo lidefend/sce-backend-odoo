@@ -5,6 +5,7 @@ import { authenticateDeniedProbe, createExpectedHttpFailureBudget } from './plat
 
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
 const DB_NAME = String(process.env.DB_NAME || 'sc_dev_demo').trim();
+const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
 const DENIED_LOGIN = String(process.env.E2E_DENIED_LOGIN || 'wutao').trim();
@@ -13,7 +14,7 @@ const ARTIFACT_DIR = path.resolve(
   process.cwd(),
   process.env.ARTIFACTS_DIR || 'artifacts/playwright/platform-capability-explorer',
 );
-const ROUTE = `${BASE_URL}/t/demo/admin/capability-explorer`;
+const ROUTE = `${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`;
 
 const report = {
   schema: 'platform.capability.explorer.browser.v1',
@@ -61,7 +62,7 @@ async function screenshot(page, name) {
 }
 
 async function login(page, loginName = LOGIN, password = PASSWORD, captureDeniedIntent = false) {
-  await page.goto(`${BASE_URL}/t/demo/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(loginName);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(password);
   const submit = () => page.getByRole('button', { name: /^登录$/ }).click();
@@ -70,7 +71,7 @@ async function login(page, loginName = LOGIN, password = PASSWORD, captureDenied
       page,
       loginName,
       submit,
-      `${BASE_URL}/t/demo/`,
+      `${BASE_URL}/t/${ENTRY_NAMESPACE}/`,
       String(process.env.E2E_TENANT || 'default'),
     )
     : await submit();

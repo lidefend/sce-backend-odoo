@@ -3,6 +3,8 @@ import path from 'node:path';
 import { launchChromium } from '../../../../scripts/verify/playwright_runtime.mjs';
 
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
+const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
+const BROWSER_LOCALE = String(process.env.E2E_LOCALE || 'zh-CN');
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
 const CONFIG_LOGIN = String(process.env.ADMIN_CLOSE_01_CONFIG_LOGIN || 'sc_demo_business_config').trim();
@@ -56,7 +58,7 @@ async function screenshot(page, name) {
 }
 
 async function login(page, loginName, password) {
-  await page.goto(`${BASE_URL}/t/demo/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(loginName);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(password);
   await page.getByRole('button', { name: /^登录$/ }).click();
@@ -67,7 +69,7 @@ async function login(page, loginName, password) {
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const page = await context.newPage();
   page.on('console', (message) => {
     if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
@@ -82,7 +84,7 @@ try {
     && intentOf(response.request()) === 'platform.capability.explorer.list'
     && response.status() === 200
   ));
-  await page.goto(`${BASE_URL}/t/demo/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
+  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
   const initialPayload = intentData(await (await initialExplorer).json());
   await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
 
@@ -131,7 +133,7 @@ try {
     && intentOf(response.request()) === 'release.operator.surface'
     && response.status() === 200
   ), { timeout: 15000 }).catch(() => null);
-  await page.goto(`${BASE_URL}/t/demo/admin/release-operator?product_key=construction.standard`, {
+  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/release-operator?product_key=construction.standard`, {
     waitUntil: 'domcontentloaded',
   });
   const releaseResponse = await releaseResponsePromise;
@@ -162,7 +164,7 @@ try {
   }
   await screenshot(page, '02-release-console');
 
-  const configContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const configContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const configPage = await configContext.newPage();
   await login(configPage, CONFIG_LOGIN, CONFIG_PASSWORD);
   const activationResponse = configPage.waitForResponse((response) => (
@@ -170,7 +172,7 @@ try {
     && intentOf(response.request()) === 'scenario.activation.catalog.get'
     && response.status() === 200
   ));
-  await configPage.goto(`${BASE_URL}/t/demo/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
+  await configPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
   const activation = intentData(await (await activationResponse).json());
   check(activation.target_scope?.company_id > 0, 'enterprise catalog declares target company');
   check(activation.target_scope?.is_global_product_release === false, 'enterprise catalog is not a global product write');
@@ -201,10 +203,10 @@ try {
   });
   await configContext.close();
 
-  const businessContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const businessContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const businessPage = await businessContext.newPage();
   await login(businessPage, BUSINESS_LOGIN, BUSINESS_PASSWORD);
-  await businessPage.goto(`${BASE_URL}/t/demo/`, { waitUntil: 'domcontentloaded' });
+  await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
   const ledgerMenu = businessPage.getByText('项目台账', { exact: true }).first();
   const dashboardMenu = businessPage.getByText('项目看板', { exact: true }).first();
   if (await ledgerMenu.count()) {

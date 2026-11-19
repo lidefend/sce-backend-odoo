@@ -371,7 +371,16 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
         }
     }
     product_qualifications = _product_qualifications(
-        list(relevant_release_states) or list((menu_xmlids or {}).values()),
+        sorted(
+            {
+                *relevant_release_states,
+                *[
+                    _text(value)
+                    for value in (menu_xmlids or {}).values()
+                    if _text(value)
+                ],
+            }
+        ),
         release_projection,
     )
     return {
