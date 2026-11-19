@@ -21,11 +21,12 @@
     "scripts/verify/test_g1_acceptance_baseline_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
     "docs/engineering_convergence/test_inventory.csv",
-    "docs/engineering_convergence/test_inventory_summary.md"
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "make/runtime_ops.mk"
   ],
   "environment": {
     "kind": "runtime",
-    "authority": "Owner explicitly authorized on-demand disposable environment. P4 release-disposable: project sc-fe-local-release, isolated fixture tenant PostgreSQL sc_frontend_acceptance, exact filter ^sc_frontend_acceptance$, dedicated sc_fe_local_release_{db,redis,odoo} volumes, ports 5185/18092/19093; generated private credentials; no customer data, control plane or production access."
+    "authority": "Owner explicitly authorized on-demand disposable environment. P4 release-disposable: project sc-fe-local-release, isolated fixture tenant PostgreSQL sc_frontend_acceptance, exact filter ^sc_frontend_acceptance$, dedicated sc_fe_local_release_{db,redis,odoo} volumes, ports 5185/18092/19093; generated private credentials; no customer data, control plane or production access. Owner explicitly requires retaining the environment after failures and reusing it until successful completion."
   },
   "checks": {
     "release_entry": {

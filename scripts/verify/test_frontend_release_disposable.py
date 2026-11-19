@@ -54,12 +54,35 @@ class DisposableReleaseTest(unittest.TestCase):
         self.assertEqual(len(calls), 1)
         self.assertEqual(calls[0][:3], ['docker', 'ps', '-aq'])
 
-    def test_failure_still_cleans_and_records_failed_release(self):
+    def test_offline_checkpoint_reuses_only_matching_head_and_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            calls = []
+            current = ['a' * 40]
+            def execute(args, env, **kwargs):
+                if args[:3] == ['git', 'rev-parse', 'HEAD']:
+                    return subprocess.CompletedProcess(args, 0, current[0], '')
+                if args[0] == 'git':
+                    return subprocess.CompletedProcess(args, 0, '', '')
+                calls.append(args)
+                return subprocess.CompletedProcess(args, 0, '', '')
+            with patch.object(runner, 'STATE', Path(directory)), patch.object(runner, 'command', execute), \
+                 patch.dict(os.environ, {'SC_ACCEPTANCE_RUNTIME_PROFILE': 'disposable'}):
+                self.assertEqual(runner.offline_stage('unit', ['make', 'unit']), 0)
+                self.assertEqual(runner.offline_stage('unit', ['make', 'unit']), 0)
+                self.assertEqual(len(calls), 1)
+                current[0] = 'b' * 40
+                self.assertEqual(runner.offline_stage('unit', ['make', 'unit']), 0)
+                self.assertEqual(len(calls), 2)
+                with self.assertRaises(ValueError):
+                    runner.offline_stage('browser', ['make', 'browser'])
+
+    def test_failure_retains_environment_and_records_failed_release(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
             profile = runner.resolve('disposable')
             profile['SC_ACCEPTANCE_BASE_ENV_FILE'] = str(root / 'release.env')
             calls = []
+            release_status = [9]
             def execute(args, env, **kwargs):
                 calls.append(args)
                 output = ''
@@ -67,7 +90,7 @@ class DisposableReleaseTest(unittest.TestCase):
                     output = 'a' * 40
                 elif '--git-common-dir' in args:
                     output = str(root)
-                status = 9 if 'verify.frontend.release.local' in args else 0
+                status = release_status[0] if 'verify.frontend.release.local' in args else 0
                 return subprocess.CompletedProcess(args, status, output, '')
             with patch.object(runner, 'STATE', root), patch.object(runner, 'resolve', return_value=profile), \
                  patch.object(runner, 'command', execute), patch.object(runner, 'require_absent'):
@@ -75,11 +98,24 @@ class DisposableReleaseTest(unittest.TestCase):
             import json
             receipt = json.loads((root / 'receipt.json').read_text())
             self.assertEqual(receipt['release_status'], 9)
-            self.assertTrue(receipt['resources_absent'])
-            self.assertFalse((root / 'release.env').exists())
-            self.assertEqual([call[-1] for call in calls if call[0] == 'make'][-3:],
-                             ['frontend.acceptance.down', 'backend.acceptance.down', 'acceptance.runtime.carrier.discard'])
+            self.assertFalse(receipt['resources_absent'])
+            self.assertTrue((root / 'release.env').exists())
+            self.assertTrue((root / 'owner.json').exists())
+            self.assertEqual(receipt['cleanup'], [])
+            self.assertFalse(any('acceptance.runtime.carrier.discard' in call for call in calls))
             self.assertFalse(any('acceptance.frontend.fixture_orm' in call for call in calls))
+            calls.clear()
+            with patch.object(runner, 'STATE', root), patch.object(runner, 'resolve', return_value=profile), \
+                 patch.object(runner, 'command', execute), patch.object(runner, 'require_absent'):
+                self.assertEqual(runner.main(), 9)
+                self.assertFalse(any('acceptance.runtime.carrier.provision' in call for call in calls))
+                release_status[0] = 0
+                self.assertEqual(runner.main(), 0)
+            self.assertTrue(any('acceptance.frontend.fixture_orm' in call for call in calls))
+            self.assertTrue(any('acceptance.runtime.carrier.discard' in call for call in calls))
+            self.assertFalse((root / 'release.env').exists())
+            self.assertFalse((root / 'owner.json').exists())
+
 
 
 if __name__ == '__main__':

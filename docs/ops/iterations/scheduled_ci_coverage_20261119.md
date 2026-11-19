@@ -77,3 +77,5 @@ Required: lifecycle/profile tests (47 passed), iteration/freeze checks, full loc
 and fixture ORM, exact source and cleanup readback. Excluded: production and existing
 acceptance carrier mutation. Not run yet: disposable full runtime audit. Publication
 remains blocked until that complete local long chain passes.
+
+Owner correction: retain failed disposable environments and private credentials for repair/retry; discard only after the complete release and fixture ORM pass with unchanged source. Reuse exact-head offline unit/static checkpoints only, checking static output hashes. Runtime assertions always rerun. Attempt 2 passed full units but failed because Docker created a root-owned evidence directory; attempt 3 provision is retained under an explicit controller handoff. No publication occurred.
