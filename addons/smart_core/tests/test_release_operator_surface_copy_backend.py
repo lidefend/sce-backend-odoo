@@ -4,6 +4,7 @@ import json
 import sys
 import types
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from unittest.mock import patch
 
@@ -170,6 +171,25 @@ def _composition(name, *, sequence=10, intent="view"):
                 ],
             }
         ],
+    }
+
+
+def _maintenance_declaration():
+    return {
+        "provider": "smart_construction_core",
+        "action_xmlid": "smart_construction_core.action_sc_product_scenario",
+        "menu_xmlid": (
+            "smart_construction_core.menu_sc_product_scenario_business_config"
+        ),
+        "model": "sc.product.scenario",
+        "scope": {
+            "kind": "shared_maintenance_library",
+            "label": "当前维护库共享业务场景定义",
+            "applies_to": (
+                "construction_product_drafts_in_this_maintenance_database"
+            ),
+            "filter_by_current_product": False,
+        },
     }
 
 
@@ -620,6 +640,36 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             "identical",
         )
 
+    def test_composition_preserves_signed_values_and_zero_center_sequence(self):
+        first = _composition("项目组合")
+        first["scenarios"][0]["sequence"] = -1
+        first["scenarios"][0]["bindings"][0]["sequence"] = -2
+        first["scenarios"][0]["bindings"][0]["center_sequence"] = 0
+        second = deepcopy(first)
+        second["scenarios"][0]["bindings"][0]["center_sequence"] = 10
+        left = READ_MODEL_MODULE._project_business_scene_composition(
+            first,
+            status="draft",
+            identity={"product_key": "construction.standard"},
+        )
+        right = READ_MODEL_MODULE._project_business_scene_composition(
+            second,
+            status="candidate",
+            identity={"product_key": "construction.standard"},
+        )
+        self.assertEqual(left["scenarios"][0]["sequence"], -1)
+        self.assertEqual(left["scenarios"][0]["entries"][0]["sequence"], -2)
+        self.assertEqual(
+            left["scenarios"][0]["entries"][0]["center_sequence"],
+            0,
+        )
+        self.assertEqual(
+            READ_MODEL_MODULE._business_scene_composition_diff(left, right)[
+                "state"
+            ],
+            "changed",
+        )
+
     def test_missing_candidate_and_active_states_are_explicit(self):
         service = READ_MODEL(_Env())
         states = service._build_business_scene_composition_states(
@@ -638,6 +688,30 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         self.assertFalse(states["candidate"]["available"])
         self.assertEqual(states["active"]["status"], "no_active_release")
         self.assertFalse(states["active"]["available"])
+
+    def test_snapshot_release_draft_is_read_from_snapshot_json_projection(self):
+        serialized = READ_MODEL(_Env())._serialize_snapshot({
+            "id": 12,
+            "product_key": "construction.standard",
+            "state": "candidate",
+            "release_draft": {
+                "page_count": 4,
+                "total_page_count": 6,
+                "business_scenario_count": 2,
+                "business_scene_composition_sha256": "b" * 64,
+            },
+            "meta": {},
+        })
+        self.assertEqual(
+            serialized["release_draft"]["business_scenario_count"],
+            2,
+        )
+        self.assertEqual(
+            serialized["release_draft"][
+                "business_scene_composition_sha256"
+            ],
+            "b" * 64,
+        )
 
     def test_shared_composition_is_the_same_source_for_freeze_and_management(self):
         policy = {"product_key": "construction.standard"}
@@ -663,22 +737,33 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             name="业务场景定义",
             res_model="sc.product.scenario",
             view_mode="tree,form",
+            groups_id=[types.SimpleNamespace(id=11)],
         )
         menu = types.SimpleNamespace(
             id=72,
             name="业务场景定义",
             action=action,
+            groups_id=[types.SimpleNamespace(id=11)],
         )
-        model = types.SimpleNamespace(
+        elevated_model = types.SimpleNamespace(
             _fields={
                 "name": object(),
                 "entry_ids": object(),
             },
-            sudo=lambda: model,
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        model = types.SimpleNamespace(
+            _fields={},
+            sudo=lambda: elevated_model,
             check_access_rights=lambda operation, raise_exception=False: True,
         )
 
         class Env(_Env):
+            user = types.SimpleNamespace(
+                id=7,
+                groups_id=[types.SimpleNamespace(id=11)],
+            )
+
             def ref(self, xmlid, raise_if_not_found=False):
                 return {
                     "smart_construction_core.action_sc_product_scenario": action,
@@ -690,11 +775,23 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             if key == "sc.product.scenario"
             else _Env.__getitem__(self, key)
         )
-        service = READ_MODEL(Env())
-        entry = service._build_business_scenario_maintenance(
-            product_key="construction.standard"
+        env = Env()
+        env.user = types.SimpleNamespace(
+            id=7,
+            groups_id=[types.SimpleNamespace(id=11)],
         )
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            service = READ_MODEL(env)
+            entry = service._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
         self.assertTrue(entry["enabled"])
+        self.assertTrue(entry["applicable"])
+        self.assertEqual(entry["provider"], "smart_construction_core")
         self.assertEqual(entry["reason_code"], "SCENARIO_MAINTENANCE_AVAILABLE")
         self.assertEqual(entry["action"]["id"], 71)
         self.assertEqual(entry["menu"]["id"], 72)
@@ -711,7 +808,7 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         )
         self.assertEqual(
             entry["return_readback"]["intent"],
-            "release.operator.read",
+            "release.operator.surface",
         )
 
     def test_native_scenario_maintenance_entry_does_not_widen_denied_write(self):
@@ -720,15 +817,27 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             name="业务场景定义",
             res_model="sc.product.scenario",
             view_mode="tree,form",
+            groups_id=[],
         )
-        menu = types.SimpleNamespace(id=72, name="业务场景定义", action=action)
+        menu = types.SimpleNamespace(
+            id=72,
+            name="业务场景定义",
+            action=action,
+            groups_id=[],
+        )
+        elevated_model = types.SimpleNamespace(
+            _fields={},
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
         model = types.SimpleNamespace(
             _fields={},
-            sudo=lambda: model,
+            sudo=lambda: elevated_model,
             check_access_rights=lambda operation, raise_exception=False: operation == "read",
         )
 
         class Env(_Env):
+            user = types.SimpleNamespace(id=7, groups_id=[])
+
             def ref(self, xmlid, raise_if_not_found=False):
                 return {
                     "smart_construction_core.action_sc_product_scenario": action,
@@ -740,14 +849,102 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             if key == "sc.product.scenario"
             else _Env.__getitem__(self, key)
         )
-        entry = READ_MODEL(Env())._build_business_scenario_maintenance(
-            product_key="construction.standard"
-        )
+        env = Env()
+        env.user = types.SimpleNamespace(id=7, groups_id=[])
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            entry = READ_MODEL(env)._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
         self.assertFalse(entry["enabled"])
+        self.assertFalse(entry["access"]["write_allowed"])
         self.assertEqual(
             entry["reason_code"],
             "SCENARIO_MAINTENANCE_WRITE_DENIED",
         )
+
+    def test_native_scenario_maintenance_entry_honors_menu_and_action_groups(self):
+        action = types.SimpleNamespace(
+            id=71,
+            name="业务场景定义",
+            res_model="sc.product.scenario",
+            view_mode="tree,form",
+            groups_id=[types.SimpleNamespace(id=81)],
+        )
+        menu = types.SimpleNamespace(
+            id=72,
+            name="业务场景定义",
+            action=action,
+            groups_id=[types.SimpleNamespace(id=80)],
+        )
+        model = types.SimpleNamespace(
+            _fields={},
+            sudo=lambda: model,
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+
+        class Env(_Env):
+            user = types.SimpleNamespace(
+                id=7,
+                groups_id=[types.SimpleNamespace(id=11)],
+            )
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return {
+                    "smart_construction_core.action_sc_product_scenario": action,
+                    "smart_construction_core.menu_sc_product_scenario_business_config": menu,
+                }.get(xmlid)
+
+        Env.__getitem__ = (
+            lambda self, key: model
+            if key == "sc.product.scenario"
+            else _Env.__getitem__(self, key)
+        )
+        env = Env()
+        env.user = types.SimpleNamespace(
+            id=7,
+            groups_id=[types.SimpleNamespace(id=11)],
+        )
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            entry = READ_MODEL(env)._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
+        self.assertFalse(entry["enabled"])
+        self.assertFalse(entry["access"]["menu_groups_allowed"])
+        self.assertFalse(entry["access"]["action_groups_allowed"])
+        self.assertEqual(
+            entry["reason_code"],
+            "SCENARIO_MAINTENANCE_MENU_GROUP_DENIED",
+        )
+        self.assertIn(
+            "SCENARIO_MAINTENANCE_ACTION_GROUP_DENIED",
+            entry["blockers"],
+        )
+
+    def test_native_scenario_maintenance_is_not_applicable_to_platform_product(self):
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=None,
+        ):
+            entry = READ_MODEL(_Env())._build_business_scenario_maintenance(
+                product_key="platform.standard"
+            )
+        self.assertFalse(entry["applicable"])
+        self.assertFalse(entry["enabled"])
+        self.assertEqual(
+            entry["reason_code"],
+            "SCENARIO_MAINTENANCE_NOT_APPLICABLE",
+        )
+        self.assertEqual(entry["action"]["id"], 0)
+        self.assertEqual(entry["menu"]["id"], 0)
 
     def test_platform_kernel_empty_surface_is_not_reported_as_blocked(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

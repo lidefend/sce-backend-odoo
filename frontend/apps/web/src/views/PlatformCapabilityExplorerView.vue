@@ -343,7 +343,7 @@
           <ScInlineState
             v-if="addReadback"
             state="success"
-            :label="`已加入 ${addReadback.product_key}：${addReadback.menu_xmlid} → ${addReadback.group_key}（草案，尚未发布）`"
+            :label="`已加入 ${addReadback.product_key}：${addReadback.menu_xmlid} 至 ${addReadback.group_key}（草案，尚未发布）`"
           />
           <p class="capability-explorer__qualification-note">
             加入产品草案只改变行业产品的选用关系，不移动原生菜单，也不改变平台原生入口总数。

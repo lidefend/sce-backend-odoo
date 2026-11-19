@@ -56,3 +56,17 @@ Branch: `feature/scene-close-03-admin-composition-ux-20261120`
 `verify.frontend.platform_capability_explorer.unit`。该目标仍由安装受锁前端依赖的
 `frontend_release_gate` 执行，现仅从 `.github` 契约专用 target 列表移除；
 Python/Node 无依赖的控制面检查范围不变。
+
+## 复审修复
+
+- 维护入口只在普通当前用户环境中判断模型 `read/write`，`sudo()` 仅用于读取模型字段元数据；菜单组和动作组独立校验。
+- 施工维护提供者、action/menu、共享作用域和产品适用性由 P1 扩展声明；P0 只做通用投影，平台及其他行业产品明确返回不适用。
+- `release.operator.surface` 成为维护返回回读 intent；返回产品取自该声明而不是可能过期的 URL。
+- `return_url`、`return_label`、`return_product_key` 已进入通用导航保留字段，ActionView 实际消费并生成返回控制台链接。
+- 场景与入口排序使用有符号整数；中心顺序显式 `0` 不再被默认成 `10`，`0 -> 10` 会产生差异。
+- 冻结候选的业务场景摘要和数量优先读取 `snapshot_json.release_draft`，不再只依赖 `meta.release_draft`。
+
+一次增量规划因新增 P1 扩展文件自动选中页面冻结和权限真值 ORM；运行在首个
+`verify.daily.permission_truth.capability.orm` 处被立即中断，日志只有
+`STATUS: interrupted`，未产生测试结论。该目标、页面冻结目标和项目冻结目标已加入本轮
+明确排除集合；中断结果不计为通过。

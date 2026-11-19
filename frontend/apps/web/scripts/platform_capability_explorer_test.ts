@@ -23,6 +23,7 @@ import {
 import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import { buildBusinessScenarioMaintenanceTarget } from '../src/app/businessScenarioNavigation';
+import { contextReturnHref, pickContractNavQuery } from '../src/app/navigationContext';
 import {
   buildConfiguredOperatorParams,
   decodeConfiguredActionResult,
@@ -652,17 +653,17 @@ const compositionEntry = {
   menu_id: 21,
   intent: 'view',
   intent_label: '查看',
-  sequence: 0,
+  sequence: -2,
   center_key: 'project',
   center_name: '项目',
-  center_sequence: 10,
+  center_sequence: 0,
   source_db: 'sc_test',
 };
 const compositionScenario = {
   key: 'project',
   name: '项目台账',
   active: true,
-  sequence: 10,
+  sequence: -1,
   source_db: 'sc_test',
   entries: [compositionEntry],
 };
@@ -720,6 +721,8 @@ const promotionSurface = {
   business_scenario_maintenance: {
     contract_version: 'business_scenario_maintenance_entry.v1',
     product_key: 'construction.standard',
+    applicable: true,
+    provider: 'smart_construction_core',
     enabled: true,
     reason_code: 'SCENARIO_MAINTENANCE_AVAILABLE',
     blockers: [],
@@ -750,7 +753,7 @@ const promotionSurface = {
       write_allowed: true,
     },
     return_readback: {
-      intent: 'release.operator.read',
+      intent: 'release.operator.surface',
       product_key: 'construction.standard',
       fields: [
         'business_scene_composition_states.draft',
@@ -1054,9 +1057,57 @@ check(
       menu_id: '72',
       return_url: '/admin/release-operator?product_key=construction.standard',
       return_label: '返回发布控制台',
+      return_product_key: 'construction.standard',
     },
   },
   'native shared maintenance target uses backend identity',
+);
+const previewMaintenance = {
+  ...decodedPromotion.business_scenario_maintenance,
+  return_readback: {
+    ...decodedPromotion.business_scenario_maintenance.return_readback,
+    product_key: 'construction.preview',
+  },
+};
+const previewTarget = buildBusinessScenarioMaintenanceTarget(
+  previewMaintenance,
+  '/admin/release-operator?product_key=construction.standard',
+);
+check(
+  previewTarget?.query.return_url,
+  '/admin/release-operator?product_key=construction.preview',
+  'return URL is rebound to the backend-declared product',
+);
+check(
+  pickContractNavQuery(previewTarget?.query || {}),
+  {
+    menu_id: '72',
+    action_id: '71',
+    return_url: '/admin/release-operator?product_key=construction.preview',
+    return_label: '返回发布控制台',
+    return_product_key: 'construction.preview',
+  },
+  'generic record navigation preserves maintenance return context',
+);
+check(
+  contextReturnHref(previewTarget?.query || {}),
+  '/admin/release-operator?product_key=construction.preview',
+  'generic action navigation consumes the backend-bound return product',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].entries[0].sequence,
+  -2,
+  'signed entry sequence is consumed',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].sequence,
+  -1,
+  'signed scenario sequence is consumed',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].entries[0].center_sequence,
+  0,
+  'zero center sequence is preserved',
 );
 check(
   buildBusinessScenarioMaintenanceTarget({
@@ -1078,6 +1129,34 @@ assert.throws(
   'wrong-product maintenance context is rejected',
 );
 cases += 1;
+const notApplicable = decodeReleaseOperatorSurface({
+  ...promotionSurface,
+  business_scenario_maintenance: {
+    ...promotionSurface.business_scenario_maintenance,
+    applicable: false,
+    provider: '',
+    enabled: false,
+    reason_code: 'SCENARIO_MAINTENANCE_NOT_APPLICABLE',
+    blockers: ['SCENARIO_MAINTENANCE_NOT_APPLICABLE'],
+    action: { xmlid: '', id: 0, name: '', res_model: '', view_mode: '' },
+    menu: { xmlid: '', id: 0, name: '' },
+    scope: {
+      kind: 'not_applicable',
+      label: '当前产品不消费共享施工业务场景定义',
+      model: '',
+      has_product_key: false,
+      has_company_id: false,
+      applies_to: '',
+      filter_by_current_product: false,
+    },
+    future_freeze_product_key: '',
+  },
+});
+check(
+  notApplicable.business_scenario_maintenance.enabled,
+  false,
+  'not-applicable product cannot claim a maintenance entry',
+);
 assert.throws(
   () => decodeReleaseOperatorSurface({
     ...promotionSurface,

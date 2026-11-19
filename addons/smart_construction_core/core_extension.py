@@ -1477,6 +1477,30 @@ def smart_core_product_scene_composition(env, policy):
     return load_maintained_runtime_surface(env)
 
 
+def smart_core_business_scenario_maintenance(env, identity):
+    """Declare the P1-owned maintenance entry for construction product drafts."""
+    del env
+    identity = identity if isinstance(identity, dict) else {}
+    product_key = str(identity.get("product_key") or "").strip()
+    base_key = str(identity.get("base_product_key") or "").strip()
+    if base_key != "construction" and not product_key.startswith("construction."):
+        return None
+    return {
+        "provider": "smart_construction_core",
+        "action_xmlid": "smart_construction_core.action_sc_product_scenario",
+        "menu_xmlid": (
+            "smart_construction_core.menu_sc_product_scenario_business_config"
+        ),
+        "model": "sc.product.scenario",
+        "scope": {
+            "kind": "shared_maintenance_library",
+            "label": "当前维护库共享业务场景定义",
+            "applies_to": "construction_product_drafts_in_this_maintenance_database",
+            "filter_by_current_product": False,
+        },
+    }
+
+
 def smart_core_server_action_window_map(env):
     return get_server_action_window_map_contributions(env)
 

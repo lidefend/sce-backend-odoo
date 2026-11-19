@@ -656,15 +656,17 @@ const businessScenarioMaintenance = computed<BusinessScenarioMaintenance>(() => 
   || {
     contract_version: 'business_scenario_maintenance_entry.v1',
     product_key: String(identity.value.product_key || ''),
+    applicable: false,
+    provider: '',
     enabled: false,
     reason_code: 'SCENARIO_MAINTENANCE_CONTRACT_MISSING',
     blockers: ['SCENARIO_MAINTENANCE_CONTRACT_MISSING'],
     action: { xmlid: '', id: 0, name: '', res_model: '', view_mode: '' },
     menu: { xmlid: '', id: 0, name: '' },
     scope: {
-      kind: 'shared_maintenance_library',
-      label: '共享业务场景定义',
-      model: 'sc.product.scenario',
+      kind: 'not_applicable',
+      label: '共享业务场景定义不可用',
+      model: '',
       has_product_key: false,
       has_company_id: false,
       applies_to: '',
@@ -1255,7 +1257,7 @@ const candidateColumns = computed(() => [
     const action = promoteActionFor(row);
     if (!action) return tableText('契约缺口');
     const confirmation = action.prerequisites.confirmation_required ? '需确认' : '无需确认';
-    return tableText(`${action.actor.login} → ${action.target_scope.product_key} · ${confirmation}`);
+    return tableText(`${action.actor.login} 至 ${action.target_scope.product_key} · ${confirmation}`);
   } },
   { colKey: 'frozen_at', title: '冻结时间', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.frozen_at) },
   { colKey: 'actions', title: '操作', width: 132, cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
@@ -1416,6 +1418,20 @@ async function openBusinessScenarioMaintenance() {
   if (target) await router.push(target);
 }
 
+async function syncResolvedProduct(decoded: ReleaseOperatorSurface) {
+  const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+  if (!resolvedProduct) return;
+  selectedProduct.value = resolvedProduct;
+  const routeProduct = String(route.query.product_key || '').trim();
+  if (resolvedProduct === routeProduct) return;
+  await router.replace({
+    query: {
+      ...route.query,
+      product_key: resolvedProduct,
+    },
+  });
+}
+
 async function loadSurface() {
   loading.value = true;
   error.value = '';
@@ -1432,10 +1448,7 @@ async function loadSurface() {
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) {
-      selectedProduct.value = resolvedProduct;
-    }
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布控制台不可用';
   } finally {
@@ -1455,8 +1468,7 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
       surface.value = decoded;
       hydratePolicyControls(decoded);
       hydrateProductCenterEditor(decoded);
-      const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-      if (resolvedProduct) selectedProduct.value = resolvedProduct;
+      await syncResolvedProduct(decoded);
     } else {
       await loadSurface();
     }
@@ -1512,8 +1524,7 @@ async function runConfiguredAction(
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '平台管理动作执行失败';
   } finally {
@@ -1628,8 +1639,7 @@ async function runCenterWrite(
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '产品中心保存失败';
   } finally {

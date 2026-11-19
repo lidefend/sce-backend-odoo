@@ -6,7 +6,10 @@ from copy import deepcopy
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.utils.extension_hooks import iter_extension_modules
+from odoo.addons.smart_core.utils.extension_hooks import (
+    call_extension_hook_first,
+    iter_extension_modules,
+)
 
 from .release_approval_policy_service import ReleaseApprovalPolicyService
 from .release_audit_trail_service import ReleaseAuditTrailService
@@ -15,6 +18,7 @@ from .release_operator_contract_versions import (
     RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
 )
 from .platform_catalog_action_contract import add_catalog_entry_action_contract
+from .platform_capability_explorer import access_layer_assessment
 from .platform_management_action_contract import configured_management_action
 from .product_scene_composition import canonical_sha256, compose_product_policy
 from .product_identity import (
@@ -35,6 +39,15 @@ def _dict(value: Any) -> dict[str, Any]:
 
 def _list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _signed_int(value: Any, default: int = 0) -> int:
+    if value in (None, ""):
+        return int(default)
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return int(default)
 
 
 PAGE_CONTROL_DEFINITION = [
@@ -124,7 +137,10 @@ def _project_business_scene_composition(
                     "sequence": int(binding.get("sequence") or 0),
                     "center_key": _text(binding.get("center_key")),
                     "center_name": _text(binding.get("center_name")),
-                    "center_sequence": int(binding.get("center_sequence") or 10),
+                    "center_sequence": _signed_int(
+                        binding.get("center_sequence"),
+                        10,
+                    ),
                     "source_db": _text(binding.get("source_db")),
                 }
             )
@@ -648,7 +664,9 @@ class ReleaseOperatorReadModelService:
         freeze_surface = _dict(row.get("freeze_surface"))
         identity = _dict(freeze_surface.get("identity"))
         meta = _dict(row.get("meta"))
-        release_draft = _dict(meta.get("release_draft"))
+        release_draft = _dict(row.get("release_draft")) or _dict(
+            meta.get("release_draft")
+        )
         release_diff = _dict(meta.get("release_diff"))
         preflight_checks = _list(meta.get("preflight_checks"))
         composition = _dict(row.get("business_scene_composition"))
@@ -1326,10 +1344,56 @@ class ReleaseOperatorReadModelService:
         *,
         product_key: str,
     ) -> dict[str, Any]:
-        action_xmlid = "smart_construction_core.action_sc_product_scenario"
-        menu_xmlid = (
-            "smart_construction_core.menu_sc_product_scenario_business_config"
+        identity = self._resolve_identity(product_key=product_key)
+        declaration = call_extension_hook_first(
+            self.env,
+            "smart_core_business_scenario_maintenance",
+            self.env,
+            identity,
         )
+        if not isinstance(declaration, dict):
+            return {
+                "contract_version": "business_scenario_maintenance_entry.v1",
+                "product_key": identity["product_key"],
+                "applicable": False,
+                "provider": "",
+                "enabled": False,
+                "reason_code": "SCENARIO_MAINTENANCE_NOT_APPLICABLE",
+                "blockers": ["SCENARIO_MAINTENANCE_NOT_APPLICABLE"],
+                "action": {
+                    "xmlid": "",
+                    "id": 0,
+                    "name": "",
+                    "res_model": "",
+                    "view_mode": "",
+                },
+                "menu": {"xmlid": "", "id": 0, "name": ""},
+                "scope": {
+                    "kind": "not_applicable",
+                    "label": "当前产品不消费共享施工业务场景定义",
+                    "model": "",
+                    "has_product_key": False,
+                    "has_company_id": False,
+                    "applies_to": "",
+                    "filter_by_current_product": False,
+                },
+                "future_freeze_product_key": "",
+                "access": {
+                    "read_allowed": False,
+                    "write_allowed": False,
+                },
+                "return_readback": {
+                    "intent": "release.operator.surface",
+                    "product_key": identity["product_key"],
+                    "fields": [
+                        "business_scene_composition_states.draft",
+                        "business_scene_composition_states.comparisons",
+                    ],
+                },
+            }
+        action_xmlid = _text(declaration.get("action_xmlid"))
+        menu_xmlid = _text(declaration.get("menu_xmlid"))
+        model_name = _text(declaration.get("model")) or "sc.product.scenario"
         blockers: list[str] = []
         action = None
         menu = None
@@ -1343,7 +1407,7 @@ class ReleaseOperatorReadModelService:
         except Exception:
             menu = None
         try:
-            model = self.env["sc.product.scenario"].sudo()
+            model = self.env[model_name]
         except (KeyError, AttributeError):
             model = None
         if not action:
@@ -1358,6 +1422,37 @@ class ReleaseOperatorReadModelService:
                 blockers.append("SCENARIO_MAINTENANCE_MENU_ACTION_MISMATCH")
         if model is None:
             blockers.append("SCENARIO_MAINTENANCE_MODEL_NOT_FOUND")
+        held_group_ids = sorted(
+            {
+                int(getattr(group, "id", 0) or 0)
+                for group in (
+                    getattr(getattr(self.env, "user", None), "groups_id", [])
+                    or []
+                )
+                if int(getattr(group, "id", 0) or 0) > 0
+            }
+        )
+        menu_group_ids = sorted(
+            {
+                int(getattr(group, "id", 0) or 0)
+                for group in (getattr(menu, "groups_id", []) or [])
+                if int(getattr(group, "id", 0) or 0) > 0
+            }
+        )
+        action_group_ids = sorted(
+            {
+                int(getattr(group, "id", 0) or 0)
+                for group in (getattr(action, "groups_id", []) or [])
+                if int(getattr(group, "id", 0) or 0) > 0
+            }
+        )
+        menu_groups_allowed = (
+            not menu_group_ids or bool(set(menu_group_ids) & set(held_group_ids))
+        )
+        action_groups_allowed = (
+            not action_group_ids
+            or bool(set(action_group_ids) & set(held_group_ids))
+        )
         access = {
             "read_allowed": False,
             "write_allowed": False,
@@ -1385,12 +1480,56 @@ class ReleaseOperatorReadModelService:
                     blockers.append(
                         f"SCENARIO_MAINTENANCE_{operation.upper()}_DENIED"
                     )
+        native_present = bool(
+            action
+            and menu
+            and "SCENARIO_MAINTENANCE_MENU_ACTION_MISMATCH" not in blockers
+        )
+        access_assessment = access_layer_assessment(
+            native_present=native_present,
+            native_blockers=[],
+            consumer_supported=bool(model is not None),
+            held_group_ids=held_group_ids,
+            acl_rows=(
+                [{"read": True, "group_id": 0}]
+                if access["read_allowed"]
+                else []
+            ),
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "not_applicable"},
+            menu_group_ids=menu_group_ids,
+            action_group_ids=action_group_ids,
+            menu_groups_allowed=menu_groups_allowed,
+            action_groups_allowed=action_groups_allowed,
+        )
+        if not menu_groups_allowed:
+            blockers.append("SCENARIO_MAINTENANCE_MENU_GROUP_DENIED")
+        if not action_groups_allowed:
+            blockers.append("SCENARIO_MAINTENANCE_ACTION_GROUP_DENIED")
+        access["entry_groups_allowed"] = access_assessment[
+            "entry_groups_allowed"
+        ]
+        access["menu_groups_allowed"] = access_assessment["menu_groups_allowed"]
+        access["action_groups_allowed"] = access_assessment[
+            "action_groups_allowed"
+        ]
+        access["model_read_allowed"] = access_assessment[
+            "model_read_allowed"
+        ]
         blockers = list(dict.fromkeys(blockers))
         enabled = not blockers
-        fields = getattr(model, "_fields", {}) if model is not None else {}
+        metadata_model = model.sudo() if model is not None else None
+        fields = (
+            getattr(metadata_model, "_fields", {})
+            if metadata_model is not None
+            else {}
+        )
+        declared_scope = _dict(declaration.get("scope"))
         return {
             "contract_version": "business_scenario_maintenance_entry.v1",
-            "product_key": product_key,
+            "product_key": identity["product_key"],
+            "applicable": True,
+            "provider": _text(declaration.get("provider")),
             "enabled": enabled,
             "reason_code": (
                 "SCENARIO_MAINTENANCE_AVAILABLE"
@@ -1411,19 +1550,22 @@ class ReleaseOperatorReadModelService:
                 "name": _text(getattr(menu, "name", "")),
             },
             "scope": {
-                "kind": "shared_maintenance_library",
-                "label": "当前维护库共享业务场景定义",
-                "model": "sc.product.scenario",
+                "kind": _text(declared_scope.get("kind"))
+                or "shared_maintenance_library",
+                "label": _text(declared_scope.get("label")),
+                "model": model_name,
                 "has_product_key": "product_key" in fields,
                 "has_company_id": "company_id" in fields,
-                "applies_to": "all_product_drafts_frozen_from_this_maintenance_database",
-                "filter_by_current_product": False,
+                "applies_to": _text(declared_scope.get("applies_to")),
+                "filter_by_current_product": bool(
+                    declared_scope.get("filter_by_current_product")
+                ),
             },
-            "future_freeze_product_key": product_key,
+            "future_freeze_product_key": identity["product_key"],
             "access": access,
             "return_readback": {
-                "intent": "release.operator.read",
-                "product_key": product_key,
+                "intent": "release.operator.surface",
+                "product_key": identity["product_key"],
                 "fields": [
                     "business_scene_composition_states.draft",
                     "business_scene_composition_states.comparisons",

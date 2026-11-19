@@ -21,6 +21,7 @@
     "addons/smart_core/tests/test_platform_capability_explorer.py",
     "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_construction_core/core_extension.py",
     "config/ci/contract_only_scopes.json",
     "contracts/generated/contract_structure_fingerprint.json",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -39,7 +40,10 @@
     "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
     "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
     "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+    "frontend/apps/web/src/app/navigationContext.ts",
     "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
     "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
     "frontend/apps/web/src/views/ReleaseOperatorView.vue",
     "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
@@ -53,7 +57,10 @@
     "targets": [
       "verify.platform.capability_explorer.orm",
       "verify.release.operator.runtime.orm",
-    "verify.admin_close_01.scene.module_baseline"
+    "verify.admin_close_01.scene.module_baseline",
+    "verify.daily.permission_truth.capability.orm",
+    "verify.page.finalize.authority.orm",
+    "verify.page.project_finalize.authority.orm"
     ],
     "reason": "Owner-selected pure-contract lane excludes ORM, module baseline, fixture, browser matrix and environment rebuild"
   },
@@ -126,6 +133,7 @@
         "addons/smart_core/delivery/release_operator_surface_service.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "addons/smart_construction_core/core_extension.py",
         "make/guards.mk"
       ],
       "kind": "offline"
@@ -136,9 +144,11 @@
         "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
         "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
         "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+        "frontend/apps/web/src/app/navigationContext.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
         "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "make/frontend.mk"
@@ -203,11 +213,11 @@
     "scope": "Contract-only P0/P1 source behavior and affected frontend consumers",
     "passed": [
       "verify.platform.capability_explorer.unit: passed; 40 backend capability tests",
-      "verify.admin_close_01.backend.unit: passed; release-operator and adjacent backend suites, 155 tests",
+      "verify.admin_close_01.backend.unit: passed; release-operator and adjacent backend suites, 159 tests",
       "verify.daily.published_face.target.unit: passed; 8 tests",
       "verify.product_center.policy.unit: passed; 15 tests",
       "verify.navigation.publication_consumers.unit: passed; affected scenario and navigation consumers, 276 tests",
-      "verify.frontend.platform_capability_explorer.unit: passed; Python/node/frontend contract cases, 130 assertions/tests",
+      "verify.frontend.platform_capability_explorer.unit: passed; Python/node/frontend contract cases incl. 100 platform explorer assertions",
       "verify.frontend.typecheck.strict: passed",
       "verify.frontend.lint.src: passed with pre-existing warnings only",
       "verify.frontend.dev.incremental.unit: 186 tests passed",
@@ -219,6 +229,12 @@
       "candidate and active compositions are projected from their own immutable snapshots",
       "name/sequence/intent-only changes are recognized by backend-owned composition comparison",
       "native shared maintenance entry is disabled by missing action/menu/model or read/write denial"
+      ,
+      "maintenance entry uses ordinary current-user access and native menu/action group restrictions; sudo is metadata-only",
+      "P1 declares the construction maintenance provider and product applicability; platform/other products receive not-applicable state",
+      "maintenance return context survives generic action/form navigation and rebinds to the backend-declared readback product",
+      "scenario and entry sequences accept signed integers; explicit zero center sequence is preserved and participates in diffs",
+      "snapshot release-draft metadata is read from snapshot_json when meta.release_draft is absent"
     ],
     "p4_correction": [
       "The first remote contract-only run attempted the esbuild-dependent frontend capability-explorer target without frontend dependencies. The target remains an owning check in frontend_release_gate and was removed from the contract-only list; the Python/node-independent control-plane scope is unchanged."

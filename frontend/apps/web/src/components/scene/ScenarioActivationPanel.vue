@@ -39,7 +39,7 @@
           variant="ghost"
           type="button"
           :disabled="busy"
-          :title="row.enablement_blockers.join(' · ') || action.key + ' → ' + String(action.enabled)"
+          :title="row.enablement_blockers.join(' · ') || action.key + ' 至 ' + String(action.enabled)"
           @click="execute(row, action)"
         >
           {{ action.label }}

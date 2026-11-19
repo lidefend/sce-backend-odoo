@@ -171,6 +171,8 @@ export interface BusinessSceneCompositionStates {
 export interface BusinessScenarioMaintenance {
   contract_version: 'business_scenario_maintenance_entry.v1';
   product_key: string;
+  applicable: boolean;
+  provider: string;
   enabled: boolean;
   reason_code: string;
   blockers: string[];
@@ -187,7 +189,7 @@ export interface BusinessScenarioMaintenance {
     name: string;
   };
   scope: {
-    kind: 'shared_maintenance_library';
+    kind: 'shared_maintenance_library' | 'not_applicable';
     label: string;
     model: string;
     has_product_key: boolean;
@@ -252,6 +254,10 @@ function nonNegativeInt(value: unknown, path: string): number {
 
 function optionalText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
+}
+
+function signedInt(value: unknown, path: string): number {
+  return integer(value, path);
 }
 
 function textList(value: unknown, path: string, required = false): string[] {
@@ -862,10 +868,10 @@ function decodeBusinessSceneCompositionEntry(
     menu_id: nonNegativeInt(entry.menu_id, `${path}.menu_id`),
     intent,
     intent_label: text(entry.intent_label, `${path}.intent_label`),
-    sequence: nonNegativeInt(entry.sequence, `${path}.sequence`),
+    sequence: signedInt(entry.sequence, `${path}.sequence`),
     center_key: optionalText(entry.center_key),
     center_name: optionalText(entry.center_name),
-    center_sequence: nonNegativeInt(
+    center_sequence: signedInt(
       entry.center_sequence,
       `${path}.center_sequence`,
     ),
@@ -885,7 +891,7 @@ function decodeBusinessSceneCompositionScenario(
     key: text(scenario.key, `${path}.key`),
     name: text(scenario.name, `${path}.name`),
     active: boolean(scenario.active, `${path}.active`),
-    sequence: nonNegativeInt(scenario.sequence, `${path}.sequence`),
+    sequence: signedInt(scenario.sequence, `${path}.sequence`),
     source_db: optionalText(scenario.source_db),
     entries: scenario.entries.map((row, index) => (
       decodeBusinessSceneCompositionEntry(row, `${path}.entries[${index}]`)
@@ -1070,14 +1076,28 @@ export function decodeBusinessScenarioMaintenance(
   const action = record(root.action, 'business_scenario_maintenance.action');
   const menu = record(root.menu, 'business_scenario_maintenance.menu');
   const scope = record(root.scope, 'business_scenario_maintenance.scope');
-  if (text(scope.kind, 'business_scenario_maintenance.scope.kind')
-    !== 'shared_maintenance_library') {
+  const enabled = boolean(root.enabled, 'business_scenario_maintenance.enabled');
+  const applicable = boolean(
+    root.applicable,
+    'business_scenario_maintenance.applicable',
+  );
+  const scopeKind = text(
+    scope.kind,
+    'business_scenario_maintenance.scope.kind',
+  );
+  if (!['shared_maintenance_library', 'not_applicable'].includes(scopeKind)) {
     gap(
       'business_scenario_maintenance.scope.kind',
-      '业务场景维护作用域不是共享维护库',
+      '业务场景维护作用域未声明',
     );
   }
-  if (boolean(
+  if (enabled && (!applicable || scopeKind !== 'shared_maintenance_library')) {
+    gap(
+      'business_scenario_maintenance.enabled',
+      '不可适用的业务场景维护契约不能声明可执行',
+    );
+  }
+  if (applicable && boolean(
     scope.filter_by_current_product,
     'business_scenario_maintenance.scope.filter_by_current_product',
   )) {
@@ -1107,7 +1127,9 @@ export function decodeBusinessScenarioMaintenance(
   return {
     contract_version: 'business_scenario_maintenance_entry.v1',
     product_key: expectedProductKey,
-    enabled: boolean(root.enabled, 'business_scenario_maintenance.enabled'),
+    applicable,
+    provider: optionalText(root.provider),
+    enabled,
     reason_code: text(
       root.reason_code,
       'business_scenario_maintenance.reason_code',
@@ -1117,7 +1139,7 @@ export function decodeBusinessScenarioMaintenance(
       'business_scenario_maintenance.blockers',
     ),
     action: {
-      xmlid: text(action.xmlid, 'business_scenario_maintenance.action.xmlid'),
+      xmlid: optionalText(action.xmlid),
       id: nonNegativeInt(
         action.id,
         'business_scenario_maintenance.action.id',
@@ -1127,14 +1149,14 @@ export function decodeBusinessScenarioMaintenance(
       view_mode: optionalText(action.view_mode),
     },
     menu: {
-      xmlid: text(menu.xmlid, 'business_scenario_maintenance.menu.xmlid'),
+      xmlid: optionalText(menu.xmlid),
       id: nonNegativeInt(menu.id, 'business_scenario_maintenance.menu.id'),
       name: optionalText(menu.name),
     },
     scope: {
-      kind: 'shared_maintenance_library',
+      kind: scopeKind as BusinessScenarioMaintenance['scope']['kind'],
       label: text(scope.label, 'business_scenario_maintenance.scope.label'),
-      model: text(scope.model, 'business_scenario_maintenance.scope.model'),
+      model: optionalText(scope.model),
       has_product_key: boolean(
         scope.has_product_key,
         'business_scenario_maintenance.scope.has_product_key',
@@ -1143,16 +1165,10 @@ export function decodeBusinessScenarioMaintenance(
         scope.has_company_id,
         'business_scenario_maintenance.scope.has_company_id',
       ),
-      applies_to: text(
-        scope.applies_to,
-        'business_scenario_maintenance.scope.applies_to',
-      ),
+      applies_to: optionalText(scope.applies_to),
       filter_by_current_product: false,
     },
-    future_freeze_product_key: text(
-      root.future_freeze_product_key,
-      'business_scenario_maintenance.future_freeze_product_key',
-    ),
+    future_freeze_product_key: optionalText(root.future_freeze_product_key),
     access: {
       read_allowed: boolean(
         access.read_allowed,

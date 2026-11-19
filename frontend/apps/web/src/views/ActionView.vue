@@ -3,6 +3,7 @@
   <ScPage class="page sc-page sc-product-workspace-stack" data-product-page-mode="list" data-semantic-component="ActionView" :data-collection-state="status" :data-can-create="canCreateRecord" :data-can-edit="canEditRecord" :aria-busy="status === 'loading' || undefined" :content-layout="actionContentLayoutMode">
     <ProductPageHeader :title="vm.page.title || '业务列表'" :subtitle="vm.page.subtitle" :presentation-mode="viewMode === 'dashboard' ? 'dashboard' : 'collection'" render-profile="readonly">
       <template v-if="!standardListOperationsInCard" #actions>
+        <ScLinkButton v-if="contextReturnHref" :href="contextReturnHref" variant="ghost">{{ contextReturnLabel }}</ScLinkButton>
         <ScButton data-page-action="reload" variant="secondary" size="small" type="button" :disabled="isUiBusy" @click="reload"><ScIcon name="refresh" :size="16" />{{ toolbarUiLabel('refresh', '刷新') }}</ScButton>
         <ScButton v-if="canCreateRecord" variant="primary" size="small" type="button" @click="openCreateRecord"><ScIcon name="plus" :size="16" />{{ toolbarUiLabel('create', '新建') }}</ScButton>
         <ScButton v-for="action in vm.header.actions" :key="`header-${action.key}`" variant="ghost" size="small" type="button" @click="executeHeaderAction(action.key)">{{ action.label || action.key }}</ScButton>
@@ -799,6 +800,7 @@ import {
 import { useRoute, useRouter } from 'vue-router';
 import type { ContractV2NormalizedStore } from '../app/contracts/v2';
 import ScButton from '../components/design-system/ScButton.vue';
+import ScLinkButton from '../components/design-system/ScLinkButton.vue';
 import ScCard from '../components/design-system/ScCard.vue';
 import ScDialog from '../components/design-system/ScDialog.vue';
 import ScIcon from '../components/design-system/ScIcon.vue';
@@ -1056,7 +1058,7 @@ import {
   buildWorkbenchRouteTarget,
 } from '../app/runtime/actionViewRouteRuntime';
 import { buildCanonicalSceneRouteTarget, buildEntryTargetRouteTarget } from '../app/routeQuery';
-import { buildBusinessCategoryCreateNavQuery, buildBusinessEntryNavQuery, buildBusinessEntryRequestContext } from '../app/navigationContext';
+import { buildBusinessCategoryCreateNavQuery, buildBusinessEntryNavQuery, buildBusinessEntryRequestContext, contextReturnHref as resolveContextReturnHref } from '../app/navigationContext';
 import {
   hasRoutePresetGroupPageStateChanged,
   resolveRoutePresetActiveFilterValue,
@@ -2005,6 +2007,16 @@ const toolbarUiLabels = computed<Record<string, string>>(() => {
 });
 
 function toolbarUiLabel(key: string, fallback: string) { return toolbarUiLabels.value[key] || fallback; }
+
+const contextReturnHref = computed(() => {
+  return resolveContextReturnHref(route.query as Record<string, unknown>);
+});
+
+const contextReturnLabel = computed(() => {
+  const raw = Array.isArray(route.query.return_label) ? route.query.return_label[0] : route.query.return_label;
+  return String(raw || '').trim() || '返回';
+});
+
 const {
   toContractActionButton,
 } = useActionViewContractActionButtonRuntime({
