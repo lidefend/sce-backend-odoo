@@ -125,6 +125,53 @@ def _project_intake_field_constraints(field_type: str, descriptor: dict) -> dict
     return constraints
 
 
+def _project_intake_modifier_record(data: dict) -> dict:
+    """Collect the values available during create-contract projection."""
+    record = {}
+    for key in ("record", "values", "default_values", "defaults", "main_data"):
+        candidate = _as_dict(data.get(key))
+        if candidate:
+            nested = _as_dict(candidate.get("data"))
+            record.update(nested or candidate)
+    for name, descriptor in _as_dict(data.get("fields")).items():
+        descriptor = _as_dict(descriptor)
+        if name in data:
+            record[name] = data[name]
+        elif "value" in descriptor:
+            record[name] = descriptor.get("value")
+    return record
+
+
+def _project_intake_field_readonly(
+    descriptor: dict,
+    field_modifiers: dict,
+    record_values: dict,
+) -> bool:
+    """Fail closed unless every declared readonly modifier evaluates false."""
+    from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+        _evaluate_action_modifier,
+    )
+
+    attributes = _as_dict(descriptor.get("attributes"))
+    sources = (
+        descriptor,
+        _as_dict(descriptor.get("modifiers")),
+        attributes,
+        _as_dict(attributes.get("modifiers")),
+        field_modifiers,
+    )
+    for source in sources:
+        if "readonly" not in source:
+            continue
+        if _evaluate_action_modifier(
+            source.get("readonly"),
+            record_values,
+            strict=True,
+        ) is not False:
+            return True
+    return False
+
+
 def _project_intake_autosave_policy(data: dict, intake_mode: str) -> dict:
     """Declare the standard project-intake local draft policy.
 
@@ -137,6 +184,7 @@ def _project_intake_autosave_policy(data: dict, intake_mode: str) -> dict:
     views = _as_dict(data.get("views"))
     form = _as_dict(views.get("form"))
     modifiers = _as_dict(form.get("field_modifiers"))
+    modifier_record = _project_intake_modifier_record(data)
     fields = []
     allowed_fields = (
         _PROJECT_INTAKE_QUICK_AUTOSAVE_FIELDS
@@ -148,7 +196,11 @@ def _project_intake_autosave_policy(data: dict, intake_mode: str) -> dict:
         if not descriptor:
             continue
         field_modifiers = _as_dict(modifiers.get(name))
-        if descriptor.get("readonly") is True or field_modifiers.get("readonly") is True:
+        if _project_intake_field_readonly(
+            descriptor,
+            field_modifiers,
+            modifier_record,
+        ):
             continue
         field_type = _text(descriptor.get("type") or "char").lower() or "char"
         relation = _text(descriptor.get("relation"))

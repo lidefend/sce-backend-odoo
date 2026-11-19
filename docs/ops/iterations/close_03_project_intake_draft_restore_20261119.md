@@ -98,10 +98,10 @@ Consumption points under review:
 ## Completion boundaries
 
 - Batch verification is locally complete once the generated-evidence commit is clean and frozen.
-- Mainline integration remains pending until independent review, the current PR head's four required checks, and protected merge succeed.
+- Mainline integration completed through PR #937; candidate `97363dc8765eded3d83f6242f16be64e229d2e29` merged as `61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138` with the same tree `76574fb8c5ce7927822004e183cd6913af529d29`.
 - Deployment and product-delivery status remain unchanged; this batch does not deploy or claim a released product version.
 - Known non-blocking external mismatches remain the cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native synthetic fixture guard.
 
 ## Results
 
-Local implementation and batch acceptance evidence are complete. The run remains `verification_pending` for exact-head independent review, PR checks and protected integration.
+Local implementation and batch acceptance evidence are complete. Mainline integration is complete. Daily-runtime consumption moved to `FE-CLOSE-03-RUNTIME-FRONTEND-CLOSURE-20261119` after the first governed upgrade exposed a maintained-policy compatibility gap.

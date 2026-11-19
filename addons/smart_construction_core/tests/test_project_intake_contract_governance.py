@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
+import json
 import unittest
 
+from lxml import etree
 from odoo.tests.common import BaseCase, tagged
 
 from odoo.addons.smart_core.utils.contract_governance import (
@@ -258,6 +260,72 @@ class ProjectIntakeContractGovernanceCase(BaseCase):
 
         fields = governed["views"]["form"]["autosave"]["fields"]
         self.assertNotIn("manager_id", {row["name"] for row in fields})
+
+    def test_native_xml_readonly_truth_values_exclude_draft_field(self):
+        root = etree.fromstring(
+            b'<form><field name="owner_id" readonly="1"/></form>'
+        )
+        raw_readonly = root.xpath('.//field[@name="owner_id"]')[0].get("readonly")
+
+        for value in (True, 1, "1", raw_readonly):
+            with self.subTest(value=value):
+                payload = _payload()
+                payload["views"]["form"]["field_modifiers"] = {
+                    "owner_id": {"readonly": value},
+                }
+
+                governed = apply_contract_governance(payload, "user")
+
+                fields = governed["views"]["form"]["autosave"]["fields"]
+                self.assertNotIn("owner_id", {row["name"] for row in fields})
+
+        sample = _payload()
+        sample["views"]["form"]["field_modifiers"] = {
+            "owner_id": {"readonly": raw_readonly},
+        }
+        sample_contract = apply_contract_governance(sample, "user")
+        autosave = sample_contract["views"]["form"]["autosave"]
+        print(
+            "CLOSE03_R1_READONLY_SAMPLE="
+            + json.dumps(
+                {
+                    "source_xml": '<field name="owner_id" readonly="1"/>',
+                    "source_modifiers": sample["views"]["form"]["field_modifiers"],
+                    "allowed_fields": [row["name"] for row in autosave["fields"]],
+                    "owner_id_declared": any(
+                        row["name"] == "owner_id" for row in autosave["fields"]
+                    ),
+                    "autosave_policy": autosave,
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+            )
+        )
+
+    def test_native_xml_readonly_false_values_keep_draft_field(self):
+        for value in (False, 0, "0"):
+            with self.subTest(value=value):
+                payload = _payload()
+                payload["views"]["form"]["field_modifiers"] = {
+                    "owner_id": {"readonly": value},
+                }
+
+                governed = apply_contract_governance(payload, "user")
+
+                fields = governed["views"]["form"]["autosave"]["fields"]
+                self.assertIn("owner_id", {row["name"] for row in fields})
+
+    def test_dynamic_readonly_expression_uses_current_create_values(self):
+        payload = _payload()
+        payload["values"] = {"state": "draft"}
+        payload["views"]["form"]["field_modifiers"] = {
+            "owner_id": {"readonly": "state == 'draft'"},
+        }
+
+        governed = apply_contract_governance(payload, "user")
+
+        fields = governed["views"]["form"]["autosave"]["fields"]
+        self.assertNotIn("owner_id", {row["name"] for row in fields})
 
     def test_payment_create_does_not_inherit_project_intake_draft_policy(self):
         payload = _payload(scene_key="payments.payment", menu_xmlid="")

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "id": "CLOSE-03-R1-REVIEW-REMEDIATION-20261119",
+  "branch": "fix/close-03-r1-review-remediation-20261119",
+  "baseline_sha": "61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138",
+  "status": "active",
+  "goal": ".agent/goals/CLOSE-03-R1-REVIEW-REMEDIATION-20261119.yaml",
+  "record": "docs/ops/iterations/close_03_r1_review_remediation_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119.yaml",
+    ".agent/goals/CLOSE-03-R1-REVIEW-REMEDIATION-20261119.yaml",
+    ".agent/runs/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119/run.json",
+    ".agent/runs/CLOSE-03-R1-REVIEW-REMEDIATION-20261119/run.json",
+    "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/services/contract_governance_overrides.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
+    "docs/ops/iterations/close_03_r1_review_remediation_20261119.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing local.test, acceptance and sc-root daily-runtime Make entries only; no new Compose project, database, port, volume, fixture or credential"
+  },
+  "stages": [
+    {
+      "id": "BE-CLOSE-03-R1",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "Actual migration entry validates only changed XMLIDs, preserves maintained rows, and projects only definitely-writable intake fields",
+      "readonly_sample_log": ".runtime/test-baseline/1795046470254202249/odoo.log",
+      "migration_test_log": ".runtime/test-baseline/1795046492196576512/odoo.log"
+    },
+    {
+      "id": "FE-CLOSE-03-R1",
+      "status": "planned",
+      "owner": "single_writer",
+      "exit": "Clean reversion clears the old draft, restore intersects current writable fields, and the governed browser journey passes"
+    }
+  ],
+  "checks": {
+    "preview_promotion_migration": {
+      "target": "verify.smart_construction_core.close_03.preview_promotion.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/migrations/17.0.0.183/post-migrate.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+        "make/ci.mk"
+      ]
+    },
+    "construction_core_module_baseline": {
+      "target": "verify.smart_construction_core.close_03.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "make/ci.mk"
+      ]
+    },
+    "intake_contract_governance": {
+      "target": "verify.project_intake.contract_governance.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/contract_governance_overrides.py",
+        "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
+        "make/ci.mk"
+      ]
+    },
+    "product_menu_contract": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/product_menu_contract_v1_guard.py",
+        "scripts/verify/test_product_menu_contract_v1_guard.py"
+      ]
+    },
+    "project_intake_browser": {
+      "target": "verify.frontend.close_03.project_intake.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/",
+        "make/ci.mk",
+        "scripts/verify/close_03_project_intake_browser.mjs",
+        "scripts/verify/close_03_intake_autosave_samples.mjs"
+      ]
+    },
+    "daily_runtime_entry": {
+      "target": "verify.daily.runtime.entry",
+      "kind": "offline",
+      "inputs": [
+        "config/ops/daily_runtime_database_duties.v1.json",
+        "config/ops/daily_runtime_entry.v1.json",
+        "scripts/verify/daily_runtime_entry_guard.py",
+        "scripts/ops/test_daily_runtime_entry.py"
+      ]
+    }
+  },
+  "blockers": [
+    "Daily demo upgrade failed before module version commit: migration 17.0.0.183 required an exact total of 132 menu rows, while the maintained sc_demo policy correctly contains 274 released rows. The transaction rolled back and a verified recovery point exists at /data/backups/daily-demo-dev/sc_demo-20261118T231606Z-c91dd0bb/database.dump.",
+    "Pre-existing owning-module baseline debt remains outside this correction: the full smart_construction_core ORM run reports 117 failures and 38 errors, while the CLOSE-03 starter run recorded 120 failures and 38 errors on the same broad module baseline. The first failures (duplicate-label namespacing, component-capability projection, native-lowcode action/view binding) are outside the product-policy migration files changed here; the full result remains failed and is not claimed as covered."
+  ],
+  "next_exact_step": "Hand the committed BE-CLOSE-03-R1 SHA, readonly contract sample and remaining FE work items to the frontend executor."
+}
