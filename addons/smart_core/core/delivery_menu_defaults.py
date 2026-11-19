@@ -150,6 +150,11 @@ def build_delivery_menu_child(menu: Dict[str, Any]) -> Dict[str, Any] | None:
         "integration_model",
         "record_scope_policy",
         "project_scope_policy",
+        "policy_group_key",
+        "policy_group_label",
+        "policy_center_key",
+        "policy_center_label",
+        "policy_center_sequence",
     ):
         value = menu.get(meta_key)
         if value not in (None, "", []):

@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import runpy
+import json
 from copy import deepcopy
 from pathlib import Path
 
@@ -30,6 +31,18 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
         )
         migration = runpy.run_path(str(path))
         result = migration["migrate"](self.env.cr, "17.0.0.182")
+        self.env["sc.product.policy"].invalidate_model()
+        return result
+
+    def _run_center_identity_migration(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "17.0.0.184"
+            / "post-migrate.py"
+        )
+        migration = runpy.run_path(str(path))
+        result = migration["migrate"](self.env.cr, "17.0.0.183")
         self.env["sc.product.policy"].invalidate_model()
         return result
 
@@ -240,6 +253,53 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                     "construction.preview": [],
                 },
             })
+
+    def test_center_identity_migration_maps_legacy_names_and_is_idempotent(self):
+        policy = self.env["sc.product.policy"].search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        legacy_groups = deepcopy(policy.menu_groups)
+        for group in legacy_groups:
+            label = str(group.get("group_label") or group.get("label") or "").strip()
+            group["group_key"] = f"construction.{label}"
+            group.pop("label", None)
+            if "sequence" not in group and "center_sequence" not in group:
+                group["center_sequence"] = 10
+        self.env.cr.execute(
+            "UPDATE sc_product_policy SET menu_groups=%s::jsonb "
+            "WHERE id=%s",
+            (json.dumps(legacy_groups, ensure_ascii=False), policy.id),
+        )
+        policy.invalidate_recordset()
+        first = self._run_center_identity_migration()
+        policy.invalidate_recordset()
+        self.assertIn(
+            "construction.standard",
+            {row["product_key"] for row in first["changed"]},
+        )
+        self.assertEqual(
+            [group["center_key"] for group in policy.menu_groups],
+            [
+                "workspace.home.workbench",
+                "construction.center.project",
+                "construction.center.contract",
+                "construction.center.cost",
+                "construction.center.finance",
+                "construction.center.tax",
+                "construction.center.accounting",
+                "construction.center.reporting",
+                "construction.center.administration",
+                "construction.center.product_configuration",
+            ],
+        )
+        self.assertTrue(
+            all(
+                group["group_key"] == group["center_key"]
+                for group in policy.menu_groups
+            )
+        )
+        second = self._run_center_identity_migration()
+        self.assertEqual(second["changed"], [])
 
     def test_policy_migration_adds_my_work_without_overwriting_existing_rows(self):
         policy_model = self.env["sc.product.policy"]

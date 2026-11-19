@@ -11,6 +11,8 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any, Callable
 
+from .platform_catalog_action_contract import add_catalog_entry_action_contract
+
 PROJECTION_VERSION = "platform.capability.explorer.projection.v1"
 LIST_SCHEMA = "platform.capability.explorer.list.v1"
 DETAIL_SCHEMA = "platform.capability.explorer.detail.v1"
@@ -30,6 +32,7 @@ CLASSIFICATION_CONFIDENCES = {
     "unclassified",
 }
 SCENE_STATUSES = {"bound", "unbound"}
+CATALOG_SCOPES = {"platform", "product"}
 
 ALLOWED_SORT_FIELDS = {
     "center_sequence",
@@ -300,6 +303,11 @@ class InvalidExplorerRequest(PlatformCapabilityExplorerError):
     http_status = 400
 
 
+class CatalogScopeDenied(PlatformCapabilityExplorerError):
+    code = "CATALOG_SCOPE_DENIED"
+    http_status = 403
+
+
 @dataclass(frozen=True)
 class CatalogProjection:
     meta: dict[str, Any]
@@ -400,7 +408,18 @@ def _runtime_identity(env) -> dict[str, Any]:
 def _load_extension_scopes(env) -> tuple[list[str], list[dict[str, Any]]]:
     roots: set[str] = set()
     diagnostics: list[dict[str, Any]] = []
-    for module_name in _extension_modules(env):
+    try:
+        extension_modules = _extension_modules(env)
+    except Exception as exc:
+        return [], [
+            {
+                "module": "",
+                "hook": "get_platform_capability_explorer_scope",
+                "status": "resolver_unavailable",
+                "reason": _text(exc),
+            }
+        ]
+    for module_name in extension_modules:
         try:
             module = importlib.import_module(f"odoo.addons.{module_name}")
         except Exception as exc:
@@ -444,7 +463,11 @@ def _load_extension_scopes(env) -> tuple[list[str], list[dict[str, Any]]]:
     return sorted(roots), diagnostics
 
 
-def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str, Any]:
+def _merge_extension_contributions(
+    env,
+    rows: list[dict[str, Any]],
+    catalog_scope: dict[str, Any] | None = None,
+) -> dict[str, Any]:
     menu_ids = sorted({_int(row.get("menu_id")) for row in rows if _int(row.get("menu_id")) > 0})
     menu_xmlids = {
         _int(row.get("menu_id")): _text(row.get("menu_xmlid"))
@@ -478,7 +501,15 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
         if not callable(hook):
             continue
         try:
-            payload = hook(env, menu_ids, menu_xmlids)
+            try:
+                payload = hook(
+                    env,
+                    menu_ids,
+                    menu_xmlids,
+                    catalog_scope=catalog_scope,
+                )
+            except TypeError:
+                payload = hook(env, menu_ids, menu_xmlids)
         except Exception as exc:
             merged["providers"].append(
                 {"module": module_name, "status": "error", "reason": _text(exc)}
@@ -661,6 +692,225 @@ class PlatformCapabilityExplorerService:
         except Exception:
             return 0
 
+    def _authorization(self, params: dict[str, Any]) -> dict[str, Any]:
+        return _dict(params.get("_authorization"))
+
+    @staticmethod
+    def _authorization_mode(params: dict[str, Any]) -> str:
+        authorization = _dict(params.get("_authorization"))
+        platform = _dict(authorization.get("platform"))
+        tenant = _dict(authorization.get("tenant"))
+        requested = _text(params.get("catalog_scope"))
+        if requested and requested not in CATALOG_SCOPES:
+            raise InvalidExplorerRequest(
+                "catalog_scope must be platform or product"
+            )
+        if not authorization:
+            return requested or "platform"
+        if requested:
+            if requested == "platform" and not platform.get("is_platform_control_admin"):
+                raise CatalogScopeDenied(
+                    "platform catalog scope requires a platform control administrator"
+                )
+            if requested == "product" and not (
+                platform.get("is_platform_control_admin")
+                or tenant.get("is_tenant_config_admin")
+            ):
+                raise CatalogScopeDenied(
+                    "product catalog scope requires an enterprise configuration administrator"
+                )
+            return requested
+        if platform.get("is_platform_control_admin"):
+            return "platform"
+        return "product"
+
+    def _product_policy_context(
+        self,
+        *,
+        requested_product_key: str = "",
+    ) -> dict[str, Any]:
+        try:
+            Model = self.env["sc.product.policy"]
+            products = Model.sudo().search(
+                [("active", "=", True)],
+                order="base_product_key, edition_key, product_key",
+            )
+        except (KeyError, AttributeError, TypeError):
+            products = []
+        options = []
+        for policy in products:
+            if not _text(policy.product_key):
+                continue
+            option_payload = policy.to_runtime_dict()
+            options.append(
+                {
+                    "product_key": _text(policy.product_key),
+                    "label": _text(policy.label) or _text(policy.product_key),
+                    "base_product_key": _text(policy.base_product_key),
+                    "edition_key": _text(policy.edition_key),
+                    "groups": [
+                        {
+                            "group_key": _text(
+                                group.get("center_key")
+                                or group.get("group_key")
+                            ),
+                            "label": _text(
+                                group.get("group_label") or group.get("label")
+                            ),
+                            "sequence": _int(group.get("sequence"), 10),
+                            "entry_count": len(_list(group.get("menus"))),
+                        }
+                        for group in _list(option_payload.get("menu_groups"))
+                        if isinstance(group, dict)
+                    ],
+                }
+            )
+        requested = _text(requested_product_key)
+        selected = next(
+            (
+                policy
+                for policy in products
+                if _text(policy.product_key) == requested
+            ),
+            None,
+        )
+        if selected is None and not requested:
+            selected = next(
+                (
+                    policy
+                    for policy in products
+                    if _text(policy.product_key) == "construction.standard"
+                ),
+                products[0] if products else None,
+            )
+        if selected is None and requested:
+            raise InvalidExplorerRequest(
+                f"product policy not found: {requested or '<default>'}"
+            )
+        if selected is None:
+            return {
+                "product_key": "",
+                "product_label": "",
+                "products": options,
+                "groups": [],
+                "menu_xmlids": set(),
+                "policy_sha256": "",
+            }
+        payload = selected.to_runtime_dict()
+        groups = [
+            {
+                "group_key": _text(
+                    group.get("center_key") or group.get("group_key")
+                ),
+                "label": _text(
+                    group.get("group_label") or group.get("label")
+                ),
+                "sequence": _int(group.get("sequence"), 10),
+                "entry_count": len(_list(group.get("menus"))),
+            }
+            for group in _list(payload.get("menu_groups"))
+            if isinstance(group, dict)
+        ]
+        menu_xmlids = {
+            _text(menu.get("menu_xmlid"))
+            for group in _list(payload.get("menu_groups"))
+            if isinstance(group, dict)
+            for menu in _list(group.get("menus"))
+            if isinstance(menu, dict)
+            and _text(menu.get("menu_xmlid"))
+        }
+        return {
+            "product_key": _text(selected.product_key),
+            "product_label": _text(selected.label) or _text(selected.product_key),
+            "products": options,
+            "groups": groups,
+            "menu_xmlids": menu_xmlids,
+            "policy_sha256": canonical_sha256(payload),
+        }
+
+    def catalog_scope_context(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
+        params = _dict(params)
+        mode = self._authorization_mode(params)
+        industry_roots, industry_diagnostics = _load_extension_scopes(self.env)
+        product_context = self._product_policy_context(
+            requested_product_key=_text(params.get("product_key"))
+        )
+        if mode == "platform":
+            product_context = {
+                **product_context,
+                "product_key": "",
+                "product_label": "",
+                "groups": [],
+                "menu_xmlids": set(),
+                "policy_sha256": "",
+            }
+        authorization = self._authorization(params)
+        products = _list((product_context or {}).get("products"))
+        groups = _list((product_context or {}).get("groups"))
+        return {
+            "mode": mode,
+            "label": "平台原生目录" if mode == "platform" else "产品选用清单",
+            "identity_scope": (
+                "current_instance_installed_native_entries"
+                if mode == "platform"
+                else "selected_product_policy_entries"
+            ),
+            "source_authority": {
+                "kind": "platform_catalog_scope_resolution",
+                "authorities": (
+                    ["ir.ui.menu", "ir.actions", "ir.module.module"]
+                    if mode == "platform"
+                    else [
+                        "sc.product.policy.menu_groups",
+                        "sc.product.policy.capabilities",
+                        "ir.ui.menu",
+                    ]
+                ),
+                "platform_control_admin": bool(
+                    _dict(authorization.get("platform")).get(
+                        "is_platform_control_admin"
+                    )
+                ),
+                "tenant_config_admin": bool(
+                    _dict(authorization.get("tenant")).get(
+                        "is_tenant_config_admin"
+                    )
+                ),
+            },
+            "product_key": _text((product_context or {}).get("product_key")),
+            "product_label": _text((product_context or {}).get("product_label")),
+            "products": products,
+            "groups": groups,
+            "policy_sha256": _text((product_context or {}).get("policy_sha256")),
+            "management_actions": {
+                "add_to_product_draft": add_catalog_entry_action_contract(
+                    enabled=bool(
+                        products
+                        and _dict(authorization.get("platform")).get(
+                            "is_platform_control_admin"
+                        )
+                    ),
+                    reason_code=(
+                        "OK"
+                        if products
+                        and _dict(authorization.get("platform")).get(
+                            "is_platform_control_admin"
+                        )
+                        else "PRODUCT_MAINTENANCE_AUTHORITY_REQUIRED"
+                    ),
+                ),
+                "open_product_draft": {
+                    "route": "/admin/release-operator",
+                    "product_key": _text((product_context or {}).get("product_key")),
+                },
+            },
+            "industry_scope_contributions": {
+                "root_menu_xmlids": industry_roots,
+                "diagnostics": industry_diagnostics,
+                "used_as_catalog_boundary": False,
+            },
+        }
+
     def _collect_native(self) -> Any:
         if self._native_collector:
             return self._native_collector()
@@ -668,7 +918,13 @@ class PlatformCapabilityExplorerService:
             RuntimeCapabilityCatalogService,
         )
 
-        roots, scope_diagnostics = _load_extension_scopes(self.env)
+        declared_industry_roots, scope_diagnostics = _load_extension_scopes(
+            self.env
+        )
+        # Platform discovery is the current instance's native inventory. An
+        # industry extension's declared root is classification evidence, not a
+        # global discovery boundary.
+        roots: list[str] = []
         menus_by_id = {}
         missing_roots = []
         for root_xmlid in roots:
@@ -890,15 +1146,15 @@ class PlatformCapabilityExplorerService:
             "root_menu_xmlids": roots,
             "missing_root_menu_xmlids": missing_roots,
             "fallback_all_menus": not bool(roots),
+            "mode": "current_instance_full_native_catalog",
+            "declared_industry_root_menu_xmlids": declared_industry_roots,
+            "industry_roots_used_as_catalog_boundary": False,
             "provider_diagnostics": scope_diagnostics,
         }
-        projection.diagnostics["root_menu_ids"] = (
-            [
-                int(self.env.ref(xmlid, raise_if_not_found=False).id)
-                for xmlid in roots
-                if self.env.ref(xmlid, raise_if_not_found=False)
-                and self.env.ref(xmlid, raise_if_not_found=False)._name == "ir.ui.menu"
-            ]
+        projection.diagnostics["root_menu_ids"] = sorted(
+            int(menu.id)
+            for menu in menus_by_id.values()
+            if not menu.parent_id
         )
         projection.diagnostics["xmlid_ambiguities"] = [
             xmlid_ambiguities[key] for key in sorted(xmlid_ambiguities)
@@ -1241,7 +1497,11 @@ class PlatformCapabilityExplorerService:
             "key": _text(center.get("key")),
             "label": _text(center.get("label")),
             "sequence": _int(center.get("sequence"), 10),
+            "product_key": _text(center.get("product_key")),
+            "snapshot_id": _int(center.get("snapshot_id")),
+            "version": _text(center.get("version")),
             "source": _text(center.get("source")) or "unknown",
+            "config_ref": dict(center.get("config_ref") or {}),
         }
 
     def _build_row(
@@ -1277,7 +1537,7 @@ class PlatformCapabilityExplorerService:
         ]
         native_center = self._center_for_menu(menu, _dict(facts.get("menus")), root_menu_ids)
         release_center = self._release_center(menu_xmlid, contributions)
-        center = native_center or release_center
+        center = release_center or native_center
         classification = classify_business_domain(
             scene_bindings=scene_bindings,
             center_key=_text(center.get("key")),
@@ -1328,6 +1588,15 @@ class PlatformCapabilityExplorerService:
         )
         preview_qualified = _text(qualification.get("preview")) or "not_verified"
         standard_qualified = _text(qualification.get("standard")) or "not_verified"
+        selected_product_key = _text(qualification.get("selected_product_key"))
+        selected_qualified = (
+            _text(qualification.get("selected_status"))
+            or (
+                standard_qualified
+                if not selected_product_key
+                else "not_verified"
+            )
+        )
         qualification_reason = (
             _text(qualification.get("reason_code"))
             or "PRODUCT_QUALIFICATION_UNVERIFIED"
@@ -1382,7 +1651,7 @@ class PlatformCapabilityExplorerService:
             entry_group_ids=entry_group_ids,
             held_group_ids=held_group_ids,
             acl_rows=acl_rows,
-            standard_qualified=standard_qualified,
+            standard_qualified=selected_qualified,
             enterprise_enablement=enterprise_enablement,
             menu_group_ids=menu_group_ids,
             action_group_ids=action_group_ids,
@@ -1428,7 +1697,7 @@ class PlatformCapabilityExplorerService:
             {
                 "key": "product_qualification",
                 "label": "产品资格",
-                "status": standard_qualified,
+                "status": selected_qualified,
                 "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
@@ -1505,6 +1774,9 @@ class PlatformCapabilityExplorerService:
             "product_qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
+                "selected_product_key": selected_product_key,
+                "selected_status": selected_qualified,
+                "by_product": _dict(qualification.get("by_product")),
                 "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
@@ -1521,6 +1793,7 @@ class PlatformCapabilityExplorerService:
             **row,
             "native_facts": {
                 "menu": {
+                    "id": menu_id,
                     "xmlid": menu_xmlid,
                     "label": _text(menu.get("name")),
                     "sequence": _int(menu.get("sequence")),
@@ -1528,6 +1801,7 @@ class PlatformCapabilityExplorerService:
                     "group_xmlids": list(menu.get("groups") or []),
                 },
                 "action": {
+                    "id": action_id,
                     "xmlid": action_xmlid,
                     "type": _text(native_row.get("action_model")),
                     "view_modes": list(native_row.get("view_modes") or []),
@@ -1588,6 +1862,9 @@ class PlatformCapabilityExplorerService:
             "qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
+                "selected_product_key": selected_product_key,
+                "selected_status": selected_qualified,
+                "by_product": _dict(qualification.get("by_product")),
                 "reason_code": qualification_reason,
                 "evidence": qualification_evidence,
             },
@@ -1853,8 +2130,15 @@ class PlatformCapabilityExplorerService:
             },
         }
 
-    def project(self, *, include_details: bool = False) -> CatalogProjection:
+    def project(
+        self,
+        *,
+        include_details: bool = False,
+        catalog_scope: dict[str, Any] | None = None,
+    ) -> CatalogProjection:
         started = time.perf_counter()
+        scope_params = _dict(catalog_scope)
+        scope_context = self.catalog_scope_context(scope_params)
         query_start = self._query_count()
         native_started = time.perf_counter()
         native = self._collect_native()
@@ -1866,6 +2150,17 @@ class PlatformCapabilityExplorerService:
         rows = [
             row for row in all_native_rows if row.get("identity_stable", True)
         ]
+        platform_native_entry_count = len(rows)
+        selected_menu_xmlids: set[str] | None = None
+        if scope_context["mode"] == "product":
+            selected_menu_xmlids = self._product_policy_context(
+                requested_product_key=_text(scope_params.get("product_key"))
+            )["menu_xmlids"]
+            rows = [
+                row
+                for row in rows
+                if _text(row.get("menu_xmlid")) in selected_menu_xmlids
+            ]
         native_diagnostics = _dict(getattr(native, "diagnostics", {}))
         native_diagnostics["excluded_unstable_entry_count"] = (
             len(all_native_rows) - len(rows)
@@ -1890,7 +2185,11 @@ class PlatformCapabilityExplorerService:
         contributions = (
             self._contribution_loader(rows)
             if self._contribution_loader
-            else _merge_extension_contributions(self.env, rows)
+            else _merge_extension_contributions(
+                self.env,
+                rows,
+                catalog_scope=scope_context,
+            )
         )
         contributions_ms = int((time.perf_counter() - contributions_started) * 1000)
         query_after_contributions = self._query_count()
@@ -1921,8 +2220,11 @@ class PlatformCapabilityExplorerService:
             if detail is not None:
                 entry_ref = row["entry_ref"]
                 details[(entry_ref["menu_xmlid"], entry_ref["action_xmlid"])] = detail
+        scope_context["platform_native_entry_count"] = platform_native_entry_count
+        scope_context["visible_entry_count"] = len(built_rows)
         token_facts = {
             "projection_version": PROJECTION_VERSION,
+            "catalog_scope": scope_context,
             "database": _text(identity.get("database")),
             "language": identity.get("language") or {},
             "modules": facts.get("modules") or {},
@@ -1997,6 +2299,7 @@ class PlatformCapabilityExplorerService:
                 contributions.get("release_authority_available")
             ),
             "release_snapshots": contributions.get("release_snapshots") or [],
+            "catalog_scope": scope_context,
             "performance": {
                 "query_count": query_count,
                 "native_query_count": max(0, query_after_native - query_start),
@@ -2021,6 +2324,7 @@ class PlatformCapabilityExplorerService:
                 "language": identity.get("language") or {},
                 "catalog_token": catalog_token,
                 "total": len(built_rows),
+                "catalog_scope": scope_context,
                 "freshness": "request_time_projection",
                 "persistence": "none",
                 "diagnostics": diagnostics,
@@ -2142,7 +2446,7 @@ class PlatformCapabilityExplorerService:
 
     def list_entries(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         params = _dict(params)
-        projection = self.project()
+        projection = self.project(catalog_scope=params)
         self._ensure_token(projection, params.get("expected_catalog_token"))
         query = _text(params.get("query")).casefold()
         filters = _dict(params.get("filters"))
@@ -2213,7 +2517,7 @@ class PlatformCapabilityExplorerService:
 
     def detail(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         params = _dict(params)
-        projection = self.project(include_details=True)
+        projection = self.project(include_details=True, catalog_scope=params)
         self._ensure_token(projection, params.get("expected_catalog_token"))
         entry_ref = _dict(params.get("entry_ref"))
         key = (_text(entry_ref.get("menu_xmlid")), _text(entry_ref.get("action_xmlid")))
@@ -2234,7 +2538,7 @@ class PlatformCapabilityExplorerService:
 
     def diagnose(self, params: dict[str, Any] | None = None) -> dict[str, Any]:
         params = _dict(params)
-        projection = self.project(include_details=True)
+        projection = self.project(include_details=True, catalog_scope=params)
         self._ensure_token(projection, params.get("expected_catalog_token"))
         menu_xmlid = _text(params.get("menu_xmlid"))
         if menu_xmlid:

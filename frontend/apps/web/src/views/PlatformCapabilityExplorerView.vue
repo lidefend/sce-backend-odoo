@@ -51,6 +51,45 @@
       </ScCard>
     </section>
 
+    <section class="capability-explorer__scope-toolbar" aria-label="能力目录范围">
+      <div>
+        <span class="capability-explorer__eyebrow">当前目录范围</span>
+        <strong>{{ catalogScope?.label || '正在读取范围' }}</strong>
+        <span v-if="catalogScope">
+          平台原生 {{ catalogScope.platform_native_entry_count ?? '—' }} ·
+          当前显示 {{ catalogScope.visible_entry_count ?? filteredTotal }}
+        </span>
+      </div>
+      <ScSelect
+        :model-value="catalogScopeMode"
+        :options="scopeOptions"
+        aria-label="能力目录范围"
+        @update:model-value="changeCatalogScope"
+      />
+      <ScSelect
+        v-if="catalogScopeMode === 'product'"
+        :model-value="selectedProductKey"
+        :options="productScopeOptions"
+        aria-label="目标产品"
+        @update:model-value="changeProductScope"
+      />
+      <ScSelect
+        v-if="catalogScopeMode === 'product'"
+        :model-value="selectedGroupKey"
+        :options="groupScopeOptions"
+        aria-label="产品中心或分组"
+        @update:model-value="changeGroupScope"
+      />
+      <ScButton
+        v-if="selectedProductKey"
+        type="button"
+        variant="secondary"
+        @click="openSelectedProductDraft"
+      >
+        打开产品草案
+      </ScButton>
+    </section>
+
     <section
       v-if="pageSectionEnabled('filters', true)"
       class="capability-explorer__toolbar"
@@ -237,6 +276,87 @@
           <ScDescriptions :items="technicalItems" :column="1" bordered />
         </ScSection>
 
+        <ScSection title="中心归属与来源">
+          <ScDescriptions :items="centerSourceItems" :column="1" bordered />
+          <ScButton
+            v-if="centerConfigRef.intent"
+            type="button"
+            variant="secondary"
+            @click="openCenterConfig"
+          >
+            打开产品中心配置
+          </ScButton>
+          <div class="capability-explorer__qualification-evidence">
+            <article>
+              <ScStatusBadge
+                v-bind="centerSourcePresentation(detail.classification.native_center)"
+                value="native_center"
+              />
+              <strong>原生中心</strong>
+              <span>{{ String(detail.classification.native_center?.label || '未识别') }} · {{ String(detail.classification.native_center?.key || '—') }}</span>
+              <span>Odoo 菜单来源事实</span>
+            </article>
+            <article>
+              <ScStatusBadge
+                v-bind="centerSourcePresentation(detail.classification.release_center)"
+                value="release_center"
+              />
+              <strong>已发布产品中心</strong>
+              <span>{{ String(detail.classification.release_center?.label || '未发布') }} · {{ String(detail.classification.release_center?.key || '—') }}</span>
+              <span>{{ String(detail.classification.release_center?.version || '无生效版本') }} · snapshot {{ String(detail.classification.release_center?.snapshot_id || '—') }}</span>
+            </article>
+          </div>
+          <ScInlineState
+            v-if="detail.scenario_usage.scenarios.length"
+            state="info"
+            :label="`关联场景 ${detail.scenario_usage.scenarios.length} 个：${detail.scenario_usage.scenarios.map((item) => item.scenario_name).join('、')}`"
+          />
+          <ScInlineState
+            v-else
+            state="info"
+            label="该入口没有场景关联；它仍可由已发布产品中心和原生权限提供。"
+          />
+        </ScSection>
+
+        <ScSection title="纳入产品草案">
+          <ScForm layout="inline" :prevent-submit-default="true">
+            <ScFormItem label="目标产品" name="catalog_target_product">
+              <ScSelect
+                v-model="addProductKey"
+                :options="addProductOptions"
+                @update:model-value="changeAddProduct"
+              />
+            </ScFormItem>
+            <ScFormItem label="产品中心/分组" name="catalog_target_group">
+              <ScSelect v-model="addGroupKey" :options="addGroupOptions" />
+            </ScFormItem>
+            <ScFormItem label="草案状态" name="catalog_release_state">
+              <ScSelect v-model="addReleaseState" :options="addReleaseStateOptions" />
+            </ScFormItem>
+            <ScFormItem>
+              <ScButton
+                type="button"
+                variant="primary"
+                :disabled="!canAddToDraft"
+                :loading="addBusy"
+                :title="addDisabledReason"
+                @click="addCatalogEntryToDraft"
+              >
+                加入产品草案
+              </ScButton>
+            </ScFormItem>
+          </ScForm>
+          <ScInlineState v-if="addError" state="error" :label="addError" />
+          <ScInlineState
+            v-if="addReadback"
+            state="success"
+            :label="`已加入 ${addReadback.product_key}：${addReadback.menu_xmlid} → ${addReadback.group_key}（草案，尚未发布）`"
+          />
+          <p class="capability-explorer__qualification-note">
+            加入产品草案只改变行业产品的选用关系，不移动原生菜单，也不改变平台原生入口总数。
+          </p>
+        </ScSection>
+
         <ScSection title="场景使用">
           <ScEmptyState
             v-if="!detail.scenario_usage.scenarios.length"
@@ -303,6 +423,7 @@
 
 <script setup lang="ts">
 import { computed, h, onBeforeUnmount, onMounted, ref, watch } from 'vue';
+import { useRouter } from 'vue-router';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScCard from '../components/design-system/ScCard.vue';
 import ScDescriptions from '../components/design-system/ScDescriptions.vue';
@@ -317,10 +438,14 @@ import ScSection from '../components/design-system/ScSection.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import ScTable from '../components/design-system/ScTable.vue';
+import { intentRequest } from '../api/intents';
 import {
+  buildCapabilityCatalogEntryAddParams,
+  decodeCapabilityCatalogEntryWriteResult,
   fetchCapabilityExplorerDetail,
   fetchCapabilityExplorerDiagnose,
   fetchCapabilityExplorerList,
+  type CapabilityCatalogEntryReadback,
   type CapabilityExplorerDetailEntry,
   type CapabilityExplorerDiagnosisResponse,
   type CapabilityExplorerListResponse,
@@ -331,6 +456,7 @@ import {
   buildListFilters,
   businessDomainPresentation,
   capabilityEntryKey,
+  centerSourcePresentation,
   factLayerPresentation,
   isCatalogStaleError,
   qualificationPresentation,
@@ -340,8 +466,10 @@ import {
 } from '../app/platformCapabilityExplorerPresentation';
 import { createCapabilityExplorerRequestGate } from '../app/platformCapabilityExplorerRequestGate';
 import { usePageContract } from '../app/pageContract';
+import { decodeReleaseOperatorSurface } from '../app/releaseOperatorActionContract';
 
 const pageContract = usePageContract('platform_capability_explorer');
+const router = useRouter();
 const pageText = pageContract.text;
 const pageSectionEnabled = pageContract.sectionEnabled;
 const catalog = ref<CapabilityExplorerListResponse | null>(null);
@@ -357,6 +485,15 @@ const releaseFilter = ref('');
 const draftFilter = ref('');
 const currentOffset = ref(0);
 const pageSize = ref(0);
+const catalogScopeMode = ref<'' | 'platform' | 'product'>('');
+const selectedProductKey = ref('');
+const selectedGroupKey = ref('');
+const addProductKey = ref('');
+const addGroupKey = ref('');
+const addReleaseState = ref('preview');
+const addBusy = ref(false);
+const addError = ref('');
+const addReadback = ref<CapabilityCatalogEntryReadback | null>(null);
 const requestSequence = ref(0);
 const drawerOpen = ref(false);
 const selectedKey = ref('');
@@ -369,6 +506,73 @@ const detailRequestGate = createCapabilityExplorerRequestGate();
 let searchTimer: ReturnType<typeof setTimeout> | null = null;
 
 const rows = computed(() => catalog.value?.rows || []);
+const catalogScope = computed(() => catalog.value?.meta.catalog_scope || null);
+const scopeOptions = computed(() => {
+  const platformAllowed = Boolean(
+    (catalogScope.value?.source_authority || {}).platform_control_admin,
+  );
+  return [
+    ...(platformAllowed ? [{ value: 'platform', label: '平台原生目录' }] : []),
+    { value: 'product', label: '产品选用清单' },
+  ];
+});
+const productScopeOptions = computed(() => (
+  (catalogScope.value?.products || []).map((product) => ({
+    value: product.product_key,
+    label: `${product.label} · ${product.product_key}`,
+  }))
+));
+const groupScopeOptions = computed(() => (
+  (catalogScope.value?.groups || []).map((group) => ({
+    value: group.group_key,
+    label: `${group.label} · 顺序 ${group.sequence}`,
+  }))
+));
+const addProductOptions = computed(() => (
+  (catalogScope.value?.products || []).map((product) => ({
+    value: product.product_key,
+    label: `${product.label} · ${product.product_key}`,
+  }))
+));
+const addProductOption = computed(() => (
+  (catalogScope.value?.products || []).find(
+    (product) => product.product_key === addProductKey.value,
+  ) || null
+));
+const addGroupOptions = computed(() => (
+  (addProductOption.value?.groups || []).map((group) => ({
+    value: group.group_key,
+    label: `${group.label} · 顺序 ${group.sequence}`,
+  }))
+));
+const addReleaseStateOptions = computed(() => (
+  catalogScope.value?.management_actions.add_to_product_draft.release_state_options || []
+));
+const canAddToDraft = computed(() => Boolean(
+  detail.value
+  && detail.value.diagnostics.native_valid
+  && detail.value.native_facts.menu.id
+  && addProductKey.value
+  && addGroupKey.value
+  && catalogScope.value?.management_actions.add_to_product_draft.enabled
+  && !addBusy.value
+));
+const addDisabledReason = computed(() => {
+  if (!detail.value?.diagnostics.native_valid) return '原生入口存在技术阻断';
+  if (!detail.value?.native_facts.menu.id) return '原生菜单身份未返回';
+  if (!catalogScope.value?.management_actions.add_to_product_draft.enabled) {
+    return catalogScope.value?.management_actions.add_to_product_draft.reason_code
+      || '没有产品草案维护权限';
+  }
+  if (!addProductKey.value || !addGroupKey.value) return '请选择目标产品和产品中心';
+  return '';
+});
+const scopeRequestParams = computed(() => ({
+  ...(catalogScopeMode.value ? { catalog_scope: catalogScopeMode.value } : {}),
+  ...(catalogScopeMode.value === 'product' && selectedProductKey.value
+    ? { product_key: selectedProductKey.value }
+    : {}),
+}));
 const filteredTotal = computed(() => catalog.value?.meta.filtered_total || 0);
 const currentPage = computed(() => pageSize.value > 0 ? Math.floor(currentOffset.value / pageSize.value) + 1 : 1);
 const hasFilters = computed(() => Boolean(
@@ -415,9 +619,13 @@ const columns = computed(() => [
   },
   {
     colKey: 'center',
-    title: '原生中心',
+    title: '生效中心',
     minWidth: 140,
-    cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => String((row.center as Record<string, unknown>)?.label || '未识别中心'),
+    cell: (_h: unknown, { row }: { row: Record<string, unknown> }) => {
+      const center = row.center as Record<string, unknown> | undefined;
+      const source = String(center?.source || '');
+      return `${String(center?.label || '未识别中心')}${source === 'published_product_policy' ? ' · 已发布' : ''}`;
+    },
   },
   {
     colKey: 'business_domain',
@@ -471,18 +679,84 @@ const technicalItems = computed(() => {
     { key: 'rules', label: 'Record Rules', value: `${facts.record_rules.count} 条` },
   ];
 });
+
+const centerSourceItems = computed(() => {
+  if (!detail.value) return [];
+  const classification = detail.value.classification;
+  const releaseCenter = classification.release_center || {};
+  const configRef = releaseCenter.config_ref && typeof releaseCenter.config_ref === 'object'
+    ? releaseCenter.config_ref as Record<string, unknown>
+    : {};
+  return [
+    {
+      key: 'effective_center',
+      label: '当前生效中心',
+      value: detail.value.center.label || detail.value.center.key || '未识别',
+    },
+    {
+      key: 'center_source',
+      label: '归属来源',
+      value: detail.value.center.source === 'published_product_policy'
+        ? '已发布产品策略'
+        : detail.value.center.source || '未知',
+    },
+    {
+      key: 'release_version',
+      label: '产品版本',
+      value: `${String(releaseCenter.version || '无生效版本')} · snapshot ${String(releaseCenter.snapshot_id || '—')}`,
+    },
+    {
+      key: 'config_ref',
+      label: '配置入口',
+      value: configRef.intent
+        ? `${String(configRef.intent)} · ${String(configRef.product_key || '')}`
+        : '未声明',
+    },
+    {
+      key: 'scenario_count',
+      label: '关联场景',
+      value: String(detail.value.scenario_usage.scenarios.length),
+    },
+  ];
+});
+const centerConfigRef = computed<Record<string, unknown>>(() => {
+  const center = detail.value?.classification.release_center || {};
+  return center.config_ref && typeof center.config_ref === 'object'
+    ? center.config_ref as Record<string, unknown>
+    : {};
+});
+
+function openCenterConfig() {
+  const productKey = String(centerConfigRef.value.product_key || '').trim();
+  void router.push({
+    name: 'release-operator',
+    query: productKey ? { product_key: productKey } : {},
+  });
+}
 const qualificationItems = computed(() => {
   if (!detail.value) return [];
-  const standard = detail.value.qualification.evidence.find((item) => item.product_key === 'construction.standard');
+  const selectedProductKey = String(
+    detail.value.qualification.selected_product_key
+    || catalogScope.value?.product_key
+    || '',
+  );
+  const selectedEvidence = detail.value.qualification.evidence.find(
+    (item) => item.product_key === selectedProductKey,
+  ) || detail.value.qualification.evidence[0];
   return [
     { key: 'native', label: '原生有效性', value: detail.value.diagnostics.native_valid ? '有效' : '存在阻断' },
     { key: 'scene', label: '场景可选性', value: detail.value.scene_assignment.assignable ? '可选' : '不可选' },
     { key: 'release', label: '入口发布', value: releaseStatePresentation(detail.value.release.state).label },
+    {
+      key: 'selected_product',
+      label: '当前产品资格',
+      value: `${selectedProductKey || '未选择产品'} · ${qualificationPresentation(detail.value.qualification.selected_status).label}`,
+    },
     { key: 'preview', label: 'Preview 资格', value: qualificationPresentation(detail.value.qualification.preview).label },
     { key: 'standard', label: 'Standard 资格', value: qualificationPresentation(detail.value.qualification.standard).label },
-    { key: 'version', label: '生效产品版本', value: standard?.version || '未返回生效版本' },
-    { key: 'snapshot', label: '生效快照', value: standard?.snapshot_id ? String(standard.snapshot_id) : '未返回快照身份' },
-    { key: 'authority', label: '资格依据', value: standard?.qualification_authority || detail.value.qualification.reason_code },
+    { key: 'version', label: '生效产品版本', value: selectedEvidence?.version || '未返回生效版本' },
+    { key: 'snapshot', label: '生效快照', value: selectedEvidence?.snapshot_id ? String(selectedEvidence.snapshot_id) : '未返回快照身份' },
+    { key: 'authority', label: '资格依据', value: selectedEvidence?.qualification_authority || detail.value.qualification.reason_code },
   ];
 });
 
@@ -513,6 +787,10 @@ async function loadList(options: { readonly offset?: number; readonly clearToken
   try {
     const response = await fetchCapabilityExplorerList({
       query: appliedQuery.value || undefined,
+      ...(catalogScopeMode.value ? { catalog_scope: catalogScopeMode.value } : {}),
+      ...(catalogScopeMode.value === 'product' && selectedProductKey.value
+        ? { product_key: selectedProductKey.value }
+        : {}),
       filters: buildListFilters({
         centerKey: centerFilter.value,
         confidence: confidenceFilter.value,
@@ -528,6 +806,10 @@ async function loadList(options: { readonly offset?: number; readonly clearToken
     });
     if (sequence !== requestSequence.value) return;
     catalog.value = response;
+    const scope = response.meta.catalog_scope;
+    catalogScopeMode.value = scope.mode;
+    selectedProductKey.value = scope.product_key || selectedProductKey.value || scope.products[0]?.product_key || '';
+    selectedGroupKey.value = selectedGroupKey.value || scope.groups[0]?.group_key || '';
     pageSize.value = response.meta.limit;
     currentOffset.value = response.meta.offset;
     staleNotice.value = false;
@@ -590,6 +872,43 @@ function clearFilters() {
   void loadList({ offset: 0 });
 }
 
+function changeCatalogScope(value: unknown) {
+  const mode = String(value || '').trim();
+  if (mode !== 'platform' && mode !== 'product') return;
+  catalogScopeMode.value = mode;
+  if (mode === 'product') {
+    selectedProductKey.value = selectedProductKey.value
+      || catalogScope.value?.products[0]?.product_key
+      || '';
+  }
+  currentOffset.value = 0;
+  void loadList({ offset: 0, clearToken: true });
+}
+
+function changeProductScope(value: unknown) {
+  selectedProductKey.value = String(value || '').trim();
+  selectedGroupKey.value = '';
+  currentOffset.value = 0;
+  void loadList({ offset: 0, clearToken: true });
+}
+
+function changeGroupScope(value: unknown) {
+  selectedGroupKey.value = String(value || '').trim();
+}
+
+function openSelectedProductDraft() {
+  const action = catalogScope.value?.management_actions.open_product_draft;
+  if (!action?.route) return;
+  void router.push({
+    path: action.route,
+    query: {
+      ...(selectedProductKey.value || action.product_key
+        ? { product_key: selectedProductKey.value || action.product_key }
+        : {}),
+    },
+  });
+}
+
 function goToPage(page: number) {
   currentOffset.value = Math.max(0, (page - 1) * pageSize.value);
   void loadList({ offset: currentOffset.value });
@@ -640,12 +959,31 @@ async function openEntry(row: CapabilityExplorerRow) {
   diagnoseLoading.value = true;
   try {
     const [detailResult, diagnosisResult] = await Promise.all([
-      fetchCapabilityExplorerDetail({ entry_ref: row.entry_ref, expected_catalog_token: token }),
-      fetchCapabilityExplorerDiagnose({ entry_ref: row.entry_ref, expected_catalog_token: token }),
+      fetchCapabilityExplorerDetail({
+        entry_ref: row.entry_ref,
+        expected_catalog_token: token,
+        ...scopeRequestParams.value,
+      }),
+      fetchCapabilityExplorerDiagnose({
+        entry_ref: row.entry_ref,
+        expected_catalog_token: token,
+        ...scopeRequestParams.value,
+      }),
     ]);
     if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     detail.value = detailResult.entry;
     diagnosis.value = diagnosisResult;
+    addProductKey.value = catalogScope.value?.product_key
+      || addProductKey.value
+      || catalogScope.value?.products[0]?.product_key
+      || '';
+    addGroupKey.value = (
+      addProductOption.value?.groups || []
+    )[0]?.group_key || '';
+    addReleaseState.value = catalogScope.value?.management_actions.add_to_product_draft.default_release_state
+      || '';
+    addError.value = '';
+    addReadback.value = null;
   } catch (err) {
     if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     if (isCatalogStaleError(err)) {
@@ -658,6 +996,49 @@ async function openEntry(row: CapabilityExplorerRow) {
       detailLoading.value = false;
       diagnoseLoading.value = false;
     }
+  }
+}
+
+function changeAddProduct(value: unknown) {
+  addProductKey.value = String(value || '').trim();
+  addGroupKey.value = (addProductOption.value?.groups || [])[0]?.group_key || '';
+  addError.value = '';
+  addReadback.value = null;
+}
+
+async function addCatalogEntryToDraft() {
+  if (!detail.value || !canAddToDraft.value) return;
+  const action = catalogScope.value?.management_actions.add_to_product_draft;
+  const menuId = Number(detail.value.native_facts.menu.id || 0);
+  if (!action || !menuId) return;
+  addBusy.value = true;
+  addError.value = '';
+  addReadback.value = null;
+  try {
+    const params = buildCapabilityCatalogEntryAddParams(action, {
+      product_key: addProductKey.value,
+      menu_id: menuId,
+      center_key: addGroupKey.value,
+      release_state: addReleaseState.value,
+    });
+    const result = await intentRequest<unknown>({
+      intent: action.intent,
+      params,
+    });
+    const decoded = decodeCapabilityCatalogEntryWriteResult(result, action, {
+      ...params,
+      menu_xmlid: detail.value.entry_ref.menu_xmlid,
+      action_xmlid: detail.value.entry_ref.action_xmlid,
+      action_id: Number(detail.value.native_facts.action.id || 0),
+    });
+    decodeReleaseOperatorSurface(decoded.surface);
+    addReadback.value = decoded.readback;
+    staleNotice.value = true;
+    await loadList({ offset: currentOffset.value, clearToken: true });
+  } catch (err) {
+    addError.value = err instanceof Error ? err.message : '加入产品草案失败。';
+  } finally {
+    addBusy.value = false;
   }
 }
 
@@ -674,6 +1055,7 @@ async function reDiagnose() {
     const result = await fetchCapabilityExplorerDiagnose({
       entry_ref: detail.value.entry_ref,
       expected_catalog_token: token,
+      ...scopeRequestParams.value,
     });
     if (!detailRequestGate.isCurrent(requestSequence) || selectedKey.value !== rowKey) return;
     diagnosis.value = result;
@@ -735,6 +1117,10 @@ onBeforeUnmount(() => {
 .capability-explorer__header > div > p:last-child { max-width: 72ch; margin-top: var(--sc-space-xs); color: var(--sc-app-text-secondary); }
 .capability-explorer__eyebrow { color: var(--sc-app-text-muted); font: var(--sc-font-body-small); text-transform: uppercase; letter-spacing: .08em; }
 .capability-explorer__header-actions { display: flex; align-items: center; gap: var(--sc-space-sm); flex-wrap: wrap; justify-content: flex-end; }
+.capability-explorer__scope-toolbar { display: flex; align-items: center; gap: var(--sc-space-sm); flex-wrap: wrap; padding: var(--sc-space-md); border: 1px solid var(--sc-app-border); border-radius: var(--sc-radius-md); background: var(--sc-app-panel); }
+.capability-explorer__scope-toolbar > div { display: grid; gap: 2px; min-width: 260px; margin-right: auto; color: var(--sc-app-text-secondary); }
+.capability-explorer__scope-toolbar strong { color: var(--sc-app-text-primary); }
+.capability-explorer__scope-toolbar :deep(.sc-select) { min-width: 190px; }
 .capability-explorer__token { max-width: 220px; color: var(--sc-app-text-muted); font: var(--sc-font-body-small); overflow-wrap: anywhere; }
 .capability-explorer__metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--sc-space-sm); }
 .capability-explorer__metric-label { margin: 0; color: var(--sc-app-text-secondary); font: var(--sc-font-body-small); }

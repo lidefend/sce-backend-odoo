@@ -391,16 +391,63 @@ class ScProductPolicy(models.Model):
         target = matches[0]
         for group in groups:
             group["menus"] = [row for row in group.get("menus", []) if row.get("menu_xmlid") != xmlid]
-        target["menus"].append({
+        entry = {
             "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
             "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
             "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
             "res_model": action.res_model, "model": action.res_model,
             "enabled": release_state in {"released", "preview"}, "release_state": release_state,
             "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
-        })
-        self.write({"menu_groups": groups})
-        return True
+        }
+        target["menus"].append(entry)
+        generated_capabilities = self._capabilities_from_user_confirmed_menu_groups(
+            groups
+        )
+        generated_by_menu = {
+            _text(capability.get("menu_xmlid")): capability
+            for capability in generated_capabilities
+            if _text(capability.get("menu_xmlid"))
+        }
+        capabilities = []
+        seen_menu_xmlids = set()
+        for capability in self.capabilities or []:
+            if not isinstance(capability, dict):
+                continue
+            menu_xmlid = _text(capability.get("menu_xmlid"))
+            replacement = generated_by_menu.get(menu_xmlid)
+            if replacement:
+                capabilities.append(replacement)
+                seen_menu_xmlids.add(menu_xmlid)
+            else:
+                capabilities.append(capability)
+        for menu_xmlid, capability in generated_by_menu.items():
+            if menu_xmlid not in seen_menu_xmlids:
+                capabilities.append(capability)
+        self.write({"menu_groups": groups, "capabilities": capabilities})
+        entry_capability = next(
+            (
+                capability
+                for capability in capabilities
+                if _text(capability.get("menu_xmlid")) == xmlid
+            ),
+            {},
+        )
+        return {
+            "policy": self.to_runtime_dict(),
+            "entry": entry,
+            "capability": entry_capability,
+            "product_key": _text(self.product_key),
+            "group_key": group_key,
+            "readback": {
+                "menu_xmlid": xmlid,
+                "action_xmlid": action_xmlid,
+                "menu_id": int(menu.id),
+                "action_id": int(action.id),
+                "res_model": _text(action.res_model),
+                "enabled": bool(entry["enabled"]),
+                "release_state": release_state,
+            },
+        }
 
     @api.model
     def synchronize_locked_formal_menu_policy(

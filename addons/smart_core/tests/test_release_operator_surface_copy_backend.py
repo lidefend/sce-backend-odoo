@@ -270,6 +270,29 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         ):
             self.assertNotIn(retired, encoded)
 
+    def test_surface_exposes_product_center_editor_contract(self):
+        service = TARGET.ReleaseOperatorSurfaceService(_Env())
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        payload = service.build_surface(
+            product_key="construction.standard",
+            action_limit=5,
+        )
+        editor = payload.get("product_center_editor") or {}
+        self.assertEqual(editor.get("contract_version"), "product_center_editor.v1")
+        self.assertEqual(editor.get("product_key"), "construction.standard")
+        self.assertEqual(
+            (editor.get("save_action") or {}).get("intent"),
+            "release.operator.update_policy",
+        )
+        self.assertEqual(
+            (payload.get("available_actions") or {})
+            .get("update_policy", {})
+            .get("editor_contract"),
+            "product_center_editor.v1",
+        )
+
     def test_platform_kernel_empty_surface_is_not_reported_as_blocked(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())
         service.read_model_service.audit_service = _AuditTrailService()

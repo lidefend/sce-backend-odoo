@@ -7,12 +7,94 @@ from __future__ import annotations
 
 import ast
 import copy
+from functools import lru_cache
 from xml.etree import ElementTree
 import json
 import re
 from pathlib import Path
 
 SOURCE_PATH = Path(__file__).resolve().parents[1] / "data/product_menu_source.json"
+CENTER_BASELINE_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "data"
+    / "product_primary_center_baseline_v1.json"
+)
+
+
+@lru_cache(maxsize=1)
+def center_identity_contract():
+    """Load the P1-owned stable ten-center identity contract."""
+    payload = json.loads(CENTER_BASELINE_PATH.read_text(encoding="utf-8"))
+    if payload.get("schema") != "sce.product_primary_center_baseline.v1":
+        raise ValueError("invalid product primary center baseline schema")
+    centers = payload.get("primary_centers")
+    if not isinstance(centers, list) or not centers:
+        raise ValueError("product primary center baseline is empty")
+    by_primary = {}
+    by_legacy = {}
+    normalized = []
+    for raw in centers:
+        if not isinstance(raw, dict):
+            raise ValueError("product primary center row must be an object")
+        primary_key = str(raw.get("key") or "").strip()
+        stable_key = str(raw.get("stable_key") or "").strip()
+        label = str(raw.get("name") or "").strip()
+        if not primary_key or not stable_key or not label:
+            raise ValueError("product primary center requires key, stable_key and name")
+        if primary_key in by_primary:
+            raise ValueError(f"duplicate product primary center key: {primary_key}")
+        row = {
+            **raw,
+            "key": primary_key,
+            "stable_key": stable_key,
+            "center_key": stable_key,
+            "group_key": stable_key,
+            "name": label,
+            "sequence": int(raw.get("sequence") or 10),
+        }
+        normalized.append(row)
+        by_primary[primary_key] = row
+        for alias in (
+            primary_key,
+            stable_key,
+            label,
+            str(raw.get("native_menu_xmlid") or "").strip(),
+            f"construction.{label}",
+            f"construction.{primary_key}",
+            f"construction.center.{primary_key}",
+        ):
+            normalized_alias = str(alias or "").strip()
+            if normalized_alias:
+                by_legacy[normalized_alias] = row
+    for transition in payload.get("legacy_center_transitions") or []:
+        if not isinstance(transition, dict):
+            continue
+        source = str(transition.get("source") or "").strip()
+        target = str(transition.get("target") or "").strip()
+        if source and target and target in by_legacy:
+            by_legacy[source] = by_legacy[target]
+            by_legacy[f"construction.{source}"] = by_legacy[target]
+    return {
+        "schema": payload["schema"],
+        "baseline_id": str(payload.get("baseline_id") or "").strip(),
+        "centers": tuple(normalized),
+        "by_primary": by_primary,
+        "by_legacy": by_legacy,
+    }
+
+
+def center_identity(value):
+    key = str(value or "").strip()
+    return center_identity_contract()["by_legacy"].get(key) if key else None
+
+
+def center_for_primary_key(key):
+    return center_identity_contract()["by_primary"].get(str(key or "").strip())
+
+
+def stable_center_key(value):
+    center = center_identity(value)
+    return str(center.get("stable_key") or "").strip() if center else ""
 
 def load_source(path=SOURCE_PATH):
     source = json.loads(Path(path).read_text(encoding="utf-8"))
@@ -36,33 +118,48 @@ def load_menu_release_states():
         for leaf in (item.get("children") or [item])
     }
 
-def load_published_menu_release_projection(env):
+def load_published_menu_release_projection(env, product_keys=None):
     """Return active publication states and the snapshot identities they used."""
     if env is None:
         raise ValueError("Published menu qualification requires an Odoo environment")
     from odoo.addons.smart_core.handlers.system_init import _load_platform_release_gate
 
-    standard = _load_platform_release_gate(env, product_key="construction.standard")
-    preview = _load_platform_release_gate(env, product_key="construction.preview")
-    standard_states = (
-        dict(standard.get("menu_release_states") or {})
-        if standard.get("applied")
-        else {}
-    )
-    preview_states = (
-        dict(preview.get("menu_release_states") or {})
-        if preview.get("applied")
-        else {}
-    )
-    states = dict(standard_states)
-    if preview.get("applied"):
-        for key in preview_states:
-            states.setdefault(key, "preview")
+    requested_keys = [
+        str(item or "").strip()
+        for item in (product_keys or ("construction.standard", "construction.preview"))
+        if str(item or "").strip()
+    ]
+    gates = {
+        product_key: _load_platform_release_gate(env, product_key=product_key)
+        for product_key in requested_keys
+    }
+    states_by_product = {
+        product_key: (
+            dict(gate.get("menu_release_states") or {})
+            if gate.get("applied")
+            else {}
+        )
+        for product_key, gate in gates.items()
+    }
+    states = {}
+    for product_key in requested_keys:
+        inherited_state = "preview" if product_key.endswith(".preview") else None
+        for key, state in states_by_product[product_key].items():
+            states.setdefault(key, inherited_state or state)
+    entry_centers = {}
+    centers_by_product = {}
+    product_centers = []
+    for product_key in requested_keys:
+        gate = gates[product_key]
+        centers_by_product[product_key] = dict(gate.get("entry_centers") or {})
+        if gate.get("applied"):
+            for key, center in centers_by_product[product_key].items():
+                entry_centers.setdefault(key, center)
+            if not product_centers:
+                product_centers = list(gate.get("product_centers") or [])
     snapshots = []
-    for product_key, gate in (
-        ("construction.standard", standard),
-        ("construction.preview", preview),
-    ):
+    for product_key in requested_keys:
+        gate = gates[product_key]
         snapshots.append(
             {
                 "product_key": product_key,
@@ -77,13 +174,22 @@ def load_published_menu_release_projection(env):
         )
     return {
         "menu_release_states": states,
-        "menu_release_states_by_product": {
-            "construction.standard": standard_states,
-            "construction.preview": preview_states,
-        },
+        "menu_release_states_by_product": states_by_product,
+        "release_centers": entry_centers,
+        "release_centers_by_product": centers_by_product,
+        "product_centers": product_centers,
         "snapshots": snapshots,
-        "standard_applied": bool(standard.get("applied")),
-        "preview_applied": bool(preview.get("applied")),
+        "standard_applied": bool(
+            gates.get("construction.standard", {}).get("applied")
+        ),
+        "preview_applied": bool(
+            gates.get("construction.preview", {}).get("applied")
+        ),
+        "applied_product_keys": [
+            product_key
+            for product_key in requested_keys
+            if gates[product_key].get("applied")
+        ],
     }
 
 
@@ -162,11 +268,21 @@ def resolve_native_source(raw, facts=None):
     source["root_label"] = root_label
     centers = {}
     for center in source["product_contract"]["centers"]:
+        center_fact = center_for_primary_key(center.get("key"))
+        if not center_fact:
+            raise ValueError(f"unknown product center identity: {center.get('key')}")
         xmlid = center.pop("native_menu_xmlid")
         native = facts[xmlid]
         if native.get("parent_id") != root_id or native.get("active") == "False":
             raise ValueError(f"invalid native product center: {xmlid}")
-        center.update(name=native["name"], sequence=int(native["sequence"]), level_two=[])
+        center.update(
+            center_key=center_fact["stable_key"],
+            group_key=center_fact["stable_key"],
+            name=center_fact["name"],
+            sequence=int(center_fact["sequence"]),
+            native_menu_xmlid=xmlid,
+            level_two=[],
+        )
         centers[xmlid] = center
     groups = {}
     seen = set()
@@ -228,9 +344,11 @@ def resolve_native_source(raw, facts=None):
     return source
 
 
-def _menu_row(center: str, label: str, menu_xmlid: str, action_xmlid: str, model: str, path: tuple[str, ...], *, maturity: str, source_kind: str = "p1_locked_menu_surface_projection") -> dict:
+def _menu_row(center: dict, label: str, menu_xmlid: str, action_xmlid: str, model: str, path: tuple[str, ...], *, maturity: str, source_kind: str = "p1_locked_menu_surface_projection") -> dict:
+    center_name = center["name"]
+    center_key = center["center_key"]
     capability_key = "construction.menu.%s" % menu_xmlid.replace(".", "_")
-    domain_label = path[-2] if len(path) > 1 else center
+    domain_label = path[-2] if len(path) > 1 else center_name
     return {
         "access_level": "public", "action_xmlid": action_xmlid,
         "business_entry_contract_version": "business_entry_disposition.v1",
@@ -243,20 +361,21 @@ def _menu_row(center: str, label: str, menu_xmlid: str, action_xmlid: str, model
         "control_granularity": "user_visible_menu_page",
         "control_object": "P1 施工行业正式产品入口", "disposition_policy": "keep_list_form",
         "enabled": True, "entry_intent": "handling", "entry_intent_label": "办理",
-        "entry_target_policy": "keep_list_form", "group_key": f"construction.{center}",
-        "group_label": center, "integration_target": f"{model} {label}", "label": label,
+        "entry_target_policy": "keep_list_form", "center_key": center_key,
+        "group_key": center_key, "group_sequence": int(center["sequence"]),
+        "group_label": center_name, "integration_target": f"{model} {label}", "label": label,
         "locked_data_policy": "odoo_model_acl_and_record_rules", "menu_key": menu_xmlid,
         "menu_xmlid": menu_xmlid, "model": model, "name": label, "page_key": menu_xmlid,
         "page_label": label, "policy_note": "locked_complete_product_menu_surface",
-        "product_domain": center, "product_domain_label": domain_label, "product_key": center,
+        "product_domain": center_name, "product_domain_label": domain_label, "product_key": center_name,
         "productization_source": source_kind, "release_domain": "construction",
         "release_state": "released", "res_model": model, "source_kind": source_kind,
         "target_scene_key": "", "title": label, "view_modes": ["tree", "form"],
-        "visible_menu_path": " / ".join(("智慧施工管理平台", center, *path)),
+        "visible_menu_path": " / ".join(("智慧施工管理平台", center_name, *path)),
     }
 
 
-def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, path: tuple[str, ...], *, maturity: str) -> dict:
+def _scene_entry_row(center: dict, label: str, menu_xmlid: str, scene_key: str, path: tuple[str, ...], *, maturity: str) -> dict:
     """Contracted navigation entry whose identity is a declared scene.
 
     It deliberately carries no action_xmlid/res_model: the entry is authorized
@@ -264,7 +383,9 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
     backend owns the route/entry_target projection so the tree cannot drift.
     """
     capability_key = "construction.menu.%s" % menu_xmlid.replace(".", "_")
-    domain_label = path[-2] if len(path) > 1 else center
+    center_name = center["name"]
+    center_key = center["center_key"]
+    domain_label = path[-2] if len(path) > 1 else center_name
     return {
         "access_level": "public", "action_xmlid": "",
         "business_entry_contract_version": "business_entry_disposition.v1",
@@ -277,23 +398,24 @@ def _scene_entry_row(center: str, label: str, menu_xmlid: str, scene_key: str, p
         "control_granularity": "user_visible_menu_page",
         "control_object": "P1 施工行业正式产品入口", "disposition_policy": "scene_entry",
         "enabled": True, "entry_intent": "handling", "entry_intent_label": "办理",
-        "entry_target_policy": "scene_entry", "group_key": f"construction.{center}",
-        "group_label": center, "integration_target": f"{scene_key} {label}", "label": label,
+        "entry_target_policy": "scene_entry", "center_key": center_key,
+        "group_key": center_key, "group_sequence": int(center["sequence"]),
+        "group_label": center_name, "integration_target": f"{scene_key} {label}", "label": label,
         "locked_data_policy": "odoo_model_acl_and_record_rules", "menu_key": menu_xmlid,
         "menu_xmlid": menu_xmlid, "model": "", "name": label, "page_key": menu_xmlid,
         "page_label": label, "policy_note": "locked_complete_product_menu_surface",
-        "product_domain": center, "product_domain_label": domain_label, "product_key": center,
+        "product_domain": center_name, "product_domain_label": domain_label, "product_key": center_name,
         "productization_source": "p1_locked_menu_surface_projection",
         "release_domain": "construction",
         "release_state": "released", "res_model": "", "scene_key": scene_key,
         "source_kind": "p1_locked_menu_surface_projection",
         "target_scene_key": scene_key, "title": label, "view_modes": [],
-        "visible_menu_path": " / ".join(("智慧施工管理平台", center, *path)),
+        "visible_menu_path": " / ".join(("智慧施工管理平台", center_name, *path)),
     }
 
 
 def _capability_from_menu(row: dict) -> dict:
-    keys = ("access_level", "capability_key", "capability_maturity", "identity_kind", "business_capability", "identity_contract_version", "qualification_authority", "provider_authority", "control_object", "disposition_policy", "enabled", "entry_intent", "entry_intent_label", "entry_target_policy", "group_key", "group_label", "integration_target", "label", "menu_xmlid", "product_domain", "product_domain_label", "product_key", "release_state", "res_model", "source_kind", "target_scene_key", "visible_menu_path")
+    keys = ("access_level", "capability_key", "capability_maturity", "center_key", "identity_kind", "business_capability", "identity_contract_version", "qualification_authority", "provider_authority", "control_object", "disposition_policy", "enabled", "entry_intent", "entry_intent_label", "entry_target_policy", "group_key", "group_sequence", "group_label", "integration_target", "label", "menu_xmlid", "product_domain", "product_domain_label", "product_key", "release_state", "res_model", "source_kind", "target_scene_key", "visible_menu_path")
     capability = {key: row[key] for key in keys if key in row}
     capability["entry_kind"] = "user_visible_menu_page"
     capability["target_page_key"] = row["page_key"]
@@ -309,6 +431,7 @@ def project(source):
     paths = set()
     for center in contract["centers"]:
         center_name = center["name"]
+        center_key = center["center_key"]
         rows = []
         for item in center["level_two"]:
             for leaf in item.get("children") or [item]:
@@ -323,11 +446,11 @@ def project(source):
                 if binding.get("entry_target_policy") == "scene_entry":
                     if not binding.get("target_scene_key") or binding.get("action_xmlid") or binding.get("model"):
                         raise ValueError("scene entry must declare only a scene target")
-                    row = _scene_entry_row(center_name, leaf["name"], menu_xmlid, binding["target_scene_key"], path, maturity=leaf["delivery"])
+                    row = _scene_entry_row(center, leaf["name"], menu_xmlid, binding["target_scene_key"], path, maturity=leaf["delivery"])
                 else:
                     if not binding.get("action_xmlid") or not binding.get("model"):
                         raise ValueError("native entry must declare action and model")
-                    row = _menu_row(center_name, leaf["name"], menu_xmlid, binding["action_xmlid"], binding["model"], path, maturity=leaf["delivery"], source_kind=binding["source_kind"])
+                    row = _menu_row(center, leaf["name"], menu_xmlid, binding["action_xmlid"], binding["model"], path, maturity=leaf["delivery"], source_kind=binding["source_kind"])
                 if "sequence" in binding:
                     row["sequence"] = binding["sequence"]
                 if "view_modes" in binding:
@@ -336,7 +459,16 @@ def project(source):
                 leaf["release_state"] = binding["release_state"]
                 row["visible_menu_path"] = " / ".join((source["root_label"], center_name, *path))
                 rows.append(row)
-        groups.append({"category":"user_visible_menu", "group_key":f"construction.{center_name}", "group_label":center_name, "label":center_name, "title":center_name, "menus":rows})
+        groups.append({
+            "category": "user_visible_menu",
+            "center_key": center_key,
+            "group_key": center_key,
+            "group_label": center_name,
+            "label": center_name,
+            "title": center_name,
+            "sequence": int(center["sequence"]),
+            "menus": rows,
+        })
     if not seen:
         raise ValueError("empty formal menu source")
     counts = {}

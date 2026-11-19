@@ -2146,6 +2146,9 @@ class MenuService:
                 else self._node_sequence(node) or 9999
             )
             if top_level:
+                meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
+                if meta.get("published_center"):
+                    return (0, sequence, label, index)
                 group_rank = self._business_group_display_order.get(label, 500)
                 return (group_rank, sequence, index)
             return (self._node_followup_rank(node), sequence, index)
@@ -2346,6 +2349,15 @@ class MenuService:
                     "scene_source": "delivery_policy",
                     "policy_group_key": str(group.get("group_key") or "").strip(),
                     "policy_group_label": str(group.get("group_label") or "").strip(),
+                    "policy_center_key": str(
+                        group.get("center_key") or group.get("group_key") or ""
+                    ).strip(),
+                    "policy_center_label": str(
+                        group.get("group_label") or group.get("label") or ""
+                    ).strip(),
+                    "policy_center_sequence": self._positive_int(
+                        group.get("sequence")
+                    ),
                     "visible_menu_path": str(menu.get("visible_menu_path") or "").strip(),
                     "native_visible_menu_path": native_visible_menu_path,
                     "entry_target": menu.get("entry_target") if isinstance(menu.get("entry_target"), dict) else {},
@@ -3184,6 +3196,11 @@ class MenuService:
                 groups_by_key[group_key] = {
                     "group_key": group_key,
                     "group_label": group_label,
+                    "center_key": str(
+                        group.get("center_key") or group_key
+                    ).strip(),
+                    "sequence": self._positive_int(group.get("sequence")),
+                    "published_center": True,
                     "config_menu_id": int(native_group_config_ids_by_label.get(group_label) or 0),
                     "native_preview": False,
                     "menus": [],
@@ -3329,6 +3346,11 @@ class MenuService:
                 merged_groups_by_key[canonical_key] = {
                     "group_key": canonical_key,
                     "group_label": str(canonical_row.get("group_label") or group_label or "系统菜单"),
+                    "center_key": str(
+                        canonical_row.get("center_key") or canonical_key
+                    ).strip(),
+                    "sequence": self._positive_int(canonical_row.get("sequence")),
+                    "published_center": bool(canonical_row.get("published_center")),
                     "config_menu_id": int(canonical_row.get("config_menu_id") or 0),
                     "native_preview": bool(canonical_row.get("native_preview")),
                     "group_target": dict(canonical_row.get("group_target") or {}),
@@ -3394,6 +3416,20 @@ class MenuService:
                 config_menu_id=int(row.get("config_menu_id") or 0),
                 target=row.get("group_target") if isinstance(row.get("group_target"), dict) else {},
             )
+            if row.get("sequence"):
+                group_node["sequence"] = int(row["sequence"])
+            group_meta = dict(
+                group_node.get("meta")
+                if isinstance(group_node.get("meta"), dict)
+                else {}
+            )
+            group_meta["policy_center_key"] = str(
+                row.get("center_key") or row.get("group_key") or group_key
+            ).strip()
+            group_meta["policy_center_label"] = group_label
+            group_meta["policy_center_sequence"] = int(row.get("sequence") or 0)
+            group_meta["published_center"] = bool(row.get("published_center"))
+            group_node["meta"] = group_meta
             if row.get("native_preview"):
                 group_meta = dict(group_node.get("meta") if isinstance(group_node.get("meta"), dict) else {})
                 group_meta["native_preview"] = True

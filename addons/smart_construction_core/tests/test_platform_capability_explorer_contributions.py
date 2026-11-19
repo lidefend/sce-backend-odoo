@@ -75,6 +75,29 @@ class ReleaseCenterContributionTests(unittest.TestCase):
         self.assertEqual(conflicts[0]["kind"], "release_center")
         self.assertEqual(conflicts[0]["center_keys"], ["center.a", "center.b"])
 
+    def test_published_center_map_uses_active_policy_identity_and_version(self):
+        projection = {
+            "release_centers": {
+                "smart_construction_core.menu_project_ledger": {
+                    "center_key": "construction.center.project",
+                    "center_label": "项目交付中心",
+                    "center_sequence": 25,
+                    "product_key": "construction.standard",
+                    "snapshot_id": 17,
+                    "version": "center-v2",
+                }
+            }
+        }
+        centers, conflicts = MODULE._published_release_center_map(projection)
+        self.assertEqual(conflicts, [])
+        center = centers["smart_construction_core.menu_project_ledger"]
+        self.assertEqual(center["key"], "construction.center.project")
+        self.assertEqual(center["label"], "项目交付中心")
+        self.assertEqual(center["sequence"], 25)
+        self.assertEqual(center["snapshot_id"], 17)
+        self.assertEqual(center["version"], "center-v2")
+        self.assertEqual(center["source"], "published_product_policy")
+
     def test_explorer_release_authority_never_opens_a_second_database(self):
         called = []
         projection = MODULE.load_capability_explorer_release_projection(

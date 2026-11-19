@@ -46,6 +46,17 @@ export function releaseStatePresentation(state: string): CapabilityStatusPresent
   return { label: state, semantic: 'default' };
 }
 
+export function centerSourcePresentation(center: Record<string, unknown> | null): CapabilityStatusPresentation {
+  const source = String(center?.source || '').trim();
+  if (source === 'published_product_policy') {
+    return { label: '已发布产品配置', semantic: 'success' };
+  }
+  if (source === 'ir.ui.menu' || source === 'native_menu') {
+    return { label: '原生菜单来源', semantic: 'info' };
+  }
+  return { label: source || '来源未知', semantic: 'default' };
+}
+
 export function qualificationPresentation(status: string): CapabilityStatusPresentation {
   if (status === 'qualified') return { label: '产品资格成立', semantic: 'success' };
   if (status === 'not_qualified') return { label: '产品资格不成立', semantic: 'warning' };

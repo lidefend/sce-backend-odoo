@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-CLOSE-01-CENTER-PUBLICATION-20261119",
+  "branch": "feature/scene-close-01-center-publication-authority-20261119",
+  "baseline_sha": "b974c32423d14f20960bf959c844a6b92334bc1a",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119.yaml",
+  "record": "docs/ops/iterations/scene_close_01_center_publication_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119.yaml",
+    ".agent/runs/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119/run.json",
+    "addons/smart_core/core/delivery_menu_defaults.py",
+    "addons/smart_core/delivery/",
+    "addons/smart_core/handlers/platform_capability_explorer.py",
+    "addons/smart_core/handlers/release_operator.py",
+    "addons/smart_core/models/release_management.py",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+    "addons/smart_construction_core/migrations/17.0.0.184/",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/",
+    "addons/smart_construction_core/tests/",
+    "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    "config/product_menu_contract_v1.json",
+    "config/product_primary_center_baseline_v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/scene_close_01_center_publication_20261119.md",
+    "frontend/apps/web/scripts/",
+    "frontend/apps/web/src/",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "scripts/ops/promote_product_ten_center_policy.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_capability_identity_boundary.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_product_center_policy.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Offline contract checks only; Odoo-native capabilities are existing authorities and no database/runtime mutation is authorized"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.capability.identity_boundary.orm",
+      "verify.daily.permission_truth.capability.orm",
+      "verify.page.finalize.authority.orm",
+      "verify.page.project_finalize.authority.orm",
+      "verify.product_center.policy.orm",
+      "verify.smart_construction_core.close_03.preview_promotion.orm",
+      "verify.workspace.entry_authority.orm"
+    ],
+    "reason": "Owner direction: Odoo-native capability facts are existing authorities; this task validates only our contract declarations and strict consumers"
+  },
+  "stages": [
+    {
+      "id": "BE-CATALOG-SCOPE-ADMISSION",
+      "status": "active",
+      "owner": "single_writer",
+      "exit": "Platform administrators discover the full current-instance native catalog; a selected native entry can be admitted to a specific industry-product draft with structured readback; platform source, product selection, release, enterprise enablement and user access remain separate facts"
+    },
+    {
+      "id": "BE-CENTER-PUBLICATION",
+      "status": "planned",
+      "owner": "single_writer_after_catalog_scope",
+      "exit": "Stable center identity and published placement remain staged in the same candidate but are not claimed complete until the catalog scope and admission journey closes"
+    },
+    {
+      "id": "FE-CONSUMPTION",
+      "status": "planned",
+      "owner": "single_writer_after_backend_handoff",
+      "exit": "Frontend consumes the declared platform/product scope, admission action and authoritative readback without inferring product semantics"
+    },
+    {
+      "id": "REVIEW",
+      "status": "planned",
+      "owner": "owner_review",
+      "exit": "Exact candidate review, affected tests and browser journey close the product result"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119.yaml",
+        ".agent/runs/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline",
+      "depends_on": [
+        "agent_resume"
+      ]
+    },
+    "platform_catalog_unit": {
+      "target": "verify.platform.capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/platform_catalog_action_contract.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "catalog_admission_unit": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/handlers/release_operator.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_unit": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+        "config/product_primary_center_baseline_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/test_product_center_policy.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "capability_identity_unit": {
+      "target": "verify.capability.identity_boundary.unit",
+      "inputs": [
+        "scripts/verify/test_capability_identity_boundary.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_construction_core/core_extension_capability_rows.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_core/core/delivery_menu_defaults.py",
+        "addons/smart_core/delivery/effective_delivery_inputs.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_publication": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_entry_publication": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "daily_published_face": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_menu_contract": {
+      "target": "verify.product.menu.contract_v1.guard",
+      "inputs": [
+        "config/product_menu_contract_v1.json",
+        "config/product_primary_center_baseline_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_menu_metadata": {
+      "target": "verify.product.menu.metadata_batch.unit",
+      "inputs": [
+        "config/product_menu_contract_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "system_init_menu_boundary": {
+      "target": "verify.system_init.menu_boundary.guard",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "workflow_action_semantics": {
+      "target": "verify.workflow_action_semantics.guard",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "role_surface_landing": {
+      "target": "verify.role_surface.landing.contract.unit",
+      "inputs": [
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baseline_policy_integrity_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "make/guards.mk",
+        "make/frontend.mk",
+        "config/product_menu_contract_v1.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_platform_catalog": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/admin_route_access_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_workspace_scenario": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_design_system": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/components/design-system/",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_navigation_policy": {
+      "target": "verify.frontend.navigation_policy.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_role_surface": {
+      "target": "verify.frontend.role_surface_exposure_declaration.guard",
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/ci.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/src/",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "The current dirty candidate contains center-publication work while the owner-prioritized product result is platform-wide native discovery and industry-product admission; platform scope/admission must close first and center-publication must not be described as delivered by that result"
+  ],
+  "validation_plan": {
+    "L0": "Exact base and dirty scope resolution",
+    "L1": "Pure producer tests and frontend strict decoders prove action fields, release-state options and readback requirements",
+    "L2": "Consumer tests prove missing declarations, undeclared input values, empty readback and identity mismatch all fail closed",
+    "L3": "Not applicable by owner direction: Odoo-native menu, action, ACL and module capabilities are existing facts and are not revalidated by ORM",
+    "L4": "Not applicable by owner direction for this contract-only task",
+    "L5": "Owner diff review and exact-head integration checks when the product result is published"
+  },
+  "validation_mechanism": {
+    "status": "passed",
+    "scope": "Run resolution, scope reconciliation, affected-target selection, zero-collection prevention, design-system consumption and contract consumption only",
+    "passed": [
+      "make agent.run.resume: resolved with outside_scope=[]",
+      "frontend incremental planner: registrationMissingTargets=[], unmappedPathCount=0",
+      "make verify.agent.resume.unit: 67 tests",
+      "make verify.agent.ledger.unit: 18 tests",
+      "make verify.frontend.dev.incremental.unit: 185 tests",
+      "make verify.frontend.component_driver_takeover.unit: 18 tests, required=33, missing=0, raw=0",
+      "make verify.frontend.contract_basis.unit: 15 tests, open_defects=0",
+      "make verify.frontend.lint.src: exit 0, 0 errors",
+      "make verify.frontend.typecheck.strict: exit 0"
+    ],
+    "interrupted_not_passed": [
+      "Two ORM/baseline commands started before the owner clarified that ORM is outside this task were interrupted and are not counted as passes"
+    ],
+    "not_run": [
+      "ORM, module baselines, module upgrade and browser journey are excluded by owner direction"
+    ]
+  },
+  "validation_contract": {
+    "status": "passed",
+    "scope": "Our producer declarations and strict frontend consumption only",
+    "passed": [
+      "make verify.platform.capability_explorer.unit: 24+9+2 tests",
+      "make verify.frontend.platform_capability_explorer.unit: 46 cases plus platform-duty and route-access tests",
+      "make verify.admin_close_01.backend.unit: 90 tests",
+      "make verify.product_center.policy.unit: 8 tests",
+      "make verify.capability.identity_boundary.unit: 12 tests",
+      "make verify.frontend.dev.incremental.unit: 185 tests",
+      "make verify.frontend.contract_basis.unit: 15 tests",
+      "make verify.frontend.component_driver_takeover.unit: 18 tests",
+      "make verify.frontend.lint.src: 0 errors",
+      "make verify.frontend.typecheck.strict: exit 0"
+    ],
+    "closed_gaps": [
+      "release-state options now come from the backend contract instead of a frontend constant",
+      "all accepted fields and declared readback fields are required before an intent is sent or success is shown",
+      "empty or identity-mismatched write readback fails closed",
+      "the product-draft route is consumed from the backend declaration"
+    ]
+  },
+  "next_exact_step": "Contract producer and strict consumer verification is complete; review the diff for the platform catalog admission contract without rerunning native Odoo capabilities or ORM"
+}

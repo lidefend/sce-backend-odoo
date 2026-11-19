@@ -194,6 +194,84 @@
         </ScSection>
 
         <ScSection
+          v-if="productCenterEditor"
+          title="产品中心草案"
+          description="中心名称、顺序和入口归属先保存为产品草案；发布产品版本后才影响正式导航。"
+        >
+          <template #actions>
+            <span class="release-operator__section-meta">
+              已发布 {{ productCenterEditor.published.version || '无版本' }} · 快照 {{ productCenterEditor.published.snapshot_id || '无' }}
+            </span>
+          </template>
+          <ScInlineState
+            state="info"
+            :label="`当前操作范围：${String(productCenterEditor.operation_scope.product_key || productCenterEditor.product_key)} 的产品草案；企业场景启停仍按当前公司单独生效。`"
+          />
+          <ScForm layout="inline" :prevent-submit-default="true" class="release-operator__policy">
+            <ScFormItem label="选择中心" name="product_center">
+              <ScSelect
+                :model-value="selectedCenterKey"
+                :options="productCenterOptions"
+                aria-label="选择产品中心"
+                @update:model-value="selectCenter"
+              />
+            </ScFormItem>
+            <ScFormItem label="中心名称" name="product_center_label">
+              <ScInput
+                v-model="centerLabelDraft"
+                type="text"
+                :maxlength="80"
+                :disabled="!selectedCenterKey"
+                aria-label="产品中心名称"
+              />
+            </ScFormItem>
+            <ScFormItem label="显示顺序" name="product_center_sequence">
+              <ScInput
+                v-model="centerSequenceDraft"
+                type="number"
+                min="0"
+                max="9999"
+                :disabled="!selectedCenterKey"
+                aria-label="产品中心显示顺序"
+              />
+            </ScFormItem>
+            <ScFormItem>
+              <ScButton
+                variant="primary"
+                type="button"
+                :disabled="centerSaveDisabled"
+                :title="centerSaveReason"
+                @click="saveProductCenterDraft"
+              >
+                保存产品中心草案
+              </ScButton>
+            </ScFormItem>
+          </ScForm>
+          <ScDescriptions
+            class="release-operator__summary"
+            :items="centerChangeItems"
+            :column="compactDescriptionColumns"
+            bordered
+          />
+          <ScCard v-if="selectedCenterEntries.length" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="入口所属中心"
+              :data="centerEntryTableRows"
+              :columns="centerEntryColumns"
+              row-key="menu_xmlid"
+              size="small"
+            />
+          </ScCard>
+          <ScEmptyState
+            v-else
+            title="当前中心没有已发布入口"
+            :heading-level="3"
+            density="compact"
+          />
+        </ScSection>
+
+        <ScSection
           :title="copy.section_candidate || '可晋升候选'"
           :description="copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。'"
           :style="pageSectionStyle('candidate_snapshots')"
@@ -287,6 +365,7 @@ import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
+import ScInput from '../components/design-system/ScInput.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -309,6 +388,7 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import {
   decodeReleaseOperatorSurface,
   type OperatorAction,
+  type ProductCenterEditor,
 } from '../app/releaseOperatorActionContract';
 
 type AnyRecord = Record<string, unknown>;
@@ -345,6 +425,7 @@ interface ReleaseOperatorSurface {
   products?: ProductRow[];
   product_delivery_console?: AnyRecord;
   control_scope?: AnyRecord;
+  product_center_editor?: ProductCenterEditor;
   release_pipeline?: AnyRecord;
   release_state?: AnyRecord;
   pending_approval?: { actions?: ReleaseActionRow[] };
@@ -473,6 +554,88 @@ const audienceRoles = computed(() => {
 const controlledPages = computed(() => {
   const pages = controlScope.value.pages;
   return Array.isArray(pages) ? pages as AnyRecord[] : [];
+});
+const productCenterEditor = computed(() => surface.value?.product_center_editor || null);
+const selectedCenterKey = ref('');
+const centerLabelDraft = ref('');
+const centerSequenceDraft = ref('10');
+const entryPlacementDraft = ref<Record<string, string>>({});
+const productCenterOptions = computed(() => (productCenterEditor.value?.centers || []).map((center) => ({
+  value: center.center_key,
+  label: `${center.label} · ${Number(center.sequence)}`,
+})));
+const selectedCenter = computed(() => (
+  productCenterEditor.value?.centers.find((center) => center.center_key === selectedCenterKey.value)
+  || null
+));
+const selectedCenterEntries = computed(() => (
+  (productCenterEditor.value?.entries || []).filter(
+    (entry) => entry.center_key === selectedCenterKey.value,
+  )
+));
+const changedCenterPlacements = computed(() => (
+  (productCenterEditor.value?.entries || []).filter(
+    (entry) => (entryPlacementDraft.value[entry.menu_xmlid] || entry.center_key) !== entry.center_key,
+  )
+));
+const centerDraftChanged = computed(() => {
+  const center = selectedCenter.value;
+  if (!center) return false;
+  return centerLabelDraft.value.trim() !== center.label
+    || Number(centerSequenceDraft.value) !== Number(center.sequence);
+});
+const centerDraftValid = computed(() => {
+  const sequence = Number(centerSequenceDraft.value);
+  return Boolean(centerLabelDraft.value.trim())
+    && Number.isInteger(sequence)
+    && sequence >= 0
+    && sequence <= 9999;
+});
+const centerSaveDisabled = computed(() => (
+  busyKey.value === 'update_policy'
+  || !updatePolicyAction.value.enabled
+  || !selectedCenter.value
+  || !centerDraftValid.value
+  || (!centerDraftChanged.value && !changedCenterPlacements.value.length)
+));
+const centerSaveReason = computed(() => {
+  if (!productCenterEditor.value) return '产品中心契约缺失';
+  if (!selectedCenter.value) return '请选择中心';
+  if (!centerDraftValid.value) return '中心名称不能为空，显示顺序必须是 0–9999 的整数';
+  if (!updatePolicyAction.value.enabled) return updatePolicyAction.value.reason_code || '保存动作不可用';
+  if (!centerDraftChanged.value && !changedCenterPlacements.value.length) return '没有待保存的中心修改';
+  return '';
+});
+const centerChangeItems = computed<DescriptionItem[]>(() => {
+  const editor = productCenterEditor.value;
+  const summary = (editor?.change_summary || {}) as AnyRecord;
+  const center = selectedCenter.value;
+  return [
+    {
+      key: 'center_scope',
+      label: '当前中心',
+      value: center
+        ? `${center.label} · ${center.center_key}`
+        : '请选择中心',
+    },
+    {
+      key: 'published_center',
+      label: '已发布值',
+      value: center
+        ? `${center.published_label || '未发布'} · ${center.published_sequence || 0}`
+        : '-',
+    },
+    {
+      key: 'draft_changes',
+      label: '草案差异',
+      value: `中心 ${Number(summary.changed_center_count || 0)} 个 / 入口归属 ${Number(summary.changed_entry_placement_count || 0)} 个`,
+    },
+    {
+      key: 'entry_count',
+      label: '当前中心入口',
+      value: `${selectedCenterEntries.value.length}`,
+    },
+  ];
 });
 const controlDefinitions = computed(() => {
   const items = controlScope.value.control_definition;
@@ -757,6 +920,47 @@ const controlledPageColumns = computed(() => [
     actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
   ]) },
 ]);
+const centerEntryTableRows = computed(() => selectedCenterEntries.value.map((entry) => ({
+  ...entry,
+  target_center_key: entryPlacementDraft.value[entry.menu_xmlid] || entry.center_key,
+})));
+const centerEntryColumns = computed(() => [
+  {
+    colKey: 'label',
+    title: '入口',
+    ellipsis: true,
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.label || row.menu_xmlid),
+  },
+  {
+    colKey: 'published',
+    title: '已发布归属',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.published_center_label || '未发布'),
+  },
+  {
+    colKey: 'target',
+    title: '草案归属',
+    width: 220,
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => h(ScSelect, {
+      modelValue: String(row.target_center_key || ''),
+      options: productCenterOptions.value,
+      'aria-label': `设置 ${String(row.label || row.menu_xmlid)} 所属中心`,
+      'onUpdate:modelValue': (value: unknown) => {
+        entryPlacementDraft.value = {
+          ...entryPlacementDraft.value,
+          [String(row.menu_xmlid)]: String(value || ''),
+        };
+      },
+    }),
+  },
+  {
+    colKey: 'changed',
+    title: '状态',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => {
+      const changed = String(row.target_center_key || '') !== String(row.center_key || '');
+      return statusNode(changed ? 'changed' : 'saved', changed ? '草案已改' : '与草案一致', changed ? 'warning' : 'default');
+    },
+  },
+]);
 const candidateColumns = computed(() => [
   { colKey: 'version', title: '版本', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.version) },
   { colKey: 'state', title: '状态', cell: (_h: unknown, { row }: { row: SnapshotRow }) => statusNode(String(row.state || ''), tableText(row.state), 'info') },
@@ -899,6 +1103,33 @@ function hydratePolicyControls(payload: ReleaseOperatorSurface) {
   policyAccessLevel.value = String(scope.access_level || 'public');
 }
 
+function hydrateProductCenterEditor(payload: ReleaseOperatorSurface) {
+  const editor = payload.product_center_editor;
+  if (!editor) {
+    selectedCenterKey.value = '';
+    centerLabelDraft.value = '';
+    centerSequenceDraft.value = '10';
+    entryPlacementDraft.value = {};
+    return;
+  }
+  const centers = editor.centers || [];
+  const selected = centers.find((center) => center.center_key === selectedCenterKey.value) || centers[0];
+  selectedCenterKey.value = selected?.center_key || '';
+  centerLabelDraft.value = selected?.label || '';
+  centerSequenceDraft.value = String(selected?.sequence ?? 10);
+  entryPlacementDraft.value = Object.fromEntries(
+    (editor.entries || []).map((entry) => [entry.menu_xmlid, entry.center_key]),
+  );
+}
+
+function selectCenter(value: unknown) {
+  const key = String(value || '').trim();
+  selectedCenterKey.value = key;
+  const center = productCenterEditor.value?.centers.find((row) => row.center_key === key);
+  centerLabelDraft.value = center?.label || '';
+  centerSequenceDraft.value = String(center?.sequence ?? 10);
+}
+
 async function loadSurface() {
   loading.value = true;
   error.value = '';
@@ -914,6 +1145,7 @@ async function loadSurface() {
     ) as unknown as ReleaseOperatorSurface;
     surface.value = decoded;
     hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
     const resolvedProduct = String(decoded.identity?.product_key || '').trim();
     if (resolvedProduct) {
       selectedProduct.value = resolvedProduct;
@@ -936,6 +1168,7 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
       ) as unknown as ReleaseOperatorSurface;
       surface.value = decoded;
       hydratePolicyControls(decoded);
+      hydrateProductCenterEditor(decoded);
       const resolvedProduct = String(decoded.identity?.product_key || '').trim();
       if (resolvedProduct) selectedProduct.value = resolvedProduct;
     } else {
@@ -985,6 +1218,33 @@ function savePolicy() {
       product_key: selectedProduct.value,
       state: policyState.value,
       access_level: policyAccessLevel.value,
+    },
+    'update_policy',
+  );
+}
+
+function saveProductCenterDraft() {
+  const editor = productCenterEditor.value;
+  const center = selectedCenter.value;
+  if (!editor || !center || centerSaveDisabled.value) return;
+  const centerUpdates = centerDraftChanged.value
+    ? [{
+      center_key: center.center_key,
+      label: centerLabelDraft.value.trim(),
+      sequence: Number(centerSequenceDraft.value),
+    }]
+    : [];
+  const entryPlacements = changedCenterPlacements.value.map((entry) => ({
+    menu_xmlid: entry.menu_xmlid,
+    center_key: entryPlacementDraft.value[entry.menu_xmlid],
+  }));
+  void runWrite(
+    String(editor.save_action.intent || 'release.operator.update_policy'),
+    {
+      ...((editor.save_action.params || {}) as AnyRecord),
+      product_key: selectedProduct.value,
+      center_updates: centerUpdates,
+      entry_placements: entryPlacements,
     },
     'update_policy',
   );

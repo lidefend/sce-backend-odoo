@@ -15,6 +15,10 @@ except Exception:
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_core.core.platform_database_contract import resolve_platform_database
+from odoo.addons.smart_core.delivery.product_center_policy import product_center_index
+from odoo.addons.smart_core.delivery.product_policy_normalization import (
+    normalize_product_policy_for_env,
+)
 
 try:
     from .product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -149,6 +153,13 @@ class ProductPolicyService:
     def _platform_policy_db(self) -> str:
         return resolve_platform_database(self.env)
 
+    def _normalize_policy(self, payload: dict | None) -> dict:
+        return normalize_product_policy_for_env(self.env, payload)
+
+    def center_index(self, payload: dict | None) -> dict:
+        normalized = self._normalize_policy(payload)
+        return product_center_index(normalized)
+
     def _load_platform_policy(self, *, product_key: str) -> dict | None:
         if api is None or Registry is None:
             return None
@@ -166,7 +177,7 @@ class ProductPolicyService:
                 )
                 if not rec:
                     return None
-                payload = rec.to_runtime_dict()
+                payload = self._normalize_policy(rec.to_runtime_dict())
                 if not isinstance(payload, dict) or not payload.get("product_key"):
                     return None
                 payload["policy_source_authority"] = self.platform_policy_source_authority_contract(
@@ -204,7 +215,7 @@ class ProductPolicyService:
                                                 separators=(",", ":")).encode("utf-8")).hexdigest()
             if digest != payload.get("policy_sha256"):
                 raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
-            return copy.deepcopy(policy)
+            return self._normalize_policy(copy.deepcopy(policy))
         registry_models = getattr(getattr(self.env, "registry", None), "models", {})
         if "sc.edition.release.snapshot" not in registry_models:
             return None
@@ -232,11 +243,11 @@ class ProductPolicyService:
                     "projection_only": True,
                     "no_business_fact_authority": True,
                 })
-                return payload
+                return self._normalize_policy(payload)
         payload = copy.deepcopy(DEFAULT_PRODUCT_POLICY)
         payload.setdefault("policy_source_authority", self.default_policy_source_authority_contract())
         _mark_legacy_default_policy_nodes(payload)
-        return payload
+        return self._normalize_policy(payload)
 
     def _default_policy_for_identity(self, *, base_product_key: str, edition_key: str) -> dict:
         base_key = str(base_product_key or "").strip() or LEGACY_DEFAULT_BASE_PRODUCT_KEY
@@ -248,7 +259,7 @@ class ProductPolicyService:
         payload["product_key"] = str(product_key or "").strip() or payload.get("product_key")
         payload["base_product_key"] = str(base_product_key or "").strip() or payload.get("base_product_key")
         payload["edition_key"] = str(edition_key or "").strip() or payload.get("edition_key")
-        return payload
+        return self._normalize_policy(payload)
 
     def _catalog_backed_policy(self, *, product_key: str) -> dict | None:
         if not self._model_registered("ir.ui.menu"):
@@ -267,7 +278,7 @@ class ProductPolicyService:
             return None
         if not (payload.get("menu_groups") or payload.get("scenes") or payload.get("capabilities")):
             return None
-        return payload
+        return self._normalize_policy(payload)
 
     def _policy_has_surface(self, payload: dict) -> bool:
         return bool(
@@ -402,7 +413,7 @@ class ProductPolicyService:
             "fallback_reason": str(fallback_reason or "").strip(),
             "fallback_applied": bool(fallback_reason),
         }
-        return row
+        return self._normalize_policy(row)
 
     def _fallback_stable_policy(self, *, base_product_key: str) -> dict:
         try:

@@ -35,6 +35,9 @@
             <field name="name"/>
             <field name="sequence"/>
             <field name="active"/>
+            <div class="text-muted" colspan="2">
+              场景定义启用只控制该场景是否参与产品组织；当前企业是否启用请在“企业场景启停”中操作。
+            </div>
           </group>
           <group string="说明">
             <field name="description" colspan="2"/>
@@ -43,9 +46,9 @@
             <field name="entry_ids" nolabel="1">
               <tree string="导航入口" editable="bottom">
                 <field name="sequence" widget="handle"/>
-                <field name="center_sequence"/>
-                <field name="center_key"/>
-                <field name="center_name"/>
+                <field name="center_sequence" readonly="1"/>
+                <field name="center_key" readonly="1"/>
+                <field name="center_name" readonly="1"/>
                 <field name="menu_id"/>
                 <field name="menu_xmlid"/>
                 <field name="intent"/>

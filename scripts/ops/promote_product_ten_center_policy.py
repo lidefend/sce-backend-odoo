@@ -22,6 +22,10 @@ CHECKSUM = BASELINE.with_suffix(BASELINE.suffix + ".sha256")
 PRODUCT_CONTRACT = ROOT / "config/product_menu_contract_v1.json"
 RUNTIME_CONTRACT = MODULE / "data" / BASELINE.name
 RUNTIME_CHECKSUM = RUNTIME_CONTRACT.with_suffix(RUNTIME_CONTRACT.suffix + ".sha256")
+PRIMARY_CENTER_BASELINE = ROOT / "config" / "product_primary_center_baseline_v1.json"
+RUNTIME_PRIMARY_CENTER_BASELINE = (
+    MODULE / "data" / PRIMARY_CENTER_BASELINE.name
+)
 _spec = importlib.util.spec_from_file_location("p1_product_menu_source", MODULE / "services/product_menu_source.py")
 _source = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_source)
@@ -52,6 +56,9 @@ def artifacts(source=None) -> dict[Path, str]:
         PRODUCT_CONTRACT: json.dumps(contract, ensure_ascii=False, indent=2) + "\n",
         BASELINE: rendered, CHECKSUM: lock,
         RUNTIME_CONTRACT: rendered, RUNTIME_CHECKSUM: lock,
+        RUNTIME_PRIMARY_CENTER_BASELINE: PRIMARY_CENTER_BASELINE.read_text(
+            encoding="utf-8"
+        ),
     }
 
 
@@ -59,6 +66,23 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--write", action="store_true")
     args = parser.parse_args()
+    canonical_center_baseline = PRIMARY_CENTER_BASELINE.read_text(encoding="utf-8")
+    runtime_center_baseline = (
+        RUNTIME_PRIMARY_CENTER_BASELINE.read_text(encoding="utf-8")
+        if RUNTIME_PRIMARY_CENTER_BASELINE.is_file()
+        else ""
+    )
+    if args.write and runtime_center_baseline != canonical_center_baseline:
+        RUNTIME_PRIMARY_CENTER_BASELINE.write_text(
+            canonical_center_baseline,
+            encoding="utf-8",
+        )
+        _source.center_identity_contract.cache_clear()
+    elif not args.write and runtime_center_baseline != canonical_center_baseline:
+        raise SystemExit(
+            "P1 runtime center baseline drift: "
+            f"{RUNTIME_PRIMARY_CENTER_BASELINE.relative_to(ROOT)}"
+        )
     outputs = artifacts()
     for path, value in outputs.items():
         if args.write:

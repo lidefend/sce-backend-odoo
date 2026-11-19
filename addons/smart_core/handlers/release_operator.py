@@ -16,8 +16,14 @@ from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import 
 from odoo.addons.smart_core.delivery.release_approval_policy_service import ReleaseApprovalPolicyService
 from odoo.addons.smart_core.delivery.release_operator_surface_service import ReleaseOperatorSurfaceService
 from odoo.addons.smart_core.delivery.release_runtime_user_probe_service import ReleaseRuntimeUserProbeService
+from odoo.addons.smart_core.delivery.platform_catalog_action_contract import (
+    CATALOG_ENTRY_RELEASE_STATES,
+)
 from odoo.addons.smart_core.security.platform_admin import user_is_platform_control_admin
 from odoo.addons.smart_core.utils.reason_codes import REASON_OK
+from odoo.addons.smart_core.utils.extension_hooks import (
+    call_extension_hook_first_compatible,
+)
 
 
 SOURCE_KIND = "release_operator_intent_proxy"
@@ -366,13 +372,73 @@ class ReleaseOperatorUpdatePolicyHandler(_ReleaseOperatorBaseHandler):
         if "allowed_role_codes" in params:
             allowed_roles = params.get("allowed_role_codes")
             values["allowed_role_codes"] = [str(item).strip() for item in allowed_roles if str(item).strip()] if isinstance(allowed_roles, list) else []
+        if "center_updates" in params or "entry_placements" in params:
+            from odoo.addons.smart_core.delivery.product_center_policy import (
+                apply_product_center_updates,
+            )
+            from odoo.addons.smart_core.delivery.product_policy_normalization import (
+                normalize_product_policy_for_env,
+            )
+
+            if "center_updates" in params and not isinstance(
+                params.get("center_updates"), list
+            ):
+                raise ValueError("CENTER_UPDATES_MUST_BE_ARRAY")
+            if "entry_placements" in params and not isinstance(
+                params.get("entry_placements"), list
+            ):
+                raise ValueError("ENTRY_PLACEMENTS_MUST_BE_ARRAY")
+            normalized = normalize_product_policy_for_env(
+                self.env,
+                policy.to_runtime_dict(),
+            )
+            updated = apply_product_center_updates(
+                normalized,
+                center_updates=params.get("center_updates")
+                if isinstance(params.get("center_updates"), list)
+                else [],
+                entry_placements=params.get("entry_placements")
+                if isinstance(params.get("entry_placements"), list)
+                else [],
+            )
+            values["menu_groups"] = updated.get("menu_groups") or []
+            values["capabilities"] = updated.get("capabilities") or []
+            if updated.get("note"):
+                values["note"] = str(updated["note"])
         if values:
             policy.write(values)
+        published = self.env["sc.edition.release.snapshot"].sudo().search(
+            [
+                ("product_key", "=", product_key),
+                ("state", "=", "released"),
+                ("is_active", "=", True),
+                ("active", "=", True),
+            ],
+            order="released_at desc, activated_at desc, id desc",
+            limit=1,
+        )
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+
+        draft_contract = EditionReleaseSnapshotService(
+            self.env
+        ).build_policy_draft_contract(product_key=product_key)
         return self._response(
             ts0,
             {
                 "policy": policy.to_runtime_dict(),
                 "surface": ReleaseOperatorSurfaceService(self.env).build_surface(product_key=product_key),
+                "readback": {
+                    "draft_policy_sha256": str(
+                        draft_contract.get("policy_sha256") or ""
+                    ),
+                    "draft_fingerprint": str(
+                        draft_contract.get("fingerprint") or ""
+                    ),
+                    "published_snapshot_id": int(published.id or 0),
+                    "published_version": str(published.version or ""),
+                },
             },
         )
 
@@ -503,6 +569,83 @@ class ReleaseOperatorUpdatePagePolicyHandler(ReleaseOperatorSetPageEnabledHandle
             {
                 "policy": policy.to_runtime_dict(),
                 "surface": ReleaseOperatorSurfaceService(self.env).build_surface(product_key=product_key),
+            },
+        )
+
+
+class ReleaseOperatorAddCatalogEntryHandler(_ReleaseOperatorBaseHandler):
+    INTENT_TYPE = "release.operator.add_catalog_entry"
+    DESCRIPTION = "将原生入口加入指定产品草案"
+    VERSION = "1.0.0"
+    NON_IDEMPOTENT_ALLOWED = "product draft catalog selection mutates product policy"
+
+    def handle(self, payload=None, ctx=None):
+        ts0 = time.time()
+        params = self._params(payload)
+        product_key = _text(params.get("product_key"))
+        menu_id = _positive_int(params.get("menu_id"), "menu_id")
+        center_key = _text(params.get("center_key") or params.get("group_key"))
+        release_state = _selection(
+            params.get("release_state") or "preview",
+            set(CATALOG_ENTRY_RELEASE_STATES),
+            "release_state",
+        )
+        if not product_key:
+            raise ValueError("PRODUCT_KEY_REQUIRED")
+        if not center_key:
+            raise ValueError("PRODUCT_GROUP_REQUIRED")
+        policy = self.env["sc.product.policy"].search(
+            [("product_key", "=", product_key), ("active", "=", True)],
+            limit=1,
+        )
+        if not policy:
+            policy = ProductPolicyCatalogSyncService(self.env).sync_policy(
+                product_key=product_key
+            )
+        result = call_extension_hook_first_compatible(
+            self.env,
+            "smart_core_add_catalog_entry_to_product_policy",
+            self.env,
+            policy,
+            {
+                "product_key": product_key,
+                "menu_id": menu_id,
+                "center_key": center_key,
+                "release_state": release_state,
+            },
+        )
+        if not isinstance(result, dict):
+            raise ValueError("PRODUCT_CATALOG_ENTRY_AUTHORITY_UNAVAILABLE")
+        draft = EditionReleaseSnapshotService(
+            self.env
+        ).build_policy_draft_contract(product_key=product_key)
+        published = self.env["sc.edition.release.snapshot"].sudo().search(
+            [
+                ("product_key", "=", product_key),
+                ("state", "=", "released"),
+                ("is_active", "=", True),
+                ("active", "=", True),
+            ],
+            order="released_at desc, activated_at desc, id desc",
+            limit=1,
+        )
+        return self._response(
+            ts0,
+            {
+                "action": result,
+                "surface": ReleaseOperatorSurfaceService(
+                    self.env
+                ).build_surface(product_key=product_key),
+                "readback": {
+                    **(result.get("readback") or {}),
+                    "product_key": product_key,
+                    "group_key": center_key,
+                    "draft_policy_sha256": str(
+                        draft.get("policy_sha256") or ""
+                    ),
+                    "published_snapshot_id": int(published.id or 0),
+                    "published_version": str(published.version or ""),
+                },
             },
         )
 

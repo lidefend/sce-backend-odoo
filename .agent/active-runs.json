@@ -29,6 +29,7 @@
     "feature/be-close-01-workflow-contract-20261118": ".agent/runs/BE-CLOSE-01-WORKFLOW-CONTRACT-20261118/run.json",
     "feature/admin-close-01-r1-management-control-20261119": ".agent/runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/run.json",
     "feature/admin-close-01-platform-to-enterprise-20261119": ".agent/runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/run.json",
+    "feature/scene-close-01-center-publication-authority-20261119": ".agent/runs/SCENE-CLOSE-01-CENTER-PUBLICATION-20261119/run.json",
     "feature/contract-detail-productization-01": ".agent/runs/PC02-CONTRACT-DETAIL-PRODUCTIZATION/run.json",
     "feature/demo-iteration-line-20261020": ".agent/runs/DEMO-USAGE-FOUNDATION-20261020/run.json",
     "feature/fe-close-01-workflow-handling-20261118": ".agent/runs/FE-CLOSE-01/run.json",

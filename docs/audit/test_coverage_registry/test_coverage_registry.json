@@ -2003,7 +2003,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.capability.identity_boundary.orm :: /TestProductPolicyFactAuthority (class selection)",
-        "make:verify.daily.permission_truth.capability.orm :: /TestProductPolicyFactAuthority (class selection)"
+        "make:verify.daily.permission_truth.capability.orm :: /TestProductPolicyFactAuthority (class selection)",
+        "make:verify.product_center.policy.orm :: /TestProductPolicyFactAuthority (class selection)"
       ],
       "disposition": "class-selected"
     },
@@ -2190,6 +2191,7 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.capability.identity_boundary.orm :: /TestLockedMenuPolicyInitialization (class selection)",
+        "make:verify.product_center.policy.orm :: /TestLockedMenuPolicyInitialization (class selection)",
         "make:verify.smart_construction_core.close_03.preview_promotion.orm :: /TestLockedMenuPolicyInitialization (class selection)"
       ],
       "disposition": "wire-pending"

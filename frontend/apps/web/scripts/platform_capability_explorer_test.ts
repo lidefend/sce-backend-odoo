@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { ApiError } from '../src/api/client';
 import {
+  buildCapabilityCatalogEntryAddParams,
+  decodeCapabilityCatalogEntryWriteResult,
   decodeCapabilityExplorerDetailResponse,
   decodeCapabilityExplorerDiagnosisResponse,
   decodeCapabilityExplorerListResponse,
@@ -11,6 +13,7 @@ import {
   buildListFilters,
   businessDomainPresentation,
   capabilityEntryKey,
+  centerSourcePresentation,
   isCatalogStaleError,
   releaseStatePresentation,
   sceneUsagePresentation,
@@ -42,6 +45,52 @@ const meta = {
   persistence: 'none',
   language: { code: 'zh_CN' },
   diagnostics: {},
+  catalog_scope: {
+    mode: 'platform',
+    label: '平台原生目录',
+    identity_scope: 'current_instance_installed_native_entries',
+    product_key: '',
+    product_label: '',
+    products: [{
+      product_key: 'construction.standard',
+      label: '施工管理标准版',
+      base_product_key: 'construction',
+      edition_key: 'standard',
+      groups: [{
+        group_key: 'construction.center.project',
+        label: '项目中心',
+        sequence: 20,
+        entry_count: 1,
+      }],
+    }],
+    groups: [{
+      group_key: 'construction.center.project',
+      label: '项目中心',
+      sequence: 20,
+      entry_count: 1,
+    }],
+    platform_native_entry_count: 3,
+    visible_entry_count: 3,
+    management_actions: {
+      add_to_product_draft: {
+        intent: 'release.operator.add_catalog_entry',
+        enabled: true,
+        reason_code: 'OK',
+        accepted_fields: ['product_key', 'menu_id', 'center_key', 'release_state'],
+        default_release_state: 'preview',
+        release_state_options: [
+          { value: 'preview', label: '预览（推荐）' },
+          { value: 'released', label: '正式' },
+        ],
+        readback_fields: ['action', 'surface', 'readback'],
+      },
+      open_product_draft: {
+        route: '/admin/release-operator',
+        product_key: 'construction.standard',
+      },
+    },
+    source_authority: { kind: 'platform_catalog_scope_resolution' },
+  },
 };
 const row = {
   entry_ref: {
@@ -102,6 +151,148 @@ const listResponse = {
 
 const decodedList = decodeCapabilityExplorerListResponse(listResponse);
 check(decodedList.meta.total, 3, 'list total consumed');
+check(decodedList.meta.catalog_scope.mode, 'platform', 'catalog scope consumed');
+check(
+  decodedList.meta.catalog_scope.management_actions.add_to_product_draft.intent,
+  'release.operator.add_catalog_entry',
+  'catalog add action consumed',
+);
+check(
+  decodedList.meta.catalog_scope.management_actions.add_to_product_draft.release_state_options.map(
+    (option) => option.value,
+  ),
+  ['preview', 'released'],
+  'release-state options come from the backend declaration',
+);
+assert.throws(
+  () => decodeCapabilityExplorerListResponse({
+    ...listResponse,
+    meta: {
+      ...meta,
+      catalog_scope: {
+        ...meta.catalog_scope,
+        management_actions: {
+          ...meta.catalog_scope.management_actions,
+          add_to_product_draft: {
+            ...meta.catalog_scope.management_actions.add_to_product_draft,
+            release_state_options: [],
+          },
+        },
+      },
+    },
+  }),
+  (error) => isContractGapError(error),
+  'missing release-state declarations stop the frontend',
+);
+cases += 1;
+assert.throws(
+  () => decodeCapabilityExplorerListResponse({
+    ...listResponse,
+    meta: {
+      ...meta,
+      catalog_scope: {
+        ...meta.catalog_scope,
+        management_actions: {
+          ...meta.catalog_scope.management_actions,
+          add_to_product_draft: {
+            ...meta.catalog_scope.management_actions.add_to_product_draft,
+            accepted_fields: ['product_key', 'menu_id', 'center_key'],
+          },
+        },
+      },
+    },
+  }),
+  (error) => isContractGapError(error),
+  'missing accepted write fields stop the frontend',
+);
+cases += 1;
+const addAction = decodedList.meta.catalog_scope.management_actions.add_to_product_draft;
+const addParams = buildCapabilityCatalogEntryAddParams(addAction, {
+  product_key: 'construction.standard',
+  menu_id: 10,
+  center_key: 'construction.center.project',
+  release_state: 'preview',
+});
+check(addParams.release_state, 'preview', 'catalog add params use declared state');
+assert.throws(
+  () => buildCapabilityCatalogEntryAddParams(addAction, {
+    ...addParams,
+    release_state: 'hidden',
+  }),
+  (error) => isContractGapError(error),
+  'undeclared release state cannot be sent',
+);
+cases += 1;
+const writeResult = {
+  action: {
+    product_key: 'construction.standard',
+    group_key: 'construction.center.project',
+    readback: {
+      menu_xmlid: row.entry_ref.menu_xmlid,
+      action_xmlid: row.entry_ref.action_xmlid,
+      menu_id: 10,
+      action_id: 20,
+      res_model: 'project.project',
+      enabled: true,
+      release_state: 'preview',
+    },
+  },
+  surface: {},
+  readback: {
+    product_key: 'construction.standard',
+    group_key: 'construction.center.project',
+    menu_xmlid: row.entry_ref.menu_xmlid,
+    action_xmlid: row.entry_ref.action_xmlid,
+    menu_id: 10,
+    action_id: 20,
+    res_model: 'project.project',
+    enabled: true,
+    release_state: 'preview',
+    draft_policy_sha256: 'sha256:draft',
+    published_snapshot_id: 9,
+    published_version: 'v9',
+  },
+};
+const decodedWrite = decodeCapabilityCatalogEntryWriteResult(writeResult, addAction, {
+  ...addParams,
+  menu_xmlid: row.entry_ref.menu_xmlid,
+  action_xmlid: row.entry_ref.action_xmlid,
+  action_id: 20,
+});
+check(decodedWrite.readback.release_state, 'preview', 'catalog add readback consumed');
+assert.throws(
+  () => decodeCapabilityCatalogEntryWriteResult(
+    { ...writeResult, readback: {} },
+    addAction,
+    {
+      ...addParams,
+      menu_xmlid: row.entry_ref.menu_xmlid,
+      action_xmlid: row.entry_ref.action_xmlid,
+      action_id: 20,
+    },
+  ),
+  (error) => isContractGapError(error),
+  'missing declared write readback stops success',
+);
+cases += 1;
+assert.throws(
+  () => decodeCapabilityCatalogEntryWriteResult(
+    {
+      ...writeResult,
+      readback: { ...writeResult.readback, group_key: 'construction.center.finance' },
+    },
+    addAction,
+    {
+      ...addParams,
+      menu_xmlid: row.entry_ref.menu_xmlid,
+      action_xmlid: row.entry_ref.action_xmlid,
+      action_id: 20,
+    },
+  ),
+  (error) => isContractGapError(error),
+  'readback identity mismatch stops success',
+);
+cases += 1;
 check(decodedList.rows[0]?.label, '项目台账', 'list row consumed');
 check(capabilityEntryKey(decodedList.rows[0]!), 'smart_construction_core.menu_project_ledger::smart_construction_core.action_project_ledger', 'stable entry key');
 const requestGate = createCapabilityExplorerRequestGate();
@@ -133,6 +324,16 @@ const centerOnly = {
   },
 };
 check(businessDomainPresentation(centerOnly).label, '业务领域未确认', 'center-only label');
+check(
+  centerSourcePresentation({ source: 'published_product_policy' }).label,
+  '已发布产品配置',
+  'published product center source is explicit',
+);
+check(
+  centerSourcePresentation({ source: 'ir.ui.menu' }).label,
+  '原生菜单来源',
+  'native center source remains distinct',
+);
 check(sceneUsagePresentation(centerOnly).label, '已场景化 · 1', 'scene usage preserved');
 check(technicalEligibilityPresentation(centerOnly).label, '技术可选', 'technical eligibility preserved');
 check(releaseStatePresentation('unknown').label, '发布状态未知', 'unknown release preserved');
@@ -325,6 +526,9 @@ const promotionSurface = {
   actor_scope: { user_id: 7, login: 'platform.admin', name: 'Platform Admin' },
   candidate_snapshots: [{ id: 31, version: 'v31', state: 'approved' }],
   available_actions: {
+    update_policy: {
+      editor_contract: 'product_center_editor.v1',
+    },
     promote: [{
       key: 'promote:31',
       label: '发布产品版本 v31',
@@ -370,6 +574,65 @@ const promotionSurface = {
     active_snapshot: { id: 30, version: 'v30', state: 'released' },
     rollback_target_snapshot_id: 29,
   },
+  product_center_editor: {
+    contract_version: 'product_center_editor.v1',
+    product_key: 'construction.standard',
+    operation_scope: {
+      kind: 'product_draft',
+      product_key: 'construction.standard',
+    },
+    editable_fields: [
+      { key: 'label', type: 'text' },
+      { key: 'sequence', type: 'integer' },
+    ],
+    centers: [{
+      center_key: 'construction.center.project',
+      label: '项目中心',
+      sequence: 20,
+      entry_count: 1,
+      editable_fields: ['label', 'sequence'],
+      config_ref: {
+        kind: 'release_operator_action',
+        intent: 'release.operator.update_policy',
+        product_key: 'construction.standard',
+      },
+      published_label: '项目中心',
+      published_sequence: 20,
+      changed_from_published: false,
+    }],
+    entries: [{
+      menu_xmlid: 'smart_construction_core.menu_sc_project_project',
+      label: '项目台账',
+      center_key: 'construction.center.project',
+      center_label: '项目中心',
+      center_sequence: 20,
+      published_center_key: 'construction.center.project',
+      published_center_label: '项目中心',
+      changed_from_published: false,
+    }],
+    published: {
+      snapshot_id: 30,
+      version: 'v30',
+      centers: [],
+    },
+    change_summary: {
+      center_count: 1,
+      entry_count: 1,
+      changed_center_count: 0,
+      changed_entry_placement_count: 0,
+    },
+    save_action: {
+      intent: 'release.operator.update_policy',
+      enabled: true,
+      params: { product_key: 'construction.standard' },
+      accepted_fields: ['center_updates', 'entry_placements'],
+    },
+    config_ref: {
+      kind: 'release_operator_action',
+      intent: 'release.operator.update_policy',
+      product_key: 'construction.standard',
+    },
+  },
 };
 const decodedPromotion = decodeReleaseOperatorSurface(promotionSurface);
 check(
@@ -389,6 +652,27 @@ assert.throws(
   }),
   (error) => isContractGapError(error),
   'missing promotion operation object stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: undefined,
+  }),
+  (error) => isContractGapError(error),
+  'missing product center editor contract stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: {
+      ...promotionSurface.product_center_editor,
+      product_key: 'construction.preview',
+    },
+  }),
+  (error) => isContractGapError(error),
+  'product center editor product identity mismatch stops',
 );
 cases += 1;
 assert.throws(
@@ -421,7 +705,10 @@ cases += 1;
 const emptyPromotion = decodeReleaseOperatorSurface({
   ...promotionSurface,
   candidate_snapshots: [],
-  available_actions: { promote: [] },
+  available_actions: {
+    ...promotionSurface.available_actions,
+    promote: [],
+  },
 });
 check(
   emptyPromotion.available_actions.promote.length,

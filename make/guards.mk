@@ -90,6 +90,8 @@ verify.native_occurrence.contract.orm: guard.prod.forbid
 .PHONY: verify.capability.identity_boundary.unit
 verify.capability.identity_boundary.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/verify/test_capability_identity_boundary.py \
+	  addons/smart_core/delivery/product_center_policy.py \
+	  addons/smart_core/delivery/product_policy_normalization.py \
 	  addons/smart_core/delivery/capability_service.py \
 	  addons/smart_core/delivery/product_policy_catalog_sync_service.py \
 	  addons/smart_construction_core/core_extension_capability_rows.py \
@@ -97,6 +99,24 @@ verify.capability.identity_boundary.unit: guard.prod.forbid
 	  addons/smart_construction_core/services/capability_registry.py \
 	  addons/smart_construction_core/services/product_menu_source.py
 	@python3 -m unittest scripts.verify.test_capability_identity_boundary
+
+.PHONY: verify.product_center.policy.unit
+verify.product_center.policy.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/delivery/product_center_policy.py \
+	  addons/smart_core/delivery/product_policy_normalization.py \
+	  addons/smart_construction_core/services/product_center_policy.py \
+	  addons/smart_construction_core/services/product_menu_source.py \
+	  scripts/verify/test_product_center_policy.py
+	@python3 -m unittest \
+	  scripts.verify.test_product_center_policy \
+	  scripts.verify.test_capability_identity_boundary
+
+.PHONY: verify.product_center.policy.orm
+verify.product_center.policy.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS=/smart_construction_core:TestProductPolicyFactAuthority.test_center_draft_publish_and_rollback_share_one_policy_authority,/smart_construction_core:TestProductPolicyFactAuthority.test_published_center_fields_override_live_scenario_names_and_order,/smart_construction_core:TestLockedMenuPolicyInitialization.test_center_identity_migration_maps_legacy_names_and_is_idempotent
 
 .PHONY: verify.capability.identity_boundary.orm
 verify.capability.identity_boundary.orm: guard.prod.forbid
@@ -519,6 +539,7 @@ verify.native_widget.provenance.unit: guard.prod.forbid
 .PHONY: verify.platform.capability_explorer.unit
 verify.platform.capability_explorer.unit: guard.prod.forbid
 	@python3 -m py_compile \
+	  addons/smart_core/delivery/platform_catalog_action_contract.py \
 	  addons/smart_core/delivery/platform_capability_explorer.py \
 	  addons/smart_core/handlers/platform_capability_explorer.py \
 	  addons/smart_core/tests/test_platform_capability_explorer.py \

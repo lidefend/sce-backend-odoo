@@ -95,6 +95,8 @@ from .core_extension import (  # noqa: F401
     smart_core_product_policy_catalog_base_keys,
     smart_core_default_product_policy_specs,
     smart_core_product_policy_catalog_label,
+    smart_core_normalize_product_policy,
+    smart_core_add_catalog_entry_to_product_policy,
     smart_core_platform_legacy_ownership_module,
     smart_core_resolve_release_actor_role_codes,
     smart_core_resolve_usage_actor_role_codes,

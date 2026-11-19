@@ -17,6 +17,7 @@ except Exception:  # pragma: no cover - standalone boundary tests install minima
 from .delivery_engine import DeliveryEngine
 from .edition_release_snapshot_promotion_service import EditionReleaseSnapshotPromotionService
 from .product_policy_service import ProductPolicyService
+from .product_policy_normalization import normalize_product_policy_for_env
 
 
 FREEZE_SURFACE_CONTRACT_VERSION = "edition_freeze_surface_v1"
@@ -187,6 +188,7 @@ class EditionReleaseSnapshotService:
                 use_published_policy=False,
             )
         )
+        policy = normalize_product_policy_for_env(self.env, _dict(policy))
         freeze_role_code = self._freeze_role_code(policy, explicit_role_code=requested_role_code)
         delivery = self.delivery_engine.build(
             data={"role_surface": {"role_code": freeze_role_code}, "scenes": [], "capabilities": []},
@@ -289,6 +291,20 @@ class EditionReleaseSnapshotService:
                         "action_xmlid": _text(menu.get("action_xmlid")),
                         "res_model": _text(menu.get("res_model")),
                         "scene_key": scene_key,
+                        "center_key": _text(
+                            menu.get("center_key")
+                            or group.get("center_key")
+                            or group.get("group_key")
+                        ),
+                        "center_label": _text(
+                            menu.get("group_label")
+                            or group.get("group_label")
+                            or group.get("label")
+                        ),
+                        "center_sequence": _to_int(
+                            menu.get("group_sequence")
+                            or group.get("sequence")
+                        ),
                     }
                 )
         return rows
@@ -546,7 +562,16 @@ class EditionReleaseSnapshotService:
             old = active_by_key.get(key)
             if not old:
                 continue
-            for field in ("enabled", "release_state", "access_level", "route"):
+            for field in (
+                "enabled",
+                "release_state",
+                "access_level",
+                "route",
+                "label",
+                "center_key",
+                "center_label",
+                "center_sequence",
+            ):
                 if row.get(field) != old.get(field):
                     changed.append(key)
                     break
@@ -576,7 +601,9 @@ class EditionReleaseSnapshotService:
             if policy_rec
             else {}
         )
+        policy = normalize_product_policy_for_env(self.env, policy)
         pages = self._draft_pages_from_policy(policy)
+        center_index = self.policy_service.center_index(policy)
         effective_pages = [row for row in pages if bool(row.get("enabled")) and _text(row.get("release_state")) in {"released", "preview"}]
         active = None
         model = self._model()
@@ -602,6 +629,7 @@ class EditionReleaseSnapshotService:
             "preview_page_count": len([row for row in effective_pages if _text(row.get("release_state")) == "preview"]),
             "hidden_page_count": len([row for row in pages if not bool(row.get("enabled")) or _text(row.get("release_state")) in {"hidden", "retired"}]),
             "pages": pages,
+            "centers": center_index.get("centers") or [],
             "preflight_checks": preflight,
             "blocking_issue_count": len([item for item in preflight if bool(item.get("blocking"))]),
             "diff_from_active": self._draft_delta(current_active=active, draft_pages=pages),

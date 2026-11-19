@@ -12,8 +12,20 @@ MODULE_PATH = (
     / "delivery"
     / "platform_capability_explorer.py"
 )
+ACTION_CONTRACT_PATH = (
+    Path(__file__).resolve().parents[1]
+    / "delivery"
+    / "platform_catalog_action_contract.py"
+)
+ACTION_CONTRACT_SPEC = importlib.util.spec_from_file_location(
+    "smart_core.delivery.platform_catalog_action_contract",
+    ACTION_CONTRACT_PATH,
+)
+ACTION_CONTRACT = importlib.util.module_from_spec(ACTION_CONTRACT_SPEC)
+sys.modules[ACTION_CONTRACT_SPEC.name] = ACTION_CONTRACT
+ACTION_CONTRACT_SPEC.loader.exec_module(ACTION_CONTRACT)
 SPEC = importlib.util.spec_from_file_location(
-    "platform_capability_explorer_under_test",
+    "smart_core.delivery.platform_capability_explorer",
     MODULE_PATH,
 )
 MODULE = importlib.util.module_from_spec(SPEC)
@@ -882,6 +894,36 @@ class ProjectionContractTests(unittest.TestCase):
         self.assertIn("def _check_permissions", source)
         self.assertIn("raise AccessError", source)
         self.assertNotIn("cross_database_target", source)
+
+    def test_add_catalog_entry_contract_declares_strict_consumer_fields(self):
+        contract = ACTION_CONTRACT.add_catalog_entry_action_contract(
+            enabled=True,
+            reason_code="OK",
+        )
+        self.assertEqual(
+            contract["accepted_fields"],
+            ["product_key", "menu_id", "center_key", "release_state"],
+        )
+        self.assertEqual(
+            contract["readback_fields"],
+            ["action", "surface", "readback"],
+        )
+        self.assertEqual(
+            [row["value"] for row in contract["release_state_options"]],
+            ["preview", "released"],
+        )
+        self.assertEqual(contract["default_release_state"], "preview")
+        contract["release_state_options"].append({"value": "hidden", "label": "隐藏"})
+        self.assertNotIn(
+            "hidden",
+            [
+                row["value"]
+                for row in ACTION_CONTRACT.add_catalog_entry_action_contract(
+                    enabled=True,
+                    reason_code="OK",
+                )["release_state_options"]
+            ],
+        )
 
 
 if __name__ == "__main__":

@@ -14,6 +14,7 @@ from .release_operator_contract_versions import (
     RELEASE_OPERATOR_READ_MODEL_CONTRACT_VERSION,
     RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
 )
+from .platform_catalog_action_contract import add_catalog_entry_action_contract
 from .product_identity import (
     LEGACY_DEFAULT_BASE_PRODUCT_KEY,
     default_operator_product_keys,
@@ -352,6 +353,8 @@ class ReleaseOperatorReadModelService:
             if isinstance(group, dict):
                 group_label = _text(group.get("group_label"))
                 group_key = _text(group.get("group_key"))
+                center_key = _text(group.get("center_key") or group_key)
+                group_sequence = int(group.get("sequence") or 0)
                 menus = [item for item in _list(group.get("menus")) if isinstance(item, dict)]
                 menu_count += len(menus)
                 for menu in menus:
@@ -371,6 +374,9 @@ class ReleaseOperatorReadModelService:
                         {
                             "group_key": group_key,
                             "group_label": group_label,
+                            "center_key": center_key,
+                            "center_label": group_label,
+                            "center_sequence": group_sequence,
                             "menu_key": _text(menu.get("menu_key")),
                             "page_key": _text(menu.get("page_key")) or _text(menu.get("scene_key")),
                             "page_label": _text(menu.get("page_label")) or _text(menu.get("label")),
@@ -414,6 +420,20 @@ class ReleaseOperatorReadModelService:
             "capability_count": enabled_capability_count,
             "scene_binding_count": len(scene_bindings),
             "menu_groups": menu_groups,
+            "centers": [
+                {
+                    "center_key": _text(
+                        group.get("center_key") or group.get("group_key")
+                    ),
+                    "label": _text(
+                        group.get("group_label") or group.get("label")
+                    ),
+                    "sequence": int(group.get("sequence") or 0),
+                    "entry_count": len(_list(group.get("menus"))),
+                }
+                for group in menu_groups
+                if isinstance(group, dict)
+            ],
             "pages": page_rows,
             "control_definition": _list(payload.get("control_definition")) or list(PAGE_CONTROL_DEFINITION),
             "scenes": scenes,
@@ -738,6 +758,189 @@ class ReleaseOperatorReadModelService:
                 "error": _text(exc),
             }
 
+    def _build_product_center_editor(
+        self,
+        *,
+        product_key: str,
+        active_snapshot_raw: dict[str, Any],
+    ) -> dict[str, Any]:
+        from .product_center_policy import product_center_index
+        from .product_policy_normalization import normalize_product_policy_for_env
+
+        policy = False
+        try:
+            policy = self.env["sc.product.policy"].sudo().search(
+                [
+                    ("product_key", "=", product_key),
+                    ("active", "=", True),
+                ],
+                limit=1,
+            )
+        except (KeyError, AttributeError):
+            policy = False
+        draft_policy = (
+            policy.to_runtime_dict()
+            if policy
+            else {
+                "product_key": product_key,
+                "menu_groups": [],
+                "capabilities": [],
+            }
+        )
+        draft_index = product_center_index(draft_policy)
+        frozen = (
+            active_snapshot_raw.get("snapshot_json")
+            if isinstance(active_snapshot_raw.get("snapshot_json"), dict)
+            else {}
+        )
+        published_policy = frozen.get("policy")
+        published_index = (
+            product_center_index(
+                normalize_product_policy_for_env(
+                    self.env,
+                    published_policy,
+                )
+            )
+            if isinstance(published_policy, dict)
+            else {"centers": [], "entries": [], "by_menu": {}}
+        )
+        published_by_menu = {
+            row["menu_xmlid"]: row
+            for row in published_index.get("entries") or []
+            if isinstance(row, dict)
+        }
+        entries = []
+        changed_placements = 0
+        for row in draft_index.get("entries") or []:
+            published = published_by_menu.get(row["menu_xmlid"]) or {}
+            changed = bool(
+                published
+                and (
+                    published.get("center_key") != row.get("center_key")
+                    or published.get("center_label") != row.get("center_label")
+                    or published.get("center_sequence") != row.get("center_sequence")
+                )
+            )
+            changed_placements += int(changed)
+            entries.append(
+                {
+                    **row,
+                    "published_center_key": _text(
+                        published.get("center_key")
+                    ),
+                    "published_center_label": _text(
+                        published.get("center_label")
+                    ),
+                    "changed_from_published": changed,
+                }
+            )
+        config_ref = {
+            "kind": "release_operator_action",
+            "intent": "release.operator.update_policy",
+            "product_key": product_key,
+            "editor_contract": "product_center_editor.v1",
+        }
+        centers = []
+        published_centers = {
+            _text(row.get("center_key")): row
+            for row in published_index.get("centers") or []
+            if isinstance(row, dict)
+        }
+        for row in draft_index.get("centers") or []:
+            published = published_centers.get(row["center_key"]) or {}
+            centers.append(
+                {
+                    **row,
+                    "editable_fields": ["label", "sequence"],
+                    "config_ref": dict(config_ref),
+                    "published_label": _text(published.get("label")),
+                    "published_sequence": int(
+                        published.get("sequence") or 0
+                    ),
+                    "changed_from_published": bool(
+                        published
+                        and (
+                            published.get("label") != row.get("label")
+                            or published.get("sequence") != row.get("sequence")
+                        )
+                    ),
+                }
+            )
+        active_snapshot = self._serialize_snapshot(active_snapshot_raw)
+        return {
+            "contract_version": "product_center_editor.v1",
+            "product_key": product_key,
+            "source_authority": {
+                "kind": "product_center_editor_projection",
+                "authorities": [
+                    "sc.product.policy.menu_groups",
+                    "sc.edition.release.snapshot.policy.menu_groups",
+                ],
+                "draft_source": "sc.product.policy",
+                "published_source": "sc.edition.release.snapshot",
+                "projection_only": True,
+            },
+            "operation_scope": {
+                "kind": "product_draft",
+                "product_key": product_key,
+                "published_runtime_unchanged_until_release": True,
+            },
+            "editable_fields": [
+                {
+                    "key": "label",
+                    "label": "中心名称",
+                    "type": "text",
+                    "required": True,
+                    "max_length": 80,
+                },
+                {
+                    "key": "sequence",
+                    "label": "显示顺序",
+                    "type": "integer",
+                    "required": True,
+                    "minimum": 0,
+                    "maximum": 9999,
+                },
+                {
+                    "key": "center_key",
+                    "label": "入口所属中心",
+                    "type": "select",
+                    "required": True,
+                    "options_source": "centers",
+                },
+            ],
+            "centers": centers,
+            "entries": entries,
+            "published": {
+                "snapshot_id": int(active_snapshot.get("id") or 0),
+                "version": _text(active_snapshot.get("version")),
+                "label": _text(active_snapshot.get("label")),
+                "centers": list(published_index.get("centers") or []),
+            },
+            "change_summary": {
+                "center_count": len(centers),
+                "entry_count": len(entries),
+                "changed_center_count": len(
+                    [
+                        row
+                        for row in centers
+                        if row.get("changed_from_published")
+                    ]
+                ),
+                "changed_entry_placement_count": changed_placements,
+            },
+            "save_action": {
+                "key": f"update_policy:{product_key}",
+                "intent": "release.operator.update_policy",
+                "enabled": bool(policy),
+                "reason_code": "OK" if policy else "PRODUCT_POLICY_NOT_FOUND",
+                "params": {"product_key": product_key},
+                "accepted_fields": ["center_updates", "entry_placements"],
+                "readback": ["policy", "surface", "readback"],
+            },
+            "config_ref": config_ref,
+        }
+
     def build_read_model(self, *, product_key: str = "", action_limit: int = 20) -> dict[str, Any]:
         from .release_operator_contract_registry import build_release_operator_contract_registry
 
@@ -762,6 +965,10 @@ class ReleaseOperatorReadModelService:
             "released_snapshot_lineage": deepcopy(_dict(_dict(audit.get("runtime")).get("released_snapshot_lineage"))),
         }
         control_scope = self._build_control_scope(product_key=identity["product_key"])
+        product_center_editor = self._build_product_center_editor(
+            product_key=identity["product_key"],
+            active_snapshot_raw=active_snapshot,
+        )
         release_pipeline = self._build_release_pipeline(
             product_key=identity["product_key"],
             control_scope=control_scope,
@@ -843,6 +1050,24 @@ class ReleaseOperatorReadModelService:
                 "params": {
                     "product_key": identity["product_key"],
                 },
+                "editor_contract": "product_center_editor.v1",
+                "accepted_fields": ["center_updates", "entry_placements"],
+                "readback_fields": ["policy", "surface", "readback"],
+            },
+            "add_catalog_entry": {
+                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
+                "key": f"add_catalog_entry:{identity['product_key']}",
+                "label": "加入产品草案",
+                **add_catalog_entry_action_contract(
+                    enabled=True,
+                    reason_code="OK",
+                ),
+                "role_context": role_context,
+                "params": {
+                    "product_key": identity["product_key"],
+                    "release_state": "preview",
+                },
+                "editor_contract": "product_center_editor.v1",
             },
             "runtime_probe": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
@@ -921,6 +1146,7 @@ class ReleaseOperatorReadModelService:
             "actor_role_context": role_context,
             "actor_scope": actor,
             "control_scope": control_scope,
+            "product_center_editor": product_center_editor,
             "product_delivery_console": product_delivery_console,
             "release_pipeline": release_pipeline,
             "current_release_state": current_release_state,

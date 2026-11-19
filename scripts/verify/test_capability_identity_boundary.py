@@ -70,8 +70,9 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
 
     def test_menu_row_remains_entry_alias_identity(self):
         source = _load_product_menu_source()
+        center = source.center_for_primary_key("contract")
         row = source._menu_row(
-            "合同中心",
+            center,
             "日常合同",
             "smart_construction_core.menu_sc_p1_daily_contract",
             "smart_construction_core.action_sc_general_contract",
@@ -83,11 +84,14 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
         self.assertFalse(row["business_capability"])
         self.assertEqual(row["qualification_authority"], "published_product_release")
         self.assertEqual(row["provider_authority"], "native_menu_action_entry")
+        self.assertEqual(row["center_key"], "construction.center.contract")
+        self.assertEqual(row["group_key"], "construction.center.contract")
 
     def test_scene_entry_remains_entry_alias_identity(self):
         source = _load_product_menu_source()
+        center = source.center_for_primary_key("project")
         row = source._scene_entry_row(
-            "项目中心",
+            center,
             "项目驾驶舱",
             "smart_construction_core.menu_project_dashboard",
             "project.execution",
@@ -97,11 +101,13 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
         self.assertEqual(row["identity_kind"], "entry_compatibility_alias")
         self.assertFalse(row["business_capability"])
         self.assertEqual(row["provider_authority"], "scene_entry_target")
+        self.assertEqual(row["center_key"], "construction.center.project")
 
     def test_menu_capability_projection_preserves_alias_contract(self):
         source = _load_product_menu_source()
+        center = source.center_for_primary_key("contract")
         row = source._menu_row(
-            "合同中心",
+            center,
             "日常合同",
             "smart_construction_core.menu_sc_p1_daily_contract",
             "smart_construction_core.action_sc_general_contract",

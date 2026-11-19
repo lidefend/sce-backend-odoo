@@ -85,6 +85,39 @@ class ScProductPolicy(models.Model):
         return records
 
     def write(self, vals):
+        if "menu_groups" in vals:
+            from odoo.addons.smart_core.delivery.product_policy_normalization import (
+                normalize_product_policy_for_env,
+            )
+
+            normalized_groups = []
+            normalized_capabilities = vals.get("capabilities")
+            for rec in self:
+                normalized = normalize_product_policy_for_env(
+                    rec.env,
+                    {
+                        **rec.to_runtime_dict(),
+                        **vals,
+                    },
+                )
+                normalized_groups.append(normalized.get("menu_groups") or [])
+                if normalized_capabilities is None:
+                    normalized_capabilities = normalized.get("capabilities")
+            if len(self) > 1 and any(
+                groups != normalized_groups[0]
+                for groups in normalized_groups[1:]
+            ):
+                from odoo.exceptions import ValidationError
+
+                raise ValidationError(
+                    "Product center policy write across multiple policies must "
+                    "resolve to the same normalized definitions."
+                )
+            if len(self) == 1:
+                vals = dict(vals)
+                vals["menu_groups"] = normalized_groups[0]
+                if normalized_capabilities is not None:
+                    vals["capabilities"] = normalized_capabilities
         draft_fields = {"menu_groups", "scenes", "capabilities", "scene_version_bindings", "state",
                         "access_level", "allowed_role_codes", "label", "version", "active",
                         "product_key", "base_product_key", "edition_key"} & set(vals)
@@ -177,9 +210,12 @@ class ScProductPolicy(models.Model):
 
     def to_runtime_dict(self) -> dict[str, Any]:
         from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
+        from odoo.addons.smart_core.delivery.product_policy_normalization import (
+            normalize_product_policy_for_env,
+        )
 
         self.ensure_one()
-        return {
+        payload = {
             "id": int(self.id),
             "active": bool(self.active),
             "product_key": _text(self.product_key),
@@ -197,6 +233,7 @@ class ScProductPolicy(models.Model):
             "note": _text(self.note),
             "policy_source_authority": ProductPolicyService.source_authority_contract(),
         }
+        return normalize_product_policy_for_env(self.env, payload)
 
     def action_freeze_candidate(self):
         from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
