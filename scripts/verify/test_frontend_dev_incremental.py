@@ -22,6 +22,7 @@ from scripts.verify.frontend_dev_incremental import (
     iteration_plan,
     print_plan,
     select_targets,
+    validation_exclusion_targets,
     worktree_changed_paths,
 )
 from scripts.ops.incremental_execution import current_identity, reuse_identity
@@ -36,6 +37,30 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_explicit_validation_exclusions_remove_only_declared_targets(self):
+        excluded = "verify.product_center.policy.orm"
+        self.assertEqual(
+            validation_exclusion_targets({
+                "validation_exclusions": {"targets": [excluded]},
+            }),
+            {excluded},
+        )
+        output = io.StringIO()
+        with redirect_stdout(output):
+            print_plan(
+                [
+                    "addons/smart_construction_core/models/support/product_policy_sync.py"
+                ],
+                excluded_targets={excluded},
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        self.assertNotIn(excluded, payload["requiredTargets"])
+        self.assertEqual(payload["excludedTargets"], [excluded])
+        with self.assertRaises(incremental.RunError):
+            validation_exclusion_targets({
+                "validation_exclusions": {"targets": ["not-a-verify-target"]},
+            })
+
     def test_shared_release_assertions_are_required_before_merge(self):
         makefile = (ROOT / "make/frontend.mk").read_text()
         def prerequisites(target):
@@ -490,6 +515,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_platform_capability_explorer_selects_its_readonly_unit(self) -> None:
         for path in (
             "addons/smart_core/delivery/platform_capability_explorer.py",
+            "addons/smart_core/delivery/platform_catalog_action_contract.py",
             "addons/smart_core/handlers/platform_capability_explorer.py",
             "addons/smart_core/tests/test_platform_capability_explorer.py",
             "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
@@ -510,12 +536,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.capability.identity_boundary.unit",
                 "verify.platform.capability_explorer.unit",
+                "verify.product_center.policy.unit",
             ],
         )
 
     def test_admin_close_management_surfaces_select_their_owning_families(self) -> None:
         for path in (
-            "addons/smart_core/delivery/release_operator_read_model_service.py",
+            "addons/smart_core/delivery/platform_management_action_contract.py",
+            "addons/smart_core/delivery/release_operator_contract_registry.py",
             "addons/smart_core/delivery/release_operator_surface_service.py",
             "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
         ):
@@ -524,6 +552,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.admin_close_01.backend.unit"],
                 )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/delivery/release_operator_read_model_service.py"
+            ]),
+            [
+                "verify.admin_close_01.backend.unit",
+                "verify.product_center.policy.unit",
+            ],
+        )
         for path in (
             "addons/smart_construction_scene/handlers/scenario_activation.py",
             "addons/smart_construction_scene/services/tenant_scene_activation.py",
@@ -652,6 +689,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.daily.permission_truth.capability.orm",
                 "verify.navigation.publication_consumers.unit",
+                "verify.product_center.policy.orm",
+                "verify.product_center.policy.unit",
                 "verify.scenario.center_projection.guard",
             ],
         )
@@ -1082,6 +1121,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.daily.permission_truth.capability.orm",
                 "verify.navigation.publication_consumers.unit",
+                "verify.product_center.policy.orm",
+                "verify.product_center.policy.unit",
                 "verify.scenario.center_projection.guard",
             ],
         )
@@ -1180,6 +1221,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/verify/test_capability_identity_boundary.py",
             "addons/smart_core/delivery/capability_service.py",
+            "addons/smart_construction_core/services/product_capability_admission.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
@@ -1193,6 +1235,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.capability.identity_boundary.unit",
                 "verify.platform.capability_explorer.unit",
+                "verify.product_center.policy.unit",
             ],
         )
         self.assertEqual(
@@ -1217,6 +1260,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.navigation_policy.unit",
                 "verify.frontend.role_surface_exposure_declaration.guard",
                 "verify.product.menu.contract_v1.guard",
+                "verify.product_center.policy.unit",
                 "verify.role_surface.landing.contract.unit",
                 "verify.workflow_action_semantics.guard",
             ],
@@ -1578,6 +1622,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py": [
                 "verify.capability.identity_boundary.orm",
+                "verify.product_center.policy.orm",
+                "verify.product_center.policy.unit",
                 "verify.smart_construction_core.close_03.preview_promotion.orm",
             ],
             "addons/smart_construction_core/services/contract_governance_overrides.py": [
@@ -1676,6 +1722,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             "config/product_menu_contract_v1.json": [
                 "verify.product.menu.contract_v1.guard",
+                "verify.product_center.policy.unit",
             ],
             "scripts/verify/scene_fact_data_boundary_guard.py": [
                 "verify.navigation.publication_consumers.unit",
@@ -1757,7 +1804,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.daily.published_face.target.unit"],
+                    [
+                        "verify.daily.published_face.target.unit",
+                        *(
+                            ["verify.product_center.policy.unit"]
+                            if path.endswith("edition_release_snapshot_service.py")
+                            else []
+                        ),
+                    ],
                 )
         self.assertEqual(
             select_targets(["make/guards.mk"]),

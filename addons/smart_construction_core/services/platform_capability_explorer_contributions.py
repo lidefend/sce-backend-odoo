@@ -23,8 +23,10 @@ def _text(value: Any) -> str:
 
 
 def _int(value: Any, default: int = 0) -> int:
+    if value in (None, ""):
+        return default
     try:
-        return int(value or default)
+        return int(value)
     except Exception:
         return default
 
@@ -84,9 +86,50 @@ def _release_center_map(source: dict[str, Any]) -> tuple[dict[str, dict[str, Any
     return centers, conflicts
 
 
+def _published_release_center_map(
+    release_projection: dict[str, Any],
+) -> tuple[dict[str, dict[str, Any]], list[dict[str, Any]]]:
+    """Project the effective published product center without seed inference."""
+    centers: dict[str, dict[str, Any]] = {}
+    raw_centers = (
+        release_projection.get("release_centers")
+        if isinstance(release_projection.get("release_centers"), dict)
+        else {}
+    )
+    for menu_xmlid, raw_center in raw_centers.items():
+        center = dict(raw_center) if isinstance(raw_center, dict) else {}
+        center_key = _text(center.get("center_key") or center.get("key"))
+        if not menu_xmlid or not center_key:
+            continue
+        product_key = _text(center.get("product_key"))
+        centers[menu_xmlid] = {
+            "key": center_key,
+            "label": _text(center.get("center_label") or center.get("label")),
+            "sequence": _int(
+                center.get("center_sequence")
+                if center.get("center_sequence") is not None
+                else center.get("sequence"),
+                10,
+            ),
+            "product_key": product_key,
+            "snapshot_id": _int(center.get("snapshot_id")),
+            "version": _text(center.get("version")),
+            "source": "published_product_policy",
+            "config_ref": {
+                "kind": "release_operator_action",
+                "intent": "release.operator.update_policy",
+                "product_key": product_key,
+                "editor_contract": "product_center_editor.v1",
+            },
+        }
+    return centers, []
+
+
 def _unavailable_release_projection(reason_code: str) -> dict[str, Any]:
     return {
         "menu_release_states": {},
+        "release_centers": {},
+        "product_centers": [],
         "snapshots": [
             {
                 "product_key": product_key,
@@ -110,6 +153,7 @@ def _unavailable_release_projection(reason_code: str) -> dict[str, Any]:
 def load_capability_explorer_release_projection(
     env,
     *,
+    product_keys=None,
     platform_database_resolver=None,
     projection_loader=None,
 ):
@@ -140,12 +184,21 @@ def load_capability_explorer_release_projection(
     if not platform_database or platform_database != current_database:
         return _unavailable_release_projection("PLATFORM_RELEASE_DB_ISOLATED")
     try:
-        projection = projection_loader(env)
+        try:
+            projection = projection_loader(env, product_keys=product_keys)
+        except TypeError:
+            projection = projection_loader(env)
     except Exception:
         return _unavailable_release_projection("RELEASE_SNAPSHOT_READ_FAILED")
     projection = dict(projection) if isinstance(projection, dict) else {}
+    applied_snapshot = any(
+        isinstance(row, dict) and bool(row.get("applied"))
+        for row in projection.get("snapshots") or []
+    )
     projection["authority_available"] = bool(
-        projection.get("standard_applied") or projection.get("preview_applied")
+        applied_snapshot
+        or projection.get("standard_applied")
+        or projection.get("preview_applied")
     )
     projection["authority_reason"] = (
         "OK" if projection["authority_available"] else "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND"
@@ -275,8 +328,18 @@ def _enterprise_enablement(env, scene_bindings: dict[str, list[dict[str, Any]]])
 def _product_qualifications(
     menu_xmlids: list[str],
     release_projection: dict[str, Any],
+    product_keys: list[str] | None = None,
 ) -> dict[str, dict[str, Any]]:
     """Resolve product qualification only from active published snapshots."""
+    product_keys = list(
+        product_keys
+        or [
+            _text(row.get("product_key"))
+            for row in release_projection.get("snapshots") or []
+            if isinstance(row, dict) and _text(row.get("product_key"))
+        ]
+        or ["construction.standard", "construction.preview"]
+    )
     states_by_product = release_projection.get("menu_release_states_by_product") or {}
     snapshots_by_product = {
         _text(row.get("product_key")): row
@@ -288,7 +351,7 @@ def _product_qualifications(
     for menu_xmlid in sorted({_text(value) for value in menu_xmlids if _text(value)}):
         evidence = []
         qualities: dict[str, str] = {}
-        for product_key in ("construction.standard", "construction.preview"):
+        for product_key in product_keys:
             snapshot = snapshots_by_product.get(product_key) or {}
             release_state = _text(
                 (states_by_product.get(product_key) or {}).get(menu_xmlid)
@@ -302,8 +365,7 @@ def _product_qualifications(
                 if authority_available
                 else "not_verified"
             )
-            edition_key = product_key.rsplit(".", 1)[-1]
-            qualities[edition_key] = status
+            qualities[product_key] = status
             evidence.append(
                 {
                     "product_key": product_key,
@@ -326,13 +388,26 @@ def _product_qualifications(
                     "qualification_authority": "published_product_release",
                 }
             )
+        selected_key = _text(release_projection.get("selected_product_key"))
+        selected_status = (
+            qualities.get(selected_key)
+            if selected_key
+            else ""
+        )
         result[menu_xmlid] = {
-            "standard": qualities["standard"],
-            "preview": qualities["preview"],
+            "standard": qualities.get("construction.standard", "not_verified"),
+            "preview": qualities.get("construction.preview", "not_verified"),
+            "selected_product_key": selected_key,
+            "selected_status": selected_status or "not_verified",
+            "by_product": dict(qualities),
             "authority_available": authority_available,
             "reason_code": (
                 "PRODUCT_QUALIFIED"
-                if qualities["standard"] == "qualified"
+                if (
+                    selected_status == "qualified"
+                    if selected_key
+                    else qualities.get("construction.standard") == "qualified"
+                )
                 else "PRODUCT_NOT_QUALIFIED"
                 if authority_available
                 else _text(release_projection.get("authority_reason"))
@@ -343,12 +418,13 @@ def _product_qualifications(
     return result
 
 
-def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
+def get_platform_capability_explorer_contributions(
+    env,
+    menu_ids,
+    menu_xmlids,
+    catalog_scope=None,
+):
     """Contribute existing scene and publication facts without persisting discovery."""
-    from .product_menu_source import (
-        load_source,
-    )
-
     normalized_menu_ids = sorted(
         {
             _int(menu_id)
@@ -358,9 +434,26 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
     )
     scene_bindings = _scene_bindings(env, normalized_menu_ids)
     enterprise_enablement = _enterprise_enablement(env, scene_bindings)
-    release_projection = load_capability_explorer_release_projection(env)
-    source = load_source()
-    release_centers, center_conflicts = _release_center_map(source)
+    scope = catalog_scope if isinstance(catalog_scope, dict) else {}
+    selected_product_key = _text(scope.get("product_key"))
+    product_keys = (
+        [selected_product_key]
+        if _text(scope.get("mode")) == "product" and selected_product_key
+        else [
+            _text(row.get("product_key"))
+            for row in scope.get("products") or []
+            if isinstance(row, dict) and _text(row.get("product_key"))
+        ]
+        or ["construction.standard", "construction.preview"]
+    )
+    release_projection = load_capability_explorer_release_projection(
+        env,
+        product_keys=product_keys,
+    )
+    release_projection["selected_product_key"] = selected_product_key
+    release_centers, center_conflicts = _published_release_center_map(
+        release_projection
+    )
     relevant_release_states = {
         menu_xmlid: state
         for menu_xmlid, state in (
@@ -382,6 +475,7 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
             }
         ),
         release_projection,
+        product_keys,
     )
     return {
         "source_module": "smart_construction_core",

@@ -15,6 +15,10 @@ from odoo.addons.smart_core.core.platform_database_contract import (
 )
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
 from odoo.addons.smart_core.delivery.product_identity import LEGACY_DEFAULT_BASE_PRODUCT_KEY
+from odoo.addons.smart_core.delivery.product_center_policy import product_center_index
+from odoo.addons.smart_core.delivery.product_policy_normalization import (
+    normalize_product_policy_for_env,
+)
 from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 def _resolve_user_acceptance_nav_contract(env) -> dict:
@@ -109,11 +113,12 @@ def _text(value) -> str:
     return str(value or "").strip()
 
 
-def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
+def _release_gate_page_contract_from_snapshot(snapshot: dict, env=None) -> dict:
     meta_json = snapshot.get("meta_json") if isinstance(snapshot.get("meta_json"), dict) else {}
     release_draft = meta_json.get("release_draft") if isinstance(meta_json.get("release_draft"), dict) else {}
     pages = release_draft.get("pages") if isinstance(release_draft.get("pages"), list) else []
     frozen = snapshot.get("snapshot_json") if isinstance(snapshot.get("snapshot_json"), dict) else {}
+    policy = {}
     if "policy_snapshot_schema" in frozen:
         if frozen["policy_snapshot_schema"] != "maintained_product_policy.v1":
             raise ValueError("PUBLISHED_PRODUCT_POLICY_SCHEMA_UNSUPPORTED")
@@ -127,6 +132,8 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
             raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
         if EditionReleaseSnapshotService._draft_fingerprint(policy=policy, pages=pages) != release_draft.get("fingerprint"):
             raise ValueError("PUBLISHED_PRODUCT_PAGES_FINGERPRINT_MISMATCH")
+        if env is not None:
+            policy = normalize_product_policy_for_env(env, policy)
     allowed = {
         "page_keys": set(),
         "menu_keys": set(),
@@ -164,6 +171,31 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
             allowed["menu_ids"].add(f"system.menu_{menu_id}")
         if action_id:
             allowed["action_ids"].add(f"/a/{action_id}")
+    center_index = product_center_index(policy) if policy else {
+        "centers": [],
+        "by_menu": {},
+    }
+    center_identity = {
+        "product_key": _text(snapshot.get("product_key")),
+        "snapshot_id": int(snapshot.get("id") or 0),
+        "version": _text(snapshot.get("version")),
+    }
+    product_centers = [
+        {**center, **center_identity}
+        for center in center_index["centers"]
+    ]
+    entry_centers = {}
+    for page in pages:
+        if not isinstance(page, dict):
+            continue
+        menu_xmlid = _text(page.get("menu_xmlid"))
+        center = center_index["by_menu"].get(menu_xmlid)
+        if center:
+            entry_centers[menu_xmlid] = {
+                **center,
+                **center_identity,
+                "source": "published_product_policy",
+            }
     return {
         "snapshot_id": int(snapshot.get("id") or 0),
         "version": _text(snapshot.get("version")),
@@ -171,6 +203,8 @@ def _release_gate_page_contract_from_snapshot(snapshot: dict) -> dict:
         "page_count": effective_count,
         "total_page_count": len(pages),
         "menu_release_states": release_states,
+        "product_centers": product_centers,
+        "entry_centers": entry_centers,
         "fingerprint": _text(release_draft.get("fingerprint")),
         "allowed": allowed,
     }
@@ -236,7 +270,7 @@ def _load_platform_release_gate(env, *, product_key: str) -> dict:
             "platform_db": platform_db,
             "reason": "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND",
         }
-    contract = _release_gate_page_contract_from_snapshot(snapshot)
+    contract = _release_gate_page_contract_from_snapshot(snapshot, env=env)
     if int(contract.get("page_count") or 0) <= 0:
         return {
             "applied": False,

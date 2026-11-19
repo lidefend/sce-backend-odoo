@@ -7,6 +7,7 @@ from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigur
 
 from odoo.addons.smart_construction_core.services import role_surface_contract as _role_surface_contract
 from odoo.addons.smart_construction_core.services import role_catalog_contract as _role_catalog_contract
+from odoo.addons.smart_construction_core.services import product_center_policy as _product_center_policy
 from odoo.addons.smart_core.core.delivery_menu_defaults import register_current_project_scope_model
 from odoo.addons.smart_core.core.project_context import (
     register_business_scope_exempt_model,
@@ -1156,12 +1157,22 @@ def get_platform_capability_explorer_scope(env):
     return get_scope(env)
 
 
-def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
+def get_platform_capability_explorer_contributions(
+    env,
+    menu_ids,
+    menu_xmlids,
+    catalog_scope=None,
+):
     from odoo.addons.smart_construction_core.services.platform_capability_explorer_contributions import (
         get_platform_capability_explorer_contributions as get_contributions,
     )
 
-    return get_contributions(env, menu_ids, menu_xmlids)
+    return get_contributions(
+        env,
+        menu_ids,
+        menu_xmlids,
+        catalog_scope=catalog_scope,
+    )
 
 
 def smart_core_register(registry):
@@ -1927,6 +1938,26 @@ def smart_core_default_product_policy_specs(env):
 def smart_core_product_policy_catalog_label(env, identity):
     del env
     return _hook_facts.product_policy_catalog_label(identity)
+
+
+def smart_core_normalize_product_policy(env, policy):
+    del env
+    return _product_center_policy.normalize_hook_result(policy)
+
+
+def smart_core_add_catalog_entry_to_product_policy(
+    env,
+    policy,
+    params,
+):
+    del env
+    params = params if isinstance(params, dict) else {}
+    return _product_center_policy.add_catalog_entry_to_product_policy(
+        policy,
+        menu_id=int(params.get("menu_id") or 0),
+        center_key=str(params.get("center_key") or "").strip(),
+        release_state=str(params.get("release_state") or "preview").strip(),
+    )
 
 
 def smart_core_platform_legacy_ownership_module(env):

@@ -61,6 +61,12 @@ _load_module(
     "odoo.addons.smart_core.delivery.release_operator_read_model_service",
     "addons/smart_core/delivery/release_operator_read_model_service.py",
 )
+MANAGEMENT_ACTIONS = sys.modules[
+    "odoo.addons.smart_core.delivery.platform_management_action_contract"
+]
+READ_MODEL = sys.modules[
+    "odoo.addons.smart_core.delivery.release_operator_read_model_service"
+].ReleaseOperatorReadModelService
 TARGET = _load_module(
     "odoo.addons.smart_core.delivery.release_operator_surface_service",
     "addons/smart_core/delivery/release_operator_surface_service.py",
@@ -134,14 +140,41 @@ class _RecordSet(list):
 
 
 class _ReleaseActionRow:
+    id = 31
+    active = True
+    approval_required = True
+    approval_state = "pending_approval"
+    state = "pending"
+
     def to_runtime_dict(self):
         return {
             "id": 31,
             "action_type": "rollback_snapshot",
             "product_key": "construction.standard",
+            "target_snapshot_id": 7,
             "approval_state": "pending_approval",
             "state": "pending",
         }
+
+
+class _SnapshotRow:
+    def __init__(self, row_id, *, active=True):
+        self.id = row_id
+        self.active = active
+        self.product_key = "construction.standard"
+        self.state = "superseded"
+
+    def exists(self):
+        return self if self.active else self.__class__(self.id, active=False)
+
+
+class _SnapshotRows(_RecordSet):
+    def __init__(self, rows):
+        super().__init__(rows)
+        self.by_id = {row.id: row for row in rows}
+
+    def browse(self, row_id):
+        return self.by_id.get(int(row_id), _SnapshotRow(int(row_id), active=False))
 
 
 class _Env(dict):
@@ -149,6 +182,9 @@ class _Env(dict):
         super().__init__()
         self.user = object()
         self["sc.release.action"] = _RecordSet([_ReleaseActionRow()])
+        self["sc.edition.release.snapshot"] = _SnapshotRows([
+            _SnapshotRow(7, active=True),
+        ])
         # A deployment with the construction bundle installed publishes both
         # product bases; the platform-only deployment publishes just `platform`.
         self["ir.config_parameter"] = _ConfigParameter(
@@ -174,6 +210,99 @@ class _ConfigParameter:
 
 
 class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
+    def test_platform_action_definitions_declare_complete_policy_inputs(self):
+        definition = MANAGEMENT_ACTIONS.management_action_definition(
+            "update_policy"
+        )
+        self.assertEqual(
+            definition["accepted_fields"],
+            [
+                "product_key",
+                "state",
+                "access_level",
+                "active",
+                "allowed_role_codes",
+                "center_updates",
+                "entry_placements",
+            ],
+        )
+        fields = {
+            row["key"]: row
+            for row in definition["editable_fields"]
+        }
+        self.assertEqual(
+            [row["value"] for row in fields["state"]["options"]],
+            ["draft", "preview", "stable", "archived"],
+        )
+        self.assertEqual(
+            [row["value"] for row in fields["access_level"]["options"]],
+            ["public", "internal", "role_restricted"],
+        )
+
+    def test_declared_confirmation_is_not_overridden_by_dynamic_default(self):
+        decorated = READ_MODEL._decorate_operator_action(
+            {
+                "key": "freeze:test",
+                "label": "Freeze",
+                "intent": "release.operator.freeze",
+                "enabled": True,
+                "reason_code": "OK",
+                "prerequisites": {"confirmation_required": False},
+            },
+            actor={"user_id": 7},
+            target_scope={"product_key": "construction.standard"},
+            operation_object={"product_key": "construction.standard"},
+            confirm_required=True,
+        )
+        self.assertFalse(
+            decorated["prerequisites"]["confirmation_required"]
+        )
+        self.assertEqual(
+            decorated["prerequisites"]["confirmation_source"],
+            "platform_action_definition",
+        )
+
+    def test_rollback_action_uses_dedicated_snapshot_rollback_authority(self):
+        source = (
+            ROOT / "addons/smart_core/handlers/release_operator.py"
+        ).read_text(encoding="utf-8")
+        rollback_branch = source.split('elif action_type == "rollback_snapshot":', 1)[1].split(
+            "else:",
+            1,
+        )[0]
+        self.assertIn("rollback_to_snapshot(", rollback_branch)
+        self.assertNotIn("promote_to_released(", rollback_branch)
+        service_source = (
+            ROOT
+            / "addons/smart_core/delivery/edition_release_snapshot_service.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ROLLBACK_TARGET_INACTIVE", service_source)
+        self.assertIn("if not target.active:", service_source)
+
+    def test_inactive_rollback_target_is_not_declared_executable(self):
+        env = _Env()
+        env["sc.edition.release.snapshot"] = _SnapshotRows([
+            _SnapshotRow(7, active=False),
+        ])
+        service = TARGET.ReleaseOperatorSurfaceService(env)
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        surface = service.build_surface(
+            product_key="construction.standard",
+            action_limit=5,
+        )
+        rollback = (surface.get("available_actions") or {}).get("rollback") or {}
+        self.assertFalse(rollback.get("enabled"))
+        self.assertEqual(rollback.get("reason_code"), "ROLLBACK_TARGET_INACTIVE")
+        pending = (surface.get("pending_approval") or {}).get("actions") or []
+        approve_action = pending[0].get("approve_action") or {}
+        self.assertFalse(approve_action.get("enabled"))
+        self.assertEqual(
+            approve_action.get("reason_code"),
+            "ROLLBACK_TARGET_INACTIVE",
+        )
+
     def test_surface_build_includes_backend_owned_copy_payload(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())
         service.read_model_service.audit_service = _AuditTrailService()
@@ -183,6 +312,15 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
 
         self.assertEqual((payload.get("source_authority") or {}).get("kind"), "release_operator_surface_projection")
         self.assertEqual((((payload.get("read_model_v1") or {}).get("source_authority") or {}).get("kind")), "release_operator_read_model_projection")
+        self.assertEqual(
+            (
+                (
+                    (payload.get("read_model_v1") or {})
+                    .get("contract_registry") or {}
+                ).get("contracts") or {}
+            ).get("platform_management_actions", {}).get("contract_version"),
+            "platform_management_actions.v1",
+        )
         self.assertEqual((payload.get("copy") or {}).get("title"), "发布控制台")
         self.assertIn("候选快照", (payload.get("copy") or {}).get("hint_candidate", ""))
         self.assertEqual((((payload.get("read_model_v1") or {}).get("copy") or {}).get("section_pending")), "待审批动作")
@@ -251,6 +389,52 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             (promote[0].get("readback") or {}).get("mode"),
             "authoritative_after_write",
         )
+        update_policy = (payload.get("available_actions") or {}).get("update_policy") or {}
+        self.assertEqual(
+            update_policy.get("accepted_fields"),
+            [
+                "product_key",
+                "state",
+                "access_level",
+                "active",
+                "allowed_role_codes",
+                "center_updates",
+                "entry_placements",
+            ],
+        )
+        self.assertEqual(
+            {
+                field.get("key")
+                for field in update_policy.get("editable_fields") or []
+            },
+            {
+                "state",
+                "access_level",
+                "active",
+                "allowed_role_codes",
+                "center_updates",
+                "entry_placements",
+            },
+        )
+        pending = (payload.get("pending_approval") or {}).get("actions") or []
+        self.assertEqual(len(pending), 1)
+        approve_action = pending[0].get("approve_action") or {}
+        self.assertEqual(approve_action.get("intent"), "release.operator.approve")
+        self.assertEqual(
+            (approve_action.get("params") or {}).get("action_id"),
+            31,
+        )
+        self.assertTrue(
+            (approve_action.get("prerequisites") or {}).get(
+                "confirmation_required"
+            )
+        )
+        rollback = (payload.get("available_actions") or {}).get("rollback") or {}
+        self.assertTrue(rollback.get("enabled"))
+        self.assertEqual(
+            (rollback.get("params") or {}).get("target_snapshot_id"),
+            7,
+        )
 
     def test_surface_copy_has_no_legacy_english_operator_labels(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())
@@ -269,6 +453,29 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             "Promote",
         ):
             self.assertNotIn(retired, encoded)
+
+    def test_surface_exposes_product_center_editor_contract(self):
+        service = TARGET.ReleaseOperatorSurfaceService(_Env())
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        payload = service.build_surface(
+            product_key="construction.standard",
+            action_limit=5,
+        )
+        editor = payload.get("product_center_editor") or {}
+        self.assertEqual(editor.get("contract_version"), "product_center_editor.v1")
+        self.assertEqual(editor.get("product_key"), "construction.standard")
+        self.assertEqual(
+            (editor.get("save_action") or {}).get("intent"),
+            "release.operator.update_policy",
+        )
+        self.assertEqual(
+            (payload.get("available_actions") or {})
+            .get("update_policy", {})
+            .get("editor_contract"),
+            "product_center_editor.v1",
+        )
 
     def test_platform_kernel_empty_surface_is_not_reported_as_blocked(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

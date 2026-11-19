@@ -95,6 +95,10 @@ class _PlatformCapabilityExplorerHandler(BaseIntentHandler):
 
     def _handle(self, operation: str, params: dict[str, Any]) -> dict[str, Any]:
         started = time.perf_counter()
+        params = {
+            **params,
+            "_authorization": dict(self.authorization_decision),
+        }
         service = PlatformCapabilityExplorerService(self.env)
         try:
             data = getattr(service, operation)(params)

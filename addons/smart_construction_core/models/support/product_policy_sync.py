@@ -19,6 +19,10 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     declared_scene_entry_key,
     load_locked_menu_policy_contract,
 )
+from odoo.addons.smart_construction_core.services.product_capability_admission import (
+    merge_admitted_menu_entry,
+    merge_admission_capability,
+)
 
 
 def _text(value):
@@ -384,6 +388,22 @@ class ScProductPolicy(models.Model):
         action_xmlid = action.get_external_id().get(action.id)
         if not xmlid or not action_xmlid or not action.res_model or action.res_model not in self.env:
             raise ValidationError("Stable menu/action identities and an installed model are required")
+        existing_entry = next(
+            (
+                deepcopy(row)
+                for group in self.menu_groups or []
+                if isinstance(group, dict)
+                for row in group.get("menus") or []
+                if isinstance(row, dict)
+                and _text(
+                    row.get("menu_xmlid")
+                    or row.get("menu_key")
+                    or row.get("page_key")
+                )
+                == xmlid
+            ),
+            None,
+        )
         groups = deepcopy(self.menu_groups or [])
         matches = [group for group in groups if group.get("group_key") == group_key]
         if len(matches) != 1:
@@ -391,16 +411,52 @@ class ScProductPolicy(models.Model):
         target = matches[0]
         for group in groups:
             group["menus"] = [row for row in group.get("menus", []) if row.get("menu_xmlid") != xmlid]
-        target["menus"].append({
-            "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
-            "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
-            "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
-            "res_model": action.res_model, "model": action.res_model,
-            "enabled": release_state in {"released", "preview"}, "release_state": release_state,
-            "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
-        })
-        self.write({"menu_groups": groups})
-        return True
+        generated_entry = {
+                "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
+                "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
+                "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
+                "res_model": action.res_model, "model": action.res_model,
+                "enabled": release_state in {"released", "preview"}, "release_state": release_state,
+                "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
+        }
+        entry = merge_admitted_menu_entry(existing_entry, generated_entry)
+        target["menus"].append(entry)
+        generated_rows = self._capabilities_from_user_confirmed_menu_groups(
+            [{**target, "menus": [entry]}]
+        )
+        if not generated_rows:
+            raise ValidationError("Native entry capability projection is unavailable")
+        generated_target = generated_rows[0]
+        capabilities = merge_admission_capability(
+            self.capabilities,
+            generated_target,
+            menu_xmlid=xmlid,
+        )
+        self.write({"menu_groups": groups, "capabilities": capabilities})
+        entry_capability = next(
+            (
+                capability
+                for capability in capabilities
+                if _text(capability.get("menu_xmlid")) == xmlid
+            ),
+            {},
+        )
+        return {
+            "policy": self.to_runtime_dict(),
+            "entry": entry,
+            "capability": entry_capability,
+            "product_key": _text(self.product_key),
+            "group_key": group_key,
+            "readback": {
+                "menu_xmlid": xmlid,
+                "action_xmlid": action_xmlid,
+                "menu_id": int(menu.id),
+                "action_id": int(action.id),
+                "res_model": _text(action.res_model),
+                "enabled": bool(entry["enabled"]),
+                "release_state": release_state,
+            },
+        }
 
     @api.model
     def synchronize_locked_formal_menu_policy(

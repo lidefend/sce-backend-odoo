@@ -19,6 +19,10 @@ from odoo.addons.smart_core.core.navigation_identity import (
     WORKBENCH_GROUP_KEY,
     WORKSPACE_SCENE_KEY as WORKSPACE_HOME_SCENE_KEY,
 )
+from odoo.addons.smart_core.delivery.product_center_policy import (
+    stable_center_key as stable_published_center_key,
+)
+from .product_menu_source import center_identity, stable_center_key
 
 
 SURFACE_PATH = Path(__file__).resolve().parents[1] / "data" / "scenario_product_surface.json"
@@ -55,6 +59,13 @@ def _int_or(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _first_declared(*values: Any, default: Any = None) -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return default
 
 
 def _scenario_location_sort_key(location: dict[str, Any]):
@@ -395,6 +406,9 @@ def flatten_authorized_nav_leaves(
         parent_menu_xmlid: str = "",
         parent_group_key: str = "",
         parent_group_label: str = "",
+        parent_center_key: str = "",
+        parent_center_label: str = "",
+        parent_center_sequence: int = 0,
         center_menu_id: int = 0,
         depth: int = 0,
     ) -> None:
@@ -426,6 +440,31 @@ def flatten_authorized_nav_leaves(
                 or meta.get("group_key")
                 or parent_group_key
             )
+            center_key = _text(
+                node.get("policy_center_key")
+                or node.get("center_key")
+                or meta.get("policy_center_key")
+                or meta.get("center_key")
+                or parent_center_key
+            )
+            center_label = _text(
+                node.get("policy_center_label")
+                or node.get("center_label")
+                or meta.get("policy_center_label")
+                or meta.get("center_label")
+                or parent_center_label
+            )
+            try:
+                center_sequence = int(_first_declared(
+                    node.get("policy_center_sequence"),
+                    node.get("center_sequence"),
+                    meta.get("policy_center_sequence"),
+                    meta.get("center_sequence"),
+                    parent_center_sequence,
+                    default=0,
+                ))
+            except (TypeError, ValueError):
+                center_sequence = parent_center_sequence
             # The center is the delivery tree's direct child of the business
             # root (depth 1). Its stable identity is the native center menu id
             # carried on the group node, never the editable display name.
@@ -445,6 +484,8 @@ def flatten_authorized_nav_leaves(
                 # sibling whose native id is missing never inherits the
                 # previous sibling's center.
                 center_menu_id = native_center_id
+                center_key = center_key or group_key
+                center_label = center_label or group_label
             effective_group_label = group_label or parent_group_label
             if menu_id > 0 and (action_id > 0 or route):
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
@@ -455,7 +496,11 @@ def flatten_authorized_nav_leaves(
                     "action_xmlid": _text(entry.get("action_xmlid")),
                     "model": _text(node.get("model") or meta.get("model") or entry.get("model")),
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
-                    "sequence": int(node.get("sequence") or meta.get("sequence") or 1000),
+                    "sequence": int(_first_declared(
+                        node.get("sequence"),
+                        meta.get("sequence"),
+                        default=1000,
+                    )),
                     "route": route,
                     "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
@@ -463,10 +508,23 @@ def flatten_authorized_nav_leaves(
                     "parent_menu_xmlid": leaf_parent,
                     "policy_group_key": group_key,
                     "policy_group_label": effective_group_label,
+                    "policy_center_key": center_key,
+                    "policy_center_label": center_label,
+                    "policy_center_sequence": center_sequence,
                     "center_menu_id": center_menu_id,
                 })
             if children:
-                walk(children, menu_xmlid, group_key, effective_group_label, center_menu_id, depth + 1)
+                walk(
+                    children,
+                    menu_xmlid,
+                    group_key,
+                    effective_group_label,
+                    center_key,
+                    center_label,
+                    center_sequence,
+                    center_menu_id,
+                    depth + 1,
+                )
 
     walk(nav or [])
     return leaves
@@ -547,10 +605,20 @@ def legacy_native_center_seed(env, menu) -> dict[str, Any]:
             "center_name": "系统入口",
             "center_sequence": 900,
         }
+    center_xmlid = _menu_external_id(env, center)
+    identity = center_identity(center_xmlid) or center_identity(_text(center.name))
+    stable_key = (
+        _text(identity.get("stable_key"))
+        if identity
+        else stable_center_key(center_xmlid) or f"center:{center.id}"
+    )
     return {
-        "center_key": _menu_external_id(env, center) or f"center:{center.id}",
-        "center_name": _text(center.name),
-        "center_sequence": _int_or(center.sequence, 10),
+        "center_key": stable_key,
+        "center_name": _text(identity.get("name") if identity else center.name) or stable_key,
+        "center_sequence": _int_or(
+            identity.get("sequence") if identity else center.sequence,
+            10,
+        ),
     }
 
 
@@ -730,16 +798,36 @@ def composition_center_for_leaf(
     *,
     workspace_center: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
-    """Resolve center from scenario composition, then policy grouping fallback."""
+    """Resolve center from published policy, then native fallback composition."""
+    raw_policy_center_key = _text(leaf.get("policy_center_key"))
+    policy_center_key = (
+        stable_published_center_key(raw_policy_center_key)
+        or stable_center_key(raw_policy_center_key)
+    )
+    if policy_center_key:
+        return {
+            "key": policy_center_key,
+            "name": _text(leaf.get("policy_center_label")) or policy_center_key,
+            "sequence": _int_or(leaf.get("policy_center_sequence"), 10),
+            "published_center": True,
+        }
     if workspace_center and is_horizontal_work_center_leaf(leaf, workspace_center):
         return dict(workspace_center)
     binding = binding if isinstance(binding, dict) else {}
     center_key = _text(binding.get("center_key"))
     if center_key:
+        identity = center_identity(center_key)
+        stable_key = _text(identity.get("stable_key")) if identity else stable_center_key(center_key)
         return {
-            "key": center_key,
-            "name": _text(binding.get("center_name")) or center_key,
-            "sequence": _int_or(binding.get("center_sequence"), 10),
+            "key": stable_key or center_key,
+            "name": _text(binding.get("center_name"))
+            or _text(identity.get("name") if identity else "")
+            or stable_key
+            or center_key,
+            "sequence": _int_or(
+                binding.get("center_sequence"),
+                _int_or(identity.get("sequence") if identity else 10, 10),
+            ),
         }
     group_key = _text(
         leaf.get("policy_group_key")
@@ -750,10 +838,22 @@ def composition_center_for_leaf(
         or (leaf.get("meta") or {}).get("group_label")
     )
     if group_key or group_label:
+        identity = center_identity(group_key) or center_identity(group_label)
+        stable_key = (
+            _text(identity.get("stable_key"))
+            if identity
+            else stable_center_key(group_key)
+        )
         return {
-            "key": group_key or f"policy:{group_label}",
-            "name": group_label or group_key,
-            "sequence": 500,
+            "key": stable_key or group_key or f"policy:{group_label}",
+            "name": group_label
+            or _text(identity.get("name") if identity else "")
+            or stable_key
+            or group_key,
+            "sequence": _int_or(
+                identity.get("sequence") if identity else 500,
+                500,
+            ),
         }
     return {
         "key": "system.entry",
@@ -1009,7 +1109,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             workspace_center=workspace_center,
         )
         native_center_sequence = native_primary_center_sequences.get(_text(center.get("name")))
-        if native_center_sequence is not None:
+        if native_center_sequence is not None and not center.get("published_center"):
             center = dict(center, sequence=native_center_sequence)
         node = centers.setdefault(center["key"], {
             "key": center["key"],
@@ -1029,7 +1129,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             if binding and binding.get("scenario_active")
             else native_menu_sequences.get(
                 menu_id,
-                int(leaf.get("sequence") or 1000),
+                _int_or(leaf.get("sequence"), 1000),
             )
         )
         if binding and binding.get("scenario_active"):

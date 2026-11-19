@@ -31,6 +31,7 @@ export interface OperatorAction {
     kind: string;
     product_key: string;
     snapshot_id: number;
+    action_id?: number;
   };
   prerequisites: {
     satisfied: boolean;
@@ -42,6 +43,70 @@ export interface OperatorAction {
     mode: string;
     fields: string[];
   };
+  accepted_fields: string[];
+  editable_fields?: Array<{
+    key: string;
+    type: string;
+    options?: Array<{ value: string; label: string }>;
+  }>;
+}
+
+export interface ProductCenterEditorCenter {
+  center_key: string;
+  label: string;
+  sequence: number;
+  entry_count: number;
+  editable_fields: string[];
+  config_ref: AnyRecord;
+  published_label: string;
+  published_sequence: number;
+  changed_from_published: boolean;
+}
+
+export interface ProductCenterEditorEntry {
+  menu_xmlid: string;
+  label: string;
+  center_key: string;
+  center_label: string;
+  center_sequence: number;
+  published_center_key: string;
+  published_center_label: string;
+  changed_from_published: boolean;
+}
+
+export interface ProductCenterEditableField {
+  key: string;
+  label: string;
+  type: 'text' | 'integer' | 'select';
+  required: boolean;
+  max_length?: number;
+  minimum?: number;
+  maximum?: number;
+  options_source?: string;
+}
+
+export interface ProductCenterSaveAction {
+  key: string;
+  intent: string;
+  enabled: boolean;
+  reason_code: string;
+  params: AnyRecord;
+  accepted_fields: string[];
+  readback: string[];
+  confirmation_required: boolean;
+}
+
+export interface ProductCenterEditor {
+  contract_version: 'product_center_editor.v1';
+  product_key: string;
+  operation_scope: AnyRecord;
+  editable_fields: ProductCenterEditableField[];
+  centers: ProductCenterEditorCenter[];
+  entries: ProductCenterEditorEntry[];
+  published: AnyRecord;
+  change_summary: AnyRecord;
+  save_action: ProductCenterSaveAction;
+  config_ref: AnyRecord;
 }
 
 function gap(path: string, message: string): never {
@@ -64,14 +129,28 @@ function text(value: unknown, path: string): string {
 }
 
 function positiveInt(value: unknown, path: string): number {
-  const result = Number(value);
-  if (!Number.isInteger(result) || result <= 0) gap(path, `${path} 非法`);
+  const result = integer(value, path);
+  if (result <= 0) gap(path, `${path} 非法`);
   return result;
 }
 
 function boolean(value: unknown, path: string): boolean {
   if (typeof value !== 'boolean') gap(path, `${path} 必须是布尔值`);
   return value;
+}
+
+function integer(value: unknown, path: string): number {
+  if (typeof value !== 'number' || !Number.isFinite(value) || !Number.isInteger(value)) {
+    gap(path, `${path} 必须是数字整数`);
+  }
+  return value;
+}
+
+function stringList(value: unknown, path: string): string[] {
+  if (!Array.isArray(value) || !value.length) gap(path, `${path} 缺失`);
+  const rows = value.map((row, index) => text(row, `${path}[${index}]`));
+  if (new Set(rows).size !== rows.length) gap(path, `${path} 不能重复`);
+  return rows;
 }
 
 export function decodePromotionAction(value: unknown, expectedProductKey: string): OperatorAction {
@@ -88,6 +167,10 @@ export function decodePromotionAction(value: unknown, expectedProductKey: string
   const operation = record(action.operation_object, `${key}.operation_object`);
   const prerequisites = record(action.prerequisites, `${key}.prerequisites`);
   const readback = record(action.readback, `${key}.readback`);
+  const acceptedFields = stringList(
+    action.accepted_fields,
+    `${key}.accepted_fields`,
+  );
   const snapshotId = positiveInt(params.snapshot_id, `${key}.params.snapshot_id`);
   const productKey = text(params.product_key, `${key}.params.product_key`);
   const operationSnapshotId = positiveInt(
@@ -166,7 +249,480 @@ export function decodePromotionAction(value: unknown, expectedProductKey: string
       mode: text(readback.mode, `${key}.readback.mode`),
       fields: fields.map(field => String(field)),
     },
+    accepted_fields: acceptedFields,
   };
+}
+
+export function decodeConfiguredOperatorAction(
+  value: unknown,
+  expectedIntent: string,
+  expectedProductKey: string,
+  path: string,
+): OperatorAction {
+  const action = record(value, path);
+  const key = text(action.key, `${path}.key`);
+  const intent = text(action.intent, `${path}.intent`);
+  if (intent !== expectedIntent) {
+    gap(`${path}.intent`, `${path} 意图与平台动作定义不一致`);
+  }
+  const enabled = boolean(action.enabled, `${path}.enabled`);
+  const params = record(action.params, `${path}.params`);
+  if (text(params.product_key, `${path}.params.product_key`) !== expectedProductKey) {
+    gap(`${path}.params.product_key`, `${path} 产品范围与当前产品不一致`);
+  }
+  const actor = record(action.actor, `${path}.actor`);
+  const target = record(action.target_scope, `${path}.target_scope`);
+  const operation = record(action.operation_object, `${path}.operation_object`);
+  if (text(target.product_key, `${path}.target_scope.product_key`) !== expectedProductKey
+    || text(operation.product_key, `${path}.operation_object.product_key`) !== expectedProductKey) {
+    gap(`${path}.operation_object`, `${path} 执行对象与当前产品不一致`);
+  }
+  const prerequisites = record(action.prerequisites, `${path}.prerequisites`);
+  const satisfied = boolean(prerequisites.satisfied, `${path}.prerequisites.satisfied`);
+  if (satisfied !== enabled) {
+    gap(`${path}.prerequisites.satisfied`, `${path} 可用状态与前置条件不一致`);
+  }
+  const readback = record(action.readback, `${path}.readback`);
+  const fields = readback.fields;
+  if (!Array.isArray(fields) || !fields.length || fields.some(field => !String(field || '').trim())) {
+    gap(`${path}.readback.fields`, `${path} 缺少权威回读字段`);
+  }
+  const acceptedFields = stringList(
+    action.accepted_fields,
+    `${path}.accepted_fields`,
+  );
+  const editableFields = Array.isArray(action.editable_fields)
+    ? action.editable_fields.map((value, index) => {
+      const field = record(value, `${path}.editable_fields[${index}]`);
+      return {
+        key: text(field.key, `${path}.editable_fields[${index}].key`),
+        type: text(field.type, `${path}.editable_fields[${index}].type`),
+        ...(field.options === undefined
+          ? {}
+          : {
+            options: Array.isArray(field.options)
+              ? field.options.map((option, optionIndex) => {
+                const row = record(
+                  option,
+                  `${path}.editable_fields[${index}].options[${optionIndex}]`,
+                );
+                return {
+                  value: text(
+                    row.value,
+                    `${path}.editable_fields[${index}].options[${optionIndex}].value`,
+                  ),
+                  label: text(
+                    row.label,
+                    `${path}.editable_fields[${index}].options[${optionIndex}].label`,
+                  ),
+                };
+              })
+              : gap(
+                `${path}.editable_fields[${index}].options`,
+                `${path} 字段选项声明非法`,
+              ),
+          }),
+      };
+    })
+    : undefined;
+  const requiredEditableFields: Record<string, string[]> = {
+    'release.operator.update_policy': ['state', 'access_level'],
+    'release.operator.update_page_policy': ['release_state', 'access_level'],
+  };
+  for (const fieldKey of requiredEditableFields[intent] || []) {
+    const field = editableFields?.find(row => row.key === fieldKey);
+    if (!field) {
+      gap(`${path}.editable_fields.${fieldKey}`, `${path} 缺少可编辑字段声明`);
+    }
+    if (field.type !== 'select' || !field.options?.length) {
+      gap(`${path}.editable_fields.${fieldKey}.options`, `${path} 缺少字段选项声明`);
+    }
+  }
+  return {
+    key,
+    label: text(action.label, `${path}.label`),
+    intent,
+    enabled,
+    reason_code: text(action.reason_code, `${path}.reason_code`),
+    params,
+    actor: {
+      user_id: positiveInt(actor.user_id, `${path}.actor.user_id`),
+      login: text(actor.login, `${path}.actor.login`),
+      name: text(actor.name, `${path}.actor.name`),
+      operator_kind: text(actor.operator_kind, `${path}.actor.operator_kind`),
+      roles: Array.isArray(actor.roles)
+        ? actor.roles.map(role => String(role || '').trim()).filter(Boolean)
+        : [],
+    },
+    target_scope: {
+      kind: text(target.kind, `${path}.target_scope.kind`),
+      scope_key: text(target.scope_key, `${path}.target_scope.scope_key`),
+      product_key: expectedProductKey,
+      company_ids: Array.isArray(target.company_ids)
+        ? target.company_ids.map(Number).filter(Number.isInteger)
+        : [],
+      target_role_codes: Array.isArray(target.target_role_codes)
+        ? target.target_role_codes.map(role => String(role || '').trim()).filter(Boolean)
+        : [],
+      is_global_product_release: boolean(
+        target.is_global_product_release,
+        `${path}.target_scope.is_global_product_release`,
+      ),
+      meaning: text(target.meaning, `${path}.target_scope.meaning`),
+    },
+    operation_object: {
+      kind: text(operation.kind, `${path}.operation_object.kind`),
+      product_key: expectedProductKey,
+      snapshot_id: operation.snapshot_id === undefined ? 0 : integer(
+        operation.snapshot_id,
+        `${path}.operation_object.snapshot_id`,
+      ),
+      ...(operation.action_id === undefined
+        ? {}
+        : {
+          action_id: integer(
+            operation.action_id,
+            `${path}.operation_object.action_id`,
+          ),
+        }),
+    },
+    prerequisites: {
+      satisfied,
+      reason_code: text(prerequisites.reason_code, `${path}.prerequisites.reason_code`),
+      confirmation_required: boolean(
+        prerequisites.confirmation_required,
+        `${path}.prerequisites.confirmation_required`,
+      ),
+    },
+    readback: {
+      source: text(readback.source, `${path}.readback.source`),
+      mode: text(readback.mode, `${path}.readback.mode`),
+      fields: fields.map(field => String(field || '').trim()),
+    },
+    accepted_fields: acceptedFields,
+    ...(editableFields ? { editable_fields: editableFields } : {}),
+  };
+}
+
+export function buildConfiguredOperatorParams(
+  action: OperatorAction,
+  overrides: AnyRecord,
+): AnyRecord {
+  const accepted = new Set(action.accepted_fields);
+  for (const field of Object.keys(overrides)) {
+    if (!accepted.has(field)) {
+      gap(`${action.key}.accepted_fields.${field}`, `平台动作未声明输入字段 ${field}`);
+    }
+  }
+  for (const field of action.editable_fields || []) {
+    if (field.options && Object.hasOwn(overrides, field.key)) {
+      const value = String(overrides[field.key] ?? '');
+      if (!field.options.some(option => option.value === value)) {
+        gap(
+          `${action.key}.editable_fields.${field.key}.options`,
+          `平台动作 ${field.key} 的值不在后端声明中`,
+        );
+      }
+    }
+  }
+  return { ...action.params, ...overrides };
+}
+
+export function decodeConfiguredActionResult(
+  value: unknown,
+  action: OperatorAction,
+  expectedProductKey: string,
+): {
+  surface: AnyRecord;
+  readback: Record<string, AnyRecord>;
+} {
+  const result = record(value, `${action.key}.write_result`);
+  const readback: Record<string, AnyRecord> = {};
+  for (const field of action.readback.fields) {
+    readback[field] = record(
+      result[field],
+      `${action.key}.write_result.${field}`,
+    );
+  }
+  const surface = record(
+    result.surface,
+    `${action.key}.write_result.surface`,
+  );
+  const surfaceIdentity = record(
+    surface.identity,
+    `${action.key}.write_result.surface.identity`,
+  );
+  if (text(
+    surfaceIdentity.product_key,
+    `${action.key}.write_result.surface.identity.product_key`,
+  ) !== expectedProductKey) {
+    gap(`${action.key}.write_result.surface.product_key`, '执行回读页面属于另一产品');
+  }
+  if (action.intent === 'release.operator.freeze') {
+    const snapshot = readback.snapshot;
+    if (text(snapshot.product_key, `${action.key}.readback.snapshot.product_key`) !== expectedProductKey) {
+      gap(`${action.key}.readback.snapshot.product_key`, '冻结快照属于另一产品');
+    }
+    positiveInt(snapshot.id, `${action.key}.readback.snapshot.id`);
+  }
+  if ([
+    'release.operator.sync_policy',
+    'release.operator.set_page_enabled',
+    'release.operator.update_page_policy',
+    'release.operator.update_policy',
+  ].includes(action.intent)) {
+    const policy = readback.policy;
+    if (text(policy.product_key, `${action.key}.readback.policy.product_key`) !== expectedProductKey) {
+      gap(`${action.key}.readback.policy.product_key`, '策略回读属于另一产品');
+    }
+  }
+  if (action.intent === 'release.operator.update_policy') {
+    const operationReadback = readback.readback;
+    if (text(
+      operationReadback.product_key,
+      `${action.key}.readback.readback.product_key`,
+    ) !== expectedProductKey) {
+      gap(`${action.key}.readback.readback.product_key`, '策略回读身份属于另一产品');
+    }
+    text(
+      operationReadback.draft_policy_sha256,
+      `${action.key}.readback.readback.draft_policy_sha256`,
+    );
+    text(
+      operationReadback.draft_fingerprint,
+      `${action.key}.readback.readback.draft_fingerprint`,
+    );
+  }
+  if (['release.operator.approve', 'release.operator.rollback'].includes(action.intent)) {
+    const actionResult = readback.action;
+    if (text(
+      actionResult.product_key,
+      `${action.key}.readback.action.product_key`,
+    ) !== expectedProductKey) {
+      gap(`${action.key}.readback.action.product_key`, '审批或回滚动作属于另一产品');
+    }
+    const resultActionId = positiveInt(
+      actionResult.id,
+      `${action.key}.readback.action.id`,
+    );
+    if (
+      action.intent === 'release.operator.approve'
+      && resultActionId !== Number(action.params.action_id)
+    ) {
+      gap(`${action.key}.readback.action.id`, '审批回读动作与本次审批对象不一致');
+    }
+  }
+  return { surface, readback };
+}
+
+export function decodeProductCenterEditor(
+  value: unknown,
+  expectedProductKey: string,
+): ProductCenterEditor {
+  const editor = record(value, 'product_center_editor');
+  if (text(editor.contract_version, 'product_center_editor.contract_version') !== 'product_center_editor.v1') {
+    gap('product_center_editor.contract_version', '产品中心编辑契约版本不支持');
+  }
+  if (text(editor.product_key, 'product_center_editor.product_key') !== expectedProductKey) {
+    gap('product_center_editor.product_key', '产品中心编辑契约产品与当前产品不一致');
+  }
+  const scope = record(editor.operation_scope, 'product_center_editor.operation_scope');
+  if (text(scope.product_key, 'product_center_editor.operation_scope.product_key') !== expectedProductKey) {
+    gap('product_center_editor.operation_scope.product_key', '产品中心编辑范围与当前产品不一致');
+  }
+  const centers = editor.centers;
+  if (!Array.isArray(centers)) {
+    gap('product_center_editor.centers', '产品中心编辑契约缺少中心选项');
+  }
+  const editableFields = Array.isArray(editor.editable_fields)
+    ? editor.editable_fields.map((value, index) => {
+      const field = record(value, `product_center_editor.editable_fields[${index}]`);
+      const key = text(field.key, `product_center_editor.editable_fields[${index}].key`);
+      const type = text(field.type, `product_center_editor.editable_fields[${index}].type`);
+      if (!['text', 'integer', 'select'].includes(type)) {
+        gap(`product_center_editor.editable_fields[${index}].type`, '中心字段类型未支持');
+      }
+      const decoded: ProductCenterEditableField = {
+        key,
+        label: text(field.label, `product_center_editor.editable_fields[${index}].label`),
+        type: type as ProductCenterEditableField['type'],
+        required: boolean(
+          field.required,
+          `product_center_editor.editable_fields[${index}].required`,
+        ),
+      };
+      if (type === 'text') {
+        decoded.max_length = positiveInt(
+          field.max_length,
+          `product_center_editor.editable_fields[${index}].max_length`,
+        );
+      }
+      if (type === 'integer') {
+        decoded.minimum = integer(
+          field.minimum,
+          `product_center_editor.editable_fields[${index}].minimum`,
+        );
+        decoded.maximum = integer(
+          field.maximum,
+          `product_center_editor.editable_fields[${index}].maximum`,
+        );
+        if (decoded.maximum < decoded.minimum) {
+          gap(`product_center_editor.editable_fields[${index}].maximum`, '中心字段范围非法');
+        }
+      }
+      if (type === 'select') {
+        decoded.options_source = text(
+          field.options_source,
+          `product_center_editor.editable_fields[${index}].options_source`,
+        );
+      }
+      return decoded;
+    })
+    : gap('product_center_editor.editable_fields', '产品中心编辑契约缺少字段声明');
+  const editableFieldByKey = new Map(editableFields.map(field => [field.key, field]));
+  for (const field of ['label', 'sequence', 'center_key']) {
+    if (!editableFieldByKey.has(field)) {
+      gap(`product_center_editor.editable_fields.${field}`, '产品中心编辑契约缺少必需字段');
+    }
+  }
+  const sequenceField = editableFieldByKey.get('sequence')!;
+  const centerRows = centers.map((value, index) => {
+    const center = record(value, `product_center_editor.centers[${index}]`);
+    const centerEditableFields = Array.isArray(center.editable_fields)
+      ? center.editable_fields.map((field, fieldIndex) => text(
+        field,
+        `product_center_editor.centers[${index}].editable_fields[${fieldIndex}]`,
+      ))
+      : gap(
+        `product_center_editor.centers[${index}].editable_fields`,
+        '产品中心缺少可编辑字段声明',
+      );
+    if (centerEditableFields.some(field => !editableFieldByKey.has(field))) {
+      gap(
+        `product_center_editor.centers[${index}].editable_fields`,
+        '产品中心声明了未登记的编辑字段',
+      );
+    }
+    const sequence = integer(
+      center.sequence,
+      `product_center_editor.centers[${index}].sequence`,
+    );
+    if (sequence < sequenceField.minimum! || sequence > sequenceField.maximum!) {
+      gap(`product_center_editor.centers[${index}].sequence`, '产品中心顺序超出声明范围');
+    }
+    return {
+      center_key: text(center.center_key, `product_center_editor.centers[${index}].center_key`),
+      label: text(center.label, `product_center_editor.centers[${index}].label`),
+      sequence,
+      entry_count: integer(center.entry_count, `product_center_editor.centers[${index}].entry_count`),
+      editable_fields: centerEditableFields,
+      config_ref: record(center.config_ref, `product_center_editor.centers[${index}].config_ref`),
+      published_label: String(center.published_label || ''),
+      published_sequence: Number(center.published_sequence || 0),
+      changed_from_published: Boolean(center.changed_from_published),
+    };
+  });
+  const entries = editor.entries;
+  if (!Array.isArray(entries)) {
+    gap('product_center_editor.entries', '产品中心编辑契约缺少入口放置列表');
+  }
+  const entryRows = entries.map((value, index) => {
+    const entry = record(value, `product_center_editor.entries[${index}]`);
+    return {
+      menu_xmlid: text(entry.menu_xmlid, `product_center_editor.entries[${index}].menu_xmlid`),
+      label: text(entry.label, `product_center_editor.entries[${index}].label`),
+      center_key: text(entry.center_key, `product_center_editor.entries[${index}].center_key`),
+      center_label: text(entry.center_label, `product_center_editor.entries[${index}].center_label`),
+      center_sequence: integer(entry.center_sequence, `product_center_editor.entries[${index}].center_sequence`),
+      published_center_key: String(entry.published_center_key || ''),
+      published_center_label: String(entry.published_center_label || ''),
+      changed_from_published: Boolean(entry.changed_from_published),
+    };
+  });
+  const saveAction = record(editor.save_action, 'product_center_editor.save_action');
+  const saveIntent = text(saveAction.intent, 'product_center_editor.save_action.intent');
+  if (saveIntent !== 'release.operator.update_policy') {
+    gap('product_center_editor.save_action.intent', '产品中心保存动作意图不匹配');
+  }
+  const acceptedFields = stringList(
+    saveAction.accepted_fields,
+    'product_center_editor.save_action.accepted_fields',
+  );
+  for (const field of ['center_updates', 'entry_placements']) {
+    if (!acceptedFields.includes(field)) {
+      gap('product_center_editor.save_action.accepted_fields', '中心保存动作缺少必需参数声明');
+    }
+  }
+  const readbackFields = stringList(
+    saveAction.readback,
+    'product_center_editor.save_action.readback',
+  );
+  for (const field of ['policy', 'surface', 'readback']) {
+    if (!readbackFields.includes(field)) {
+      gap('product_center_editor.save_action.readback', '中心保存动作缺少权威回读声明');
+    }
+  }
+  const saveParams = record(saveAction.params, 'product_center_editor.save_action.params');
+  if (text(saveParams.product_key, 'product_center_editor.save_action.params.product_key') !== expectedProductKey) {
+    gap('product_center_editor.save_action.params.product_key', '中心保存动作产品范围不匹配');
+  }
+  return {
+    contract_version: 'product_center_editor.v1',
+    product_key: expectedProductKey,
+    operation_scope: scope,
+    editable_fields: editableFields,
+    centers: centerRows,
+    entries: entryRows,
+    published: record(editor.published, 'product_center_editor.published'),
+    change_summary: record(editor.change_summary, 'product_center_editor.change_summary'),
+    save_action: {
+      key: text(saveAction.key, 'product_center_editor.save_action.key'),
+      intent: saveIntent,
+      enabled: boolean(saveAction.enabled, 'product_center_editor.save_action.enabled'),
+      reason_code: text(saveAction.reason_code, 'product_center_editor.save_action.reason_code'),
+      params: saveParams,
+      accepted_fields: acceptedFields,
+      readback: readbackFields,
+      confirmation_required: boolean(
+        saveAction.confirmation_required,
+        'product_center_editor.save_action.confirmation_required',
+      ),
+    },
+    config_ref: record(editor.config_ref, 'product_center_editor.config_ref'),
+  };
+}
+
+export function decodeProductCenterWriteEnvelope(
+  value: unknown,
+  editor: ProductCenterEditor,
+): {
+  policy: AnyRecord;
+  surface: AnyRecord;
+  readback: AnyRecord;
+} {
+  const result = record(value, 'product_center_write');
+  for (const field of editor.save_action.readback) {
+    if (!Object.hasOwn(result, field)) {
+      gap(`product_center_write.${field}`, `产品中心保存缺少 ${field}`);
+    }
+  }
+  const policy = record(result.policy, 'product_center_write.policy');
+  const surface = record(result.surface, 'product_center_write.surface');
+  const readback = record(result.readback, 'product_center_write.readback');
+  if (text(policy.product_key, 'product_center_write.policy.product_key') !== editor.product_key) {
+    gap('product_center_write.policy.product_key', '产品中心保存返回的草案属于另一产品');
+  }
+  if (text(readback.product_key, 'product_center_write.readback.product_key') !== editor.product_key) {
+    gap('product_center_write.readback.product_key', '产品中心保存回读属于另一产品');
+  }
+  const surfaceIdentity = record(
+    surface.identity,
+    'product_center_write.surface.identity',
+  );
+  if (text(surfaceIdentity.product_key, 'product_center_write.surface.identity.product_key') !== editor.product_key) {
+    gap('product_center_write.surface.identity.product_key', '产品中心保存返回页面属于另一产品');
+  }
+  return { policy, surface, readback };
 }
 
 export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
@@ -184,6 +740,31 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
   if (text(readback.product_key, 'operation_readback.product_key') !== productKey) {
     gap('operation_readback.product_key', '发布回读产品与当前产品不一致');
   }
+  const productCenterEditor = decodeProductCenterEditor(
+    surface.product_center_editor,
+    productKey,
+  );
+  const decodedActions: AnyRecord = { ...actions };
+  for (const [key, intent] of Object.entries({
+    freeze: 'release.operator.freeze',
+    sync_policy: 'release.operator.sync_policy',
+    set_page_enabled: 'release.operator.set_page_enabled',
+    update_page_policy: 'release.operator.update_page_policy',
+    update_policy: 'release.operator.update_policy',
+    runtime_probe: 'release.operator.runtime_probe',
+    rollback: 'release.operator.rollback',
+  })) {
+    decodedActions[key] = decodeConfiguredOperatorAction(
+      actions[key],
+      intent,
+      productKey,
+      `available_actions.${key}`,
+    );
+  }
+  const updatePolicy = record(actions.update_policy, 'available_actions.update_policy');
+  if (text(updatePolicy.editor_contract, 'available_actions.update_policy.editor_contract') !== 'product_center_editor.v1') {
+    gap('available_actions.update_policy.editor_contract', '保存产品草案未声明产品中心编辑契约');
+  }
   const snapshots = Array.isArray(surface.candidate_snapshots)
     ? surface.candidate_snapshots.map(row => record(row, 'candidate_snapshots[]'))
     : [];
@@ -197,5 +778,43 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
       gap(`${action.key}.params.snapshot_id`, '候选发布动作引用了不存在的候选快照');
     }
   }
-  return surface as T;
+  const pending = surface.pending_approval
+    ? record(surface.pending_approval, 'pending_approval')
+    : null;
+  const pendingActions = pending && Array.isArray(pending.actions)
+    ? pending.actions.map((value, index) => {
+      const row = record(value, `pending_approval.actions[${index}]`);
+      const rowId = positiveInt(
+        row.id,
+        `pending_approval.actions[${index}].id`,
+      );
+      const approveAction = decodeConfiguredOperatorAction(
+        row.approve_action,
+        'release.operator.approve',
+        productKey,
+        `pending_approval.actions[${index}].approve_action`,
+      );
+      if (
+        Number(approveAction.params.action_id) !== rowId
+        || approveAction.operation_object.action_id !== rowId
+      ) {
+        gap(
+          `pending_approval.actions[${index}].approve_action.operation_object.action_id`,
+          '审批动作对象与待审批行不一致',
+        );
+      }
+      return {
+        ...row,
+        approve_action: approveAction,
+      };
+    })
+    : [];
+  return {
+    ...surface,
+    available_actions: decodedActions,
+    ...(pending
+      ? { pending_approval: { ...pending, actions: pendingActions } }
+      : {}),
+    product_center_editor: productCenterEditor,
+  } as unknown as T;
 }

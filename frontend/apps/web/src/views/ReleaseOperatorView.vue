@@ -194,6 +194,84 @@
         </ScSection>
 
         <ScSection
+          v-if="productCenterEditor"
+          title="产品中心草案"
+          description="中心名称、顺序和入口归属先保存为产品草案；发布产品版本后才影响正式导航。"
+        >
+          <template #actions>
+            <span class="release-operator__section-meta">
+              已发布 {{ productCenterEditor.published.version || '无版本' }} · 快照 {{ productCenterEditor.published.snapshot_id || '无' }}
+            </span>
+          </template>
+          <ScInlineState
+            state="info"
+            :label="`当前操作范围：${String(productCenterEditor.operation_scope.product_key || productCenterEditor.product_key)} 的产品草案；企业场景启停仍按当前公司单独生效。`"
+          />
+          <ScForm layout="inline" :prevent-submit-default="true" class="release-operator__policy">
+            <ScFormItem label="选择中心" name="product_center">
+              <ScSelect
+                :model-value="selectedCenterKey"
+                :options="productCenterOptions"
+                aria-label="选择产品中心"
+                @update:model-value="selectCenter"
+              />
+            </ScFormItem>
+            <ScFormItem label="中心名称" name="product_center_label">
+              <ScInput
+                v-model="centerLabelDraft"
+                type="text"
+                :maxlength="centerLabelMaxLength"
+                :disabled="!selectedCenterKey || !centerLabelEditable"
+                aria-label="产品中心名称"
+              />
+            </ScFormItem>
+            <ScFormItem label="显示顺序" name="product_center_sequence">
+              <ScInput
+                v-model="centerSequenceDraft"
+                type="number"
+                :min="centerSequenceMinimum"
+                :max="centerSequenceMaximum"
+                :disabled="!selectedCenterKey || !centerSequenceEditable"
+                aria-label="产品中心显示顺序"
+              />
+            </ScFormItem>
+            <ScFormItem>
+              <ScButton
+                variant="primary"
+                type="button"
+                :disabled="centerSaveDisabled"
+                :title="centerSaveReason"
+                @click="saveProductCenterDraft"
+              >
+                保存产品中心草案
+              </ScButton>
+            </ScFormItem>
+          </ScForm>
+          <ScDescriptions
+            class="release-operator__summary"
+            :items="centerChangeItems"
+            :column="compactDescriptionColumns"
+            bordered
+          />
+          <ScCard v-if="selectedCenterEntries.length" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="入口所属中心"
+              :data="centerEntryTableRows"
+              :columns="centerEntryColumns"
+              row-key="menu_xmlid"
+              size="small"
+            />
+          </ScCard>
+          <ScEmptyState
+            v-else
+            title="当前中心没有已发布入口"
+            :heading-level="3"
+            density="compact"
+          />
+        </ScSection>
+
+        <ScSection
           :title="copy.section_candidate || '可晋升候选'"
           :description="copy.hint_candidate || '仅展示当前产品下 candidate / approved 状态的候选快照。'"
           :style="pageSectionStyle('candidate_snapshots')"
@@ -287,6 +365,7 @@ import { useRoute, useRouter } from 'vue-router';
 import StatusPanel from '../components/StatusPanel.vue';
 import ScButton from '../components/design-system/ScButton.vue';
 import ScEmptyState from '../components/design-system/ScEmptyState.vue';
+import ScInput from '../components/design-system/ScInput.vue';
 import ScStatusBadge from '../components/design-system/ScStatusBadge.vue';
 import ScSelect from '../components/design-system/ScSelect.vue';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -306,9 +385,14 @@ import { useNarrowViewport } from '../composables/useNarrowViewport';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
+import { contractGapError } from '../app/contract/contractGap';
 import {
+  buildConfiguredOperatorParams,
+  decodeConfiguredActionResult,
   decodeReleaseOperatorSurface,
+  decodeProductCenterWriteEnvelope,
   type OperatorAction,
+  type ProductCenterEditor,
 } from '../app/releaseOperatorActionContract';
 
 type AnyRecord = Record<string, unknown>;
@@ -337,6 +421,7 @@ interface ReleaseActionRow {
   approval_state?: string;
   requested_at?: string;
   can_approve?: boolean;
+  approve_action?: OperatorAction;
 }
 
 interface ReleaseOperatorSurface {
@@ -345,6 +430,7 @@ interface ReleaseOperatorSurface {
   products?: ProductRow[];
   product_delivery_console?: AnyRecord;
   control_scope?: AnyRecord;
+  product_center_editor?: ProductCenterEditor;
   release_pipeline?: AnyRecord;
   release_state?: AnyRecord;
   pending_approval?: { actions?: ReleaseActionRow[] };
@@ -426,17 +512,15 @@ const productOptions = computed(() => products.value.map((product) => ({
   value: product.product_key,
   label: `${product.label || product.product_key} · ${product.product_key}`,
 })));
-const policyStateOptions = [
-  { value: 'draft', label: 'draft' },
-  { value: 'preview', label: 'preview' },
-  { value: 'stable', label: 'stable' },
-  { value: 'archived', label: 'archived' },
-];
-const policyAccessOptions = [
-  { value: 'public', label: 'public' },
-  { value: 'internal', label: 'internal' },
-  { value: 'role_restricted', label: 'role_restricted' },
-];
+const actionSelectOptions = (action: OperatorAction | null | undefined, key: string) => (
+  action?.editable_fields?.find((field) => field.key === key)?.options || []
+);
+const policyStateOptions = computed(() => (
+  actionSelectOptions(updatePolicyAction.value, 'state')
+));
+const policyAccessOptions = computed(() => (
+  actionSelectOptions(updatePolicyAction.value, 'access_level')
+));
 const productConsole = computed(() => surface.value?.product_delivery_console || {});
 const productProfile = computed(() => (productConsole.value.profile || {}) as AnyRecord);
 const productBundle = computed(() => (productConsole.value.bundle || {}) as AnyRecord);
@@ -473,6 +557,108 @@ const audienceRoles = computed(() => {
 const controlledPages = computed(() => {
   const pages = controlScope.value.pages;
   return Array.isArray(pages) ? pages as AnyRecord[] : [];
+});
+const productCenterEditor = computed(() => surface.value?.product_center_editor || null);
+const selectedCenterKey = ref('');
+const centerLabelDraft = ref('');
+const centerSequenceDraft = ref('10');
+const entryPlacementDraft = ref<Record<string, string>>({});
+const productCenterOptions = computed(() => (productCenterEditor.value?.centers || []).map((center) => ({
+  value: center.center_key,
+  label: `${center.label} · ${Number(center.sequence)}`,
+})));
+const selectedCenter = computed(() => (
+  productCenterEditor.value?.centers.find((center) => center.center_key === selectedCenterKey.value)
+  || null
+));
+const selectedCenterEntries = computed(() => (
+  (productCenterEditor.value?.entries || []).filter(
+    (entry) => entry.center_key === selectedCenterKey.value,
+  )
+));
+const centerField = (key: string) => (
+  productCenterEditor.value?.editable_fields.find((field) => field.key === key) || null
+);
+const centerLabelField = computed(() => centerField('label'));
+const centerSequenceField = computed(() => centerField('sequence'));
+const centerLabelEditable = computed(() => Boolean(
+  selectedCenter.value?.editable_fields.includes('label'),
+));
+const centerSequenceEditable = computed(() => Boolean(
+  selectedCenter.value?.editable_fields.includes('sequence'),
+));
+const centerLabelMaxLength = computed(() => centerLabelField.value?.max_length || 1);
+const centerSequenceMinimum = computed(() => centerSequenceField.value?.minimum ?? 0);
+const centerSequenceMaximum = computed(() => centerSequenceField.value?.maximum ?? 0);
+const changedCenterPlacements = computed(() => (
+  (productCenterEditor.value?.entries || []).filter(
+    (entry) => (entryPlacementDraft.value[entry.menu_xmlid] || entry.center_key) !== entry.center_key,
+  )
+));
+const centerDraftChanged = computed(() => {
+  const center = selectedCenter.value;
+  if (!center) return false;
+  return centerLabelDraft.value.trim() !== center.label
+    || Number(centerSequenceDraft.value) !== Number(center.sequence);
+});
+const centerDraftValid = computed(() => {
+  const sequence = Number(centerSequenceDraft.value);
+  const label = centerLabelDraft.value.trim();
+  return (!centerLabelField.value?.required || Boolean(label))
+    && label.length <= centerLabelMaxLength.value
+    && Number.isInteger(sequence)
+    && sequence >= centerSequenceMinimum.value
+    && sequence <= centerSequenceMaximum.value;
+});
+const centerSaveDisabled = computed(() => (
+  busyKey.value === 'update_policy'
+  || !productCenterEditor.value?.save_action.enabled
+  || !selectedCenter.value
+  || !centerDraftValid.value
+  || (!centerDraftChanged.value && !changedCenterPlacements.value.length)
+));
+const centerSaveReason = computed(() => {
+  if (!productCenterEditor.value) return '产品中心契约缺失';
+  if (!selectedCenter.value) return '请选择中心';
+  if (!centerDraftValid.value) {
+    return `中心名称必须为 1–${centerLabelMaxLength.value} 个字符，显示顺序必须在 ${centerSequenceMinimum.value}–${centerSequenceMaximum.value} 之间`;
+  }
+  if (!productCenterEditor.value.save_action.enabled) {
+    return productCenterEditor.value.save_action.reason_code || '保存动作不可用';
+  }
+  if (!centerDraftChanged.value && !changedCenterPlacements.value.length) return '没有待保存的中心修改';
+  return '';
+});
+const centerChangeItems = computed<DescriptionItem[]>(() => {
+  const editor = productCenterEditor.value;
+  const summary = (editor?.change_summary || {}) as AnyRecord;
+  const center = selectedCenter.value;
+  return [
+    {
+      key: 'center_scope',
+      label: '当前中心',
+      value: center
+        ? `${center.label} · ${center.center_key}`
+        : '请选择中心',
+    },
+    {
+      key: 'published_center',
+      label: '已发布值',
+      value: center
+        ? `${center.published_label || '未发布'} · ${center.published_sequence || 0}`
+        : '-',
+    },
+    {
+      key: 'draft_changes',
+      label: '草案差异',
+      value: `中心 ${Number(summary.changed_center_count || 0)} 个 / 入口归属 ${Number(summary.changed_entry_placement_count || 0)} 个`,
+    },
+    {
+      key: 'entry_count',
+      label: '当前中心入口',
+      value: `${selectedCenterEntries.value.length}`,
+    },
+  ];
 });
 const controlDefinitions = computed(() => {
   const items = controlScope.value.control_definition;
@@ -750,12 +936,69 @@ const controlledPageColumns = computed(() => [
   } },
   { colKey: 'access_level', title: '可见范围', cell: (_h: unknown, { row }: { row: AnyRecord }) => accessLevelLabel(row) },
   { colKey: 'source', title: '来源', ellipsis: true, cell: (_h: unknown, { row }: { row: AnyRecord }) => sourceLabel(row) },
-  { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => h('div', { class: 'release-operator__row-actions' }, [
-    actionNode('发布页面配置', busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode('预览页面配置', busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode('下线页面', busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-  ]) },
+  { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => {
+    const releaseOptions = actionSelectOptions(updatePagePolicyAction.value, 'release_state');
+    const accessOptions = actionSelectOptions(updatePagePolicyAction.value, 'access_level');
+    const releaseOption = (value: string) => releaseOptions.find(option => option.value === value);
+    const accessOption = (value: string) => accessOptions.find(option => option.value === value);
+    const actions = [
+      ...(releaseOption('released') ? [actionNode(releaseOption('released')!.label, busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+      ...(releaseOption('preview') ? [actionNode(releaseOption('preview')!.label, busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+      ...(releaseOption('hidden') ? [actionNode(releaseOption('hidden')!.label, busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+    ];
+    const targetAccess = row.access_level === 'internal' ? 'public' : 'internal';
+    if (accessOption(targetAccess)) {
+      actions.push(actionNode(
+        accessOption(targetAccess)!.label,
+        busyKey.value === `page:${pageKey(row)}:${targetAccess}` || !updatePagePolicyAction.value.enabled,
+        () => updatePagePolicy(row, { access_level: targetAccess }),
+        'ghost',
+        updatePagePolicyAction.value.reason_code || '',
+      ));
+    }
+    return h('div', { class: 'release-operator__row-actions' }, actions);
+  } },
+]);
+const centerEntryTableRows = computed(() => selectedCenterEntries.value.map((entry) => ({
+  ...entry,
+  target_center_key: entryPlacementDraft.value[entry.menu_xmlid] || entry.center_key,
+})));
+const centerEntryColumns = computed(() => [
+  {
+    colKey: 'label',
+    title: '入口',
+    ellipsis: true,
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.label || row.menu_xmlid),
+  },
+  {
+    colKey: 'published',
+    title: '已发布归属',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.published_center_label || '未发布'),
+  },
+  {
+    colKey: 'target',
+    title: '草案归属',
+    width: 220,
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => h(ScSelect, {
+      modelValue: String(row.target_center_key || ''),
+      options: productCenterOptions.value,
+      'aria-label': `设置 ${String(row.label || row.menu_xmlid)} 所属中心`,
+      'onUpdate:modelValue': (value: unknown) => {
+        entryPlacementDraft.value = {
+          ...entryPlacementDraft.value,
+          [String(row.menu_xmlid)]: String(value || ''),
+        };
+      },
+    }),
+  },
+  {
+    colKey: 'changed',
+    title: '状态',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => {
+      const changed = String(row.target_center_key || '') !== String(row.center_key || '');
+      return statusNode(changed ? 'changed' : 'saved', changed ? '草案已改' : '与草案一致', changed ? 'warning' : 'default');
+    },
+  },
 ]);
 const candidateColumns = computed(() => [
   { colKey: 'version', title: '版本', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.version) },
@@ -784,7 +1027,7 @@ const pendingActionColumns = computed(() => [
   { colKey: 'product_key', title: '产品', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.product_key) },
   { colKey: 'approval_state', title: '审批', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => statusNode(String(row.approval_state || ''), tableText(row.approval_state), 'warning') },
   { colKey: 'requested_at', title: '请求时间', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.requested_at) },
-  { colKey: 'actions', title: '操作', width: 128, cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => actionNode(copy.value.approve_action_label || '审批并执行', busyKey.value === `approve:${row.id}` || row.can_approve === false, () => approve(row), 'primary') },
+  { colKey: 'actions', title: '操作', width: 128, cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => actionNode(copy.value.approve_action_label || '审批并执行', busyKey.value === `approve:${row.id}` || row.approve_action?.enabled !== true, () => approve(row), 'primary', row.approve_action?.reason_code || '') },
 ]);
 
 function pageKey(page: AnyRecord) {
@@ -899,6 +1142,33 @@ function hydratePolicyControls(payload: ReleaseOperatorSurface) {
   policyAccessLevel.value = String(scope.access_level || 'public');
 }
 
+function hydrateProductCenterEditor(payload: ReleaseOperatorSurface) {
+  const editor = payload.product_center_editor;
+  if (!editor) {
+    selectedCenterKey.value = '';
+    centerLabelDraft.value = '';
+    centerSequenceDraft.value = '10';
+    entryPlacementDraft.value = {};
+    return;
+  }
+  const centers = editor.centers || [];
+  const selected = centers.find((center) => center.center_key === selectedCenterKey.value) || centers[0];
+  selectedCenterKey.value = selected?.center_key || '';
+  centerLabelDraft.value = selected?.label || '';
+  centerSequenceDraft.value = String(selected?.sequence ?? 10);
+  entryPlacementDraft.value = Object.fromEntries(
+    (editor.entries || []).map((entry) => [entry.menu_xmlid, entry.center_key]),
+  );
+}
+
+function selectCenter(value: unknown) {
+  const key = String(value || '').trim();
+  selectedCenterKey.value = key;
+  const center = productCenterEditor.value?.centers.find((row) => row.center_key === key);
+  centerLabelDraft.value = center?.label || '';
+  centerSequenceDraft.value = String(center?.sequence ?? 10);
+}
+
 async function loadSurface() {
   loading.value = true;
   error.value = '';
@@ -914,6 +1184,7 @@ async function loadSurface() {
     ) as unknown as ReleaseOperatorSurface;
     surface.value = decoded;
     hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
     const resolvedProduct = String(decoded.identity?.product_key || '').trim();
     if (resolvedProduct) {
       selectedProduct.value = resolvedProduct;
@@ -936,6 +1207,7 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
       ) as unknown as ReleaseOperatorSurface;
       surface.value = decoded;
       hydratePolicyControls(decoded);
+      hydrateProductCenterEditor(decoded);
       const resolvedProduct = String(decoded.identity?.product_key || '').trim();
       if (resolvedProduct) selectedProduct.value = resolvedProduct;
     } else {
@@ -943,6 +1215,183 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
     }
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布动作执行失败';
+  } finally {
+    busyKey.value = '';
+  }
+}
+
+async function runConfiguredAction(
+  action: OperatorAction | null | undefined,
+  overrides: AnyRecord,
+  busy: string,
+  confirmationMessage = '',
+) {
+  if (!action || !action.enabled) return;
+  if (
+    action.prerequisites.confirmation_required
+  ) {
+    const confirmed = await promotionConfirmationRef.value?.confirm({
+      actionLabel: action.label,
+      message: confirmationMessage || `确认执行平台动作“${action.label}”？`,
+    });
+    if (!confirmed) return;
+  }
+  busyKey.value = busy;
+  error.value = '';
+  try {
+    const params = buildConfiguredOperatorParams(action, overrides);
+    const result = await intentRequest<AnyRecord>({
+      intent: action.intent,
+      params,
+    });
+    const writeReadback = decodeConfiguredActionResult(
+      result,
+      action,
+      action.target_scope.product_key,
+    );
+    const decoded = decodeReleaseOperatorSurface(
+      writeReadback.surface,
+    ) as unknown as ReleaseOperatorSurface;
+    if (
+      String(decoded.identity?.product_key || '')
+      !== action.target_scope.product_key
+    ) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `${action.key}.readback.product_key`,
+        requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
+      }, `平台动作 ${action.key} 的回读产品与执行对象不一致`);
+    }
+    surface.value = decoded;
+    hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
+    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '平台管理动作执行失败';
+  } finally {
+    busyKey.value = '';
+  }
+}
+
+function centerWriteText(value: unknown, path: string): string {
+  const result = String(value || '').trim();
+  if (!result) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: path,
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, `产品中心保存回读缺少 ${path}`);
+  }
+  return result;
+}
+
+function assertCenterWriteReadback(
+  result: AnyRecord,
+  editor: ProductCenterEditor,
+  centerUpdates: AnyRecord[],
+  entryPlacements: AnyRecord[],
+) {
+  const envelope = decodeProductCenterWriteEnvelope(result, editor);
+  const { policy, readback } = envelope;
+  if (String(policy.product_key || '') !== editor.product_key) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.policy.product_key',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读的产品与本次提交不一致');
+  }
+  const groups = Array.isArray(policy.menu_groups) ? policy.menu_groups : [];
+  for (const update of centerUpdates) {
+    const group = groups.find((row) => (
+      row && typeof row === 'object'
+      && String((row as AnyRecord).center_key || (row as AnyRecord).group_key || '') === String(update.center_key)
+    )) as AnyRecord | undefined;
+    if (!group
+      || String(group.group_label || group.label || '') !== String(update.label)
+      || Number(group.sequence) !== Number(update.sequence)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.policy.center_update',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存回读未包含本次中心修改');
+    }
+  }
+  for (const placement of entryPlacements) {
+    const group = groups.find((row) => (
+      row && typeof row === 'object'
+      && Array.isArray((row as AnyRecord).menus)
+      && ((row as AnyRecord).menus as unknown[]).some((menu) => (
+        menu && typeof menu === 'object'
+        && String((menu as AnyRecord).menu_xmlid || (menu as AnyRecord).menu_key || '') === String(placement.menu_xmlid)
+      ))
+    )) as AnyRecord | undefined;
+    if (!group
+      || String(group.center_key || group.group_key || '') !== String(placement.center_key)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.policy.entry_placement',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存回读未包含本次入口归属');
+    }
+  }
+  if (String(readback.product_key || '') !== editor.product_key) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.product_key',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读的产品身份与本次提交不一致');
+  }
+  centerWriteText(readback.draft_policy_sha256, 'product_center_write.readback.draft_policy_sha256');
+  centerWriteText(readback.draft_fingerprint, 'product_center_write.readback.draft_fingerprint');
+  if (!Number.isInteger(Number(readback.published_snapshot_id))) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.published_snapshot_id',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读缺少发布快照身份');
+  }
+  if (typeof readback.published_version !== 'string') {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.published_version',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读缺少发布版本声明');
+  }
+}
+
+async function runCenterWrite(
+  editor: ProductCenterEditor,
+  params: AnyRecord,
+  centerUpdates: AnyRecord[],
+  entryPlacements: AnyRecord[],
+) {
+  busyKey.value = 'update_policy';
+  error.value = '';
+  try {
+    const result = await intentRequest<AnyRecord>({
+      intent: editor.save_action.intent,
+      params,
+    });
+    assertCenterWriteReadback(result, editor, centerUpdates, entryPlacements);
+    const envelope = decodeProductCenterWriteEnvelope(result, editor);
+    const decoded = decodeReleaseOperatorSurface(
+      envelope.surface,
+    ) as unknown as ReleaseOperatorSurface;
+    if (String(decoded.identity?.product_key || '') !== editor.product_key) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.surface.identity.product_key',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存返回的 surface 属于另一产品');
+    }
+    surface.value = decoded;
+    hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
+    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '产品中心保存失败';
   } finally {
     busyKey.value = '';
   }
@@ -963,26 +1412,26 @@ async function promote(snapshot: SnapshotRow) {
 }
 
 function approve(action: ReleaseActionRow) {
-  void runWrite('release.operator.approve', { action_id: action.id }, `approve:${action.id}`);
+  void runConfiguredAction(
+    action.approve_action,
+    {},
+    `approve:${action.id}`,
+    `确认审批并执行发布申请 ${action.id}？`,
+  );
 }
 
 function freeze() {
-  const params = freezeAction.value.params || { product_key: selectedProduct.value };
-  void runWrite('release.operator.freeze', params, 'freeze');
+  void runConfiguredAction(freezeAction.value, {}, 'freeze');
 }
 
 function syncPolicy() {
-  const params = syncPolicyAction.value.params || { product_key: selectedProduct.value };
-  void runWrite('release.operator.sync_policy', params, 'sync_policy');
+  void runConfiguredAction(syncPolicyAction.value, {}, 'sync_policy');
 }
 
 function savePolicy() {
-  const params = updatePolicyAction.value.params || { product_key: selectedProduct.value };
-  void runWrite(
-    'release.operator.update_policy',
+  void runConfiguredAction(
+    updatePolicyAction.value,
     {
-      ...params,
-      product_key: selectedProduct.value,
       state: policyState.value,
       access_level: policyAccessLevel.value,
     },
@@ -990,16 +1439,48 @@ function savePolicy() {
   );
 }
 
+async function saveProductCenterDraft() {
+  const editor = productCenterEditor.value;
+  const center = selectedCenter.value;
+  if (!editor || !center || centerSaveDisabled.value) return;
+  if (editor.save_action.confirmation_required) {
+    const confirmed = await promotionConfirmationRef.value?.confirm({
+      actionLabel: '保存产品中心草案',
+      message: `确认将中心 ${center.label} 的修改保存为产品 ${editor.product_key} 的草案？`,
+    });
+    if (!confirmed) return;
+  }
+  const centerUpdates = centerDraftChanged.value
+    ? [{
+      center_key: center.center_key,
+      label: centerLabelDraft.value.trim(),
+      sequence: Number(centerSequenceDraft.value),
+    }]
+    : [];
+  const entryPlacements = changedCenterPlacements.value.map((entry) => ({
+    menu_xmlid: entry.menu_xmlid,
+    center_key: entryPlacementDraft.value[entry.menu_xmlid],
+  }));
+  void runCenterWrite(
+    editor,
+    {
+      ...editor.save_action.params,
+      product_key: editor.product_key,
+      center_updates: centerUpdates,
+      entry_placements: entryPlacements,
+    },
+    centerUpdates,
+    entryPlacements,
+  );
+}
+
 function updatePagePolicy(page: AnyRecord, updates: AnyRecord) {
   const key = pageKey(page);
   if (!key) return;
-  const params = updatePagePolicyAction.value.params || { product_key: selectedProduct.value };
   const state = String(updates.release_state || updates.access_level || 'update');
-  void runWrite(
-    'release.operator.update_page_policy',
+  void runConfiguredAction(
+    updatePagePolicyAction.value,
     {
-      ...params,
-      product_key: selectedProduct.value,
       page_key: key,
       ...updates,
     },
@@ -1008,8 +1489,12 @@ function updatePagePolicy(page: AnyRecord, updates: AnyRecord) {
 }
 
 function rollback() {
-  const params = rollbackAction.value.params || {};
-  void runWrite('release.operator.rollback', params, 'rollback');
+  void runConfiguredAction(
+    rollbackAction.value,
+    {},
+    'rollback',
+    `确认回滚产品 ${rollbackAction.value.target_scope.product_key} 到快照 ${rollbackAction.value.params.target_snapshot_id}？`,
+  );
 }
 
 onMounted(() => {

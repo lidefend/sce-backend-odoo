@@ -20,6 +20,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseCenterContributionTests(unittest.TestCase):
+    def test_zero_integer_projection_preserves_declared_sequence(self):
+        self.assertEqual(MODULE._int(0, 10), 0)
+        self.assertEqual(MODULE._int("0", 10), 0)
+        self.assertEqual(MODULE._int(None, 10), 10)
+
     def test_release_center_maps_declared_native_menu_xmlid_without_name_guessing(self):
         source = {
             "product_contract": {
@@ -74,6 +79,29 @@ class ReleaseCenterContributionTests(unittest.TestCase):
         self.assertNotIn("smart_construction_core.menu_same", centers)
         self.assertEqual(conflicts[0]["kind"], "release_center")
         self.assertEqual(conflicts[0]["center_keys"], ["center.a", "center.b"])
+
+    def test_published_center_map_uses_active_policy_identity_and_version(self):
+        projection = {
+            "release_centers": {
+                "smart_construction_core.menu_project_ledger": {
+                    "center_key": "construction.center.project",
+                    "center_label": "项目交付中心",
+                    "center_sequence": 25,
+                    "product_key": "construction.standard",
+                    "snapshot_id": 17,
+                    "version": "center-v2",
+                }
+            }
+        }
+        centers, conflicts = MODULE._published_release_center_map(projection)
+        self.assertEqual(conflicts, [])
+        center = centers["smart_construction_core.menu_project_ledger"]
+        self.assertEqual(center["key"], "construction.center.project")
+        self.assertEqual(center["label"], "项目交付中心")
+        self.assertEqual(center["sequence"], 25)
+        self.assertEqual(center["snapshot_id"], 17)
+        self.assertEqual(center["version"], "center-v2")
+        self.assertEqual(center["source"], "published_product_policy")
 
     def test_explorer_release_authority_never_opens_a_second_database(self):
         called = []
@@ -158,6 +186,62 @@ class ReleaseCenterContributionTests(unittest.TestCase):
         self.assertEqual(evidence["construction.standard"]["snapshot_id"], 17)
         self.assertEqual(evidence["construction.standard"]["version"], "v17")
         self.assertFalse(evidence["construction.preview"]["qualified"])
+
+    def test_product_qualification_keeps_full_product_keys_independent(self):
+        qualification = MODULE._product_qualifications(
+            ["smart_construction_core.menu_sc_project_project"],
+            {
+                "authority_available": True,
+                "selected_product_key": "platform.standard",
+                "menu_release_states_by_product": {
+                    "construction.standard": {
+                        "smart_construction_core.menu_sc_project_project": "released"
+                    },
+                    "platform.standard": {},
+                },
+                "snapshots": [
+                    {
+                        "product_key": "construction.standard",
+                        "applied": True,
+                        "snapshot_id": 17,
+                        "version": "v17",
+                    },
+                    {
+                        "product_key": "platform.standard",
+                        "applied": True,
+                        "snapshot_id": 31,
+                        "version": "v31",
+                    },
+                ],
+            },
+            product_keys=["construction.standard", "platform.standard"],
+        )["smart_construction_core.menu_sc_project_project"]
+        self.assertEqual(
+            qualification["by_product"],
+            {
+                "construction.standard": "qualified",
+                "platform.standard": "not_qualified",
+            },
+        )
+        self.assertEqual(qualification["selected_status"], "not_qualified")
+        self.assertEqual(qualification["standard"], "qualified")
+        self.assertEqual(qualification["preview"], "not_verified")
+
+    def test_non_construction_snapshot_establishes_release_authority(self):
+        projection = MODULE.load_capability_explorer_release_projection(
+            SimpleNamespace(cr=SimpleNamespace(dbname="sc_demo")),
+            platform_database_resolver=lambda env: "sc_demo",
+            projection_loader=lambda env, product_keys=None: {
+                "snapshots": [{
+                    "product_key": "platform.standard",
+                    "applied": True,
+                    "snapshot_id": 31,
+                }],
+            },
+            product_keys=["platform.standard"],
+        )
+        self.assertTrue(projection["authority_available"])
+        self.assertEqual(projection["authority_reason"], "OK")
 
     def test_menu_release_without_active_product_evidence_is_not_qualified(self):
         qualification = MODULE._product_qualifications(

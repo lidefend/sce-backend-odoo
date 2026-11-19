@@ -26,17 +26,36 @@ def _load_module(name: str, path: Path):
     if spec is None or spec.loader is None:
         raise RuntimeError(f"cannot load {path}")
     module = importlib.util.module_from_spec(spec)
+    sys.modules[name] = module
     spec.loader.exec_module(module)
     return module
 
 
-PMS = _load_module("product_menu_source", ROOT / "addons/smart_construction_core/services/product_menu_source.py")
+PMS = _load_module(
+    "smart_construction_core.services.product_menu_source",
+    ROOT / "addons/smart_construction_core/services/product_menu_source.py",
+)
+for package_name in (
+    "odoo",
+    "odoo.addons",
+    "odoo.addons.smart_core",
+    "odoo.addons.smart_core.delivery",
+):
+    package = sys.modules.get(package_name) or types.ModuleType(package_name)
+    package.__path__ = []
+    sys.modules[package_name] = package
+PRODUCT_CENTER_POLICY = _load_module(
+    "odoo.addons.smart_core.delivery.product_center_policy",
+    ROOT / "addons/smart_core/delivery/product_center_policy.py",
+)
 NAV_IDENTITY = _load_module(
     "odoo.addons.smart_core.core.navigation_identity",
     ROOT / "addons/smart_core/core/navigation_identity.py",
 )
-sys.modules["odoo.addons.smart_core.core.navigation_identity"] = NAV_IDENTITY
-PROJ = _load_module("scenario_surface_projection", ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py")
+PROJ = _load_module(
+    "smart_construction_core.services.scenario_surface_projection",
+    ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py",
+)
 SURFACE_PATH = ROOT / "addons/smart_construction_core/data/scenario_product_surface.json"
 
 

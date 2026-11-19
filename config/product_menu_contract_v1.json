@@ -17,8 +17,11 @@
   "centers": [
     {
       "key": "workbench",
+      "center_key": "workspace.home.workbench",
+      "group_key": "workspace.home.workbench",
       "name": "工作台",
       "sequence": 10,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_workspace_center",
       "level_two": [
         {
           "name": "角色首页",
@@ -56,8 +59,11 @@
     },
     {
       "key": "project",
+      "center_key": "construction.center.project",
+      "group_key": "construction.center.project",
       "name": "项目中心",
       "sequence": 20,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_project_center",
       "level_two": [
         {
           "name": "项目创建",
@@ -483,8 +489,11 @@
     },
     {
       "key": "contract",
+      "center_key": "construction.center.contract",
+      "group_key": "construction.center.contract",
       "name": "合同中心",
       "sequence": 30,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center",
       "level_two": [
         {
           "name": "收入合同",
@@ -530,8 +539,11 @@
     },
     {
       "key": "cost",
+      "center_key": "construction.center.cost",
+      "group_key": "construction.center.cost",
       "name": "成本中心",
       "sequence": 40,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center",
       "level_two": [
         {
           "name": "项目预算",
@@ -557,8 +569,11 @@
     },
     {
       "key": "finance",
+      "center_key": "construction.center.finance",
+      "group_key": "construction.center.finance",
       "name": "财务中心",
       "sequence": 50,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_finance_center",
       "level_two": [
         {
           "name": "收款登记",
@@ -634,8 +649,11 @@
     },
     {
       "key": "tax",
+      "center_key": "construction.center.tax",
+      "group_key": "construction.center.tax",
       "name": "税务中心",
       "sequence": 60,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_tax_center",
       "level_two": [
         {
           "name": "外经证",
@@ -686,8 +704,11 @@
     },
     {
       "key": "accounting",
+      "center_key": "construction.center.accounting",
+      "group_key": "construction.center.accounting",
       "name": "会计账务中心",
       "sequence": 70,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_accounting_center",
       "level_two": [
         {
           "name": "日记账分录",
@@ -723,8 +744,11 @@
     },
     {
       "key": "reporting",
+      "center_key": "construction.center.reporting",
+      "group_key": "construction.center.reporting",
       "name": "报表中心",
       "sequence": 80,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_data_center",
       "level_two": [
         {
           "name": "项目报表",
@@ -755,8 +779,11 @@
     },
     {
       "key": "administration",
+      "center_key": "construction.center.administration",
+      "group_key": "construction.center.administration",
       "name": "行政中心",
       "sequence": 90,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_hr_admin_center",
       "level_two": [
         {
           "name": "部门管理",
@@ -802,8 +829,11 @@
     },
     {
       "key": "product_configuration",
+      "center_key": "construction.center.product_configuration",
+      "group_key": "construction.center.product_configuration",
       "name": "产品配置",
       "sequence": 100,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center",
       "level_two": [
         {
           "name": "表单配置",

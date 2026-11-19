@@ -585,6 +585,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/platform_catalog_action_contract.py",
         "addons/smart_core/handlers/platform_capability_explorer.py",
         "addons/smart_core/tests/test_platform_capability_explorer.py",
         "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
@@ -598,6 +599,8 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/platform_management_action_contract.py",
+        "addons/smart_core/delivery/release_operator_contract_registry.py",
         "addons/smart_core/delivery/release_operator_surface_service.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
     ), (
@@ -1066,6 +1069,7 @@ RULES = (
         "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
         "addons/smart_construction_core/core_extension_capability_rows.py",
         "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/services/product_capability_admission.py",
         "addons/smart_construction_core/services/capability_registry.py",
         "addons/smart_construction_core/services/product_menu_source.py",
     ), (
@@ -1078,6 +1082,43 @@ RULES = (
         "addons/smart_construction_core/migrations/17.0.0.182/post-migrate.py",
     ), (
         "verify.capability.identity_boundary.orm",
+    )),
+    Rule((
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+        "config/product_primary_center_baseline_v1.json",
+        "config/product_menu_contract_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+        "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "scripts/verify/test_product_center_policy.py",
+        "scripts/ops/promote_product_ten_center_policy.py",
+    ), (
+        "verify.product_center.policy.unit",
+    )),
+    Rule((
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_core/handlers/release_operator.py",
+    ), (
+        "verify.product_center.policy.unit",
+    )),
+    Rule((
+        "addons/smart_construction_core/models/support/product_scenario.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "config/product_primary_center_baseline_v1.json",
+        "addons/smart_construction_core/migrations/17.0.0.184/post-migrate.py",
+        "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+        "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    ), (
+        "verify.product_center.policy.unit",
+        "verify.product_center.policy.orm",
     )),
     Rule((
         "addons/smart_construction_core/security/sc_role_entry_groups.xml",
@@ -2517,6 +2558,18 @@ def iteration_scope(root: Path, run: dict) -> tuple[str, str, list[str]]:
     return checkpoint, kind, _paths_since(root, checkpoint)
 
 
+def validation_exclusion_targets(run: dict) -> set[str]:
+    declaration = run.get("validation_exclusions") or []
+    if isinstance(declaration, dict):
+        declaration = declaration.get("targets") or []
+    if not isinstance(declaration, list) or any(
+        not isinstance(target, str) or not target.startswith("verify.")
+        for target in declaration
+    ):
+        raise RunError("validation_exclusions.targets must contain verify targets")
+    return set(declaration)
+
+
 def iteration_plan(root: Path = ROOT) -> int:
     selected = resolve_run(root)
     if selected is None:
@@ -2533,6 +2586,7 @@ def iteration_plan(root: Path = ROOT) -> int:
         registered_targets=declared_check_targets(run),
         iteration_baseline_sha=checkpoint,
         iteration_baseline_kind=checkpoint_kind,
+        excluded_targets=validation_exclusion_targets(run),
     )
 
 
@@ -2544,11 +2598,16 @@ def print_plan(
     registered_targets: set[str] | None = None,
     iteration_baseline_sha: str = "",
     iteration_baseline_kind: str = "",
+    excluded_targets: set[str] | None = None,
 ) -> int:
-    required_targets = set(select_targets(paths))
+    excluded_targets = excluded_targets or set()
+    required_targets = set(select_targets(paths)) - excluded_targets
     reusable = reusable_check_targets(checks or {})
     blocked = blocked_check_targets(checks or {})
-    targets = required_targets | {check["target"] for check in (checks or {}).values()}
+    targets = required_targets | {
+        check["target"] for check in (checks or {}).values()
+    }
+    targets -= excluded_targets
     targets.difference_update(reusable | blocked)
     unmapped_paths = [
         path
@@ -2577,6 +2636,7 @@ def print_plan(
         "reusedTargets": sorted(reusable),
         "blockedTargets": sorted(blocked),
         "registrationMissingTargets": registration_missing,
+        "excludedTargets": sorted(excluded_targets),
         "unmappedPathCount": len(unmapped_paths),
         "unmappedPaths": unmapped_paths,
         "executionReady": bool(required_targets)
@@ -2787,9 +2847,14 @@ def execute_targets(
     worktree_identity: dict | None = None,
     iteration_checkpoint_sha: str = "",
     iteration_checkpoint_kind: str = "",
+    excluded_targets: set[str] | None = None,
 ) -> int:
     paths = sorted(set(paths))
-    required_targets = select_targets(paths)
+    excluded_targets = excluded_targets or set()
+    required_targets = [
+        target for target in select_targets(paths)
+        if target not in excluded_targets
+    ]
     blocked = sorted(set(required_targets) & (blocked_targets or set()))
     reusable = sorted(
         (set(required_targets) & (reusable_targets or set())) - set(blocked)
@@ -2824,6 +2889,7 @@ def execute_targets(
         "targetResults": [],
         "notRunTargets": [],
         "registrationMissingTargets": registration_missing,
+        "excludedTargets": sorted(excluded_targets),
         "blockedTargets": blocked,
         "environmentMissing": environment_missing,
         "unmappedPathCount": len(unmapped_paths),
@@ -3024,7 +3090,8 @@ def execute_worktree(root: Path = ROOT) -> int:
     if run["status"] in ("completed", "superseded"):
         raise RunError("selected run is closed; register/select the next task")
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
-    required = set(select_targets(paths))
+    excluded = validation_exclusion_targets(run)
+    required = set(select_targets(paths)) - excluded
     checks = check_states(root, run)
     reusable = reusable_check_targets(checks) & required
     blocked = blocked_check_targets(checks) & required
@@ -3042,6 +3109,7 @@ def execute_worktree(root: Path = ROOT) -> int:
         },
         iteration_checkpoint_sha=checkpoint,
         iteration_checkpoint_kind=checkpoint_kind,
+        excluded_targets=excluded,
     )
 
 

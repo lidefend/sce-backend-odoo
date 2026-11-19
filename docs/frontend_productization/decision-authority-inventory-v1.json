@@ -223,7 +223,7 @@
       "literal": "release.operator.surface",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        907
+        1177
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -842,7 +842,7 @@
       "literal": "not_qualified",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        51
+        78
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -855,7 +855,7 @@
       "literal": "not_verified",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        52
+        79
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -868,7 +868,7 @@
       "literal": "preview",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        44
+        60
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -882,7 +882,7 @@
       "literal": "qualified",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        50
+        77
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -895,7 +895,7 @@
       "literal": "released",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        43
+        59
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -908,7 +908,7 @@
       "literal": "unknown",
       "path": "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
       "lines": [
-        45
+        61
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1431,7 +1431,7 @@
       "literal": "active",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        836
+        1079
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1444,7 +1444,7 @@
       "literal": "blocked",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        838
+        1081
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1458,7 +1458,7 @@
       "literal": "done",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        835
+        1078
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1471,7 +1471,7 @@
       "literal": "fail",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        854
+        1097
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1484,7 +1484,7 @@
       "literal": "pass",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        852
+        1095
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1498,8 +1498,8 @@
       "literal": "preview",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        749,
-        836
+        935,
+        1079
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",
@@ -1513,7 +1513,7 @@
       "literal": "released",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        749
+        935
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1526,8 +1526,8 @@
       "literal": "warn",
       "path": "frontend/apps/web/src/views/ReleaseOperatorView.vue",
       "lines": [
-        837,
-        853
+        1080,
+        1096
       ],
       "occurrences": 2,
       "classification": "contract-derived",

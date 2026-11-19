@@ -1,0 +1,55 @@
+schema_version: 1
+goal:
+  id: SCENE-CLOSE-01-CENTER-PUBLICATION-20261119
+  status: active
+  formal_product_layer: P0/P1
+  layer_target: >-
+    Stable product-center identity, published-policy center projection,
+    release-operator center maintenance and shared frontend consumption
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_runtime_product_policy
+  objective: >-
+    Make product centers a stable, versioned part of the maintained product
+    policy so names, order and entry placement survive rename, publication and
+    rollback without live scenario-entry labels or native display names
+    becoming a second authority.
+  product_result: >-
+    An administrator can edit center names, order and entry placement; the
+    change remains a product draft until release, ordinary navigation consumes
+    the active released snapshot, capability diagnostics explain the same
+    source and version, and rollback restores the previous center definition.
+  why_here: >-
+    smart_core owns release snapshots, policy normalization and release-operator
+    contracts. smart_construction_core owns the ten construction centers and
+    their mapping to native scenario entries. Frontend components only consume
+    the resulting explicit declarations.
+  why_not_elsewhere:
+    - Frontend code must not infer center identity from Chinese labels or XMLIDs.
+    - Scenario entries must not maintain a second writable center name or sequence.
+    - Native menu display labels remain source facts, not product-center publication authority.
+    - Enterprise enablement and ordinary user ACL remain independent runtime decisions.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_project
+      - smart_construction_core.menu_sc_business_config_workbench
+      - smart_construction_core.menu_sc_product_scenario_business_config
+    behavior:
+      - product center identity and order
+      - menu-to-center placement in product policy drafts and active snapshots
+      - scenario navigation composition and capability-explorer center explanation
+      - release-operator center maintenance and readback
+  exclusions:
+    - SCENE-CLOSE-02 composite dependency and scene-version convergence
+    - versioning all scenario fields or lifecycle state
+    - automatic scenario creation or business-category inference
+    - custom fields, personal preferences and full-entry browser matrix
+    - deployment or production mutation
+  rollback: >-
+    Revert the backend and frontend candidate together. Existing release
+    snapshots remain immutable; reactivate the previous snapshot through the
+    governed rollback action if runtime verification requires recovery.

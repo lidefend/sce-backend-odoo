@@ -203,6 +203,45 @@ class TestProductPolicyFactAuthority(TransactionCase):
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'preview')
         self.assertEqual(len(self.policy.menu_groups[0]['menus']), 1)
 
+    def test_catalog_entry_handler_returns_policy_capability_and_readback(self):
+        from odoo.addons.smart_core.handlers.release_operator import (
+            ReleaseOperatorAddCatalogEntryHandler,
+        )
+
+        handler = ReleaseOperatorAddCatalogEntryHandler(self.env)
+        result = handler.handle({
+            'product_key': self.policy.product_key,
+            'menu_id': self.menu.id,
+            'center_key': 'configuration',
+            'release_state': 'preview',
+        })
+        data = result['data']
+        menu_xmlid = self.menu.get_external_id()[self.menu.id]
+        action_xmlid = self.menu.action.get_external_id()[self.menu.action.id]
+        self.assertEqual(data['action']['product_key'], self.policy.product_key)
+        self.assertEqual(data['action']['entry']['menu_xmlid'], menu_xmlid)
+        self.assertEqual(data['readback']['menu_xmlid'], menu_xmlid)
+        self.assertEqual(data['readback']['action_xmlid'], action_xmlid)
+        self.assertEqual(data['readback']['release_state'], 'preview')
+        self.assertEqual(data['readback']['product_key'], self.policy.product_key)
+        self.assertEqual(data['readback']['group_key'], 'configuration')
+        self.assertIn('surface', data)
+        self.policy.invalidate_recordset()
+        selected = [
+            menu
+            for group in self.policy.menu_groups
+            for menu in group.get('menus') or []
+            if menu.get('menu_xmlid') == menu_xmlid
+        ]
+        self.assertEqual(len(selected), 1)
+        capabilities = [
+            capability
+            for capability in self.policy.capabilities
+            if capability.get('menu_xmlid') == menu_xmlid
+        ]
+        self.assertEqual(len(capabilities), 1)
+        self.assertEqual(capabilities[0]['group_key'], 'configuration')
+
     def test_menu_policy_capability_is_entry_alias_not_business_capability(self):
         self._maintain()
         capability = self.policy._capabilities_from_user_confirmed_menu_groups(
@@ -302,6 +341,19 @@ class TestProductPolicyFactAuthority(TransactionCase):
                     'meta_json': {'release_draft': deepcopy(draft)}}
         gate = _release_gate_page_contract_from_snapshot(snapshot)
         self.assertEqual(gate['menu_release_states'][self.menu.get_external_id()[self.menu.id]], 'released')
+        gate_with_centers = _release_gate_page_contract_from_snapshot(
+            snapshot,
+            env=self.env,
+        )
+        menu_xmlid = self.menu.get_external_id()[self.menu.id]
+        self.assertEqual(
+            gate_with_centers['entry_centers'][menu_xmlid]['center_key'],
+            self.policy.menu_groups[0]['center_key'],
+        )
+        self.assertEqual(
+            gate_with_centers['entry_centers'][menu_xmlid]['center_label'],
+            self.policy.menu_groups[0]['group_label'],
+        )
         snapshot['meta_json']['release_draft']['pages'][0]['res_model'] = 'res.partner'
         with self.assertRaisesRegex(ValueError, 'PAGES_FINGERPRINT_MISMATCH'):
             _release_gate_page_contract_from_snapshot(snapshot)
@@ -335,3 +387,187 @@ class TestProductPolicyFactAuthority(TransactionCase):
         snapshot.meta_json['release_draft']['pages'][0]['action_id'] += 1
         with self.assertRaisesRegex(ValueError, 'FINGERPRINT_MISMATCH'):
             self.service.assert_frozen_release_integrity(snapshot)
+
+    def test_center_draft_publish_and_rollback_share_one_policy_authority(self):
+        from odoo.addons.smart_core.delivery.product_policy_service import (
+            ProductPolicyService,
+        )
+        from odoo.addons.smart_core.handlers.release_operator import (
+            ReleaseOperatorUpdatePolicyHandler,
+        )
+
+        project_menu = self.env.ref(
+            'smart_construction_core.menu_sc_project_project'
+        )
+        contract_menu = self.env.ref(
+            'smart_construction_core.menu_sc_construction_contract'
+        )
+
+        def menu_row(menu, release_state='released'):
+            action = menu.action
+            return {
+                'menu_id': menu.id,
+                'action_id': action.id,
+                'menu_xmlid': menu.get_external_id()[menu.id],
+                'action_xmlid': action.get_external_id()[action.id],
+                'res_model': action.res_model,
+                'label': menu.name,
+                'page_label': menu.name,
+                'page_key': menu.get_external_id()[menu.id],
+                'menu_key': menu.get_external_id()[menu.id],
+                'enabled': True,
+                'release_state': release_state,
+            }
+
+        product_key = 'construction.scene_center_test'
+        policy = self.env['sc.product.policy'].create({
+            'product_key': product_key,
+            'base_product_key': 'construction',
+            'edition_key': 'scene_center_test',
+            'label': 'Scene center test',
+            'state': 'stable',
+            'access_level': 'public',
+            'menu_groups': [
+                {
+                    'center_key': 'construction.center.project',
+                    'group_key': 'construction.center.project',
+                    'group_label': '项目中心',
+                    'sequence': 20,
+                    'menus': [menu_row(project_menu)],
+                },
+                {
+                    'center_key': 'construction.center.contract',
+                    'group_key': 'construction.center.contract',
+                    'group_label': '合同中心',
+                    'sequence': 30,
+                    'menus': [menu_row(contract_menu)],
+                },
+            ],
+        })
+        self.env['ir.config_parameter'].sudo().set_param(
+            'smart_core.platform_release_db',
+            self.env.cr.dbname,
+        )
+        self.env['ir.config_parameter'].sudo().set_param(
+            'smart_core.release_operator.catalog_source_db',
+            self.env.cr.dbname,
+        )
+        old = self.service.freeze_release_surface(
+            product_key=product_key,
+            version='centers-old',
+            replace_active=True,
+            note='old center baseline',
+        )
+        old_snapshot = self.env['sc.edition.release.snapshot'].sudo().browse(
+            old['id']
+        )
+        old_policy = deepcopy(old_snapshot.snapshot_json['policy'])
+        runtime_service = ProductPolicyService(self.env)
+        published_old = runtime_service.get_policy(
+            product_key=product_key,
+            enforce_release=True,
+        )
+        self.assertEqual(
+            published_old['menu_groups'][0]['group_label'],
+            '项目中心',
+        )
+
+        handler = ReleaseOperatorUpdatePolicyHandler(self.env)
+        result = handler.handle({
+            'product_key': product_key,
+            'center_updates': [
+                {
+                    'center_key': 'construction.center.project',
+                    'label': '项目交付中心',
+                    'sequence': 25,
+                }
+            ],
+            'entry_placements': [
+                {
+                    'menu_xmlid': project_menu.get_external_id()[project_menu.id],
+                    'center_key': 'construction.center.contract',
+                }
+            ],
+        })
+        self.assertEqual(
+            result['data']['policy']['menu_groups'][0]['group_label'],
+            '项目交付中心',
+        )
+        still_published = runtime_service.get_policy(
+            product_key=product_key,
+            enforce_release=True,
+        )
+        self.assertEqual(
+            still_published['menu_groups'][0]['group_label'],
+            '项目中心',
+        )
+
+        new = self.service.freeze_release_surface(
+            product_key=product_key,
+            version='centers-new',
+            replace_active=True,
+            note='new center baseline',
+        )
+        published_new = runtime_service.get_policy(
+            product_key=product_key,
+            enforce_release=True,
+        )
+        project_center = next(
+            row
+            for row in published_new['menu_groups']
+            if row['center_key'] == 'construction.center.project'
+        )
+        contract_center = next(
+            row
+            for row in published_new['menu_groups']
+            if row['center_key'] == 'construction.center.contract'
+        )
+        self.assertEqual(project_center['group_label'], '项目交付中心')
+        self.assertEqual(project_center['sequence'], 25)
+        self.assertEqual(len(project_center['menus']), 0)
+        self.assertIn(
+            project_menu.get_external_id()[project_menu.id],
+            {row['menu_xmlid'] for row in contract_center['menus']},
+        )
+        self.assertEqual(old_snapshot.snapshot_json['policy'], old_policy)
+
+        rollback = self.service.rollback_to_snapshot(
+            product_key=product_key,
+            target_snapshot_id=old['id'],
+        )
+        self.assertEqual(rollback['id'], old['id'])
+        published_rollback = runtime_service.get_policy(
+            product_key=product_key,
+            enforce_release=True,
+        )
+        self.assertEqual(
+            published_rollback['menu_groups'][0]['group_label'],
+            '项目中心',
+        )
+        self.assertEqual(
+            published_rollback['menu_groups'][0]['menus'][0]['menu_xmlid'],
+            project_menu.get_external_id()[project_menu.id],
+        )
+        self.assertNotEqual(new['id'], old['id'])
+
+    def test_published_center_fields_override_live_scenario_names_and_order(self):
+        from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
+            composition_center_for_leaf,
+        )
+
+        center = composition_center_for_leaf(
+            {
+                'policy_center_key': 'construction.center.project',
+                'policy_center_label': '项目交付中心',
+                'policy_center_sequence': 25,
+            },
+            {
+                'center_key': 'construction.center.contract',
+                'center_name': '旧合同名称',
+                'center_sequence': 99,
+            },
+        )
+        self.assertEqual(center['key'], 'construction.center.project')
+        self.assertEqual(center['name'], '项目交付中心')
+        self.assertEqual(center['sequence'], 25)
+        self.assertTrue(center['published_center'])

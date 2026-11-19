@@ -58,7 +58,14 @@ class ScProductScenario(models.Model):
     _description = "Business Product Scenario"
     _order = "sequence, id"
 
-    active = fields.Boolean(default=True)
+    active = fields.Boolean(
+        default=True,
+        string="场景定义启用",
+        help=(
+            "Controls whether this scenario definition participates in product "
+            "organization. It is not the current company's enablement switch."
+        ),
+    )
     sequence = fields.Integer(default=10)
     code = fields.Char(required=True, index=True)
     name = fields.Char(required=True)
@@ -168,7 +175,6 @@ class ScProductScenario(models.Model):
         this method is called. Future seed changes require explicit migrations.
         """
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
-            legacy_native_center_seed,
             load_surface,
         )
 
@@ -208,15 +214,11 @@ class ScProductScenario(models.Model):
                         ("menu_id", "=", menu.id),
                     ], limit=1)
                     if not exists:
-                        center = legacy_native_center_seed(self.env, menu)
                         Entry.create({
                             "scenario_id": record.id,
                             "menu_id": menu.id,
                             "intent": intent_code,
                             "sequence": 10,
-                            "center_key": center["center_key"],
-                            "center_name": center["center_name"],
-                            "center_sequence": center["center_sequence"],
                         })
                         created_entries += 1
         Param.set_param(SCENARIO_SEED_KEY, "1")
@@ -289,9 +291,21 @@ class ScProductScenarioEntry(models.Model):
     menu_xmlid = fields.Char(compute="_compute_menu_xmlid", store=True, readonly=True)
     intent = fields.Selection(SCENARIO_INTENTS, required=True, default="handle")
     sequence = fields.Integer(default=10)
-    center_key = fields.Char(index=True, help="Scenario-composed navigation center identity.")
-    center_name = fields.Char(help="Scenario-composed navigation center label.")
-    center_sequence = fields.Integer(default=10)
+    center_key = fields.Char(
+        compute="_compute_center_reference",
+        string="Product Center",
+        help="Derived stable product-center identity from the maintained product policy.",
+    )
+    center_name = fields.Char(
+        compute="_compute_center_reference",
+        string="Product Center Name",
+        help="Derived label from the maintained product policy.",
+    )
+    center_sequence = fields.Integer(
+        compute="_compute_center_reference",
+        string="Product Center Sequence",
+        help="Derived order from the maintained product policy.",
+    )
 
     _sql_constraints = [
         (
@@ -330,3 +344,33 @@ class ScProductScenarioEntry(models.Model):
                     entry.menu_xmlid = str(external or "").strip()
                 except Exception:
                     entry.menu_xmlid = ""
+
+    @api.depends("menu_id")
+    def _compute_center_reference(self):
+        from odoo.addons.smart_construction_core.services.product_center_policy import (
+            construction_product_center_index,
+        )
+
+        policy = self.env["sc.product.policy"].sudo().search(
+            [
+                ("product_key", "=", "construction.standard"),
+                ("active", "=", True),
+            ],
+            limit=1,
+        )
+        center_index = (
+            construction_product_center_index(policy.to_runtime_dict())
+            if policy
+            else {"by_menu": {}}
+        )
+        for entry in self:
+            center = center_index["by_menu"].get(entry.menu_xmlid or "")
+            entry.center_key = str(
+                (center or {}).get("center_key") or ""
+            ).strip()
+            entry.center_name = str(
+                (center or {}).get("center_label") or ""
+            ).strip()
+            entry.center_sequence = int(
+                (center or {}).get("center_sequence") or 10
+            )

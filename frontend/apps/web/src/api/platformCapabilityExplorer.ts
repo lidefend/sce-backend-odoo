@@ -2,6 +2,13 @@ import { intentRequest } from './intents';
 import { contractGapError } from '../app/contract/contractGap';
 
 const DECLARATION_LAYER = 'P0:smart_core:platform_capability_explorer';
+const CATALOG_ENTRY_ACCEPTED_FIELDS = [
+  'product_key',
+  'menu_id',
+  'center_key',
+  'release_state',
+] as const;
+const CATALOG_ENTRY_READBACK_FIELDS = ['action', 'surface', 'readback'] as const;
 
 export type CapabilityExplorerFilters = {
   center_keys?: string[];
@@ -14,11 +21,85 @@ export type CapabilityExplorerFilters = {
 
 export type CapabilityExplorerListParams = {
   query?: string;
+  catalog_scope?: 'platform' | 'product';
+  product_key?: string;
   filters?: CapabilityExplorerFilters;
   limit?: number;
   offset?: number;
   sort?: string;
   expected_catalog_token?: string;
+};
+
+export type CapabilityCatalogScope = {
+  mode: 'platform' | 'product';
+  label: string;
+  identity_scope: string;
+  product_key: string;
+  product_label: string;
+  products: Array<{
+    product_key: string;
+    label: string;
+    base_product_key?: string;
+    edition_key?: string;
+    groups: Array<{
+      group_key: string;
+      label: string;
+      sequence: number;
+      entry_count: number;
+    }>;
+  }>;
+  groups: Array<{
+    group_key: string;
+    label: string;
+    sequence: number;
+    entry_count: number;
+  }>;
+  platform_native_entry_count?: number;
+  visible_entry_count?: number;
+  management_actions: {
+    add_to_product_draft: {
+      intent: string;
+      enabled: boolean;
+      reason_code: string;
+      accepted_fields: string[];
+      default_release_state: string;
+      release_state_options: Array<{ value: string; label: string }>;
+      readback_fields: string[];
+    };
+    open_product_draft: {
+      route: string;
+      product_key: string;
+    };
+  };
+  source_authority: Record<string, unknown>;
+};
+
+export type CapabilityCatalogEntryAddParams = {
+  product_key: string;
+  menu_id: number;
+  center_key: string;
+  release_state: string;
+};
+
+export type CapabilityCatalogEntryReadback = {
+  product_key: string;
+  group_key: string;
+  menu_xmlid: string;
+  action_xmlid: string;
+  menu_id: number;
+  action_id: number;
+  res_model: string;
+  enabled: boolean;
+  release_state: string;
+  draft_policy_sha256: string;
+  published_snapshot_id: number;
+  published_version: string;
+};
+
+export type CapabilityCatalogEntryWriteResult = {
+  action: Record<string, unknown>;
+  surface: Record<string, unknown>;
+  readback: CapabilityCatalogEntryReadback;
 };
 
 export type CapabilityExplorerBaseMeta = {
@@ -32,6 +113,7 @@ export type CapabilityExplorerBaseMeta = {
   persistence: string;
   language: Record<string, unknown>;
   diagnostics: Record<string, unknown>;
+  catalog_scope: CapabilityCatalogScope;
 };
 
 export type CapabilityExplorerMeta = CapabilityExplorerBaseMeta & {
@@ -48,6 +130,10 @@ export type CapabilityExplorerCenter = {
   label: string;
   sequence: number;
   source: string;
+  product_key?: string;
+  snapshot_id?: number;
+  version?: string;
+  config_ref?: Record<string, unknown>;
 };
 
 export type CapabilityExplorerQualificationEvidence = {
@@ -67,6 +153,9 @@ export type CapabilityExplorerQualificationEvidence = {
 export type CapabilityExplorerProductQualification = {
   preview: string;
   standard: string;
+  selected_product_key?: string;
+  selected_status?: string;
+  by_product?: Record<string, string>;
   reason_code: string;
   authority_available?: boolean;
   evidence: CapabilityExplorerQualificationEvidence[];
@@ -153,6 +242,11 @@ export type CapabilityExplorerRow = {
     selectable: boolean;
     blockers: string[];
   };
+  catalog_admission: {
+    enabled: boolean;
+    reason_code: string;
+    blockers: string[];
+  };
   product_qualification: CapabilityExplorerProductQualification;
 };
 
@@ -172,6 +266,7 @@ export type CapabilityExplorerListResponse = {
 
 export type CapabilityExplorerNativeFacts = {
   menu: {
+    id?: number;
     xmlid: string;
     label: string;
     sequence: number;
@@ -179,6 +274,7 @@ export type CapabilityExplorerNativeFacts = {
     group_xmlids: string[];
   };
   action: {
+    id?: number;
     xmlid: string;
     type: string;
     view_modes: string[];
@@ -343,6 +439,19 @@ function nullableObject(value: unknown, path: string): Record<string, unknown> |
   return value === null ? null : object(value, path);
 }
 
+function actionOptions(value: unknown, path: string): Array<{ value: string; label: string }> {
+  if (!Array.isArray(value) || !value.length) return gap(path);
+  const options = value.map((item, index) => {
+    const row = object(item, `${path}[${index}]`);
+    return {
+      value: requiredText(row.value, `${path}[${index}].value`),
+      label: requiredText(row.label, `${path}[${index}].label`),
+    };
+  });
+  if (new Set(options.map((item) => item.value)).size !== options.length) return gap(path);
+  return options;
+}
+
 function qualificationEvidence(value: unknown, path: string): CapabilityExplorerQualificationEvidence[] {
   if (!Array.isArray(value)) return gap(path);
   return value.map((item, index) => {
@@ -371,6 +480,15 @@ function decodeProductQualification(value: unknown, path: string): CapabilityExp
   return {
     preview: requiredText(source.preview, `${path}.preview`),
     standard: requiredText(source.standard, `${path}.standard`),
+    ...(source.selected_product_key === undefined
+      ? {}
+      : { selected_product_key: optionalText(source.selected_product_key) }),
+    ...(source.selected_status === undefined
+      ? {}
+      : { selected_status: optionalText(source.selected_status) }),
+    ...(source.by_product && typeof source.by_product === 'object' && !Array.isArray(source.by_product)
+      ? { by_product: Object.fromEntries(Object.entries(source.by_product).map(([key, value]) => [key, String(value || '')])) }
+      : {}),
     reason_code: requiredText(source.reason_code, `${path}.reason_code`),
     ...(source.authority_available === undefined
       ? {}
@@ -401,6 +519,42 @@ function countMap(value: unknown, path: string): Record<string, number> {
 
 function decodeBaseMeta(value: unknown): CapabilityExplorerBaseMeta {
   const source = object(value, 'meta');
+  const scope = object(source.catalog_scope, 'meta.catalog_scope');
+  const scopeMode = requiredText(scope.mode, 'meta.catalog_scope.mode');
+  if (scopeMode !== 'platform' && scopeMode !== 'product') {
+    gap('meta.catalog_scope.mode');
+  }
+  if (!Array.isArray(scope.products) || !Array.isArray(scope.groups)) {
+    gap('meta.catalog_scope.products/groups');
+  }
+  const actions = object(scope.management_actions, 'meta.catalog_scope.management_actions');
+  const addAction = object(actions.add_to_product_draft, 'meta.catalog_scope.management_actions.add_to_product_draft');
+  const openAction = object(actions.open_product_draft, 'meta.catalog_scope.management_actions.open_product_draft');
+  const addAcceptedFields = strings(
+    addAction.accepted_fields,
+    'meta.catalog_scope.management_actions.add_to_product_draft.accepted_fields',
+  );
+  const addReadbackFields = strings(
+    addAction.readback_fields,
+    'meta.catalog_scope.management_actions.add_to_product_draft.readback_fields',
+  );
+  const releaseStateOptions = actionOptions(
+    addAction.release_state_options,
+    'meta.catalog_scope.management_actions.add_to_product_draft.release_state_options',
+  );
+  const defaultReleaseState = requiredText(
+    addAction.default_release_state,
+    'meta.catalog_scope.management_actions.add_to_product_draft.default_release_state',
+  );
+  if (CATALOG_ENTRY_ACCEPTED_FIELDS.some((field) => !addAcceptedFields.includes(field))) {
+    gap('meta.catalog_scope.management_actions.add_to_product_draft.accepted_fields');
+  }
+  if (CATALOG_ENTRY_READBACK_FIELDS.some((field) => !addReadbackFields.includes(field))) {
+    gap('meta.catalog_scope.management_actions.add_to_product_draft.readback_fields');
+  }
+  if (!releaseStateOptions.some((option) => option.value === defaultReleaseState)) {
+    gap('meta.catalog_scope.management_actions.add_to_product_draft.default_release_state');
+  }
   return {
     schema: requiredText(source.schema, 'meta.schema'),
     generated_at: requiredText(source.generated_at, 'meta.generated_at'),
@@ -412,6 +566,184 @@ function decodeBaseMeta(value: unknown): CapabilityExplorerBaseMeta {
     persistence: requiredText(source.persistence, 'meta.persistence'),
     language: object(source.language, 'meta.language'),
     diagnostics: object(source.diagnostics, 'meta.diagnostics'),
+    catalog_scope: {
+      mode: scopeMode,
+      label: requiredText(scope.label, 'meta.catalog_scope.label'),
+      identity_scope: requiredText(scope.identity_scope, 'meta.catalog_scope.identity_scope'),
+      product_key: optionalText(scope.product_key),
+      product_label: optionalText(scope.product_label),
+      products: scope.products.map((item, index) => {
+        const row = object(item, `meta.catalog_scope.products[${index}]`);
+        return {
+          product_key: requiredText(row.product_key, `meta.catalog_scope.products[${index}].product_key`),
+          label: requiredText(row.label, `meta.catalog_scope.products[${index}].label`),
+          base_product_key: optionalText(row.base_product_key),
+          edition_key: optionalText(row.edition_key),
+          groups: (Array.isArray(row.groups) ? row.groups : []).map((item, groupIndex) => {
+            const group = object(item, `meta.catalog_scope.products[${index}].groups[${groupIndex}]`);
+            return {
+              group_key: requiredText(group.group_key, `meta.catalog_scope.products[${index}].groups[${groupIndex}].group_key`),
+              label: requiredText(group.label, `meta.catalog_scope.products[${index}].groups[${groupIndex}].label`),
+              sequence: number(group.sequence, `meta.catalog_scope.products[${index}].groups[${groupIndex}].sequence`),
+              entry_count: number(group.entry_count, `meta.catalog_scope.products[${index}].groups[${groupIndex}].entry_count`),
+            };
+          }),
+        };
+      }),
+      groups: scope.groups.map((item, index) => {
+        const row = object(item, `meta.catalog_scope.groups[${index}]`);
+        return {
+          group_key: requiredText(row.group_key, `meta.catalog_scope.groups[${index}].group_key`),
+          label: requiredText(row.label, `meta.catalog_scope.groups[${index}].label`),
+          sequence: number(row.sequence, `meta.catalog_scope.groups[${index}].sequence`),
+          entry_count: number(row.entry_count, `meta.catalog_scope.groups[${index}].entry_count`),
+        };
+      }),
+      platform_native_entry_count: scope.platform_native_entry_count === undefined
+        ? undefined
+        : number(scope.platform_native_entry_count, 'meta.catalog_scope.platform_native_entry_count'),
+      visible_entry_count: scope.visible_entry_count === undefined
+        ? undefined
+        : number(scope.visible_entry_count, 'meta.catalog_scope.visible_entry_count'),
+      management_actions: {
+        add_to_product_draft: {
+          intent: requiredText(addAction.intent, 'meta.catalog_scope.management_actions.add_to_product_draft.intent'),
+          enabled: boolean(addAction.enabled, 'meta.catalog_scope.management_actions.add_to_product_draft.enabled'),
+          reason_code: requiredText(addAction.reason_code, 'meta.catalog_scope.management_actions.add_to_product_draft.reason_code'),
+          accepted_fields: addAcceptedFields,
+          default_release_state: defaultReleaseState,
+          release_state_options: releaseStateOptions,
+          readback_fields: addReadbackFields,
+        },
+        open_product_draft: {
+          route: requiredText(openAction.route, 'meta.catalog_scope.management_actions.open_product_draft.route'),
+          product_key: optionalText(openAction.product_key),
+        },
+      },
+      source_authority: object(scope.source_authority, 'meta.catalog_scope.source_authority'),
+    },
+  };
+}
+
+export function buildCapabilityCatalogEntryAddParams(
+  action: CapabilityCatalogScope['management_actions']['add_to_product_draft'],
+  input: CapabilityCatalogEntryAddParams,
+): CapabilityCatalogEntryAddParams {
+  if (!action.enabled) {
+    throw new Error(action.reason_code || '产品草案维护动作不可用');
+  }
+  for (const field of CATALOG_ENTRY_ACCEPTED_FIELDS) {
+    if (!action.accepted_fields.includes(field)) {
+      gap(`meta.catalog_scope.management_actions.add_to_product_draft.accepted_fields.${field}`);
+    }
+  }
+  if (!action.release_state_options.some((option) => option.value === input.release_state)) {
+    gap('meta.catalog_scope.management_actions.add_to_product_draft.release_state_options');
+  }
+  if (!Number.isInteger(input.menu_id) || input.menu_id <= 0) {
+    gap('catalog_entry.menu_id');
+  }
+  const productKey = requiredText(input.product_key, 'catalog_entry.product_key');
+  const centerKey = requiredText(input.center_key, 'catalog_entry.center_key');
+  return {
+    product_key: productKey,
+    menu_id: input.menu_id,
+    center_key: centerKey,
+    release_state: input.release_state,
+  };
+}
+
+export function decodeCapabilityCatalogEntryWriteResult(
+  value: unknown,
+  action: CapabilityCatalogScope['management_actions']['add_to_product_draft'],
+  expected: CapabilityCatalogEntryAddParams & {
+    menu_xmlid: string;
+    action_xmlid: string;
+    action_id?: number;
+  },
+): CapabilityCatalogEntryWriteResult {
+  const source = object(value, 'catalog_entry_write');
+  for (const field of action.readback_fields) {
+    if (!(field in source)) gap(`catalog_entry_write.${field}`);
+  }
+  for (const field of CATALOG_ENTRY_READBACK_FIELDS) {
+    if (!action.readback_fields.includes(field)) {
+      gap(`meta.catalog_scope.management_actions.add_to_product_draft.readback_fields.${field}`);
+    }
+  }
+  const actionResult = object(source.action, 'catalog_entry_write.action');
+  const surface = object(source.surface, 'catalog_entry_write.surface');
+  const readback = object(source.readback, 'catalog_entry_write.readback');
+  const actionReadback = object(actionResult.readback, 'catalog_entry_write.action.readback');
+  const productKey = requiredText(actionResult.product_key, 'catalog_entry_write.action.product_key');
+  const groupKey = requiredText(actionResult.group_key, 'catalog_entry_write.action.group_key');
+  const menuXmlid = requiredText(actionReadback.menu_xmlid, 'catalog_entry_write.action.readback.menu_xmlid');
+  const actionXmlid = requiredText(actionReadback.action_xmlid, 'catalog_entry_write.action.readback.action_xmlid');
+  const menuId = number(actionReadback.menu_id, 'catalog_entry_write.action.readback.menu_id');
+  const actionId = number(actionReadback.action_id, 'catalog_entry_write.action.readback.action_id');
+  const releaseState = requiredText(actionReadback.release_state, 'catalog_entry_write.action.readback.release_state');
+  const topProductKey = requiredText(readback.product_key, 'catalog_entry_write.readback.product_key');
+  const topGroupKey = requiredText(readback.group_key, 'catalog_entry_write.readback.group_key');
+  const topMenuXmlid = requiredText(readback.menu_xmlid, 'catalog_entry_write.readback.menu_xmlid');
+  const topActionXmlid = requiredText(readback.action_xmlid, 'catalog_entry_write.readback.action_xmlid');
+  const topMenuId = number(readback.menu_id, 'catalog_entry_write.readback.menu_id');
+  const topActionId = number(readback.action_id, 'catalog_entry_write.readback.action_id');
+  const topReleaseState = requiredText(readback.release_state, 'catalog_entry_write.readback.release_state');
+  const resModel = requiredText(readback.res_model, 'catalog_entry_write.readback.res_model');
+  const enabled = boolean(readback.enabled, 'catalog_entry_write.readback.enabled');
+  const draftPolicySha256 = requiredText(
+    readback.draft_policy_sha256,
+    'catalog_entry_write.readback.draft_policy_sha256',
+  );
+  const publishedSnapshotId = number(
+    readback.published_snapshot_id,
+    'catalog_entry_write.readback.published_snapshot_id',
+  );
+  const publishedVersion = text(
+    readback.published_version,
+    'catalog_entry_write.readback.published_version',
+  );
+  const expectedActionId = Number(expected.action_id || 0);
+  const identities = [
+    productKey === expected.product_key,
+    topProductKey === expected.product_key,
+    groupKey === expected.center_key,
+    topGroupKey === expected.center_key,
+    menuXmlid === expected.menu_xmlid,
+    topMenuXmlid === expected.menu_xmlid,
+    actionXmlid === expected.action_xmlid,
+    topActionXmlid === expected.action_xmlid,
+    menuId === expected.menu_id,
+    topMenuId === expected.menu_id,
+    releaseState === expected.release_state,
+    topReleaseState === expected.release_state,
+    ...(expectedActionId > 0
+      ? [actionId === expectedActionId, topActionId === expectedActionId]
+      : []),
+  ];
+  if (identities.some((matched) => !matched)) {
+    gap('catalog_entry_write.readback.identity');
+  }
+  if (!action.release_state_options.some((option) => option.value === releaseState)) {
+    gap('catalog_entry_write.action.readback.release_state');
+  }
+  return {
+    action: actionResult,
+    surface,
+    readback: {
+      product_key: topProductKey,
+      group_key: topGroupKey,
+      menu_xmlid: topMenuXmlid,
+      action_xmlid: topActionXmlid,
+      menu_id: topMenuId,
+      action_id: topActionId,
+      res_model: resModel,
+      enabled,
+      release_state: topReleaseState,
+      draft_policy_sha256: draftPolicySha256,
+      published_snapshot_id: publishedSnapshotId,
+      published_version: publishedVersion,
+    },
   };
 }
 
@@ -436,6 +768,7 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
   const business = object(source.business_domain, 'row.business_domain');
   const usage = object(source.scene_usage, 'row.scene_usage');
   const draft = object(source.draft_eligibility, 'row.draft_eligibility');
+  const admission = object(source.catalog_admission, 'row.catalog_admission');
   const qualification = decodeProductQualification(
     source.product_qualification,
     'row.product_qualification',
@@ -474,6 +807,14 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
     draft_eligibility: {
       selectable: boolean(draft.selectable, 'row.draft_eligibility.selectable'),
       blockers: strings(draft.blockers, 'row.draft_eligibility.blockers'),
+    },
+    catalog_admission: {
+      enabled: boolean(admission.enabled, 'row.catalog_admission.enabled'),
+      reason_code: requiredText(
+        admission.reason_code,
+        'row.catalog_admission.reason_code',
+      ),
+      blockers: strings(admission.blockers, 'row.catalog_admission.blockers'),
     },
     product_qualification: {
       ...qualification,
@@ -524,6 +865,7 @@ function decodeNativeFacts(value: unknown): CapabilityExplorerNativeFacts {
   const rules = object(source.record_rules, 'entry.native_facts.record_rules');
   return {
     menu: {
+      id: menu.id === undefined ? undefined : number(menu.id, 'entry.native_facts.menu.id'),
       xmlid: requiredText(menu.xmlid, 'entry.native_facts.menu.xmlid'),
       label: requiredText(menu.label, 'entry.native_facts.menu.label'),
       sequence: number(menu.sequence, 'entry.native_facts.menu.sequence'),
@@ -531,6 +873,7 @@ function decodeNativeFacts(value: unknown): CapabilityExplorerNativeFacts {
       group_xmlids: strings(menu.group_xmlids, 'entry.native_facts.menu.group_xmlids'),
     },
     action: {
+      id: action.id === undefined ? undefined : number(action.id, 'entry.native_facts.action.id'),
       xmlid: requiredText(action.xmlid, 'entry.native_facts.action.xmlid'),
       type: requiredText(action.type, 'entry.native_facts.action.type'),
       view_modes: strings(action.view_modes, 'entry.native_facts.action.view_modes'),
@@ -728,6 +1071,8 @@ export async function fetchCapabilityExplorerList(params: CapabilityExplorerList
 export async function fetchCapabilityExplorerDetail(params: {
   entry_ref: CapabilityExplorerRow['entry_ref'];
   expected_catalog_token: string;
+  catalog_scope?: 'platform' | 'product';
+  product_key?: string;
 }) {
   const result = await intentRequest<unknown>({
     intent: 'platform.capability.explorer.detail',
@@ -741,6 +1086,8 @@ export async function fetchCapabilityExplorerDiagnose(params: {
   menu_xmlid?: string;
   action_xmlid?: string;
   expected_catalog_token: string;
+  catalog_scope?: 'platform' | 'product';
+  product_key?: string;
 }) {
   const result = await intentRequest<unknown>({
     intent: 'platform.capability.explorer.diagnose',

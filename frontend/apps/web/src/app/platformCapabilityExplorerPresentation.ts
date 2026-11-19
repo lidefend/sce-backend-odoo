@@ -14,6 +14,22 @@ export function capabilityEntryKey(row: Pick<CapabilityExplorerRow, 'entry_ref'>
   return `${row.entry_ref.menu_xmlid}::${row.entry_ref.action_xmlid}`;
 }
 
+export function isCatalogAdmissionOperationCurrent(
+  operationEntryKey: string,
+  current: {
+    drawer_open: boolean;
+    selected_entry_key: string;
+    detail_entry_key: string;
+  },
+): boolean {
+  return Boolean(
+    operationEntryKey
+    && current.drawer_open
+    && current.selected_entry_key === operationEntryKey
+    && current.detail_entry_key === operationEntryKey,
+  );
+}
+
 export function businessDomainPresentation(row: CapabilityExplorerRow): CapabilityStatusPresentation {
   if (row.business_domain.confidence === 'authoritative_scene_binding') {
     return {
@@ -44,6 +60,17 @@ export function releaseStatePresentation(state: string): CapabilityStatusPresent
   if (state === 'preview') return { label: '预览', semantic: 'info' };
   if (state === 'unknown') return { label: '发布状态未知', semantic: 'warning' };
   return { label: state, semantic: 'default' };
+}
+
+export function centerSourcePresentation(center: Record<string, unknown> | null): CapabilityStatusPresentation {
+  const source = String(center?.source || '').trim();
+  if (source === 'published_product_policy') {
+    return { label: '已发布产品配置', semantic: 'success' };
+  }
+  if (source === 'ir.ui.menu' || source === 'native_menu') {
+    return { label: '原生菜单来源', semantic: 'info' };
+  }
+  return { label: source || '来源未知', semantic: 'default' };
 }
 
 export function qualificationPresentation(status: string): CapabilityStatusPresentation {

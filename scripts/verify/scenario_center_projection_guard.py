@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -22,12 +23,42 @@ NAV_IDENTITY_SPEC = importlib.util.spec_from_file_location(
 NAV_IDENTITY = importlib.util.module_from_spec(NAV_IDENTITY_SPEC)
 NAV_IDENTITY_SPEC.loader.exec_module(NAV_IDENTITY)
 sys.modules["odoo.addons.smart_core.core.navigation_identity"] = NAV_IDENTITY
+PRODUCT_MENU_SOURCE_NAME = "smart_construction_core.services.product_menu_source"
+PRODUCT_MENU_SOURCE_SPEC = importlib.util.spec_from_file_location(
+    PRODUCT_MENU_SOURCE_NAME,
+    ROOT / "addons/smart_construction_core/services/product_menu_source.py",
+)
+PRODUCT_MENU_SOURCE = importlib.util.module_from_spec(PRODUCT_MENU_SOURCE_SPEC)
+sys.modules[PRODUCT_MENU_SOURCE_NAME] = PRODUCT_MENU_SOURCE
+PRODUCT_MENU_SOURCE_SPEC.loader.exec_module(PRODUCT_MENU_SOURCE)
+for package_name in (
+    "odoo",
+    "odoo.addons",
+    "odoo.addons.smart_core",
+    "odoo.addons.smart_core.delivery",
+):
+    package = sys.modules.get(package_name) or types.ModuleType(package_name)
+    package.__path__ = []
+    sys.modules[package_name] = package
+PRODUCT_CENTER_POLICY_NAME = "odoo.addons.smart_core.delivery.product_center_policy"
+PRODUCT_CENTER_POLICY_SPEC = importlib.util.spec_from_file_location(
+    PRODUCT_CENTER_POLICY_NAME,
+    ROOT / "addons/smart_core/delivery/product_center_policy.py",
+)
+PRODUCT_CENTER_POLICY = importlib.util.module_from_spec(PRODUCT_CENTER_POLICY_SPEC)
+sys.modules[PRODUCT_CENTER_POLICY_NAME] = PRODUCT_CENTER_POLICY
+PRODUCT_CENTER_POLICY_SPEC.loader.exec_module(PRODUCT_CENTER_POLICY)
 SPEC = importlib.util.spec_from_file_location(
-    "scenario_surface_projection",
+    "smart_construction_core.services.scenario_surface_projection",
     ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py",
 )
 PROJ = importlib.util.module_from_spec(SPEC)
+sys.modules[SPEC.name] = PROJ
 SPEC.loader.exec_module(PROJ)
+FINANCE_CENTER_STABLE_KEY = PRODUCT_MENU_SOURCE.stable_center_key(
+    "smart_construction_core.menu_sc_finance_center"
+)
+PROJECT_CENTER_STABLE_KEY = PRODUCT_MENU_SOURCE.stable_center_key("项目中心")
 
 
 class _Menu:
@@ -203,12 +234,12 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         result = PROJ.project_authorized_nav_with_env(env, nav, {})
         self.assertTrue(result["ok"])
         centers = {center["key"]: center for center in result["tree"]["centers"]}
-        self.assertIn("smart_construction_core.menu_sc_finance_center", centers)
-        self.assertIn("policy.project_center", centers)
-        finance = centers["smart_construction_core.menu_sc_finance_center"]
+        self.assertIn(FINANCE_CENTER_STABLE_KEY, centers)
+        self.assertIn(PROJECT_CENTER_STABLE_KEY, centers)
+        finance = centers[FINANCE_CENTER_STABLE_KEY]
         self.assertEqual(finance["scenarios"][0]["key"], "payment.capital")
         self.assertEqual(finance["scenarios"][0]["entries"][0]["configured"], True)
-        project = centers["policy.project_center"]
+        project = centers[PROJECT_CENTER_STABLE_KEY]
         self.assertEqual(project["entries"][0]["configured"], False)
 
     def test_disabled_scenario_keeps_authorized_entry_unconfigured(self):
@@ -223,7 +254,7 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         nav = [_leaf(101, 1011, "付款申请", "smart_construction_core.menu_sc_user_payment_apply")]
         result = PROJ.project_authorized_nav_with_env(env, nav, {})
         centers = result["tree"]["centers"]
-        finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
+        finance = next(c for c in centers if c["key"] == FINANCE_CENTER_STABLE_KEY)
         self.assertEqual(finance["scenarios"], [])
         self.assertEqual(finance["entries"][0]["configured"], False)
 
@@ -273,7 +304,7 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         result = PROJ.project_authorized_nav_with_env(env, nav, authority)
         centers = result["tree"]["centers"]
         self.assertEqual(len(centers), 1)
-        self.assertEqual(centers[0]["key"], env.menus[10].xmlid)
+        self.assertEqual(centers[0]["key"], FINANCE_CENTER_STABLE_KEY)
         self.assertEqual(len(centers[0]["scenarios"]), 1)
         self.assertEqual(centers[0]["scenarios"][0]["key"], "payment.capital")
         self.assertEqual(len(centers[0]["scenarios"][0]["entries"]), 1)
@@ -310,9 +341,30 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         nav = [{"label": "系统菜单", "children": [center_group]}]
         result = PROJ.project_authorized_nav_with_env(env, nav, {})
         centers = result["tree"]["centers"]
-        finance = next(c for c in centers if c["key"] == "smart_construction_core.menu_sc_finance_center")
+        finance = next(c for c in centers if c["key"] == FINANCE_CENTER_STABLE_KEY)
         self.assertEqual(finance["scenarios"][0]["key"], "accounting.management")
         self.assertEqual(finance["name"], "财务账款")
+
+    def test_generic_published_center_is_not_limited_to_construction_aliases(self):
+        env = _Env()
+        leaf = {
+            **_leaf(101, 1011, "Published reports", env.menus[101].xmlid),
+            "policy_center_key": "acme.center.reporting",
+            "policy_center_label": "Published reports",
+            "policy_center_sequence": 0,
+        }
+        center = PROJ.composition_center_for_leaf(
+            leaf,
+            {
+                "center_key": "construction.center.project",
+                "center_name": "Current live project",
+                "center_sequence": 99,
+            },
+        )
+        self.assertEqual(center["key"], "acme.center.reporting")
+        self.assertEqual(center["name"], "Published reports")
+        self.assertEqual(center["sequence"], 0)
+        self.assertTrue(center["published_center"])
 
     def test_moved_native_menu_does_not_change_composed_center(self):
         env = _Env()
@@ -323,7 +375,7 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
             "children": [_leaf(101, 1011, "Payment", env.menus[101].xmlid)],
         }]}]
         centers = PROJ.project_authorized_nav_with_env(env, nav, {})["tree"]["centers"]
-        self.assertEqual([c["key"] for c in centers], [env.menus[10].xmlid])
+        self.assertEqual([c["key"] for c in centers], [FINANCE_CENTER_STABLE_KEY])
 
     def test_entry_sequence_and_stable_tie_breaker(self):
         env = _Env()

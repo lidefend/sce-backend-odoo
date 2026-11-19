@@ -992,6 +992,13 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         ordered = menu_service.MenuService(env={})._sort_delivery_nodes([later, child])
         self.assertEqual([node["menu_id"] for node in ordered], [10, 30])
 
+    def test_zero_center_sequence_is_written_to_the_group_node(self):
+        group = menu_service.apply_delivery_group_sequence(
+            {"key": "construction.center.project"},
+            {"sequence": 0},
+        )
+        self.assertEqual(group["sequence"], 0)
+
     def test_project_ledger_query_menu_uses_current_project_scope(self):
         delivery_menu_defaults.register_current_project_scope_model("project.project")
 
