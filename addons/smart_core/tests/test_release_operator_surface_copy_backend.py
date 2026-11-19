@@ -186,7 +186,7 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         self.assertEqual((payload.get("copy") or {}).get("title"), "发布控制台")
         self.assertIn("候选快照", (payload.get("copy") or {}).get("hint_candidate", ""))
         self.assertEqual((((payload.get("read_model_v1") or {}).get("copy") or {}).get("section_pending")), "待审批动作")
-        self.assertEqual((((payload.get("read_model_v1") or {}).get("copy") or {}).get("rollback_action_label")), "执行回滚")
+        self.assertEqual((((payload.get("read_model_v1") or {}).get("copy") or {}).get("rollback_action_label")), "回滚产品版本")
         self.assertEqual((((payload.get("available_actions") or {}).get("freeze") or {}).get("intent")), "release.operator.freeze")
         self.assertEqual((((payload.get("available_actions") or {}).get("sync_policy") or {}).get("intent")), "release.operator.sync_policy")
         self.assertEqual((((payload.get("available_actions") or {}).get("update_policy") or {}).get("intent")), "release.operator.update_policy")

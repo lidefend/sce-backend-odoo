@@ -225,9 +225,9 @@ class ReleaseOperatorReadModelService:
             "hint_pending_count_prefix": "当前数量：",
             "hint_rollback": "仅当当前生效快照存在可回滚目标时可执行。",
             "hint_history": "最近的发布动作与发布快照。",
-            "freeze_action_label": "冻结候选快照",
-            "sync_policy_action_label": "同步用户可见菜单",
-            "save_policy_action_label": "保存策略",
+            "freeze_action_label": "冻结产品候选版本",
+            "sync_policy_action_label": "同步产品能力",
+            "save_policy_action_label": "保存产品草案",
             "policy_state_label": "发布状态",
             "policy_access_label": "访问级别",
             "metric_controlled_menus": "受控菜单",
@@ -243,7 +243,7 @@ class ReleaseOperatorReadModelService:
             "metric_latest_action": "最近发布动作",
             "metric_approval_state": "审批状态",
             "rollback_target_label": "回滚目标",
-            "rollback_action_label": "执行回滚",
+            "rollback_action_label": "回滚产品版本",
             "history_actions_title": "发布动作",
             "history_snapshots_title": "发布快照",
             "approve_action_label": "审批并执行",
@@ -475,7 +475,7 @@ class ReleaseOperatorReadModelService:
                 {
                     "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                     "key": f"promote:{snapshot_id}",
-                    "label": f"晋升 {row.get('version') or 'v1'}",
+                    "label": f"发布产品版本 {row.get('version') or 'v1'}",
                     "intent": "release.operator.promote",
                     "enabled": bool(allowed),
                     "reason_code": "OK" if allowed else "RELEASE_EXECUTOR_NOT_ALLOWED",
@@ -531,7 +531,7 @@ class ReleaseOperatorReadModelService:
         return {
             "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
             "key": f"rollback:{product_key}",
-            "label": "执行回滚",
+            "label": "回滚产品版本",
             "intent": "release.operator.rollback",
             "enabled": enabled,
             "reason_code": reason_code,
@@ -784,7 +784,7 @@ class ReleaseOperatorReadModelService:
             "freeze": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"freeze:{identity['product_key']}",
-                "label": "冻结候选快照",
+                "label": "冻结产品候选版本",
                 "intent": "release.operator.freeze",
                 "enabled": True,
                 "reason_code": "OK",
@@ -797,7 +797,7 @@ class ReleaseOperatorReadModelService:
             "sync_policy": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"sync_policy:{identity['product_key']}",
-                "label": "同步已实现能力",
+                "label": "同步产品能力",
                 "intent": "release.operator.sync_policy",
                 "enabled": True,
                 "reason_code": "OK",
@@ -811,7 +811,7 @@ class ReleaseOperatorReadModelService:
             "set_page_enabled": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"set_page_enabled:{identity['product_key']}",
-                "label": "调整页面发布范围",
+                "label": "调整产品页面范围",
                 "intent": "release.operator.set_page_enabled",
                 "enabled": True,
                 "reason_code": "OK",
@@ -823,7 +823,7 @@ class ReleaseOperatorReadModelService:
             "update_page_policy": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"update_page_policy:{identity['product_key']}",
-                "label": "调整页面管控策略",
+                "label": "调整产品页面策略",
                 "intent": "release.operator.update_page_policy",
                 "enabled": True,
                 "reason_code": "OK",
@@ -835,7 +835,7 @@ class ReleaseOperatorReadModelService:
             "update_policy": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"update_policy:{identity['product_key']}",
-                "label": "保存策略",
+                "label": "保存产品草案",
                 "intent": "release.operator.update_policy",
                 "enabled": True,
                 "reason_code": "OK",
@@ -847,7 +847,7 @@ class ReleaseOperatorReadModelService:
             "runtime_probe": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"runtime_probe:{identity['product_key']}",
-                "label": "验证真实用户",
+                "label": "验证产品用户",
                 "intent": "release.operator.runtime_probe",
                 "enabled": True,
                 "reason_code": "OK",

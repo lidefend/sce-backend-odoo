@@ -5,20 +5,92 @@ import { contractGapError } from '../app/contract/contractGap';
 import { useSessionStore } from '../stores/session';
 
 export type ScenarioAction = { key: string; label: string; enabled: boolean };
+export type ScenarioActor = {
+  user_id: number;
+  login: string;
+  name: string;
+  can_manage_enterprise_configuration: boolean;
+  platform_admin: boolean;
+  source: string;
+};
+export type ScenarioTargetScope = {
+  kind: string;
+  company_id: number;
+  company_name: string;
+  is_global_product_release: boolean;
+  source: string;
+  target_role_scope: {
+    mode: string;
+    target_role_key: string;
+    reason_code: string;
+    meaning: string;
+  };
+};
+export type ScenarioProductQualification = {
+  status: string;
+  reason_code: string;
+  evidence: {
+    product_key?: string;
+    qualified?: boolean;
+    snapshot_id?: number;
+    version?: string;
+    fingerprint?: string;
+    applied?: boolean;
+    source?: string;
+    qualification_authority?: string;
+    products?: Array<Record<string, unknown>>;
+    [key: string]: unknown;
+  };
+};
 export type BusinessScenario = {
   scene_key: string; name: string; enablement_scope: string;
-  status_label: string; release_label: string; actions: ScenarioAction[];
+  status_label: string; release_label: string;
+  product_qualification: ScenarioProductQualification;
+  enablement_blockers: string[];
+  enable_allowed: boolean;
+  actions: ScenarioAction[];
 };
-type Catalog = { company_id: number; business_scenarios: BusinessScenario[] };
+export type ScenarioReadback = {
+  scene_key: string;
+  stored_scene_key: string;
+  enablement_scope: string;
+  enabled: boolean;
+  target_scope: ScenarioTargetScope;
+  readback: {
+    enabled: boolean;
+    company_id: number;
+    stored_scene_key: string;
+    source: string;
+    write_committed: boolean;
+    access_granted: boolean;
+  };
+};
+type Catalog = {
+  company_id: number;
+  actor: ScenarioActor;
+  target_scope: ScenarioTargetScope;
+  business_scenarios: BusinessScenario[];
+};
 
 function requireCatalog(value: Catalog): Catalog {
   if (!value || !Number.isInteger(value.company_id) || value.company_id <= 0
+    || !value.actor || !Number.isInteger(value.actor.user_id) || value.actor.user_id <= 0
+    || typeof value.actor.can_manage_enterprise_configuration !== 'boolean'
+    || !value.target_scope || value.target_scope.company_id !== value.company_id
+    || value.target_scope.is_global_product_release !== false
+    || typeof value.target_scope.target_role_scope?.mode !== 'string'
     || !Array.isArray(value.business_scenarios)
     || value.business_scenarios.some(row => !row || ['scene_key', 'name', 'enablement_scope', 'status_label', 'release_label']
       .some(key => typeof row[key as keyof BusinessScenario] !== 'string' || !row[key as keyof BusinessScenario])
       || !Array.isArray(row.actions) || row.actions.some(action => !action
         || typeof action.key !== 'string' || !action.key || typeof action.label !== 'string' || !action.label
-        || typeof action.enabled !== 'boolean'))) {
+        || typeof action.enabled !== 'boolean')
+      || !row.product_qualification || typeof row.product_qualification.status !== 'string'
+      || typeof row.product_qualification.reason_code !== 'string'
+      || !row.product_qualification.evidence || typeof row.product_qualification.evidence !== 'object'
+      || !Array.isArray(row.enablement_blockers)
+      || row.enablement_blockers.some((item: unknown) => typeof item !== 'string')
+      || typeof row.enable_allowed !== 'boolean')) {
     throw contractGapError({ kind: 'contract_defect', missing: 'business_scenarios',
       requiredDeclarationLayer: 'P1:smart_construction_scene:scenario.activation.catalog.get' }, '业务场景目录契约不完整');
   }
@@ -28,6 +100,9 @@ function requireCatalog(value: Catalog): Catalog {
 export function useScenarioActivation() {
   const session = useSessionStore();
   const rows = ref<BusinessScenario[]>([]);
+  const actor = ref<ScenarioActor | null>(null);
+  const targetScope = ref<ScenarioTargetScope | null>(null);
+  const readback = ref<ScenarioReadback | null>(null);
   const state = ref<'loading' | 'ready' | 'error'>('loading');
   const errorMessage = ref('');
   const busy = ref(false);
@@ -45,6 +120,8 @@ export function useScenarioActivation() {
   async function load() {
     const request = ++sequence;
     rows.value = [];
+    actor.value = null;
+    targetScope.value = null;
     companyId = 0;
     state.value = 'loading';
     errorMessage.value = '';
@@ -65,6 +142,8 @@ export function useScenarioActivation() {
       const catalog = requireCatalog(response);
       if (company && catalog.company_id !== company) throw new Error('场景目录公司与当前上下文不一致');
       rows.value = catalog.business_scenarios;
+      actor.value = catalog.actor;
+      targetScope.value = catalog.target_scope;
       companyId = catalog.company_id;
       catalogKey = key;
       catalogEpoch = epoch;
@@ -85,9 +164,15 @@ export function useScenarioActivation() {
     busy.value = true;
     errorMessage.value = '';
     try {
-      await intentRequest({ intent: 'scenario.activation.set', params: { company_id: companyId,
+      const response = await intentRequest<ScenarioReadback>({ intent: 'scenario.activation.set', params: { company_id: companyId,
         scene_key: row.scene_key, enablement_scope: row.enablement_scope, enabled: action.enabled } });
       if (!current(key, epoch) || operation !== mutation) return;
+      readback.value = response?.readback
+        && Number.isInteger(response.readback.company_id)
+        && typeof response.readback.enabled === 'boolean'
+        && typeof response.readback.access_granted === 'boolean'
+        ? response
+        : null;
       refreshRequired = true;
       await session.loadAppInit({ force: true });
       if (current(key, epoch) && operation === mutation) {
@@ -97,6 +182,7 @@ export function useScenarioActivation() {
     } catch (error) {
       if (!current(key, epoch) || operation !== mutation) return;
       rows.value = [];
+      readback.value = null;
       state.value = 'error';
       const message = error instanceof Error ? error.message : '场景操作失败';
       errorMessage.value = refreshRequired ? `场景状态已保存，但导航刷新失败。请点击刷新恢复：${message}` : message;
@@ -130,7 +216,14 @@ export function useScenarioActivation() {
     }
   }
 
-  watch(contextKey, () => { mutation += 1; busy.value = false; refreshRequired = false; });
+  watch(contextKey, () => {
+    mutation += 1;
+    busy.value = false;
+    refreshRequired = false;
+    readback.value = null;
+    actor.value = null;
+    targetScope.value = null;
+  });
   watch(() => [contextKey(), session.initStatus], () => {
     if (busy.value) {
       sequence += 1;
@@ -143,5 +236,5 @@ export function useScenarioActivation() {
     void load();
   }, { immediate: true });
   onScopeDispose(() => { disposed = true; sequence += 1; mutation += 1; });
-  return { rows, state, errorMessage, busy, load, refresh, execute };
+  return { rows, actor, targetScope, readback, state, errorMessage, busy, load, refresh, execute };
 }

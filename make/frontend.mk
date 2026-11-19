@@ -636,6 +636,13 @@ verify.frontend.platform_capability_explorer.browser: guard.prod.forbid verify.f
 	  E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
 	  ARTIFACTS_DIR=artifacts/playwright/platform-capability-explorer \
 	  node frontend/apps/web/scripts/platform_capability_explorer_browser.mjs
+	@FRONTEND_URL="$${FRONTEND_URL:-$(WORKFLOW_CONTRACT_FRONTEND_URL)}" \
+	  E2E_LOGIN="$${E2E_LOGIN:-admin}" \
+	  E2E_PASSWORD="$${E2E_PASSWORD:-123456}" \
+	  ADMIN_CLOSE_01_BUSINESS_LOGIN="$${ADMIN_CLOSE_01_BUSINESS_LOGIN:-wutao}" \
+	  ADMIN_CLOSE_01_BUSINESS_PASSWORD="$${ADMIN_CLOSE_01_BUSINESS_PASSWORD:-123456}" \
+	  ARTIFACTS_DIR=artifacts/playwright/admin-close-01-management \
+	  node frontend/apps/web/scripts/admin_close_01_management_browser.mjs
 
 # 受控系统参数的契约消费面：目录/影响预览/变更记录均原样消费后端声明，
 # 声明面存在但非法即 ContractGapError 停机；planned 参数不可编辑，前端不推导

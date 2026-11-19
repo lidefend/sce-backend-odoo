@@ -1,5 +1,6 @@
 import { ApiError } from '../api/client';
 import type {
+  CapabilityExplorerFactLayer,
   CapabilityExplorerRow,
   CapabilityExplorerFilters,
 } from '../api/platformCapabilityExplorer';
@@ -43,6 +44,44 @@ export function releaseStatePresentation(state: string): CapabilityStatusPresent
   if (state === 'preview') return { label: '预览', semantic: 'info' };
   if (state === 'unknown') return { label: '发布状态未知', semantic: 'warning' };
   return { label: state, semantic: 'default' };
+}
+
+export function qualificationPresentation(status: string): CapabilityStatusPresentation {
+  if (status === 'qualified') return { label: '产品资格成立', semantic: 'success' };
+  if (status === 'not_qualified') return { label: '产品资格不成立', semantic: 'warning' };
+  if (status === 'not_verified') return { label: '产品资格未验证', semantic: 'warning' };
+  return { label: status || '产品资格未知', semantic: 'default' };
+}
+
+export function factLayerPresentation(layer: CapabilityExplorerFactLayer): CapabilityStatusPresentation {
+  const labels: Record<string, string> = {
+    present: '原生存在',
+    supported: '消费者支持',
+    qualified: '产品资格成立',
+    released: '入口已发布',
+    enabled: '企业已启用',
+    allowed: '当前用户可用',
+    missing: '原生缺失',
+    unsupported: '消费者不支持',
+    not_qualified: '产品资格不成立',
+    not_verified: '资格未验证',
+    disabled: '企业未启用',
+    denied: '当前用户不可用',
+    not_applicable: '不适用',
+    preview: '预览',
+  };
+  const success = new Set(['present', 'supported', 'qualified', 'released', 'enabled', 'allowed']);
+  const warning = new Set(['preview', 'not_applicable', 'not_verified']);
+  return {
+    label: labels[layer.status] || layer.status || 'unknown',
+    semantic: success.has(layer.status) ? 'success' : warning.has(layer.status) ? 'warning' : 'danger',
+  };
+}
+
+export function accessPresentation(canUse: boolean): CapabilityStatusPresentation {
+  return canUse
+    ? { label: '当前用户可用', semantic: 'success' }
+    : { label: '当前用户不可用', semantic: 'danger' };
 }
 
 export function blockerLabel(blockers: string[]): string {

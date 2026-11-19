@@ -38,6 +38,7 @@
           <ScButton
             variant="ghost"
             :disabled="busyKey === 'sync_policy' || !syncPolicyAction.enabled"
+            :title="syncPolicyAction.reason_code || ''"
             @click="syncPolicy"
           >
             {{ copy.sync_policy_action_label || '同步已实现能力' }}
@@ -45,6 +46,7 @@
           <ScButton
             variant="primary"
             :disabled="busyKey === 'freeze' || !freezeAction.enabled"
+            :title="freezeAction.reason_code || ''"
             @click="freeze"
           >
             {{ copy.freeze_action_label || '冻结候选快照' }}
@@ -80,6 +82,15 @@
             <p>{{ metric.value }}</p>
           </ScCard>
         </section>
+
+        <ScSection title="操作身份与影响范围">
+          <ScDescriptions :items="operationScopeItems" :column="descriptionColumns" bordered />
+          <ScInlineState
+            v-if="operationReadback"
+            state="success"
+            :label="`权威回读：${operationReadback.product_key || '-'} · ${activeSnapshot.version || '无生效版本'} · 回滚目标 ${operationReadback.rollback_target_snapshot_id || '无'}`"
+          />
+        </ScSection>
 
         <ScSection :title="copy.section_product_delivery_console || '产品交付控制台'">
           <template #actions>
@@ -121,6 +132,9 @@
             </template>
           </ScList>
           <ScDescriptions class="release-operator__summary" :items="changeSummaryItems" :column="descriptionColumns" bordered />
+          <ScCard appearance="section" title="发布后回读">
+            <ScDescriptions :items="operationReadbackItems" :column="compactDescriptionColumns" bordered />
+          </ScCard>
           <ScList :items="preflightItems" class="release-operator__check-list">
             <template #item="{ item }">
               <span class="release-operator__check">
@@ -151,6 +165,7 @@
                 variant="ghost"
                 type="button"
                 :disabled="busyKey === 'update_policy' || !updatePolicyAction.enabled"
+                :title="updatePolicyAction.reason_code || ''"
                 @click="savePolicy"
               >
                 {{ copy.save_policy_action_label || '保存策略' }}
@@ -223,6 +238,7 @@
             <ScButton
               variant="ghost"
               :disabled="!rollbackAction.enabled || busyKey === 'rollback'"
+              :title="rollbackAction.reason_code || ''"
               @click="rollback"
             >
               {{ copy.rollback_action_label || '执行回滚' }}
@@ -317,6 +333,30 @@ interface ReleaseActionRow {
   can_approve?: boolean;
 }
 
+interface OperatorActionScope {
+  kind?: string;
+  scope_key?: string;
+  product_key?: string;
+  company_ids?: number[];
+  target_role_codes?: string[];
+  is_global_product_release?: boolean;
+  meaning?: string;
+}
+
+interface OperatorAction {
+  key?: string;
+  label?: string;
+  intent?: string;
+  enabled?: boolean;
+  reason_code?: string;
+  params?: AnyRecord;
+  actor?: AnyRecord;
+  target_scope?: OperatorActionScope;
+  operation_object?: AnyRecord;
+  prerequisites?: AnyRecord;
+  readback?: AnyRecord;
+}
+
 interface ReleaseOperatorSurface {
   copy?: AnyRecord;
   identity?: AnyRecord;
@@ -328,7 +368,16 @@ interface ReleaseOperatorSurface {
   pending_approval?: { actions?: ReleaseActionRow[] };
   candidate_snapshots?: SnapshotRow[];
   release_history?: { actions?: ReleaseActionRow[]; snapshots?: SnapshotRow[] };
+  actor_scope?: AnyRecord;
   available_actions?: AnyRecord;
+  operation_readback?: {
+    product_key?: string;
+    active_snapshot?: AnyRecord;
+    draft?: AnyRecord;
+    change_summary?: AnyRecord;
+    rollback_target_snapshot_id?: number;
+    audience?: AnyRecord;
+  };
 }
 
 const route = useRoute();
@@ -448,6 +497,8 @@ const controlDefinitions = computed(() => {
 });
 const releaseState = computed(() => surface.value?.release_state || {});
 const activeSnapshot = computed(() => (releaseState.value.active_snapshot || {}) as AnyRecord);
+const actorScope = computed(() => surface.value?.actor_scope || {});
+const operationReadback = computed(() => surface.value?.operation_readback || {});
 const runtimeSummary = computed(() => (releaseState.value.runtime_summary || {}) as AnyRecord);
 const candidateSnapshots = computed(() => surface.value?.candidate_snapshots || []);
 const pendingActions = computed(() => surface.value?.pending_approval?.actions || []);
@@ -455,19 +506,19 @@ const historySnapshots = computed(() => surface.value?.release_history?.snapshot
 const historyActions = computed(() => surface.value?.release_history?.actions || []);
 const rollbackAction = computed(() => {
   const actions = surface.value?.available_actions || {};
-  return (actions.rollback || {}) as { enabled?: boolean; params?: AnyRecord };
+  return (actions.rollback || {}) as OperatorAction;
 });
 const syncPolicyAction = computed(() => {
   const actions = surface.value?.available_actions || {};
-  return (actions.sync_policy || {}) as { enabled?: boolean; params?: AnyRecord };
+  return (actions.sync_policy || {}) as OperatorAction;
 });
 const updatePolicyAction = computed(() => {
   const actions = surface.value?.available_actions || {};
-  return (actions.update_policy || {}) as { enabled?: boolean; params?: AnyRecord };
+  return (actions.update_policy || {}) as OperatorAction;
 });
 const updatePagePolicyAction = computed(() => {
   const actions = surface.value?.available_actions || {};
-  return (actions.update_page_policy || {}) as { enabled?: boolean; params?: AnyRecord };
+  return (actions.update_page_policy || {}) as OperatorAction;
 });
 const controlledPageTableRows = computed(() => controlledPages.value.map((page) => ({ ...page, __rowKey: pageKey(page) })));
 const candidateTableRows = computed(() => candidateSnapshots.value.map((snapshot) => ({ ...snapshot })));
@@ -502,6 +553,74 @@ const summaryMetrics = computed(() => [
     key: 'approval_state',
     label: copy.value.metric_approval_state || '审批状态',
     value: String(runtimeSummary.value.latest_action_approval_state || '-'),
+  },
+]);
+
+const freezeAction = computed(() => {
+  const actions = surface.value?.available_actions || {};
+  return (actions.freeze || {}) as OperatorAction;
+});
+
+const operationScopeItems = computed<DescriptionItem[]>(() => [
+  {
+    key: 'actor',
+    label: '操作者',
+    value: `${String(actorScope.value.name || actorScope.value.login || '—')} (${String(actorScope.value.login || actorScope.value.user_id || '—')})`,
+  },
+  {
+    key: 'operator_kind',
+    label: '操作者类型',
+    value: String(actorScope.value.operator_kind || '—'),
+  },
+  {
+    key: 'roles',
+    label: '发布角色',
+    value: Array.isArray(actorScope.value.roles) && actorScope.value.roles.length
+      ? actorScope.value.roles.map(String).join(', ')
+      : '未返回角色',
+  },
+  {
+    key: 'target_scope',
+    label: '目标范围',
+    value: String(operationReadback.value.product_key || identity.value.product_key || '—'),
+  },
+  {
+    key: 'scope_meaning',
+    label: '影响范围',
+    value: String((freezeAction.value.target_scope || {}).meaning || '—'),
+  },
+]);
+
+const operationReadbackItems = computed<DescriptionItem[]>(() => [
+  {
+    key: 'readback_product',
+    label: '产品',
+    value: String(operationReadback.value.product_key || '—'),
+  },
+  {
+    key: 'readback_version',
+    label: '当前生效版本',
+    value: String((operationReadback.value.active_snapshot || {}).version || activeSnapshot.value.version || '无'),
+  },
+  {
+    key: 'readback_state',
+    label: '版本状态',
+    value: String((operationReadback.value.active_snapshot || {}).state || '—'),
+  },
+  {
+    key: 'readback_rollback',
+    label: '回滚目标',
+    value: String(operationReadback.value.rollback_target_snapshot_id || '无'),
+  },
+  {
+    key: 'readback_draft',
+    label: '草案页数',
+    value: String((operationReadback.value.draft || {}).page_count ?? '—'),
+  },
+  {
+    key: 'readback_delta',
+    label: '页面差异',
+    value: String((operationReadback.value.change_summary || {}).page_count_delta ?? '—'),
   },
 ]);
 
@@ -629,8 +748,14 @@ function tableText(value: unknown) { return String(value ?? '').trim() || '-'; }
 function statusNode(value: string, label: string, semantic: 'default'|'info'|'success'|'warning'|'danger' = 'default') {
   return h(ScStatusBadge, { value, label, semantic });
 }
-function actionNode(label: string, disabled: boolean, onClick: () => void, variant: 'primary'|'ghost' = 'ghost') {
-  return h(ScButton, { variant, size: 'small', disabled, onClick }, () => label);
+function actionNode(
+  label: string,
+  disabled: boolean,
+  onClick: () => void,
+  variant: 'primary'|'ghost' = 'ghost',
+  title = '',
+) {
+  return h(ScButton, { variant, size: 'small', disabled, onClick, title }, () => label);
 }
 const controlledPageColumns = computed(() => [
   { colKey: 'visible_menu_path', title: '用户菜单', cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.visible_menu_path || row.group_label) },
@@ -643,10 +768,10 @@ const controlledPageColumns = computed(() => [
   { colKey: 'access_level', title: '可见范围', cell: (_h: unknown, { row }: { row: AnyRecord }) => accessLevelLabel(row) },
   { colKey: 'source', title: '来源', ellipsis: true, cell: (_h: unknown, { row }: { row: AnyRecord }) => sourceLabel(row) },
   { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => h('div', { class: 'release-operator__row-actions' }, [
-    actionNode('发布', busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true })),
-    actionNode('预览', busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true })),
-    actionNode('下线', busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false })),
-    actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' })),
+    actionNode('发布页面配置', busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
+    actionNode('预览页面配置', busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
+    actionNode('下线页面', busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
+    actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
   ]) },
 ]);
 const candidateColumns = computed(() => [
@@ -655,9 +780,15 @@ const candidateColumns = computed(() => [
   { colKey: 'channel', title: '通道', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.channel) },
   { colKey: 'draft', title: '草案范围', cell: (_h: unknown, { row }: { row: SnapshotRow }) => snapshotDraftLabel(row) },
   { colKey: 'diff', title: '差异', cell: (_h: unknown, { row }: { row: SnapshotRow }) => snapshotDiffLabel(row) },
-  { colKey: 'gate', title: '门禁', cell: (_h: unknown, { row }: { row: SnapshotRow }) => statusNode(candidateReady(row) ? 'ready' : 'refreeze', candidateReady(row) ? '可发布' : '需重新冻结', candidateReady(row) ? 'success' : 'warning') },
+  { colKey: 'gate', title: '门禁', cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
+    const action = promoteActionFor(row);
+    return statusNode(candidateReady(row) ? 'ready' : action?.reason_code || 'blocked', candidateReady(row) ? '可发布产品版本' : action?.reason_code || '后端未返回可发布动作', candidateReady(row) ? 'success' : 'danger');
+  } },
   { colKey: 'frozen_at', title: '冻结时间', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.frozen_at) },
-  { colKey: 'actions', title: '操作', width: 96, cell: (_h: unknown, { row }: { row: SnapshotRow }) => actionNode('发布', busyKey.value === `promote:${row.id}` || !candidateReady(row), () => promote(row), 'primary') },
+  { colKey: 'actions', title: '操作', width: 132, cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
+    const action = promoteActionFor(row);
+    return actionNode(action?.label || '发布产品版本', busyKey.value === `promote:${row.id}` || !candidateReady(row), () => promote(row), 'primary', action?.reason_code || '');
+  } },
 ]);
 const pendingActionColumns = computed(() => [
   { colKey: 'action_type', title: '动作', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.action_type) },
@@ -761,15 +892,18 @@ function snapshotDiffLabel(snapshot: SnapshotRow) {
   const diff = (snapshot.release_diff || {}) as AnyRecord;
   return `新增 ${Number(diff.added_page_count || 0)} / 变更 ${Number(diff.changed_page_count || 0)} / 移除 ${Number(diff.removed_page_count || 0)}`;
 }
-function candidateReady(snapshot: SnapshotRow) {
-  const draft = (snapshot.release_draft || {}) as AnyRecord;
-  return Boolean(draft.fingerprint) && Number(draft.blocking_issue_count || 0) === 0;
-}
-const freezeAction = computed(() => {
+const promoteActions = computed<OperatorAction[]>(() => {
   const actions = surface.value?.available_actions || {};
-  return (actions.freeze || {}) as { enabled?: boolean; params?: AnyRecord };
+  return Array.isArray(actions.promote) ? actions.promote as OperatorAction[] : [];
 });
-
+function promoteActionFor(snapshot: SnapshotRow) {
+  return promoteActions.value.find((action) => (
+    Number(action.params?.snapshot_id || 0) === Number(snapshot.id)
+  ));
+}
+function candidateReady(snapshot: SnapshotRow) {
+  return promoteActionFor(snapshot)?.enabled === true;
+}
 function hydratePolicyControls(payload: ReleaseOperatorSurface) {
   const scope = payload.control_scope || {};
   policyState.value = String(scope.policy_state || 'stable');

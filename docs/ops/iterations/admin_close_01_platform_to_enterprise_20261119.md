@@ -141,3 +141,55 @@ Known baseline debt remains explicit:
 No logged failure names the changed capability explorer, contribution provider,
 release operator or scenario activation files. The focused and affected
 families above pass, while the full module results remain failed.
+
+## Frontend consumption
+
+The frontend now consumes the backend contract without inferring qualification,
+release state, company scope or access:
+
+- the capability detail shows final availability, actor and target company,
+  six independent fact layers, qualification evidence and active product
+  version;
+- the release console accepts backend-owned actor, target product scope,
+  action prerequisites, blockers and post-write readback;
+- the enterprise activation panel shows the configuration administrator,
+  target company, product qualification/version, blockers and persisted
+  company-scoped readback while stating that access was not granted;
+- all new response fields are strict contract inputs and missing declarations
+  fail closed.
+
+Frontend validation passed:
+
+- `verify.frontend.platform_capability_explorer.unit` (25 frontend cases plus
+  the platform-duty family)
+- `verify.frontend.workspace_scenario_lifecycle.unit` (13 management cases
+  inside the complete lifecycle family)
+- `verify.frontend.typecheck.strict`
+- `verify.frontend.lint` (warnings only; zero errors)
+- `verify.frontend.build` with the governed static-build script
+- `verify.platform.capability_explorer.unit`
+- `verify.admin_close_01.backend.unit`
+
+The existing local development environment was upgraded in place for
+`smart_core`, `smart_construction_core`, and `smart_construction_scene`, then
+recreated and rebuilt through governed entries. No database was rebuilt.
+
+The management browser journey passed 19 assertions on the local development
+tenant:
+
+- capability detail rendered the backend's availability and fact layers;
+- a tenant identity was redirected away from the platform-control release
+  surface, preserving the platform/enterprise identity boundary;
+- the enterprise configuration administrator loaded 17 scenarios with an
+  explicit company target and no global product-release scope;
+- an ordinary business user opened the formal project dashboard.
+
+Raw browser summary and screenshots:
+`.runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/browser_journey/`.
+
+The local development tenant's active capability set excludes the project
+ledger and is not the declared `sc_platform_control` instance. Therefore the
+positive project-ledger and platform-release browser result is not claimed from
+this tenant; those contracts are exercised by the governed ORM sample above.
+The independent review must decide whether that evidence boundary is acceptable
+for this batch or require the dedicated platform-control/formal-entry runtime.

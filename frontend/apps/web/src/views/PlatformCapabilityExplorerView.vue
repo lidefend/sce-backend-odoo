@@ -195,6 +195,44 @@
           />
         </header>
 
+        <ScSection title="最终可用性">
+          <div class="capability-explorer__availability-head">
+            <ScStatusBadge
+              :value="detail.visibility.can_use ? 'available' : 'denied'"
+              :label="detail.visibility.can_use ? '当前用户可用' : '当前用户不可用'"
+              :semantic="detail.visibility.can_use ? 'success' : 'danger'"
+            />
+            <code>{{ detail.visibility.reason_code }}</code>
+          </div>
+          <ScDescriptions :items="availabilityItems" :column="1" bordered />
+          <ScInlineState
+            v-if="detail.visibility.blockers.length"
+            state="error"
+            :label="`不可用原因：${blockerLabel(detail.visibility.blockers)}`"
+          />
+          <ScInlineState
+            v-else
+            state="success"
+            label="原生来源、产品资格、版本、企业启用和当前用户权限均未返回阻断。"
+          />
+        </ScSection>
+
+        <ScSection title="事实分层">
+          <div class="capability-explorer__fact-layers">
+            <article v-for="layer in detail.fact_layers" :key="layer.key">
+              <div>
+                <strong>{{ layer.label }}</strong>
+                <span>{{ layer.reason_code }}</span>
+              </div>
+              <ScStatusBadge
+                :value="layer.status"
+                :label="factLayerPresentation(layer).label"
+                :semantic="factLayerPresentation(layer).semantic"
+              />
+            </article>
+          </div>
+        </ScSection>
+
         <ScSection title="技术来源">
           <ScDescriptions :items="technicalItems" :column="1" bordered />
         </ScSection>
@@ -217,6 +255,21 @@
 
         <ScSection title="发布与资格">
           <ScDescriptions :items="qualificationItems" :column="1" bordered />
+          <div class="capability-explorer__qualification-evidence">
+            <article
+              v-for="evidence in detail.qualification.evidence"
+              :key="evidence.product_key"
+            >
+              <ScStatusBadge
+                :value="evidence.status"
+                :label="qualificationPresentation(evidence.status).label"
+                :semantic="qualificationPresentation(evidence.status).semantic"
+              />
+              <strong>{{ evidence.product_key }}</strong>
+              <span>{{ evidence.version || '无生效版本' }} · snapshot {{ evidence.snapshot_id || '—' }}</span>
+              <span>{{ evidence.reason_code }}</span>
+            </article>
+          </div>
           <ScInlineState
             v-if="detail.release.blockers.length"
             state="error"
@@ -278,7 +331,9 @@ import {
   buildListFilters,
   businessDomainPresentation,
   capabilityEntryKey,
+  factLayerPresentation,
   isCatalogStaleError,
+  qualificationPresentation,
   releaseStatePresentation,
   sceneUsagePresentation,
   technicalEligibilityPresentation,
@@ -418,12 +473,31 @@ const technicalItems = computed(() => {
 });
 const qualificationItems = computed(() => {
   if (!detail.value) return [];
+  const standard = detail.value.qualification.evidence.find((item) => item.product_key === 'construction.standard');
   return [
     { key: 'native', label: '原生有效性', value: detail.value.diagnostics.native_valid ? '有效' : '存在阻断' },
     { key: 'scene', label: '场景可选性', value: detail.value.scene_assignment.assignable ? '可选' : '不可选' },
     { key: 'release', label: '入口发布', value: releaseStatePresentation(detail.value.release.state).label },
-    { key: 'preview', label: 'Preview 资格', value: detail.value.qualification.preview },
-    { key: 'standard', label: 'Standard 资格', value: detail.value.qualification.standard },
+    { key: 'preview', label: 'Preview 资格', value: qualificationPresentation(detail.value.qualification.preview).label },
+    { key: 'standard', label: 'Standard 资格', value: qualificationPresentation(detail.value.qualification.standard).label },
+    { key: 'version', label: '生效产品版本', value: standard?.version || '未返回生效版本' },
+    { key: 'snapshot', label: '生效快照', value: standard?.snapshot_id ? String(standard.snapshot_id) : '未返回快照身份' },
+    { key: 'authority', label: '资格依据', value: standard?.qualification_authority || detail.value.qualification.reason_code },
+  ];
+});
+
+const availabilityItems = computed(() => {
+  if (!detail.value) return [];
+  const actor = detail.value.visibility.actor;
+  const enterprise = detail.value.enterprise_enablement;
+  return [
+    { key: 'actor', label: '操作者身份', value: `${actor.name || actor.login || '—'} (${actor.login || actor.user_id})` },
+    { key: 'actor_company', label: '操作者公司', value: actor.company_name || String(actor.company_id || '—') },
+    { key: 'target_company', label: '本次目标公司', value: enterprise.company_name || String(enterprise.company_id || '—') },
+    { key: 'enterprise', label: '企业启用', value: `${enterprise.status} · ${enterprise.reason_code}` },
+    { key: 'group', label: '入口组权限', value: detail.value.current_user_access.entry_groups_allowed ? '满足' : '不满足' },
+    { key: 'acl', label: '模型读取', value: detail.value.current_user_access.model_read_allowed ? '满足' : '不满足' },
+    { key: 'record', label: '记录范围', value: detail.value.current_user_access.record_scope },
   ];
 });
 
@@ -694,6 +768,14 @@ onBeforeUnmount(() => {
 .capability-explorer__detail-head h2, .capability-explorer__detail-head p { margin: 0; }
 .capability-explorer__detail-head h2 { font: var(--sc-font-title-large); }
 .capability-explorer__detail-head p:not(.capability-explorer__eyebrow) { margin-top: 2px; color: var(--sc-app-text-secondary); font: var(--sc-font-body-small); overflow-wrap: anywhere; }
+.capability-explorer__availability-head { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-space-sm); margin-bottom: var(--sc-space-sm); }
+.capability-explorer__availability-head code { color: var(--sc-app-text-muted); font: var(--sc-font-body-small); overflow-wrap: anywhere; }
+.capability-explorer__fact-layers, .capability-explorer__qualification-evidence { display: grid; gap: var(--sc-space-xs); }
+.capability-explorer__fact-layers article, .capability-explorer__qualification-evidence article { display: flex; align-items: center; justify-content: space-between; gap: var(--sc-space-sm); padding: var(--sc-space-sm); border: 1px solid var(--sc-app-border); border-radius: var(--sc-radius-sm); }
+.capability-explorer__fact-layers article > div, .capability-explorer__qualification-evidence article { min-width: 0; }
+.capability-explorer__fact-layers strong, .capability-explorer__fact-layers span, .capability-explorer__qualification-evidence strong, .capability-explorer__qualification-evidence span { overflow-wrap: anywhere; }
+.capability-explorer__fact-layers span, .capability-explorer__qualification-evidence span { color: var(--sc-app-text-secondary); font: var(--sc-font-body-small); }
+.capability-explorer__qualification-evidence article { display: grid; grid-template-columns: auto minmax(140px, 1fr) minmax(160px, 1fr) minmax(140px, 1fr); }
 .capability-explorer__scenario-list { display: grid; gap: var(--sc-space-xs); }
 .capability-explorer__scenario-list article { display: grid; gap: 2px; padding: var(--sc-space-sm); border: 1px solid var(--sc-app-border); border-radius: var(--sc-radius-sm); }
 .capability-explorer__scenario-list span { color: var(--sc-app-text-secondary); font: var(--sc-font-body-small); overflow-wrap: anywhere; }
@@ -714,6 +796,7 @@ onBeforeUnmount(() => {
   .capability-explorer__table { display: none; }
   .capability-explorer__mobile-list { display: grid; gap: var(--sc-space-sm); }
   .capability-explorer__detail-head { display: grid; }
+  .capability-explorer__fact-layers article, .capability-explorer__qualification-evidence article { display: grid; justify-items: start; }
 }
 @media (max-width: 520px) {
   .capability-explorer__metrics { grid-template-columns: minmax(0, 1fr); }

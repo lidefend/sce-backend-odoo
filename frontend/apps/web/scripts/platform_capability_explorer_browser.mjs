@@ -66,7 +66,13 @@ async function login(page, loginName = LOGIN, password = PASSWORD, captureDenied
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(password);
   const submit = () => page.getByRole('button', { name: /^登录$/ }).click();
   const deniedIntent = captureDeniedIntent
-    ? await authenticateDeniedProbe(page, loginName, submit)
+    ? await authenticateDeniedProbe(
+      page,
+      loginName,
+      submit,
+      `${BASE_URL}/t/demo/`,
+      String(process.env.E2E_TENANT || 'default'),
+    )
     : await submit();
   await page.waitForFunction(() => !window.location.pathname.includes('/login'), null, { timeout: 60000 });
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
@@ -118,6 +124,10 @@ try {
   );
   await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
   await page.locator('.capability-explorer__metrics').waitFor({ timeout: 60000 });
+  await page.waitForFunction((total) => {
+    const text = document.querySelector('.capability-explorer__metrics')?.textContent || '';
+    return text.includes(String(total)) && !text.includes('—');
+  }, String(listPayload.meta.total), { timeout: 60000 });
   const desktopListReadyMs = Date.now() - listStartedAt;
   const metricsText = await page.locator('.capability-explorer__metrics').innerText();
   check(metricsText.includes(String(listPayload.meta.total)), 'summary renders backend total', { metricsText });
@@ -176,6 +186,10 @@ try {
     drawerHeadings,
     sectionCount,
   });
+  check(sectionTitles.includes('最终可用性'), 'detail final availability section rendered');
+  check(sectionTitles.includes('事实分层'), 'detail fact-layer section rendered');
+  check(drawerText.includes('当前用户可用') || drawerText.includes('当前用户不可用'), 'detail separates current-user access');
+  check(drawerText.includes('生效产品版本'), 'detail renders active product version');
   check(drawerText.includes('模块'), 'detail renders module facts');
   check(drawerText.includes('模型'), 'detail renders model facts');
   check(drawerText.includes('View'), 'detail renders view summary');

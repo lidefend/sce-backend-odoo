@@ -1,7 +1,7 @@
 import { authenticateBrowserProbe, assertEntryRequest, successfulIntentData } from '../../../../scripts/verify/frontend_authenticated_intent.mjs';
 
 // Keep observed credentials in this closure only; never expose them in reports.
-export async function bindObservedDeniedIntent(response, expectedUserId, entryUrl) {
+export async function bindObservedDeniedIntent(response, expectedUserId, entryUrl, expectedTenant = '') {
   if (!response) throw new Error('denied probe: authenticated startup request missing');
   const startup = successfulIntentData(response.status(), await response.json(), 'system.init');
   if (!(expectedUserId > 0) || Number(startup.user?.id) !== expectedUserId) {
@@ -15,10 +15,11 @@ export async function bindObservedDeniedIntent(response, expectedUserId, entryUr
   const entry = new URL(entryUrl);
   const observed = new URL(url);
   const namespace = entry.pathname.match(/^\/t\/([^/]+)(?:\/|$)/)?.[1];
+  const tenantHint = String(expectedTenant || headers['x-tenant'] || '');
   if (!namespace || observed.origin !== entry.origin
       || observed.pathname !== `/t/${namespace}/api/v1/intent`
-      || (headers['x-tenant'] && headers['x-tenant'] !== namespace)) {
-    throw new Error('denied probe: entry namespace mismatch');
+      || (headers['x-tenant'] && tenantHint && headers['x-tenant'] !== tenantHint)) {
+    throw new Error(`denied probe: entry namespace mismatch entry=${entryUrl} observed=${url} namespace=${namespace} tenant=${headers['x-tenant'] || ''}`);
   }
   if (request.method() !== 'POST' || original.intent !== 'system.init' || !headers.authorization) {
     throw new Error('denied probe: authenticated startup request missing');
@@ -36,8 +37,8 @@ export async function bindObservedDeniedIntent(response, expectedUserId, entryUr
   };
 }
 
-export async function authenticateDeniedProbe(page, expectedLogin, submit) {
-  const entryUrl = page.url();
+export async function authenticateDeniedProbe(page, expectedLogin, submit, declaredEntryUrl = '', expectedTenant = '') {
+  const entryUrl = String(declaredEntryUrl || page.url());
   let startupResponse;
   const observe = response => {
     try {
@@ -49,7 +50,12 @@ export async function authenticateDeniedProbe(page, expectedLogin, submit) {
   page.on('response', observe);
   try {
     const authenticated = await authenticateBrowserProbe(page, expectedLogin, submit);
-    return await bindObservedDeniedIntent(startupResponse, Number(authenticated.startupData.user?.id), entryUrl);
+    return await bindObservedDeniedIntent(
+      startupResponse,
+      Number(authenticated.startupData.user?.id),
+      entryUrl,
+      expectedTenant,
+    );
   } finally {
     page.off('response', observe);
   }

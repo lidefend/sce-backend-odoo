@@ -3,7 +3,7 @@
   "id": "ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119",
   "branch": "feature/admin-close-01-platform-to-enterprise-20261119",
   "baseline_sha": "0dc7778132a6814e3cb18eb7cecb3ba39ac5df71",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119.yaml",
   "record": "docs/ops/iterations/admin_close_01_platform_to_enterprise_20261119.md",
   "scope": [
@@ -46,13 +46,14 @@
     },
     {
       "id": "FE-ADMIN-CLOSE-01",
-      "status": "active",
+      "status": "completed",
       "owner": "single_writer_frontend_after_backend_handoff",
-      "exit": "Existing platform and enterprise administration screens complete the prepared flow and display backend-owned scope, versions, blockers and readback"
+      "exit": "Existing platform and enterprise administration screens complete the prepared flow and display backend-owned scope, versions, blockers and readback",
+      "browser_summary": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/browser_journey/summary.json"
     },
     {
       "id": "REVIEW-ADMIN-CLOSE-01",
-      "status": "not_run",
+      "status": "active",
       "owner": "read_only_independent_reviewer",
       "exit": "The same candidate closes scope, permissions, administrative journey and ordinary-user result with required CI"
     }
@@ -133,9 +134,68 @@
       "kind": "offline",
       "inputs": [
         "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
         "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "scripts/verify/frontend_decision_authority.py",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_scenario_lifecycle": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/eslint.config.js",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/vite.config.ts",
+        "scripts/dev/frontend_static_build.sh",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_management_browser": {
+      "target": "verify.frontend.platform_capability_explorer.browser",
+      "kind": "runtime",
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser.mjs",
+        "frontend/apps/web/scripts/admin_close_01_management_browser.mjs",
         "make/frontend.mk"
       ]
     },
@@ -159,7 +219,8 @@
   "blockers": [
     "The full smart_core module baseline is failed and has no collection count: existing suite/setup failures include missing test relations, entry namespace expectations and unrelated contract/config scenarios. No failure references the changed capability-explorer, release-operator or scenario files, and the focused files pass.",
     "The full smart_construction_core module baseline remains existing debt at 117 failures / 38 errors of 1473 executed tests; no failure references platform_capability_explorer_contributions.py or product_menu_source.py, and the focused contribution and capability families pass.",
-    "The governed local test database intentionally deactivates demo-facing menus. The project-ledger runtime sample activates only its own rolled-back native menu path and exercises the real native records, metadata loaders, contribution provider, release snapshot service, scenario catalog and ACL projection; it is not a daily-demo acceptance claim."
+    "The governed local test database intentionally deactivates demo-facing menus. The project-ledger runtime sample activates only its own rolled-back native menu path and exercises the real native records, metadata loaders, contribution provider, release snapshot service, scenario catalog and ACL projection; it is not a daily-demo acceptance claim.",
+    "The local development tenant face does not expose the project-ledger menu in its active capability catalog, and it is not the declared platform-control instance. Its browser journey therefore uses an active capability entry for detail verification, verifies that a tenant identity is routed away from the platform-control surface, verifies the enterprise configuration administrator and company scope, and verifies the ordinary project dashboard. The positive platform release and project-ledger contracts are covered by the governed ORM sample rather than claimed as local browser delivery."
   ],
-  "next_exact_step": "Commit BE-ADMIN-CLOSE-01 as the exact frontend handoff candidate, then connect PlatformCapabilityExplorerView, ReleaseOperatorView and ScenarioActivationPanel to the backend-owned facts and run frontend validation."
+  "next_exact_step": "Commit the frontend consumption changes, run the final affected local iteration, obtain independent review on the exact candidate, and publish through the protected PR entrypoint."
 }

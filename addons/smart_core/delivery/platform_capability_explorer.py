@@ -1329,6 +1329,7 @@ class PlatformCapabilityExplorerService:
         enterprise_enablement = _dict(
             _dict(contributions.get("enterprise_enablement")).get(str(menu_id))
         )
+        company_context = _dict(contributions.get("company_context"))
         access = access_layer_assessment(
             native_present=native_present,
             native_blockers=native_blockers,
@@ -1547,6 +1548,9 @@ class PlatformCapabilityExplorerService:
                 "enabled": False,
                 "status": "not_applicable",
                 "reason_code": "ENTERPRISE_ENABLEMENT_NOT_APPLICABLE",
+                "company_id": _int(company_context.get("company_id")),
+                "company_name": _text(company_context.get("company_name")),
+                "source": "res.company",
                 "scenes": [],
             },
             "current_user_access": access,
@@ -1555,7 +1559,7 @@ class PlatformCapabilityExplorerService:
                 "reason_code": access["reason_code"],
                 "blockers": list(access["blockers"]),
                 "actor": actor,
-                "target_company": _dict(contributions.get("company_context")),
+                "target_company": company_context,
                 "record_scope": "runtime_acl_and_record_rules",
             },
             "diagnostics": {
