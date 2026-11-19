@@ -169,7 +169,17 @@ class ProductPolicyCatalogSyncService:
         source_db = self._catalog_source_db()
         current_db = _text(getattr(getattr(self.env, "cr", None), "dbname", ""))
         if source_db == current_db:
-            return self._extract_user_menu_pages(self.env), {"source_db": current_db, "source": "current_db_ir_ui_menu"}
+            try:
+                return self._extract_user_menu_pages(self.env), {
+                    "source_db": current_db,
+                    "source": "current_db_ir_ui_menu",
+                }
+            except Exception as exc:
+                return [], {
+                    "source_db": current_db,
+                    "source": "current_db_ir_ui_menu_failed",
+                    "error": str(exc),
+                }
         try:
             registry = Registry(source_db)
             with registry.cursor() as cr:
@@ -433,9 +443,10 @@ class ProductPolicyCatalogSyncService:
         """Build values for one sync; all source validation happens before return.
 
         A missing policy keeps the existing initialization behavior. An existing
-        policy is a maintenance fact carrier: the native catalog may refresh
-        source identity for entries that are already selected, but it cannot
-        replace the policy's maintained organization or expand its selection.
+        policy is a maintenance fact carrier: the actual execution database
+        refreshes source identity for entries that are already selected, but it
+        cannot replace the policy's maintained organization or expand its
+        selection.
         """
         generated = payload if isinstance(payload, dict) else {}
         if not current:
@@ -561,8 +572,6 @@ class ProductPolicyCatalogSyncService:
         """Refresh selected native sources without replacing maintained facts."""
         self._assert_catalog_source_usable(generated)
         merged = copy.deepcopy(current)
-        generated_sources = self._index_generated_menu_sources(generated)
-        refreshed_menus: dict[str, dict[str, Any]] = {}
         validated_sources: dict[str, dict[str, Any]] = {}
         current_groups = current.get("menu_groups")
         current_groups = current_groups if isinstance(current_groups, list) else []
@@ -580,9 +589,7 @@ class ProductPolicyCatalogSyncService:
                         "selected native entry has no stable menu XMLID",
                         entry=_text(menu.get("menu_key") or menu.get("page_key")),
                     )
-                source = generated_sources.get(menu_ref)
-                if source is None:
-                    source = self._read_native_source_facts(menu)
+                source = self._read_native_source_facts(menu)
                 self._assert_action_identity(current_row=menu, source_row=source)
                 validated_sources[menu_ref] = source
 
@@ -625,7 +632,7 @@ class ProductPolicyCatalogSyncService:
             next_capability = copy.deepcopy(capability)
             menu_ref = _text(capability.get("menu_xmlid"))
             source = validated_sources.get(menu_ref)
-            if source:
+            if source and self._is_native_capability_alias(next_capability):
                 self._overlay_source_fields(
                     next_capability,
                     {
@@ -648,35 +655,19 @@ class ProductPolicyCatalogSyncService:
         ) if isinstance(current.get("scene_version_bindings"), dict) else {}
         return merged
 
-    def _index_generated_menu_sources(
-        self,
-        payload: dict[str, Any],
-    ) -> dict[str, dict[str, Any]]:
-        sources: dict[str, dict[str, Any]] = {}
-        groups = payload.get("menu_groups")
-        for group in groups if isinstance(groups, list) else []:
-            if not isinstance(group, dict):
-                continue
-            menus = group.get("menus")
-            for menu in menus if isinstance(menus, list) else []:
-                if not isinstance(menu, dict):
-                    continue
-                menu_ref = _text(menu.get("menu_xmlid"))
-                if not menu_ref:
-                    continue
-                existing = sources.get(menu_ref)
-                if existing and self._source_action_identity(existing) != self._source_action_identity(menu):
-                    raise ProductPolicyCatalogSyncError(
-                        "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
-                        "catalog maps one menu XMLID to multiple native actions",
-                        entry=menu_ref,
-                    )
-                sources[menu_ref] = menu
-        return sources
-
     @staticmethod
     def _is_native_entry(row: dict[str, Any]) -> bool:
         return bool(int(row.get("action_id") or 0) or _text(row.get("action_xmlid")))
+
+    @staticmethod
+    def _is_native_capability_alias(row: dict[str, Any]) -> bool:
+        if row.get("business_capability") is True:
+            return False
+        identity_kind = _text(row.get("identity_kind"))
+        if identity_kind and identity_kind != "entry_compatibility_alias":
+            return False
+        provider_authority = _text(row.get("provider_authority"))
+        return not provider_authority or provider_authority == "native_menu_action_entry"
 
     @staticmethod
     def _source_action_identity(row: dict[str, Any]) -> tuple[str, int]:
@@ -715,6 +706,29 @@ class ProductPolicyCatalogSyncService:
                 "native source has no stable action XMLID",
                 entry=_text(current_row.get("menu_xmlid") or source_row.get("menu_xmlid")),
             )
+        source_model = _text(
+            source_row.get("res_model") or source_row.get("model")
+        )
+        source_action_model = _text(source_row.get("action_model"))
+        for field_name, source_value in (
+            ("action_model", source_action_model),
+            ("model", source_model),
+            ("res_model", source_model),
+        ):
+            current_value = _text(current_row.get(field_name))
+            if current_value and current_value != source_value:
+                raise ProductPolicyCatalogSyncError(
+                    "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+                    (
+                        f"stored {field_name} binding {current_value} resolved to "
+                        f"{source_value}"
+                    ),
+                    entry=_text(
+                        current_row.get("menu_xmlid")
+                        or current_row.get("menu_key")
+                        or current_row.get("page_key")
+                    ),
+                )
 
     @staticmethod
     def _overlay_source_fields(
@@ -762,6 +776,11 @@ class ProductPolicyCatalogSyncService:
             res_model = _text(getattr(action, "res_model", "")) or _text(
                 getattr(action, "model_name", "")
             )
+            view_modes = [
+                mode.strip()
+                for mode in _text(getattr(action, "view_mode", "")).split(",")
+                if mode.strip()
+            ]
             return {
                 "menu_id": int(menu.id),
                 "menu_xmlid": actual_menu_xmlid or menu_xmlid,
@@ -771,6 +790,8 @@ class ProductPolicyCatalogSyncService:
                 "action_model": action_model,
                 "res_model": res_model,
                 "model": res_model,
+                "view_modes": view_modes,
+                "visible_menu_path": self._native_menu_path(menu),
             }
         except ProductPolicyCatalogSyncError:
             raise
@@ -780,6 +801,22 @@ class ProductPolicyCatalogSyncService:
                 str(exc),
                 entry=menu_xmlid,
             ) from exc
+
+    @staticmethod
+    def _native_menu_path(menu: Any) -> str:
+        labels: list[str] = []
+        seen: set[int] = set()
+        node = menu
+        while node:
+            node_id = int(getattr(node, "id", 0) or 0)
+            if not node_id or node_id in seen:
+                break
+            seen.add(node_id)
+            label = _text(getattr(node, "name", ""))
+            if label:
+                labels.append(label)
+            node = getattr(node, "parent_id", None)
+        return " / ".join(reversed(labels))
 
     def _merge_existing_page_controls(self, payload: dict[str, Any], current: dict[str, Any]) -> None:
         current_controls: dict[str, dict[str, Any]] = {}

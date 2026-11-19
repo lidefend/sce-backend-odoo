@@ -101,12 +101,26 @@ def _use_construction_catalog_source(service):
 
 
 class _FakeAction:
-    def __init__(self, action_id: int, res_model: str = "", *, model_name: str = "", model_id=None):
+    def __init__(
+        self,
+        action_id: int,
+        res_model: str = "",
+        *,
+        model_name: str = "",
+        model_id=None,
+        action_xmlid="",
+        view_mode="",
+    ):
         self.id = action_id
         self.res_model = res_model
         self.model_name = model_name
         self.model_id = model_id
+        self.view_mode = view_mode
+        self._xmlid = action_xmlid
         self._name = "ir.actions.act_window"
+
+    def get_external_id(self):
+        return {self.id: self._xmlid}
 
 
 class _FakeMenu:
@@ -121,6 +135,7 @@ class _FakeMenu:
         sequence=10,
         active=True,
     ):
+        self._name = "ir.ui.menu"
         self.id = menu_id
         self.name = name
         self.parent_id = parent
@@ -192,6 +207,14 @@ class _FakeSourceEnv:
         raise KeyError(key)
 
 
+class _NativeSourceEnv:
+    def __init__(self, menu):
+        self.menu = menu
+
+    def ref(self, xmlid, raise_if_not_found=False):
+        return self.menu if xmlid == self.menu.get_external_id().get(self.menu.id) else None
+
+
 class _PolicyServiceEnv:
     registry = SimpleNamespace(models={})
     cr = SimpleNamespace(dbname="sc_test")
@@ -231,12 +254,17 @@ class _SyncPolicyModel:
 
 
 class _SyncPolicyEnv:
-    def __init__(self, model):
+    def __init__(self, model, *, dbname="sc_test"):
         self.model = model
+        self.cr = SimpleNamespace(dbname=dbname)
 
     def __getitem__(self, key):
         if key == "sc.product.policy":
             return self.model
+        if key == "ir.config_parameter":
+            return SimpleNamespace(
+                sudo=lambda: SimpleNamespace(get_param=lambda *args: "")
+            )
         raise KeyError(key)
 
 
@@ -472,6 +500,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                         {
                             "menu_xmlid": "project.menu_ledger",
                             "menu_key": "project.menu_ledger",
+                            "menu_id": 10,
                             "page_key": "project.ledger",
                             "action_xmlid": "project.action_ledger",
                             "action_id": 11,
@@ -483,6 +512,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                             "access_level": "role_restricted",
                             "policy_note": "maintained",
                             "entry_intent": "handling",
+                            "model": "project.project",
                             "res_model": "project.project",
                             "visible_menu_path": "Maintained / Project / Ledger",
                         }
@@ -496,6 +526,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                         {
                             "menu_xmlid": "account.menu_move",
                             "menu_key": "account.menu_move",
+                            "menu_id": 20,
                             "page_key": "account.move",
                             "action_xmlid": "account.action_move",
                             "action_id": 21,
@@ -531,6 +562,10 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                     "business_capability": True,
                     "provider_authority": "scene_entry_target",
                     "entry_intent_label": "Review",
+                    "action_xmlid": "business.action.review",
+                    "action_id": 99,
+                    "action_model": "ir.actions.server",
+                    "res_model": "custom.business.model",
                 },
                 {
                     "capability_key": "catalog.menu.account_menu_move",
@@ -610,7 +645,22 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
             },
         }
 
+        business_capability_before = deepcopy(current["capabilities"][1])
+
         def native_source(row):
+            if row["menu_xmlid"] == "project.menu_ledger":
+                return {
+                    "menu_id": 110,
+                    "menu_xmlid": "project.menu_ledger",
+                    "menu_key": "project.menu_ledger",
+                    "action_id": 111,
+                    "action_xmlid": "project.action_ledger",
+                    "action_model": "ir.actions.act_window",
+                    "res_model": "project.project",
+                    "model": "project.project",
+                    "view_modes": ["tree", "form"],
+                    "visible_menu_path": "Native / Project / Ledger",
+                }
             self.assertEqual(row["menu_xmlid"], "account.menu_move")
             return {
                 "menu_id": 201,
@@ -662,7 +712,10 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         self.assertEqual(project_menu["policy_note"], "maintained")
         self.assertEqual(project_menu["entry_intent"], "handling")
         self.assertEqual(project_menu["page_key"], "project.ledger")
-        self.assertEqual(project_menu["res_model"], "project.project.refreshed")
+        self.assertEqual(project_menu["menu_id"], 110)
+        self.assertEqual(project_menu["action_id"], 111)
+        self.assertEqual(project_menu["model"], "project.project")
+        self.assertEqual(project_menu["res_model"], "project.project")
         self.assertEqual(project_menu["visible_menu_path"], "Native / Project / Ledger")
         self.assertEqual(project_menu["view_modes"], ["tree", "form"])
         self.assertEqual(
@@ -686,6 +739,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         self.assertTrue(business_capability["business_capability"])
         self.assertEqual(business_capability["provider_authority"], "scene_entry_target")
         self.assertEqual(business_capability["entry_intent_label"], "Review")
+        self.assertEqual(business_capability, business_capability_before)
 
         repeated = service.build_sync_values(
             payload=generated,
@@ -698,7 +752,47 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         )
         self.assertEqual(repeated, values)
 
-    def test_sync_rejects_rebound_or_missing_native_sources_before_write(self):
+    def test_native_source_read_returns_execution_ids_and_uniform_model_path(self):
+        root = _FakeMenu(
+            1,
+            "Project",
+            xmlid="project.menu_root",
+        )
+        center = _FakeMenu(
+            2,
+            "Ledger",
+            xmlid="project.menu_center",
+            parent=root,
+        )
+        action = _FakeAction(
+            31,
+            "project.project",
+            action_xmlid="project.action_ledger",
+            view_mode="tree,form",
+        )
+        menu = _FakeMenu(
+            21,
+            "Ledger Entries",
+            xmlid="project.menu_ledger",
+            parent=center,
+            action=action,
+        )
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+            _NativeSourceEnv(menu)
+        )
+
+        source = service._read_native_source_facts({"menu_xmlid": "project.menu_ledger"})
+
+        self.assertEqual(source["menu_id"], 21)
+        self.assertEqual(source["action_id"], 31)
+        self.assertEqual(source["action_xmlid"], "project.action_ledger")
+        self.assertEqual(source["action_model"], "ir.actions.act_window")
+        self.assertEqual(source["model"], "project.project")
+        self.assertEqual(source["res_model"], "project.project")
+        self.assertEqual(source["view_modes"], ["tree", "form"])
+        self.assertEqual(source["visible_menu_path"], "Project / Ledger / Ledger Entries")
+
+    def test_non_catalog_sync_uses_native_truth_and_rejects_before_write(self):
         current = {
             "active": True,
             "product_key": "construction.standard",
@@ -717,8 +811,14 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                     "menus": [
                         {
                             "menu_xmlid": "project.menu_ledger",
+                            "menu_key": "project.menu_ledger",
+                            "page_key": "project.ledger",
+                            "menu_id": 21,
                             "action_xmlid": "project.action_ledger",
-                            "action_id": 11,
+                            "action_id": 31,
+                            "action_model": "ir.actions.act_window",
+                            "model": "project.project",
+                            "res_model": "project.project",
                             "sequence": 0,
                             "enabled": True,
                         }
@@ -728,17 +828,171 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
             "scenes": [],
             "capabilities": [],
         }
-        generated = deepcopy(current)
-        generated["policy_source_authority"] = {
-            "source": "current_db_ir_ui_menu",
+        identity = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
         }
-        generated["menu_groups"][0]["menus"][0][
-            "action_xmlid"
-        ] = "project.action_rebound"
-        generated["menu_groups"][0]["menus"][0]["action_id"] = 12
+        for failure, reason_code in (
+            ("missing", "PRODUCT_SYNC_SOURCE_MISSING"),
+            ("model_rebind", "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED"),
+            ("action_type_rebind", "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED"),
+        ):
+            with self.subTest(failure=failure):
+                record = _SyncPolicyRecord(current)
+                service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+                    _SyncPolicyEnv(_SyncPolicyModel(record))
+                )
+                service._is_catalog_backed_product = lambda *, identity: False
+
+                def native_source(_row):
+                    if failure == "missing":
+                        raise PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError(
+                            "PRODUCT_SYNC_SOURCE_MISSING",
+                            "native menu source not found",
+                            entry="project.menu_ledger",
+                        )
+                    return {
+                        "menu_id": 21,
+                        "menu_xmlid": "project.menu_ledger",
+                        "menu_key": "project.menu_ledger",
+                        "action_id": 31,
+                        "action_xmlid": "project.action_ledger",
+                        "action_model": (
+                            "ir.actions.server"
+                            if failure == "action_type_rebind"
+                            else "ir.actions.act_window"
+                        ),
+                        "res_model": "account.move",
+                        "model": "account.move",
+                    }
+
+                service._read_native_source_facts = native_source
+                with patch.object(
+                    PRODUCT_POLICY_CATALOG_SYNC_SERVICE,
+                    "resolve_product_identity",
+                    return_value=identity,
+                ), patch.object(
+                    PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyService,
+                    "get_policy",
+                    return_value=current,
+                ):
+                    with self.assertRaisesRegex(
+                        PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
+                        reason_code,
+                    ):
+                        service.sync_policy(product_key="construction.standard")
+                self.assertIsNone(record.written)
+                self.assertEqual(record.to_runtime_dict(), current)
+
+    def test_sync_resolves_catalog_xmlids_to_execution_database_ids(self):
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(env=None)
+        current = {
+            "active": True,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "note": "",
+            "menu_groups": [{
+                "group_key": "construction.center.project",
+                "menus": [{
+                    "menu_xmlid": "project.menu_ledger",
+                    "menu_key": "project.menu_ledger",
+                    "menu_id": 21,
+                    "action_xmlid": "project.action_ledger",
+                    "action_id": 31,
+                    "model": "project.project",
+                    "res_model": "project.project",
+                    "enabled": True,
+                }],
+            }],
+            "scenes": [],
+            "capabilities": [{
+                "capability_key": "catalog.menu.project_menu_ledger",
+                "menu_xmlid": "project.menu_ledger",
+                "action_xmlid": "project.action_ledger",
+                "action_id": 31,
+                "res_model": "project.project",
+            }],
+        }
+        external_payload = {
+            **deepcopy(current),
+            "menu_groups": [{
+                "group_key": "catalog.project",
+                "menus": [{
+                    "menu_xmlid": "project.menu_ledger",
+                    "menu_key": "project.menu_ledger",
+                    "menu_id": 101,
+                    "action_xmlid": "project.action_ledger",
+                    "action_id": 201,
+                    "res_model": "project.project",
+                    "model": "project.project",
+                }],
+            }],
+            "policy_source_authority": {
+                "source": "external_db_ir_ui_menu",
+                "source_db": "catalog_db",
+            },
+        }
+        service._read_native_source_facts = lambda _row: {
+            "menu_id": 21,
+            "menu_xmlid": "project.menu_ledger",
+            "menu_key": "project.menu_ledger",
+            "action_id": 31,
+            "action_xmlid": "project.action_ledger",
+            "action_model": "ir.actions.act_window",
+            "res_model": "project.project",
+            "model": "project.project",
+        }
+        values = service.build_sync_values(
+            payload=external_payload,
+            current=current,
+            identity={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        )
+        menu = values["menu_groups"][0]["menus"][0]
+        capability = values["capabilities"][0]
+        self.assertEqual((menu["menu_id"], menu["action_id"]), (21, 31))
+        self.assertEqual(
+            (capability["action_id"], capability["res_model"]),
+            (31, "project.project"),
+        )
+        self.assertEqual(menu["model"], menu["res_model"])
+
+    def test_current_database_catalog_read_failure_is_stable_and_zero_write(self):
+        current = {
+            "active": True,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "note": "",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
         record = _SyncPolicyRecord(current)
         service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
             _SyncPolicyEnv(_SyncPolicyModel(record))
+        )
+        service._is_catalog_backed_product = lambda *, identity: True
+        service._catalog_product_label = lambda *, identity: "Construction"
+        service._extract_user_menu_pages = lambda _env: (_ for _ in ()).throw(
+            RuntimeError("catalog read exploded")
         )
         with patch.object(
             PRODUCT_POLICY_CATALOG_SYNC_SERVICE,
@@ -748,42 +1002,10 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                 "base_product_key": "construction",
                 "edition_key": "standard",
             },
-        ), patch.object(service, "build_policy_payload", return_value=generated):
-            with self.assertRaisesRegex(
-                PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
-                "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
-            ):
-                service.sync_policy(product_key="construction.standard")
-        self.assertIsNone(record.written)
-        self.assertEqual(record.to_runtime_dict(), current)
-
-        generated_without_source = deepcopy(generated)
-        generated_without_source["menu_groups"] = []
-
-        def missing_source(_row):
-            raise PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError(
-                "PRODUCT_SYNC_SOURCE_MISSING",
-                "native menu source not found",
-                entry="project.menu_ledger",
-            )
-
-        service._read_native_source_facts = missing_source
-        with patch.object(
-            PRODUCT_POLICY_CATALOG_SYNC_SERVICE,
-            "resolve_product_identity",
-            return_value={
-                "product_key": "construction.standard",
-                "base_product_key": "construction",
-                "edition_key": "standard",
-            },
-        ), patch.object(
-            service,
-            "build_policy_payload",
-            return_value=generated_without_source,
         ):
             with self.assertRaisesRegex(
                 PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
-                "PRODUCT_SYNC_SOURCE_MISSING",
+                "PRODUCT_SYNC_SOURCE_READ_FAILED",
             ):
                 service.sync_policy(product_key="construction.standard")
         self.assertIsNone(record.written)

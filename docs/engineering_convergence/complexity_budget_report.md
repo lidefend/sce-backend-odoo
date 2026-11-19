@@ -168,6 +168,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
+| 1089 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
@@ -212,7 +213,7 @@ Generated from repository source files. This report is informational during the 
 | 882 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 879 | Python source | `scripts/verify/frontend_decision_authority.py` |
-| 867 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
+| 870 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
@@ -226,7 +227,6 @@ Generated from repository source files. This report is informational during the 
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
-| 833 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
 | 830 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |

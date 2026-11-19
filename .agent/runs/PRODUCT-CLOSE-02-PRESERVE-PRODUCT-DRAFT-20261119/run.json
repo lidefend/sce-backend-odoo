@@ -213,6 +213,35 @@
       "frontend consumer checks pending frontend handoff"
     ]
   },
+  "review_remediation_r1": {
+    "status": "verification_pending",
+    "reviewed_head": "dce3c841c9f0e4366aa529f6969e4d4b9931ec59",
+    "scope": [
+      "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+      "addons/smart_core/tests/test_backend_semantic_copy_supply.py"
+    ],
+    "closed_items": [
+      "selected native menus are always resolved from the execution database by XMLID; maintained policy content is not source proof",
+      "catalog source-database numeric IDs never become execution IDs",
+      "same-XMLID action type or model rebinding is rejected",
+      "normal source refresh keeps model and res_model equal",
+      "independent business capabilities are not mutated by same-menu alias refresh",
+      "current-database catalog extraction failures use PRODUCT_SYNC_SOURCE_READ_FAILED before write"
+    ],
+    "passed": [
+      "make verify.runtime_capability_catalog.unit: 25 tests",
+      "make verify.capability.identity_boundary.unit: 8 tests",
+      "make verify.product_center.policy.unit: 15 tests",
+      "make verify.admin_close_01.backend.unit: 141 aggregate tests",
+      "make verify.frontend.platform_capability_explorer.unit: 84 contract cases on unchanged consumer inputs",
+      "make ci.local.iteration: exit 0; contract-only scope"
+    ],
+    "not_run": [
+      "ORM and module baselines",
+      "module upgrade and environment rebuild",
+      "browser matrix"
+    ]
+  },
   "frontend_handoff": {
     "status": "completed",
     "changed_paths": [
@@ -248,5 +277,5 @@
     "L4": "Not applicable by owner direction: no browser matrix or environment rebuild",
     "L5": "Independent exact-head review and required remote checks at publication"
   },
-  "next_exact_step": "Run delivery freeze preparation, commit the exact candidate, and start independent exact-head review"
+  "next_exact_step": "Run delivery freeze preparation, commit and push the R1 candidate, then repeat exact-head independent review"
 }

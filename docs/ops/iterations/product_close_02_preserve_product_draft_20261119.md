@@ -144,7 +144,44 @@ The local run receipts now report all ten registered checks as reusable.
 ORM, module baselines, module upgrade, browser matrix and environment rebuild
 remain `not_run` by owner direction.
 
+## R1 source-resolution remediation
+
+Owner and independent review found that the first candidate could still treat
+the maintained policy as proof of native source existence, could leak
+source-database numeric IDs across databases, and could leave inconsistent
+source model fields.
+
+The R1 implementation now:
+
+- resolves every selected native menu from the actual execution database by
+  stable menu XMLID before any write, for both catalog-backed and non-catalog
+  products;
+- treats source-database IDs as discovery metadata only and writes execution
+  database menu/action IDs;
+- rejects same-XMLID action type or model rebinding with
+  `PRODUCT_SYNC_ACTION_IDENTITY_CHANGED`;
+- refreshes `model` and `res_model` consistently;
+- skips native alias overlays for independent business capabilities;
+- maps current-database catalog extraction failures to
+  `PRODUCT_SYNC_SOURCE_READ_FAILED`;
+- keeps the all-validate-before-write, no-expansion, no-publication and
+  product-isolation behavior.
+
+Focused R1 results:
+
+| Check | Result |
+| --- | --- |
+| `verify.runtime_capability_catalog.unit` | passed, 25 tests |
+| `verify.capability.identity_boundary.unit` | passed, 8 tests |
+| `verify.product_center.policy.unit` | passed, 15 tests |
+| `verify.admin_close_01.backend.unit` | passed, 141 aggregate tests |
+| `verify.frontend.platform_capability_explorer.unit` | passed, 84 contract cases; frontend inputs unchanged |
+| `make ci.local.iteration` | passed, exit 0, contract-only scope |
+
+ORM, module baselines, module upgrade and browser matrix remain `not_run` by
+owner direction.
+
 ## Next exact step
 
-Run `make ci.delivery.freeze.prepare`, inspect generated changes, commit the
-exact candidate and start independent exact-head review.
+Run delivery freeze preparation, commit and push the R1 candidate, then repeat
+exact-head independent review.
