@@ -99,7 +99,7 @@ stop_heartbeat
         authorization = workflow['jobs']['professional_authorization']
         self.assertEqual(
             authorization['outputs']['tool_checks'],
-            "${{ steps.backend_impact.outputs.tool_checks || '' }}",
+            '${{ steps.backend_impact.outputs.tool_checks }}',
         )
         checks = workflow['jobs']['professional_quality_checks']
         self.assertEqual(checks['outputs']['tool_checks_ran'],

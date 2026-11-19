@@ -190,11 +190,11 @@ Generated from repository source files. This report is informational during the 
 | 984 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 981 | Python source | `scripts/ops/agent_run_context.py` |
+| 979 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
-| 964 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 949 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
@@ -244,7 +244,7 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 596 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 594 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |

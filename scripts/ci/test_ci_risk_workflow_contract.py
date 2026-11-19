@@ -840,6 +840,21 @@ class ParallelQualityExecutionTest(unittest.TestCase):
             "needs.professional_authorization.outputs.contract_only_scope != ''",
             jobs['contract_checks']['if'],
         )
+        authorization = jobs['professional_authorization']
+        planner = next(
+            step
+            for step in authorization['steps']
+            if step.get('name') == 'Plan affected backend modules from exact trees'
+        )
+        self.assertEqual(planner['if'], "github.event_name == 'pull_request'")
+        self.assertEqual(
+            authorization['outputs']['backend_impact_required'],
+            "${{ steps.risk.outputs.contract_only_scope != '' && 'false' || steps.backend_impact.outputs.required }}",
+        )
+        self.assertEqual(
+            authorization['outputs']['tool_checks'],
+            '${{ steps.backend_impact.outputs.tool_checks }}',
+        )
         self.assertEqual(sum(job.get('name') == 'professional_quality_gate' for job in jobs.values()), 1)
         self.assertIn('!cancelled()', jobs['professional_quality_checks']['if'])
         self.assertIn("needs.professional_authorization.result == 'success'", jobs['professional_quality_checks']['if'])
