@@ -55,6 +55,18 @@
       "status": "active",
       "owner": "owner_independent_review",
       "exit": "Owner reviews the exact frozen candidate and current remote checks"
+    },
+    {
+      "id": "FE-942-R2",
+      "status": "completed",
+      "owner": "frontend_executor",
+      "exit": "Mutation-bound readback, mandatory promotion declaration, limited impact mappings and the same-user disable journey are implemented"
+    },
+    {
+      "id": "BE-942-R2",
+      "status": "completed",
+      "owner": "backend_executor",
+      "exit": "Real promote/approve execution and current full-baseline failure classification are captured"
     }
   ],
   "checks": {
@@ -186,8 +198,8 @@
     }
   },
   "blockers": [
-    "The full smart_core module baseline remains failed with no usable count; observed failures are in authentication, maintenance, configuration and pre-existing ORM families with no reference to the R1 changed files. Existing affected navigation, capability-explorer, release-operator and scene families pass, so the module baseline stays an explicit failed coverage layer rather than being described as green.",
+    "The current exact smart_core full-module baseline at 6dd747c still fails with no usable count: 29 failures and 76 errors. The dominant root causes are the minimal local.test template lacking a sc_test namespace and construction role XMLIDs, producing UnknownNamespace/NS_NAMESPACE_REQUIRED and missing external ID setup failures. Remote managed_orm selected 23 tests passed on the same source and the focused AdminClose01 ORM group passed 4 tests, but the full module failure remains an environment/baseline coverage blocker and is not represented as green.",
     "The isolated candidate tenant has the enterprise configuration administrator and ordinary project user, but no platform-control administrator. Its browser journey therefore proves enterprise enable, ordinary-user project-ledger use and enterprise disable; candidate promotion actions are covered by the real governed ORM contract and strict frontend consumer tests, not by a candidate-tenant platform-release browser click."
   ],
-  "next_exact_step": "Refresh generated evidence, commit the frontend/browser handoff, and publish one exact-head PR for owner review."
+  "next_exact_step": "Run final affected validation, refresh generated evidence, commit the R2 backend sample and records, update PR #942, and bind the next owner review to the new exact head."
 }

@@ -170,9 +170,9 @@ The browser journey passed 45 assertions:
 - the platform context passed 17 governed entries and permission denial checks;
 - all three browser contexts had zero unexpected console/page errors.
 
-Raw readback:
+Raw readback from the original R1 journey:
 `.runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json`
-(SHA-256 `3ed9c7a2e63899c8bc82e65ded87fc1b9791024a91936f6680e5786b4591abb1`).
+(the same path is refreshed by R2 below).
 
 The candidate tenant has no platform-control administrator. Promotion execution
 is therefore proven by the governed ORM sample and strict frontend contract
@@ -200,3 +200,99 @@ recorded as a pass. `acceptance.artifact.verify` was rebuilt from candidate Git
 object `a0d35288562adb52031fb1eabfc538294ead0ca2`, the candidate container was
 replaced with a rollback container, and the readback source/version was checked
 again before rerunning the browser.
+
+## R2 owner-review remediation
+
+### FE-942-R2-01: mutation-bound success receipt
+
+Scenario activation now clears the previous receipt when a new mutation starts.
+A successful fact is stored in a local `verifiedReadback` for that mutation only.
+If the later navigation refresh fails, that verified receipt is retained and
+read-only recovery remains available. If the current response is missing or
+mismatched, the old green receipt is not retained and the UI reports that the
+write result is unconfirmed.
+
+The lifecycle family covers:
+
+- first success followed by a second missing readback;
+- target-state mismatch and missing storage identity;
+- a verified current receipt followed by navigation failure.
+
+### FE-942-R2-02: mandatory promotion declaration
+
+`available_actions.promote` is now mandatory and must be an array. A complete
+surface with `promote: []` is valid. A missing array stops as a contract gap
+before identity, actor or authoritative-readback validation can be skipped.
+Empty arrays still validate identity, actor and operation readback.
+
+### FE-942-R2-03: limited impact mappings
+
+The incremental planner now selects:
+
+- scenario lifecycle tests for `ScenarioActivationPanel.vue`,
+  `useScenarioActivation.ts` and their test driver;
+- capability-explorer promotion tests for `releaseOperatorActionContract.ts`
+  and `ReleaseOperatorView.vue`;
+- AdminClose01 ORM for the scenario activation handler, tenant activation
+  service, catalog and real admin-close test.
+
+The planner unit suite was updated and passed with these exact expectations.
+
+### FE-942-R2-04: same-user browser closure
+
+The candidate browser now:
+
+- verifies the ordinary user's current company equals the enterprise target;
+- resolves and asserts project-ledger menu/action identity instead of trusting
+  sidebar text;
+- waits for the successful `api.data` list request and checks the main surface;
+- keeps the same business context while enterprise disable runs;
+- reloads as that user and verifies the disabled entry disappears from formal
+  navigation;
+- restores the initial enablement value through the governed UI and readback,
+  including on failure.
+
+Current browser readback passed 38 management assertions and 33 platform
+capability assertions:
+
+`.runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json`
+(SHA-256 `0bd89d06d82a61d4ad626dab77ea2b48dda5ebad7329cedccb65b1dad0e94866`).
+
+### BE-942-R2: real promotion execution
+
+The ORM sample now uses a platform-control principal and executes the formal
+handlers:
+
+- `release.operator.promote`;
+- `release.operator.approve` when the policy returns pending approval.
+
+The resulting action is `done`, `result_snapshot_id=10`, active snapshot `10`,
+version `admin-close-01-r2-promotion-candidate`, and rollback target `9`.
+The result is stored at:
+
+`.runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/backend_release_sample/promotion_execution.json`
+(SHA-256 `7d550210bdd9c92f30830d6d531fb5a1a4e7aa42733b3d437324956a57ea3cd2`).
+
+### Full smart_core baseline classification
+
+The current exact full-module attempt is recorded at
+`.runtime/test-baseline/1795070998723442573/receipt.json`:
+
+- status failed;
+- collected count `0`;
+- 29 individual failures and 76 errors;
+- profile `sc-local-test` / `sc_test`, image
+  `sha256:ed39ff7e64626fd69c4b8f6248c8ae228965d07ae1532de7a685b5e0d05119bb`;
+- database template reused.
+
+The dominant reproducible setup causes are:
+
+- `UnknownNamespace: database sc_test declares no namespace`;
+- `NS_NAMESPACE_REQUIRED` in HTTP authentication cases;
+- missing construction role XMLIDs because the selected template module is the
+  minimal `smart_core` template.
+
+This is a test-environment/baseline coverage defect, not evidence that the full
+module is green. On the same source identity, remote managed ORM selected 23
+tests passed, and the focused AdminClose01 ORM group passed 4 tests. The full
+module blocker remains explicit.
