@@ -70,3 +70,22 @@ The closed contract gaps are:
 
 ORM and baseline commands started before the owner clarified this boundary were
 interrupted and are not counted as passes.
+
+## PR #943 CI remediation
+
+The first exact-head run of PR #943 failed only in
+`frontend_release_gate / managed_orm`; `merge_policy_gate` was a dependent
+failure. Two acceptance navigation tests still expected legacy center
+identities:
+
+- `smart_construction_core.menu_sc_project_center`
+- `construction.会计账务中心`
+
+The candidate correctly returns the stable keys
+`construction.center.project` and `construction.center.accounting`. This is a
+baseline-evidence defect, not a product regression.
+
+The fixture tests now derive the expected key from the P1
+`center_identity(...).stable_key` contract instead of hard-coding either the
+legacy XMLID or display-name key. Local ORM remains excluded by owner direction;
+the new exact-head remote `managed_orm` run is the authoritative verification.

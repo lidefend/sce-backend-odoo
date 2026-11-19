@@ -10,6 +10,7 @@ from pathlib import Path
 from odoo.tests.common import TransactionCase, tagged
 from odoo.tools.convert import convert_file
 from odoo.addons.smart_construction_core.models.support import product_scenario
+from odoo.addons.smart_construction_core.services.product_menu_source import center_identity
 from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
 
 
@@ -160,6 +161,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
                 for scenario in [*center["scenarios"], {"key": "", "entries": center["entries"]}]
                 for entry in scenario["entries"]}
 
+    def _stable_center_key(self, menu):
+        xmlid = menu.get_external_id()[menu.id]
+        return center_identity(xmlid)["stable_key"]
+
     def test_deleted_binding_stays_deleted_on_upgrade(self):
         self._binding(self.project_menu).unlink()
         self._upgrade_seed()
@@ -215,7 +220,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         after = self._locations(self._navigation_surface())
         self.assertEqual(set(after), set(before), "placement must not change authorization")
         center = after[self.project_menu.id][0]
-        self.assertEqual(center["key"], "smart_construction_core.menu_sc_project_center")
+        self.assertEqual(center["key"], self._stable_center_key(self.contract_center))
 
     def test_system_init_external_center_rename_and_binding_deletion(self):
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_activity_accounting")
@@ -248,7 +253,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         after = self._locations(self._navigation_surface())
         self.assertIn(self.account_menu.id, after)
         center, scenario, entry = after[self.account_menu.id]
-        self.assertEqual(center["key"], "construction.会计账务中心")
+        self.assertEqual(center["key"], self._stable_center_key(self.account_center))
         self.assertFalse(scenario["key"])
         self.assertFalse(entry["configured"])
 

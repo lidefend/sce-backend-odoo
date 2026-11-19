@@ -28,6 +28,7 @@
     "addons/smart_construction_core/services/",
     "addons/smart_construction_core/tests/",
     "addons/smart_construction_core/views/support/product_scenario_views.xml",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
     "config/product_menu_contract_v1.json",
     "config/product_primary_center_baseline_v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
@@ -438,5 +439,13 @@
       "the product-draft route is consumed from the backend declaration"
     ]
   },
-  "next_exact_step": "Contract producer and strict consumer verification is complete; review the diff for the platform catalog admission contract without rerunning native Odoo capabilities or ORM"
+  "ci_remediation": {
+    "pr": 943,
+    "failed_check": "frontend_release_gate / managed_orm",
+    "classification": "baseline_evidence_defect",
+    "fix": "Acceptance navigation tests derive the expected stable center key from the P1 center contract instead of asserting legacy menu XMLIDs or name-derived keys",
+    "local_orm": "not_run_by_owner_direction",
+    "remote_validation": "managed_orm must rerun on the new exact PR head"
+  },
+  "next_exact_step": "Run contract/static checks, commit the acceptance-test evidence fix, push the same PR branch, and verify the new exact-head managed_orm result"
 }
