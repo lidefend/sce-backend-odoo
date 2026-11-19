@@ -2026,6 +2026,62 @@ class TestMaintainedScenarioScope(unittest.TestCase):
             },
         )
 
+    def test_scenario_identity_uses_xmlid_cross_db_and_rejects_numeric_cross_db(self):
+        menu = types.SimpleNamespace(id=121)
+
+        class Env:
+            cr = types.SimpleNamespace(dbname="execution_db")
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return menu if xmlid == "project.menu_ledger" else None
+
+        xmlid_surface = {
+            "schema": scenario_surface.SCHEMA,
+            "source_db": "catalog_db",
+            "scenarios": [{
+                "key": "project",
+                "bindings": [{
+                    "menu_key": "project.menu_ledger",
+                    "menu_id": 21,
+                    "intent": "view",
+                    "source_db": "catalog_db",
+                }],
+            }],
+        }
+        indexed = scenario_surface._scenario_entries_by_menu(
+            Env(),
+            surface=xmlid_surface,
+        )
+        self.assertIn(121, indexed)
+        self.assertNotIn(21, indexed)
+
+        numeric_surface = copy.deepcopy(xmlid_surface)
+        numeric_surface["scenarios"][0]["bindings"][0]["menu_key"] = "menu:21"
+        indexed = scenario_surface._scenario_entries_by_menu(
+            Env(),
+            surface=numeric_surface,
+        )
+        self.assertEqual(indexed, {})
+
+    def test_added_and_existing_leaves_share_scene_target_projection(self):
+        scene_targets = {(21, 31): "finance.operating_metrics"}
+        existing = {
+            "menu_id": 21,
+            "action_id": 31,
+            "route": "/a/31?menu_id=21",
+        }
+        added = copy.deepcopy(existing)
+
+        scenario_surface._apply_scene_target_projection(existing, scene_targets)
+        scenario_surface._apply_scene_target_projection(added, scene_targets)
+
+        self.assertEqual(existing["entry_target"], added["entry_target"])
+        self.assertEqual(existing["entry_target"]["type"], "scene")
+        self.assertEqual(
+            existing["entry_target"]["scene_key"],
+            "finance.operating_metrics",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

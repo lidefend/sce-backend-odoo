@@ -110,6 +110,7 @@ def build_menu_assignments(
             "center_key": _text(meta.get("center_key")),
             "center_name": _text(meta.get("center_name")),
             "center_sequence": _int_or(meta.get("center_sequence"), 10),
+            "source_db": _text(meta.get("source_db")),
         }
         existing = assignments.setdefault(key, [])
         if location != "scenario":
@@ -173,6 +174,11 @@ def build_menu_assignments(
                     center_key=binding.get("center_key"),
                     center_name=binding.get("center_name"),
                     center_sequence=binding.get("center_sequence"),
+                    source_db=_first_declared(
+                        binding.get("source_db"),
+                        scenario.get("source_db"),
+                        default="",
+                    ),
                 )
             continue
         for intent, menus in (scenario.get("intents") or {}).items():
@@ -633,6 +639,7 @@ def load_maintained_runtime_surface(env):
         raise ValueError("scenario runtime requires an Odoo environment")
     scenarios = env["sc.product.scenario"].sudo().with_context(active_test=False).search([])
     menu_xmlids = _menu_external_ids(scenarios.mapped("entry_ids.menu_id"))
+    source_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
     rows = []
     for scenario in scenarios:
         intents = {}
@@ -651,6 +658,7 @@ def load_maintained_runtime_surface(env):
                 "center_key": getattr(entry, "center_key", ""),
                 "center_name": getattr(entry, "center_name", ""),
                 "center_sequence": getattr(entry, "center_sequence", 10),
+                "source_db": source_db,
             })
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
@@ -658,6 +666,7 @@ def load_maintained_runtime_surface(env):
     return {
         "schema": SCHEMA,
         "scenarios": rows,
+        "source_db": source_db,
         "runtime_scope": "maintained_draft",
     }
 
@@ -811,12 +820,18 @@ def _scenario_entries_by_menu(
     result: dict[int, list[dict[str, Any]]] = {}
     for menu_key, location in index.items():
         menu_id = _int_or(location.get("menu_id"), 0)
-        if menu_id <= 0 and env is not None and "." in _text(menu_key):
+        if env is not None and "." in _text(menu_key):
             try:
                 menu = env.ref(menu_key, raise_if_not_found=False)
             except Exception:
                 menu = None
-            menu_id = int(getattr(menu, "id", 0) or 0)
+            if menu:
+                menu_id = int(getattr(menu, "id", 0) or 0)
+        elif _text(menu_key).startswith("menu:"):
+            source_db = _text(location.get("source_db") or surface.get("source_db"))
+            execution_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
+            if not source_db or source_db != execution_db:
+                continue
         if menu_id <= 0:
             continue
         for row in _scenario_locations(location):
@@ -1072,6 +1087,35 @@ def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     return by_pair, sorted(ambiguous)
 
 
+def _apply_scene_target_projection(
+    leaf: dict[str, Any],
+    scene_targets: dict[tuple[int, int], str],
+) -> None:
+    pair = (
+        int(leaf.get("menu_id") or 0),
+        int(leaf.get("action_id") or 0),
+    )
+    scene_key = scene_targets.get(pair)
+    if not scene_key:
+        return
+    leaf["scene_key"] = scene_key
+    leaf["entry_target"] = {
+        "type": "scene",
+        "scene_key": scene_key,
+        "compatibility_refs": {
+            key: value
+            for key, value in {
+                "menu_id": pair[0],
+                "action_id": pair[1],
+                "model": leaf.get("model"),
+                "view_modes": leaf.get("view_modes"),
+            }.items()
+            if value not in (None, "", [])
+        },
+    }
+    leaf["route"] = ""
+
+
 def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, Any]]:
     """Project scenario centers into the final canonical navigation contract."""
     try:
@@ -1171,26 +1215,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         }
     scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
     for leaf in leaves:
-        pair = (int(leaf.get("menu_id") or 0), int(leaf.get("action_id") or 0))
-        scene_key = scene_targets.get(pair)
-        if not scene_key:
-            continue
-        leaf["scene_key"] = scene_key
-        leaf["entry_target"] = {
-            "type": "scene",
-            "scene_key": scene_key,
-            "compatibility_refs": {
-                key: value
-                for key, value in {
-                    "menu_id": pair[0],
-                    "action_id": pair[1],
-                    "model": leaf.get("model"),
-                    "view_modes": leaf.get("view_modes"),
-                }.items()
-                if value not in (None, "", [])
-            },
-        }
-        leaf["route"] = ""
+        _apply_scene_target_projection(leaf, scene_targets)
     published_surface = (
         route_authority.get("business_scene_composition")
         if isinstance(route_authority, dict)
@@ -1245,7 +1270,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             menu_xmlid = _text(row.get("menu_xmlid") or row.get("menu_key"))
             if not menu_xmlid:
                 menu_xmlid = f"menu:{pair[0]}"
-            leaves.append({
+            leaf = {
                 **row,
                 "menu_id": pair[0],
                 "action_id": pair[1],
@@ -1254,7 +1279,9 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
                 "route": _text(row.get("route")) or f"/a/{pair[1]}?menu_id={pair[0]}",
                 "sequence": _int_or(binding.get("sequence"), 1000),
                 "children": [],
-            })
+            }
+            _apply_scene_target_projection(leaf, scene_targets)
+            leaves.append(leaf)
             represented_pairs.add(pair)
     composition = (
         route_authority.get("scenario_composition")

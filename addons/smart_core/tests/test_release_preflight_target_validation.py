@@ -113,6 +113,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
     def test_freeze_surface_carries_published_scene_composition(self):
         composition = {
             "schema": "construction.scenario_product_surface.v1",
+            "source_db": "product_db",
             "scenarios": [{
                 "key": "project",
                 "name": "Project",
@@ -153,6 +154,8 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             ),
         )
         class Env:
+            cr = SimpleNamespace(dbname="product_db")
+
             def __getitem__(self, model_name):
                 if model_name == "ir.ui.menu":
                     return menu_model
@@ -211,13 +214,14 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
     def test_freeze_accepts_valid_scene_composition_without_legacy_pages(self):
         composition = {
             "schema": "construction.scenario_product_surface.v1",
+            "source_db": "product_db",
             "scenarios": [{
                 "key": "project",
                 "name": "Project",
                 "active": True,
                 "sequence": 0,
                 "bindings": [{
-                    "menu_key": "project.menu",
+                    "menu_key": "menu:7",
                     "menu_id": 7,
                     "intent": "view",
                     "sequence": 0,
@@ -265,10 +269,38 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 self.created.append(record)
                 return record
 
-        service = TARGET.EditionReleaseSnapshotService(env={})
+        action = SimpleNamespace(res_model="project.project")
+        menu = SimpleNamespace(
+            id=7,
+            _name="ir.ui.menu",
+            action=action,
+            get_external_id=lambda: {},
+        )
+        menu_model = SimpleNamespace(
+            sudo=lambda: menu_model,
+            browse=lambda menu_id: SimpleNamespace(
+                exists=lambda: menu if menu_id == 7 else [],
+            ),
+        )
+
+        class Env:
+            cr = SimpleNamespace(dbname="product_db")
+
+            def __getitem__(self, model_name):
+                if model_name == "ir.ui.menu":
+                    return menu_model
+                raise KeyError(model_name)
+
+            def ref(self, *args, **kwargs):
+                return None
+
+        service = TARGET.EditionReleaseSnapshotService(env=Env())
         model = SnapshotModel()
         service._model = lambda: model
-        service._model_registered = lambda model_name: False
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "project.project",
+        }
         service.now = lambda: "2026-11-20 00:00:00"
         service.policy_service.resolve_policy_identity = lambda **kwargs: (
             "construction.standard",
@@ -318,6 +350,35 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             composition,
         )
         self.assertEqual(frozen_policy["menu_groups"], [])
+
+    def test_numeric_scene_reference_rejects_cross_database_source(self):
+        class Env:
+            cr = SimpleNamespace(dbname="execution_db")
+
+            def __getitem__(self, model_name):
+                raise KeyError(model_name)
+
+        service = TARGET.EditionReleaseSnapshotService(env=Env())
+        service._model_registered = lambda model_name: model_name == "ir.ui.menu"
+
+        check = service._business_scene_composition_check({
+            "business_scene_composition": {
+                "schema": "construction.scenario_product_surface.v1",
+                "source_db": "catalog_db",
+                "scenarios": [{
+                    "key": "project",
+                    "active": True,
+                    "bindings": [{
+                        "menu_key": "menu:21",
+                        "menu_id": 21,
+                        "source_db": "catalog_db",
+                    }],
+                }],
+            },
+        })
+
+        self.assertTrue(check["blocking"])
+        self.assertEqual(check["issues"][0]["code"], "BUSINESS_SCENE_MENU_UNRESOLVED")
 
     def test_action_menu_with_fake_scene_key_blocks_release(self):
         service = TARGET.EditionReleaseSnapshotService(env={})

@@ -427,6 +427,9 @@ class EditionReleaseSnapshotService:
                         menu = self._resolve_business_scene_menu(
                             menu_key=menu_xmlid,
                             binding=binding,
+                            composition_source_db=_text(
+                                composition.get("source_db")
+                            ),
                         )
                     except Exception:
                         menu = None
@@ -471,10 +474,19 @@ class EditionReleaseSnapshotService:
         *,
         menu_key: str,
         binding: dict[str, Any],
+        composition_source_db: str = "",
     ):
         """Resolve a stable XMLID or same-database ``menu:<id>`` reference."""
         reference = _text(menu_key)
+        execution_db = _text(
+            getattr(getattr(self.env, "cr", None), "dbname", "")
+        )
+        source_db = _text(
+            binding.get("source_db") or composition_source_db
+        )
         if reference.startswith("menu:"):
+            if not execution_db or not source_db or source_db != execution_db:
+                return None
             try:
                 menu_id = int(reference.split(":", 1)[1])
             except (TypeError, ValueError):
@@ -491,7 +503,12 @@ class EditionReleaseSnapshotService:
             return menu
         menu = self.env.ref(reference, raise_if_not_found=False)
         declared_id = _to_int(binding.get("menu_id"))
-        if declared_id and int(getattr(menu, "id", 0) or 0) != declared_id:
+        if (
+            declared_id
+            and execution_db
+            and (not source_db or source_db == execution_db)
+            and int(getattr(menu, "id", 0) or 0) != declared_id
+        ):
             return None
         return menu
 
