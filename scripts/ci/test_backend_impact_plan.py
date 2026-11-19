@@ -376,7 +376,10 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
     def test_required_check_depends_on_runtime_and_rejects_failure(self):
         text = (planner.ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
         job = text.split('  professional_quality_gate:\n', 1)[1]
-        self.assertIn('needs: [professional_authorization, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]', job)
+        self.assertIn(
+            'needs: [professional_authorization, contract_checks, backend_impact_suite, professional_quality_checks, python310_runtime_compatibility]',
+            job,
+        )
         self.assertIn('always() &&', job)
         condition = job.split('runs-on:', 1)[0]
         self.assertNotIn("needs.professional_authorization.result == 'success'", condition)
@@ -384,6 +387,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         self.assertIn('test "${IMPACT_REQUIRED}" = true || test "${IMPACT_REQUIRED}" = false', job)
         self.assertIn('test "${IMPACT_RESULT}" = success', job)
         self.assertIn('test "${IMPACT_RESULT}" = skipped', job)
+        self.assertIn('Enforce contract-only execution', job)
         suite = (planner.ROOT / '.github/workflows/backend_test_suite.yml').read_text()
         self.assertIn('workflow_call:', suite)
         self.assertIn('--base "${IMPACT_BASE}"', suite)

@@ -3140,7 +3140,7 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        "make/codex.mk"
+        "make/ci.mk"
       ]
     },
     {

@@ -331,6 +331,37 @@ class CIRiskClassifierTests(unittest.TestCase):
     def test_path_escape_fails_closed(self) -> None:
         self.assertEqual(self.lane("../security.xml"), "HIGH_RISK")
 
+    def test_owner_contract_scope_disables_orm_only_for_exact_scope(self) -> None:
+        base = "f0df3409eca16f0852764aca4632307b026873a4"
+        branch = "feature/scene-close-02-published-scenario-composition-20261120"
+        result = classify(
+            ["config/ci/contract_only_scopes.json"],
+            event_name="pull_request",
+            head_ref=branch,
+            base=base,
+            head="b" * 40,
+        )
+        self.assertEqual(
+            result.contract_only_scope,
+            "SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120",
+        )
+        self.assertFalse(result.orm_required)
+        self.assertFalse(result.managed_orm_required)
+        self.assertIn(
+            "verify.navigation.publication_consumers.unit",
+            result.contract_only_targets,
+        )
+
+        outside = classify(
+            ["addons/smart_core/delivery/not-declared.py"],
+            event_name="pull_request",
+            head_ref=branch,
+            base=base,
+            head="b" * 40,
+        )
+        self.assertEqual(outside.contract_only_scope, "")
+        self.assertTrue(outside.managed_orm_required)
+
 
 class BackendRecipeScopeTests(unittest.TestCase):
     before = ('SHARED := unchanged\n'

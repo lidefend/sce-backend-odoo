@@ -811,8 +811,16 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         self.assertEqual(jobs['professional_quality_checks']['needs'], 'professional_authorization')
         self.assertEqual(jobs['backend_impact_suite']['needs'], 'professional_authorization')
         self.assertEqual(set(jobs['professional_quality_gate']['needs']), {
-            'professional_authorization', 'backend_impact_suite',
+            'professional_authorization', 'contract_checks', 'backend_impact_suite',
             'professional_quality_checks', 'python310_runtime_compatibility'})
+        self.assertEqual(
+            jobs['contract_checks']['needs'],
+            'professional_authorization',
+        )
+        self.assertIn(
+            "needs.professional_authorization.outputs.contract_only_scope != ''",
+            jobs['contract_checks']['if'],
+        )
         self.assertEqual(sum(job.get('name') == 'professional_quality_gate' for job in jobs.values()), 1)
         self.assertIn('!cancelled()', jobs['professional_quality_checks']['if'])
         self.assertIn("needs.professional_authorization.result == 'success'", jobs['professional_quality_checks']['if'])

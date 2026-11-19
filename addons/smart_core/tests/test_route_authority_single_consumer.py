@@ -339,16 +339,10 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
             self.assertNotIn(removed, body)
 
     # ------------------------------------------------------------------ #
-    # the shared authority owns release enforcement and publication
+    # the shared authority keeps native execution independent from product pages
     # ------------------------------------------------------------------ #
-    def test_the_shared_authority_enforces_release_and_publication(self):
-        """The one authority carries the release gate the consumers dropped.
-
-        The former inline derivation asked the product policy with
-        ``enforce_release``/``enforce_access`` and filtered the route authority
-        by publication.  That duty now lives only here, so it is locked here
-        rather than in each consumer.
-        """
+    def test_the_shared_authority_keeps_native_execution_unfiltered(self):
+        """Installed/SEC-qualified actions do not require a product page row."""
         source = (ROOT / "delivery" / "runtime_route_authority.py").read_text(encoding="utf-8")
         builder = source.split("def _build_runtime_route_authority", 1)[1]
         self.assertIn("EffectiveDeliveryService(env).resolve", builder)
@@ -357,8 +351,10 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         engine = (ROOT / "delivery" / "delivery_engine.py").read_text(encoding="utf-8")
         self.assertIn("enforce_release=True", engine)
         self.assertIn("enforce_access=True", engine)
-        self.assertIn("filter_route_authority_by_publication", shared)
-        self.assertIn("fail_closed", shared)
+        self.assertNotIn("filter_route_authority_by_publication", shared)
+        self.assertNotIn("_filter_nav_by_release_gate", shared)
+        self.assertIn("_native_execution_surface", shared)
+        self.assertIn("platform_release_gate", shared)
         self.assertNotIn("load_capabilities", shared)
         published = source.split("def published_route_authority", 1)[1].split(
             "def build_runtime_route_authority", 1

@@ -255,6 +255,13 @@ RULES = (
         "verify.ci.workflow.contract",
     )),
     Rule((
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py",
+        "config/ci/contract_only_scopes.json",
+    ), (
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
         "scripts/ci/frontend_",
         "scripts/ci/test_frontend_",
     ), (

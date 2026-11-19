@@ -10,6 +10,9 @@
     ".agent/active-runs.json",
     ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
     ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/professional_quality_gate.yml",
     "addons/smart_core/delivery/delivery_engine.py",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/delivery/effective_delivery_service.py",
@@ -19,6 +22,7 @@
     "addons/smart_core/models/release_management.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
     "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_core/tests/test_route_authority_single_consumer.py",
     "addons/smart_construction_core/core_extension.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "addons/smart_construction_scene/core_extension.py",
@@ -26,7 +30,17 @@
     "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
     "addons/smart_construction_scene/services/tenant_scene_activation.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
-    "docs/ops/iterations/scene_close_02_published_scenario_composition_20261120.md"
+    "docs/ops/iterations/scene_close_02_published_scenario_composition_20261120.md",
+    "config/ci/contract_only_scopes.json",
+    "docs/ops/iterations/ci_contract_only_scope_20261120.md",
+    "make/ci.mk",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/contract_only_scope.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_contract_only_scope.py",
+    "scripts/verify/frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "offline",
@@ -216,6 +230,24 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_contract_only_scope.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "validation_results": {
@@ -224,14 +256,20 @@
     "passed": [
       "make verify.ci.workflow.contract: passed; contract-only risk scope disables managed ORM only for exact branch/base/path match",
       "make verify.navigation.publication_consumers.unit: passed; tenant activation 94, center projection 9, scenario surface 24, capability authority 40 and adjacent suites non-zero",
-      "make verify.daily.published_face.target.unit: 6 tests",
+      "make verify.daily.published_face.target.unit: 7 tests",
       "make verify.admin_close_01.backend.unit: aggregate passed, including tenant activation 94 tests",
       "make verify.frontend.workspace_scenario_lifecycle.unit: passed; lifecycle 11 cases plus existing frontend scenario suites",
       "make verify.backend.navigation_delivery.unit: passed",
       "make verify.runtime_capability_catalog.unit: 27 tests",
       "make verify.product_center.policy.unit: 15 tests",
       "make verify.scene.fact_data.boundary.unit: 1 test",
-      "make ci.local.iteration: exit 0; 11 affected non-ORM targets passed"
+      "make ci.local.iteration: exit 0; latest receipt status=passed across 16 affected targets"
+    ],
+    "p4_passed": [
+      "make verify.ci.workflow.contract: passed",
+      "explicit risk classifier probe: contract-only scope matched exact branch/base/path set; orm_required=false and managed_orm_required=false",
+      "make verify.frontend.dev.incremental.unit: 186 tests passed",
+      "make verify.product.entry_publication.unit: 15 tests passed"
     ],
     "review_remediation": [
       "native execution authority no longer consumes product page publication as an allowlist",
@@ -239,7 +277,8 @@
       "freeze preflight accepts a valid active business-scene composition with empty legacy menu_groups and validates referenced native entries before release",
       "no active release snapshot yields an explicit empty published composition at runtime; maintained draft is reserved for editing/freezing",
       "old company enablement keys cannot activate an unpublished maintained scenario",
-      "contract-only risk scope matches exact branch/base/path set and fails closed on wildcard or outside paths"
+      "contract-only risk scope matches exact branch/base/path set and fails closed on wildcard or outside paths",
+      "remote planner registers exact pure targets through contract_only_checks while backend impact and managed ORM selection are skipped"
     ],
     "interrupted_not_passed": [
       "Two early ci.local.iteration attempts were interrupted after path analysis selected ORM targets outside the declared contract-only boundary; neither interrupted run is counted as a pass"
@@ -260,5 +299,5 @@
     "L4": "Not applicable by owner continuation: no browser matrix or environment rebuild",
     "L5": "Exact-head owner review and required remote checks at publication"
   },
-  "next_exact_step": "Commit the product contract fix, then commit the P4 contract-only remote planner change and republish PR #945"
+  "next_exact_step": "Commit the P4 contract-only remote planner change and publish the amended PR #945 exact head"
 }
