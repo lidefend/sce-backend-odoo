@@ -13,6 +13,7 @@
     ".github/workflows/frontend_release_gate.yml",
     ".github/workflows/merge_policy_gate.yml",
     ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/public_guard.yml",
     "addons/smart_core/delivery/delivery_engine.py",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/delivery/effective_delivery_service.py",
@@ -238,6 +239,7 @@
         ".github/workflows/frontend_release_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
         "config/ci/contract_only_scopes.json",
         "make/ci.mk",
         "scripts/ci/ci_risk_classifier.py",
@@ -267,19 +269,24 @@
       "make ci.local.iteration: exit 0; latest receipt status=passed across 16 affected targets"
     ],
     "p4_passed": [
-      "make verify.ci.workflow.contract: passed",
+      "make verify.ci.workflow.contract: passed; workflow contract 29 tests",
       "explicit risk classifier probe: contract-only scope matched exact branch/base/path set; orm_required=false and managed_orm_required=false",
       "make verify.frontend.dev.incremental.unit: 186 tests passed",
-      "make verify.product.entry_publication.unit: 19 tests passed"
+      "make verify.product.entry_publication.unit: 21 tests passed",
+      "make ci.local.iteration: passed; latest receipt status=passed across 16 affected targets"
     ],
     "review_remediation": [
       "native execution authority no longer consumes product page publication as an allowlist",
+      "native execution authority is built before product-nav intersection, with released target metadata merged afterward",
       "route.authority.validate receives installed/SEC-qualified native authority without PRODUCT_ENTRY_NOT_RELEASED from product page absence",
       "freeze preflight accepts a valid active business-scene composition with empty legacy menu_groups and validates referenced native entries before release",
       "no active release snapshot yields an explicit empty published composition at runtime; maintained draft is reserved for editing/freezing",
       "old company enablement keys cannot activate an unpublished maintained scenario",
       "contract-only risk scope matches exact branch/base/path set and fails closed on wildcard or outside paths",
       "remote planner registers exact pure targets through contract_only_checks while backend impact and managed ORM selection are skipped"
+      ,
+      "all risk-classifier invocations receive the exact PR head branch",
+      "contract-only scope preserves the owning control-plane tool checks instead of dropping backend planner output"
     ],
     "interrupted_not_passed": [
       "Two early ci.local.iteration attempts were interrupted after path analysis selected ORM targets outside the declared contract-only boundary; neither interrupted run is counted as a pass"

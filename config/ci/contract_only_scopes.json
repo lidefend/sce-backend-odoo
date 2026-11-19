@@ -13,6 +13,7 @@
         ".github/workflows/frontend_release_gate.yml",
         ".github/workflows/merge_policy_gate.yml",
         ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
         "addons/smart_construction_core/core_extension.py",
         "addons/smart_construction_core/services/scenario_surface_projection.py",
         "addons/smart_construction_scene/core_extension.py",

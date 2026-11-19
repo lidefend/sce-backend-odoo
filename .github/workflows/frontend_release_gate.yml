@@ -389,6 +389,7 @@ jobs:
             --base "${BASE_SHA}" \
             --head "${CHECKOUT_SHA}" \
             --event "${GITHUB_EVENT_NAME}" \
+            --head-ref "${{ github.event.pull_request.head.ref || '' }}" \
             --ref "${GITHUB_REF}" \
             --github-output "${GITHUB_OUTPUT}"
 

@@ -806,6 +806,25 @@ class ParallelQualityExecutionTest(unittest.TestCase):
     def jobs(self):
         return yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())['jobs']
 
+    def test_every_risk_classifier_invocation_receives_the_pr_head_ref(self):
+        for path in sorted((ROOT / ".github/workflows").glob("*.yml")):
+            text = path.read_text(encoding="utf-8")
+            marker = "python3 scripts/ci/ci_risk_classifier.py"
+            offset = 0
+            invocations = 0
+            while True:
+                index = text.find(marker, offset)
+                if index < 0:
+                    break
+                invocations += 1
+                body = text[index:index + 700]
+                self.assertIn(
+                    '--head-ref "${{ github.event.pull_request.head.ref || \'\' }}"',
+                    body,
+                    f"{path.name} classifier invocation {invocations}",
+                )
+                offset = index + len(marker)
+
     def test_independent_work_is_parallel_and_protected_name_is_unique(self):
         jobs = self.jobs()
         self.assertEqual(jobs['professional_quality_checks']['needs'], 'professional_authorization')
