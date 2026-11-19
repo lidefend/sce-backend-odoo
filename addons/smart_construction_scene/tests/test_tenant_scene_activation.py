@@ -58,11 +58,27 @@ navigation_identity = _load(
     "odoo.addons.smart_core.core.navigation_identity",
     SCENE_DIR.parent / "smart_core/core/navigation_identity.py",
 )
+smart_core_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_core",
+    types.ModuleType("odoo.addons.smart_core"),
+)
+smart_core_pkg.__path__ = []
+delivery_pkg = sys.modules.setdefault(
+    "odoo.addons.smart_core.delivery",
+    types.ModuleType("odoo.addons.smart_core.delivery"),
+)
+delivery_pkg.__path__ = []
+product_center_policy = _load(
+    "odoo.addons.smart_core.delivery.product_center_policy",
+    SCENE_DIR.parent / "smart_core/delivery/product_center_policy.py",
+)
 
 scenario_surface = _load(
     "odoo.addons.smart_construction_core.services.scenario_surface_projection",
     SCENE_DIR.parent / "smart_construction_core/services/scenario_surface_projection.py",
 )
+smart_core_pkg.__path__ = [str(SCENE_DIR.parent / "smart_core")]
+delivery_pkg.__path__ = [str(SCENE_DIR.parent / "smart_core/delivery")]
 
 
 route_authority = _load(

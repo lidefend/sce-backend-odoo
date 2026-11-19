@@ -38,6 +38,17 @@ def _int(value: Any, default: int) -> int:
         return default
 
 
+def _declared_int(source: dict[str, Any], keys: tuple[str, ...], default: int) -> int:
+    for key in keys:
+        if key not in source:
+            continue
+        value = source.get(key)
+        if value in (None, ""):
+            continue
+        return _int(value, default)
+    return default
+
+
 def stable_center_key(value: str) -> str:
     key = _text(value)
     if key.startswith("construction.") and not key.startswith("construction.center."):
@@ -62,8 +73,9 @@ def _resolved_center(
             "stable_key": candidate,
             "key": candidate,
             "name": label or candidate,
-            "sequence": _int(
-                group.get("sequence") or group.get("center_sequence"),
+            "sequence": _declared_int(
+                group,
+                ("sequence", "center_sequence"),
                 (index + 1) * 10,
             ),
         }
@@ -86,8 +98,9 @@ def _resolved_center(
         "stable_key": candidate,
         "key": candidate,
         "name": label or candidate,
-        "sequence": _int(
-            group.get("sequence") or group.get("center_sequence"),
+        "sequence": _declared_int(
+            group,
+            ("sequence", "center_sequence"),
             (index + 1) * 10,
         ),
         "extension_center": True,
@@ -156,8 +169,9 @@ def normalize_product_policy(
             or raw_group.get("title")
             or center.get("name")
         ) or key
-        sequence = _int(
-            raw_group.get("sequence") or raw_group.get("center_sequence"),
+        sequence = _declared_int(
+            raw_group,
+            ("sequence", "center_sequence"),
             _int(center.get("sequence"), (index + 1) * 10),
         )
         existing = resolved_groups.get(key)

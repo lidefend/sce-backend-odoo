@@ -35,6 +35,19 @@ PMS = _load_module(
     "smart_construction_core.services.product_menu_source",
     ROOT / "addons/smart_construction_core/services/product_menu_source.py",
 )
+for package_name in (
+    "odoo",
+    "odoo.addons",
+    "odoo.addons.smart_core",
+    "odoo.addons.smart_core.delivery",
+):
+    package = sys.modules.get(package_name) or types.ModuleType(package_name)
+    package.__path__ = []
+    sys.modules[package_name] = package
+PRODUCT_CENTER_POLICY = _load_module(
+    "odoo.addons.smart_core.delivery.product_center_policy",
+    ROOT / "addons/smart_core/delivery/product_center_policy.py",
+)
 NAV_IDENTITY = _load_module(
     "odoo.addons.smart_core.core.navigation_identity",
     ROOT / "addons/smart_core/core/navigation_identity.py",

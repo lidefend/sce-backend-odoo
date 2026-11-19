@@ -220,8 +220,8 @@
               <ScInput
                 v-model="centerLabelDraft"
                 type="text"
-                :maxlength="80"
-                :disabled="!selectedCenterKey"
+                :maxlength="centerLabelMaxLength"
+                :disabled="!selectedCenterKey || !centerLabelEditable"
                 aria-label="产品中心名称"
               />
             </ScFormItem>
@@ -229,9 +229,9 @@
               <ScInput
                 v-model="centerSequenceDraft"
                 type="number"
-                min="0"
-                max="9999"
-                :disabled="!selectedCenterKey"
+                :min="centerSequenceMinimum"
+                :max="centerSequenceMaximum"
+                :disabled="!selectedCenterKey || !centerSequenceEditable"
                 aria-label="产品中心显示顺序"
               />
             </ScFormItem>
@@ -385,6 +385,7 @@ import { useNarrowViewport } from '../composables/useNarrowViewport';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
+import { contractGapError } from '../app/contract/contractGap';
 import {
   decodeReleaseOperatorSurface,
   type OperatorAction,
@@ -573,6 +574,20 @@ const selectedCenterEntries = computed(() => (
     (entry) => entry.center_key === selectedCenterKey.value,
   )
 ));
+const centerField = (key: string) => (
+  productCenterEditor.value?.editable_fields.find((field) => field.key === key) || null
+);
+const centerLabelField = computed(() => centerField('label'));
+const centerSequenceField = computed(() => centerField('sequence'));
+const centerLabelEditable = computed(() => Boolean(
+  selectedCenter.value?.editable_fields.includes('label'),
+));
+const centerSequenceEditable = computed(() => Boolean(
+  selectedCenter.value?.editable_fields.includes('sequence'),
+));
+const centerLabelMaxLength = computed(() => centerLabelField.value?.max_length || 1);
+const centerSequenceMinimum = computed(() => centerSequenceField.value?.minimum ?? 0);
+const centerSequenceMaximum = computed(() => centerSequenceField.value?.maximum ?? 0);
 const changedCenterPlacements = computed(() => (
   (productCenterEditor.value?.entries || []).filter(
     (entry) => (entryPlacementDraft.value[entry.menu_xmlid] || entry.center_key) !== entry.center_key,
@@ -586,14 +601,16 @@ const centerDraftChanged = computed(() => {
 });
 const centerDraftValid = computed(() => {
   const sequence = Number(centerSequenceDraft.value);
-  return Boolean(centerLabelDraft.value.trim())
+  const label = centerLabelDraft.value.trim();
+  return (!centerLabelField.value?.required || Boolean(label))
+    && label.length <= centerLabelMaxLength.value
     && Number.isInteger(sequence)
-    && sequence >= 0
-    && sequence <= 9999;
+    && sequence >= centerSequenceMinimum.value
+    && sequence <= centerSequenceMaximum.value;
 });
 const centerSaveDisabled = computed(() => (
   busyKey.value === 'update_policy'
-  || !updatePolicyAction.value.enabled
+  || !productCenterEditor.value?.save_action.enabled
   || !selectedCenter.value
   || !centerDraftValid.value
   || (!centerDraftChanged.value && !changedCenterPlacements.value.length)
@@ -601,8 +618,12 @@ const centerSaveDisabled = computed(() => (
 const centerSaveReason = computed(() => {
   if (!productCenterEditor.value) return '产品中心契约缺失';
   if (!selectedCenter.value) return '请选择中心';
-  if (!centerDraftValid.value) return '中心名称不能为空，显示顺序必须是 0–9999 的整数';
-  if (!updatePolicyAction.value.enabled) return updatePolicyAction.value.reason_code || '保存动作不可用';
+  if (!centerDraftValid.value) {
+    return `中心名称必须为 1–${centerLabelMaxLength.value} 个字符，显示顺序必须在 ${centerSequenceMinimum.value}–${centerSequenceMaximum.value} 之间`;
+  }
+  if (!productCenterEditor.value.save_action.enabled) {
+    return productCenterEditor.value.save_action.reason_code || '保存动作不可用';
+  }
   if (!centerDraftChanged.value && !changedCenterPlacements.value.length) return '没有待保存的中心修改';
   return '';
 });
@@ -1181,6 +1202,127 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
   }
 }
 
+function centerWriteRecord(value: unknown, path: string): AnyRecord {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: path,
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, `产品中心保存回读缺少 ${path}`);
+  }
+  return value as AnyRecord;
+}
+
+function centerWriteText(value: unknown, path: string): string {
+  const result = String(value || '').trim();
+  if (!result) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: path,
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, `产品中心保存回读缺少 ${path}`);
+  }
+  return result;
+}
+
+function assertCenterWriteReadback(
+  result: AnyRecord,
+  editor: ProductCenterEditor,
+  centerUpdates: AnyRecord[],
+  entryPlacements: AnyRecord[],
+) {
+  for (const field of editor.save_action.readback) {
+    if (!(field in result)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `product_center_write.${field}`,
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, `产品中心保存回读缺少 ${field}`);
+    }
+  }
+  const policy = centerWriteRecord(result.policy, 'product_center_write.policy');
+  const groups = Array.isArray(policy.menu_groups) ? policy.menu_groups : [];
+  for (const update of centerUpdates) {
+    const group = groups.find((row) => (
+      row && typeof row === 'object'
+      && String((row as AnyRecord).center_key || (row as AnyRecord).group_key || '') === String(update.center_key)
+    )) as AnyRecord | undefined;
+    if (!group
+      || String(group.group_label || group.label || '') !== String(update.label)
+      || Number(group.sequence) !== Number(update.sequence)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.policy.center_update',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存回读未包含本次中心修改');
+    }
+  }
+  for (const placement of entryPlacements) {
+    const group = groups.find((row) => (
+      row && typeof row === 'object'
+      && Array.isArray((row as AnyRecord).menus)
+      && ((row as AnyRecord).menus as unknown[]).some((menu) => (
+        menu && typeof menu === 'object'
+        && String((menu as AnyRecord).menu_xmlid || (menu as AnyRecord).menu_key || '') === String(placement.menu_xmlid)
+      ))
+    )) as AnyRecord | undefined;
+    if (!group
+      || String(group.center_key || group.group_key || '') !== String(placement.center_key)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.policy.entry_placement',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存回读未包含本次入口归属');
+    }
+  }
+  const readback = centerWriteRecord(result.readback, 'product_center_write.readback');
+  centerWriteText(readback.draft_policy_sha256, 'product_center_write.readback.draft_policy_sha256');
+  centerWriteText(readback.draft_fingerprint, 'product_center_write.readback.draft_fingerprint');
+  if (!Number.isInteger(Number(readback.published_snapshot_id))) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.published_snapshot_id',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读缺少发布快照身份');
+  }
+  if (typeof readback.published_version !== 'string') {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.published_version',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读缺少发布版本声明');
+  }
+}
+
+async function runCenterWrite(
+  editor: ProductCenterEditor,
+  params: AnyRecord,
+  centerUpdates: AnyRecord[],
+  entryPlacements: AnyRecord[],
+) {
+  busyKey.value = 'update_policy';
+  error.value = '';
+  try {
+    const result = await intentRequest<AnyRecord>({
+      intent: editor.save_action.intent,
+      params,
+    });
+    assertCenterWriteReadback(result, editor, centerUpdates, entryPlacements);
+    const decoded = decodeReleaseOperatorSurface(
+      result.surface as AnyRecord,
+    ) as unknown as ReleaseOperatorSurface;
+    surface.value = decoded;
+    hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
+    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '产品中心保存失败';
+  } finally {
+    busyKey.value = '';
+  }
+}
+
 async function promote(snapshot: SnapshotRow) {
   const action = promoteActionFor(snapshot);
   if (!action || !action.enabled) return;
@@ -1238,15 +1380,16 @@ function saveProductCenterDraft() {
     menu_xmlid: entry.menu_xmlid,
     center_key: entryPlacementDraft.value[entry.menu_xmlid],
   }));
-  void runWrite(
-    String(editor.save_action.intent || 'release.operator.update_policy'),
+  void runCenterWrite(
+    editor,
     {
-      ...((editor.save_action.params || {}) as AnyRecord),
-      product_key: selectedProduct.value,
+      ...editor.save_action.params,
+      product_key: editor.product_key,
       center_updates: centerUpdates,
       entry_placements: entryPlacements,
     },
-    'update_policy',
+    centerUpdates,
+    entryPlacements,
   );
 }
 

@@ -181,6 +181,29 @@ def native_selection_assessment(
     return not blockers, blockers
 
 
+def catalog_admission_assessment(
+    *,
+    native_valid: bool,
+    native_blockers: list[str],
+    action_type: Any,
+) -> dict[str, Any]:
+    blockers = list(native_blockers)
+    if _text(action_type) != "ir.actions.act_window":
+        blockers.append("CATALOG_ENTRY_ACTION_TYPE_UNSUPPORTED")
+    blockers = list(dict.fromkeys(blockers))
+    return {
+        "enabled": bool(native_valid and not blockers),
+        "reason_code": (
+            "CATALOG_ENTRY_ADMISSIBLE"
+            if native_valid and not blockers
+            else blockers[0]
+            if blockers
+            else "CATALOG_ENTRY_NOT_ADMISSIBLE"
+        ),
+        "blockers": blockers,
+    }
+
+
 def access_layer_assessment(
     *,
     native_present: bool,
@@ -1569,6 +1592,11 @@ class PlatformCapabilityExplorerService:
         if not scene_authority_available:
             scene_assignable_blockers.append("SCENE_AUTHORITY_UNAVAILABLE")
         scene_assignable = not scene_assignable_blockers
+        catalog_admission = catalog_admission_assessment(
+            native_valid=native_valid,
+            native_blockers=native_blockers,
+            action_type=native_row.get("action_model"),
+        )
         release_state = _text(
             _dict(contributions.get("release_states")).get(menu_xmlid)
         ) or "unknown"
@@ -1771,6 +1799,7 @@ class PlatformCapabilityExplorerService:
                 "selectable": native_valid,
                 "blockers": native_blockers,
             },
+            "catalog_admission": catalog_admission,
             "product_qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,

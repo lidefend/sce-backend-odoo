@@ -124,6 +124,58 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
         self.assertFalse(capability["business_capability"])
         self.assertNotIn("default_payload", capability)
 
+    def test_admission_updates_only_the_selected_entry(self):
+        admission = _load_real_module(
+            "smart_construction_core.services.product_capability_admission",
+            "addons/smart_construction_core/services/product_capability_admission.py",
+        )
+        existing = [
+            {
+                "menu_xmlid": "workspace.home",
+                "capability_key": "workspace.home",
+                "provider_authority": "scene_entry_target",
+                "capability_maturity": "RELEASED_FOUNDATION",
+                "entry_intent_label": "首页",
+                "product_domain_label": "工作台",
+                "group_key": "workspace.home.workbench",
+                "release_state": "released",
+            },
+            {
+                "menu_xmlid": "other.menu",
+                "capability_key": "construction.menu.other_menu",
+                "provider_authority": "scene_entry_target",
+                "capability_maturity": "RELEASED_FOUNDATION",
+                "group_key": "construction.center.project",
+                "release_state": "released",
+            },
+        ]
+        merged = admission.merge_admission_capability(
+            existing,
+            {
+                "menu_xmlid": "other.menu",
+                "capability_key": "construction.menu.other_menu",
+                "provider_authority": "native_menu_action_entry",
+                "group_key": "construction.center.contract",
+                "group_label": "合同中心",
+                "group_sequence": 30,
+                "enabled": True,
+                "release_state": "preview",
+                "access_level": "public",
+            },
+            menu_xmlid="other.menu",
+        )
+        self.assertEqual(merged[0], existing[0])
+        self.assertEqual(
+            merged[1]["provider_authority"],
+            "scene_entry_target",
+        )
+        self.assertEqual(
+            merged[1]["capability_maturity"],
+            "RELEASED_FOUNDATION",
+        )
+        self.assertEqual(merged[1]["group_key"], "construction.center.contract")
+        self.assertEqual(merged[1]["release_state"], "preview")
+
     def test_business_registry_and_delivery_projection_declare_identity(self):
         _tokens(
             "addons/smart_construction_core/services/capability_registry.py",

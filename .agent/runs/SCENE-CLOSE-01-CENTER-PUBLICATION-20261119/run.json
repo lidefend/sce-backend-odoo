@@ -26,9 +26,11 @@
     "addons/smart_construction_core/models/support/product_policy_sync.py",
     "addons/smart_construction_core/models/support/product_scenario.py",
     "addons/smart_construction_core/services/",
+    "addons/smart_construction_core/services/product_capability_admission.py",
     "addons/smart_construction_core/tests/",
     "addons/smart_construction_core/views/support/product_scenario_views.xml",
     "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "config/product_menu_contract_v1.json",
     "config/product_primary_center_baseline_v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
@@ -221,6 +223,17 @@
         "addons/smart_core/delivery/product_policy_service.py",
         "addons/smart_core/delivery/menu_service.py",
         "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_scene_fixture_unit": {
+      "target": "verify.daily_dev.acceptance_fixture.unit",
+      "inputs": [
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/dev/daily_dev_acceptance_fixture.sh",
+        "scripts/verify/test_daily_acceptance_fixture_lane.py",
+        "make/dev.mk"
       ],
       "kind": "offline"
     },
@@ -447,5 +460,21 @@
     "local_orm": "not_run_by_owner_direction",
     "remote_validation": "managed_orm must rerun on the new exact PR head"
   },
-  "next_exact_step": "Run contract/static checks, commit the acceptance-test evidence fix, push the same PR branch, and verify the new exact-head managed_orm result"
+  "review_remediation": {
+    "status": "implemented_pending_static_verification",
+    "closed_items": [
+      "admission capability merge is now entry-incremental and preserves unrelated/scene-owned fields",
+      "qualification evidence and summary use full product keys",
+      "generic published center keys remain authoritative in runtime projection",
+      "catalog admission readiness is declared per entry and excludes unsupported action types",
+      "zero center sequence survives update and renormalization",
+      "center editor decodes field constraints, save action, accepted fields and readback declarations",
+      "catalog admission write freezes its entry identity before await",
+      "rollback actions use the dedicated historical snapshot rollback service"
+    ],
+    "not_run": [
+      "ORM, module upgrade and browser checks remain excluded by owner direction"
+    ]
+  },
+  "next_exact_step": "Refresh generated design-system evidence, run the complete affected pure test set, commit the review remediation, push #943 and verify exact-head CI"
 }

@@ -19,6 +19,9 @@ from odoo.addons.smart_core.core.navigation_identity import (
     WORKBENCH_GROUP_KEY,
     WORKSPACE_SCENE_KEY as WORKSPACE_HOME_SCENE_KEY,
 )
+from odoo.addons.smart_core.delivery.product_center_policy import (
+    stable_center_key as stable_published_center_key,
+)
 from .product_menu_source import center_identity, stable_center_key
 
 
@@ -56,6 +59,13 @@ def _int_or(value: Any, default: int) -> int:
         return int(value)
     except (TypeError, ValueError):
         return default
+
+
+def _first_declared(*values: Any, default: Any = None) -> Any:
+    for value in values:
+        if value not in (None, ""):
+            return value
+    return default
 
 
 def _scenario_location_sort_key(location: dict[str, Any]):
@@ -445,14 +455,14 @@ def flatten_authorized_nav_leaves(
                 or parent_center_label
             )
             try:
-                center_sequence = int(
-                    node.get("policy_center_sequence")
-                    or node.get("center_sequence")
-                    or meta.get("policy_center_sequence")
-                    or meta.get("center_sequence")
-                    or parent_center_sequence
-                    or 0
-                )
+                center_sequence = int(_first_declared(
+                    node.get("policy_center_sequence"),
+                    node.get("center_sequence"),
+                    meta.get("policy_center_sequence"),
+                    meta.get("center_sequence"),
+                    parent_center_sequence,
+                    default=0,
+                ))
             except (TypeError, ValueError):
                 center_sequence = parent_center_sequence
             # The center is the delivery tree's direct child of the business
@@ -486,7 +496,11 @@ def flatten_authorized_nav_leaves(
                     "action_xmlid": _text(entry.get("action_xmlid")),
                     "model": _text(node.get("model") or meta.get("model") or entry.get("model")),
                     "view_modes": node.get("view_modes") or meta.get("view_modes") or entry.get("view_modes") or [],
-                    "sequence": int(node.get("sequence") or meta.get("sequence") or 1000),
+                    "sequence": int(_first_declared(
+                        node.get("sequence"),
+                        meta.get("sequence"),
+                        default=1000,
+                    )),
                     "route": route,
                     "label": label,
                     "delivery_bucket": _text(node.get("delivery_bucket") or meta.get("delivery_bucket")),
@@ -785,7 +799,11 @@ def composition_center_for_leaf(
     workspace_center: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Resolve center from published policy, then native fallback composition."""
-    policy_center_key = stable_center_key(_text(leaf.get("policy_center_key")))
+    raw_policy_center_key = _text(leaf.get("policy_center_key"))
+    policy_center_key = (
+        stable_published_center_key(raw_policy_center_key)
+        or stable_center_key(raw_policy_center_key)
+    )
     if policy_center_key:
         return {
             "key": policy_center_key,
@@ -1111,7 +1129,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             if binding and binding.get("scenario_active")
             else native_menu_sequences.get(
                 menu_id,
-                int(leaf.get("sequence") or 1000),
+                _int_or(leaf.get("sequence"), 1000),
             )
         )
         if binding and binding.get("scenario_active"):

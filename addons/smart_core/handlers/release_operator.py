@@ -202,11 +202,12 @@ class _ReleaseOperatorBaseHandler(BaseIntentHandler):
             snapshot_id = int(action.target_snapshot_id.id or 0)
             if snapshot_id <= 0:
                 raise ValueError("ROLLBACK_TARGET_NOT_FOUND")
-            result = promotion.promote_to_released(
-                snapshot_id,
-                replace_active=True,
-                state_reason="rollback_from_release_operator",
-                promotion_note=_text(note) or "rollback from release operator",
+            result = EditionReleaseSnapshotService(
+                self.env
+            ).rollback_to_snapshot(
+                product_key=_text(action.product_key),
+                target_snapshot_id=snapshot_id,
+                note=_text(note) or "rollback from release operator",
             )
         else:
             raise ValueError(f"UNSUPPORTED_RELEASE_ACTION_TYPE:{action_type}")

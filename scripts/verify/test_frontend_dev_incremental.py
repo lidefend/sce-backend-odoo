@@ -1219,6 +1219,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/verify/test_capability_identity_boundary.py",
             "addons/smart_core/delivery/capability_service.py",
+            "addons/smart_construction_core/services/product_capability_admission.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

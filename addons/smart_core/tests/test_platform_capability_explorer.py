@@ -506,6 +506,25 @@ class ProjectionContractTests(unittest.TestCase):
         self.assertEqual(denied["reason_code"], "ENTRY_GROUP_DENIED")
         self.assertIn("MODEL_READ_ACL_DENIED", denied["blockers"])
 
+    def test_catalog_admission_is_declared_per_entry(self):
+        window = MODULE.catalog_admission_assessment(
+            native_valid=True,
+            native_blockers=[],
+            action_type="ir.actions.act_window",
+        )
+        report = MODULE.catalog_admission_assessment(
+            native_valid=True,
+            native_blockers=[],
+            action_type="ir.actions.report",
+        )
+        self.assertTrue(window["enabled"])
+        self.assertEqual(window["reason_code"], "CATALOG_ENTRY_ADMISSIBLE")
+        self.assertFalse(report["enabled"])
+        self.assertEqual(
+            report["reason_code"],
+            "CATALOG_ENTRY_ACTION_TYPE_UNSUPPORTED",
+        )
+
     def test_native_group_layers_use_or_within_each_layer_and_both_layers_must_pass(self):
         menu_or = MODULE.access_layer_assessment(
             native_present=True,

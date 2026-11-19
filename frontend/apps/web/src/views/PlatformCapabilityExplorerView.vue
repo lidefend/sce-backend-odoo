@@ -73,13 +73,6 @@
         aria-label="目标产品"
         @update:model-value="changeProductScope"
       />
-      <ScSelect
-        v-if="catalogScopeMode === 'product'"
-        :model-value="selectedGroupKey"
-        :options="groupScopeOptions"
-        aria-label="产品中心或分组"
-        @update:model-value="changeGroupScope"
-      />
       <ScButton
         v-if="selectedProductKey"
         type="button"
@@ -458,6 +451,7 @@ import {
   capabilityEntryKey,
   centerSourcePresentation,
   factLayerPresentation,
+  isCatalogAdmissionOperationCurrent,
   isCatalogStaleError,
   qualificationPresentation,
   releaseStatePresentation,
@@ -487,7 +481,6 @@ const currentOffset = ref(0);
 const pageSize = ref(0);
 const catalogScopeMode = ref<'' | 'platform' | 'product'>('');
 const selectedProductKey = ref('');
-const selectedGroupKey = ref('');
 const addProductKey = ref('');
 const addGroupKey = ref('');
 const addReleaseState = ref('preview');
@@ -522,12 +515,6 @@ const productScopeOptions = computed(() => (
     label: `${product.label} · ${product.product_key}`,
   }))
 ));
-const groupScopeOptions = computed(() => (
-  (catalogScope.value?.groups || []).map((group) => ({
-    value: group.group_key,
-    label: `${group.label} · 顺序 ${group.sequence}`,
-  }))
-));
 const addProductOptions = computed(() => (
   (catalogScope.value?.products || []).map((product) => ({
     value: product.product_key,
@@ -551,6 +538,7 @@ const addReleaseStateOptions = computed(() => (
 const canAddToDraft = computed(() => Boolean(
   detail.value
   && detail.value.diagnostics.native_valid
+  && detail.value.catalog_admission.enabled
   && detail.value.native_facts.menu.id
   && addProductKey.value
   && addGroupKey.value
@@ -559,6 +547,9 @@ const canAddToDraft = computed(() => Boolean(
 ));
 const addDisabledReason = computed(() => {
   if (!detail.value?.diagnostics.native_valid) return '原生入口存在技术阻断';
+  if (!detail.value?.catalog_admission.enabled) {
+    return detail.value?.catalog_admission.reason_code || '当前入口类型不允许加入产品草案';
+  }
   if (!detail.value?.native_facts.menu.id) return '原生菜单身份未返回';
   if (!catalogScope.value?.management_actions.add_to_product_draft.enabled) {
     return catalogScope.value?.management_actions.add_to_product_draft.reason_code
@@ -809,7 +800,6 @@ async function loadList(options: { readonly offset?: number; readonly clearToken
     const scope = response.meta.catalog_scope;
     catalogScopeMode.value = scope.mode;
     selectedProductKey.value = scope.product_key || selectedProductKey.value || scope.products[0]?.product_key || '';
-    selectedGroupKey.value = selectedGroupKey.value || scope.groups[0]?.group_key || '';
     pageSize.value = response.meta.limit;
     currentOffset.value = response.meta.offset;
     staleNotice.value = false;
@@ -887,13 +877,8 @@ function changeCatalogScope(value: unknown) {
 
 function changeProductScope(value: unknown) {
   selectedProductKey.value = String(value || '').trim();
-  selectedGroupKey.value = '';
   currentOffset.value = 0;
   void loadList({ offset: 0, clearToken: true });
-}
-
-function changeGroupScope(value: unknown) {
-  selectedGroupKey.value = String(value || '').trim();
 }
 
 function openSelectedProductDraft() {
@@ -1021,20 +1006,32 @@ async function addCatalogEntryToDraft() {
       center_key: addGroupKey.value,
       release_state: addReleaseState.value,
     });
+    const operationIdentity = {
+      entry_key: entryKey(detail.value),
+      menu_xmlid: detail.value.entry_ref.menu_xmlid,
+      action_xmlid: detail.value.entry_ref.action_xmlid,
+      action_id: Number(detail.value.native_facts.action.id || 0),
+    };
     const result = await intentRequest<unknown>({
       intent: action.intent,
       params,
     });
     const decoded = decodeCapabilityCatalogEntryWriteResult(result, action, {
       ...params,
-      menu_xmlid: detail.value.entry_ref.menu_xmlid,
-      action_xmlid: detail.value.entry_ref.action_xmlid,
-      action_id: Number(detail.value.native_facts.action.id || 0),
+      menu_xmlid: operationIdentity.menu_xmlid,
+      action_xmlid: operationIdentity.action_xmlid,
+      action_id: operationIdentity.action_id,
     });
     decodeReleaseOperatorSurface(decoded.surface);
-    addReadback.value = decoded.readback;
     staleNotice.value = true;
     await loadList({ offset: currentOffset.value, clearToken: true });
+    if (isCatalogAdmissionOperationCurrent(operationIdentity.entry_key, {
+      drawer_open: drawerOpen.value,
+      selected_entry_key: selectedKey.value,
+      detail_entry_key: detail.value ? entryKey(detail.value) : '',
+    })) {
+      addReadback.value = decoded.readback;
+    }
   } catch (err) {
     addError.value = err instanceof Error ? err.message : '加入产品草案失败。';
   } finally {

@@ -14,6 +14,7 @@ import {
   businessDomainPresentation,
   capabilityEntryKey,
   centerSourcePresentation,
+  isCatalogAdmissionOperationCurrent,
   isCatalogStaleError,
   releaseStatePresentation,
   sceneUsagePresentation,
@@ -114,6 +115,11 @@ const row = {
   scene_usage: { bound: true, count: 1 },
   release_state: 'unknown',
   draft_eligibility: { selectable: true, blockers: [] },
+  catalog_admission: {
+    enabled: true,
+    reason_code: 'CATALOG_ENTRY_ADMISSIBLE',
+    blockers: [],
+  },
   product_qualification: {
     preview: 'not_verified',
     standard: 'qualified',
@@ -294,7 +300,40 @@ assert.throws(
 );
 cases += 1;
 check(decodedList.rows[0]?.label, '项目台账', 'list row consumed');
+check(
+  decodedList.rows[0]?.catalog_admission.enabled,
+  true,
+  'per-entry admission declaration consumed',
+);
 check(capabilityEntryKey(decodedList.rows[0]!), 'smart_construction_core.menu_project_ledger::smart_construction_core.action_project_ledger', 'stable entry key');
+const operationEntryKey = capabilityEntryKey(decodedList.rows[0]!);
+check(
+  isCatalogAdmissionOperationCurrent(operationEntryKey, {
+    drawer_open: true,
+    selected_entry_key: operationEntryKey,
+    detail_entry_key: operationEntryKey,
+  }),
+  true,
+  'current detail retains the frozen admission identity',
+);
+check(
+  isCatalogAdmissionOperationCurrent(operationEntryKey, {
+    drawer_open: true,
+    selected_entry_key: 'other.menu::other.action',
+    detail_entry_key: 'other.menu::other.action',
+  }),
+  false,
+  'switching detail cannot validate the original admission against another identity',
+);
+check(
+  isCatalogAdmissionOperationCurrent(operationEntryKey, {
+    drawer_open: false,
+    selected_entry_key: '',
+    detail_entry_key: '',
+  }),
+  false,
+  'closing detail suppresses stale success presentation',
+);
 const requestGate = createCapabilityExplorerRequestGate();
 const firstRequest = requestGate.begin();
 const secondRequest = requestGate.begin();
@@ -306,6 +345,15 @@ assert.throws(
   () => decodeCapabilityExplorerListResponse({ ...listResponse, meta: { ...meta, catalog_token: '' } }),
   (error) => isContractGapError(error),
   'missing catalog token must stop',
+);
+cases += 1;
+assert.throws(
+  () => decodeCapabilityExplorerListResponse({
+    ...listResponse,
+    rows: [{ ...row, catalog_admission: undefined }],
+  }),
+  (error) => isContractGapError(error),
+  'missing per-entry admission declaration must stop',
 );
 cases += 1;
 check(
@@ -582,8 +630,9 @@ const promotionSurface = {
       product_key: 'construction.standard',
     },
     editable_fields: [
-      { key: 'label', type: 'text' },
-      { key: 'sequence', type: 'integer' },
+      { key: 'label', label: '中心名称', type: 'text', required: true, max_length: 80 },
+      { key: 'sequence', label: '显示顺序', type: 'integer', required: true, minimum: 0, maximum: 9999 },
+      { key: 'center_key', label: '入口所属中心', type: 'select', required: true, options_source: 'centers' },
     ],
     centers: [{
       center_key: 'construction.center.project',
@@ -622,10 +671,13 @@ const promotionSurface = {
       changed_entry_placement_count: 0,
     },
     save_action: {
+      key: 'update_policy:construction.standard',
       intent: 'release.operator.update_policy',
       enabled: true,
+      reason_code: 'OK',
       params: { product_key: 'construction.standard' },
       accepted_fields: ['center_updates', 'entry_placements'],
+      readback: ['policy', 'surface', 'readback'],
     },
     config_ref: {
       kind: 'release_operator_action',
@@ -673,6 +725,48 @@ assert.throws(
   }),
   (error) => isContractGapError(error),
   'product center editor product identity mismatch stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: {
+      ...promotionSurface.product_center_editor,
+      editable_fields: promotionSurface.product_center_editor.editable_fields.slice(0, 2),
+    },
+  }),
+  (error) => isContractGapError(error),
+  'missing center field declaration stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: {
+      ...promotionSurface.product_center_editor,
+      centers: [{
+        ...promotionSurface.product_center_editor.centers[0],
+        sequence: 'banana',
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'invalid center sequence stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: {
+      ...promotionSurface.product_center_editor,
+      save_action: {
+        ...promotionSurface.product_center_editor.save_action,
+        readback: ['surface'],
+      },
+    },
+  }),
+  (error) => isContractGapError(error),
+  'incomplete center save readback declaration stops',
 );
 cases += 1;
 assert.throws(

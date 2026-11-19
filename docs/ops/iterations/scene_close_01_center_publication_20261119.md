@@ -89,3 +89,34 @@ The fixture tests now derive the expected key from the P1
 `center_identity(...).stable_key` contract instead of hard-coding either the
 legacy XMLID or display-name key. Local ORM remains excluded by owner direction;
 the new exact-head remote `managed_orm` run is the authoritative verification.
+
+## Owner review remediation
+
+The exact-head owner review identified contract-production and consumption
+gaps without requiring ORM. The candidate now addresses them in the existing
+contract chain:
+
+1. Catalog admission updates only the selected compatibility capability. It no
+   longer regenerates unrelated capabilities or scene-home source fields.
+2. Qualification summaries, selected status, and compatibility fields use full
+   product keys. Construction `standard/preview` are explicit projections of
+   `construction.standard` and `construction.preview`.
+3. Non-construction snapshots establish release authority, and generic
+   published center keys are consumed directly instead of being filtered by
+   the construction ten-center alias table.
+4. Each catalog row declares `catalog_admission.enabled/reason_code/blockers`.
+   The frontend combines this per-entry declaration with the global maintenance
+   action instead of treating generic native validity as admission readiness.
+5. Declared center sequence `0` is preserved through normalization,
+   placement updates, and runtime projection.
+6. The center editor strictly decodes editable fields, field constraints,
+   accepted parameters, save-action availability, and authoritative readback.
+   Missing declarations or invalid sequence values stop the action.
+7. Catalog admission freezes entry identity before awaiting the write and uses
+   that frozen identity for readback validation. Closing or switching details
+   cannot attach the write to another entry.
+8. `rollback_snapshot` execution now uses the dedicated
+   `rollback_to_snapshot()` service, preserving the existing approval chain.
+
+The obsolete product-group selector with no declared query or filter behavior
+was removed until a backend behavior contract is introduced.

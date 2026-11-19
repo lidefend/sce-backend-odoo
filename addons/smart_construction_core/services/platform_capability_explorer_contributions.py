@@ -189,8 +189,14 @@ def load_capability_explorer_release_projection(
     except Exception:
         return _unavailable_release_projection("RELEASE_SNAPSHOT_READ_FAILED")
     projection = dict(projection) if isinstance(projection, dict) else {}
+    applied_snapshot = any(
+        isinstance(row, dict) and bool(row.get("applied"))
+        for row in projection.get("snapshots") or []
+    )
     projection["authority_available"] = bool(
-        projection.get("standard_applied") or projection.get("preview_applied")
+        applied_snapshot
+        or projection.get("standard_applied")
+        or projection.get("preview_applied")
     )
     projection["authority_reason"] = (
         "OK" if projection["authority_available"] else "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND"
@@ -357,8 +363,7 @@ def _product_qualifications(
                 if authority_available
                 else "not_verified"
             )
-            edition_key = product_key.rsplit(".", 1)[-1]
-            qualities[edition_key] = status
+            qualities[product_key] = status
             evidence.append(
                 {
                     "product_key": product_key,
@@ -383,13 +388,13 @@ def _product_qualifications(
             )
         selected_key = _text(release_projection.get("selected_product_key"))
         selected_status = (
-            qualities.get(selected_key.rsplit(".", 1)[-1])
+            qualities.get(selected_key)
             if selected_key
             else ""
         )
         result[menu_xmlid] = {
-            "standard": qualities.get("standard", "not_verified"),
-            "preview": qualities.get("preview", "not_verified"),
+            "standard": qualities.get("construction.standard", "not_verified"),
+            "preview": qualities.get("construction.preview", "not_verified"),
             "selected_product_key": selected_key,
             "selected_status": selected_status or "not_verified",
             "by_product": dict(qualities),
@@ -399,7 +404,7 @@ def _product_qualifications(
                 if (
                     selected_status == "qualified"
                     if selected_key
-                    else qualities.get("standard") == "qualified"
+                    else qualities.get("construction.standard") == "qualified"
                 )
                 else "PRODUCT_NOT_QUALIFIED"
                 if authority_available

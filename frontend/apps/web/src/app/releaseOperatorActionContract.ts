@@ -67,16 +67,37 @@ export interface ProductCenterEditorEntry {
   changed_from_published: boolean;
 }
 
+export interface ProductCenterEditableField {
+  key: string;
+  label: string;
+  type: 'text' | 'integer' | 'select';
+  required: boolean;
+  max_length?: number;
+  minimum?: number;
+  maximum?: number;
+  options_source?: string;
+}
+
+export interface ProductCenterSaveAction {
+  key: string;
+  intent: string;
+  enabled: boolean;
+  reason_code: string;
+  params: AnyRecord;
+  accepted_fields: string[];
+  readback: string[];
+}
+
 export interface ProductCenterEditor {
   contract_version: 'product_center_editor.v1';
   product_key: string;
   operation_scope: AnyRecord;
-  editable_fields: AnyRecord[];
+  editable_fields: ProductCenterEditableField[];
   centers: ProductCenterEditorCenter[];
   entries: ProductCenterEditorEntry[];
   published: AnyRecord;
   change_summary: AnyRecord;
-  save_action: AnyRecord;
+  save_action: ProductCenterSaveAction;
   config_ref: AnyRecord;
 }
 
@@ -108,6 +129,19 @@ function positiveInt(value: unknown, path: string): number {
 function boolean(value: unknown, path: string): boolean {
   if (typeof value !== 'boolean') gap(path, `${path} 必须是布尔值`);
   return value;
+}
+
+function integer(value: unknown, path: string): number {
+  const result = Number(value);
+  if (!Number.isInteger(result)) gap(path, `${path} 必须是整数`);
+  return result;
+}
+
+function stringList(value: unknown, path: string): string[] {
+  if (!Array.isArray(value) || !value.length) gap(path, `${path} 缺失`);
+  const rows = value.map((row, index) => text(row, `${path}[${index}]`));
+  if (new Set(rows).size !== rows.length) gap(path, `${path} 不能重复`);
+  return rows;
 }
 
 export function decodePromotionAction(value: unknown, expectedProductKey: string): OperatorAction {
@@ -224,16 +258,88 @@ export function decodeProductCenterEditor(
   if (!Array.isArray(centers)) {
     gap('product_center_editor.centers', '产品中心编辑契约缺少中心选项');
   }
+  const editableFields = Array.isArray(editor.editable_fields)
+    ? editor.editable_fields.map((value, index) => {
+      const field = record(value, `product_center_editor.editable_fields[${index}]`);
+      const key = text(field.key, `product_center_editor.editable_fields[${index}].key`);
+      const type = text(field.type, `product_center_editor.editable_fields[${index}].type`);
+      if (!['text', 'integer', 'select'].includes(type)) {
+        gap(`product_center_editor.editable_fields[${index}].type`, '中心字段类型未支持');
+      }
+      const decoded: ProductCenterEditableField = {
+        key,
+        label: text(field.label, `product_center_editor.editable_fields[${index}].label`),
+        type: type as ProductCenterEditableField['type'],
+        required: boolean(
+          field.required,
+          `product_center_editor.editable_fields[${index}].required`,
+        ),
+      };
+      if (type === 'text') {
+        decoded.max_length = positiveInt(
+          field.max_length,
+          `product_center_editor.editable_fields[${index}].max_length`,
+        );
+      }
+      if (type === 'integer') {
+        decoded.minimum = integer(
+          field.minimum,
+          `product_center_editor.editable_fields[${index}].minimum`,
+        );
+        decoded.maximum = integer(
+          field.maximum,
+          `product_center_editor.editable_fields[${index}].maximum`,
+        );
+        if (decoded.maximum < decoded.minimum) {
+          gap(`product_center_editor.editable_fields[${index}].maximum`, '中心字段范围非法');
+        }
+      }
+      if (type === 'select') {
+        decoded.options_source = text(
+          field.options_source,
+          `product_center_editor.editable_fields[${index}].options_source`,
+        );
+      }
+      return decoded;
+    })
+    : gap('product_center_editor.editable_fields', '产品中心编辑契约缺少字段声明');
+  const editableFieldByKey = new Map(editableFields.map(field => [field.key, field]));
+  for (const field of ['label', 'sequence', 'center_key']) {
+    if (!editableFieldByKey.has(field)) {
+      gap(`product_center_editor.editable_fields.${field}`, '产品中心编辑契约缺少必需字段');
+    }
+  }
+  const sequenceField = editableFieldByKey.get('sequence')!;
   const centerRows = centers.map((value, index) => {
     const center = record(value, `product_center_editor.centers[${index}]`);
+    const centerEditableFields = Array.isArray(center.editable_fields)
+      ? center.editable_fields.map((field, fieldIndex) => text(
+        field,
+        `product_center_editor.centers[${index}].editable_fields[${fieldIndex}]`,
+      ))
+      : gap(
+        `product_center_editor.centers[${index}].editable_fields`,
+        '产品中心缺少可编辑字段声明',
+      );
+    if (centerEditableFields.some(field => !editableFieldByKey.has(field))) {
+      gap(
+        `product_center_editor.centers[${index}].editable_fields`,
+        '产品中心声明了未登记的编辑字段',
+      );
+    }
+    const sequence = integer(
+      center.sequence,
+      `product_center_editor.centers[${index}].sequence`,
+    );
+    if (sequence < sequenceField.minimum! || sequence > sequenceField.maximum!) {
+      gap(`product_center_editor.centers[${index}].sequence`, '产品中心顺序超出声明范围');
+    }
     return {
       center_key: text(center.center_key, `product_center_editor.centers[${index}].center_key`),
       label: text(center.label, `product_center_editor.centers[${index}].label`),
-      sequence: Number(center.sequence),
-      entry_count: Number(center.entry_count || 0),
-      editable_fields: Array.isArray(center.editable_fields)
-        ? center.editable_fields.map(field => String(field || '')).filter(Boolean)
-        : [],
+      sequence,
+      entry_count: integer(center.entry_count, `product_center_editor.centers[${index}].entry_count`),
+      editable_fields: centerEditableFields,
       config_ref: record(center.config_ref, `product_center_editor.centers[${index}].config_ref`),
       published_label: String(center.published_label || ''),
       published_sequence: Number(center.published_sequence || 0),
@@ -251,29 +357,57 @@ export function decodeProductCenterEditor(
       label: text(entry.label, `product_center_editor.entries[${index}].label`),
       center_key: text(entry.center_key, `product_center_editor.entries[${index}].center_key`),
       center_label: text(entry.center_label, `product_center_editor.entries[${index}].center_label`),
-      center_sequence: Number(entry.center_sequence || 0),
+      center_sequence: integer(entry.center_sequence, `product_center_editor.entries[${index}].center_sequence`),
       published_center_key: String(entry.published_center_key || ''),
       published_center_label: String(entry.published_center_label || ''),
       changed_from_published: Boolean(entry.changed_from_published),
     };
   });
   const saveAction = record(editor.save_action, 'product_center_editor.save_action');
-  if (text(saveAction.intent, 'product_center_editor.save_action.intent') !== 'release.operator.update_policy') {
+  const saveIntent = text(saveAction.intent, 'product_center_editor.save_action.intent');
+  if (saveIntent !== 'release.operator.update_policy') {
     gap('product_center_editor.save_action.intent', '产品中心保存动作意图不匹配');
   }
-  boolean(saveAction.enabled, 'product_center_editor.save_action.enabled');
+  const acceptedFields = stringList(
+    saveAction.accepted_fields,
+    'product_center_editor.save_action.accepted_fields',
+  );
+  for (const field of ['center_updates', 'entry_placements']) {
+    if (!acceptedFields.includes(field)) {
+      gap('product_center_editor.save_action.accepted_fields', '中心保存动作缺少必需参数声明');
+    }
+  }
+  const readbackFields = stringList(
+    saveAction.readback,
+    'product_center_editor.save_action.readback',
+  );
+  for (const field of ['policy', 'surface', 'readback']) {
+    if (!readbackFields.includes(field)) {
+      gap('product_center_editor.save_action.readback', '中心保存动作缺少权威回读声明');
+    }
+  }
+  const saveParams = record(saveAction.params, 'product_center_editor.save_action.params');
+  if (text(saveParams.product_key, 'product_center_editor.save_action.params.product_key') !== expectedProductKey) {
+    gap('product_center_editor.save_action.params.product_key', '中心保存动作产品范围不匹配');
+  }
   return {
     contract_version: 'product_center_editor.v1',
     product_key: expectedProductKey,
     operation_scope: scope,
-    editable_fields: Array.isArray(editor.editable_fields)
-      ? editor.editable_fields.map((field, index) => record(field, `product_center_editor.editable_fields[${index}]`))
-      : [],
+    editable_fields: editableFields,
     centers: centerRows,
     entries: entryRows,
     published: record(editor.published, 'product_center_editor.published'),
     change_summary: record(editor.change_summary, 'product_center_editor.change_summary'),
-    save_action: saveAction,
+    save_action: {
+      key: text(saveAction.key, 'product_center_editor.save_action.key'),
+      intent: saveIntent,
+      enabled: boolean(saveAction.enabled, 'product_center_editor.save_action.enabled'),
+      reason_code: text(saveAction.reason_code, 'product_center_editor.save_action.reason_code'),
+      params: saveParams,
+      accepted_fields: acceptedFields,
+      readback: readbackFields,
+    },
     config_ref: record(editor.config_ref, 'product_center_editor.config_ref'),
   };
 }
@@ -293,7 +427,10 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
   if (text(readback.product_key, 'operation_readback.product_key') !== productKey) {
     gap('operation_readback.product_key', '发布回读产品与当前产品不一致');
   }
-  decodeProductCenterEditor(surface.product_center_editor, productKey);
+  const productCenterEditor = decodeProductCenterEditor(
+    surface.product_center_editor,
+    productKey,
+  );
   const updatePolicy = record(actions.update_policy, 'available_actions.update_policy');
   if (text(updatePolicy.editor_contract, 'available_actions.update_policy.editor_contract') !== 'product_center_editor.v1') {
     gap('available_actions.update_policy.editor_contract', '保存产品草案未声明产品中心编辑契约');
@@ -311,5 +448,8 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
       gap(`${action.key}.params.snapshot_id`, '候选发布动作引用了不存在的候选快照');
     }
   }
-  return surface as T;
+  return {
+    ...surface,
+    product_center_editor: productCenterEditor,
+  } as unknown as T;
 }

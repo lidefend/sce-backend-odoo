@@ -19,6 +19,9 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     declared_scene_entry_key,
     load_locked_menu_policy_contract,
 )
+from odoo.addons.smart_construction_core.services.product_capability_admission import (
+    merge_admission_capability,
+)
 
 
 def _text(value):
@@ -400,29 +403,17 @@ class ScProductPolicy(models.Model):
             "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
         }
         target["menus"].append(entry)
-        generated_capabilities = self._capabilities_from_user_confirmed_menu_groups(
-            groups
+        generated_rows = self._capabilities_from_user_confirmed_menu_groups(
+            [{**target, "menus": [entry]}]
         )
-        generated_by_menu = {
-            _text(capability.get("menu_xmlid")): capability
-            for capability in generated_capabilities
-            if _text(capability.get("menu_xmlid"))
-        }
-        capabilities = []
-        seen_menu_xmlids = set()
-        for capability in self.capabilities or []:
-            if not isinstance(capability, dict):
-                continue
-            menu_xmlid = _text(capability.get("menu_xmlid"))
-            replacement = generated_by_menu.get(menu_xmlid)
-            if replacement:
-                capabilities.append(replacement)
-                seen_menu_xmlids.add(menu_xmlid)
-            else:
-                capabilities.append(capability)
-        for menu_xmlid, capability in generated_by_menu.items():
-            if menu_xmlid not in seen_menu_xmlids:
-                capabilities.append(capability)
+        if not generated_rows:
+            raise ValidationError("Native entry capability projection is unavailable")
+        generated_target = generated_rows[0]
+        capabilities = merge_admission_capability(
+            self.capabilities,
+            generated_target,
+            menu_xmlid=xmlid,
+        )
         self.write({"menu_groups": groups, "capabilities": capabilities})
         entry_capability = next(
             (

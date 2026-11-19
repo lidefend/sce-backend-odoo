@@ -96,6 +96,7 @@ verify.capability.identity_boundary.unit: guard.prod.forbid
 	  addons/smart_core/delivery/product_policy_catalog_sync_service.py \
 	  addons/smart_construction_core/core_extension_capability_rows.py \
 	  addons/smart_construction_core/models/support/product_policy_sync.py \
+	  addons/smart_construction_core/services/product_capability_admission.py \
 	  addons/smart_construction_core/services/capability_registry.py \
 	  addons/smart_construction_core/services/product_menu_source.py
 	@python3 -m unittest scripts.verify.test_capability_identity_boundary

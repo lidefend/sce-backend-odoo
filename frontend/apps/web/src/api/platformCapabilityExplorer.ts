@@ -242,6 +242,11 @@ export type CapabilityExplorerRow = {
     selectable: boolean;
     blockers: string[];
   };
+  catalog_admission: {
+    enabled: boolean;
+    reason_code: string;
+    blockers: string[];
+  };
   product_qualification: CapabilityExplorerProductQualification;
 };
 
@@ -763,6 +768,7 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
   const business = object(source.business_domain, 'row.business_domain');
   const usage = object(source.scene_usage, 'row.scene_usage');
   const draft = object(source.draft_eligibility, 'row.draft_eligibility');
+  const admission = object(source.catalog_admission, 'row.catalog_admission');
   const qualification = decodeProductQualification(
     source.product_qualification,
     'row.product_qualification',
@@ -801,6 +807,14 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
     draft_eligibility: {
       selectable: boolean(draft.selectable, 'row.draft_eligibility.selectable'),
       blockers: strings(draft.blockers, 'row.draft_eligibility.blockers'),
+    },
+    catalog_admission: {
+      enabled: boolean(admission.enabled, 'row.catalog_admission.enabled'),
+      reason_code: requiredText(
+        admission.reason_code,
+        'row.catalog_admission.reason_code',
+      ),
+      blockers: strings(admission.blockers, 'row.catalog_admission.blockers'),
     },
     product_qualification: {
       ...qualification,

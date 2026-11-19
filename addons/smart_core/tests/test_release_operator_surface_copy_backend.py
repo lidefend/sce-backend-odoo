@@ -174,6 +174,17 @@ class _ConfigParameter:
 
 
 class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
+    def test_rollback_action_uses_dedicated_snapshot_rollback_authority(self):
+        source = (
+            ROOT / "addons/smart_core/handlers/release_operator.py"
+        ).read_text(encoding="utf-8")
+        rollback_branch = source.split('elif action_type == "rollback_snapshot":', 1)[1].split(
+            "else:",
+            1,
+        )[0]
+        self.assertIn("rollback_to_snapshot(", rollback_branch)
+        self.assertNotIn("promote_to_released(", rollback_branch)
+
     def test_surface_build_includes_backend_owned_copy_payload(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())
         service.read_model_service.audit_service = _AuditTrailService()

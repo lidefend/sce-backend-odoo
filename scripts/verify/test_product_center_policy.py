@@ -129,6 +129,30 @@ class ProductCenterPolicyTest(unittest.TestCase):
             "construction.center.project",
         )
 
+    def test_declared_zero_sequence_survives_update_and_renormalization(self):
+        policy = legacy_policy()
+        for index, key in enumerate(
+            ["construction.center.project", "construction.center.contract"]
+        ):
+            policy["menu_groups"][index].update(center_key=key, group_key=key)
+        updated = CENTER.apply_product_center_updates(
+            policy,
+            center_updates=[
+                {
+                    "center_key": "construction.center.contract",
+                    "label": "合同中心",
+                    "sequence": 0,
+                }
+            ],
+        )
+        contract = next(
+            row
+            for row in updated["menu_groups"]
+            if row["center_key"] == "construction.center.contract"
+        )
+        self.assertEqual(contract["sequence"], 0)
+        self.assertEqual(contract["menus"][0]["group_sequence"], 0)
+
     def test_entry_placement_moves_complete_entry_without_losing_fields(self):
         policy = legacy_policy()
         for index, key in enumerate(

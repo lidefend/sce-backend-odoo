@@ -14,6 +14,22 @@ export function capabilityEntryKey(row: Pick<CapabilityExplorerRow, 'entry_ref'>
   return `${row.entry_ref.menu_xmlid}::${row.entry_ref.action_xmlid}`;
 }
 
+export function isCatalogAdmissionOperationCurrent(
+  operationEntryKey: string,
+  current: {
+    drawer_open: boolean;
+    selected_entry_key: string;
+    detail_entry_key: string;
+  },
+): boolean {
+  return Boolean(
+    operationEntryKey
+    && current.drawer_open
+    && current.selected_entry_key === operationEntryKey
+    && current.detail_entry_key === operationEntryKey,
+  );
+}
+
 export function businessDomainPresentation(row: CapabilityExplorerRow): CapabilityStatusPresentation {
   if (row.business_domain.confidence === 'authoritative_scene_binding') {
     return {

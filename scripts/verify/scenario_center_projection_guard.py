@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import importlib.util
 import sys
+import types
 import unittest
 from pathlib import Path
 
@@ -30,6 +31,23 @@ PRODUCT_MENU_SOURCE_SPEC = importlib.util.spec_from_file_location(
 PRODUCT_MENU_SOURCE = importlib.util.module_from_spec(PRODUCT_MENU_SOURCE_SPEC)
 sys.modules[PRODUCT_MENU_SOURCE_NAME] = PRODUCT_MENU_SOURCE
 PRODUCT_MENU_SOURCE_SPEC.loader.exec_module(PRODUCT_MENU_SOURCE)
+for package_name in (
+    "odoo",
+    "odoo.addons",
+    "odoo.addons.smart_core",
+    "odoo.addons.smart_core.delivery",
+):
+    package = sys.modules.get(package_name) or types.ModuleType(package_name)
+    package.__path__ = []
+    sys.modules[package_name] = package
+PRODUCT_CENTER_POLICY_NAME = "odoo.addons.smart_core.delivery.product_center_policy"
+PRODUCT_CENTER_POLICY_SPEC = importlib.util.spec_from_file_location(
+    PRODUCT_CENTER_POLICY_NAME,
+    ROOT / "addons/smart_core/delivery/product_center_policy.py",
+)
+PRODUCT_CENTER_POLICY = importlib.util.module_from_spec(PRODUCT_CENTER_POLICY_SPEC)
+sys.modules[PRODUCT_CENTER_POLICY_NAME] = PRODUCT_CENTER_POLICY
+PRODUCT_CENTER_POLICY_SPEC.loader.exec_module(PRODUCT_CENTER_POLICY)
 SPEC = importlib.util.spec_from_file_location(
     "smart_construction_core.services.scenario_surface_projection",
     ROOT / "addons/smart_construction_core/services/scenario_surface_projection.py",
@@ -326,6 +344,27 @@ class ScenarioCenterProjectionGuard(unittest.TestCase):
         finance = next(c for c in centers if c["key"] == FINANCE_CENTER_STABLE_KEY)
         self.assertEqual(finance["scenarios"][0]["key"], "accounting.management")
         self.assertEqual(finance["name"], "财务账款")
+
+    def test_generic_published_center_is_not_limited_to_construction_aliases(self):
+        env = _Env()
+        leaf = {
+            **_leaf(101, 1011, "Published reports", env.menus[101].xmlid),
+            "policy_center_key": "acme.center.reporting",
+            "policy_center_label": "Published reports",
+            "policy_center_sequence": 0,
+        }
+        center = PROJ.composition_center_for_leaf(
+            leaf,
+            {
+                "center_key": "construction.center.project",
+                "center_name": "Current live project",
+                "center_sequence": 99,
+            },
+        )
+        self.assertEqual(center["key"], "acme.center.reporting")
+        self.assertEqual(center["name"], "Published reports")
+        self.assertEqual(center["sequence"], 0)
+        self.assertTrue(center["published_center"])
 
     def test_moved_native_menu_does_not_change_composed_center(self):
         env = _Env()
