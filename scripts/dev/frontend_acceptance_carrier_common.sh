@@ -25,7 +25,7 @@ carrier_resolve_profile_identity() {
 
   local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
   case "$profile" in
-    local|candidate) ;;
+    local|candidate|disposable) ;;
     *) carrier_deny "unsupported managed carrier profile: $profile" ;;
   esac
 

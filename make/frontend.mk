@@ -20,10 +20,15 @@ confirm.frontend.release.audit: guard.prod.forbid
 	  exit 2; \
 	}
 
+ifneq ($(FRONTEND_RELEASE_DISPOSABLE),1)
 verify.frontend.release.local: guard.prod.forbid confirm.frontend.release.audit
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-preflight
 	@$(MAKE) --no-print-directory fe.install.cached
 	@SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" bash scripts/dev/frontend_acceptance_operation_entry.sh release-audit
+
+else
+verify.frontend.release.local: verify.frontend.release.disposable
+endif
 
 fe.dev:
 	@FRONTEND_PROFILE=$${FRONTEND_PROFILE:-local-dev} \
@@ -1462,8 +1467,8 @@ SC_LIST_PREVIEW_URL_KEYS := SC_ACCEPTANCE_FRONTEND_URL FRONTEND_URL ACCEPTANCE_B
 SC_LIST_PREVIEW_DB_KEYS := SC_ACCEPTANCE_DATABASE E2E_DB FRONTEND_ACCEPTANCE_DB
 SC_LIST_PREVIEW_FRONTEND_URL := $(if $(filter candidate,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:5178,$(if $(filter navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),http://127.0.0.1:18091/t/clean,http://127.0.0.1:5180))
 SC_LIST_PREVIEW_DB := $(if $(filter candidate navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),sc_frontend_acceptance_candidate,sc_frontend_acceptance)
-ifeq ($(filter local candidate navux_branch,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),)
-$(error DENY standard list surface profile: SC_ACCEPTANCE_RUNTIME_PROFILE must be local, candidate or navux_branch)
+ifeq ($(filter local candidate navux_branch disposable,$(SC_ACCEPTANCE_RUNTIME_PROFILE)),)
+$(error DENY standard list surface profile: SC_ACCEPTANCE_RUNTIME_PROFILE must be local, candidate, navux_branch or disposable)
 endif
 # Arguments: diagnostic name, origin, value, exact registered value.
 define sc_list_preview_explicit_input
@@ -1843,3 +1848,13 @@ verify.scenario.center_projection.guard: guard.prod.forbid
 
 verify.frontend.quick.gate: verify.frontend.scene_primitive_adapter.unit
 verify.frontend.release.unit: verify.frontend.scene_primitive_adapter.unit verify.frontend.scene_primitive_contract.all
+
+.PHONY: verify.frontend.release.disposable
+verify.frontend.release.disposable: guard.prod.forbid confirm.frontend.release.audit
+	@python3 scripts/dev/frontend_release_disposable.py $(if $(filter 1,$(FRONTEND_RELEASE_FAILURE_PROBE)),--probe,)
+
+.PHONY: verify.acceptance.disposable.unit
+verify.acceptance.disposable.unit:
+	@python3 -m unittest scripts.verify.test_frontend_release_disposable scripts.verify.test_frontend_acceptance_runtime_profile scripts.verify.test_frontend_acceptance_carrier_common scripts.verify.test_g1_acceptance_baseline_guard
+
+verify.frontend.release.unit: verify.acceptance.disposable.unit

@@ -580,8 +580,15 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         )[0]
         self.assertEqual(
             performance.count("navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR)"),
-            2,
+            1,  # Initial entry only; an open form must use its guarded return action.
         )
+        self.assertEqual(performance.count("await returnPaymentCreateToList("), 2)
+        reset = source.split("async function returnPaymentCreateToList(", 1)[1].split(
+            "async function openMyWorkFromRoleHome(", 1
+        )[0]
+        self.assertIn("page.locator(READY_ACTION_LIST_SELECTOR)", reset)
+        self.assertIn("await list.waitFor({ state: 'visible'", reset)
+        self.assertIn("await form.waitFor({ state: 'hidden'", reset)
         self.assertNotIn("[data-list-status]:visible", performance)
 
 

@@ -9,6 +9,7 @@
     "profiles_present": [
       "candidate",
       "daily",
+      "disposable",
       "local",
       "production",
       "test"
@@ -16,7 +17,7 @@
     "assets": [
       {
         "path": "config/frontend/acceptance_environments_v1.json",
-        "sha256": "193c3bf959bd404e430b7b4e94ba65f4ebe1d0b445dbaf834438a7448f96c3b7"
+        "sha256": "7d1ab86dd891410919fc94d10bff217ee0d87e745ee4753df411bc920ec1fac9"
       },
       {
         "path": "config/frontend/acceptance_tool_matrix_v1.json",

@@ -41,7 +41,7 @@ INVENTORY_PATH = (
     ROOT / "docs" / "planning" / "custom-frontend-integration" / "G1_CAPABILITY_INVENTORY.md"
 )
 
-EXPECTED_PROFILES = {"local", "test", "daily", "production", "candidate"}
+EXPECTED_PROFILES = {"local", "test", "daily", "production", "candidate", "disposable"}
 
 # Mandatory browser evidence fields from README section 12 (contract freeze).
 MANDATORY_BROWSER_EVIDENCE_FIELDS = {
@@ -224,7 +224,7 @@ def write_evidence(baseline_sha: str | None) -> dict:
             "capability_inventory_path": "docs/planning/custom-frontend-integration/G1_CAPABILITY_INVENTORY.md",
         },
         "environment_assets": {
-            "profiles_present": ["candidate", "daily", "local", "production", "test"],
+            "profiles_present": ["candidate", "daily", "disposable", "local", "production", "test"],
             "assets": [
                 {
                     "path": "config/frontend/acceptance_environments_v1.json",

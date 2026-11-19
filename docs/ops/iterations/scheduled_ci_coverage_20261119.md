@@ -37,3 +37,45 @@ The complete `verify.frontend.pr.unit` target passed with the new prerequisites.
 ## PR 939 follow-up
 
 The owner authorized PR publication; PR 939 was created as draft at bfb55ef958043139840a2d5bbeeca5f116cddbfd. Public guard run 44432090116 failed because `test_frontend_lane_commands_are_explicit` reads only the first `verify.frontend.pr.unit` declaration. Make itself merges prerequisites, so local execution passed, but adding a new first declaration broke the existing textual contract. This was introduced by this repair and missed by the original local validation selection. The correction merges the added prerequisites into the original first declaration without removing any checks. `verify.ci.scheduled_gates` is now explicitly registered for this run. Independent review remains pending.
+
+## Full-chain navigation continuation
+
+PR 939 merged at 0dc7778132a6814e3cb18eb7cecb3ba39ac5df71 with four required checks passed. Full dispatch 44432597937 subsequently failed at the form-open performance loop: after opening an unsaved payment create form, navigateSpa used history.pushState/popstate to force the list route. The retained form displayed its unsaved-leave confirmation while the harness waited for a list. The continuation owns P4 browser scenario transitions, not product dirty-state policy. Baseline is the merged main tree; previous worktree and evidence are preserved, with one replacement active repair worktree under the existing owner worktree authorization.
+
+| Gate | State | Owner | Reason |
+| --- | --- | --- | --- |
+| Identity | required | exact main base and repair head | continuation |
+| Owning module ORM | excluded | none | no model or product behavior change |
+| Focused regressions | required | release.local_entry | clean/dirty/unrelated-dialog navigation |
+| Product lint/type/build | excluded | none | product source unchanged |
+| Full runtime browser | required, not_run | remote full release | observed integration failure |
+| PR checks | required, not_run | exact-head checks | before merge |
+
+Owner constraint: run the complete long chain locally before any push. No continuation changes have been pushed. The formal entry is `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local SC_ACCEPTANCE_RUNTIME_PROFILE=local`. It binds isolated fixture tenant database `sc_frontend_acceptance`, exact filter `^sc_frontend_acceptance$`, project `sc-fe-r2-p1-01`, and separate declared DB/Redis/Odoo volumes. This is not the platform-control/industry catalog or a customer production database; customer business data is prohibited and isolated fixture data is allowed. Managed preflight verified those identities. Existing frontend PID 975157 is owned by another worktree, so a lifecycle handoff was requested rather than stopping it unilaterally.
+
+The initial release-unit run exposed an existing structural test expecting two raw-history list navigations. Updated that assertion to preserve the settled-list requirement while requiring guarded form exits; all 38 hardening tests and 27 release-entry tests passed. Prior failure remains in its original log. Runtime/browser validation remains not_run until the environment is available.
+
+### Disposable local full release (owner authorization)
+
+Owner explicitly requested configuring a disposable environment on demand, replacing the
+pending shared-environment handoff. P4 tooling owns the new
+`verify.frontend.release.disposable` entry. It reuses carrier provision/discard and the
+complete `verify.frontend.release.local` audit, followed by fixture ORM; no product
+semantics or release assertions change.
+
+Database role: isolated synthetic acceptance tenant; tenant/environment:
+`sc-fe-local-release`. Not platform control, industry catalog, customer production, or
+UAT. Customer business data forbidden; fixtures permitted. Database
+`sc_frontend_acceptance` exists in its own PostgreSQL instance, exact filter
+`^sc_frontend_acceptance$`. Dedicated database/session/filestore volumes:
+`sc_fe_local_release_db`, `sc_fe_local_release_redis`, `sc_fe_local_release_odoo`.
+Ports: 5185 frontend, 18092 acceptance backend, 19093 compose carrier. Credentials are
+fresh private worktree-local ignored files, removed after verified cleanup. Existing
+resources cause refusal before mutation; shared resources remain outside scope.
+
+Required: lifecycle/profile tests (47 passed), iteration/freeze checks, full local audit
+and fixture ORM, exact source and cleanup readback. Excluded: production and existing
+acceptance carrier mutation. Not run yet: disposable full runtime audit. Publication
+remains blocked until that complete local long chain passes.
+
+Owner correction: retain failed disposable environments and private credentials for repair/retry; discard only after the complete release and fixture ORM pass with unchanged source. Reuse exact-head offline unit/static checkpoints only, checking static output hashes. Runtime assertions always rerun. Attempt 2 passed full units but failed because Docker created a root-owned evidence directory; attempt 3 provision is retained under an explicit controller handoff. No publication occurred.
