@@ -965,6 +965,119 @@ assert.throws(
   'null policy readback is rejected',
 );
 cases += 1;
+const syncAction = (
+  decodedPromotion.available_actions as Record<string, OperatorAction>
+).sync_policy;
+check(
+  buildConfiguredOperatorParams(syncAction, {}),
+  { product_key: 'construction.standard' },
+  'sync action builds its declared request without frontend defaults',
+);
+const maintainedSyncPolicy = {
+  product_key: 'construction.standard',
+  label: '施工管理标准版',
+  allowed_role_codes: ['project_manager'],
+  scene_version_bindings: {
+    'scene.project': { version: 'v4', channel: 'stable' },
+  },
+  menu_groups: [{
+    center_key: 'construction.center.project',
+    group_key: 'construction.center.project',
+    group_label: '项目中心（管理员命名）',
+    sequence: 0,
+    menus: [{
+      menu_xmlid: 'smart_construction_core.menu_sc_project_project',
+      action_xmlid: 'smart_construction_core.action_project_project',
+      label: '项目台账（管理员命名）',
+      sequence: 0,
+      release_state: 'hidden',
+      entry_intent: 'handling',
+      res_model: 'project.project',
+    }],
+  }],
+  scenes: [{
+    scene_key: 'scene.project',
+    label: '项目管理场景',
+    capability_key: 'business.project.ledger',
+  }],
+  capabilities: [{
+    capability_key: 'business.project.ledger',
+    menu_xmlid: 'smart_construction_core.menu_sc_project_project',
+    business_capability: true,
+    provider_authority: 'scene_entry_target',
+  }],
+};
+const maintainedSyncSurface = {
+  ...promotionSurface,
+  operation_readback: {
+    ...promotionSurface.operation_readback,
+    active_snapshot: {
+      id: 30,
+      version: 'v30',
+      state: 'released',
+    },
+  },
+  product_center_editor: {
+    ...promotionSurface.product_center_editor,
+    centers: [{
+      ...promotionSurface.product_center_editor.centers[0],
+      label: '项目中心（管理员命名）',
+      sequence: 0,
+      changed_from_published: false,
+    }],
+    entries: [{
+      ...promotionSurface.product_center_editor.entries[0],
+      label: '项目台账（管理员命名）',
+      center_sequence: 0,
+      changed_from_published: false,
+    }],
+  },
+};
+const decodedSync = decodeConfiguredActionResult(
+  {
+    policy: maintainedSyncPolicy,
+    surface: maintainedSyncSurface,
+  },
+  syncAction,
+  'construction.standard',
+);
+const syncedPolicy = decodedSync.readback.policy;
+const syncedGroups = syncedPolicy.menu_groups as Array<Record<string, unknown>>;
+const syncedMenus = syncedGroups[0].menus as Array<Record<string, unknown>>;
+check(syncedGroups[0].group_label, '项目中心（管理员命名）', 'sync policy preserves maintained center label');
+check(syncedGroups[0].sequence, 0, 'sync policy preserves center sequence zero');
+check(syncedMenus[0].label, '项目台账（管理员命名）', 'sync policy preserves maintained entry label');
+check(syncedMenus[0].sequence, 0, 'sync policy preserves entry sequence zero');
+check(syncedMenus[0].entry_intent, 'handling', 'sync policy preserves business intent');
+check(syncedPolicy.allowed_role_codes, ['project_manager'], 'sync policy preserves role restrictions');
+check(syncedPolicy.scene_version_bindings, maintainedSyncPolicy.scene_version_bindings, 'sync policy preserves scene bindings');
+const decodedSyncSurface = decodeReleaseOperatorSurface(maintainedSyncSurface);
+check(
+  decodedSyncSurface.product_center_editor.centers[0].label,
+  '项目中心（管理员命名）',
+  'sync surface updates the current draft expression',
+);
+check(
+  decodedSyncSurface.operation_readback.active_snapshot.version,
+  'v30',
+  'sync success does not replace the currently published version',
+);
+assert.throws(
+  () => decodeConfiguredActionResult(
+    {
+      policy: {
+        ...maintainedSyncPolicy,
+        product_key: 'construction.preview',
+      },
+      surface: maintainedSyncSurface,
+    },
+    syncAction,
+    'construction.standard',
+  ),
+  (error) => isContractGapError(error),
+  'sync readback for another product is rejected before surface replacement',
+);
+cases += 1;
 assert.throws(
   () => decodeConfiguredActionResult(
     {
@@ -1022,6 +1135,37 @@ check(
   'construction.standard',
   'center write binds the submitted product',
 );
+check(
+  decodeProductCenterWriteEnvelope(
+    {
+      ...centerWriteEnvelope,
+      readback: {
+        ...centerWriteEnvelope.readback,
+        published_snapshot_id: 0,
+      },
+    },
+    decodedPromotion.product_center_editor,
+  ).readback.published_snapshot_id,
+  0,
+  'unpublished center write accepts an explicit integer zero',
+);
+for (const invalidSnapshotId of [null, false, '0', 1.5]) {
+  assert.throws(
+    () => decodeProductCenterWriteEnvelope(
+      {
+        ...centerWriteEnvelope,
+        readback: {
+          ...centerWriteEnvelope.readback,
+          published_snapshot_id: invalidSnapshotId,
+        },
+      },
+      decodedPromotion.product_center_editor,
+    ),
+    (error) => isContractGapError(error),
+    `center write rejects invalid published snapshot identity ${String(invalidSnapshotId)}`,
+  );
+  cases += 1;
+}
 assert.throws(
   () => decodeProductCenterWriteEnvelope(
     {

@@ -715,6 +715,16 @@ export function decodeProductCenterWriteEnvelope(
   if (text(readback.product_key, 'product_center_write.readback.product_key') !== editor.product_key) {
     gap('product_center_write.readback.product_key', '产品中心保存回读属于另一产品');
   }
+  const publishedSnapshotId = integer(
+    readback.published_snapshot_id,
+    'product_center_write.readback.published_snapshot_id',
+  );
+  if (publishedSnapshotId < 0) {
+    gap(
+      'product_center_write.readback.published_snapshot_id',
+      '产品中心保存回读的发布快照身份不能为负数',
+    );
+  }
   const surfaceIdentity = record(
     surface.identity,
     'product_center_write.surface.identity',

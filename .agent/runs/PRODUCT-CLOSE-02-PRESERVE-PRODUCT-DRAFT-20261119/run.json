@@ -1,0 +1,252 @@
+{
+  "schema_version": 1,
+  "id": "PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119",
+  "branch": "fix/product-close-02-preserve-product-draft",
+  "baseline_sha": "810632f57e736823eed3e555ad45e2c6f43e27b0",
+  "status": "verification_pending",
+  "goal": ".agent/goals/PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119.yaml",
+  "record": "docs/ops/iterations/product_close_02_preserve_product_draft_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119.yaml",
+    ".agent/runs/PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119/run.json",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+    "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    "docs/ops/iterations/product_close_02_preserve_product_draft_20261119.md",
+    "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+    "frontend/apps/web/scripts/platform_capability_explorer_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing repository Make tools; contract-only validation; no database, service or browser access"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.product_center.policy.orm",
+      "verify.capability.identity_boundary.orm",
+      "verify.scene.publication_authority.orm",
+      "verify.admin_close_01.runtime.orm"
+    ],
+    "reason": "Owner direction: ORM, native Odoo capabilities, module upgrade, browser matrix and environment rebuild are outside PRODUCT-CLOSE-02; only repository contract logic is in scope"
+  },
+  "stages": [
+    {
+      "id": "BE-MERGE",
+      "status": "completed",
+      "owner": "single_backend_writer",
+      "exit": "Existing drafts retain maintained facts while selected native identities are refreshed, validated and fail closed before any write"
+    },
+    {
+      "id": "FE-CONSUMPTION",
+      "status": "completed",
+      "owner": "single_frontend_writer_after_backend_handoff",
+      "exit": "Production-shaped sync output decodes and updates the current draft without conflating sync with publication; invalid identity or numeric data fails closed"
+    },
+    {
+      "id": "REVIEW",
+      "status": "planned",
+      "owner": "independent_reviewer",
+      "exit": "One exact-head candidate is reviewed and required checks are evaluated"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119.yaml",
+        ".agent/runs/PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline",
+      "depends_on": [
+        "agent_resume"
+      ]
+    },
+    "runtime_catalog_contract": {
+      "target": "verify.runtime_capability_catalog.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/runtime_capability_catalog.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        "addons/smart_core/tests/test_runtime_capability_catalog.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "capability_identity": {
+      "target": "verify.capability.identity_boundary.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_capability_admission.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_policy": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "scripts/verify/test_product_center_policy.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_operator_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_management_action_contract.py",
+        "addons/smart_core/delivery/release_operator_contract_registry.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_release_operator": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_contract_basis": {
+      "target": "verify.frontend.contract_basis.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/src/",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "backend_handoff": {
+    "status": "completed",
+    "changed_paths": [
+      "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+      "addons/smart_core/tests/test_backend_semantic_copy_supply.py"
+    ],
+    "contract": "Existing policy + surface response is unchanged",
+    "source_errors": [
+      "PRODUCT_SYNC_SOURCE_MISSING",
+      "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+      "PRODUCT_SYNC_SOURCE_READ_FAILED"
+    ],
+    "samples": {
+      "maintained_sync": "center name/sequence 0, entry label/release/order, roles, scene bindings and external account entry remain; source res_model/path refresh; newly discovered catalog row is not selected",
+      "failure_rebind": {
+        "reason_code": "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+        "entry": "project.menu_ledger",
+        "write_attempted": false
+      }
+    },
+    "passed": [
+      "make verify.runtime_capability_catalog.unit: 22 tests",
+      "make verify.capability.identity_boundary.unit: 8 tests",
+      "make verify.product_center.policy.unit: 15 tests",
+      "make verify.admin_close_01.backend.unit: 141 aggregate tests",
+      "make verify.agent.resume.unit: 67 tests",
+      "make verify.agent.ledger.unit: 18 tests",
+      "make ci.local.iteration: exit 0; contract-only scope; ORM/module/browser excluded by owner direction"
+    ],
+    "not_run": [
+      "ORM and module baselines",
+      "module upgrade and environment rebuild",
+      "browser matrix",
+      "frontend consumer checks pending frontend handoff"
+    ]
+  },
+  "frontend_handoff": {
+    "status": "completed",
+    "changed_paths": [
+      "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+      "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+      "frontend/apps/web/scripts/platform_capability_explorer_test.ts"
+    ],
+    "contract": "Existing runConfiguredAction policy+surface consumption remains the only sync path",
+    "closed_items": [
+      "production-shaped sync policy+surface preserves center, entry, role and scene facts while the active released snapshot remains v30",
+      "wrong-product sync readback is rejected before effective surface replacement",
+      "published_snapshot_id decode accepts integer 0 and rejects null, false, numeric strings and non-integers",
+      "the view no longer coerces published_snapshot_id through Number"
+    ],
+    "passed": [
+      "make verify.frontend.platform_capability_explorer.unit: 84 cases",
+      "make verify.frontend.contract_basis.unit: 15 tests; open_defects=0",
+      "make verify.frontend.lint.src: 0 errors; 4 pre-existing warnings",
+      "make verify.frontend.typecheck.strict: exit 0",
+      "make ci.local.iteration: exit 0; affected frontend targets executed; contract-only scope"
+    ],
+    "not_run": [
+      "ORM and module baselines",
+      "module upgrade and environment rebuild",
+      "browser matrix"
+    ]
+  },
+  "validation_plan": {
+    "L0": "Exact base, branch and owned dirty scope",
+    "L1": "Pure synchronization merge tests prove maintained-fact preservation, no selection expansion, source rejection and idempotence",
+    "L2": "Existing pure backend and frontend contract families prove producer/consumer compatibility",
+    "L3": "Not applicable by owner direction: no database or module upgrade",
+    "L4": "Not applicable by owner direction: no browser matrix or environment rebuild",
+    "L5": "Independent exact-head review and required remote checks at publication"
+  },
+  "next_exact_step": "Run delivery freeze preparation, commit the exact candidate, and start independent exact-head review"
+}

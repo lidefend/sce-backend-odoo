@@ -3,8 +3,10 @@ import importlib.util
 import sys
 import types
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 SOURCE_FILE = Path(__file__).resolve()
 ADDONS_ROOT = next(
@@ -199,6 +201,42 @@ class _PolicyServiceEnv:
             return SimpleNamespace(
                 sudo=lambda: SimpleNamespace(get_param=lambda *args: "")
             )
+        raise KeyError(key)
+
+
+class _SyncPolicyRecord:
+    def __init__(self, payload):
+        self.payload = deepcopy(payload)
+        self.written = None
+
+    def to_runtime_dict(self):
+        return deepcopy(self.payload)
+
+    def write(self, values):
+        self.written = deepcopy(values)
+
+
+class _SyncPolicyModel:
+    def __init__(self, record):
+        self.record = record
+
+    def sudo(self):
+        return self
+
+    def with_context(self, **kwargs):
+        return self
+
+    def search(self, domain, limit=None):
+        return self.record
+
+
+class _SyncPolicyEnv:
+    def __init__(self, model):
+        self.model = model
+
+    def __getitem__(self, key):
+        if key == "sc.product.policy":
+            return self.model
         raise KeyError(key)
 
 
@@ -410,6 +448,419 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         self.assertTrue(all(not row["enabled"] and row["release_state"] == "hidden" for row in menus))
         self.assertNotEqual(menus[0]["capability_key"], menus[1]["capability_key"])
         self.assertEqual(menus[0]["menu_xmlid"], "smart_construction_core.menu_a")
+
+    def test_existing_policy_sync_preserves_maintained_draft_and_refreshes_only_sources(self):
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(env=None)
+        current = {
+            "active": False,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "role_restricted",
+            "allowed_role_codes": ["project_manager"],
+            "label": "Maintained construction product",
+            "version": "v7",
+            "scene_version_bindings": {"scene.project": {"version": "v3"}},
+            "note": "",
+            "menu_groups": [
+                {
+                    "group_key": "construction.center.project",
+                    "group_label": "Admin renamed project center",
+                    "sequence": 0,
+                    "menus": [
+                        {
+                            "menu_xmlid": "project.menu_ledger",
+                            "menu_key": "project.menu_ledger",
+                            "page_key": "project.ledger",
+                            "action_xmlid": "project.action_ledger",
+                            "action_id": 11,
+                            "label": "Maintained project ledger",
+                            "page_label": "Maintained project ledger",
+                            "sequence": 0,
+                            "enabled": False,
+                            "release_state": "hidden",
+                            "access_level": "role_restricted",
+                            "policy_note": "maintained",
+                            "entry_intent": "handling",
+                            "res_model": "project.project",
+                            "visible_menu_path": "Maintained / Project / Ledger",
+                        }
+                    ],
+                },
+                {
+                    "group_key": "external.center.accounting",
+                    "group_label": "External accounting",
+                    "sequence": 80,
+                    "menus": [
+                        {
+                            "menu_xmlid": "account.menu_move",
+                            "menu_key": "account.menu_move",
+                            "page_key": "account.move",
+                            "action_xmlid": "account.action_move",
+                            "action_id": 21,
+                            "label": "External journal entries",
+                            "sequence": 30,
+                            "enabled": True,
+                            "release_state": "preview",
+                            "access_level": "internal",
+                        }
+                    ],
+                },
+            ],
+            "scenes": [
+                {
+                    "scene_key": "scene.project",
+                    "capability_key": "business.project.ledger",
+                    "label": "Maintained project scene",
+                }
+            ],
+            "capabilities": [
+                {
+                    "capability_key": "catalog.menu.project_menu_ledger",
+                    "menu_xmlid": "project.menu_ledger",
+                    "action_xmlid": "project.action_ledger",
+                    "action_id": 11,
+                    "provider_authority": "native_menu_action_entry",
+                    "res_model": "project.project",
+                },
+                {
+                    "capability_key": "business.project.ledger",
+                    "menu_xmlid": "project.menu_ledger",
+                    "target_page_key": "project.ledger",
+                    "business_capability": True,
+                    "provider_authority": "scene_entry_target",
+                    "entry_intent_label": "Review",
+                },
+                {
+                    "capability_key": "catalog.menu.account_menu_move",
+                    "menu_xmlid": "account.menu_move",
+                    "action_xmlid": "account.action_move",
+                    "action_id": 21,
+                    "res_model": "account.move",
+                },
+            ],
+        }
+        generated = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Native catalog label",
+            "version": "v1",
+            "note": "synced from native catalog",
+            "scene_version_bindings": {"scene.native": {"version": "v1"}},
+            "menu_groups": [
+                {
+                    "group_key": "catalog.project",
+                    "group_label": "Native project center",
+                    "sequence": 99,
+                    "menus": [
+                        {
+                            "menu_xmlid": "project.menu_ledger",
+                            "menu_key": "project.menu_ledger",
+                            "page_key": "native.project.ledger",
+                            "action_xmlid": "project.action_ledger",
+                            "action_id": 11,
+                            "label": "Native project ledger",
+                            "sequence": 77,
+                            "enabled": True,
+                            "release_state": "released",
+                            "access_level": "public",
+                            "res_model": "project.project.refreshed",
+                            "visible_menu_path": "Native / Project / Ledger",
+                            "view_modes": ["tree", "form"],
+                        },
+                        {
+                            "menu_xmlid": "project.menu_new_catalog_entry",
+                            "menu_key": "project.menu_new_catalog_entry",
+                            "page_key": "project.new",
+                            "action_xmlid": "project.action_new",
+                            "action_id": 12,
+                            "label": "Newly discovered",
+                            "sequence": 90,
+                            "enabled": False,
+                            "release_state": "hidden",
+                        },
+                    ],
+                }
+            ],
+            "scenes": [{"scene_key": "scene.native"}],
+            "capabilities": [
+                {
+                    "capability_key": "catalog.menu.project_menu_ledger",
+                    "menu_xmlid": "project.menu_ledger",
+                    "action_xmlid": "project.action_ledger",
+                    "action_id": 11,
+                    "res_model": "project.project.refreshed",
+                },
+                {
+                    "capability_key": "catalog.menu.project_menu_new_catalog_entry",
+                    "menu_xmlid": "project.menu_new_catalog_entry",
+                    "action_xmlid": "project.action_new",
+                    "action_id": 12,
+                    "res_model": "project.new",
+                },
+            ],
+            "policy_source_authority": {
+                "source": "current_db_ir_ui_menu",
+                "source_db": "sc_test",
+            },
+        }
+
+        def native_source(row):
+            self.assertEqual(row["menu_xmlid"], "account.menu_move")
+            return {
+                "menu_id": 201,
+                "menu_xmlid": "account.menu_move",
+                "menu_key": "account.menu_move",
+                "action_id": 21,
+                "action_xmlid": "account.action_move",
+                "action_model": "ir.actions.act_window",
+                "res_model": "account.move",
+                "model": "account.move",
+                "visible_menu_path": "Accounting / Journal Entries",
+            }
+
+        service._read_native_source_facts = native_source
+        values = service.build_sync_values(
+            payload=generated,
+            current=current,
+            identity={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        )
+
+        self.assertFalse(values["active"])
+        self.assertEqual(values["allowed_role_codes"], ["project_manager"])
+        self.assertEqual(values["label"], "Maintained construction product")
+        self.assertEqual(values["version"], "v7")
+        self.assertEqual(values["note"], "")
+        self.assertEqual(
+            values["scene_version_bindings"],
+            {"scene.project": {"version": "v3"}},
+        )
+        self.assertEqual(values["scenes"], current["scenes"])
+        self.assertEqual(
+            [group["group_key"] for group in values["menu_groups"]],
+            ["construction.center.project", "external.center.accounting"],
+        )
+        project_group = values["menu_groups"][0]
+        self.assertEqual(project_group["group_label"], "Admin renamed project center")
+        self.assertEqual(project_group["sequence"], 0)
+        self.assertEqual(len(project_group["menus"]), 1)
+        project_menu = project_group["menus"][0]
+        self.assertEqual(project_menu["label"], "Maintained project ledger")
+        self.assertEqual(project_menu["sequence"], 0)
+        self.assertFalse(project_menu["enabled"])
+        self.assertEqual(project_menu["release_state"], "hidden")
+        self.assertEqual(project_menu["access_level"], "role_restricted")
+        self.assertEqual(project_menu["policy_note"], "maintained")
+        self.assertEqual(project_menu["entry_intent"], "handling")
+        self.assertEqual(project_menu["page_key"], "project.ledger")
+        self.assertEqual(project_menu["res_model"], "project.project.refreshed")
+        self.assertEqual(project_menu["visible_menu_path"], "Native / Project / Ledger")
+        self.assertEqual(project_menu["view_modes"], ["tree", "form"])
+        self.assertEqual(
+            values["menu_groups"][1]["menus"][0]["label"],
+            "External journal entries",
+        )
+        capability_keys = {
+            row["capability_key"] for row in values["capabilities"]
+        }
+        self.assertIn("business.project.ledger", capability_keys)
+        self.assertIn("catalog.menu.account_menu_move", capability_keys)
+        self.assertNotIn(
+            "catalog.menu.project_menu_new_catalog_entry",
+            capability_keys,
+        )
+        business_capability = next(
+            row
+            for row in values["capabilities"]
+            if row["capability_key"] == "business.project.ledger"
+        )
+        self.assertTrue(business_capability["business_capability"])
+        self.assertEqual(business_capability["provider_authority"], "scene_entry_target")
+        self.assertEqual(business_capability["entry_intent_label"], "Review")
+
+        repeated = service.build_sync_values(
+            payload=generated,
+            current=values,
+            identity={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        )
+        self.assertEqual(repeated, values)
+
+    def test_sync_rejects_rebound_or_missing_native_sources_before_write(self):
+        current = {
+            "active": True,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "note": "",
+            "menu_groups": [
+                {
+                    "group_key": "construction.center.project",
+                    "menus": [
+                        {
+                            "menu_xmlid": "project.menu_ledger",
+                            "action_xmlid": "project.action_ledger",
+                            "action_id": 11,
+                            "sequence": 0,
+                            "enabled": True,
+                        }
+                    ],
+                }
+            ],
+            "scenes": [],
+            "capabilities": [],
+        }
+        generated = deepcopy(current)
+        generated["policy_source_authority"] = {
+            "source": "current_db_ir_ui_menu",
+        }
+        generated["menu_groups"][0]["menus"][0][
+            "action_xmlid"
+        ] = "project.action_rebound"
+        generated["menu_groups"][0]["menus"][0]["action_id"] = 12
+        record = _SyncPolicyRecord(current)
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+            _SyncPolicyEnv(_SyncPolicyModel(record))
+        )
+        with patch.object(
+            PRODUCT_POLICY_CATALOG_SYNC_SERVICE,
+            "resolve_product_identity",
+            return_value={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        ), patch.object(service, "build_policy_payload", return_value=generated):
+            with self.assertRaisesRegex(
+                PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
+                "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+            ):
+                service.sync_policy(product_key="construction.standard")
+        self.assertIsNone(record.written)
+        self.assertEqual(record.to_runtime_dict(), current)
+
+        generated_without_source = deepcopy(generated)
+        generated_without_source["menu_groups"] = []
+
+        def missing_source(_row):
+            raise PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_MISSING",
+                "native menu source not found",
+                entry="project.menu_ledger",
+            )
+
+        service._read_native_source_facts = missing_source
+        with patch.object(
+            PRODUCT_POLICY_CATALOG_SYNC_SERVICE,
+            "resolve_product_identity",
+            return_value={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        ), patch.object(
+            service,
+            "build_policy_payload",
+            return_value=generated_without_source,
+        ):
+            with self.assertRaisesRegex(
+                PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
+                "PRODUCT_SYNC_SOURCE_MISSING",
+            ):
+                service.sync_policy(product_key="construction.standard")
+        self.assertIsNone(record.written)
+        self.assertEqual(record.to_runtime_dict(), current)
+
+    def test_sync_rejects_catalog_source_read_failure_and_keeps_empty_policy(self):
+        current = {
+            "active": False,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Archived empty policy",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "note": "",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+        payload = {
+            **current,
+            "policy_source_authority": {
+                "source": "external_db_ir_ui_menu_failed",
+                "error": "source database unavailable",
+            },
+        }
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+            env=None
+        )
+        with self.assertRaisesRegex(
+            PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
+            "PRODUCT_SYNC_SOURCE_READ_FAILED",
+        ):
+            service.build_sync_values(
+                payload=payload,
+                current=current,
+                identity={
+                    "product_key": "construction.standard",
+                    "base_product_key": "construction",
+                    "edition_key": "standard",
+                },
+            )
+        self.assertFalse(current["active"])
+        self.assertEqual(current["menu_groups"], [])
+
+        usable_payload = deepcopy(payload)
+        usable_payload["policy_source_authority"] = {
+            "source": "current_db_ir_ui_menu",
+            "source_db": "sc_test",
+        }
+        usable_payload["menu_groups"] = [
+            {
+                "group_key": "catalog.project",
+                "menus": [
+                    {
+                        "menu_xmlid": "project.menu_discovered",
+                        "action_xmlid": "project.action_discovered",
+                        "action_id": 41,
+                    }
+                ],
+            }
+        ]
+        values = service.build_sync_values(
+            payload=usable_payload,
+            current=current,
+            identity={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        )
+        self.assertFalse(values["active"])
+        self.assertEqual(values["menu_groups"], [])
+        self.assertEqual(values["capabilities"], [])
 
 
 if __name__ == "__main__":

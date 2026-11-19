@@ -1344,13 +1344,6 @@ function assertCenterWriteReadback(
   }
   centerWriteText(readback.draft_policy_sha256, 'product_center_write.readback.draft_policy_sha256');
   centerWriteText(readback.draft_fingerprint, 'product_center_write.readback.draft_fingerprint');
-  if (!Number.isInteger(Number(readback.published_snapshot_id))) {
-    throw contractGapError({
-      kind: 'contract_defect',
-      missing: 'product_center_write.readback.published_snapshot_id',
-      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
-    }, '产品中心保存回读缺少发布快照身份');
-  }
   if (typeof readback.published_version !== 'string') {
     throw contractGapError({
       kind: 'contract_defect',

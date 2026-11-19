@@ -1,0 +1,48 @@
+schema_version: 1
+goal:
+  id: PRODUCT-CLOSE-02-PRESERVE-PRODUCT-DRAFT-20261119
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Product-policy catalog synchronization merge behavior and its strict
+    frontend action/readback consumer
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+    - docs/ops/iterations
+  standard_vs_user_specific: platform_mechanism
+  objective: >-
+    Preserve administrator-maintained product draft facts when synchronizing
+    native catalog sources. Sync refreshes source identity and metadata for
+    already-selected entries only; it does not add catalog capabilities to a
+    product, overwrite maintained organization/role/scene facts, or publish.
+  product_result: >-
+    After an administrator selects capabilities, edits centers, sequence and
+    roles, "sync product capabilities" retains those draft decisions. New
+    catalog discoveries remain in the platform catalog until explicitly
+    admitted, and the existing release flow remains the only publication path.
+  why_here: >-
+    smart_core owns product-policy synchronization, release-operator actions
+    and the generic contract consumer. The source menu/action facts remain
+    native Odoo and industry-extension inputs.
+  why_not_elsewhere:
+    - Frontend code must not reconstruct data lost by backend synchronization.
+    - smart_construction_core must not own the generic merge mechanism.
+    - Sync must not publish, enable enterprise scenarios or add unselected catalog entries.
+    - Native menu and action records remain the source identity authority.
+  blast_radius:
+    behavior:
+      - sc.product.policy draft synchronization for one submitted product
+      - release.operator.sync_policy policy and surface readback consumption
+      - published snapshot and other-product isolation
+      - frontend configured-action request and readback validation
+  exclusions:
+    - ORM, Odoo native capability and module baselines
+    - module upgrade and environment rebuild
+    - browser matrix and deployment
+    - automatic catalog admission, publication or source migration
+    - SCENE-CLOSE-02 scenario-version convergence
+  rollback: >-
+    Revert the backend and frontend commits together. Existing immutable
+    snapshots and enterprise enablement are untouched by the synchronization
+    change; no data migration is introduced.

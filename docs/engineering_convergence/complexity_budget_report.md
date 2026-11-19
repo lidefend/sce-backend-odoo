@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5291`
 - Files requiring split plan: `82`
-- Files above warning threshold: `159`
+- Files above warning threshold: `161`
 
 ## Split Plan Required
 
@@ -77,7 +77,7 @@ Generated from repository source files. This report is informational during the 
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1657 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
-| 1640 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
+| 1633 | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1612 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
@@ -212,6 +212,7 @@ Generated from repository source files. This report is informational during the 
 | 882 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 879 | Python source | `scripts/verify/frontend_decision_authority.py` |
+| 867 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
@@ -225,14 +226,15 @@ Generated from repository source files. This report is informational during the 
 | 842 | Python source | `scripts/verify/guard_registry_audit.py` |
 | 841 | Python source | `scripts/verify/test_sc_data_scope_rule_coverage_guard.py` |
 | 837 | Python source | `addons/smart_construction_core/core_extension_system_init_rows.py` |
+| 833 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 833 | JavaScript source | `scripts/verify/frontend_geometry_scroll_audit.mjs` |
 | 832 | Python source | `scripts/ops/production_acceptance_clone_runtime.py` |
+| 830 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |
 | 830 | Python source | `scripts/release/test_production_release_contract.py` |
 | 829 | Python source | `addons/smart_core/core/node_component_validation.py` |
 | 828 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 820 | TypeScript source | `frontend/apps/web/src/app/releaseOperatorActionContract.ts` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 810 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
@@ -329,7 +331,7 @@ Generated from repository source files. This report is informational during the 
 | 1657 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
-| 1640 | split_plan_required | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
+| 1633 | split_plan_required | Vue source | `frontend/apps/web/src/views/ReleaseOperatorView.vue` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1612 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
