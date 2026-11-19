@@ -44,13 +44,13 @@ Generated from repository source files. This report is informational during the 
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
+| 2252 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2213 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2200 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 2087 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2086 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 2068 | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2024 | Python source | `addons/smart_construction_core/core_extension.py` |
@@ -103,6 +103,7 @@ Generated from repository source files. This report is informational during the 
 | 1538 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1491 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
+| 1479 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
@@ -113,7 +114,6 @@ Generated from repository source files. This report is informational during the 
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1392 | Python source | `scripts/ops/change_impact_planner.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
-| 1388 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1361 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1353 | Python source | `scripts/ops/local_quick_evidence.py` |
@@ -297,13 +297,13 @@ Generated from repository source files. This report is informational during the 
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
+| 2252 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2213 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
 | 2200 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
-| 2087 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2086 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 2068 | split_plan_required | Python source | `scripts/audit/generate_change_impact_verification_inventory.py` |
 | 2024 | split_plan_required | Python source | `addons/smart_construction_core/core_extension.py` |

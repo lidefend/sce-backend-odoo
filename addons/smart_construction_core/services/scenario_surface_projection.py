@@ -722,6 +722,84 @@ def load_runtime_surface(env):
     return published if published is not None else load_maintained_runtime_surface(env)
 
 
+def _execution_database(env) -> str:
+    return _text(getattr(getattr(env, "cr", None), "dbname", ""))
+
+
+def _resolved_scenario_menu_id(
+    env,
+    menu_key: str,
+    location: dict[str, Any],
+    surface: dict[str, Any],
+) -> int:
+    """Resolve one scenario reference to the menu ID used by the current DB."""
+    reference = _text(menu_key)
+    source_db = _text(location.get("source_db") or surface.get("source_db"))
+    execution_db = _execution_database(env)
+    if reference.startswith("menu:"):
+        if execution_db and source_db != execution_db:
+            return 0
+        return _int_or(reference.split(":", 1)[1], 0)
+    if "." in reference:
+        ref = getattr(env, "ref", None)
+        if callable(ref):
+            try:
+                menu = ref(reference, raise_if_not_found=False)
+            except Exception:
+                menu = None
+            return int(getattr(menu, "id", 0) or 0)
+    return _int_or(location.get("menu_id"), 0)
+
+
+def _resolved_menu_index(env, surface: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    """Normalize declared menu references to execution-database identities.
+
+    XMLIDs are stable across databases and resolve through ``env.ref``. Numeric
+    identities are executable only when their declared source is the current
+    database; a coincident number in a foreign database is not a mapping.
+    """
+    index: dict[str, dict[str, Any]] = {}
+    for menu_key, location in build_menu_index(surface).items():
+        numeric_reference = _text(menu_key).startswith("menu:")
+        declared_locations = _scenario_locations(location)
+        resolved_locations = []
+        for declared_location in declared_locations:
+            menu_id = _resolved_scenario_menu_id(
+                env,
+                menu_key,
+                declared_location,
+                surface,
+            )
+            if menu_id <= 0:
+                continue
+            resolved_locations.append({
+                **deepcopy(declared_location),
+                "menu_id": menu_id,
+            })
+
+        menu_id = _resolved_scenario_menu_id(env, menu_key, location, surface)
+        if menu_id <= 0 and resolved_locations:
+            menu_id = int(resolved_locations[0]["menu_id"])
+        if numeric_reference and menu_id <= 0:
+            continue
+        if numeric_reference and declared_locations and not resolved_locations:
+            continue
+
+        resolved = {
+            **deepcopy(location),
+            "menu_id": menu_id,
+        }
+        if resolved_locations:
+            resolved["scenario_locations"] = resolved_locations
+            resolved.update({
+                key: value
+                for key, value in resolved_locations[0].items()
+                if key != "menu_id"
+            })
+        index[menu_key] = resolved
+    return index
+
+
 def runtime_menu_scope(env, surface=None):
     """Index all native menus as bound, explicitly exempt, or missing.
 
@@ -729,7 +807,12 @@ def runtime_menu_scope(env, surface=None):
     The index and ID/action maps share the same current native identities.
     """
     surface = load_runtime_surface(env) if surface is None else surface
-    index = build_menu_index(surface)
+    index = _resolved_menu_index(env, surface)
+    declared_keys_by_menu_id: dict[int, list[str]] = {}
+    for menu_key, location in index.items():
+        menu_id = _int_or(location.get("menu_id"), 0)
+        if menu_id > 0:
+            declared_keys_by_menu_id.setdefault(menu_id, []).append(menu_key)
     by_id, by_action = {}, {}
     # The scene-fact index must cover every native menu, not just the menus the
     # current principal may see. Odoo filters ir.ui.menu search by the caller's
@@ -746,9 +829,10 @@ def runtime_menu_scope(env, surface=None):
         by_id[menu.id] = key
         if menu.action:
             by_action.setdefault(menu.action.id, []).append(key)
-        if key in index:
-            index[key]["menu_id"] = menu.id
-        else:
+        declared_keys = (
+            [key] if key in index else declared_keys_by_menu_id.get(menu.id, [])
+        )
+        if not declared_keys:
             index[key] = {
                 "location": (
                     "exempt"
@@ -762,6 +846,25 @@ def runtime_menu_scope(env, surface=None):
                 "scenario_locations": [],
                 "menu_id": menu.id,
             }
+            continue
+        for declared_key in declared_keys:
+            location = index.pop(declared_key)
+            location["menu_id"] = menu.id
+            for scenario_location in location.get("scenario_locations") or []:
+                scenario_location["menu_id"] = menu.id
+            existing = index.get(key)
+            if not existing or existing.get("location") != "scenario":
+                index[key] = location
+                continue
+            existing.setdefault("scenario_locations", []).extend(
+                location.get("scenario_locations") or []
+            )
+    local_menu_ids = {int(menu.id) for menu in menus}
+    index = {
+        key: location
+        for key, location in index.items()
+        if int(location.get("menu_id") or 0) in local_menu_ids
+    }
     return index, by_id, by_action
 
 
@@ -816,22 +919,10 @@ def _scenario_entries_by_menu(
                 item["entry_id"],
             ))
         return result
-    index = build_menu_index(surface)
+    index = _resolved_menu_index(env, surface)
     result: dict[int, list[dict[str, Any]]] = {}
     for menu_key, location in index.items():
         menu_id = _int_or(location.get("menu_id"), 0)
-        if env is not None and "." in _text(menu_key):
-            try:
-                menu = env.ref(menu_key, raise_if_not_found=False)
-            except Exception:
-                menu = None
-            if menu:
-                menu_id = int(getattr(menu, "id", 0) or 0)
-        elif _text(menu_key).startswith("menu:"):
-            source_db = _text(location.get("source_db") or surface.get("source_db"))
-            execution_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
-            if not source_db or source_db != execution_db:
-                continue
         if menu_id <= 0:
             continue
         for row in _scenario_locations(location):

@@ -258,9 +258,9 @@
     "scope": "Contract-only P0/P1 source behavior and existing consumers",
     "passed": [
       "make verify.ci.workflow.contract: passed; contract-only risk scope disables managed ORM only for exact branch/base/path match",
-      "make verify.navigation.publication_consumers.unit: passed; tenant activation 94, center projection 9, scenario surface 24, capability authority 40 and adjacent suites non-zero",
+      "make verify.navigation.publication_consumers.unit: passed; tenant activation 97, center projection 9, scenario surface 24, capability authority 40 and adjacent suites non-zero",
       "make verify.daily.published_face.target.unit: 7 tests",
-      "make verify.admin_close_01.backend.unit: aggregate passed, including tenant activation 94 tests",
+      "make verify.admin_close_01.backend.unit: aggregate passed, including tenant activation 97 tests",
       "make verify.frontend.workspace_scenario_lifecycle.unit: passed; lifecycle 11 cases plus existing frontend scenario suites",
       "make verify.backend.navigation_delivery.unit: passed",
       "make verify.runtime_capability_catalog.unit: 27 tests",
@@ -286,7 +286,9 @@
       "remote planner registers exact pure targets through contract_only_checks while backend impact and managed ORM selection are skipped"
       ,
       "all risk-classifier invocations receive the exact PR head branch",
-      "contract-only scope preserves the owning control-plane tool checks instead of dropping backend planner output"
+      "contract-only scope preserves the owning control-plane tool checks instead of dropping backend planner output",
+      "P1 runtime menu scope resolves numeric scene references only from the execution database and shares that normalized identity with navigation indexing",
+      "foreign or source-less numeric scene references cannot populate scenario_composition.selected_by_menu; stable XMLIDs still resolve across databases and same-database numeric references remain valid"
     ],
     "interrupted_not_passed": [
       "Two early ci.local.iteration attempts were interrupted after path analysis selected ORM targets outside the declared contract-only boundary; neither interrupted run is counted as a pass"
@@ -307,5 +309,5 @@
     "L4": "Not applicable by owner continuation: no browser matrix or environment rebuild",
     "L5": "Exact-head owner review and required remote checks at publication"
   },
-  "next_exact_step": "Commit the P4 contract-only remote planner change and publish the amended PR #945 exact head"
+  "next_exact_step": "Commit the P1 execution-identity scenario reference fix and publish the amended PR #945 exact head"
 }

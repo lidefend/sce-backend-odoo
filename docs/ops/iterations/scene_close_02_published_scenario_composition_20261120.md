@@ -81,6 +81,14 @@ existing `scenes` and `scene_version_bindings` carrier.
   empty published composition. Retained company enablement keys cannot select
   maintained draft scenes, and `load_maintained_runtime_surface` is restricted to
   editing and freezing.
+- P1 runtime menu scope now resolves numeric scene references against the
+  execution database before producing `scenario_composition.selected_by_menu`.
+  Source-less or foreign numeric references cannot bind a local menu with the
+  same number; stable XMLIDs still resolve to the execution database's local
+  identity, and same-database numeric references remain valid.
+- Scenario selection and navigation indexing consume the same normalized menu
+  identity result, so a rejected reference cannot enter through either the
+  existing-navigation or authority-added-entry path.
 - Directed regression includes native denial control, composition-only freeze,
   draft isolation, publication, rollback and immutable snapshot behavior.
 
@@ -88,7 +96,7 @@ existing `scenes` and `scene_version_bindings` carrier.
 
 | Check | Result |
 | --- | --- |
-| `verify.navigation.publication_consumers.unit` | passed; tenant activation 94, center projection 9, scenario surface 24 and adjacent suites non-zero |
+| `verify.navigation.publication_consumers.unit` | passed; tenant activation 97, center projection 9, scenario surface 24 and adjacent suites non-zero |
 | `verify.daily.published_face.target.unit` | passed, 6 tests |
 | `verify.admin_close_01.backend.unit` | passed aggregate |
 | `verify.frontend.workspace_scenario_lifecycle.unit` | passed; affected frontend lifecycle and scenario suites |

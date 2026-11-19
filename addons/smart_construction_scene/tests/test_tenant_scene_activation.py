@@ -2063,6 +2063,171 @@ class TestMaintainedScenarioScope(unittest.TestCase):
         )
         self.assertEqual(indexed, {})
 
+    def test_scenario_selection_uses_the_same_resolved_menu_identity(self):
+        def env_for(menu):
+            class MenuModel:
+                def sudo(self):
+                    return self
+
+                def with_context(self, **kwargs):
+                    return self
+
+                def search(self, domain):
+                    return [menu]
+
+            class Env:
+                cr = types.SimpleNamespace(dbname="tenant_db")
+
+                def __getitem__(self, model_name):
+                    if model_name == "ir.ui.menu":
+                        return MenuModel()
+                    raise KeyError(model_name)
+
+                def ref(self, xmlid, raise_if_not_found=False):
+                    return menu if xmlid == "project.menu_ledger" else None
+
+            return Env()
+
+        def surface(source_db, menu_key="menu:21"):
+            return {
+                "schema": scenario_surface.SCHEMA,
+                "source_db": source_db,
+                "scenarios": [{
+                    "key": "project",
+                    "name": "Project",
+                    "active": True,
+                    "sequence": 0,
+                    "bindings": [{
+                        "menu_key": menu_key,
+                        "menu_id": 21,
+                        "source_db": source_db,
+                        "intent": "view",
+                        "sequence": 0,
+                    }],
+                }],
+            }
+
+        local_menu = types.SimpleNamespace(
+            id=21,
+            action=types.SimpleNamespace(id=99),
+            child_id=[],
+            sc_scenario_exempt=False,
+            get_external_id=lambda: {},
+        )
+        local_env = env_for(local_menu)
+        for source_db in ("platform_db", ""):
+            with self.subTest(source_db=source_db):
+                rejected_surface = surface(source_db)
+                index, by_id, by_action = scenario_surface.runtime_menu_scope(
+                    local_env,
+                    rejected_surface,
+                )
+                self.assertEqual(index["menu:21"]["location"], "missing")
+                self.assertEqual(
+                    scenario_surface._scenario_entries_by_menu(
+                        local_env,
+                        surface=rejected_surface,
+                    ),
+                    {},
+                )
+                filtered = business_enablement.filter_business_authority(
+                    {
+                        "primary_actions": [{
+                            "menu_id": 21,
+                            "action_id": 99,
+                            "allowed": True,
+                        }]
+                    },
+                    surface_index=index,
+                    enabled={"project": True},
+                    entries=[],
+                    menu_xmlids_by_id=by_id,
+                    menu_xmlids_by_action=by_action,
+                    company_id=9,
+                )
+                self.assertFalse(filtered["primary_actions"])
+                self.assertNotIn(
+                    "21",
+                    filtered["scenario_composition"]["selected_by_menu"],
+                )
+
+        same_db_surface = surface("tenant_db")
+        index, by_id, by_action = scenario_surface.runtime_menu_scope(
+            local_env,
+            same_db_surface,
+        )
+        self.assertEqual(index["menu:21"]["location"], "scenario")
+        self.assertEqual(
+            scenario_surface._scenario_entries_by_menu(
+                local_env,
+                surface=same_db_surface,
+            )[21][0]["scenario_key"],
+            "project",
+        )
+        filtered = business_enablement.filter_business_authority(
+            {
+                "primary_actions": [{
+                    "menu_id": 21,
+                    "action_id": 99,
+                    "allowed": True,
+                }]
+            },
+            surface_index=index,
+            enabled={"project": True},
+            entries=[],
+            menu_xmlids_by_id=by_id,
+            menu_xmlids_by_action=by_action,
+            company_id=9,
+        )
+        self.assertTrue(filtered["primary_actions"])
+        self.assertEqual(
+            filtered["scenario_composition"]["selected_by_menu"]["21"]["scenario_key"],
+            "project",
+        )
+
+        xmlid_menu = types.SimpleNamespace(
+            id=121,
+            action=types.SimpleNamespace(id=331),
+            child_id=[],
+            sc_scenario_exempt=False,
+            get_external_id=lambda: {121: "project.menu_ledger"},
+        )
+        xmlid_env = env_for(xmlid_menu)
+        xmlid_surface = surface("platform_db", "project.menu_ledger")
+        index, by_id, by_action = scenario_surface.runtime_menu_scope(
+            xmlid_env,
+            xmlid_surface,
+        )
+        self.assertEqual(index["project.menu_ledger"]["location"], "scenario")
+        self.assertEqual(
+            scenario_surface._scenario_entries_by_menu(
+                xmlid_env,
+                surface=xmlid_surface,
+            )[121][0]["scenario_key"],
+            "project",
+        )
+        filtered = business_enablement.filter_business_authority(
+            {
+                "primary_actions": [{
+                    "menu_id": 121,
+                    "action_id": 331,
+                    "menu_xmlid": "project.menu_ledger",
+                    "allowed": True,
+                }]
+            },
+            surface_index=index,
+            enabled={"project": True},
+            entries=[],
+            menu_xmlids_by_id=by_id,
+            menu_xmlids_by_action=by_action,
+            company_id=9,
+        )
+        self.assertTrue(filtered["primary_actions"])
+        self.assertEqual(
+            filtered["scenario_composition"]["selected_by_menu"]["121"]["scenario_key"],
+            "project",
+        )
+
     def test_added_and_existing_leaves_share_scene_target_projection(self):
         scene_targets = {(21, 31): "finance.operating_metrics"}
         existing = {
