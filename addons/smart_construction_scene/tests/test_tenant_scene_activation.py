@@ -674,6 +674,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
     def test_activation_binds_diagnosis_create_and_write_to_requested_company(self):
         handlers, original = self._handlers_and_env()
         events = []
+        params = {}
         class Env(ContextEnv):
             company = original.company
             user = types.SimpleNamespace(id=7, company_ids=types.SimpleNamespace(ids=[1, 2]))
@@ -688,7 +689,13 @@ class TestActualPublicationConsumers(unittest.TestCase):
                     company.exists = lambda: company
                     return types.SimpleNamespace(browse=lambda company_id: company)
                 if name == "ir.config_parameter":
-                    model = types.SimpleNamespace(set_param=lambda key, value: events.append(("set_param", key, value)))
+                    def set_param(key, value):
+                        params[key] = value
+                        events.append(("set_param", key, value))
+                    model = types.SimpleNamespace(
+                        set_param=set_param,
+                        get_param=lambda key, default="0": params.get(key, default),
+                    )
                     return types.SimpleNamespace(sudo=lambda: model)
                 raise AssertionError(name)
         module = types.ModuleType("odoo.addons.smart_construction_scene.services.scenario_dependency_diagnosis")
@@ -701,6 +708,15 @@ class TestActualPublicationConsumers(unittest.TestCase):
         with patch.dict(sys.modules, {module.__name__: module}):
             result = handler.handle({"company_id": 2, "scene_key": "test.scene", "enabled": True})
         self.assertTrue(result["ok"])
+        self.assertEqual(result["data"]["target_scope"]["company_id"], 2)
+        self.assertFalse(result["data"]["target_scope"]["is_global_product_release"])
+        self.assertEqual(
+            result["data"]["target_scope"]["target_role_scope"]["mode"],
+            "not_role_scoped",
+        )
+        self.assertTrue(result["data"]["readback"]["enabled"])
+        self.assertFalse(result["data"]["readback"]["access_granted"])
+        self.assertIn("actor", result["data"])
         self.assertEqual(events, [
             ("diagnose", 2, 2, 7),
             ("set_param", "sc.scene.tenant.enablement.2.test.scene", "1"),
@@ -713,6 +729,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
         for allowed in (False, True):
             with self.subTest(allowed=allowed):
                 events = []
+                params = {}
                 record = types.SimpleNamespace(enabled=False)
                 def set_enabled(value):
                     events.append("set_enabled")
@@ -732,7 +749,13 @@ class TestActualPublicationConsumers(unittest.TestCase):
                         if name == "res.company":
                             return types.SimpleNamespace(browse=lambda company_id: company)
                         if name == "ir.config_parameter":
-                            model = types.SimpleNamespace(set_param=lambda key, value: events.append("set_param"))
+                            def set_param(key, value):
+                                params[key] = value
+                                events.append("set_param")
+                            model = types.SimpleNamespace(
+                                set_param=set_param,
+                                get_param=lambda key, default="0": params.get(key, default),
+                            )
                             return types.SimpleNamespace(sudo=lambda: model)
                         raise AssertionError(name)
                 def diagnose(*args, **kwargs):
@@ -1269,7 +1292,14 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 if name == "ir.config_parameter":
                     def set_param(key, value):
                         params[key] = value
-                    return types.SimpleNamespace(sudo=lambda: types.SimpleNamespace(set_param=set_param))
+                    def get_param(key, default="0"):
+                        return params.get(key, default)
+                    return types.SimpleNamespace(
+                        sudo=lambda: types.SimpleNamespace(
+                            set_param=set_param,
+                            get_param=get_param,
+                        )
+                    )
                 raise AssertionError(name)
         handler = handlers.ScenarioActivationSetHandler()
         handler.env, handler.params = Env(), {}
@@ -1539,15 +1569,45 @@ class TestTenantSceneActivation(unittest.TestCase):
             release_state_by_menu=release,
             tenant_enablement_by_scene={"projects.ledger": True},
             role_candidates_by_scene={"projects.ledger": ["pm", "business_config_admin"]},
+            product_release_evidence_by_menu={
+                "smart_construction_core.menu_sc_project_project": {
+                    "qualification_authority": "published_product_release",
+                    "products": [
+                        {
+                            "product_key": "construction.standard",
+                            "qualified": True,
+                            "release_state": "released",
+                            "snapshot_id": 9,
+                            "version": "v9",
+                            "applied": True,
+                        }
+                    ],
+                }
+            },
         )
         self.assertEqual(catalog["contract_version"], "scenario_activation_catalog.v1")
         self.assertEqual(catalog["row_count"], 2)
         by_key = {row["scene_key"]: row for row in catalog["rows"]}
         self.assertTrue(by_key["projects.ledger"]["product_released"])
         self.assertTrue(by_key["projects.ledger"]["tenant_enabled"])
+        self.assertEqual(
+            by_key["projects.ledger"]["product_qualification"]["status"],
+            "qualified",
+        )
+        self.assertEqual(
+            by_key["projects.ledger"]["product_qualification"]["evidence"][
+                "products"
+            ][0]["version"],
+            "v9",
+        )
+        self.assertEqual(by_key["projects.ledger"]["enablement_blockers"], [])
         self.assertEqual(by_key["projects.ledger"]["applicable_roles"], ["pm", "business_config_admin"])
         self.assertFalse(by_key["finance.payment_ledger"]["product_released"])
         self.assertFalse(by_key["finance.payment_ledger"]["tenant_enabled"])
+        self.assertEqual(
+            by_key["finance.payment_ledger"]["enablement_blockers"],
+            ["PRODUCT_NOT_RELEASED"],
+        )
 
     def test_workspace_projection_intersection(self):
         entries = [

@@ -149,12 +149,11 @@ class AcceptanceRuntimeProfileTest(unittest.TestCase):
         server = (ROOT / "scripts/release/release_static_server.mjs").read_text(
             encoding="utf-8"
         )
-        backend_route = "requestPath === '/web' || requestPath.startsWith('/web/')"
-        self.assertIn(backend_route, " ".join(server.split()))
+        self.assertIn("isBackendRequestPath(requestPath)", server)
         self.assertLess(server.index("if (isBackendRoute)"), server.index("const raw ="))
         self.assertIn("API_PROXY_BASE_PATH", server)
-        self.assertIn("upstreamRequestPath(req.url, proxyBasePath)", server)
-        self.assertIn("proxyResponseHeaders(up.headers, proxyBasePath)", server)
+        self.assertIn("upstreamRequestPath(req.url, proxyBasePath, entryPrefix)", server)
+        self.assertIn("proxyResponseHeaders(up.headers, proxyBasePath, proxy.origin)", server)
 
     def test_runtime_mutators_validate_existing_resource_identity_before_change(self):
         runtime = (ROOT / "scripts/dev/frontend_acceptance_runtime.sh").read_text(

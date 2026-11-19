@@ -311,6 +311,15 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|planned": _derived(
         "config/product_configuration_capability_v1.json"
     ),
+    "R4_business_state_literal|qualified": _derived(
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:299"
+    ),
+    "R4_business_state_literal|not_qualified": _derived(
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:301"
+    ),
+    "R4_business_state_literal|not_verified": _derived(
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py:303"
+    ),
     "R4_business_state_literal|published": _derived(
         "addons/smart_core/core/view_contract_presence.py:60"
     ),

@@ -1,7 +1,7 @@
 import { createReadStream, statSync } from 'node:fs'
 import { createServer, request as httpRequest } from 'node:http'
 import { extname, join, normalize } from 'node:path'
-import { normalizeProxyBasePath, proxyResponseHeaders, upstreamRequestPath } from './static_proxy_target.mjs'
+import { isBackendRequestPath, normalizeProxyBasePath, proxyResponseHeaders, upstreamRequestPath } from './static_proxy_target.mjs'
 
 const root = process.env.STATIC_ROOT
 const port = Number(process.env.STATIC_PORT || 5175)
@@ -13,6 +13,7 @@ if (!root) throw new Error('STATIC_ROOT is required')
 // same way nginx does for a deployed entry.  An unset namespace leaves the
 // request untouched so a non-acceptance preview cannot invent an identity.
 const entryNamespace = (process.env.SC_ENTRY_NAMESPACE || '').trim()
+const entryPrefix = entryNamespace ? `/t/${entryNamespace}` : ''
 const entryHeaders = entryNamespace
   ? {
       'x-sc-namespace': entryNamespace,
@@ -36,15 +37,10 @@ const contentTypes = { '.html': 'text/html; charset=utf-8', '.js': 'text/javascr
 
 createServer((req, res) => {
   const requestPath = (req.url || '').split('?')[0]
-  const isBackendRoute = (
-    requestPath.startsWith('/api/')
-    || requestPath === '/web'
-    || requestPath.startsWith('/web/')
-    || /^\/t\/[^/]+\/(api|web)(\/|$)/.test(requestPath)
-  )
+  const isBackendRoute = isBackendRequestPath(requestPath)
   if (isBackendRoute) {
-    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: upstreamRequestPath(req.url, proxyBasePath), headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
-      res.writeHead(up.statusCode || 502, proxyResponseHeaders(up.headers, proxyBasePath))
+    const upstream = httpRequest({ hostname: proxy.hostname, port: proxy.port, method: req.method, path: upstreamRequestPath(req.url, proxyBasePath, entryPrefix), headers: { ...proxyHeaders(req.headers), host: proxy.host } }, (up) => {
+      res.writeHead(up.statusCode || 502, proxyResponseHeaders(up.headers, proxyBasePath, proxy.origin))
       up.pipe(res)
     })
     upstream.on('error', () => { res.writeHead(502, { 'content-type': 'application/json' }); res.end('{"error":"upstream unavailable"}') })

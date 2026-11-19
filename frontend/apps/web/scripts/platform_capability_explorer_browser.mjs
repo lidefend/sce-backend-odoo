@@ -5,6 +5,8 @@ import { authenticateDeniedProbe, createExpectedHttpFailureBudget } from './plat
 
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
 const DB_NAME = String(process.env.DB_NAME || 'sc_dev_demo').trim();
+const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
+const BROWSER_LOCALE = String(process.env.E2E_LOCALE || 'zh-CN');
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
 const DENIED_LOGIN = String(process.env.E2E_DENIED_LOGIN || 'wutao').trim();
@@ -13,7 +15,7 @@ const ARTIFACT_DIR = path.resolve(
   process.cwd(),
   process.env.ARTIFACTS_DIR || 'artifacts/playwright/platform-capability-explorer',
 );
-const ROUTE = `${BASE_URL}/t/demo/admin/capability-explorer`;
+const ROUTE = `${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`;
 
 const report = {
   schema: 'platform.capability.explorer.browser.v1',
@@ -61,12 +63,18 @@ async function screenshot(page, name) {
 }
 
 async function login(page, loginName = LOGIN, password = PASSWORD, captureDeniedIntent = false) {
-  await page.goto(`${BASE_URL}/t/demo/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
+  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/login`, { waitUntil: 'domcontentloaded', timeout: 60000 });
   await page.locator('#login-username, input[autocomplete="username"]').first().fill(loginName);
   await page.locator('#login-password, input[autocomplete="current-password"]').first().fill(password);
   const submit = () => page.getByRole('button', { name: /^登录$/ }).click();
   const deniedIntent = captureDeniedIntent
-    ? await authenticateDeniedProbe(page, loginName, submit)
+    ? await authenticateDeniedProbe(
+      page,
+      loginName,
+      submit,
+      `${BASE_URL}/t/${ENTRY_NAMESPACE}/`,
+      String(process.env.E2E_TENANT || 'default'),
+    )
     : await submit();
   await page.waitForFunction(() => !window.location.pathname.includes('/login'), null, { timeout: 60000 });
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
@@ -76,7 +84,7 @@ async function login(page, loginName = LOGIN, password = PASSWORD, captureDenied
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const page = await context.newPage();
   const expectedHttpFailures = createExpectedHttpFailureBudget();
   let expectedConsoleFailures = 0;
@@ -118,6 +126,10 @@ try {
   );
   await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
   await page.locator('.capability-explorer__metrics').waitFor({ timeout: 60000 });
+  await page.waitForFunction((total) => {
+    const text = document.querySelector('.capability-explorer__metrics')?.textContent || '';
+    return text.includes(String(total)) && !text.includes('—');
+  }, String(listPayload.meta.total), { timeout: 60000 });
   const desktopListReadyMs = Date.now() - listStartedAt;
   const metricsText = await page.locator('.capability-explorer__metrics').innerText();
   check(metricsText.includes(String(listPayload.meta.total)), 'summary renders backend total', { metricsText });
@@ -176,6 +188,10 @@ try {
     drawerHeadings,
     sectionCount,
   });
+  check(sectionTitles.includes('最终可用性'), 'detail final availability section rendered');
+  check(sectionTitles.includes('事实分层'), 'detail fact-layer section rendered');
+  check(drawerText.includes('当前用户可用') || drawerText.includes('当前用户不可用'), 'detail separates current-user access');
+  check(drawerText.includes('生效产品版本'), 'detail renders active product version');
   check(drawerText.includes('模块'), 'detail renders module facts');
   check(drawerText.includes('模型'), 'detail renders model facts');
   check(drawerText.includes('View'), 'detail renders view summary');
@@ -400,7 +416,7 @@ try {
     has_more: listPayload.meta.has_more,
   };
 
-  const deniedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'zh-CN' });
+  const deniedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: BROWSER_LOCALE });
   try {
     const deniedPage = await deniedContext.newPage();
     const deniedIntent = await login(deniedPage, DENIED_LOGIN, DENIED_PASSWORD, true);

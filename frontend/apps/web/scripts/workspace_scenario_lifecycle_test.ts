@@ -540,15 +540,49 @@ session.initStatus = 'ready';
 session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
 const managementScope = effectScope();
 const management = managementScope.run(() => useScenarioActivation())!;
-const catalogResponse = (company = 1, actions = true) => ({ company_id: company, business_scenarios: [{
-  scene_key: 'project.management', name: '项目管理', enablement_scope: 'business.v1',
-  status_label: '未启用', release_label: '已发布',
-  actions: actions ? [{ key: 'enable', label: '启用', enabled: true }] : [],
-}] });
+const catalogResponse = (company = 1, actions = true) => ({
+  company_id: company,
+  actor: {
+    user_id: 9,
+    login: 'config.admin',
+    name: 'Config Admin',
+    can_manage_enterprise_configuration: true,
+    platform_admin: false,
+    source: 'res.users',
+  },
+  target_scope: {
+    kind: 'enterprise_scenario_enablement',
+    company_id: company,
+    company_name: `Company ${company}`,
+    is_global_product_release: false,
+    source: 'res.company',
+    target_role_scope: {
+      mode: 'not_role_scoped',
+      target_role_key: '',
+      reason_code: 'SCENARIO_ENABLEMENT_COMPANY_SCOPED',
+      meaning: 'company scoped',
+    },
+  },
+  business_scenarios: [{
+    scene_key: 'project.management', name: '项目管理', enablement_scope: 'business.v1',
+    status_label: '未启用', release_label: '已发布',
+    product_qualification: {
+      status: 'qualified',
+      reason_code: 'PRODUCT_QUALIFIED',
+      evidence: { version: 'v9', snapshot_id: 9, source: 'sc.edition.release.snapshot' },
+    },
+    enablement_blockers: [],
+    enable_allowed: true,
+    actions: actions ? [{ key: 'enable', label: '启用', enabled: true }] : [],
+  }],
+});
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 pending.at(-1)!.settle(catalogResponse());
 await flush();
 assert.equal(management.rows.value[0].enablement_scope, 'business.v1');
+assert.equal(management.actor.value?.login, 'config.admin');
+assert.equal(management.targetScope.value?.company_id, 1);
+assert.equal(management.rows.value[0].product_qualification.status, 'qualified');
 
 // The client never constructs an action absent from the server contract.
 const beforeInvented = pending.length;
@@ -571,13 +605,29 @@ assert.deepEqual(mutationRequest.request.params, { company_id: 1, scene_key: 'pr
 const countDuringMutation = pending.length;
 await management.execute(row, row.actions[0]);
 assert.equal(pending.length, countDuringMutation, 'double-click cannot submit twice');
-mutationRequest.request.settle({ scene_key: row.scene_key, enabled: true });
+mutationRequest.request.settle({
+  scene_key: row.scene_key,
+  stored_scene_key: 'business.v1:project.management',
+  enablement_scope: 'business.v1',
+  enabled: true,
+  target_scope: catalogResponse(1).target_scope,
+  readback: {
+    enabled: true,
+    company_id: 1,
+    stored_scene_key: 'business.v1:project.management',
+    source: 'sc.scene.company.enablement',
+    write_committed: true,
+    access_granted: false,
+  },
+});
 await flush();
+assert.equal(management.readback.value?.readback.access_granted, false);
 assert.equal(bootstraps, 1);
 assert.equal(pending.at(-1)!.intent, 'scenario.activation.catalog.get');
 pending.at(-1)!.settle(catalogResponse());
 await mutationRequest.result;
 assert.equal(management.state.value, 'ready');
+assert.equal(management.targetScope.value?.company_id, 1);
 
 // A failed mutation does not claim success or retain enabled controls.
 const failedRow = management.rows.value[0];

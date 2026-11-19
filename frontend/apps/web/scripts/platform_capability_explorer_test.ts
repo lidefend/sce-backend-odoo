@@ -64,7 +64,24 @@ const row = {
   scene_usage: { bound: true, count: 1 },
   release_state: 'unknown',
   draft_eligibility: { selectable: true, blockers: [] },
-  product_qualification: { preview: 'not_verified', standard: 'not_verified' },
+  product_qualification: {
+    preview: 'not_verified',
+    standard: 'qualified',
+    reason_code: 'PRODUCT_QUALIFIED',
+    evidence: [{
+      product_key: 'construction.standard',
+      qualified: true,
+      status: 'qualified',
+      release_state: 'released',
+      snapshot_id: 9,
+      version: 'v9',
+      fingerprint: 'sha256:v9',
+      applied: true,
+      reason_code: 'PRODUCT_QUALIFIED',
+      source: 'sc.edition.release.snapshot',
+      qualification_authority: 'published_product_release',
+    }],
+  },
 };
 const listResponse = {
   meta,
@@ -192,7 +209,53 @@ const detailResponse = {
       snapshots: [],
     },
     scene_assignment: { assignable: true, blockers: [] },
-    qualification: { preview: 'not_verified', standard: 'not_verified' },
+    qualification: row.product_qualification,
+    enterprise_enablement: {
+      applicable: true,
+      enabled: true,
+      status: 'enabled',
+      reason_code: 'ENTERPRISE_SCENARIO_ENABLED',
+      company_id: 7,
+      company_name: 'Demo Company',
+      source: 'res.company',
+      scenes: [{ scene_key: 'project.management', enabled: true, source: 'sc.scene.company.enablement' }],
+    },
+    current_user_access: {
+      entry_groups_allowed: true,
+      required_group_ids: [11],
+      held_group_ids: [11],
+      model_read_acl_present: true,
+      model_read_allowed: true,
+      record_scope: 'runtime_acl_and_record_rules',
+      reason_code: 'CURRENT_USER_ENTRY_AVAILABLE',
+      blockers: [],
+    },
+    visibility: {
+      can_use: true,
+      reason_code: 'CURRENT_USER_ENTRY_AVAILABLE',
+      blockers: [],
+      actor: {
+        user_id: 5,
+        login: 'platform.admin',
+        name: 'Platform Admin',
+        company_id: 7,
+        company_name: 'Demo Company',
+        allowed_company_ids: [7],
+        group_ids: [11],
+        group_xmlids: ['smart_construction_core.group_sc_cap_project_read'],
+        source: 'test principal',
+      },
+      target_company: { company_id: 7, company_name: 'Demo Company' },
+      record_scope: 'runtime_acl_and_record_rules',
+    },
+    fact_layers: [
+      { key: 'native_presence', label: '原生存在', status: 'present', reason_code: 'NATIVE_ENTRY_PRESENT', evidence: {} },
+      { key: 'consumer_support', label: '消费者支持', status: 'supported', reason_code: 'CONSUMER_SUPPORTED', evidence: {} },
+      { key: 'product_qualification', label: '产品资格', status: 'qualified', reason_code: 'PRODUCT_QUALIFIED', evidence: {} },
+      { key: 'product_release', label: '入口发布', status: 'released', reason_code: 'ENTRY_RELEASED', evidence: {} },
+      { key: 'enterprise_enablement', label: '企业启用', status: 'enabled', reason_code: 'ENTERPRISE_SCENARIO_ENABLED', evidence: {} },
+      { key: 'current_user_access', label: '当前用户权限', status: 'allowed', reason_code: 'CURRENT_USER_ENTRY_AVAILABLE', evidence: {} },
+    ],
     diagnostics: {
       native_valid: true,
       native_blockers: [],
@@ -218,6 +281,10 @@ const detailResponse = {
 const decodedDetail = decodeCapabilityExplorerDetailResponse(detailResponse);
 check(decodedDetail.entry.native_facts.views.count, 42, 'detail native facts consumed');
 check(decodedDetail.entry.scenario_usage.scenarios[0]?.scenario_key, 'project.management', 'scenario usage consumed');
+check(decodedDetail.entry.qualification.evidence[0]?.version, 'v9', 'product qualification evidence consumed');
+check(decodedDetail.entry.enterprise_enablement.enabled, true, 'enterprise enablement consumed');
+check(decodedDetail.entry.visibility.actor.login, 'platform.admin', 'visibility actor consumed');
+check(decodedDetail.entry.fact_layers.length, 6, 'fact layers consumed');
 const baseMeta = Object.fromEntries(Object.entries(meta).filter(([key]) => (
   !['filtered_total', 'offset', 'limit', 'next_offset', 'has_more', 'sort'].includes(key)
 )));

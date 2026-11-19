@@ -1,7 +1,7 @@
 schema_version: 1
 goal:
   id: CLOSE-03-R1-REVIEW-REMEDIATION-20261119
-  status: active
+  status: completed
   formal_product_layer: P1/P0
   layer_target: >-
     CLOSE-03 migration changed-set validation, effective native readonly

@@ -50,6 +50,83 @@ export type CapabilityExplorerCenter = {
   source: string;
 };
 
+export type CapabilityExplorerQualificationEvidence = {
+  product_key: string;
+  qualified: boolean;
+  status: string;
+  release_state: string;
+  snapshot_id: number;
+  version: string;
+  fingerprint: string;
+  applied: boolean;
+  reason_code: string;
+  source: string;
+  qualification_authority: string;
+};
+
+export type CapabilityExplorerProductQualification = {
+  preview: string;
+  standard: string;
+  reason_code: string;
+  authority_available?: boolean;
+  evidence: CapabilityExplorerQualificationEvidence[];
+};
+
+export type CapabilityExplorerActor = {
+  user_id: number;
+  login: string;
+  name: string;
+  company_id: number;
+  company_name: string;
+  allowed_company_ids: number[];
+  group_ids: number[];
+  group_xmlids: string[];
+  source: string;
+};
+
+export type CapabilityExplorerEnterpriseEnablement = {
+  applicable: boolean;
+  enabled: boolean;
+  status: string;
+  reason_code: string;
+  company_id: number;
+  company_name: string;
+  source: string;
+  scenes: Array<{
+    scene_key: string;
+    enabled: boolean;
+    source: string;
+  }>;
+};
+
+export type CapabilityExplorerCurrentUserAccess = {
+  entry_groups_allowed: boolean;
+  required_group_ids: number[];
+  held_group_ids: number[];
+  model_read_acl_present: boolean;
+  model_read_allowed: boolean;
+  record_scope: string;
+  reason_code: string;
+  blockers: string[];
+};
+
+export type CapabilityExplorerFactLayer = {
+  key: string;
+  label: string;
+  status: string;
+  reason_code: string;
+  evidence: unknown;
+};
+
+export type CapabilityExplorerVisibility = {
+  can_use: boolean;
+  reason_code: string;
+  blockers: string[];
+  actor: CapabilityExplorerActor;
+  target_company: Record<string, unknown>;
+  record_scope: string;
+};
+
 export type CapabilityExplorerRow = {
   entry_ref: {
     menu_xmlid: string;
@@ -76,10 +153,7 @@ export type CapabilityExplorerRow = {
     selectable: boolean;
     blockers: string[];
   };
-  product_qualification: {
-    preview: string;
-    standard: string;
-  };
+  product_qualification: CapabilityExplorerProductQualification;
 };
 
 export type CapabilityExplorerFacets = {
@@ -181,10 +255,11 @@ export type CapabilityExplorerDetailEntry = CapabilityExplorerRow & {
     assignable: boolean;
     blockers: string[];
   };
-  qualification: {
-    preview: string;
-    standard: string;
-  };
+  qualification: CapabilityExplorerProductQualification;
+  enterprise_enablement: CapabilityExplorerEnterpriseEnablement;
+  current_user_access: CapabilityExplorerCurrentUserAccess;
+  visibility: CapabilityExplorerVisibility;
+  fact_layers: CapabilityExplorerFactLayer[];
   diagnostics: CapabilityExplorerDiagnostics;
   classification: {
     source: string;
@@ -259,8 +334,64 @@ function strings(value: unknown, path: string): string[] {
   return [...value] as string[];
 }
 
+function numberArray(value: unknown, path: string): number[] {
+  if (!Array.isArray(value)) return gap(path);
+  return value.map((item, index) => number(item, `${path}[${index}]`));
+}
+
 function nullableObject(value: unknown, path: string): Record<string, unknown> | null {
   return value === null ? null : object(value, path);
+}
+
+function qualificationEvidence(value: unknown, path: string): CapabilityExplorerQualificationEvidence[] {
+  if (!Array.isArray(value)) return gap(path);
+  return value.map((item, index) => {
+    const row = object(item, `${path}[${index}]`);
+    return {
+      product_key: requiredText(row.product_key, `${path}[${index}].product_key`),
+      qualified: boolean(row.qualified, `${path}[${index}].qualified`),
+      status: requiredText(row.status, `${path}[${index}].status`),
+      release_state: text(row.release_state, `${path}[${index}].release_state`),
+      snapshot_id: number(row.snapshot_id, `${path}[${index}].snapshot_id`),
+      version: text(row.version, `${path}[${index}].version`),
+      fingerprint: text(row.fingerprint, `${path}[${index}].fingerprint`),
+      applied: boolean(row.applied, `${path}[${index}].applied`),
+      reason_code: requiredText(row.reason_code, `${path}[${index}].reason_code`),
+      source: requiredText(row.source, `${path}[${index}].source`),
+      qualification_authority: requiredText(
+        row.qualification_authority,
+        `${path}[${index}].qualification_authority`,
+      ),
+    };
+  });
+}
+
+function decodeProductQualification(value: unknown, path: string): CapabilityExplorerProductQualification {
+  const source = object(value, path);
+  return {
+    preview: requiredText(source.preview, `${path}.preview`),
+    standard: requiredText(source.standard, `${path}.standard`),
+    reason_code: requiredText(source.reason_code, `${path}.reason_code`),
+    ...(source.authority_available === undefined
+      ? {}
+      : { authority_available: boolean(source.authority_available, `${path}.authority_available`) }),
+    evidence: qualificationEvidence(source.evidence, `${path}.evidence`),
+  };
+}
+
+function decodeActor(value: unknown, path: string): CapabilityExplorerActor {
+  const source = object(value, path);
+  return {
+    user_id: number(source.user_id, `${path}.user_id`),
+    login: text(source.login, `${path}.login`),
+    name: text(source.name, `${path}.name`),
+    company_id: number(source.company_id, `${path}.company_id`),
+    company_name: text(source.company_name, `${path}.company_name`),
+    allowed_company_ids: numberArray(source.allowed_company_ids, `${path}.allowed_company_ids`),
+    group_ids: numberArray(source.group_ids, `${path}.group_ids`),
+    group_xmlids: strings(source.group_xmlids, `${path}.group_xmlids`),
+    source: requiredText(source.source, `${path}.source`),
+  };
 }
 
 function countMap(value: unknown, path: string): Record<string, number> {
@@ -305,7 +436,10 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
   const business = object(source.business_domain, 'row.business_domain');
   const usage = object(source.scene_usage, 'row.scene_usage');
   const draft = object(source.draft_eligibility, 'row.draft_eligibility');
-  const qualification = object(source.product_qualification, 'row.product_qualification');
+  const qualification = decodeProductQualification(
+    source.product_qualification,
+    'row.product_qualification',
+  );
   const confidence = requiredText(business.confidence, 'row.business_domain.confidence');
   if (!['authoritative_scene_binding', 'center_only', 'unclassified'].includes(confidence)) {
     gap('row.business_domain.confidence');
@@ -342,8 +476,7 @@ export function decodeCapabilityExplorerRow(value: unknown): CapabilityExplorerR
       blockers: strings(draft.blockers, 'row.draft_eligibility.blockers'),
     },
     product_qualification: {
-      preview: requiredText(qualification.preview, 'row.product_qualification.preview'),
-      standard: requiredText(qualification.standard, 'row.product_qualification.standard'),
+      ...qualification,
     },
   };
 }
@@ -471,9 +604,13 @@ export function decodeCapabilityExplorerDetailResponse(value: unknown): Capabili
   const entry = object(source.entry, 'entry');
   const row = decodeCapabilityExplorerRow(entry);
   const assignment = object(entry.scene_assignment, 'entry.scene_assignment');
-  const qualification = object(entry.qualification, 'entry.qualification');
+  const qualification = decodeProductQualification(entry.qualification, 'entry.qualification');
   const diagnostics = object(entry.diagnostics, 'entry.diagnostics');
   const classification = object(entry.classification, 'entry.classification');
+  const enterprise = object(entry.enterprise_enablement, 'entry.enterprise_enablement');
+  const access = object(entry.current_user_access, 'entry.current_user_access');
+  const visibility = object(entry.visibility, 'entry.visibility');
+  if (!Array.isArray(entry.fact_layers)) return gap('entry.fact_layers');
   if (!Array.isArray(classification.candidates)) return gap('entry.classification.candidates');
   return {
     meta: decodeBaseMeta(source.meta),
@@ -486,10 +623,54 @@ export function decodeCapabilityExplorerDetailResponse(value: unknown): Capabili
         assignable: boolean(assignment.assignable, 'entry.scene_assignment.assignable'),
         blockers: strings(assignment.blockers, 'entry.scene_assignment.blockers'),
       },
-      qualification: {
-        preview: requiredText(qualification.preview, 'entry.qualification.preview'),
-        standard: requiredText(qualification.standard, 'entry.qualification.standard'),
+      qualification,
+      enterprise_enablement: {
+        applicable: boolean(enterprise.applicable, 'entry.enterprise_enablement.applicable'),
+        enabled: boolean(enterprise.enabled, 'entry.enterprise_enablement.enabled'),
+        status: requiredText(enterprise.status, 'entry.enterprise_enablement.status'),
+        reason_code: requiredText(enterprise.reason_code, 'entry.enterprise_enablement.reason_code'),
+        company_id: number(enterprise.company_id, 'entry.enterprise_enablement.company_id'),
+        company_name: text(enterprise.company_name, 'entry.enterprise_enablement.company_name'),
+        source: requiredText(enterprise.source, 'entry.enterprise_enablement.source'),
+        scenes: Array.isArray(enterprise.scenes)
+          ? enterprise.scenes.map((item, index) => {
+            const scene = object(item, `entry.enterprise_enablement.scenes[${index}]`);
+            return {
+              scene_key: requiredText(scene.scene_key, `entry.enterprise_enablement.scenes[${index}].scene_key`),
+              enabled: boolean(scene.enabled, `entry.enterprise_enablement.scenes[${index}].enabled`),
+              source: requiredText(scene.source, `entry.enterprise_enablement.scenes[${index}].source`),
+            };
+          })
+          : gap('entry.enterprise_enablement.scenes'),
       },
+      current_user_access: {
+        entry_groups_allowed: boolean(access.entry_groups_allowed, 'entry.current_user_access.entry_groups_allowed'),
+        required_group_ids: numberArray(access.required_group_ids, 'entry.current_user_access.required_group_ids'),
+        held_group_ids: numberArray(access.held_group_ids, 'entry.current_user_access.held_group_ids'),
+        model_read_acl_present: boolean(access.model_read_acl_present, 'entry.current_user_access.model_read_acl_present'),
+        model_read_allowed: boolean(access.model_read_allowed, 'entry.current_user_access.model_read_allowed'),
+        record_scope: requiredText(access.record_scope, 'entry.current_user_access.record_scope'),
+        reason_code: requiredText(access.reason_code, 'entry.current_user_access.reason_code'),
+        blockers: strings(access.blockers, 'entry.current_user_access.blockers'),
+      },
+      visibility: {
+        can_use: boolean(visibility.can_use, 'entry.visibility.can_use'),
+        reason_code: requiredText(visibility.reason_code, 'entry.visibility.reason_code'),
+        blockers: strings(visibility.blockers, 'entry.visibility.blockers'),
+        actor: decodeActor(visibility.actor, 'entry.visibility.actor'),
+        target_company: object(visibility.target_company, 'entry.visibility.target_company'),
+        record_scope: requiredText(visibility.record_scope, 'entry.visibility.record_scope'),
+      },
+      fact_layers: entry.fact_layers.map((item, index) => {
+        const layer = object(item, `entry.fact_layers[${index}]`);
+        return {
+          key: requiredText(layer.key, `entry.fact_layers[${index}].key`),
+          label: requiredText(layer.label, `entry.fact_layers[${index}].label`),
+          status: requiredText(layer.status, `entry.fact_layers[${index}].status`),
+          reason_code: requiredText(layer.reason_code, `entry.fact_layers[${index}].reason_code`),
+          evidence: layer.evidence,
+        };
+      }),
       diagnostics: {
         native_valid: boolean(diagnostics.native_valid, 'entry.diagnostics.native_valid'),
         native_blockers: strings(diagnostics.native_blockers, 'entry.diagnostics.native_blockers'),
