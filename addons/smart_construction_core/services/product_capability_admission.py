@@ -24,18 +24,51 @@ ADMISSION_DEFAULT_FIELDS = (
     "source_kind",
     "entry_target_policy",
 )
+MENU_ADMISSION_OWNED_FIELDS = (
+    "menu_xmlid",
+    "menu_id",
+    "action_id",
+    "action_xmlid",
+    "res_model",
+    "model",
+    "enabled",
+    "release_state",
+)
+MENU_ADMISSION_DEFAULT_FIELDS = (
+    "menu_key",
+    "page_key",
+    "label",
+    "page_label",
+    "sequence",
+    "access_level",
+    "source_kind",
+    "entry_target_policy",
+)
 
 
 def _text(value: Any) -> str:
     return str(value or "").strip()
 
 
-def _matches(capability: dict[str, Any], menu_xmlid: str) -> bool:
+def _matches(
+    capability: dict[str, Any],
+    generated_target: dict[str, Any],
+    menu_xmlid: str,
+) -> bool:
     identities = {
         _text(capability.get("menu_xmlid")),
         _text(capability.get("target_page_key")),
     }
-    return bool(menu_xmlid and menu_xmlid in identities)
+    if not menu_xmlid or menu_xmlid not in identities:
+        return False
+    identity_kind = _text(capability.get("identity_kind"))
+    capability_key = _text(capability.get("capability_key"))
+    target_key = _text(generated_target.get("capability_key"))
+    is_alias = (
+        identity_kind == "entry_compatibility_alias"
+        or capability_key.startswith("construction.menu.")
+    )
+    return bool(is_alias and (not target_key or capability_key in {"", target_key}))
 
 
 def merge_admission_capability(
@@ -54,7 +87,8 @@ def merge_admission_capability(
     matches = [
         index
         for index, row in enumerate(capabilities)
-        if isinstance(row, dict) and _matches(row, menu_xmlid)
+        if isinstance(row, dict)
+        and _matches(row, generated_target, menu_xmlid)
     ]
     if not matches:
         capabilities.append(deepcopy(generated_target))
@@ -71,3 +105,21 @@ def merge_admission_capability(
     for index in reversed(matches[1:]):
         del capabilities[index]
     return capabilities
+
+
+def merge_admitted_menu_entry(
+    existing_entry: Any,
+    generated_entry: dict[str, Any],
+) -> dict[str, Any]:
+    """Preserve maintained menu fields while applying admission-owned facts."""
+
+    if not isinstance(existing_entry, dict):
+        return deepcopy(generated_entry)
+    merged = deepcopy(existing_entry)
+    for field in MENU_ADMISSION_OWNED_FIELDS:
+        if field in generated_entry:
+            merged[field] = deepcopy(generated_entry[field])
+    for field in MENU_ADMISSION_DEFAULT_FIELDS:
+        if not merged.get(field) and generated_entry.get(field):
+            merged[field] = deepcopy(generated_entry[field])
+    return merged

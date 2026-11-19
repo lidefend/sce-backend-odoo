@@ -143,9 +143,18 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
             {
                 "menu_xmlid": "other.menu",
                 "capability_key": "construction.menu.other_menu",
+                "identity_kind": "entry_compatibility_alias",
                 "provider_authority": "scene_entry_target",
                 "capability_maturity": "RELEASED_FOUNDATION",
                 "group_key": "construction.center.project",
+                "release_state": "released",
+            },
+            {
+                "menu_xmlid": "other.menu",
+                "capability_key": "finance.payment_request.list",
+                "identity_kind": "business_capability",
+                "provider_authority": "business_capability_registry",
+                "group_key": "construction.center.finance",
                 "release_state": "released",
             },
         ]
@@ -154,6 +163,7 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
             {
                 "menu_xmlid": "other.menu",
                 "capability_key": "construction.menu.other_menu",
+                "identity_kind": "entry_compatibility_alias",
                 "provider_authority": "native_menu_action_entry",
                 "group_key": "construction.center.contract",
                 "group_label": "合同中心",
@@ -175,6 +185,54 @@ class CapabilityIdentityBoundaryTest(unittest.TestCase):
         )
         self.assertEqual(merged[1]["group_key"], "construction.center.contract")
         self.assertEqual(merged[1]["release_state"], "preview")
+        self.assertEqual(
+            merged[2]["capability_key"],
+            "finance.payment_request.list",
+        )
+        self.assertEqual(
+            merged[2]["provider_authority"],
+            "business_capability_registry",
+        )
+
+    def test_repeated_admission_preserves_maintained_menu_fields(self):
+        admission = _load_real_module(
+            "smart_construction_core.services.product_capability_admission",
+            "addons/smart_construction_core/services/product_capability_admission.py",
+        )
+        merged = admission.merge_admitted_menu_entry(
+            {
+                "menu_xmlid": "payment.menu.request",
+                "menu_id": 10,
+                "action_id": 20,
+                "label": "Maintained payment label",
+                "sequence": 7,
+                "access_level": "role_restricted",
+                "entry_intent": "finance",
+                "allowed_role_codes": ["finance_manager"],
+                "release_state": "released",
+            },
+            {
+                "menu_xmlid": "payment.menu.request",
+                "menu_id": 10,
+                "action_id": 20,
+                "action_xmlid": "payment.action_request",
+                "res_model": "payment.request",
+                "model": "payment.request",
+                "label": "Native label",
+                "sequence": 1,
+                "access_level": "public",
+                "source_kind": "native_menu",
+                "entry_target_policy": "native_action",
+                "enabled": True,
+                "release_state": "preview",
+            },
+        )
+        self.assertEqual(merged["label"], "Maintained payment label")
+        self.assertEqual(merged["sequence"], 7)
+        self.assertEqual(merged["access_level"], "role_restricted")
+        self.assertEqual(merged["entry_intent"], "finance")
+        self.assertEqual(merged["allowed_role_codes"], ["finance_manager"])
+        self.assertEqual(merged["release_state"], "preview")
 
     def test_business_registry_and_delivery_projection_declare_identity(self):
         _tokens(

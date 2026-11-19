@@ -20,6 +20,7 @@ from odoo.addons.smart_construction_core.services.locked_menu_policy_contract im
     load_locked_menu_policy_contract,
 )
 from odoo.addons.smart_construction_core.services.product_capability_admission import (
+    merge_admitted_menu_entry,
     merge_admission_capability,
 )
 
@@ -387,6 +388,22 @@ class ScProductPolicy(models.Model):
         action_xmlid = action.get_external_id().get(action.id)
         if not xmlid or not action_xmlid or not action.res_model or action.res_model not in self.env:
             raise ValidationError("Stable menu/action identities and an installed model are required")
+        existing_entry = next(
+            (
+                deepcopy(row)
+                for group in self.menu_groups or []
+                if isinstance(group, dict)
+                for row in group.get("menus") or []
+                if isinstance(row, dict)
+                and _text(
+                    row.get("menu_xmlid")
+                    or row.get("menu_key")
+                    or row.get("page_key")
+                )
+                == xmlid
+            ),
+            None,
+        )
         groups = deepcopy(self.menu_groups or [])
         matches = [group for group in groups if group.get("group_key") == group_key]
         if len(matches) != 1:
@@ -394,14 +411,15 @@ class ScProductPolicy(models.Model):
         target = matches[0]
         for group in groups:
             group["menus"] = [row for row in group.get("menus", []) if row.get("menu_xmlid") != xmlid]
-        entry = {
-            "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
-            "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
-            "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
-            "res_model": action.res_model, "model": action.res_model,
-            "enabled": release_state in {"released", "preview"}, "release_state": release_state,
-            "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
+        generated_entry = {
+                "menu_xmlid": xmlid, "menu_key": xmlid, "page_key": xmlid,
+                "menu_id": menu.id, "action_id": action.id, "action_xmlid": action_xmlid,
+                "label": menu.name, "page_label": menu.name, "sequence": menu.sequence,
+                "res_model": action.res_model, "model": action.res_model,
+                "enabled": release_state in {"released", "preview"}, "release_state": release_state,
+                "access_level": "public", "source_kind": "native_menu", "entry_target_policy": "native_action",
         }
+        entry = merge_admitted_menu_entry(existing_entry, generated_entry)
         target["menus"].append(entry)
         generated_rows = self._capabilities_from_user_confirmed_menu_groups(
             [{**target, "menus": [entry]}]

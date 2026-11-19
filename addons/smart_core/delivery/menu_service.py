@@ -2,6 +2,7 @@
 from __future__ import annotations
 import json
 import re
+from typing import Any
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
 from odoo.addons.smart_core.core.delivery_menu_defaults import (
     build_delivery_menu_child,
@@ -36,6 +37,17 @@ def register_customer_acceptance_group_label(label: str) -> None:
     text = str(label or "").strip()
     if text:
         _CUSTOMER_ACCEPTANCE_GROUP_LABELS.add(text)
+
+
+def apply_delivery_group_sequence(
+    node: dict[str, Any],
+    row: dict[str, Any],
+) -> dict[str, Any]:
+    """Apply a declared group sequence, including the valid value zero."""
+
+    if row.get("sequence") is not None and row.get("sequence") != "":
+        node["sequence"] = int(row["sequence"])
+    return node
 
 
 class MenuService:
@@ -3416,8 +3428,7 @@ class MenuService:
                 config_menu_id=int(row.get("config_menu_id") or 0),
                 target=row.get("group_target") if isinstance(row.get("group_target"), dict) else {},
             )
-            if row.get("sequence"):
-                group_node["sequence"] = int(row["sequence"])
+            apply_delivery_group_sequence(group_node, row)
             group_meta = dict(
                 group_node.get("meta")
                 if isinstance(group_node.get("meta"), dict)

@@ -135,6 +135,8 @@
       "target": "verify.admin_close_01.backend.unit",
       "inputs": [
         "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/platform_management_action_contract.py",
+        "addons/smart_core/delivery/release_operator_contract_registry.py",
         "addons/smart_core/delivery/release_operator_surface_service.py",
         "addons/smart_core/handlers/release_operator.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
@@ -461,7 +463,7 @@
     "remote_validation": "managed_orm must rerun on the new exact PR head"
   },
   "review_remediation": {
-    "status": "implemented_pending_static_verification",
+    "status": "static_verification_passed",
     "closed_items": [
       "admission capability merge is now entry-incremental and preserves unrelated/scene-owned fields",
       "qualification evidence and summary use full product keys",
@@ -471,10 +473,20 @@
       "center editor decodes field constraints, save action, accepted fields and readback declarations",
       "catalog admission write freezes its entry identity before await",
       "rollback actions use the dedicated historical snapshot rollback service"
+      ,
+      "platform management actions are declared by a P0 static contract and executed from backend-bound objects",
+      "pending approvals expose a complete approve_action",
+      "policy and page-policy inputs are fully declared",
+      "repeated admission preserves maintained menu fields",
+      "compatibility capability merge no longer collapses same-page business capability identity",
+      "zero sequence is preserved through navigation and catalog projection",
+      "center save readback is bound to the submitted product",
+      "backend numeric declarations reject null and boolean values",
+      "inactive rollback targets are rejected before execution"
     ],
     "not_run": [
       "ORM, module upgrade and browser checks remain excluded by owner direction"
     ]
   },
-  "next_exact_step": "Refresh generated design-system evidence, run the complete affected pure test set, commit the review remediation, push #943 and verify exact-head CI"
+  "next_exact_step": "Commit the completed contract remediation, push #943, and verify the new exact-head required checks"
 }

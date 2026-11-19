@@ -20,6 +20,11 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseCenterContributionTests(unittest.TestCase):
+    def test_zero_integer_projection_preserves_declared_sequence(self):
+        self.assertEqual(MODULE._int(0, 10), 0)
+        self.assertEqual(MODULE._int("0", 10), 0)
+        self.assertEqual(MODULE._int(None, 10), 10)
+
     def test_release_center_maps_declared_native_menu_xmlid_without_name_guessing(self):
         source = {
             "product_contract": {

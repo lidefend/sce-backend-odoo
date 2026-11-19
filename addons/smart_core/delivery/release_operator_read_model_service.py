@@ -15,6 +15,7 @@ from .release_operator_contract_versions import (
     RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
 )
 from .platform_catalog_action_contract import add_catalog_entry_action_contract
+from .platform_management_action_contract import configured_management_action
 from .product_identity import (
     LEGACY_DEFAULT_BASE_PRODUCT_KEY,
     default_operator_product_keys,
@@ -153,11 +154,14 @@ class ReleaseOperatorReadModelService:
                 "readback": {
                     "source": "release.operator.surface",
                     "mode": "authoritative_after_write",
-                    "fields": [
-                        "current_release_state.active_snapshot",
-                        "release_pipeline.change_summary",
-                        "available_actions.rollback",
-                    ],
+                    "fields": list(
+                        result.get("readback_fields")
+                        or [
+                            "current_release_state.active_snapshot",
+                            "release_pipeline.change_summary",
+                            "available_actions.rollback",
+                        ]
+                    ),
                 },
             }
         )
@@ -532,6 +536,16 @@ class ReleaseOperatorReadModelService:
                     "approve_reason_code": reason_code,
                     "approve_diagnostics": diagnostics,
                     "approve_intent": "release.operator.approve",
+                    "approve_action": configured_management_action(
+                        "approve",
+                        action_key=f"approve:{int(action.id)}",
+                        enabled=allowed,
+                        reason_code=reason_code,
+                        params={
+                            "product_key": product_key,
+                            "action_id": int(action.id),
+                        },
+                    ),
                 }
             )
         return {
@@ -546,21 +560,39 @@ class ReleaseOperatorReadModelService:
         actor_roles = list(role_context.get("actor_role_codes") or [])
         allowed = self.approval_policy_service.roles_match(actor_roles, list(_list(policy.get("allowed_executor_role_codes"))))
         rollback_target_snapshot_id = int(active_snapshot.get("rollback_target_snapshot_id") or 0)
-        enabled = bool(allowed and rollback_target_snapshot_id > 0)
-        reason_code = "OK" if enabled else ("ROLLBACK_TARGET_NOT_FOUND" if rollback_target_snapshot_id <= 0 else "RELEASE_EXECUTOR_NOT_ALLOWED")
-        return {
-            "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-            "key": f"rollback:{product_key}",
-            "label": "回滚产品版本",
-            "intent": "release.operator.rollback",
-            "enabled": enabled,
-            "reason_code": reason_code,
-            "role_context": role_context,
-            "params": {
+        target_active = False
+        if rollback_target_snapshot_id > 0:
+            try:
+                target = self.env["sc.edition.release.snapshot"].sudo().browse(
+                    rollback_target_snapshot_id
+                ).exists()
+                target_active = bool(target and target.active)
+            except (KeyError, AttributeError):
+                target_active = False
+        enabled = bool(
+            allowed and rollback_target_snapshot_id > 0 and target_active
+        )
+        reason_code = (
+            "OK"
+            if enabled
+            else "ROLLBACK_TARGET_NOT_FOUND"
+            if rollback_target_snapshot_id <= 0
+            else "ROLLBACK_TARGET_INACTIVE"
+            if not target_active
+            else "RELEASE_EXECUTOR_NOT_ALLOWED"
+        )
+        return configured_management_action(
+            "rollback",
+            action_key=f"rollback:{product_key}",
+            enabled=enabled,
+            reason_code=reason_code,
+            role_context=role_context,
+            params={
                 "product_key": product_key,
                 "target_snapshot_id": rollback_target_snapshot_id,
+                "replace_active": True,
             },
-        }
+        )
 
     def _subscription_audience_summary(self, *, product_key: str, control_scope: dict[str, Any]) -> dict[str, Any]:
         company_count = 0
@@ -937,6 +969,7 @@ class ReleaseOperatorReadModelService:
                 "params": {"product_key": product_key},
                 "accepted_fields": ["center_updates", "entry_placements"],
                 "readback": ["policy", "surface", "readback"],
+                "confirmation_required": True,
             },
             "config_ref": config_ref,
         }
@@ -986,74 +1019,76 @@ class ReleaseOperatorReadModelService:
         role_context = self.approval_policy_service.resolve_actor_role_context(self.env.user)
         actor = self._actor_scope(role_context)
         target_scope = self._product_target_scope(identity)
+        for row in pending_approval_queue["actions"]:
+            approve_action = _dict(row.get("approve_action"))
+            if approve_action:
+                row["approve_action"] = self._decorate_operator_action(
+                    approve_action,
+                    actor=actor,
+                    target_scope=target_scope,
+                    operation_object={
+                        "kind": "release_action",
+                        "product_key": identity["product_key"],
+                        "action_id": int(row.get("id") or 0),
+                    },
+                    confirm_required=True,
+                )
         available_operator_actions = {
             "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-            "freeze": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"freeze:{identity['product_key']}",
-                "label": "冻结产品候选版本",
-                "intent": "release.operator.freeze",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            "freeze": configured_management_action(
+                "freeze",
+                action_key=f"freeze:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                     "replace_active": False,
                 },
-            },
-            "sync_policy": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"sync_policy:{identity['product_key']}",
-                "label": "同步产品能力",
-                "intent": "release.operator.sync_policy",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            ),
+            "sync_policy": configured_management_action(
+                "sync_policy",
+                action_key=f"sync_policy:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                     "preserve_state": True,
                     "preserve_access_level": True,
                 },
-            },
-            "set_page_enabled": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"set_page_enabled:{identity['product_key']}",
-                "label": "调整产品页面范围",
-                "intent": "release.operator.set_page_enabled",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            ),
+            "set_page_enabled": configured_management_action(
+                "set_page_enabled",
+                action_key=f"set_page_enabled:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                 },
-            },
-            "update_page_policy": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"update_page_policy:{identity['product_key']}",
-                "label": "调整产品页面策略",
-                "intent": "release.operator.update_page_policy",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            ),
+            "update_page_policy": configured_management_action(
+                "update_page_policy",
+                action_key=f"update_page_policy:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                 },
-            },
-            "update_policy": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"update_policy:{identity['product_key']}",
-                "label": "保存产品草案",
-                "intent": "release.operator.update_policy",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            ),
+            "update_policy": configured_management_action(
+                "update_policy",
+                action_key=f"update_policy:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                 },
-                "editor_contract": "product_center_editor.v1",
-                "accepted_fields": ["center_updates", "entry_placements"],
-                "readback_fields": ["policy", "surface", "readback"],
-            },
+                editor_contract="product_center_editor.v1",
+            ),
             "add_catalog_entry": {
                 "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
                 "key": f"add_catalog_entry:{identity['product_key']}",
@@ -1069,18 +1104,16 @@ class ReleaseOperatorReadModelService:
                 },
                 "editor_contract": "product_center_editor.v1",
             },
-            "runtime_probe": {
-                "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
-                "key": f"runtime_probe:{identity['product_key']}",
-                "label": "验证产品用户",
-                "intent": "release.operator.runtime_probe",
-                "enabled": True,
-                "reason_code": "OK",
-                "role_context": role_context,
-                "params": {
+            "runtime_probe": configured_management_action(
+                "runtime_probe",
+                action_key=f"runtime_probe:{identity['product_key']}",
+                enabled=True,
+                reason_code="OK",
+                role_context=role_context,
+                params={
                     "product_key": identity["product_key"],
                 },
-            },
+            ),
             "promote": self._build_promote_actions(product_key=identity["product_key"], snapshots=candidate_snapshots),
             "rollback": self._build_rollback_action(product_key=identity["product_key"], active_snapshot=active_snapshot),
         }

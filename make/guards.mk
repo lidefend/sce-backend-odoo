@@ -556,6 +556,8 @@ verify.platform.capability_explorer.unit: guard.prod.forbid
 .PHONY: verify.admin_close_01.backend.unit
 verify.admin_close_01.backend.unit: guard.prod.forbid verify.platform.capability_explorer.unit
 	@python3 -m py_compile \
+	  addons/smart_core/delivery/platform_management_action_contract.py \
+	  addons/smart_core/delivery/release_operator_contract_registry.py \
 	  addons/smart_core/delivery/release_operator_read_model_service.py \
 	  addons/smart_core/delivery/release_operator_surface_service.py \
 	  addons/smart_core/tests/test_release_operator_surface_copy_backend.py \

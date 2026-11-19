@@ -11,6 +11,9 @@ from .release_operator_contract_versions import (
     RELEASE_OPERATOR_SURFACE_CONTRACT_VERSION,
     RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
 )
+from .platform_management_action_contract import (
+    PLATFORM_MANAGEMENT_ACTION_CONTRACT_VERSION,
+)
 
 SOURCE_KIND = "release_operator_contract_registry_projection"
 SOURCE_AUTHORITIES = ("static_release_operator_contract_versions",)
@@ -43,6 +46,12 @@ def build_release_operator_contract_registry() -> dict:
         "write_model": {
             "contract_key": "release_operator_write_model",
             "contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
+            "state": "frozen",
+            "change_rule": "version_bump_required",
+        },
+        "platform_management_actions": {
+            "contract_key": "platform_management_actions",
+            "contract_version": PLATFORM_MANAGEMENT_ACTION_CONTRACT_VERSION,
             "state": "frozen",
             "change_rule": "version_bump_required",
         },

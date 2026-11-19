@@ -431,6 +431,7 @@ class ReleaseOperatorUpdatePolicyHandler(_ReleaseOperatorBaseHandler):
                 "policy": policy.to_runtime_dict(),
                 "surface": ReleaseOperatorSurfaceService(self.env).build_surface(product_key=product_key),
                 "readback": {
+                    "product_key": product_key,
                     "draft_policy_sha256": str(
                         draft_contract.get("policy_sha256") or ""
                     ),

@@ -388,6 +388,7 @@ import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { contractGapError } from '../app/contract/contractGap';
 import {
   decodeReleaseOperatorSurface,
+  decodeProductCenterWriteEnvelope,
   type OperatorAction,
   type ProductCenterEditor,
 } from '../app/releaseOperatorActionContract';
@@ -418,6 +419,7 @@ interface ReleaseActionRow {
   approval_state?: string;
   requested_at?: string;
   can_approve?: boolean;
+  approve_action?: OperatorAction;
 }
 
 interface ReleaseOperatorSurface {
@@ -508,17 +510,15 @@ const productOptions = computed(() => products.value.map((product) => ({
   value: product.product_key,
   label: `${product.label || product.product_key} · ${product.product_key}`,
 })));
-const policyStateOptions = [
-  { value: 'draft', label: 'draft' },
-  { value: 'preview', label: 'preview' },
-  { value: 'stable', label: 'stable' },
-  { value: 'archived', label: 'archived' },
-];
-const policyAccessOptions = [
-  { value: 'public', label: 'public' },
-  { value: 'internal', label: 'internal' },
-  { value: 'role_restricted', label: 'role_restricted' },
-];
+const actionSelectOptions = (action: OperatorAction | null | undefined, key: string) => (
+  action?.editable_fields?.find((field) => field.key === key)?.options || []
+);
+const policyStateOptions = computed(() => (
+  actionSelectOptions(updatePolicyAction.value, 'state')
+));
+const policyAccessOptions = computed(() => (
+  actionSelectOptions(updatePolicyAction.value, 'access_level')
+));
 const productConsole = computed(() => surface.value?.product_delivery_console || {});
 const productProfile = computed(() => (productConsole.value.profile || {}) as AnyRecord);
 const productBundle = computed(() => (productConsole.value.bundle || {}) as AnyRecord);
@@ -934,12 +934,28 @@ const controlledPageColumns = computed(() => [
   } },
   { colKey: 'access_level', title: '可见范围', cell: (_h: unknown, { row }: { row: AnyRecord }) => accessLevelLabel(row) },
   { colKey: 'source', title: '来源', ellipsis: true, cell: (_h: unknown, { row }: { row: AnyRecord }) => sourceLabel(row) },
-  { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => h('div', { class: 'release-operator__row-actions' }, [
-    actionNode('发布页面配置', busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode('预览页面配置', busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode('下线页面', busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-    actionNode(row.access_level === 'internal' ? '转公开' : '内部', busyKey.value === `page:${pageKey(row)}:internal` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { access_level: row.access_level === 'internal' ? 'public' : 'internal' }), 'ghost', updatePagePolicyAction.value.reason_code || ''),
-  ]) },
+  { colKey: 'actions', title: '操作', width: 260, cell: (_h: unknown, { row }: { row: AnyRecord }) => {
+    const releaseOptions = actionSelectOptions(updatePagePolicyAction.value, 'release_state');
+    const accessOptions = actionSelectOptions(updatePagePolicyAction.value, 'access_level');
+    const releaseOption = (value: string) => releaseOptions.find(option => option.value === value);
+    const accessOption = (value: string) => accessOptions.find(option => option.value === value);
+    const actions = [
+      ...(releaseOption('released') ? [actionNode(releaseOption('released')!.label, busyKey.value === `page:${pageKey(row)}:released` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'released', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+      ...(releaseOption('preview') ? [actionNode(releaseOption('preview')!.label, busyKey.value === `page:${pageKey(row)}:preview` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'preview', enabled: true }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+      ...(releaseOption('hidden') ? [actionNode(releaseOption('hidden')!.label, busyKey.value === `page:${pageKey(row)}:hidden` || !updatePagePolicyAction.value.enabled, () => updatePagePolicy(row, { release_state: 'hidden', enabled: false }), 'ghost', updatePagePolicyAction.value.reason_code || '')] : []),
+    ];
+    const targetAccess = row.access_level === 'internal' ? 'public' : 'internal';
+    if (accessOption(targetAccess)) {
+      actions.push(actionNode(
+        accessOption(targetAccess)!.label,
+        busyKey.value === `page:${pageKey(row)}:${targetAccess}` || !updatePagePolicyAction.value.enabled,
+        () => updatePagePolicy(row, { access_level: targetAccess }),
+        'ghost',
+        updatePagePolicyAction.value.reason_code || '',
+      ));
+    }
+    return h('div', { class: 'release-operator__row-actions' }, actions);
+  } },
 ]);
 const centerEntryTableRows = computed(() => selectedCenterEntries.value.map((entry) => ({
   ...entry,
@@ -1009,7 +1025,7 @@ const pendingActionColumns = computed(() => [
   { colKey: 'product_key', title: '产品', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.product_key) },
   { colKey: 'approval_state', title: '审批', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => statusNode(String(row.approval_state || ''), tableText(row.approval_state), 'warning') },
   { colKey: 'requested_at', title: '请求时间', cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => tableText(row.requested_at) },
-  { colKey: 'actions', title: '操作', width: 128, cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => actionNode(copy.value.approve_action_label || '审批并执行', busyKey.value === `approve:${row.id}` || row.can_approve === false, () => approve(row), 'primary') },
+  { colKey: 'actions', title: '操作', width: 128, cell: (_h: unknown, { row }: { row: ReleaseActionRow }) => actionNode(copy.value.approve_action_label || '审批并执行', busyKey.value === `approve:${row.id}` || row.approve_action?.enabled !== true, () => approve(row), 'primary', row.approve_action?.reason_code || '') },
 ]);
 
 function pageKey(page: AnyRecord) {
@@ -1202,15 +1218,93 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
   }
 }
 
-function centerWriteRecord(value: unknown, path: string): AnyRecord {
-  if (!value || typeof value !== 'object' || Array.isArray(value)) {
-    throw contractGapError({
-      kind: 'contract_defect',
-      missing: path,
-      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
-    }, `产品中心保存回读缺少 ${path}`);
+function configuredActionParams(action: OperatorAction, overrides: AnyRecord) {
+  const accepted = new Set(
+    Array.isArray((action as unknown as AnyRecord).accepted_fields)
+      ? ((action as unknown as AnyRecord).accepted_fields as unknown[])
+        .map(field => String(field || '').trim())
+      : [],
+  );
+  for (const field of Object.keys(overrides)) {
+    if (!accepted.has(field)) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `${action.key}.accepted_fields.${field}`,
+        requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
+      }, `平台动作 ${action.key} 未声明输入字段 ${field}`);
+    }
   }
-  return value as AnyRecord;
+  for (const field of action.editable_fields || []) {
+    if (field.options && Object.hasOwn(overrides, field.key)) {
+      const value = String(overrides[field.key] ?? '');
+      if (!field.options.some(option => option.value === value)) {
+        throw contractGapError({
+          kind: 'contract_defect',
+          missing: `${action.key}.editable_fields.${field.key}.options`,
+          requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
+        }, `平台动作 ${action.key} 的 ${field.key} 值不在后端声明中`);
+      }
+    }
+  }
+  return { ...action.params, ...overrides };
+}
+
+async function runConfiguredAction(
+  action: OperatorAction | null | undefined,
+  overrides: AnyRecord,
+  busy: string,
+  confirmationMessage = '',
+) {
+  if (!action || !action.enabled) return;
+  if (
+    action.prerequisites.confirmation_required
+  ) {
+    const confirmed = await promotionConfirmationRef.value?.confirm({
+      actionLabel: action.label,
+      message: confirmationMessage || `确认执行平台动作“${action.label}”？`,
+    });
+    if (!confirmed) return;
+  }
+  busyKey.value = busy;
+  error.value = '';
+  try {
+    const params = configuredActionParams(action, overrides);
+    const result = await intentRequest<AnyRecord>({
+      intent: action.intent,
+      params,
+    });
+    for (const field of action.readback.fields) {
+      if (!Object.hasOwn(result, field)) {
+        throw contractGapError({
+          kind: 'contract_defect',
+          missing: `${action.key}.readback.${field}`,
+          requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
+        }, `平台动作 ${action.key} 缺少权威回读字段 ${field}`);
+      }
+    }
+    const decoded = decodeReleaseOperatorSurface(
+      result.surface as AnyRecord,
+    ) as unknown as ReleaseOperatorSurface;
+    if (
+      String(decoded.identity?.product_key || '')
+      !== action.target_scope.product_key
+    ) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: `${action.key}.readback.product_key`,
+        requiredDeclarationLayer: 'P0:smart_core:platform_management_action_contract',
+      }, `平台动作 ${action.key} 的回读产品与执行对象不一致`);
+    }
+    surface.value = decoded;
+    hydratePolicyControls(decoded);
+    hydrateProductCenterEditor(decoded);
+    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+  } catch (err) {
+    error.value = err instanceof Error ? err.message : '平台管理动作执行失败';
+  } finally {
+    busyKey.value = '';
+  }
 }
 
 function centerWriteText(value: unknown, path: string): string {
@@ -1231,16 +1325,15 @@ function assertCenterWriteReadback(
   centerUpdates: AnyRecord[],
   entryPlacements: AnyRecord[],
 ) {
-  for (const field of editor.save_action.readback) {
-    if (!(field in result)) {
-      throw contractGapError({
-        kind: 'contract_defect',
-        missing: `product_center_write.${field}`,
-        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
-      }, `产品中心保存回读缺少 ${field}`);
-    }
+  const envelope = decodeProductCenterWriteEnvelope(result, editor);
+  const { policy, readback } = envelope;
+  if (String(policy.product_key || '') !== editor.product_key) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.policy.product_key',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读的产品与本次提交不一致');
   }
-  const policy = centerWriteRecord(result.policy, 'product_center_write.policy');
   const groups = Array.isArray(policy.menu_groups) ? policy.menu_groups : [];
   for (const update of centerUpdates) {
     const group = groups.find((row) => (
@@ -1275,7 +1368,13 @@ function assertCenterWriteReadback(
       }, '产品中心保存回读未包含本次入口归属');
     }
   }
-  const readback = centerWriteRecord(result.readback, 'product_center_write.readback');
+  if (String(readback.product_key || '') !== editor.product_key) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'product_center_write.readback.product_key',
+      requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+    }, '产品中心保存回读的产品身份与本次提交不一致');
+  }
   centerWriteText(readback.draft_policy_sha256, 'product_center_write.readback.draft_policy_sha256');
   centerWriteText(readback.draft_fingerprint, 'product_center_write.readback.draft_fingerprint');
   if (!Number.isInteger(Number(readback.published_snapshot_id))) {
@@ -1308,9 +1407,17 @@ async function runCenterWrite(
       params,
     });
     assertCenterWriteReadback(result, editor, centerUpdates, entryPlacements);
+    const envelope = decodeProductCenterWriteEnvelope(result, editor);
     const decoded = decodeReleaseOperatorSurface(
-      result.surface as AnyRecord,
+      envelope.surface,
     ) as unknown as ReleaseOperatorSurface;
+    if (String(decoded.identity?.product_key || '') !== editor.product_key) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'product_center_write.surface.identity.product_key',
+        requiredDeclarationLayer: 'P0:smart_core:product_center_editor',
+      }, '产品中心保存返回的 surface 属于另一产品');
+    }
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
@@ -1338,26 +1445,26 @@ async function promote(snapshot: SnapshotRow) {
 }
 
 function approve(action: ReleaseActionRow) {
-  void runWrite('release.operator.approve', { action_id: action.id }, `approve:${action.id}`);
+  void runConfiguredAction(
+    action.approve_action,
+    {},
+    `approve:${action.id}`,
+    `确认审批并执行发布申请 ${action.id}？`,
+  );
 }
 
 function freeze() {
-  const params = freezeAction.value.params || { product_key: selectedProduct.value };
-  void runWrite('release.operator.freeze', params, 'freeze');
+  void runConfiguredAction(freezeAction.value, {}, 'freeze');
 }
 
 function syncPolicy() {
-  const params = syncPolicyAction.value.params || { product_key: selectedProduct.value };
-  void runWrite('release.operator.sync_policy', params, 'sync_policy');
+  void runConfiguredAction(syncPolicyAction.value, {}, 'sync_policy');
 }
 
 function savePolicy() {
-  const params = updatePolicyAction.value.params || { product_key: selectedProduct.value };
-  void runWrite(
-    'release.operator.update_policy',
+  void runConfiguredAction(
+    updatePolicyAction.value,
     {
-      ...params,
-      product_key: selectedProduct.value,
       state: policyState.value,
       access_level: policyAccessLevel.value,
     },
@@ -1365,10 +1472,17 @@ function savePolicy() {
   );
 }
 
-function saveProductCenterDraft() {
+async function saveProductCenterDraft() {
   const editor = productCenterEditor.value;
   const center = selectedCenter.value;
   if (!editor || !center || centerSaveDisabled.value) return;
+  if (editor.save_action.confirmation_required) {
+    const confirmed = await promotionConfirmationRef.value?.confirm({
+      actionLabel: '保存产品中心草案',
+      message: `确认将中心 ${center.label} 的修改保存为产品 ${editor.product_key} 的草案？`,
+    });
+    if (!confirmed) return;
+  }
   const centerUpdates = centerDraftChanged.value
     ? [{
       center_key: center.center_key,
@@ -1396,13 +1510,10 @@ function saveProductCenterDraft() {
 function updatePagePolicy(page: AnyRecord, updates: AnyRecord) {
   const key = pageKey(page);
   if (!key) return;
-  const params = updatePagePolicyAction.value.params || { product_key: selectedProduct.value };
   const state = String(updates.release_state || updates.access_level || 'update');
-  void runWrite(
-    'release.operator.update_page_policy',
+  void runConfiguredAction(
+    updatePagePolicyAction.value,
     {
-      ...params,
-      product_key: selectedProduct.value,
       page_key: key,
       ...updates,
     },
@@ -1411,8 +1522,12 @@ function updatePagePolicy(page: AnyRecord, updates: AnyRecord) {
 }
 
 function rollback() {
-  const params = rollbackAction.value.params || {};
-  void runWrite('release.operator.rollback', params, 'rollback');
+  void runConfiguredAction(
+    rollbackAction.value,
+    {},
+    'rollback',
+    `确认回滚产品 ${rollbackAction.value.target_scope.product_key} 到快照 ${rollbackAction.value.params.target_snapshot_id}？`,
+  );
 }
 
 onMounted(() => {

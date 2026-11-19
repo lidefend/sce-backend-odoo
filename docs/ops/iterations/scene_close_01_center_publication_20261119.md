@@ -120,3 +120,56 @@ contract chain:
 
 The obsolete product-group selector with no declared query or filter behavior
 was removed until a backend behavior contract is introduced.
+
+## Second owner review remediation
+
+The platform-management surface now follows the same product contract model as
+the business pages:
+
+- `platform_management_action_contract.py` owns static P0 action identity,
+  labels, intents, accepted inputs, editable field options, confirmation and
+  readback requirements.
+- The existing read model remains the dynamic authority. It binds the current
+  product, actor, object, permissions and state to those definitions.
+- Existing handlers remain the execution authority. The frontend no longer
+  supplies freeze, sync, policy, page-policy, approval or rollback intents and
+  parameters by convention.
+
+Additional review corrections:
+
+1. Re-adding an existing entry preserves maintained label, access level,
+   sequence, intent and role restrictions.
+2. Capability merge distinguishes the compatibility alias from a same-page
+   business capability by capability identity.
+3. Declared center sequence `0` survives P0 navigation-node construction and
+   capability catalog numeric projection.
+4. Pending approval rows now contain a complete decorated `approve_action`.
+5. Policy and page-policy actions declare their complete accepted fields and
+   selectable options.
+6. Center-save readback must identify the same product in policy, readback and
+   surface.
+7. Backend numeric declarations require actual finite integers; `null` and
+   `false` are rejected.
+8. Rollback declarations and execution reject inactive target snapshots.
+
+## Platform management as a product
+
+The platform management page is now treated as a product surface driven by P0
+configuration facts:
+
+- `platform_management_action_contract.py` owns stable action labels, intents,
+  accepted fields, editable options, confirmation requirements and readback
+  requirements.
+- The read model binds those facts to the current product, actor, target object,
+  permissions and state.
+- Existing `release.operator.*` handlers and document services remain the
+  execution authority and revalidate current facts.
+- The frontend executes the declared action object directly for freeze, sync,
+  policy save, page policy, approval and rollback. It no longer reconstructs
+  intents or falls back to missing parameters.
+- Pending approval rows expose a complete decorated `approve_action`.
+- Policy and page-policy actions declare the full accepted input sets and
+  selectable options.
+
+The platform action registry entry identifies the contract version. The
+definitions and the current dynamic binding remain separate facts.

@@ -22,7 +22,10 @@ import {
 } from '../src/app/platformCapabilityExplorerPresentation';
 import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
-import { decodeReleaseOperatorSurface } from '../src/app/releaseOperatorActionContract';
+import {
+  decodeProductCenterWriteEnvelope,
+  decodeReleaseOperatorSurface,
+} from '../src/app/releaseOperatorActionContract';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -569,14 +572,184 @@ assert.throws(
 );
 cases += 1;
 
+const managementActor = {
+  user_id: 7,
+  login: 'platform.admin',
+  name: 'Platform Admin',
+  operator_kind: 'authorized_release_operator',
+  roles: ['admin'],
+};
+const managementTarget = {
+  kind: 'product_release',
+  scope_key: 'construction.standard',
+  product_key: 'construction.standard',
+  company_ids: [],
+  target_role_codes: [],
+  is_global_product_release: true,
+  meaning: 'all authorized enterprises',
+};
+const configuredManagementAction = (
+  key: string,
+  intent: string,
+  params: Record<string, unknown>,
+  acceptedFields: string[],
+  readbackFields: string[],
+  extra: Record<string, unknown> = {},
+) => ({
+  key,
+  label: key,
+  intent,
+  enabled: true,
+  reason_code: 'OK',
+  params,
+  accepted_fields: acceptedFields,
+  actor: managementActor,
+  target_scope: managementTarget,
+  operation_object: {
+    kind: 'product_release_policy',
+    product_key: 'construction.standard',
+    snapshot_id: 0,
+  },
+  prerequisites: {
+    satisfied: true,
+    reason_code: 'OK',
+    confirmation_required: false,
+  },
+  readback: {
+    source: 'release.operator.surface',
+    mode: 'authoritative_after_write',
+    fields: readbackFields,
+  },
+  ...extra,
+});
+
 const promotionSurface = {
   identity: { product_key: 'construction.standard' },
   actor_scope: { user_id: 7, login: 'platform.admin', name: 'Platform Admin' },
   candidate_snapshots: [{ id: 31, version: 'v31', state: 'approved' }],
   available_actions: {
+    freeze: configuredManagementAction(
+      'freeze:construction.standard',
+      'release.operator.freeze',
+      { product_key: 'construction.standard', replace_active: false },
+      ['product_key', 'version', 'role_code', 'note'],
+      ['snapshot', 'surface'],
+    ),
+    sync_policy: configuredManagementAction(
+      'sync_policy:construction.standard',
+      'release.operator.sync_policy',
+      { product_key: 'construction.standard' },
+      ['product_key', 'preserve_state', 'preserve_access_level'],
+      ['policy', 'surface'],
+    ),
+    set_page_enabled: configuredManagementAction(
+      'set_page_enabled:construction.standard',
+      'release.operator.set_page_enabled',
+      { product_key: 'construction.standard' },
+      ['product_key', 'page_key', 'enabled'],
+      ['policy', 'surface'],
+    ),
+    update_page_policy: configuredManagementAction(
+      'update_page_policy:construction.standard',
+      'release.operator.update_page_policy',
+      { product_key: 'construction.standard' },
+      ['product_key', 'page_key', 'enabled', 'release_state', 'access_level', 'policy_note'],
+      ['policy', 'surface'],
+      {
+        editable_fields: [
+          {
+            key: 'release_state',
+            type: 'select',
+            options: [
+              { value: 'released', label: '正式' },
+              { value: 'preview', label: '预览' },
+              { value: 'hidden', label: '隐藏' },
+              { value: 'retired', label: '退役' },
+            ],
+          },
+          {
+            key: 'access_level',
+            type: 'select',
+            options: [
+              { value: 'public', label: '公开' },
+              { value: 'internal', label: '内部' },
+              { value: 'role_restricted', label: '按角色限制' },
+            ],
+          },
+        ],
+      },
+    ),
     update_policy: {
+      ...configuredManagementAction(
+        'update_policy:construction.standard',
+        'release.operator.update_policy',
+        { product_key: 'construction.standard' },
+        [
+          'product_key',
+          'state',
+          'access_level',
+          'active',
+          'allowed_role_codes',
+          'center_updates',
+          'entry_placements',
+        ],
+        ['policy', 'surface', 'readback'],
+        {
+          editable_fields: [
+            {
+              key: 'state',
+              type: 'select',
+              options: [
+                { value: 'draft', label: '草稿' },
+                { value: 'preview', label: '预览' },
+                { value: 'stable', label: '稳定' },
+                { value: 'archived', label: '归档' },
+              ],
+            },
+            {
+              key: 'access_level',
+              type: 'select',
+              options: [
+                { value: 'public', label: '公开' },
+                { value: 'internal', label: '内部' },
+                { value: 'role_restricted', label: '按角色限制' },
+              ],
+            },
+          ],
+        },
+      ),
       editor_contract: 'product_center_editor.v1',
     },
+    runtime_probe: configuredManagementAction(
+      'runtime_probe:construction.standard',
+      'release.operator.runtime_probe',
+      { product_key: 'construction.standard' },
+      ['product_key'],
+      ['runtime_user_probe'],
+    ),
+    rollback: configuredManagementAction(
+      'rollback:construction.standard',
+      'release.operator.rollback',
+      {
+        product_key: 'construction.standard',
+        target_snapshot_id: 29,
+        replace_active: true,
+      },
+      ['product_key', 'target_snapshot_id', 'replace_active', 'note'],
+      ['action', 'surface'],
+      {
+        operation_object: {
+          kind: 'release_snapshot',
+          product_key: 'construction.standard',
+          snapshot_id: 29,
+        },
+        prerequisites: {
+          satisfied: true,
+          reason_code: 'OK',
+          confirmation_required: true,
+        },
+      },
+    ),
     promote: [{
       key: 'promote:31',
       label: '发布产品版本 v31',
@@ -621,6 +794,29 @@ const promotionSurface = {
     product_key: 'construction.standard',
     active_snapshot: { id: 30, version: 'v30', state: 'released' },
     rollback_target_snapshot_id: 29,
+  },
+  pending_approval: {
+    count: 1,
+    actions: [{
+      id: 31,
+      action_type: 'promote_snapshot',
+      product_key: 'construction.standard',
+      can_approve: true,
+      approve_action: configuredManagementAction(
+        'approve:31',
+        'release.operator.approve',
+        { product_key: 'construction.standard', action_id: 31 },
+        ['action_id'],
+        ['action', 'surface'],
+        {
+          prerequisites: {
+            satisfied: true,
+            reason_code: 'OK',
+            confirmation_required: true,
+          },
+        },
+      ),
+    }],
   },
   product_center_editor: {
     contract_version: 'product_center_editor.v1',
@@ -678,6 +874,7 @@ const promotionSurface = {
       params: { product_key: 'construction.standard' },
       accepted_fields: ['center_updates', 'entry_placements'],
       readback: ['policy', 'surface', 'readback'],
+      confirmation_required: true,
     },
     config_ref: {
       kind: 'release_operator_action',
@@ -692,6 +889,83 @@ check(
   31,
   'complete promotion contract consumed',
 );
+check(
+  (decodedPromotion.available_actions as Record<string, Record<string, unknown>>).freeze.intent,
+  'release.operator.freeze',
+  'declared freeze action consumed',
+);
+check(
+  ((decodedPromotion.available_actions as Record<string, Record<string, unknown>>).rollback.readback as Record<string, unknown>).fields,
+  ['action', 'surface'],
+  'declared rollback action readback consumed',
+);
+check(
+  ((((decodedPromotion.pending_approval as Record<string, unknown>).actions as Array<Record<string, unknown>>)[0].approve_action as Record<string, unknown>).params as Record<string, unknown>).action_id,
+  31,
+  'pending approval uses backend action object',
+);
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    available_actions: {
+      ...promotionSurface.available_actions,
+      update_policy: {
+        ...promotionSurface.available_actions.update_policy,
+        editable_fields: (
+          promotionSurface.available_actions.update_policy.editable_fields as Array<Record<string, unknown>>
+        ).filter((field) => field.key !== 'state'),
+      },
+    },
+  }),
+  (error) => isContractGapError(error),
+  'policy save declaration must include its state field',
+);
+cases += 1;
+const centerWriteEnvelope = {
+  policy: {
+    product_key: 'construction.standard',
+    menu_groups: [],
+  },
+  surface: promotionSurface,
+  readback: {
+    product_key: 'construction.standard',
+    draft_policy_sha256: 'sha256:draft',
+    draft_fingerprint: 'draft-v1',
+    published_snapshot_id: 30,
+    published_version: 'v30',
+  },
+};
+check(
+  decodeProductCenterWriteEnvelope(
+    centerWriteEnvelope,
+    decodedPromotion.product_center_editor,
+  ).policy.product_key,
+  'construction.standard',
+  'center write binds the submitted product',
+);
+assert.throws(
+  () => decodeProductCenterWriteEnvelope(
+    {
+      ...centerWriteEnvelope,
+      policy: {
+        ...centerWriteEnvelope.policy,
+        product_key: 'construction.preview',
+      },
+      readback: {
+        ...centerWriteEnvelope.readback,
+        product_key: 'construction.preview',
+      },
+      surface: {
+        ...promotionSurface,
+        identity: { product_key: 'construction.preview' },
+      },
+    },
+    decodedPromotion.product_center_editor,
+  ),
+  (error) => isContractGapError(error),
+  'internally consistent center write for another product still stops',
+);
+cases += 1;
 assert.throws(
   () => decodeReleaseOperatorSurface({
     ...promotionSurface,
@@ -704,6 +978,21 @@ assert.throws(
   }),
   (error) => isContractGapError(error),
   'missing promotion operation object stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    pending_approval: {
+      count: 1,
+      actions: [{
+        ...promotionSurface.pending_approval.actions[0],
+        approve_action: undefined,
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'pending approval without a complete action object stops',
 );
 cases += 1;
 assert.throws(
@@ -752,6 +1041,21 @@ assert.throws(
   }),
   (error) => isContractGapError(error),
   'invalid center sequence stops',
+);
+cases += 1;
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    product_center_editor: {
+      ...promotionSurface.product_center_editor,
+      centers: [{
+        ...promotionSurface.product_center_editor.centers[0],
+        sequence: false,
+      }],
+    },
+  }),
+  (error) => isContractGapError(error),
+  'boolean is never decoded as a numeric sequence declaration',
 );
 cases += 1;
 assert.throws(

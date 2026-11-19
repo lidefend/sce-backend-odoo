@@ -23,8 +23,10 @@ def _text(value: Any) -> str:
 
 
 def _int(value: Any, default: int = 0) -> int:
+    if value in (None, ""):
+        return default
     try:
-        return int(value or default)
+        return int(value)
     except Exception:
         return default
 

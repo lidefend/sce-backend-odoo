@@ -874,6 +874,8 @@ class EditionReleaseSnapshotService:
         target = model.browse(int(target_snapshot_id)) if target_snapshot_id else current.rollback_target_snapshot_id
         if not target or not target.exists():
             raise ValueError("ROLLBACK_TARGET_NOT_FOUND")
+        if not target.active:
+            raise ValueError("ROLLBACK_TARGET_INACTIVE")
         if _text(target.product_key) != _text(product_key):
             raise ValueError("ROLLBACK_TARGET_PRODUCT_MISMATCH")
         if _text(target.state) not in {"approved", "released", "superseded"}:
