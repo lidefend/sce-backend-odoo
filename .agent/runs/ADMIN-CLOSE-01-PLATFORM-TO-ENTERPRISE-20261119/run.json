@@ -172,7 +172,7 @@
         "frontend/apps/web/src/",
         "frontend/apps/web/scripts/",
         "frontend/apps/web/package.json",
-        "frontend/apps/web/eslint.config.js",
+        "frontend/apps/web/.eslintrc.cjs",
         "make/frontend.mk"
       ]
     },
