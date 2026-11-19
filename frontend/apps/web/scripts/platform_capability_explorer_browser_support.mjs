@@ -15,7 +15,7 @@ export async function bindObservedDeniedIntent(response, expectedUserId, entryUr
   const entry = new URL(entryUrl);
   const observed = new URL(url);
   const namespace = entry.pathname.match(/^\/t\/([^/]+)(?:\/|$)/)?.[1];
-  const tenantHint = String(expectedTenant || headers['x-tenant'] || '');
+  const tenantHint = String(expectedTenant || namespace);
   if (!namespace || observed.origin !== entry.origin
       || observed.pathname !== `/t/${namespace}/api/v1/intent`
       || (headers['x-tenant'] && tenantHint && headers['x-tenant'] !== tenantHint)) {

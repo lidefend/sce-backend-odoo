@@ -6,6 +6,7 @@ import { authenticateDeniedProbe, createExpectedHttpFailureBudget } from './plat
 const BASE_URL = String(process.env.FRONTEND_URL || 'http://127.0.0.1:18081').replace(/\/+$/, '');
 const DB_NAME = String(process.env.DB_NAME || 'sc_dev_demo').trim();
 const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
+const BROWSER_LOCALE = String(process.env.E2E_LOCALE || 'zh-CN');
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
 const DENIED_LOGIN = String(process.env.E2E_DENIED_LOGIN || 'wutao').trim();
@@ -83,7 +84,7 @@ async function login(page, loginName = LOGIN, password = PASSWORD, captureDenied
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
-  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: 'zh-CN' });
+  const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const page = await context.newPage();
   const expectedHttpFailures = createExpectedHttpFailureBudget();
   let expectedConsoleFailures = 0;
@@ -415,7 +416,7 @@ try {
     has_more: listPayload.meta.has_more,
   };
 
-  const deniedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: 'zh-CN' });
+  const deniedContext = await browser.newContext({ viewport: { width: 1280, height: 800 }, locale: BROWSER_LOCALE });
   try {
     const deniedPage = await deniedContext.newPage();
     const deniedIntent = await login(deniedPage, DENIED_LOGIN, DENIED_PASSWORD, true);
