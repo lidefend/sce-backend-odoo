@@ -29,6 +29,7 @@
     "make/ci.mk",
     "make/frontend.mk",
     "make/guards.mk",
+    "scripts/release/",
     "scripts/verify/"
   ],
   "environment": {
@@ -199,6 +200,17 @@
         "make/frontend.mk"
       ]
     },
+    "static_proxy_target": {
+      "target": "verify.local.dev.static_proxy_target.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/release/release_static_server.mjs",
+        "scripts/release/static_proxy_target.mjs",
+        "scripts/verify/static_proxy_target_test.mjs",
+        "scripts/verify/test_frontend_acceptance_runtime_profile.py",
+        "make/dev.mk"
+      ]
+    },
     "smart_core_module_baseline": {
       "target": "verify.smart_core.close_02.module_baseline",
       "kind": "runtime",
@@ -220,7 +232,7 @@
     "The full smart_core module baseline is failed and has no collection count: existing suite/setup failures include missing test relations, entry namespace expectations and unrelated contract/config scenarios. No failure references the changed capability-explorer, release-operator or scenario files, and the focused files pass.",
     "The full smart_construction_core module baseline remains existing debt at 117 failures / 38 errors of 1473 executed tests; no failure references platform_capability_explorer_contributions.py or product_menu_source.py, and the focused contribution and capability families pass.",
     "The governed local test database intentionally deactivates demo-facing menus. The project-ledger runtime sample activates only its own rolled-back native menu path and exercises the real native records, metadata loaders, contribution provider, release snapshot service, scenario catalog and ACL projection; it is not a daily-demo acceptance claim.",
-    "The local development tenant face does not expose the project-ledger menu in its active capability catalog, and it is not the declared platform-control instance. Its browser journey therefore uses an active capability entry for detail verification, verifies that a tenant identity is routed away from the platform-control surface, verifies the enterprise configuration administrator and company scope, and verifies the ordinary project dashboard. The positive platform release and project-ledger contracts are covered by the governed ORM sample rather than claimed as local browser delivery."
+    "The isolated candidate tenant does not expose the project-ledger menu in its active capability catalog, and it is not the declared platform-control instance. Its browser journey therefore uses an active capability entry for detail verification, verifies that a tenant identity is routed away from the platform-control surface, verifies the enterprise configuration administrator and company scope, and verifies the ordinary project dashboard. The positive platform release and project-ledger contracts are covered by the governed ORM sample rather than claimed as candidate-tenant browser delivery."
   ],
-  "next_exact_step": "Commit the frontend consumption changes, run the final affected local iteration, obtain independent review on the exact candidate, and publish through the protected PR entrypoint."
+  "next_exact_step": "Record the isolated candidate browser and static-proxy checks in the run, rerun the final affected local iteration, obtain independent review on the exact candidate, and publish through the protected PR entrypoint."
 }

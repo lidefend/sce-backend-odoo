@@ -170,12 +170,15 @@ Frontend validation passed:
 - `verify.platform.capability_explorer.unit`
 - `verify.admin_close_01.backend.unit`
 
-The existing local development environment was upgraded in place for
-`smart_core`, `smart_construction_core`, and `smart_construction_scene`, then
-recreated and rebuilt through governed entries. No database was rebuilt.
+The isolated candidate acceptance environment was bound to
+`sc-frontend_acceptance_candidate` / `sc-fe-candidate-770`, upgraded for
+`smart_core`, `smart_construction_core`, and `smart_construction_scene`, seeded
+with the governed acceptance fixture, and given a standard product release
+snapshot with 132 menus. Its production frontend was built and served at
+`127.0.0.1:5178`; the candidate backend was read back on `127.0.0.1:18088`.
 
-The management browser journey passed 19 assertions on the local development
-tenant:
+The unified candidate browser journey passed both the capability explorer and
+management suites (20 management assertions):
 
 - capability detail rendered the backend's availability and fact layers;
 - a tenant identity was redirected away from the platform-control release
@@ -185,9 +188,9 @@ tenant:
 - an ordinary business user opened the formal project dashboard.
 
 Raw browser summary and screenshots:
-`.runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/browser_journey/`.
+`.runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/candidate_browser_journey/`.
 
-The local development tenant's active capability set excludes the project
+The isolated candidate tenant's active capability set excludes the project
 ledger and is not the declared `sc_platform_control` instance. Therefore the
 positive project-ledger and platform-release browser result is not claimed from
 this tenant; those contracts are exercised by the governed ORM sample above.
