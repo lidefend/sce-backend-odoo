@@ -226,10 +226,12 @@
       "same-XMLID action type or model rebinding is rejected",
       "normal source refresh keeps model and res_model equal",
       "independent business capabilities are not mutated by same-menu alias refresh",
-      "current-database catalog extraction failures use PRODUCT_SYNC_SOURCE_READ_FAILED before write"
+      "current-database catalog extraction failures use PRODUCT_SYNC_SOURCE_READ_FAILED before write",
+      "initial creation resolves catalog XMLIDs to execution-database menu/action IDs before create",
+      "compatibility alias capabilities refresh model and res_model together"
     ],
     "passed": [
-      "make verify.runtime_capability_catalog.unit: 25 tests",
+      "make verify.runtime_capability_catalog.unit: 26 tests",
       "make verify.capability.identity_boundary.unit: 8 tests",
       "make verify.product_center.policy.unit: 15 tests",
       "make verify.admin_close_01.backend.unit: 141 aggregate tests",
@@ -277,5 +279,5 @@
     "L4": "Not applicable by owner direction: no browser matrix or environment rebuild",
     "L5": "Independent exact-head review and required remote checks at publication"
   },
-  "next_exact_step": "Run delivery freeze preparation, commit and push the R1 candidate, then repeat exact-head independent review"
+  "next_exact_step": "Run delivery freeze preparation, commit and push the R2 candidate, then repeat exact-head independent review"
 }

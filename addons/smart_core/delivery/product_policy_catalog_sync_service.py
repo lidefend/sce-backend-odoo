@@ -60,6 +60,7 @@ class ProductPolicyCatalogSyncService:
         "action_xmlid",
         "action_model",
         "res_model",
+        "model",
         "visible_menu_path",
     )
 
@@ -503,6 +504,7 @@ class ProductPolicyCatalogSyncService:
         identity: dict[str, str],
     ) -> dict[str, Any]:
         self._assert_catalog_source_usable(payload)
+        payload = self._resolve_initial_native_sources(payload)
         return {
             "active": True,
             "product_key": identity["product_key"],
@@ -533,6 +535,79 @@ class ProductPolicyCatalogSyncService:
             else [],
             "note": "synced from productized scene catalog",
         }
+
+    def _resolve_initial_native_sources(
+        self,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve source-database discovery rows to execution identities."""
+        resolved = copy.deepcopy(payload)
+        groups = resolved.get("menu_groups")
+        groups = groups if isinstance(groups, list) else []
+        validated_sources: dict[str, dict[str, Any]] = {}
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            menus = group.get("menus")
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict) or not self._is_native_entry(menu):
+                    continue
+                menu_ref = _text(menu.get("menu_xmlid"))
+                if not menu_ref:
+                    raise ProductPolicyCatalogSyncError(
+                        "PRODUCT_SYNC_SOURCE_MISSING",
+                        "selected native entry has no stable menu XMLID",
+                        entry=_text(menu.get("menu_key") or menu.get("page_key")),
+                    )
+                source = self._read_native_source_facts(menu)
+                self._assert_action_identity(current_row=menu, source_row=source)
+                validated_sources[menu_ref] = source
+
+        refreshed_menus: dict[str, dict[str, Any]] = {}
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            menus = group.get("menus")
+            next_menus = []
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict):
+                    continue
+                next_menu = copy.deepcopy(menu)
+                source = validated_sources.get(_text(menu.get("menu_xmlid")))
+                if source:
+                    self._overlay_source_fields(
+                        next_menu,
+                        source,
+                        self.NATIVE_SOURCE_FIELDS,
+                    )
+                    refreshed_menus[_text(next_menu.get("menu_xmlid"))] = next_menu
+                next_menus.append(next_menu)
+            group["menus"] = next_menus
+
+        capabilities = resolved.get("capabilities")
+        next_capabilities = []
+        for capability in capabilities if isinstance(capabilities, list) else []:
+            if not isinstance(capability, dict):
+                continue
+            next_capability = copy.deepcopy(capability)
+            menu_ref = _text(capability.get("menu_xmlid"))
+            source = validated_sources.get(menu_ref)
+            if source and self._is_native_capability_alias(next_capability):
+                self._overlay_source_fields(
+                    next_capability,
+                    {
+                        **source,
+                        "visible_menu_path": _text(
+                            (refreshed_menus.get(menu_ref) or {}).get(
+                                "visible_menu_path"
+                            )
+                        ),
+                    },
+                    self.CAPABILITY_SOURCE_FIELDS,
+                )
+            next_capabilities.append(next_capability)
+        resolved["capabilities"] = next_capabilities
+        return resolved
 
     @staticmethod
     def _preserved_value(

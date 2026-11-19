@@ -147,6 +147,7 @@ Generated from repository source files. This report is informational during the 
 | 1179 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1169 | Python source | `scripts/ci/backend_test_receipt.py` |
+| 1165 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1160 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
@@ -168,7 +169,6 @@ Generated from repository source files. This report is informational during the 
 | 1093 | Python source | `addons/smart_core/handlers/load_contract.py` |
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
-| 1089 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
@@ -196,6 +196,7 @@ Generated from repository source files. This report is informational during the 
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 949 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
+| 945 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 937 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 920 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
@@ -213,7 +214,6 @@ Generated from repository source files. This report is informational during the 
 | 882 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 879 | Python source | `scripts/verify/frontend_decision_authority.py` |
-| 870 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |

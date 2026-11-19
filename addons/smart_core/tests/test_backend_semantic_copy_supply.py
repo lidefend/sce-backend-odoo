@@ -918,6 +918,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                 "menu_xmlid": "project.menu_ledger",
                 "action_xmlid": "project.action_ledger",
                 "action_id": 31,
+                "model": "stale.model",
                 "res_model": "project.project",
             }],
         }
@@ -963,10 +964,85 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
         capability = values["capabilities"][0]
         self.assertEqual((menu["menu_id"], menu["action_id"]), (21, 31))
         self.assertEqual(
-            (capability["action_id"], capability["res_model"]),
-            (31, "project.project"),
+            (
+                capability["action_id"],
+                capability["model"],
+                capability["res_model"],
+            ),
+            (31, "project.project", "project.project"),
         )
         self.assertEqual(menu["model"], menu["res_model"])
+
+    def test_initial_sync_uses_execution_ids_for_catalog_sources(self):
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(env=None)
+        external_payload = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "menu_groups": [{
+                "group_key": "catalog.project",
+                "menus": [{
+                    "menu_xmlid": "project.menu_ledger",
+                    "menu_key": "project.menu_ledger",
+                    "menu_id": 101,
+                    "action_xmlid": "project.action_ledger",
+                    "action_id": 201,
+                    "model": "project.project",
+                    "res_model": "project.project",
+                }],
+            }],
+            "scenes": [],
+            "capabilities": [{
+                "capability_key": "catalog.menu.project_menu_ledger",
+                "menu_xmlid": "project.menu_ledger",
+                "action_xmlid": "project.action_ledger",
+                "action_id": 201,
+                "model": "stale.model",
+                "res_model": "project.project",
+            }],
+            "policy_source_authority": {
+                "source": "external_db_ir_ui_menu",
+                "source_db": "catalog_db",
+            },
+        }
+        service._read_native_source_facts = lambda _row: {
+            "menu_id": 21,
+            "menu_xmlid": "project.menu_ledger",
+            "menu_key": "project.menu_ledger",
+            "action_id": 31,
+            "action_xmlid": "project.action_ledger",
+            "action_model": "ir.actions.act_window",
+            "res_model": "project.project",
+            "model": "project.project",
+        }
+
+        values = service.build_sync_values(
+            payload=external_payload,
+            current={},
+            identity={
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+            },
+        )
+
+        menu = values["menu_groups"][0]["menus"][0]
+        capability = values["capabilities"][0]
+        self.assertEqual((menu["menu_id"], menu["action_id"]), (21, 31))
+        self.assertEqual((menu["model"], menu["res_model"]), (
+            "project.project",
+            "project.project",
+        ))
+        self.assertEqual((capability["action_id"], capability["model"]), (
+            31,
+            "project.project",
+        ))
 
     def test_current_database_catalog_read_failure_is_stable_and_zero_write(self):
         current = {
