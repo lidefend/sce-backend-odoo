@@ -592,6 +592,36 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
   }
   await page.waitForTimeout(50);
 }
+async function returnPaymentCreateToList(page, target, label) {
+  // Reset the sample through the form's real exit action. Raw history mutation
+  // changes the URL before the router's unsaved guard has accepted navigation.
+  const form = page.locator(
+    '[data-product-page-mode="form"][data-form-model="payment.request"][data-form-record="new"]'
+    + `[data-form-action-id="${target.action_id}"][data-form-menu-id="${target.menu_id}"]:visible`,
+  );
+  check(await form.count() === 1, `${label}: payment create form identity is not unique`);
+  const back = form.locator('[data-form-secondary-action="return-list"]:visible');
+  check(await back.count() === 1, `${label}: form return action identity is not unique`);
+  await back.click();
+  const list = page.locator(READY_ACTION_LIST_SELECTOR).first();
+  const confirmation = page.locator('[data-dialog-purpose="intent-confirmation"][data-state="open"]:visible');
+  await list.or(confirmation).first().waitFor({ state: 'visible', timeout: 45000 });
+  let discarded = false;
+  if (await confirmation.isVisible()) {
+    check(await confirmation.count() === 1, `${label}: leave confirmation identity is not unique`);
+    check((await confirmation.innerText()).includes('当前修改尚未保存'), `${label}: unexpected confirmation while leaving create`);
+    await confirmation.getByRole('button', { name: '确认离开页面', exact: true }).click();
+    await confirmation.waitFor({ state: 'hidden', timeout: 15000 });
+    discarded = true;
+  }
+  const expected = new URL(listRoute(target), BASE_URL);
+  await page.waitForURL((url) => url.pathname === expected.pathname
+    && [...expected.searchParams.entries()].every(([key, value]) => url.searchParams.get(key) === value),
+  { timeout: 45000 });
+  await list.waitFor({ state: 'visible', timeout: 45000 });
+  await form.waitFor({ state: 'hidden', timeout: 15000 });
+  return { status: 'PASS', discarded_unsaved_form: discarded };
+}
 async function openMyWorkFromRoleHome(page) {
   const roleHome = page.locator('[data-role-home]');
   await roleHome.waitFor({ state: 'visible', timeout: 45000 });
@@ -1204,8 +1234,11 @@ async function main() {
         performanceReport.skipped_scenarios = performanceReport.skipped_scenarios || {};
         performanceReport.skipped_scenarios.form_open = 'effective create capability is false';
       } else {
+        performanceReport.form_open_resets = [];
         for (let i = 0; i < PERF_RUNS; i += 1) {
-          await navigateSpa(page, listRoute(TARGETS.payment_request), READY_ACTION_LIST_SELECTOR);
+          performanceReport.form_open_resets.push(await returnPaymentCreateToList(
+            page, TARGETS.payment_request, `form_open_reset_${i + 1}`,
+          ));
           const requestOffset = formOpenRequests.length;
           formSamples.push(await time(async () => {
             await openPaymentCreateFromList(page, TARGETS.payment_request, `form_open_${i + 1}`);
@@ -1213,6 +1246,11 @@ async function main() {
           performanceReport.form_open_requests.samples.push(formOpenRequests.slice(requestOffset));
         }
         performanceReport.scenarios.form_open = stats(formSamples);
+      }
+      if (formWarmup.status !== 'skipped_create_disabled') {
+        performanceReport.form_open_resets.push(await returnPaymentCreateToList(
+          page, TARGETS.payment_request, 'form_open_final_reset',
+        ));
       }
       captureFormOpenRequests = false;
       page.off('request', onFormOpenRequest);

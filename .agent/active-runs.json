@@ -133,6 +133,6 @@
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
-    "fix/scheduled-ci-coverage-20261119": ".agent/runs/SCHEDULED-CI-COVERAGE-20261119/run.json"
+    "fix/scheduled-ci-navigation-20261119": ".agent/runs/SCHEDULED-CI-COVERAGE-20261119/run.json"
   }
 }

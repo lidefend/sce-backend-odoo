@@ -100,9 +100,9 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1538 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1491 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
-| 1453 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
 | 1432 | Python source | `scripts/product/build_capability_productization_v1.py` |
@@ -175,6 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
 | 1008 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
+| 1005 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 1004 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
 | 1002 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
@@ -196,7 +197,6 @@ Generated from repository source files. This report is informational during the 
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
 | 914 | Python source | `addons/smart_core/tests/test_execute_button_server_action_boundaries.py` |
 | 914 | Python source | `scripts/audit/test_verification_lane_coverage.py` |
-| 914 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 910 | Python source | `addons/smart_construction_core/models/core/equipment_management.py` |
 | 907 | JavaScript source | `scripts/verify/frontend_color_role_browser_audit.mjs` |
 | 897 | Python source | `addons/smart_core/utils/idempotency.py` |
@@ -338,7 +338,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | split_plan_required | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | split_plan_required | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
-| 1491 | warning | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
+| 1491 | warning | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 
 ## Interpretation
 

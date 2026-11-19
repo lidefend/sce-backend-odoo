@@ -530,6 +530,97 @@ load_profile
         self.assertNotIn("sessionStorage", login)
         self.assertNotIn("postData()", login)
 
+    def test_payment_create_sample_reset_respects_unsaved_guard(self) -> None:
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text()
+        helper = "async function returnPaymentCreateToList(" + source.split(
+            "async function returnPaymentCreateToList(", 1
+        )[1].split("\nasync function openMyWorkFromRoleHome(", 1)[0]
+        harness = r"""
+const assert = require('node:assert/strict');
+const BASE_URL = 'http://fixture.invalid';
+const READY_ACTION_LIST_SELECTOR = 'ready-list';
+const listRoute = target => `/a/${target.action_id}?menu_id=${target.menu_id}`;
+const check = (condition, message) => { if (!condition) throw new Error(message); };
+function fakePage({dirty = false, unexpected = false, duplicate = false, wrongRoute = false} = {}) {
+  const events = [];
+  let formVisible = true, listVisible = false, dialogVisible = false;
+  const finish = () => { dialogVisible = false; formVisible = false; listVisible = true; };
+  const list = {
+    first() { return this; },
+    or(other) { assert.equal(other, dialog); return {first: () => ({waitFor: async () => {
+      assert.ok(listVisible || dialogVisible);
+    }})}; },
+    async waitFor() { assert.ok(listVisible); events.push('list-ready'); },
+  };
+  const dialog = {
+    async isVisible() { return dialogVisible; },
+    async count() { return 1; },
+    async innerText() { return unexpected ? 'confirm delete record' : '当前修改尚未保存'; },
+    getByRole(role, options) {
+      assert.equal(role, 'button'); assert.equal(options.name, '确认离开页面'); assert.ok(options.exact);
+      return {click: async () => { assert.ok(dialogVisible); events.push('confirm-discard'); finish(); }};
+    },
+    async waitFor(options) { assert.equal(options.state, 'hidden'); assert.ok(!dialogVisible); },
+  };
+  const form = {
+    async count() { return duplicate ? 2 : 1; },
+    locator(selector) {
+      assert.equal(selector, '[data-form-secondary-action="return-list"]:visible');
+      return {count: async () => 1, click: async () => {
+        events.push('return-action');
+        if (dirty) dialogVisible = true; else finish();
+      }};
+    },
+    async waitFor(options) { assert.equal(options.state, 'hidden'); assert.ok(!formVisible); },
+  };
+  return {events,
+    locator(selector) {
+      if (selector === READY_ACTION_LIST_SELECTOR) return list;
+      if (selector.includes('intent-confirmation')) return dialog;
+      assert.ok(selector.includes('data-form-model="payment.request"'));
+      assert.ok(selector.includes('data-form-action-id="881"'));
+      assert.ok(selector.includes('data-form-menu-id="560"'));
+      return form;
+    },
+    async waitForURL(predicate) {
+      assert.ok(predicate(new URL(wrongRoute ? '/a/999?menu_id=560' : '/a/881?menu_id=560', BASE_URL)));
+      assert.equal(predicate(new URL('/a/881?menu_id=999', BASE_URL)), false);
+      events.push('route-verified');
+    },
+  };
+}
+"""
+        cases = r"""
+(async () => {
+  const target = {action_id: 881, menu_id: 560};
+  const clean = fakePage();
+  assert.deepEqual(await returnPaymentCreateToList(clean, target, 'clean'),
+    {status: 'PASS', discarded_unsaved_form: false});
+  assert.deepEqual(clean.events, ['return-action', 'route-verified', 'list-ready']);
+  const dirty = fakePage({dirty: true});
+  assert.deepEqual(await returnPaymentCreateToList(dirty, target, 'dirty'),
+    {status: 'PASS', discarded_unsaved_form: true});
+  assert.deepEqual(dirty.events, ['return-action', 'confirm-discard', 'route-verified', 'list-ready']);
+  const unrelated = fakePage({dirty: true, unexpected: true});
+  await assert.rejects(returnPaymentCreateToList(unrelated, target, 'unrelated'), /unexpected confirmation/);
+  assert.deepEqual(unrelated.events, ['return-action']);
+  await assert.rejects(returnPaymentCreateToList(fakePage({duplicate: true}), target, 'duplicate'), /not unique/);
+  await assert.rejects(returnPaymentCreateToList(fakePage({wrongRoute: true}), target, 'wrong-route'));
+  console.log('payment-create-reset PASS cases=5');
+})().catch(error => { console.error(error); process.exitCode = 1; });
+"""
+        result = subprocess.run(["node", "-e", harness + helper + cases], capture_output=True, text=True)
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertIn("PASS cases=5", result.stdout)
+        self.assertNotIn("pushState", helper)
+        self.assertNotIn("page.goto", helper)
+        self.assertIn("form_open_final_reset", source)
+        loop = source.split("performanceReport.form_open_resets = [];", 1)[1].split(
+            "const switchSamples = [];", 1
+        )[0]
+        self.assertLess(loop.index("returnPaymentCreateToList("), loop.index("formSamples.push(await time("))
+        self.assertNotIn("navigateSpa(", loop)
+
     def test_delivery_hardening_payment_create_uses_product_list_path(self) -> None:
         source = (
             ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs"

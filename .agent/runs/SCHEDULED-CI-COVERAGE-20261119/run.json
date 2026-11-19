@@ -1,88 +1,42 @@
 {
   "schema_version": 1,
-  "baseline_sha": "5e1cb935d31209cc9ece0f317d55a5064e3f7123",
+  "baseline_sha": "0dc7778132a6814e3cb18eb7cecb3ba39ac5df71",
   "scope": [
-    "scripts/verify/frontend_localized_display_contract_test.ts",
-    "scripts/verify/test_frontend_dev_incremental.py",
-    "make/frontend.mk",
     ".agent/active-runs.json",
-    ".agent/goals/SCHEDULED-CI-COVERAGE-20261119.yaml",
     ".agent/runs/SCHEDULED-CI-COVERAGE-20261119/run.json",
     "docs/ops/iterations/scheduled_ci_coverage_20261119.md",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/test_frontend_release_local_entry.py",
     "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "existing Make entrypoints and browser component harness; no database or service mutation"
+    "kind": "runtime",
+    "authority": "governed local acceptance profile: sc-fe-r2-p1-01 / sc_frontend_acceptance; exact filter ^sc_frontend_acceptance$; db/redis/filestore volumes sc_fe_r2_p1_01_db, sc_fe_r2_p1_01_redis, sc_fe_r2_p1_01_odoo; isolated fixture tenant; no customer/production data; exclusive lifecycle handoff required"
   },
   "checks": {
-    "incremental": {
-      "target": "verify.frontend.dev.incremental.unit",
+    "release_entry": {
+      "target": "verify.frontend.release.unit",
       "inputs": [
-        "scripts/verify/frontend_dev_incremental.py",
-        "scripts/verify/test_frontend_dev_incremental.py",
-        "make/frontend.mk"
-      ],
-      "kind": "offline"
-    },
-    "localized": {
-      "target": "verify.frontend.localized_display.unit",
-      "inputs": [
-        "frontend/apps/web/src",
-        "scripts/verify/frontend_localized_display_contract_test.ts",
-        "make/frontend.mk",
-        "frontend/pnpm-lock.yaml"
-      ],
-      "kind": "offline"
-    },
-    "dialog": {
-      "target": "verify.frontend.contract_reason_dialog.browser",
-      "inputs": [
-        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
-        "frontend/apps/web/src",
-        "frontend/packages/ui/src",
-        "frontend/pnpm-lock.yaml",
-        "scripts/verify/playwright_runtime.mjs",
-        "make/frontend.mk"
-      ],
-      "kind": "offline"
-    },
-    "autosave": {
-      "target": "verify.frontend.intake_autosave.unit",
-      "inputs": [
-        "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
-        "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
-        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
-        "frontend/pnpm-lock.yaml",
-        "make/frontend.mk"
-      ],
-      "kind": "offline"
-    },
-    "ci_contract": {
-      "target": "verify.ci.scheduled_gates",
-      "inputs": [
-        "scripts/ci/test_ci_risk_workflow_contract.py",
-        "scripts/ci",
-        "scripts/verify/frontend_release_gate.py",
-        "scripts/verify/test_frontend_release_gate.py",
-        "scripts/verify/test_frontend_release_ci_guard.py",
-        "scripts/verify/test_frontend_release_ci_identity.py",
-        "scripts/verify/ci_artifact_host_write_guard.py",
-        "scripts/verify/test_ci_artifact_host_write_guard.py",
-        ".github/workflows",
-        "make/frontend.mk",
-        "make/ci.mk"
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/dev",
+        "scripts/verify",
+        "make/runtime_ops.mk",
+        "frontend/apps/web/src/pages/contractForm",
+        "frontend/apps/web/src/pages/ContractFormPage.vue"
       ],
       "kind": "offline"
     }
   },
   "blockers": [
-    "Independent review and successful current-head remote checks pending."
+    "Local acceptance frontend lifecycle currently owned by sce-backend-odoo-acceptance-scope-20261109; handoff requested.",
+    "Full local release must pass before publication."
   ],
-  "next_exact_step": "Validate the Make declaration compatibility correction, push to PR 939, and verify current-head remote results.",
+  "next_exact_step": "Pass local full release through verify.frontend.release.local before any remote publication, as explicitly required by the owner.",
   "id": "SCHEDULED-CI-COVERAGE-20261119",
-  "branch": "fix/scheduled-ci-coverage-20261119",
+  "branch": "fix/scheduled-ci-navigation-20261119",
   "status": "verification_pending",
   "goal": ".agent/goals/SCHEDULED-CI-COVERAGE-20261119.yaml",
   "record": "docs/ops/iterations/scheduled_ci_coverage_20261119.md",
@@ -113,8 +67,10 @@
       "log": ".runtime/scheduled-ci/autosave.log"
     },
     "remote_full": {
-      "status": "not_run",
-      "reason": "awaiting reviewed candidate publication"
+      "status": "failed",
+      "run_id": 44432597937,
+      "head": "1688561962b5b355e0da6a37f2f982e8a6dd4816",
+      "reason": "form_open sample reset waits for list while the unsaved-leave dialog remains open"
     },
     "generated_evidence": {
       "status": "passed",
@@ -138,6 +94,30 @@
       "status": "passed",
       "target": "verify.ci.scheduled_gates",
       "log": ".runtime/scheduled-ci/ci-contract-followup.log"
+    },
+    "release_unit": {
+      "status": "failed",
+      "reason": "existing reset wiring test expected two raw history navigations; updated to require guarded reset and settled list checks",
+      "log": ".runtime/scheduled-ci/release-unit.log"
+    },
+    "entry_tests": {
+      "status": "passed",
+      "tests": 27,
+      "log": ".runtime/scheduled-ci/entry-tests.log"
+    },
+    "hardening_tests": {
+      "status": "passed",
+      "tests": 38,
+      "log": ".runtime/scheduled-ci/hardening-tests.log"
+    },
+    "local_iteration_followup": {
+      "status": "passed",
+      "targets": 3,
+      "log": ".runtime/scheduled-ci/iteration.log"
+    },
+    "local_full": {
+      "status": "not_run",
+      "reason": "owner requires local full pass before push; active frontend PID 975157 belongs to another worktree, awaiting environment handoff"
     }
   }
 }
