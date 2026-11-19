@@ -194,6 +194,37 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         self.assertEqual((((payload.get("available_actions") or {}).get("update_page_policy") or {}).get("intent")), "release.operator.update_page_policy")
         self.assertEqual((((payload.get("available_actions") or {}).get("runtime_probe") or {}).get("intent")), "release.operator.runtime_probe")
         self.assertIn("runtime_user_probe", (payload.get("release_pipeline") or {}))
+        self.assertEqual(
+            (payload.get("actor_scope") or {}).get("operator_kind"),
+            "authorized_release_operator",
+        )
+        readback = payload.get("operation_readback") or {}
+        self.assertEqual(readback.get("product_key"), "construction.standard")
+        self.assertEqual(
+            (readback.get("active_snapshot") or {}).get("version"),
+            "v11",
+        )
+        self.assertEqual(readback.get("rollback_target_snapshot_id"), 7)
+        freeze = (payload.get("available_actions") or {}).get("freeze") or {}
+        self.assertEqual(
+            (freeze.get("target_scope") or {}).get("kind"),
+            "product_release",
+        )
+        self.assertTrue(
+            (freeze.get("target_scope") or {}).get("is_global_product_release")
+        )
+        self.assertEqual(
+            (freeze.get("operation_object") or {}).get("kind"),
+            "release_snapshot",
+        )
+        self.assertEqual(
+            (freeze.get("prerequisites") or {}).get("reason_code"),
+            "OK",
+        )
+        self.assertEqual(
+            (freeze.get("readback") or {}).get("mode"),
+            "authoritative_after_write",
+        )
 
     def test_surface_copy_has_no_legacy_english_operator_labels(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

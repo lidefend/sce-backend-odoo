@@ -44,9 +44,19 @@ def load_published_menu_release_projection(env):
 
     standard = _load_platform_release_gate(env, product_key="construction.standard")
     preview = _load_platform_release_gate(env, product_key="construction.preview")
-    states = dict(standard.get("menu_release_states") or {}) if standard.get("applied") else {}
+    standard_states = (
+        dict(standard.get("menu_release_states") or {})
+        if standard.get("applied")
+        else {}
+    )
+    preview_states = (
+        dict(preview.get("menu_release_states") or {})
+        if preview.get("applied")
+        else {}
+    )
+    states = dict(standard_states)
     if preview.get("applied"):
-        for key in (preview.get("menu_release_states") or {}):
+        for key in preview_states:
             states.setdefault(key, "preview")
     snapshots = []
     for product_key, gate in (
@@ -67,6 +77,10 @@ def load_published_menu_release_projection(env):
         )
     return {
         "menu_release_states": states,
+        "menu_release_states_by_product": {
+            "construction.standard": standard_states,
+            "construction.preview": preview_states,
+        },
         "snapshots": snapshots,
         "standard_applied": bool(standard.get("applied")),
         "preview_applied": bool(preview.get("applied")),

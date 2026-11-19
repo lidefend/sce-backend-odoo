@@ -1,0 +1,165 @@
+{
+  "schema_version": 1,
+  "id": "ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119",
+  "branch": "feature/admin-close-01-platform-to-enterprise-20261119",
+  "baseline_sha": "0dc7778132a6814e3cb18eb7cecb3ba39ac5df71",
+  "status": "active",
+  "goal": ".agent/goals/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119.yaml",
+  "record": "docs/ops/iterations/admin_close_01_platform_to_enterprise_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119.yaml",
+    ".agent/goals/CLOSE-03-R1-REVIEW-REMEDIATION-20261119.yaml",
+    ".agent/runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/run.json",
+    ".agent/runs/CLOSE-03-R1-REVIEW-REMEDIATION-20261119/run.json",
+    "addons/smart_core/delivery/",
+    "addons/smart_core/handlers/release_operator.py",
+    "addons/smart_core/handlers/platform_capability_explorer.py",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+    "addons/smart_construction_core/services/product_menu_source.py",
+    "addons/smart_construction_core/tests/",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/",
+    "docs/ops/iterations/admin_close_01_platform_to_enterprise_20261119.md",
+    "frontend/apps/web/src/",
+    "frontend/apps/web/scripts/",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing sc-root daily runtime, local.test and registered frontend acceptance entries only; no new Compose project, database, port, volume, fixture or credential"
+  },
+  "stages": [
+    {
+      "id": "BE-ADMIN-CLOSE-01",
+      "status": "completed",
+      "owner": "single_writer_backend",
+      "exit": "Backend surfaces actor and target scope, capability/native/product-version/enterprise/user-access facts, action prerequisites and refusals, and authoritative post-action readback for the real project-ledger sample",
+      "runtime_sample": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/backend_contract_sample/project_ledger_runtime_sample.json",
+      "denied_sample": ".runtime/agent-runs/ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119/backend_contract_sample/project_ledger_denied_sample.json"
+    },
+    {
+      "id": "FE-ADMIN-CLOSE-01",
+      "status": "active",
+      "owner": "single_writer_frontend_after_backend_handoff",
+      "exit": "Existing platform and enterprise administration screens complete the prepared flow and display backend-owned scope, versions, blockers and readback"
+    },
+    {
+      "id": "REVIEW-ADMIN-CLOSE-01",
+      "status": "not_run",
+      "owner": "read_only_independent_reviewer",
+      "exit": "The same candidate closes scope, permissions, administrative journey and ordinary-user result with required CI"
+    }
+  ],
+  "checks": {
+    "admin_close_01_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ]
+    },
+    "admin_close_01_runtime": {
+      "target": "verify.admin_close_01.runtime.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
+        "make/guards.mk"
+      ]
+    },
+    "scene_module_baseline": {
+      "target": "verify.admin_close_01.scene.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/",
+        "make/guards.mk"
+      ]
+    },
+    "platform_capability_explorer": {
+      "target": "verify.platform.capability_explorer.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/guards.mk"
+      ]
+    },
+    "navigation_publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "make/frontend.mk"
+      ]
+    },
+    "capability_identity_boundary": {
+      "target": "verify.capability.identity_boundary.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ]
+    },
+    "frontend_platform_capability_explorer": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "make/frontend.mk"
+      ]
+    },
+    "smart_core_module_baseline": {
+      "target": "verify.smart_core.close_02.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/",
+        "make/ci.mk"
+      ]
+    },
+    "construction_core_module_baseline": {
+      "target": "verify.smart_construction_core.close_03.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/",
+        "make/ci.mk"
+      ]
+    }
+  },
+  "blockers": [
+    "The full smart_core module baseline is failed and has no collection count: existing suite/setup failures include missing test relations, entry namespace expectations and unrelated contract/config scenarios. No failure references the changed capability-explorer, release-operator or scenario files, and the focused files pass.",
+    "The full smart_construction_core module baseline remains existing debt at 117 failures / 38 errors of 1473 executed tests; no failure references platform_capability_explorer_contributions.py or product_menu_source.py, and the focused contribution and capability families pass.",
+    "The governed local test database intentionally deactivates demo-facing menus. The project-ledger runtime sample activates only its own rolled-back native menu path and exercises the real native records, metadata loaders, contribution provider, release snapshot service, scenario catalog and ACL projection; it is not a daily-demo acceptance claim."
+  ],
+  "next_exact_step": "Commit BE-ADMIN-CLOSE-01 as the exact frontend handoff candidate, then connect PlatformCapabilityExplorerView, ReleaseOperatorView and ScenarioActivationPanel to the backend-owned facts and run frontend validation."
+}

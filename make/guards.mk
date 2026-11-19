@@ -103,7 +103,7 @@ verify.capability.identity_boundary.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core:TestCapabilityRegistryService,/smart_construction_core:TestProductPolicyFactAuthority,/smart_construction_core:TestLockedMenuPolicyInitialization.test_policy_migration_adds_my_work_without_overwriting_existing_rows,/smart_construction_core:TestLockedMenuPolicyInitialization.test_policy_reconciliation_without_active_snapshot_has_one_target_row
 
 .PHONY: verify.scene.publication_authority.orm
-verify.scene.publication_authority.orm: guard.prod.forbid
+verify.scene.publication_authority.orm: guard.prod.forbid verify.admin_close_01.backend.unit verify.admin_close_01.runtime.orm verify.admin_close_01.scene.module_baseline
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=scene_publish_usage_backend
 
 .PHONY: verify.smart_construction_core.migration_compatibility.orm
@@ -530,6 +530,26 @@ verify.platform.capability_explorer.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_platform_capability_explorer.py
 	@python3 addons/smart_construction_core/tests/test_platform_capability_explorer_contributions.py
 	@python3 -m unittest scripts.verify.test_platform_capability_explorer_runtime_probe
+
+.PHONY: verify.admin_close_01.backend.unit
+verify.admin_close_01.backend.unit: guard.prod.forbid verify.platform.capability_explorer.unit
+	@python3 -m py_compile \
+	  addons/smart_core/delivery/release_operator_read_model_service.py \
+	  addons/smart_core/delivery/release_operator_surface_service.py \
+	  addons/smart_core/tests/test_release_operator_surface_copy_backend.py \
+	  addons/smart_construction_scene/services/scenario_activation_catalog.py \
+	  addons/smart_construction_scene/handlers/scenario_activation.py \
+	  addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+	@python3 addons/smart_core/tests/test_release_operator_surface_copy_backend.py
+	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
+
+.PHONY: verify.admin_close_01.runtime.orm
+verify.admin_close_01.runtime.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_scene TEST_TAGS=/smart_construction_scene:TestAdminClose01PlatformToEnterprise
+
+.PHONY: verify.admin_close_01.scene.module_baseline
+verify.admin_close_01.scene.module_baseline: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_scene TEST_TAGS=/smart_construction_scene
 
 # Native workspace fact migration (PR #800): preserve source -> projections,
 # not the retired critical-route override map.

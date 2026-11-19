@@ -3,7 +3,7 @@
   "id": "CLOSE-03-R1-REVIEW-REMEDIATION-20261119",
   "branch": "fix/close-03-r1-review-remediation-20261119",
   "baseline_sha": "61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/CLOSE-03-R1-REVIEW-REMEDIATION-20261119.yaml",
   "record": "docs/ops/iterations/close_03_r1_review_remediation_20261119.md",
   "scope": [
@@ -112,5 +112,14 @@
     "Daily demo upgrade failed before module version commit: migration 17.0.0.183 required an exact total of 132 menu rows, while the maintained sc_demo policy correctly contains 274 released rows. The transaction rolled back and a verified recovery point exists at /data/backups/daily-demo-dev/sc_demo-20261118T231606Z-c91dd0bb/database.dump.",
     "Pre-existing owning-module baseline debt remains outside this correction: the full smart_construction_core ORM run reports 117 failures and 38 errors, while the CLOSE-03 starter run recorded 120 failures and 38 errors on the same broad module baseline. The first failures (duplicate-label namespacing, component-capability projection, native-lowcode action/view binding) are outside the product-policy migration files changed here; the full result remains failed and is not claimed as covered."
   ],
-  "next_exact_step": "Freeze and publish the reviewed R1 candidate, merge through the protected Make entrypoint, then resume the governed daily upgrade and frontend build."
+  "closure": {
+    "pull_request": 938,
+    "candidate_head": "30a6b7d4864c49992a977ee754a02f7542b95c03",
+    "merge_commit": "5e1cb935d31209cc9ece0f317d55a5064e3f7123",
+    "candidate_tree": "a14a8b3b1a24a4c6df736f2465f070aaffb8cb80",
+    "merge_tree": "a14a8b3b1a24a4c6df736f2465f070aaffb8cb80",
+    "required_checks": "public_guard, merge_policy_gate, professional_quality_gate and frontend_release_gate passed on the exact candidate",
+    "active_branch_mapping_removed": true
+  },
+  "next_exact_step": "ADMIN-CLOSE-01 is the next active product batch; retain this run and its original evidence as history."
 }

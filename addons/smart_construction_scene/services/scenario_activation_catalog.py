@@ -22,6 +22,7 @@ def build_scenario_activation_catalog(
     tenant_enablement_by_scene: dict[str, bool] | None = None,
     role_candidates_by_scene: dict[str, list[str]] | None = None,
     surface_index: dict | None = None,
+    product_release_evidence_by_menu: dict[str, dict[str, Any]] | None = None,
 ) -> dict[str, Any]:
     """Project menu qualification and scene lifecycle without conflating them.
 
@@ -31,6 +32,11 @@ def build_scenario_activation_catalog(
     enabled_map = {str(k): bool(v) for k, v in (tenant_enablement_by_scene or {}).items()}
     roles_map = {str(k): [str(x) for x in (v or [])] for k, v in (role_candidates_by_scene or {}).items()}
     product_release_map = {str(k): str(v or "").strip() for k, v in (product_release_by_scene or {}).items()}
+    release_evidence_map = {
+        str(k): dict(v)
+        for k, v in (product_release_evidence_by_menu or {}).items()
+        if isinstance(v, dict)
+    }
     rows: list[dict[str, Any]] = []
     for entry in entries:
         if not isinstance(entry, dict):
@@ -41,6 +47,14 @@ def build_scenario_activation_catalog(
         target = entry.get("target") if isinstance(entry.get("target"), dict) else {}
         menu_xmlid = str(target.get("menu_xmlid") or "").strip()
         release_state = resolve_entry_release_state(entry, release_state_by_menu)
+        release_evidence = release_evidence_map.get(menu_xmlid, {})
+        enablement_blockers = []
+        if release_state != "released":
+            enablement_blockers.append(
+                "PRODUCT_NOT_RELEASED"
+                if release_state
+                else "PRODUCT_RELEASE_UNVERIFIED"
+            )
         rows.append(
             {
                 "scene_key": scene_key,
@@ -49,8 +63,23 @@ def build_scenario_activation_catalog(
                 "menu_xmlid": menu_xmlid,
                 "release_state": release_state or "preview",
                 "product_released": release_state == "released",
+                "product_qualification": {
+                    "status": "qualified" if release_state == "released" else (
+                        "not_qualified" if release_state else "not_verified"
+                    ),
+                    "reason_code": (
+                        "PRODUCT_QUALIFIED"
+                        if release_state == "released"
+                        else "PRODUCT_NOT_RELEASED"
+                        if release_state
+                        else "PRODUCT_RELEASE_UNVERIFIED"
+                    ),
+                    "evidence": release_evidence,
+                },
                 "scene_version_release_state": product_release_map.get(scene_key, ""),
                 "tenant_enabled": enabled_map.get(scene_key, False),
+                "enablement_blockers": enablement_blockers,
+                "enable_allowed": not enablement_blockers,
                 "applicable_roles": roles_map.get(scene_key, []),
             }
         )

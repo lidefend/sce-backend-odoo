@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 219,
+    "odoo_tags": 220,
     "gated": 5,
-    "on_demand": 76,
+    "on_demand": 77,
     "unwired": 138,
-    "odoo_tag_declarations": 449,
+    "odoo_tag_declarations": 450,
     "gated_declarations": 102,
-    "uncovered_declarations": 347,
+    "uncovered_declarations": 348,
     "ci_unit_scripts": 21,
     "ci_unit_scripts_wired": 21,
     "ci_unit_scripts_unwired": 0
@@ -633,6 +633,19 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "admin_close_01",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.admin_close_01.runtime.orm :: /TestAdminClose01PlatformToEnterprise (class selection)"
+      ]
     },
     {
       "group": "admin_vis_patch_a",

@@ -119,6 +119,59 @@ class ReleaseCenterContributionTests(unittest.TestCase):
             "PLATFORM_RELEASE_DATABASE_UNRESOLVED",
         )
 
+    def test_product_qualification_uses_active_snapshot_evidence(self):
+        qualification = MODULE._product_qualifications(
+            ["smart_construction_core.menu_sc_project_project"],
+            {
+                "authority_available": True,
+                "menu_release_states_by_product": {
+                    "construction.standard": {
+                        "smart_construction_core.menu_sc_project_project": "released"
+                    },
+                    "construction.preview": {},
+                },
+                "snapshots": [
+                    {
+                        "product_key": "construction.standard",
+                        "applied": True,
+                        "snapshot_id": 17,
+                        "version": "v17",
+                        "fingerprint": "sha256:v17",
+                    },
+                    {
+                        "product_key": "construction.preview",
+                        "applied": False,
+                        "snapshot_id": 0,
+                        "version": "",
+                        "fingerprint": "",
+                        "reason": "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND",
+                    },
+                ],
+            },
+        )["smart_construction_core.menu_sc_project_project"]
+        self.assertEqual(qualification["standard"], "qualified")
+        self.assertEqual(qualification["preview"], "not_qualified")
+        evidence = {
+            row["product_key"]: row for row in qualification["evidence"]
+        }
+        self.assertTrue(evidence["construction.standard"]["qualified"])
+        self.assertEqual(evidence["construction.standard"]["snapshot_id"], 17)
+        self.assertEqual(evidence["construction.standard"]["version"], "v17")
+        self.assertFalse(evidence["construction.preview"]["qualified"])
+
+    def test_menu_release_without_active_product_evidence_is_not_qualified(self):
+        qualification = MODULE._product_qualifications(
+            ["smart_construction_core.menu_sc_project_project"],
+            {
+                "authority_available": False,
+                "menu_release_states_by_product": {},
+                "snapshots": [],
+                "authority_reason": "PLATFORM_RELEASE_DB_ISOLATED",
+            },
+        )["smart_construction_core.menu_sc_project_project"]
+        self.assertEqual(qualification["standard"], "not_verified")
+        self.assertEqual(qualification["reason_code"], "PLATFORM_RELEASE_DB_ISOLATED")
+
     def test_contribution_is_orm_read_only(self):
         source = MODULE_PATH.read_text(encoding="utf-8")
         for forbidden in (".write(", ".create(", ".unlink(", ".sudo().create("):

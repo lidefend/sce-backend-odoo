@@ -77,6 +77,7 @@ def native_facts(rows=None, root_menu_ids=None):
                 "parent_path": "1/2/10/",
                 "sequence": 20,
                 "groups": ["smart_construction_core.group_sc_entry_p01"],
+                "group_ids": [1],
             },
         },
         "actions": {
@@ -86,6 +87,7 @@ def native_facts(rows=None, root_menu_ids=None):
                 "type": "ir.actions.act_window",
                 "res_model": "project.project",
                 "groups": ["smart_construction_core.group_sc_project_read"],
+                "group_ids": [1],
             }
         },
         "modules": {
@@ -118,8 +120,14 @@ def native_facts(rows=None, root_menu_ids=None):
             "project.project": {
                 "row_count": 2,
                 "group_xmlids": ["smart_construction_core.group_sc_project_read"],
+                "read_group_ids": [1],
                 "sha256": "acl-sha-v1",
             }
+        },
+        "acl_rows": {
+            "project.project": [
+                {"read": True, "group_id": 1},
+            ]
         },
         "rules": {
             "project.project": {
@@ -135,6 +143,17 @@ def native_facts(rows=None, root_menu_ids=None):
                 "version": "17.0.0.182",
             }
         ],
+        "actor": {
+            "user_id": 7,
+            "login": "project.manager",
+            "name": "Project Manager",
+            "company_id": 3,
+            "company_name": "Acceptance Co",
+            "allowed_company_ids": [3],
+            "group_ids": [1],
+            "group_xmlids": ["smart_construction_core.group_sc_project_read"],
+            "source": "test principal",
+        },
         "root_menu_ids": [1] if root_menu_ids is None else root_menu_ids,
     }
 
@@ -388,6 +407,92 @@ class ProjectionContractTests(unittest.TestCase):
         self.assertEqual(row["product_qualification"]["preview"], "qualified")
         self.assertEqual(row["product_qualification"]["standard"], "not_verified")
         self.assertEqual(row["release_state"], "released")
+
+    def test_visibility_is_explained_from_separate_contract_facts(self):
+        payload = contributions()
+        payload["product_qualifications"] = {
+            "smart_construction_core.menu_project_ledger": {
+                "preview": "qualified",
+                "standard": "qualified",
+                "reason_code": "PRODUCT_QUALIFIED",
+                "evidence": [
+                    {
+                        "product_key": "construction.standard",
+                        "version": "v5",
+                        "snapshot_id": 5,
+                        "qualified": True,
+                    }
+                ],
+            }
+        }
+        payload["enterprise_enablement"] = {
+            "10": {
+                "applicable": True,
+                "enabled": True,
+                "status": "enabled",
+                "reason_code": "ENTERPRISE_SCENARIO_ENABLED",
+                "company_id": 3,
+                "company_name": "Acceptance Co",
+            }
+        }
+        payload["company_context"] = {
+            "company_id": 3,
+            "company_name": "Acceptance Co",
+        }
+        detail = build_service(contribution_payload=payload).project(
+            include_details=True
+        ).details[
+            (
+                "smart_construction_core.menu_project_ledger",
+                "smart_construction_core.action_project_ledger",
+            )
+        ]
+        self.assertTrue(detail["visibility"]["can_use"])
+        self.assertEqual(
+            detail["diagnostics"]["visibility_reason"],
+            "CURRENT_USER_ENTRY_AVAILABLE",
+        )
+        layers = {row["key"]: row for row in detail["fact_layers"]}
+        self.assertEqual(layers["native_presence"]["status"], "present")
+        self.assertEqual(layers["consumer_support"]["status"], "supported")
+        self.assertEqual(layers["product_qualification"]["status"], "qualified")
+        self.assertEqual(layers["product_release"]["status"], "released")
+        self.assertEqual(layers["enterprise_enablement"]["status"], "enabled")
+        self.assertEqual(layers["current_user_access"]["status"], "allowed")
+
+    def test_released_menu_is_not_reported_as_qualified_without_product_evidence(self):
+        payload = contributions()
+        payload["product_qualifications"] = {}
+        detail = build_service(contribution_payload=payload).project(
+            include_details=True
+        ).details[
+            (
+                "smart_construction_core.menu_project_ledger",
+                "smart_construction_core.action_project_ledger",
+            )
+        ]
+        self.assertEqual(detail["release"]["state"], "released")
+        self.assertEqual(
+            detail["diagnostics"]["visibility_reason"],
+            "PRODUCT_QUALIFICATION_NOT_VERIFIED",
+        )
+        self.assertFalse(detail["visibility"]["can_use"])
+
+    def test_access_layers_report_group_and_acl_denials_independently(self):
+        denied = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            entry_group_ids=[11],
+            held_group_ids=[12],
+            acl_rows=[{"read": True, "group_id": 13}],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+        )
+        self.assertFalse(denied["entry_groups_allowed"])
+        self.assertFalse(denied["model_read_allowed"])
+        self.assertEqual(denied["reason_code"], "ENTRY_GROUP_DENIED")
+        self.assertIn("MODEL_READ_ACL_DENIED", denied["blockers"])
 
     def test_missing_scene_authority_blocks_assignment_without_changing_native_validity(self):
         payload = contributions()

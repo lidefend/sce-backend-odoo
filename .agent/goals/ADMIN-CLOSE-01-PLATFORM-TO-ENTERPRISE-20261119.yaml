@@ -1,0 +1,65 @@
+schema_version: 1
+goal:
+  id: ADMIN-CLOSE-01-PLATFORM-TO-ENTERPRISE-20261119
+  status: active
+  formal_product_layer: P0/P1
+  layer_target: >-
+    Platform capability qualification and release operation facts consumed by
+    platform administration, enterprise scenario activation and ordinary users
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_runtime_scope
+  objective: >-
+    Deliver one governed flow in which a platform administrator can identify a
+    capability's native source, product qualification, effective product version,
+    draft difference, blockers, promotion and rollback target; an enterprise
+    configuration administrator can enable only a released scenario for the
+    explicitly selected company; and an ordinary authorized user can use the
+    resulting published entry without the administrator screens broadening
+    company, role or business permissions.
+  product_result: >-
+    Platform and enterprise administrators complete the existing visual release
+    and activation flow without SQL, hand-written JSON or command-line repair.
+    Each action displays its actor, target scope, object, prerequisites, refusal
+    reason and authoritative readback. Capability discovery, product
+    qualification, active product version, enterprise enablement and current-user
+    access remain separate facts, so a discovered native menu is never presented
+    as a qualified or enabled product.
+  why_here: >-
+    smart_core owns generic capability, release-version, operation-scope and
+    readback mechanisms. smart_construction_core contributes construction product
+    qualification and published menu evidence. smart_construction_scene owns the
+    industry scenario catalog and company enablement decision. The shared frontend
+    consumes those declarations without reimplementing precedence or permission.
+  why_not_elsewhere:
+    - The frontend must not infer product qualification from menu existence or release_state.
+    - A platform administrator identity must not turn an enterprise-scoped save into a global company write.
+    - Enterprise enablement must not grant user permissions or replace native ACL and record rules.
+    - P4 verification may exercise the facts but must not become their product authority.
+    - Production deployment, the second LC-CLOSE-01 batch and unrelated customization work are out of scope.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_project
+      - smart_construction_core.menu_sc_business_config_workbench
+      - smart_construction_core.menu_sc_enterprise_initialization
+    behavior:
+      - platform capability explorer qualification, diagnostics and release readback
+      - platform product draft, release version, promotion and rollback actions
+      - enterprise scenario activation catalog and company-scoped write
+      - ordinary user visibility after product and enterprise activation
+  exclusions:
+    - LC-CLOSE-01 form configuration edit, preview, publish and rollback
+    - custom field definitions and stored values
+    - ordinary user personal preferences beyond existing runtime behavior
+    - production deployment and release publication
+    - all-entry browser matrix or unrelated menu redesign
+  rollback: >-
+    Revert the ADMIN-CLOSE-01 backend and frontend commits. The change adds
+    projection metadata and readback only; any existing release or enterprise
+    activation write used by acceptance must be restored through the same governed
+    operator intent and verified against its prior snapshot or company value.

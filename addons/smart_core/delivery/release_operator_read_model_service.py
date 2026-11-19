@@ -90,6 +90,78 @@ class ReleaseOperatorReadModelService:
         identity["source_authority"] = product_identity_source_authority_contract()
         return identity
 
+    def _actor_scope(self, role_context: dict[str, Any]) -> dict[str, Any]:
+        user = self.env.user
+        try:
+            from odoo.addons.smart_core.security.platform_admin import (
+                user_is_platform_control_admin,
+            )
+
+            platform_admin = bool(user_is_platform_control_admin(user))
+        except Exception:
+            platform_admin = False
+        return {
+            "user_id": int(getattr(user, "id", 0) or 0),
+            "login": _text(getattr(user, "login", "")),
+            "name": _text(getattr(user, "name", "")),
+            "operator_kind": "platform_admin" if platform_admin else "authorized_release_operator",
+            "platform_admin": platform_admin,
+            "roles": list(role_context.get("actor_role_codes") or []),
+            "role_source": _text(role_context.get("role_source")),
+            "source_authority": role_context.get("source_authority") or {},
+        }
+
+    @staticmethod
+    def _product_target_scope(identity: dict[str, Any]) -> dict[str, Any]:
+        product_key = _text(identity.get("product_key"))
+        return {
+            "kind": "product_release",
+            "scope_key": product_key,
+            "product_key": product_key,
+            "base_product_key": _text(identity.get("base_product_key")),
+            "edition_key": _text(identity.get("edition_key")),
+            "company_ids": [],
+            "target_role_codes": [],
+            "is_global_product_release": True,
+            "meaning": "applies to all authorized enterprises consuming this product version",
+            "source": "release_operator_product_identity",
+        }
+
+    @staticmethod
+    def _decorate_operator_action(
+        action: dict[str, Any],
+        *,
+        actor: dict[str, Any],
+        target_scope: dict[str, Any],
+        operation_object: dict[str, Any],
+        confirm_required: bool = False,
+    ) -> dict[str, Any]:
+        result = dict(action)
+        enabled = bool(result.get("enabled"))
+        reason_code = _text(result.get("reason_code")) or ("OK" if enabled else "ACTION_BLOCKED")
+        result.update(
+            {
+                "actor": actor,
+                "target_scope": target_scope,
+                "operation_object": operation_object,
+                "prerequisites": {
+                    "satisfied": enabled,
+                    "reason_code": reason_code,
+                    "confirmation_required": bool(confirm_required),
+                },
+                "readback": {
+                    "source": "release.operator.surface",
+                    "mode": "authoritative_after_write",
+                    "fields": [
+                        "current_release_state.active_snapshot",
+                        "release_pipeline.change_summary",
+                        "available_actions.rollback",
+                    ],
+                },
+            }
+        )
+        return result
+
     def _products(self, current_product_key: str) -> list[dict[str, Any]]:
         rows = []
         current_identity = self._resolve_identity(product_key=current_product_key)
@@ -705,6 +777,8 @@ class ReleaseOperatorReadModelService:
             current_release_state=current_release_state,
         )
         role_context = self.approval_policy_service.resolve_actor_role_context(self.env.user)
+        actor = self._actor_scope(role_context)
+        target_scope = self._product_target_scope(identity)
         available_operator_actions = {
             "write_model_contract_version": RELEASE_OPERATOR_WRITE_MODEL_CONTRACT_VERSION,
             "freeze": {
@@ -785,6 +859,47 @@ class ReleaseOperatorReadModelService:
             "promote": self._build_promote_actions(product_key=identity["product_key"], snapshots=candidate_snapshots),
             "rollback": self._build_rollback_action(product_key=identity["product_key"], active_snapshot=active_snapshot),
         }
+        for key, action in list(available_operator_actions.items()):
+            if not isinstance(action, dict) or key == "write_model_contract_version":
+                continue
+            if key == "promote":
+                available_operator_actions[key] = [
+                    self._decorate_operator_action(
+                        item,
+                        actor=actor,
+                        target_scope=target_scope,
+                        operation_object={
+                            "kind": "release_snapshot",
+                            "snapshot_id": int(
+                                (item.get("params") or {}).get("snapshot_id") or 0
+                            ),
+                            "product_key": identity["product_key"],
+                        },
+                        confirm_required=True,
+                    )
+                    for item in action
+                    if isinstance(item, dict)
+                ]
+                continue
+            operation_kind = (
+                "release_snapshot"
+                if key in {"rollback", "freeze", "runtime_probe"}
+                else "product_release_policy"
+            )
+            available_operator_actions[key] = self._decorate_operator_action(
+                action,
+                actor=actor,
+                target_scope=target_scope,
+                operation_object={
+                    "kind": operation_kind,
+                    "product_key": identity["product_key"],
+                    "snapshot_id": int(
+                        (action.get("params") or {}).get("target_snapshot_id") or 0
+                    ),
+                    "page_key": _text((action.get("params") or {}).get("page_key")),
+                },
+                confirm_required=key in {"rollback", "update_policy"},
+            )
         surface_copy = self._build_surface_copy(product_key=identity["product_key"])
         return {
             "contract_version": RELEASE_OPERATOR_READ_MODEL_CONTRACT_VERSION,
@@ -804,6 +919,7 @@ class ReleaseOperatorReadModelService:
             },
             "products": self._products(identity["product_key"]),
             "actor_role_context": role_context,
+            "actor_scope": actor,
             "control_scope": control_scope,
             "product_delivery_console": product_delivery_console,
             "release_pipeline": release_pipeline,
@@ -812,4 +928,26 @@ class ReleaseOperatorReadModelService:
             "candidate_snapshots": candidate_snapshots,
             "release_history_summary": release_history_summary,
             "available_operator_actions": available_operator_actions,
+            "operation_readback": {
+                "product_key": identity["product_key"],
+                "active_snapshot": current_release_state.get("active_snapshot") or {},
+                "draft": release_pipeline.get("draft") or {},
+                "change_summary": release_pipeline.get("change_summary") or {},
+                "rollback_target_snapshot_id": int(
+                    _dict(current_release_state.get("active_snapshot")).get(
+                        "rollback_target_snapshot_id"
+                    )
+                    or 0
+                ),
+                "audience": release_pipeline.get("audience_simulation") or {},
+                "source_authority": {
+                    "kind": "release_operator_operation_readback",
+                    "authorities": [
+                        "sc.edition.release.snapshot",
+                        "sc.release.action",
+                        "sc.product.policy",
+                    ],
+                    "projection_only": True,
+                },
+            },
         }

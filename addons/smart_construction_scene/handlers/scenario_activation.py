@@ -25,18 +25,108 @@ def _product_surface_index(env=None):
     return runtime_menu_scope(env)[0]
 
 
+def _actor_fact(env) -> dict:
+    user = getattr(env, "user", None)
+    can_manage = bool(
+        getattr(user, "has_group", lambda _group: False)(
+            "smart_construction_core.group_sc_cap_business_config_admin"
+        )
+    )
+    try:
+        from odoo.addons.smart_core.security.platform_admin import (
+            user_is_platform_control_admin,
+        )
+
+        platform_admin = bool(user_is_platform_control_admin(user))
+    except Exception:
+        platform_admin = False
+    return {
+        "user_id": int(getattr(user, "id", 0) or 0),
+        "login": str(getattr(user, "login", "") or "").strip(),
+        "name": str(getattr(user, "name", "") or "").strip(),
+        "can_manage_enterprise_configuration": can_manage,
+        "platform_admin": platform_admin,
+        "source": "res.users + smart_construction_core.group_sc_cap_business_config_admin",
+    }
+
+
+def _target_scope(env, company_id: int) -> dict:
+    company = getattr(env, "company", None)
+    company_name = (
+        str(getattr(company, "name", "") or "").strip()
+        if int(getattr(company, "id", 0) or 0) == int(company_id)
+        else ""
+    )
+    return {
+        "kind": "enterprise_scenario_enablement",
+        "company_id": int(company_id),
+        "company_name": company_name,
+        "target_role_scope": {
+            "mode": "not_role_scoped",
+            "target_role_key": "",
+            "reason_code": "SCENARIO_ENABLEMENT_COMPANY_SCOPED",
+            "meaning": "enablement exposes an eligible scenario for this company; user permission is evaluated separately",
+        },
+        "is_global_product_release": False,
+        "source": "res.company + sc.scene.company.enablement",
+    }
+
+
+def _release_evidence_by_menu(release_projection: dict) -> dict:
+    snapshots = {
+        str(row.get("product_key") or "").strip(): row
+        for row in release_projection.get("snapshots") or []
+        if isinstance(row, dict)
+    }
+    states_by_product = release_projection.get("menu_release_states_by_product") or {}
+    menu_xmlids = {
+        str(menu_xmlid)
+        for states in states_by_product.values()
+        for menu_xmlid in (states or {})
+        if str(menu_xmlid).strip()
+    }
+    result = {}
+    for menu_xmlid in sorted(menu_xmlids):
+        evidence = []
+        for product_key in ("construction.standard", "construction.preview"):
+            snapshot = snapshots.get(product_key) or {}
+            release_state = str(
+                (states_by_product.get(product_key) or {}).get(menu_xmlid) or ""
+            ).strip()
+            evidence.append(
+                {
+                    "product_key": product_key,
+                    "qualified": release_state == "released"
+                    and bool(snapshot.get("applied")),
+                    "release_state": release_state,
+                    "snapshot_id": int(snapshot.get("snapshot_id") or 0),
+                    "version": str(snapshot.get("version") or "").strip(),
+                    "fingerprint": str(snapshot.get("fingerprint") or "").strip(),
+                    "applied": bool(snapshot.get("applied")),
+                    "source": "sc.edition.release.snapshot",
+                }
+            )
+        result[menu_xmlid] = {
+            "qualification_authority": "published_product_release",
+            "products": evidence,
+        }
+    return result
+
+
 def _catalog(env, company_id=0):
     from odoo.addons.smart_construction_scene.profiles.scene_registry_content import (
         list_scene_entries,
     )
     from odoo.addons.smart_construction_core.services.product_menu_source import (
-        load_published_menu_release_states,
+        load_published_menu_release_projection,
     )
     from odoo.addons.smart_construction_scene.services.scenario_activation_catalog import (
         build_scenario_activation_catalog,
     )
     entries = list_scene_entries()
-    release_state_by_menu = load_published_menu_release_states(env)
+    release_projection = load_published_menu_release_projection(env)
+    release_state_by_menu = release_projection.get("menu_release_states") or {}
+    release_evidence_by_menu = _release_evidence_by_menu(release_projection)
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
     from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_catalog, business_key
     from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
@@ -62,12 +152,47 @@ def _catalog(env, company_id=0):
         product_release_by_scene=product_release_by_scene,
         tenant_enablement_by_scene=enablement,
         surface_index=_product_surface_index(env),
+        product_release_evidence_by_menu=release_evidence_by_menu,
     )
     can_manage = bool(env.user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
-    result["business_scenarios"] = business_catalog(
+    business_scenarios = business_catalog(
         load_runtime_surface(env), release_state_by_menu, enablement, can_manage=bool(can_manage)
     )
+    standard_snapshot = next(
+        (
+            row
+            for row in release_projection.get("snapshots") or []
+            if isinstance(row, dict)
+            and row.get("product_key") == "construction.standard"
+        ),
+        {},
+    )
+    business_evidence = {
+        "product_key": "construction.standard",
+        "qualified": bool(standard_snapshot.get("applied")),
+        "snapshot_id": int(standard_snapshot.get("snapshot_id") or 0),
+        "version": str(standard_snapshot.get("version") or "").strip(),
+        "fingerprint": str(standard_snapshot.get("fingerprint") or "").strip(),
+        "source": "sc.edition.release.snapshot",
+    }
+    for row in business_scenarios:
+        row["product_qualification"] = {
+            "status": "qualified" if row.get("product_released") else "not_qualified",
+            "reason_code": (
+                "PRODUCT_QUALIFIED"
+                if row.get("product_released")
+                else "PRODUCT_NOT_RELEASED"
+            ),
+            "evidence": business_evidence,
+        }
+        row["enablement_blockers"] = (
+            [] if row.get("product_released") else ["PRODUCT_NOT_RELEASED"]
+        )
+        row["enable_allowed"] = bool(row.get("product_released"))
+    result["business_scenarios"] = business_scenarios
     result["company_id"] = company_id
+    result["actor"] = _actor_fact(env)
+    result["target_scope"] = _target_scope(env, company_id) if company_id else {}
     return result
 
 
@@ -159,10 +284,47 @@ class ScenarioActivationSetHandler(BaseIntentHandler):
                         "details": diagnosis.get("blocking_dependencies") or [],
                     },
                 }
-        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+            read_tenant_enablement,
+            write_tenant_enablement,
+        )
 
         write_tenant_enablement(env, company.id, stored_key, enabled)
-        return {"ok": True, "data": {"scene_key": scene_key, "enablement_scope": scope, "enabled": enabled}, "meta": {}}
+        persisted_enabled = read_tenant_enablement(env, company.id, stored_key)
+        if persisted_enabled is not enabled:
+            return {
+                "ok": False,
+                "error": {
+                    "code": 409,
+                    "message": "enablement readback does not match the requested state",
+                    "details": {
+                        "company_id": int(company.id),
+                        "scene_key": scene_key,
+                        "requested": enabled,
+                        "readback": persisted_enabled,
+                    },
+                },
+            }
+        return {
+            "ok": True,
+            "data": {
+                "scene_key": scene_key,
+                "stored_scene_key": stored_key,
+                "enablement_scope": scope,
+                "enabled": enabled,
+                "actor": _actor_fact(env),
+                "target_scope": _target_scope(env, company.id),
+                "readback": {
+                    "enabled": persisted_enabled,
+                    "company_id": int(company.id),
+                    "stored_scene_key": stored_key,
+                    "source": "sc.scene.company.enablement",
+                    "write_committed": True,
+                    "access_granted": False,
+                },
+            },
+            "meta": {},
+        }
 
 
 class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):

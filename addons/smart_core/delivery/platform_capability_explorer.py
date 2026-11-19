@@ -178,6 +178,72 @@ def native_selection_assessment(
     return not blockers, blockers
 
 
+def access_layer_assessment(
+    *,
+    native_present: bool,
+    native_blockers: list[str],
+    consumer_supported: bool,
+    entry_group_ids: list[int],
+    held_group_ids: list[int],
+    acl_rows: list[dict[str, Any]],
+    standard_qualified: str,
+    enterprise_enablement: dict[str, Any],
+) -> dict[str, Any]:
+    """Explain access from independent facts without inventing a grant.
+
+    The ACL check proves model access rows available to the current principal.
+    Record-level visibility still executes in Odoo at query time.
+    """
+    held = {_int(value) for value in held_group_ids if _int(value) > 0}
+    required = {_int(value) for value in entry_group_ids if _int(value) > 0}
+    entry_allowed = required.issubset(held)
+    read_row_found = False
+    read_allowed = False
+    for row in acl_rows:
+        if not isinstance(row, dict) or not bool(row.get("read")):
+            continue
+        read_row_found = True
+        group_id = _int(row.get("group_id"))
+        if group_id <= 0 or group_id in held:
+            read_allowed = True
+            break
+    enterprise = _dict(enterprise_enablement)
+    enterprise_status = (
+        _text(enterprise.get("status"))
+        or ("enabled" if enterprise.get("enabled") is True else "not_applicable")
+    )
+    blockers = list(native_blockers)
+    if not native_present:
+        blockers.append("NATIVE_ENTRY_NOT_READY")
+    if not consumer_supported:
+        blockers.append("CONSUMER_SURFACE_UNSUPPORTED")
+    if standard_qualified != "qualified":
+        blockers.append(
+            "PRODUCT_QUALIFICATION_NOT_VERIFIED"
+            if standard_qualified == "not_verified"
+            else "PRODUCT_NOT_QUALIFIED"
+        )
+    if enterprise_status == "disabled":
+        blockers.append("ENTERPRISE_SCENARIO_NOT_ENABLED")
+    if not entry_allowed:
+        blockers.append("ENTRY_GROUP_DENIED")
+    if not read_row_found:
+        blockers.append("MODEL_READ_ACL_MISSING")
+    elif not read_allowed:
+        blockers.append("MODEL_READ_ACL_DENIED")
+    blockers = list(dict.fromkeys(blockers))
+    return {
+        "entry_groups_allowed": entry_allowed,
+        "required_group_ids": sorted(required),
+        "held_group_ids": sorted(held),
+        "model_read_acl_present": read_row_found,
+        "model_read_allowed": read_allowed,
+        "record_scope": "runtime_acl_and_record_rules",
+        "reason_code": blockers[0] if blockers else "CURRENT_USER_ENTRY_AVAILABLE",
+        "blockers": blockers,
+    }
+
+
 class PlatformCapabilityExplorerError(ValueError):
     code = "CAPABILITY_EXPLORER_ERROR"
     http_status = 400
@@ -351,6 +417,8 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
     }
     merged: dict[str, Any] = {
         "scene_bindings": {},
+        "enterprise_enablement": {},
+        "company_context": {},
         "release_states": {},
         "release_centers": {},
         "product_qualifications": {},
@@ -404,6 +472,28 @@ def _merge_extension_contributions(env, rows: list[dict[str, Any]]) -> dict[str,
             for binding in _list(bindings):
                 if isinstance(binding, dict):
                     target.append(dict(binding))
+        for raw_menu_id, enablement in _dict(payload.get("enterprise_enablement")).items():
+            menu_id = _int(raw_menu_id)
+            if menu_id > 0 and isinstance(enablement, dict):
+                merged["enterprise_enablement"][str(menu_id)] = dict(enablement)
+        company_context = _dict(payload.get("company_context"))
+        if company_context:
+            previous_company = _dict(merged.get("company_context"))
+            if previous_company and previous_company != company_context:
+                merged["conflicts"].append(
+                    {
+                        "kind": "company_context",
+                        "company_ids": sorted(
+                            {
+                                _int(previous_company.get("company_id")),
+                                _int(company_context.get("company_id")),
+                            }
+                        ),
+                    }
+                )
+                merged["company_context"] = {}
+            else:
+                merged["company_context"] = company_context
         for menu_xmlid, state in _dict(payload.get("release_states")).items():
             menu_xmlid = _text(menu_xmlid)
             state = _text(state)
@@ -910,6 +1000,7 @@ class PlatformCapabilityExplorerService:
                 {
                     "id": int(access.id),
                     "group_id": _int(access.group_id.id),
+                    "group_xmlid": _text(group_xmlids.get(_int(access.group_id.id))),
                     "read": bool(access.perm_read),
                     "write": bool(access.perm_write),
                     "create": bool(access.perm_create),
@@ -925,6 +1016,13 @@ class PlatformCapabilityExplorerService:
                         _text(group_xmlids.get(item["group_id"]))
                         for item in values
                         if _text(group_xmlids.get(item["group_id"]))
+                    }
+                ),
+                "read_group_ids": sorted(
+                    {
+                        _int(item["group_id"])
+                        for item in values
+                        if item["read"] and _int(item["group_id"]) > 0
                     }
                 ),
                 "sha256": canonical_sha256(values),
@@ -977,6 +1075,7 @@ class PlatformCapabilityExplorerService:
                 "sequence": int(menu.sequence or 0),
                 "active": bool(menu.active),
                 "groups": _group_xmlids(menu.groups_id, group_xmlids),
+                "group_ids": sorted(int(group.id) for group in menu.groups_id),
             }
         action_facts = {}
         for action in action_records:
@@ -988,6 +1087,10 @@ class PlatformCapabilityExplorerService:
                 "groups": _group_xmlids(
                     getattr(action, "groups_id", []) or [],
                     group_xmlids,
+                ),
+                "group_ids": sorted(
+                    int(group.id)
+                    for group in (getattr(action, "groups_id", []) or [])
                 ),
             }
         module_facts = {}
@@ -1005,6 +1108,36 @@ class PlatformCapabilityExplorerService:
             }
             for model in models
         }
+        user = getattr(env, "user", None)
+        company = getattr(env, "company", None)
+        actor = {
+            "user_id": _int(getattr(user, "id", 0)),
+            "login": _text(getattr(user, "login", "")),
+            "name": _text(getattr(user, "name", "")),
+            "company_id": _int(getattr(company, "id", 0)),
+            "company_name": _text(getattr(company, "name", "")),
+            "allowed_company_ids": sorted(
+                {
+                    int(company_id)
+                    for company_id in (
+                        getattr(getattr(user, "company_ids", None), "ids", []) or []
+                    )
+                    if _int(company_id) > 0
+                }
+            ),
+            "group_ids": sorted(
+                {
+                    int(group.id)
+                    for group in (getattr(user, "groups_id", []) or [])
+                    if _int(getattr(group, "id", 0)) > 0
+                }
+            ),
+            "group_xmlids": _group_xmlids(
+                getattr(user, "groups_id", []) or [],
+                group_xmlids,
+            ),
+            "source": "ir.ui.menu + ir.actions + ir.model.access + current principal",
+        }
         return {
             "menus": menu_facts,
             "actions": action_facts,
@@ -1013,6 +1146,7 @@ class PlatformCapabilityExplorerService:
             "field_counts": dict(field_counts),
             "views": views_by_model,
             "acl": acl_by_model,
+            "acl_rows": dict(grouped_access),
             "rules": rules_by_model,
             "installed_modules": [
                 {
@@ -1022,6 +1156,7 @@ class PlatformCapabilityExplorerService:
                 }
                 for module in installed_modules
             ],
+            "actor": actor,
             "root_menu_ids": root_ids,
             "xmlid_ambiguities": [
                 xmlid_ambiguities[key] for key in sorted(xmlid_ambiguities)
@@ -1153,9 +1288,137 @@ class PlatformCapabilityExplorerService:
         )
         preview_qualified = _text(qualification.get("preview")) or "not_verified"
         standard_qualified = _text(qualification.get("standard")) or "not_verified"
+        qualification_evidence = [
+            dict(item)
+            for item in _list(qualification.get("evidence"))
+            if isinstance(item, dict)
+        ]
         views = _dict(_dict(facts.get("views")).get(model_name))
         acl = _dict(_dict(facts.get("acl")).get(model_name))
         rules = _dict(_dict(facts.get("rules")).get(model_name))
+        acl_rows = [
+            dict(item)
+            for item in _list(_dict(facts.get("acl_rows")).get(model_name))
+            if isinstance(item, dict)
+        ]
+        if not acl_rows:
+            acl_rows = [
+                {"read": True, "group_id": group_id}
+                for group_id in _list(acl.get("read_group_ids"))
+                if _int(group_id) > 0
+            ]
+        actor = _dict(facts.get("actor"))
+        held_group_ids = [
+            _int(value) for value in _list(actor.get("group_ids"))
+        ]
+        entry_group_ids = sorted(
+            {
+                *[_int(value) for value in _list(menu.get("group_ids"))],
+                *[_int(value) for value in _list(action.get("group_ids"))],
+            }
+        )
+        module_installed = module_state in INSTALLED_MODULE_STATES
+        native_present = bool(action_exists and menu_action_matches and module_installed)
+        consumer_supported = bool(
+            _text(native_row.get("action_model")) in SUPPORTED_ACTION_TYPES
+            and (
+                _text(native_row.get("action_model")) != "ir.actions.act_window"
+                or bool(model)
+            )
+        )
+        enterprise_enablement = _dict(
+            _dict(contributions.get("enterprise_enablement")).get(str(menu_id))
+        )
+        access = access_layer_assessment(
+            native_present=native_present,
+            native_blockers=native_blockers,
+            consumer_supported=consumer_supported,
+            entry_group_ids=entry_group_ids,
+            held_group_ids=held_group_ids,
+            acl_rows=acl_rows,
+            standard_qualified=standard_qualified,
+            enterprise_enablement=enterprise_enablement,
+        )
+        enterprise_status = (
+            _text(enterprise_enablement.get("status"))
+            or ("enabled" if enterprise_enablement.get("enabled") is True else "not_applicable")
+        )
+        fact_layers = [
+            {
+                "key": "native_presence",
+                "label": "原生存在",
+                "status": "present" if native_present else "missing",
+                "reason_code": (
+                    "NATIVE_ENTRY_PRESENT"
+                    if native_present
+                    else native_blockers[0]
+                    if native_blockers
+                    else "NATIVE_ENTRY_NOT_READY"
+                ),
+                "evidence": {
+                    "menu_xmlid": menu_xmlid,
+                    "action_xmlid": action_xmlid,
+                    "module_state": module_state,
+                },
+            },
+            {
+                "key": "consumer_support",
+                "label": "前端/消费者支持",
+                "status": "supported" if consumer_supported else "unsupported",
+                "reason_code": (
+                    "CONSUMER_SUPPORTED"
+                    if consumer_supported
+                    else "CONSUMER_SURFACE_UNSUPPORTED"
+                ),
+                "evidence": {
+                    "action_type": _text(native_row.get("action_model")),
+                    "view_modes": list(native_row.get("view_modes") or []),
+                },
+            },
+            {
+                "key": "product_qualification",
+                "label": "产品资格",
+                "status": standard_qualified,
+                "reason_code": _text(qualification.get("reason_code"))
+                or "PRODUCT_QUALIFICATION_UNVERIFIED",
+                "evidence": qualification_evidence,
+            },
+            {
+                "key": "product_release",
+                "label": "入口发布",
+                "status": release_state,
+                "reason_code": (
+                    "ENTRY_RELEASED"
+                    if release_state == "released"
+                    else "ENTRY_PREVIEW"
+                    if release_state == "preview"
+                    else "ENTRY_NOT_RELEASED"
+                ),
+                "evidence": {
+                    "release_state": release_state,
+                    "snapshots": list(contributions.get("release_snapshots") or []),
+                },
+            },
+            {
+                "key": "enterprise_enablement",
+                "label": "企业启用",
+                "status": enterprise_status,
+                "reason_code": _text(enterprise_enablement.get("reason_code"))
+                or (
+                    "ENTERPRISE_ENABLEMENT_NOT_APPLICABLE"
+                    if enterprise_status == "not_applicable"
+                    else "ENTERPRISE_SCENARIO_NOT_ENABLED"
+                ),
+                "evidence": enterprise_enablement,
+            },
+            {
+                "key": "current_user_access",
+                "label": "当前用户权限",
+                "status": "allowed" if not access["blockers"] else "denied",
+                "reason_code": access["reason_code"],
+                "evidence": access,
+            },
+        ]
         field_count = _int(_dict(facts.get("field_counts")).get(model_name))
         scene_count = len(
             {
@@ -1193,6 +1456,16 @@ class PlatformCapabilityExplorerService:
             "product_qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
+                "reason_code": _text(qualification.get("reason_code")),
+                "evidence": qualification_evidence,
+            },
+            "fact_layers": fact_layers,
+            "availability": {
+                "available_to_current_user": not access["blockers"],
+                "reason_code": access["reason_code"],
+                "blockers": list(access["blockers"]),
+                "actor": actor,
+                "target_company": _dict(contributions.get("company_context")),
             },
         }
         detail = None if not include_detail else {
@@ -1266,6 +1539,24 @@ class PlatformCapabilityExplorerService:
             "qualification": {
                 "preview": preview_qualified,
                 "standard": standard_qualified,
+                "reason_code": _text(qualification.get("reason_code")),
+                "evidence": qualification_evidence,
+            },
+            "enterprise_enablement": enterprise_enablement or {
+                "applicable": False,
+                "enabled": False,
+                "status": "not_applicable",
+                "reason_code": "ENTERPRISE_ENABLEMENT_NOT_APPLICABLE",
+                "scenes": [],
+            },
+            "current_user_access": access,
+            "visibility": {
+                "can_use": not access["blockers"],
+                "reason_code": access["reason_code"],
+                "blockers": list(access["blockers"]),
+                "actor": actor,
+                "target_company": _dict(contributions.get("company_context")),
+                "record_scope": "runtime_acl_and_record_rules",
             },
             "diagnostics": {
                 "native_valid": native_valid,
@@ -1277,6 +1568,9 @@ class PlatformCapabilityExplorerService:
                 "entry_published": release_state in {"released", "preview"},
                 "preview_qualified": preview_qualified,
                 "standard_qualified": standard_qualified,
+                "current_user_access": access,
+                "visibility_reason": access["reason_code"],
+                "visibility_blockers": list(access["blockers"]),
                 "classification_reason": classification["reason_code"],
             },
         }
@@ -1603,9 +1897,13 @@ class PlatformCapabilityExplorerService:
             "field_counts": facts.get("field_counts") or {},
             "views": facts.get("views") or {},
             "acl": facts.get("acl") or {},
+            "acl_rows": facts.get("acl_rows") or {},
             "rules": facts.get("rules") or {},
+            "actor": facts.get("actor") or {},
             "scene_and_release": {
                 "scene_bindings": contributions.get("scene_bindings") or {},
+                "enterprise_enablement": contributions.get("enterprise_enablement") or {},
+                "company_context": contributions.get("company_context") or {},
                 "release_states": contributions.get("release_states") or {},
                 "release_centers": contributions.get("release_centers") or {},
                 "product_qualifications": contributions.get("product_qualifications") or {},
@@ -1937,5 +2235,9 @@ class PlatformCapabilityExplorerService:
                 "scene_assignment": entry["scene_assignment"],
                 "release": entry["release"],
                 "qualification": entry["qualification"],
+                "enterprise_enablement": entry["enterprise_enablement"],
+                "current_user_access": entry["current_user_access"],
+                "fact_layers": entry["fact_layers"],
+                "visibility": entry["visibility"],
             },
         }

@@ -11,6 +11,7 @@ SOURCE_AUTHORITIES = (
     "sc.product.scenario.entry",
     "sc.product.scenario",
     "sc.edition.release.snapshot",
+    "sc.scene.company.enablement",
     "data/product_menu_source.json",
     "ir.config_parameter",
 )
@@ -210,6 +211,138 @@ def _scene_bindings(env, menu_ids: list[int]) -> dict[str, list[dict[str, Any]]]
     return dict(result)
 
 
+def _company_fact(env) -> dict[str, Any]:
+    company = getattr(env, "company", None)
+    company_id = _int(getattr(company, "id", 0))
+    return {
+        "company_id": company_id,
+        "company_name": _text(getattr(company, "name", "")),
+        "source": "res.company",
+    }
+
+
+def _enterprise_enablement(env, scene_bindings: dict[str, list[dict[str, Any]]]) -> dict[str, dict[str, Any]]:
+    """Project the current company's scenario decisions per native menu.
+
+    Enablement is only the enterprise's choice to expose an eligible released
+    scenario. It is not a user or role grant; ordinary access remains a runtime
+    navigation + ACL/rule decision.
+    """
+    from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+        read_tenant_enablement,
+    )
+
+    company = _company_fact(env)
+    company_id = company["company_id"]
+    result: dict[str, dict[str, Any]] = {}
+    cache: dict[str, bool] = {}
+    for menu_id, bindings in scene_bindings.items():
+        scenes = []
+        for binding in bindings:
+            scene_key = _text(binding.get("scenario_key"))
+            if not scene_key or binding.get("scenario_active", True) is False:
+                continue
+            if scene_key not in cache:
+                cache[scene_key] = (
+                    bool(read_tenant_enablement(env, company_id, scene_key))
+                    if company_id
+                    else False
+                )
+            scenes.append(
+                {
+                    "scene_key": scene_key,
+                    "enabled": cache[scene_key],
+                    "source": "sc.scene.company.enablement",
+                }
+            )
+        if not scenes:
+            continue
+        result[str(menu_id)] = {
+            "applicable": True,
+            "enabled": any(row["enabled"] for row in scenes),
+            "status": "enabled" if any(row["enabled"] for row in scenes) else "disabled",
+            "reason_code": (
+                "ENTERPRISE_SCENARIO_ENABLED"
+                if any(row["enabled"] for row in scenes)
+                else "ENTERPRISE_SCENARIO_NOT_ENABLED"
+            ),
+            **company,
+            "scenes": scenes,
+        }
+    return result
+
+
+def _product_qualifications(
+    menu_xmlids: list[str],
+    release_projection: dict[str, Any],
+) -> dict[str, dict[str, Any]]:
+    """Resolve product qualification only from active published snapshots."""
+    states_by_product = release_projection.get("menu_release_states_by_product") or {}
+    snapshots_by_product = {
+        _text(row.get("product_key")): row
+        for row in release_projection.get("snapshots") or []
+        if isinstance(row, dict) and _text(row.get("product_key"))
+    }
+    authority_available = bool(release_projection.get("authority_available"))
+    result: dict[str, dict[str, Any]] = {}
+    for menu_xmlid in sorted({_text(value) for value in menu_xmlids if _text(value)}):
+        evidence = []
+        qualities: dict[str, str] = {}
+        for product_key in ("construction.standard", "construction.preview"):
+            snapshot = snapshots_by_product.get(product_key) or {}
+            release_state = _text(
+                (states_by_product.get(product_key) or {}).get(menu_xmlid)
+            )
+            applied = bool(snapshot.get("applied"))
+            qualified = bool(applied and release_state == "released")
+            status = (
+                "qualified"
+                if qualified
+                else "not_qualified"
+                if authority_available
+                else "not_verified"
+            )
+            edition_key = product_key.rsplit(".", 1)[-1]
+            qualities[edition_key] = status
+            evidence.append(
+                {
+                    "product_key": product_key,
+                    "qualified": qualified,
+                    "status": status,
+                    "release_state": release_state,
+                    "snapshot_id": _int(snapshot.get("snapshot_id")),
+                    "version": _text(snapshot.get("version")),
+                    "fingerprint": _text(snapshot.get("fingerprint")),
+                    "applied": applied,
+                    "reason_code": (
+                        "PRODUCT_QUALIFIED"
+                        if qualified
+                        else "PRODUCT_NOT_RELEASED"
+                        if applied
+                        else _text(snapshot.get("reason"))
+                        or "ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND"
+                    ),
+                    "source": "sc.edition.release.snapshot",
+                    "qualification_authority": "published_product_release",
+                }
+            )
+        result[menu_xmlid] = {
+            "standard": qualities["standard"],
+            "preview": qualities["preview"],
+            "authority_available": authority_available,
+            "reason_code": (
+                "PRODUCT_QUALIFIED"
+                if qualities["standard"] == "qualified"
+                else "PRODUCT_NOT_QUALIFIED"
+                if authority_available
+                else _text(release_projection.get("authority_reason"))
+                or "PRODUCT_QUALIFICATION_UNVERIFIED"
+            ),
+            "evidence": evidence,
+        }
+    return result
+
+
 def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
     """Contribute existing scene and publication facts without persisting discovery."""
     from .product_menu_source import (
@@ -224,6 +357,7 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
         }
     )
     scene_bindings = _scene_bindings(env, normalized_menu_ids)
+    enterprise_enablement = _enterprise_enablement(env, scene_bindings)
     release_projection = load_capability_explorer_release_projection(env)
     source = load_source()
     release_centers, center_conflicts = _release_center_map(source)
@@ -236,6 +370,10 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
             _text(value) for value in (menu_xmlids or {}).values()
         }
     }
+    product_qualifications = _product_qualifications(
+        list(relevant_release_states) or list((menu_xmlids or {}).values()),
+        release_projection,
+    )
     return {
         "source_module": "smart_construction_core",
         "source_authority": source_authority_contract(),
@@ -247,6 +385,8 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
             release_projection.get("authority_reason")
         ),
         "scene_bindings": scene_bindings,
+        "enterprise_enablement": enterprise_enablement,
+        "company_context": _company_fact(env),
         "release_states": relevant_release_states,
         "release_centers": {
             menu_xmlid: center
@@ -255,10 +395,12 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
                 _text(value) for value in (menu_xmlids or {}).values()
             }
         },
-        "product_qualifications": {},
+        "product_qualifications": product_qualifications,
         "release_snapshots": release_projection.get("snapshots") or [],
         "token_facts": {
             "scene_bindings": scene_bindings,
+            "enterprise_enablement": enterprise_enablement,
+            "company_context": _company_fact(env),
             "release_states": relevant_release_states,
             "release_centers": {
                 menu_xmlid: release_centers[menu_xmlid]
@@ -268,6 +410,7 @@ def get_platform_capability_explorer_contributions(env, menu_ids, menu_xmlids):
                 }
             },
             "release_snapshots": release_projection.get("snapshots") or [],
+            "product_qualifications": product_qualifications,
         },
         "conflicts": center_conflicts,
     }
