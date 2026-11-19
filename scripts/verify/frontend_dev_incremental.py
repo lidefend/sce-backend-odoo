@@ -2065,6 +2065,7 @@ RULES = (
     ), (
         "verify.frontend.evidence_bundle.unit",
     )),
+    Rule(('config/frontend/acceptance_environments_v1.json', 'scripts/dev/frontend_acceptance_carrier_common.sh', 'scripts/dev/frontend_acceptance_runtime_profile.py', 'scripts/dev/frontend_release_disposable.py', 'scripts/verify/g1_acceptance_baseline_guard.py', 'scripts/verify/test_frontend_release_disposable.py', 'scripts/verify/test_g1_acceptance_baseline_guard.py'), ("verify.acceptance.disposable.unit",)),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")

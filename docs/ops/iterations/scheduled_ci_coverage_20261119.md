@@ -54,3 +54,26 @@ PR 939 merged at 0dc7778132a6814e3cb18eb7cecb3ba39ac5df71 with four required che
 Owner constraint: run the complete long chain locally before any push. No continuation changes have been pushed. The formal entry is `CONFIRM_FRONTEND_RELEASE_AUDIT=RUN_FROZEN_FRONTEND_RELEASE_AUDIT make verify.frontend.release.local SC_ACCEPTANCE_RUNTIME_PROFILE=local`. It binds isolated fixture tenant database `sc_frontend_acceptance`, exact filter `^sc_frontend_acceptance$`, project `sc-fe-r2-p1-01`, and separate declared DB/Redis/Odoo volumes. This is not the platform-control/industry catalog or a customer production database; customer business data is prohibited and isolated fixture data is allowed. Managed preflight verified those identities. Existing frontend PID 975157 is owned by another worktree, so a lifecycle handoff was requested rather than stopping it unilaterally.
 
 The initial release-unit run exposed an existing structural test expecting two raw-history list navigations. Updated that assertion to preserve the settled-list requirement while requiring guarded form exits; all 38 hardening tests and 27 release-entry tests passed. Prior failure remains in its original log. Runtime/browser validation remains not_run until the environment is available.
+
+### Disposable local full release (owner authorization)
+
+Owner explicitly requested configuring a disposable environment on demand, replacing the
+pending shared-environment handoff. P4 tooling owns the new
+`verify.frontend.release.disposable` entry. It reuses carrier provision/discard and the
+complete `verify.frontend.release.local` audit, followed by fixture ORM; no product
+semantics or release assertions change.
+
+Database role: isolated synthetic acceptance tenant; tenant/environment:
+`sc-fe-local-release`. Not platform control, industry catalog, customer production, or
+UAT. Customer business data forbidden; fixtures permitted. Database
+`sc_frontend_acceptance` exists in its own PostgreSQL instance, exact filter
+`^sc_frontend_acceptance$`. Dedicated database/session/filestore volumes:
+`sc_fe_local_release_db`, `sc_fe_local_release_redis`, `sc_fe_local_release_odoo`.
+Ports: 5185 frontend, 18092 acceptance backend, 19093 compose carrier. Credentials are
+fresh private worktree-local ignored files, removed after verified cleanup. Existing
+resources cause refusal before mutation; shared resources remain outside scope.
+
+Required: lifecycle/profile tests (47 passed), iteration/freeze checks, full local audit
+and fixture ORM, exact source and cleanup readback. Excluded: production and existing
+acceptance carrier mutation. Not run yet: disposable full runtime audit. Publication
+remains blocked until that complete local long chain passes.

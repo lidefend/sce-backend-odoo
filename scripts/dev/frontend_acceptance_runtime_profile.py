@@ -78,9 +78,14 @@ def resolve(profile_name: str) -> dict[str, str]:
     base_env_name = runtime.get("base_env_file")
     if not isinstance(base_env_name, str) or Path(base_env_name).name != base_env_name:
         raise ValueError("managed runtime base_env_file must be a filename in the primary worktree")
+    base_env_root = _primary_worktree()
+    if runtime.get("base_env_location") == "worktree_disposable":
+        if profile_name != "disposable":
+            raise ValueError("disposable credential authority requires disposable profile")
+        base_env_root = ROOT / ".runtime/frontend-release-disposable"
     values = {
         "SC_ACCEPTANCE_RUNTIME_PROFILE": profile_name,
-        "SC_ACCEPTANCE_BASE_ENV_FILE": str(_primary_worktree() / base_env_name),
+        "SC_ACCEPTANCE_BASE_ENV_FILE": str(base_env_root / base_env_name),
         "COMPOSE_PROJECT_NAME": runtime.get("compose_project"),
         "PROJECT": runtime.get("compose_project"),
         "SC_ACCEPTANCE_CREDENTIAL_CONTAINER": runtime.get("credential_container"),

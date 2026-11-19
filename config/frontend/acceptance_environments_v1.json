@@ -260,6 +260,52 @@
       },
       "role_bindings_env": "SC_ACCEPTANCE_ROLE_BINDINGS_JSON",
       "runtime_identity_path": "/api/runtime-version"
+    },
+    "disposable": {
+      "environment": "dev",
+      "runtime_identity_path": "/api/runtime-version",
+      "target_mode": "managed",
+      "base_url": "http://127.0.0.1:5185",
+      "database": "sc_frontend_acceptance",
+      "managed_runtime": {
+        "base_env_file": "release.env",
+        "compose_project": "sc-fe-local-release",
+        "credential_container": "sc-fe-local-release-odoo-1",
+        "database_filter": "^sc_frontend_acceptance$",
+        "volumes": {
+          "database": "sc_fe_local_release_db",
+          "redis": "sc_fe_local_release_redis",
+          "odoo": "sc_fe_local_release_odoo"
+        },
+        "services": {
+          "compose_backend_port": 19093,
+          "backend_container": "sc-backend-odoo-local-release",
+          "backend_port": 18092,
+          "frontend_port": 5185,
+          "frontend_pidfile": "/tmp/sc-frontend-local-release.pid",
+          "frontend_logfile": "/tmp/sc-frontend-local-release.log"
+        },
+        "base_env_location": "worktree_disposable"
+      },
+      "allowed_operations": [
+        "readonly",
+        "simulated-write",
+        "isolated-write",
+        "managed-service"
+      ],
+      "fixture_required_for_write": true,
+      "credential_env": {
+        "login": "E2E_LOGIN",
+        "password": "SC_ACCEPTANCE_FIXTURE_PASSWORD"
+      },
+      "role_bindings": {
+        "finance": "fixture_role_finance",
+        "project_member": "fixture_role_project_a_member",
+        "project_manager": "fixture_role_pm",
+        "owner": "fixture_role_owner",
+        "contract_operator": "fixture_role_contract_operator",
+        "config_admin": "fixture_role_config_admin"
+      }
     }
   }
 }
