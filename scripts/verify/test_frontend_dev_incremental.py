@@ -513,6 +513,31 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_admin_close_management_surfaces_select_their_owning_families(self) -> None:
+        for path in (
+            "addons/smart_core/delivery/release_operator_read_model_service.py",
+            "addons/smart_core/delivery/release_operator_surface_service.py",
+            "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.admin_close_01.backend.unit"],
+                )
+        for path in (
+            "addons/smart_construction_scene/handlers/scenario_activation.py",
+            "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+            "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.daily.permission_truth.capability.orm",
+                        "verify.navigation.publication_consumers.unit",
+                    ],
+                )
+
     def test_native_scene_inventory_selects_its_evidence_unit(self) -> None:
         for path in (
             "scripts/audit/native_scene_inventory.py",

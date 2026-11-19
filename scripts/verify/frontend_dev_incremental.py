@@ -597,6 +597,13 @@ RULES = (
         "verify.platform.capability_explorer.unit",
     )),
     Rule((
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    ), (
+        "verify.admin_close_01.backend.unit",
+    )),
+    Rule((
         "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
@@ -1415,6 +1422,9 @@ RULES = (
     Rule((
         "addons/smart_construction_scene/models/product_policy.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
     ), (
         "verify.navigation.publication_consumers.unit",
         "verify.daily.permission_truth.capability.orm",
