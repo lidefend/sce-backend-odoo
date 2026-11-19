@@ -507,6 +507,10 @@ class ScProductPolicy(models.Model):
             menu_xmlids=standard_targets,
         )
         promoted = set(merge["added"])
+        changed_by_product = {
+            "construction.standard": set(merge["added"]),
+            "construction.preview": set(),
+        }
         for product_key in ("construction.standard", "construction.preview"):
             product = contract["products"].get(product_key)
             if not isinstance(product, dict):
@@ -556,16 +560,31 @@ class ScProductPolicy(models.Model):
                         continue
                     if current_release == "preview":
                         promoted.add(menu_xmlid)
+                    changed_by_product[product_key].add(menu_xmlid)
                     menu["release_state"] = "released"
                     menu["enabled"] = True
                     menu["capability_maturity"] = target_maturity
                     changed += 1
+            menu_by_xmlid = {
+                _text(
+                    menu.get("menu_xmlid")
+                    or menu.get("menu_key")
+                    or menu.get("page_key")
+                ): menu
+                for group in groups
+                if isinstance(group, dict)
+                for menu in group.get("menus") or []
+                if isinstance(menu, dict)
+            }
             for capability in capabilities:
                 if not isinstance(capability, dict):
                     continue
                 menu_xmlid = _text(capability.get("menu_xmlid"))
                 release = desired.get(menu_xmlid)
                 if not release or _text(release.get("release_state")) != "released":
+                    continue
+                menu = menu_by_xmlid.get(menu_xmlid) or {}
+                if _text(menu.get("release_state")) != "released":
                     continue
                 current_release = _text(capability.get("release_state"))
                 if current_release not in {"preview", "released"}:
@@ -579,6 +598,7 @@ class ScProductPolicy(models.Model):
                     continue
                 if current_release == "preview":
                     promoted.add(menu_xmlid)
+                changed_by_product[product_key].add(menu_xmlid)
                 capability["release_state"] = "released"
                 capability["capability_maturity"] = target_maturity
                 changed += 1
@@ -592,7 +612,205 @@ class ScProductPolicy(models.Model):
             "standard_added": list(merge["added"]),
             "promoted_entry_count": len(promoted),
             "promoted_entry_xmlids": sorted(promoted),
+            "changed_entry_xmlids": {
+                product_key: sorted(menu_xmlids)
+                for product_key, menu_xmlids in changed_by_product.items()
+            },
         }
+
+    @api.model
+    def preview_entry_policy_snapshot(self):
+        """Capture maintained menu and capability rows before promotion."""
+        snapshot = {}
+        for product_key in ("construction.standard", "construction.preview"):
+            rec = self.sudo().with_context(active_test=False).search([
+                ("product_key", "=", product_key),
+            ], limit=1)
+            menus = {}
+            capabilities = {}
+            if rec:
+                for group in rec.menu_groups or []:
+                    for menu in group.get("menus") or []:
+                        if not isinstance(menu, dict):
+                            continue
+                        menu_xmlid = _text(
+                            menu.get("menu_xmlid")
+                            or menu.get("menu_key")
+                            or menu.get("page_key")
+                        )
+                        if menu_xmlid:
+                            menus[menu_xmlid] = deepcopy(menu)
+                for capability in rec.capabilities or []:
+                    if not isinstance(capability, dict):
+                        continue
+                    menu_xmlid = _text(capability.get("menu_xmlid"))
+                    if menu_xmlid:
+                        capabilities[menu_xmlid] = deepcopy(capability)
+            snapshot[product_key] = {
+                "menus": menus,
+                "capabilities": capabilities,
+            }
+        return snapshot
+
+    @api.model
+    def validate_preview_entry_promotion(self, result, previous=None):
+        """Validate only the identities changed by this migration pass."""
+        contract = load_locked_menu_policy_contract()
+        changed_by_product = result.get("changed_entry_xmlids") or {}
+        summary = {}
+        failures = []
+        for product_key in ("construction.standard", "construction.preview"):
+            product = contract["products"].get(product_key)
+            if not isinstance(product, dict):
+                failures.append("%s source product is missing" % product_key)
+                continue
+            desired = {}
+            for group in product.get("menu_groups") or []:
+                for menu in group.get("menus") or []:
+                    if not isinstance(menu, dict):
+                        continue
+                    menu_xmlid = _text(
+                        menu.get("menu_xmlid") or menu.get("menu_key") or menu.get("page_key")
+                    )
+                    if menu_xmlid:
+                        desired[menu_xmlid] = menu
+            changed = set(changed_by_product.get(product_key) or [])
+            rec = self.sudo().with_context(active_test=False).search([
+                ("product_key", "=", product_key),
+            ], limit=1)
+            if not rec:
+                failures.append("%s persisted product is missing" % product_key)
+                continue
+            rows = [
+                row
+                for group in rec.menu_groups or []
+                for row in group.get("menus") or []
+                if isinstance(row, dict)
+            ]
+            by_xmlid = {
+                _text(row.get("menu_xmlid") or row.get("menu_key") or row.get("page_key")): row
+                for row in rows
+                if _text(row.get("menu_xmlid") or row.get("menu_key") or row.get("page_key"))
+            }
+            capabilities = {
+                _text(capability.get("menu_xmlid")): capability
+                for capability in rec.capabilities or []
+                if isinstance(capability, dict) and _text(capability.get("menu_xmlid"))
+            }
+            missing_changed = sorted(changed - set(by_xmlid))
+            wrong_release = sorted(
+                menu_xmlid
+                for menu_xmlid in changed
+                if menu_xmlid in by_xmlid
+                and _text(by_xmlid[menu_xmlid].get("release_state")) != "released"
+            )
+            wrong_maturity = sorted(
+                menu_xmlid
+                for menu_xmlid in changed
+                if menu_xmlid in by_xmlid
+                and _text(by_xmlid[menu_xmlid].get("capability_maturity"))
+                != (
+                    _text((desired.get(menu_xmlid) or {}).get("capability_maturity"))
+                    or "RELEASED_FOUNDATION"
+                )
+            )
+            missing_capabilities = sorted(changed - set(capabilities))
+            wrong_capability_release = sorted(
+                menu_xmlid
+                for menu_xmlid in changed
+                if menu_xmlid in capabilities
+                and _text(capabilities[menu_xmlid].get("release_state")) != "released"
+            )
+            wrong_capability_maturity = sorted(
+                menu_xmlid
+                for menu_xmlid in changed
+                if menu_xmlid in capabilities
+                and _text(capabilities[menu_xmlid].get("capability_maturity"))
+                != (
+                    _text((desired.get(menu_xmlid) or {}).get("capability_maturity"))
+                    or "RELEASED_FOUNDATION"
+                )
+            )
+            previous_product = (previous or {}).get(product_key) or {}
+            previous_menus = previous_product.get("menus") or {}
+            previous_capabilities = previous_product.get("capabilities") or {}
+            changed_menu_drift = sorted(
+                menu_xmlid
+                for menu_xmlid, old_row in previous_menus.items()
+                if menu_xmlid not in changed and by_xmlid.get(menu_xmlid) != old_row
+            )
+            changed_capability_drift = sorted(
+                menu_xmlid
+                for menu_xmlid, old_capability in previous_capabilities.items()
+                if menu_xmlid not in changed
+                and capabilities.get(menu_xmlid) != old_capability
+            )
+            if missing_changed:
+                failures.append(
+                    "%s changed entries are missing: %s" % (product_key, missing_changed)
+                )
+            if wrong_release:
+                failures.append(
+                    "%s changed entries are not released: %s" % (product_key, wrong_release)
+                )
+            if wrong_maturity:
+                failures.append(
+                    "%s changed entries have stale maturity: %s"
+                    % (product_key, wrong_maturity)
+                )
+            if missing_capabilities:
+                failures.append(
+                    "%s changed capabilities are missing: %s"
+                    % (product_key, missing_capabilities)
+                )
+            if wrong_capability_release:
+                failures.append(
+                    "%s changed capabilities are not released: %s"
+                    % (product_key, wrong_capability_release)
+                )
+            if wrong_capability_maturity:
+                failures.append(
+                    "%s changed capabilities have stale maturity: %s"
+                    % (product_key, wrong_capability_maturity)
+                )
+            if changed_menu_drift:
+                failures.append(
+                    "%s unchanged maintained menus drifted: %s"
+                    % (product_key, changed_menu_drift)
+                )
+            if changed_capability_drift:
+                failures.append(
+                    "%s unchanged maintained capabilities drifted: %s"
+                    % (product_key, changed_capability_drift)
+                )
+            summary[product_key] = {
+                "changed_count": len(changed),
+                "persisted_count": len(by_xmlid),
+                "capability_count": len(capabilities),
+                "diagnostics": {
+                    "standard_added": (
+                        list(result.get("standard_added") or [])
+                        if product_key == "construction.standard"
+                        else []
+                    ),
+                    "changed_entry_xmlids": sorted(changed),
+                    "promoted_entry_xmlids": list(result.get("promoted_entry_xmlids") or []),
+                },
+                "missing_xmlids": missing_changed,
+                "wrong_release_xmlids": wrong_release,
+                "wrong_maturity_xmlids": wrong_maturity,
+                "missing_capability_xmlids": missing_capabilities,
+                "wrong_capability_release_xmlids": wrong_capability_release,
+                "wrong_capability_maturity_xmlids": wrong_capability_maturity,
+                "unchanged_menu_drift_xmlids": changed_menu_drift,
+                "unchanged_capability_drift_xmlids": changed_capability_drift,
+            }
+        if failures:
+            raise LockedMenuPolicyContractError(
+                "CLOSE03_PREVIEW_PROMOTION_INCOMPLETE",
+                "; ".join(failures),
+            )
+        return summary
 
     @api.model
     def apply_entry_group_rebinding(self):

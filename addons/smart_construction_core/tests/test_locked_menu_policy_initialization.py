@@ -1,10 +1,38 @@
 # -*- coding: utf-8 -*-
+import runpy
 from copy import deepcopy
+from pathlib import Path
 
 from odoo.tests.common import TransactionCase, tagged
 
 @tagged("post_install", "-at_install", "r11c_locked_menu")
 class TestLockedMenuPolicyInitialization(TransactionCase):
+    def _product_policy_state(self):
+        policies = self.env["sc.product.policy"].sudo().with_context(
+            active_test=False
+        ).search([
+            ("product_key", "in", ["construction.standard", "construction.preview"]),
+        ])
+        return {
+            policy.product_key: {
+                "menu_groups": deepcopy(policy.menu_groups),
+                "capabilities": deepcopy(policy.capabilities),
+            }
+            for policy in policies
+        }
+
+    def _run_preview_promotion_migration(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "migrations"
+            / "17.0.0.183"
+            / "post-migrate.py"
+        )
+        migration = runpy.run_path(str(path))
+        result = migration["migrate"](self.env.cr, "17.0.0.182")
+        self.env["sc.product.policy"].invalidate_model()
+        return result
+
     def _artifact_state(self):
         policies = self.env["sc.product.policy"].search_read(
             [("product_key", "in", ["construction.standard", "construction.preview"])],
@@ -56,7 +84,7 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
             ]
             self.assertEqual(rows, [])
 
-    def test_preview_promotion_converges_existing_standard_and_preview_policies(self):
+    def test_preview_promotion_migration_preserves_maintained_policy_and_is_idempotent(self):
         policy_model = self.env["sc.product.policy"]
         target_xmlid = "smart_construction_core.menu_sc_project_quick_create"
         standard = policy_model.search(
@@ -88,9 +116,53 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                 if menu.get("menu_xmlid") == stale_maturity_key:
                     menu["capability_maturity"] = "PREVIEW_FOUNDATION"
         standard.write({"menu_groups": stale_groups})
+        hidden_xmlid = "smart_construction_core.menu_sc_project_project"
+        for target in (standard, preview):
+            groups = deepcopy(target.menu_groups)
+            for group in groups:
+                for menu in group.get("menus") or []:
+                    if menu.get("menu_xmlid") == hidden_xmlid:
+                        menu.update({
+                            "release_state": "hidden",
+                            "enabled": False,
+                            "capability_maturity": "MAINTAINED_HIDDEN",
+                        })
+            target.write({"menu_groups": groups})
+        extra_xmlid = "test.close03.maintained_extension"
+        extra_row = {
+            "menu_xmlid": extra_xmlid,
+            "label": "Maintained extension",
+            "enabled": True,
+            "release_state": "released",
+            "capability_maturity": "MAINTAINED_EXTENSION",
+        }
+        for target in (standard, preview):
+            groups = deepcopy(target.menu_groups)
+            groups[0].setdefault("menus", []).append(deepcopy(extra_row))
+            capabilities = deepcopy(target.capabilities)
+            capabilities.append({
+                "capability_key": "test.close03.maintained_extension",
+                "identity_kind": "menu",
+                "menu_xmlid": extra_xmlid,
+                "label": "Maintained extension",
+                "enabled": True,
+                "release_state": "released",
+                "capability_maturity": "MAINTAINED_EXTENSION",
+            })
+            target.write({"menu_groups": groups, "capabilities": capabilities})
 
-        result = policy_model.promote_preview_entries_to_standard_release()
-        self.assertIn(target_xmlid, result["standard_added"])
+        hidden_before = {
+            product_key: next(
+                menu
+                for group in state["menu_groups"]
+                for menu in group.get("menus") or []
+                if menu.get("menu_xmlid") == hidden_xmlid
+            )
+            for product_key, state in self._product_policy_state().items()
+        }
+        first = self._run_preview_promotion_migration()
+        self.assertIn(target_xmlid, first["construction.standard"]["diagnostics"]["standard_added"])
+        first_state = self._product_policy_state()
         for target in (standard, preview):
             target.invalidate_recordset()
             rows = [
@@ -98,17 +170,76 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                 for group in target.menu_groups
                 for menu in group.get("menus") or []
             ]
-            self.assertEqual(len(rows), 132)
-            self.assertTrue(all(menu.get("release_state") == "released" for menu in rows))
+            self.assertEqual(len(rows), 133)
+            by_xmlid = {menu.get("menu_xmlid"): menu for menu in rows}
+            self.assertEqual(by_xmlid[extra_xmlid], extra_row)
+            self.assertEqual(by_xmlid[hidden_xmlid], hidden_before[target.product_key])
+            self.assertTrue(all(
+                menu.get("release_state") == "released"
+                for xmlid, menu in by_xmlid.items()
+                if xmlid not in {extra_xmlid, hidden_xmlid}
+            ))
             self.assertTrue(all(
                 menu.get("capability_maturity") == "RELEASED_FOUNDATION"
-                for menu in rows
+                for xmlid, menu in by_xmlid.items()
+                if xmlid not in {extra_xmlid, hidden_xmlid}
             ))
             self.assertIn(target_xmlid, {menu.get("menu_xmlid") for menu in rows})
+            capabilities = {
+                capability.get("menu_xmlid"): capability
+                for capability in target.capabilities
+            }
+            self.assertEqual(capabilities[extra_xmlid]["capability_maturity"], "MAINTAINED_EXTENSION")
 
-        second = policy_model.promote_preview_entries_to_standard_release()
-        self.assertEqual(second["standard_added"], [])
-        self.assertEqual(second["promoted_entry_count"], 0)
+        for product_key in ("construction.standard", "construction.preview"):
+            self.assertGreater(first[product_key]["changed_count"], 0)
+            self.assertEqual(first[product_key]["persisted_count"], 133)
+            self.assertEqual(first[product_key]["capability_count"], 133)
+
+        second = self._run_preview_promotion_migration()
+        self.assertEqual(second["construction.standard"]["diagnostics"]["changed_entry_xmlids"], [])
+        self.assertEqual(second["construction.preview"]["diagnostics"]["changed_entry_xmlids"], [])
+        self.assertEqual(self._product_policy_state(), first_state)
+
+    def test_preview_promotion_migration_accepts_unmaintained_canonical_policy(self):
+        result = self._run_preview_promotion_migration()
+        for product_key in ("construction.standard", "construction.preview"):
+            self.assertEqual(result[product_key]["changed_count"], 132)
+            self.assertEqual(result[product_key]["persisted_count"], 132)
+            self.assertEqual(result[product_key]["capability_count"], 132)
+            self.assertFalse(result[product_key]["missing_xmlids"])
+            self.assertFalse(result[product_key]["wrong_release_xmlids"])
+            self.assertFalse(result[product_key]["wrong_maturity_xmlids"])
+
+    def test_preview_promotion_validation_rejects_canonical_preview_rows(self):
+        policy_model = self.env["sc.product.policy"]
+        standard = policy_model.search(
+            [("product_key", "=", "construction.standard")], limit=1
+        )
+        groups = deepcopy(standard.menu_groups)
+        target = next(
+            menu
+            for group in groups
+            for menu in group.get("menus") or []
+            if menu.get("menu_xmlid") == "smart_construction_core.menu_sc_project_quick_create"
+        )
+        target.update({
+            "release_state": "preview",
+            "capability_maturity": "PREVIEW_FOUNDATION",
+        })
+        standard.write({"menu_groups": groups})
+
+        with self.assertRaisesRegex(
+            RuntimeError, "CLOSE03_PREVIEW_PROMOTION_INCOMPLETE"
+        ):
+            policy_model.validate_preview_entry_promotion({
+                "changed_entry_xmlids": {
+                    "construction.standard": [
+                        "smart_construction_core.menu_sc_project_quick_create",
+                    ],
+                    "construction.preview": [],
+                },
+            })
 
     def test_policy_migration_adds_my_work_without_overwriting_existing_rows(self):
         policy_model = self.env["sc.product.policy"]

@@ -30,12 +30,15 @@ export function useIntakeAutosaveRuntime(options: {
   isActive: Ref<boolean>;
   isDirty: Ref<boolean>;
   paused: Ref<boolean>;
+  isFieldWritable: (name: string) => boolean;
   applyRestoredValues: (candidate: IntakeAutosaveCandidate) => Promise<void> | void;
   onNotice: (notice: IntakeAutosaveNotice | null) => void;
 }) {
   const candidate = ref<IntakeAutosaveCandidate | null>(null);
   let lastSavedSignature = '';
   let lastSavedToken = '';
+  let cleanSignature = '';
+  let activeKey = '';
   let draftSequence = 0;
 
   const key = computed(() => options.policy.value
@@ -44,9 +47,24 @@ export function useIntakeAutosaveRuntime(options: {
   const coverageText = computed(() => options.policy.value
     ? intakeAutosaveCoverageText(options.policy.value)
     : '');
+  const writableFields = (policy: IntakeAutosavePolicy) => (
+    policy.fields.filter((field) => options.isFieldWritable(field.name))
+  );
+  const signatureFor = (fields: IntakeAutosavePolicy['fields']) => JSON.stringify(
+    fields.map((field) => [field.name, options.formData[field.name]]),
+  );
+  const scopeToCurrentKey = () => {
+    if (activeKey === key.value) return;
+    activeKey = key.value;
+    candidate.value = null;
+    lastSavedSignature = '';
+    lastSavedToken = '';
+    cleanSignature = '';
+  };
 
   const capture = (): IntakeAutosaveCapture | null => {
     if (!options.policy.value || !key.value) return null;
+    scopeToCurrentKey();
     if (options.isDirty.value && !options.paused.value && !candidate.value) persist();
     return {
       key: key.value,
@@ -69,6 +87,8 @@ export function useIntakeAutosaveRuntime(options: {
       options.onNotice({ kind: 'error', message: '本机暂存不可用：表单身份尚未就绪。' });
       return 'unavailable' as const;
     }
+    scopeToCurrentKey();
+    cleanSignature = signatureFor(writableFields(policy));
     const result = restoreIntakeAutosavePayload({
       policy,
       key: key.value,
@@ -99,11 +119,31 @@ export function useIntakeAutosaveRuntime(options: {
   const restore = async () => {
     const selected = candidate.value;
     if (!selected) return false;
-    await options.applyRestoredValues(selected);
+    const fields = writableFields(selected.policy);
+    const values = Object.fromEntries(
+      fields
+        .filter((field) => Object.prototype.hasOwnProperty.call(selected.values, field.name))
+        .map((field) => [field.name, selected.values[field.name]]),
+    );
+    if (!fields.length || !Object.keys(values).length) {
+      clearIntakeAutosavePayload(selected.key, {
+        policyVersion: selected.policy.policyVersion,
+        scope: selected.policy.scope,
+        draftToken: selected.draftToken,
+      });
+      candidate.value = null;
+      lastSavedSignature = '';
+      lastSavedToken = '';
+      options.paused.value = false;
+      options.onNotice({
+        kind: 'warn',
+        message: '本机草稿中的字段已不可写，未恢复任何值并已丢弃该草稿。',
+      });
+      return false;
+    }
+    await options.applyRestoredValues({ ...selected, fields, values });
     candidate.value = null;
-    lastSavedSignature = JSON.stringify(Object.fromEntries(
-      selected.fields.map((field) => [field.name, options.formData[field.name]]),
-    ));
+    lastSavedSignature = signatureFor(fields);
     lastSavedToken = selected.draftToken;
     options.paused.value = false;
     options.onNotice({ kind: 'success', message: `已恢复本机暂存的新建输入。${coverageText.value}` });
@@ -124,10 +164,29 @@ export function useIntakeAutosaveRuntime(options: {
   const persist = () => {
     const policy = options.policy.value;
     if (!policy || !options.isActive.value || options.hasRecord.value || options.paused.value
-        || candidate.value || !options.isDirty.value || !key.value) {
+        || !key.value) {
       return;
     }
-    const signature = JSON.stringify(policy.fields.map((field) => [field.name, options.formData[field.name]]));
+    scopeToCurrentKey();
+    if (candidate.value) return;
+    const fields = writableFields(policy);
+    const signature = signatureFor(fields);
+    if (!options.isDirty.value) {
+      if (lastSavedToken && cleanSignature && signature === cleanSignature) {
+        const cleared = clearIntakeAutosavePayload(key.value, {
+          policyVersion: policy.policyVersion,
+          scope: policy.scope,
+          draftToken: lastSavedToken,
+        });
+        if (cleared) {
+          lastSavedSignature = '';
+          lastSavedToken = '';
+          options.onNotice({ kind: 'info', message: '输入已恢复到初始值，本机草稿已清除。' });
+        }
+      }
+      return;
+    }
+    if (!fields.length) return;
     if (signature === lastSavedSignature) return;
     draftSequence += 1;
     const draftToken = `${Date.now()}:${draftSequence}`;
@@ -136,7 +195,7 @@ export function useIntakeAutosaveRuntime(options: {
       key: key.value,
       identity: options.identity.value,
       draftToken,
-      values: options.formData,
+      values: Object.fromEntries(fields.map((field) => [field.name, options.formData[field.name]])),
     });
     if (result === 'saved') {
       lastSavedSignature = signature;
@@ -156,6 +215,7 @@ export function useIntakeAutosaveRuntime(options: {
       candidate.value = null;
       lastSavedSignature = '';
       lastSavedToken = '';
+      cleanSignature = '';
       options.paused.value = true;
     }
     return cleared;

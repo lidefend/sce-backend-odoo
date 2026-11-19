@@ -1,0 +1,54 @@
+schema_version: 1
+goal:
+  id: CLOSE-03-R1-REVIEW-REMEDIATION-20261119
+  status: active
+  formal_product_layer: P1/P0
+  layer_target: >-
+    CLOSE-03 migration changed-set validation, effective native readonly
+    allow-list projection, and shared intake draft lifecycle/restore correctness
+  module:
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Close the three independently reviewed S2 findings: runtime policy migration
+    validates only XMLIDs changed by the current pass while preserving maintained
+    hidden and extra rows; native readonly truth values exclude fields from local
+    drafts; and a stored draft cannot resurrect a value the user reverted to clean.
+  product_result: >-
+    Maintained policies upgrade and replay idempotently, project-intake local drafts
+    never include fields made readonly by the effective contract, refresh after
+    reverting to original values does not restore stale input, and normal restore,
+    validation, create and post-create cleanup continue to work.
+  why_here: >-
+    smart_construction_core owns the persisted product-policy migration and the
+    effective native modifier projection. The shared frontend owns draft lifecycle
+    and contract consumption, including current writable-field intersection.
+  why_not_elsewhere:
+    - The frontend must not compensate for a rejected migration.
+    - Native readonly values must use the existing modifier evaluator, not frontend string heuristics.
+    - Migration validation must not require runtime maintenance state to equal the canonical seed snapshot.
+    - Production deployment and CLOSE-04 remain outside this run.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_initiation
+      - smart_construction_core.menu_sc_project_quick_create
+      - all canonical released entries in construction.standard and construction.preview
+    behavior:
+      - migration 17.0.0.183 changed-set validation and idempotent replay
+      - maintained hidden/retired, disabled and extra menu/capability rows
+      - native readonly True/1/"1" and False/0/"0"
+      - intake draft persistence, clean reversion, restore and cleanup
+      - project-intake browser journey and negative entry isolation
+  exclusions:
+    - CLOSE-04 and unrelated renderer work
+    - production deployment
+    - removal of compatibility product key construction.preview
+    - deletion or implicit promotion of unrelated maintained rows
+    - full 132-entry user acceptance matrix
+  rollback: >-
+    Revert the R1 backend/frontend commits. Browser-local drafts are non-authoritative;
+    the corrected migration changes neither schema nor business data beyond the
+    intended one-time policy promotion.

@@ -3,7 +3,7 @@
   "id": "CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119",
   "branch": "feature/close-03-project-intake-draft-restore-20261119",
   "baseline_sha": "c365db1eae1ae8c4e2efab649c609ea1aebd8a0b",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/CLOSE-03-PROJECT-INTAKE-DRAFT-RESTORE-20261119.yaml",
   "record": "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
   "scope": [
@@ -73,9 +73,13 @@
     },
     {
       "id": "JOINT-CLOSE-03",
-      "status": "verification_pending",
+      "status": "completed",
       "owner": "single_writer",
-      "exit": "Local formal journey and negative boundaries pass; independent review and exact-head PR gates remain"
+      "exit": "Formal project-intake journey, exact-head review and four protected checks passed before merge",
+      "pr": 937,
+      "pr_head": "97363dc8765eded3d83f6242f16be64e229d2e29",
+      "merge_commit": "61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138",
+      "integrated_tree": "76574fb8c5ce7927822004e183cd6913af529d29"
     }
   ],
   "checks": {
@@ -384,5 +388,5 @@
   "blockers": [
     "Non-blocking for CLOSE-03: pre-existing release-surface runtime guard mismatches remain outside this behavior: cost-center XML identity guard, view-orchestration semantic annotation guard, and platform no-native delivery with an empty native-nav fixture. The migrated product policy itself reports 132 entries for both construction.standard and construction.preview."
   ],
-  "next_exact_step": "Publish the clean metadata commit on the existing feature branch as one PR, obtain independent review and the four required exact-head checks, then merge through make pr.merge."
+  "next_exact_step": "Closed: PR #937 merged at 61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138 with candidate tree 76574fb8c5ce7927822004e183cd6913af529d29. Runtime consumption is tracked by FE-CLOSE-03-RUNTIME-FRONTEND-CLOSURE-20261119."
 }
