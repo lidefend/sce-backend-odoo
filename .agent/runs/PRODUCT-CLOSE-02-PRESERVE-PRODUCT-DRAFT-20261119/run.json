@@ -228,10 +228,13 @@
       "independent business capabilities are not mutated by same-menu alias refresh",
       "current-database catalog extraction failures use PRODUCT_SYNC_SOURCE_READ_FAILED before write",
       "initial creation resolves catalog XMLIDs to execution-database menu/action IDs before create",
-      "compatibility alias capabilities refresh model and res_model together"
+      "compatibility alias capabilities refresh model and res_model together",
+      "catalog production and synchronization share the full native action-model resolution chain",
+      "bound client actions with unchanged model bindings pass initial and existing-draft synchronization",
+      "initial catalog-derived scene source IDs resolve against the execution database"
     ],
     "passed": [
-      "make verify.runtime_capability_catalog.unit: 26 tests",
+      "make verify.runtime_capability_catalog.unit: 27 tests",
       "make verify.capability.identity_boundary.unit: 8 tests",
       "make verify.product_center.policy.unit: 15 tests",
       "make verify.admin_close_01.backend.unit: 141 aggregate tests",
@@ -279,5 +282,5 @@
     "L4": "Not applicable by owner direction: no browser matrix or environment rebuild",
     "L5": "Independent exact-head review and required remote checks at publication"
   },
-  "next_exact_step": "Run delivery freeze preparation, commit and push the R2 candidate, then repeat exact-head independent review"
+  "next_exact_step": "Run delivery freeze preparation, commit and push the R3 candidate, then repeat exact-head owner review"
 }

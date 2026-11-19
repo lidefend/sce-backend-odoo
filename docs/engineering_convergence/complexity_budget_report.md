@@ -124,6 +124,7 @@ Generated from repository source files. This report is informational during the 
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
 | 1300 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
+| 1299 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
 | 1284 | Python source | `scripts/ops/daily_candidate_data_continuity.py` |
 | 1275 | Python source | `scripts/audit/native_scene_inventory.py` |
@@ -147,7 +148,6 @@ Generated from repository source files. This report is informational during the 
 | 1179 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1169 | Python source | `scripts/ci/backend_test_receipt.py` |
-| 1165 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |
 | 1160 | Vue source | `frontend/apps/web/src/components/action/ActionSurfaceToolbar.vue` |
 | 1157 | Python source | `addons/smart_core/utils/tenant_payload_import_service.py` |
@@ -191,12 +191,12 @@ Generated from repository source files. This report is informational during the 
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
+| 966 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 949 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
-| 945 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 937 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 920 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |

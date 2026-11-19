@@ -166,6 +166,9 @@ The R1 implementation now:
   `PRODUCT_SYNC_SOURCE_READ_FAILED`;
 - applies the same execution-database XMLID resolution before first creation;
 - refreshes compatibility alias `model` and `res_model` together;
+- reuses the catalog producer's complete action-model resolver
+  (`res_model -> model_name -> model_id.model -> binding_model_id.model`);
+- resolves initial catalog-derived scene source IDs from the execution database;
 - keeps the all-validate-before-write, no-expansion, no-publication and
   product-isolation behavior.
 
@@ -173,7 +176,7 @@ Focused R1 results:
 
 | Check | Result |
 | --- | --- |
-| `verify.runtime_capability_catalog.unit` | passed, 26 tests |
+| `verify.runtime_capability_catalog.unit` | passed, 27 tests |
 | `verify.capability.identity_boundary.unit` | passed, 8 tests |
 | `verify.product_center.policy.unit` | passed, 15 tests |
 | `verify.admin_close_01.backend.unit` | passed, 141 aggregate tests |
@@ -185,5 +188,5 @@ owner direction.
 
 ## Next exact step
 
-Run delivery freeze preparation, commit and push the R2 candidate, then repeat
-exact-head independent review.
+Run delivery freeze preparation, commit and push the R3 candidate, then repeat
+exact-head owner review.

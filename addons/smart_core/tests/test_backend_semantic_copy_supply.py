@@ -110,6 +110,8 @@ class _FakeAction:
         model_id=None,
         action_xmlid="",
         view_mode="",
+        action_type="ir.actions.act_window",
+        binding_model="",
     ):
         self.id = action_id
         self.res_model = res_model
@@ -117,7 +119,12 @@ class _FakeAction:
         self.model_id = model_id
         self.view_mode = view_mode
         self._xmlid = action_xmlid
-        self._name = "ir.actions.act_window"
+        self._name = action_type
+        self.binding_model_id = (
+            SimpleNamespace(model=binding_model)
+            if binding_model
+            else None
+        )
 
     def get_external_id(self):
         return {self.id: self._xmlid}
@@ -997,7 +1004,14 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
                     "res_model": "project.project",
                 }],
             }],
-            "scenes": [],
+            "scenes": [{
+                "scene_key": "scene.project",
+                "menu_xmlid": "project.menu_ledger",
+                "action_xmlid": "project.action_ledger",
+                "action_id": 201,
+                "model": "stale.model",
+                "res_model": "project.project",
+            }],
             "capabilities": [{
                 "capability_key": "catalog.menu.project_menu_ledger",
                 "menu_xmlid": "project.menu_ledger",
@@ -1034,6 +1048,7 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
 
         menu = values["menu_groups"][0]["menus"][0]
         capability = values["capabilities"][0]
+        scene = values["scenes"][0]
         self.assertEqual((menu["menu_id"], menu["action_id"]), (21, 31))
         self.assertEqual((menu["model"], menu["res_model"]), (
             "project.project",
@@ -1043,6 +1058,125 @@ class TestBackendSemanticCopySupply(unittest.TestCase):
             31,
             "project.project",
         ))
+        self.assertEqual((scene["action_id"], scene["model"], scene["res_model"]), (
+            31,
+            "project.project",
+            "project.project",
+        ))
+
+    def test_bound_client_action_uses_shared_model_resolver(self):
+        action = _FakeAction(
+            31,
+            action_xmlid="project.action_client",
+            action_type="ir.actions.client",
+            binding_model="project.project",
+        )
+        menu = _FakeMenu(
+            21,
+            "Project Client",
+            xmlid="project.menu_client",
+            action=action,
+        )
+        service = PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+            _NativeSourceEnv(menu)
+        )
+
+        source = service._read_native_source_facts(
+            {"menu_xmlid": "project.menu_client"}
+        )
+
+        self.assertEqual(source["action_model"], "ir.actions.client")
+        self.assertEqual(source["model"], "project.project")
+        self.assertEqual(source["res_model"], "project.project")
+
+        menu_row = {
+            "menu_xmlid": "project.menu_client",
+            "menu_id": 21,
+            "action_xmlid": "project.action_client",
+            "action_id": 31,
+            "action_model": "ir.actions.client",
+            "model": "project.project",
+            "res_model": "project.project",
+        }
+        current = {
+            "active": True,
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "scene_version_bindings": {},
+            "note": "",
+            "menu_groups": [{"group_key": "center", "menus": [menu_row]}],
+            "scenes": [],
+            "capabilities": [{
+                "capability_key": "alias",
+                "menu_xmlid": "project.menu_client",
+                "action_xmlid": "project.action_client",
+                "action_id": 31,
+                "model": "project.project",
+                "res_model": "project.project",
+            }],
+        }
+        payload = {
+            **deepcopy(current),
+            "policy_source_authority": {"source": "current_db_ir_ui_menu"},
+        }
+        identity = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+        }
+
+        existing = service.build_sync_values(
+            payload=payload,
+            current=current,
+            identity=identity,
+        )
+        initial = service.build_sync_values(
+            payload=payload,
+            current={},
+            identity=identity,
+        )
+        self.assertEqual(
+            existing["menu_groups"][0]["menus"][0]["model"],
+            "project.project",
+        )
+        self.assertEqual(
+            initial["menu_groups"][0]["menus"][0]["res_model"],
+            "project.project",
+        )
+
+        rebound_action = _FakeAction(
+            31,
+            action_xmlid="project.action_client",
+            action_type="ir.actions.client",
+            binding_model="account.move",
+        )
+        rebound_menu = _FakeMenu(
+            21,
+            "Project Client",
+            xmlid="project.menu_client",
+            action=rebound_action,
+        )
+        rebound_service = (
+            PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncService(
+                _NativeSourceEnv(rebound_menu)
+            )
+        )
+        for current_policy in (current, {}):
+            with self.assertRaisesRegex(
+                PRODUCT_POLICY_CATALOG_SYNC_SERVICE.ProductPolicyCatalogSyncError,
+                "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+            ):
+                rebound_service.build_sync_values(
+                    payload=payload,
+                    current=current_policy,
+                    identity=identity,
+                )
 
     def test_current_database_catalog_read_failure_is_stable_and_zero_write(self):
         current = {

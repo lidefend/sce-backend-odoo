@@ -13,7 +13,12 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 
 from .product_identity import resolve_product_identity
 from .product_policy_service import ProductPolicyService
-from .runtime_capability_catalog import RuntimeCapabilityCatalogService, capability_identity
+from .runtime_capability_catalog import (
+    RuntimeCapabilityCatalogService,
+    _action_model,
+    _action_view_modes,
+    capability_identity,
+)
 
 
 def _text(value: Any) -> str:
@@ -62,6 +67,12 @@ class ProductPolicyCatalogSyncService:
         "res_model",
         "model",
         "visible_menu_path",
+    )
+    SCENE_SOURCE_FIELDS = (
+        "action_id",
+        "action_xmlid",
+        "res_model",
+        "model",
     )
 
     def __init__(self, env):
@@ -607,6 +618,22 @@ class ProductPolicyCatalogSyncService:
                 )
             next_capabilities.append(next_capability)
         resolved["capabilities"] = next_capabilities
+
+        scenes = resolved.get("scenes")
+        next_scenes = []
+        for scene in scenes if isinstance(scenes, list) else []:
+            if not isinstance(scene, dict):
+                continue
+            next_scene = copy.deepcopy(scene)
+            source = validated_sources.get(_text(scene.get("menu_xmlid")))
+            if source:
+                self._overlay_source_fields(
+                    next_scene,
+                    source,
+                    self.SCENE_SOURCE_FIELDS,
+                )
+            next_scenes.append(next_scene)
+        resolved["scenes"] = next_scenes
         return resolved
 
     @staticmethod
@@ -848,14 +875,8 @@ class ProductPolicyCatalogSyncService:
             actual_menu_xmlid = _text(menu.get_external_id().get(menu.id))
             action_xmlid = _text(action.get_external_id().get(action.id))
             action_model = _text(getattr(action, "_name", ""))
-            res_model = _text(getattr(action, "res_model", "")) or _text(
-                getattr(action, "model_name", "")
-            )
-            view_modes = [
-                mode.strip()
-                for mode in _text(getattr(action, "view_mode", "")).split(",")
-                if mode.strip()
-            ]
+            res_model = _action_model(action)
+            view_modes = _action_view_modes(action)
             return {
                 "menu_id": int(menu.id),
                 "menu_xmlid": actual_menu_xmlid or menu_xmlid,
