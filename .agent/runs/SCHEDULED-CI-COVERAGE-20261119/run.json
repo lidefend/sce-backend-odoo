@@ -22,7 +22,8 @@
     "scripts/verify/frontend_dev_incremental.py",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
-    "make/runtime_ops.mk"
+    "make/runtime_ops.mk",
+    "scripts/dev/frontend_acceptance_runtime.sh"
   ],
   "environment": {
     "kind": "runtime",

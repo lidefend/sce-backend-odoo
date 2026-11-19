@@ -344,7 +344,7 @@ preflight() {
 standard_profile_name() {
   local profile="${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}"
   case "$profile" in
-    local|candidate) echo "$profile" ;;
+    local|candidate|disposable) echo "$profile" ;;
     *) echo "DENY: unknown acceptance runtime profile: $profile" >&2; return 2 ;;
   esac
 }
