@@ -38,6 +38,7 @@ export function useIntakeAutosaveRuntime(options: {
   let lastSavedSignature = '';
   let lastSavedToken = '';
   let cleanSignature = '';
+  let activeKey = '';
   let draftSequence = 0;
 
   const key = computed(() => options.policy.value
@@ -52,9 +53,18 @@ export function useIntakeAutosaveRuntime(options: {
   const signatureFor = (fields: IntakeAutosavePolicy['fields']) => JSON.stringify(
     fields.map((field) => [field.name, options.formData[field.name]]),
   );
+  const scopeToCurrentKey = () => {
+    if (activeKey === key.value) return;
+    activeKey = key.value;
+    candidate.value = null;
+    lastSavedSignature = '';
+    lastSavedToken = '';
+    cleanSignature = '';
+  };
 
   const capture = (): IntakeAutosaveCapture | null => {
     if (!options.policy.value || !key.value) return null;
+    scopeToCurrentKey();
     if (options.isDirty.value && !options.paused.value && !candidate.value) persist();
     return {
       key: key.value,
@@ -77,6 +87,7 @@ export function useIntakeAutosaveRuntime(options: {
       options.onNotice({ kind: 'error', message: '本机暂存不可用：表单身份尚未就绪。' });
       return 'unavailable' as const;
     }
+    scopeToCurrentKey();
     cleanSignature = signatureFor(writableFields(policy));
     const result = restoreIntakeAutosavePayload({
       policy,
@@ -153,9 +164,11 @@ export function useIntakeAutosaveRuntime(options: {
   const persist = () => {
     const policy = options.policy.value;
     if (!policy || !options.isActive.value || options.hasRecord.value || options.paused.value
-        || candidate.value || !key.value) {
+        || !key.value) {
       return;
     }
+    scopeToCurrentKey();
+    if (candidate.value) return;
     const fields = writableFields(policy);
     const signature = signatureFor(fields);
     if (!options.isDirty.value) {
