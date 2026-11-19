@@ -7,11 +7,21 @@ const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
 const BROWSER_LOCALE = String(process.env.E2E_LOCALE || 'zh-CN');
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
+const ADMIN_LOGIN = String(process.env.ADMIN_CLOSE_01_ADMIN_LOGIN || LOGIN).trim();
+const ADMIN_PASSWORD = String(process.env.ADMIN_CLOSE_01_ADMIN_PASSWORD || PASSWORD).trim();
 const CONFIG_LOGIN = String(process.env.ADMIN_CLOSE_01_CONFIG_LOGIN || 'sc_demo_business_config').trim();
 const CONFIG_PASSWORD = String(process.env.ADMIN_CLOSE_01_CONFIG_PASSWORD || PASSWORD).trim();
 const BUSINESS_LOGIN = String(process.env.ADMIN_CLOSE_01_BUSINESS_LOGIN || 'wutao').trim();
 const BUSINESS_PASSWORD = String(process.env.ADMIN_CLOSE_01_BUSINESS_PASSWORD || PASSWORD).trim();
 const REQUIRE_POSITIVE = process.env.ADMIN_CLOSE_01_REQUIRE_POSITIVE === '1';
+const REQUIRE_PLATFORM_RELEASE = process.env.ADMIN_CLOSE_01_REQUIRE_PLATFORM_RELEASE === undefined
+  ? REQUIRE_POSITIVE
+  : process.env.ADMIN_CLOSE_01_REQUIRE_PLATFORM_RELEASE === '1';
+const REQUIRE_ENTERPRISE_POSITIVE = process.env.ADMIN_CLOSE_01_REQUIRE_ENTERPRISE_POSITIVE === undefined
+  ? REQUIRE_POSITIVE
+  : process.env.ADMIN_CLOSE_01_REQUIRE_ENTERPRISE_POSITIVE === '1';
+const PROJECT_SCENE_KEY = String(process.env.ADMIN_CLOSE_01_PROJECT_SCENE_KEY || '').trim();
+const SKIP_EXPLORER = process.env.ADMIN_CLOSE_01_SKIP_EXPLORER === '1';
 const ARTIFACT_DIR = path.resolve(
   process.cwd(),
   process.env.ARTIFACTS_DIR || 'artifacts/playwright/admin-close-01-management',
@@ -23,7 +33,7 @@ const report = {
   generated_at: new Date().toISOString(),
   runtime: {
     base_url: BASE_URL,
-    admin_login: LOGIN,
+    admin_login: ADMIN_LOGIN,
     config_login: CONFIG_LOGIN,
     business_login: BUSINESS_LOGIN,
   },
@@ -78,6 +88,16 @@ async function login(page, loginName, password) {
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
 }
 
+function findNavigationNode(nodes, predicate) {
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    if (!node || typeof node !== 'object') continue;
+    if (predicate(node)) return node;
+    const child = findNavigationNode(node.children || node.nodes || [], predicate);
+    if (child) return child;
+  }
+  return null;
+}
+
 function checkActivationReadback(payload, expected, label) {
   const readback = payload?.readback || {};
   check(payload?.scene_key === expected.sceneKey, `${label} returns requested scene`, payload);
@@ -128,58 +148,65 @@ try {
   const page = await context.newPage();
   watchPage(page, 'platform');
 
-  await login(page, LOGIN, PASSWORD);
-  const initialExplorer = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
-  const initialPayload = intentData(await (await initialExplorer).json());
-  await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
-
-  const filteredExplorer = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill('menu_sc_project_project');
-  const filteredPayload = intentData(await (await filteredExplorer).json());
-  const projectRow = (filteredPayload.rows || []).find((row) => (
-    row.entry_ref?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
-  ));
-  const selectedRow = projectRow || (initialPayload.rows || [])[0];
-  check(selectedRow, 'governed catalog exposes at least one capability entry');
-  if (REQUIRE_POSITIVE) {
-    check(projectRow, 'positive journey exposes the project-ledger capability', filteredPayload.rows);
-  }
-  if (!projectRow) {
+  await login(page, ADMIN_LOGIN, ADMIN_PASSWORD);
+  let projectRow = null;
+  if (SKIP_EXPLORER) {
+    await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
     report.api.project_ledger_browser_available = false;
-    report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
+    report.api.project_ledger_browser_reason = 'EXPLORER_SEPARATELY_VERIFIED_BY_PLATFORM_ADMIN';
   } else {
-    report.api.project_ledger_browser_available = true;
+    const initialExplorer = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
+    const initialPayload = intentData(await (await initialExplorer).json());
+    await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
+
+    const filteredExplorer = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill('menu_sc_project_project');
+    const filteredPayload = intentData(await (await filteredExplorer).json());
+    projectRow = (filteredPayload.rows || []).find((row) => (
+      row.entry_ref?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    ));
+    const selectedRow = projectRow || (initialPayload.rows || [])[0];
+    check(selectedRow, 'governed catalog exposes at least one capability entry');
+    if (REQUIRE_POSITIVE) {
+      check(projectRow, 'positive journey exposes the project-ledger capability', filteredPayload.rows);
+    }
+    if (!projectRow) {
+      report.api.project_ledger_browser_available = false;
+      report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
+    } else {
+      report.api.project_ledger_browser_available = true;
+    }
+    const selectedEntryResponse = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill(selectedRow.entry_ref.menu_xmlid);
+    await selectedEntryResponse;
+    await page.locator('[data-semantic-component="ScTable"]').getByText(selectedRow.label, { exact: true }).first().click();
+    const drawer = page.getByRole('dialog');
+    await drawer.waitFor({ state: 'visible', timeout: 60000 });
+    await page.waitForFunction(() => {
+      const node = document.querySelector('.sc-design-drawer [role="dialog"]');
+      const text = node?.textContent || '';
+      return !text.includes('正在读取入口详情并执行诊断');
+    }, null, { timeout: 60000 });
+    const drawerText = await drawer.innerText();
+    for (const label of ['最终可用性', '事实分层', '原生存在', '产品资格', '入口发布', '企业启用', '当前用户权限', '生效产品版本']) {
+      check(drawerText.includes(label), `capability detail exposes ${label}`);
+    }
+    report.api.selected_entry = selectedRow.entry_ref;
+    await screenshot(page, '01-project-capability');
   }
-  const selectedEntryResponse = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill(selectedRow.entry_ref.menu_xmlid);
-  await selectedEntryResponse;
-  await page.locator('[data-semantic-component="ScTable"]').getByText(selectedRow.label, { exact: true }).first().click();
-  const drawer = page.getByRole('dialog');
-  await drawer.waitFor({ state: 'visible', timeout: 60000 });
-  await page.waitForFunction(() => {
-    const node = document.querySelector('.sc-design-drawer [role="dialog"]');
-    const text = node?.textContent || '';
-    return !text.includes('正在读取入口详情并执行诊断');
-  }, null, { timeout: 60000 });
-  const drawerText = await drawer.innerText();
-  for (const label of ['最终可用性', '事实分层', '原生存在', '产品资格', '入口发布', '企业启用', '当前用户权限', '生效产品版本']) {
-    check(drawerText.includes(label), `capability detail exposes ${label}`);
-  }
-  report.api.selected_entry = selectedRow.entry_ref;
-  await screenshot(page, '01-project-capability');
 
   const releaseResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/intent')
@@ -191,7 +218,7 @@ try {
   });
   const releaseResponse = await releaseResponsePromise;
   if (!releaseResponse) {
-    if (REQUIRE_POSITIVE) {
+    if (REQUIRE_PLATFORM_RELEASE) {
       check(false, 'positive journey opens the platform release console', { url: page.url() });
     }
     check(
@@ -214,7 +241,7 @@ try {
     const promotionActions = Array.isArray(release.available_actions?.promote)
       ? release.available_actions.promote
       : [];
-    if (REQUIRE_POSITIVE) {
+    if (REQUIRE_PLATFORM_RELEASE) {
       check(promotionActions.length > 0, 'positive journey exposes a candidate promotion contract');
       const action = promotionActions.find((item) => (
         item?.enabled === true
@@ -284,8 +311,8 @@ try {
     row_count: activation.business_scenarios?.length || 0,
   };
   let positiveScenario = null;
-  if (REQUIRE_POSITIVE) {
-    const sceneKey = String(projectRow?.business_domain?.key || '').trim();
+  if (REQUIRE_ENTERPRISE_POSITIVE) {
+    const sceneKey = String(projectRow?.business_domain?.key || PROJECT_SCENE_KEY).trim();
     positiveScenario = (activation.business_scenarios || []).find((scenario) => (
       scenario.scene_key === sceneKey
       && scenario.enable_allowed === true
@@ -317,14 +344,40 @@ try {
   const businessContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const businessPage = await businessContext.newPage();
   watchPage(businessPage, 'business');
+  const businessStartupResponse = businessPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'system.init'
+    && response.status() === 200
+  ));
   await login(businessPage, BUSINESS_LOGIN, BUSINESS_PASSWORD);
-  await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
+  const businessStartup = intentData(await (await businessStartupResponse).json());
+  const ledgerNode = findNavigationNode(businessStartup?.navigation?.nav || [], (node) => (
+    node.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    || node.meta?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+  ));
+  const ledgerMenuId = Number(
+    ledgerNode?.menu_id
+    || ledgerNode?.meta?.menu_id
+    || ledgerNode?.id
+    || 0,
+  );
+  let businessPositiveFailure = '';
+  if (ledgerMenuId > 0) {
+    await businessPage.goto(
+      `${BASE_URL}/t/${ENTRY_NAMESPACE}/m/${ledgerMenuId}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+  } else {
+    await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
+  }
   const ledgerMenu = businessPage.getByText('项目台账', { exact: true }).first();
   const dashboardMenu = businessPage.getByText('项目看板', { exact: true }).first();
-  if (await ledgerMenu.count()) {
+  if (ledgerMenuId > 0) {
+    // The resolved formal navigation identity is the authoritative route.
+  } else if (await ledgerMenu.count()) {
     await ledgerMenu.click();
-  } else if (REQUIRE_POSITIVE) {
-    check(false, 'positive journey reaches the project-ledger formal menu');
+  } else if (REQUIRE_ENTERPRISE_POSITIVE) {
+    businessPositiveFailure = 'positive journey reaches the project-ledger formal menu';
   } else {
     const navigationMenuId = await dashboardMenu.evaluate((element) => (
       element.closest('li[data-navigation-menu-id]')?.getAttribute('data-navigation-menu-id') || ''
@@ -340,12 +393,19 @@ try {
     return text.includes('项目台账') || text.includes('项目看板') || text.includes('访问被拒绝') || text.includes('权限');
   }, null, { timeout: 60000 });
   const businessText = await businessPage.locator('body').innerText();
-  check(
-    REQUIRE_POSITIVE
-      ? businessText.includes('项目台账')
-      : businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
-    'ordinary business user receives an explicit formal project result',
-  );
+  if (REQUIRE_ENTERPRISE_POSITIVE) {
+    if (!businessText.includes('项目台账')) {
+      businessPositiveFailure = 'ordinary business user opens the enabled project ledger';
+    }
+    if (!businessPositiveFailure) {
+      report.assertions.push({ pass: true, message: 'ordinary business user opens the enabled project ledger' });
+    }
+  } else {
+    check(
+      businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
+      'ordinary business user receives an explicit formal project result',
+    );
+  }
   report.api.business_entry = {
     login: BUSINESS_LOGIN,
     route: businessPage.url(),
@@ -374,6 +434,7 @@ try {
       file: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
       url: configPage.url(),
     });
+    if (businessPositiveFailure) check(false, businessPositiveFailure);
   }
   await configContext.close();
 

@@ -56,8 +56,9 @@ Only one writer is active in this product worktree at a time.
 
 - Base: `68828a9a3919b95ca931d41559889a93bf7fa622`
 - Branch: `feature/admin-close-01-r1-management-control-20261119`
-- Backend stage: completed; clean handoff commit follows this record
-- Frontend stage: pending backend handoff
+- Backend stage: completed at `84eddc23d743e2963e73687113add5922a028c09`
+- Frontend stage: completed on the shared delivery branch
+- Owner independent review: pending the frozen candidate
 - Center ownership and composite-version convergence: later batches
 - Deployment and product publication: not authorized by this batch
 
@@ -118,3 +119,84 @@ Focused backend validation passed:
 configuration and ORM-family failures; no failure references the changed R1
 files. This remains a recorded baseline/coverage blocker rather than a claimed
 pass.
+
+## Frontend handoff
+
+FE-R1-01 keeps enterprise actions enabled according to backend execution state,
+not their target value. A legal `disable` action with `enabled=false` remains
+clickable and submits the target boolean `false`.
+
+FE-R1-02 validates the enterprise response against the operation that initiated
+it:
+
+- same requested scene and stored scene;
+- same company and enablement scope;
+- same target state in the top-level and nested readback;
+- `source=ir.config_parameter` and a nonempty storage key;
+- committed write and `access_granted=false`.
+
+Missing or mismatched readback never displays success and never replays the
+write. Verified write followed by navigation failure retains the readback and
+offers read-only refresh recovery.
+
+FE-R1-03 and FE-R1-04 use the backend promotion action as the executable
+contract. The frontend validates its actor, target product scope, snapshot
+object, parameters, prerequisites, confirmation requirement and authoritative
+readback. Missing declarations fail closed. Promotion submits the declared
+params and requires the declared confirmation.
+
+FE-R1-05 adds page-scoped console/page error collection for platform, enterprise
+and business browser contexts.
+
+## Joined candidate evidence
+
+The existing isolated candidate profile was normalized through the governed
+fixture and release-snapshot entries after the backend artifact was rebuilt from
+Git object `a0d35288562adb52031fb1eabfc538294ead0ca2`.
+
+- fixture: 14 managed users, companies `FE Company A/B`, project carriers and
+  acceptance records re-applied;
+- standard release: `frontend-audit-a0d35288562a`, snapshot `3`, 132 menus;
+- candidate backend artifact digest:
+  `699580b954c469fb240163994a4d0ca52a3e19a0b7196d0c257707b27e6b9678`;
+- candidate frontend rebuilt through the registered preview entry.
+
+The browser journey passed 45 assertions:
+
+- enterprise enable returned an identity-bound readback from
+  `ir.config_parameter`;
+- the ordinary project user opened the project-ledger formal navigation route;
+- enterprise disable submitted `false` and read back disabled;
+- the platform context passed 17 governed entries and permission denial checks;
+- all three browser contexts had zero unexpected console/page errors.
+
+Raw readback:
+`.runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json`
+(SHA-256 `3ed9c7a2e63899c8bc82e65ded87fc1b9791024a91936f6680e5786b4591abb1`).
+
+The candidate tenant has no platform-control administrator. Promotion execution
+is therefore proven by the governed ORM sample and strict frontend contract
+tests; the candidate browser does not claim a platform-release click.
+
+## Final affected validation
+
+The final `make ci.local.iteration` passed 11 target closures on the R1 branch,
+including:
+
+- backend admin unit and scene ORM groups;
+- navigation delivery and publication consumers;
+- capability explorer producer and frontend consumer;
+- scenario lifecycle and strict promotion contract tests;
+- strict frontend lint and typecheck.
+
+The candidate frontend production preview build passed through the registered
+`frontend.standard.preview.build` entry. `verify.frontend.build` was not used in
+this worktree because its declared daily `.env.dev` input is absent; the
+candidate preview build consumed the registered candidate profile instead.
+
+The first candidate backend restart used the primary worktree's stale acceptance
+artifact. That was detected from the old readback shape before acceptance was
+recorded as a pass. `acceptance.artifact.verify` was rebuilt from candidate Git
+object `a0d35288562adb52031fb1eabfc538294ead0ca2`, the candidate container was
+replaced with a rollback container, and the readback source/version was checked
+again before rerunning the browser.

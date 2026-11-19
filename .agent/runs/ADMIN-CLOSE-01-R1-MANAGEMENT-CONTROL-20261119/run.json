@@ -3,7 +3,7 @@
   "id": "ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119",
   "branch": "feature/admin-close-01-r1-management-control-20261119",
   "baseline_sha": "68828a9a3919b95ca931d41559889a93bf7fa622",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119.yaml",
   "record": "docs/ops/iterations/admin_close_01_r1_management_control_20261119.md",
   "scope": [
@@ -21,6 +21,7 @@
     "frontend/apps/web/scripts/",
     "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
     "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
     "frontend/apps/web/src/views/ReleaseOperatorView.vue",
     "make/guards.mk",
     "scripts/verify/"
@@ -44,13 +45,14 @@
     },
     {
       "id": "FE-ADMIN-CLOSE-01-R1",
-      "status": "pending",
+      "status": "completed",
       "owner": "single_writer_frontend_after_backend_handoff",
-      "exit": "FE-R1-01 through FE-R1-05 consume strict contracts and complete the joined management journey"
+      "exit": "FE-R1-01 through FE-R1-05 consume strict contracts and complete the joined enterprise enable/use/disable journey",
+      "browser_summary": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json"
     },
     {
       "id": "REVIEW-ADMIN-CLOSE-01-R1",
-      "status": "pending",
+      "status": "active",
       "owner": "owner_independent_review",
       "exit": "Owner reviews the exact frozen candidate and current remote checks"
     }
@@ -184,7 +186,8 @@
     }
   },
   "blockers": [
-    "The full smart_core module baseline remains failed with no usable count; observed failures are in authentication, maintenance, configuration and pre-existing ORM families with no reference to the R1 changed files. Existing affected navigation, capability-explorer, release-operator and scene families pass, so the module baseline stays an explicit failed coverage layer rather than being described as green."
+    "The full smart_core module baseline remains failed with no usable count; observed failures are in authentication, maintenance, configuration and pre-existing ORM families with no reference to the R1 changed files. Existing affected navigation, capability-explorer, release-operator and scene families pass, so the module baseline stays an explicit failed coverage layer rather than being described as green.",
+    "The isolated candidate tenant has the enterprise configuration administrator and ordinary project user, but no platform-control administrator. Its browser journey therefore proves enterprise enable, ordinary-user project-ledger use and enterprise disable; candidate promotion actions are covered by the real governed ORM contract and strict frontend consumer tests, not by a candidate-tenant platform-release browser click."
   ],
-  "next_exact_step": "Commit the clean backend handoff, then take the same worktree as frontend writer for FE-R1-01 through FE-R1-05."
+  "next_exact_step": "Refresh generated evidence, commit the frontend/browser handoff, and publish one exact-head PR for owner review."
 }
