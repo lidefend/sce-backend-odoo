@@ -97,8 +97,10 @@ stop_heartbeat
     def test_control_plane_tool_checks_are_wired_through_the_final_gate(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/professional_quality_gate.yml').read_text())
         authorization = workflow['jobs']['professional_authorization']
-        self.assertEqual(authorization['outputs']['tool_checks'],
-                         '${{ steps.backend_impact.outputs.tool_checks }}')
+        self.assertEqual(
+            authorization['outputs']['tool_checks'],
+            "${{ steps.backend_impact.outputs.tool_checks || '' }}",
+        )
         checks = workflow['jobs']['professional_quality_checks']
         self.assertEqual(checks['outputs']['tool_checks_ran'],
                          '${{ steps.tool_checks.outputs.ran }}')

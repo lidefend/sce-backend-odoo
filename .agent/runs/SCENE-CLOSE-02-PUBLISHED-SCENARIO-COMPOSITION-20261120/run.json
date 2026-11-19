@@ -37,6 +37,7 @@
     "scripts/ci/ci_risk_classifier.py",
     "scripts/ci/contract_only_scope.py",
     "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_contract_only_scope.py",
