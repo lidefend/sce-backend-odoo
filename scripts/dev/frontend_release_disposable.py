@@ -68,6 +68,14 @@ def main():
     with (common / 'frontend-release-disposable.lock').open('w') as lease:
         fcntl.flock(lease, fcntl.LOCK_EX | fcntl.LOCK_NB)
         require_absent(profile, env)
+        # Docker creates a missing bind source as root. Prepare host evidence
+        # before provisioning so the local audit can write its reports.
+        artifacts = ROOT / 'artifacts'
+        if artifacts.is_symlink():
+            raise ValueError('artifact output must not be a symlink')
+        artifacts.mkdir(exist_ok=True)
+        if not os.access(artifacts, os.W_OK):
+            raise ValueError('artifact output is not writable by the local runner')
         STATE.mkdir(parents=True, exist_ok=True, mode=0o700)
         credential_path = Path(profile['SC_ACCEPTANCE_BASE_ENV_FILE'])
         if credential_path.exists():
