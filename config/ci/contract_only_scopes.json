@@ -127,7 +127,6 @@
         "verify.product_center.policy.unit",
         "verify.daily.published_face.target.unit",
         "verify.navigation.publication_consumers.unit",
-        "verify.frontend.platform_capability_explorer.unit",
         "verify.frontend.dev.incremental.unit",
         "verify.ci.workflow.contract",
         "verify.github_actions.security"

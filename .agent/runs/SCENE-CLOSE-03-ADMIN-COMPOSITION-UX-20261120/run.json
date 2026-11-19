@@ -220,6 +220,9 @@
       "name/sequence/intent-only changes are recognized by backend-owned composition comparison",
       "native shared maintenance entry is disabled by missing action/menu/model or read/write denial"
     ],
+    "p4_correction": [
+      "The first remote contract-only run attempted the esbuild-dependent frontend capability-explorer target without frontend dependencies. The target remains an owning check in frontend_release_gate and was removed from the contract-only list; the Python/node-independent control-plane scope is unchanged."
+    ],
     "not_run": [
       "ORM and module baselines explicitly excluded by owner continuation",
       "module upgrade and environment rebuild",

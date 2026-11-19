@@ -51,3 +51,8 @@ Branch: `feature/scene-close-03-admin-composition-ux-20261120`
 ## 验证结果
 
 `ci.local.iteration` 已通过，受影响目标包括能力目录、发布控制台后端、产品中心、已发布面、场景导航消费、前端契约单测、lint、严格类型和增量规划回归。frontend lint 仅保留仓库已有的 warning，没有 error。ORM、模块基线、升级、浏览器矩阵和部署未执行。
+
+首次远端纯契约分片错误地在无 `node_modules` 的 runner 上选择了依赖 esbuild 的
+`verify.frontend.platform_capability_explorer.unit`。该目标仍由安装受锁前端依赖的
+`frontend_release_gate` 执行，现仅从 `.github` 契约专用 target 列表移除；
+Python/Node 无依赖的控制面检查范围不变。
