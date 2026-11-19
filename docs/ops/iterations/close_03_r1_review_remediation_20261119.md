@@ -93,7 +93,7 @@ Status: implemented on the shared R1 candidate.
 Frontend verification:
 
 - Intake autosave runtime: PASS, 33 cases.
-- Governed acceptance browser: PASS, created record 145 and cleaned one record.
+- Governed acceptance browser: PASS, created record 146 and cleaned one record.
 - The browser proves clean reversion does not reappear after reload, normal
   typed/relation restore still works, payment create and saved project detail
   remain isolated while the project draft still exists, and create cleanup
