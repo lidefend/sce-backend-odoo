@@ -36,6 +36,18 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_shared_release_assertions_are_required_before_merge(self):
+        makefile = (ROOT / "make/frontend.mk").read_text()
+        def prerequisites(target):
+            return " ".join(re.findall(r"^" + re.escape(target) + r":(.*)$", makefile, re.M)).split()
+        # Local iteration and standard PR both run the systemic static entry.
+        # The full-source scan must not depend on recognizing a new filename.
+        self.assertIn("verify.frontend.localized_display.unit", prerequisites("verify.frontend.systemic.convergence.static"))
+        self.assertIn("verify.frontend.localized_display.unit", prerequisites("verify.frontend.pr.unit"))
+        self.assertIn("verify.frontend.contract_reason_dialog.browser", prerequisites("verify.frontend.pr.unit"))
+        ci = (ROOT / "make/ci.mk").read_text()
+        self.assertRegex(ci, r"(?m)^ci\.local\.iteration:.*verify\.frontend\.systemic\.convergence\.static")
+
     def test_incremental_targets_enable_database_template_reuse(self):
         with tempfile.TemporaryDirectory() as directory:
             log_path = Path(directory) / "target.log"

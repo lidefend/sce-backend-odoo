@@ -212,9 +212,24 @@ const ATTACHMENT_SOURCE_REGISTRY: Record<string, string> = {
 };
 const TEMPORAL_PARSE_REGISTRY: Record<string, string> = {
   'utils/fieldSemantics.ts': 'authority',
+  'pages/contractForm/intakeAutosave.ts':
+    'registered: lossless local-storage wire-shape validation only; no date parsing, formatting or display authority',
   'pages/contractForm/professionalCollaborationModel.ts':
     'registered: collaboration audit timestamp formatting, unconverted; needs its own batch decision',
 };
+// The storage exemption is bounded to the two existing wire-shape checks.
+// Adding another temporal rule or a formatting/parser call requires review again.
+const autosaveSource = sourceText('pages/contractForm/intakeAutosave.ts');
+assert.deepEqual(
+  autosaveSource.split('\n').filter((line) => line.includes('\\d{4}')).map((line) => line.trim()),
+  [
+    String.raw`return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}$/.test(value)`,
+    String.raw`return typeof value === 'string' && /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/.test(value)`,
+  ],
+  'autosave may validate the existing storage wire shape only',
+);
+assert.doesNotMatch(autosaveSource, /new Date\s*\(|Date\.parse\s*\(|toLocale(?:Date|Time)?String\s*\(|Intl\.DateTimeFormat/);
+
 for (const source of presentationSources) {
   const relativePath = readPresentationSource(source);
   const text = readFileSync(source, 'utf8');

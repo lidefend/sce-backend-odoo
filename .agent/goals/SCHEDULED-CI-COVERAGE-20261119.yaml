@@ -1,0 +1,13 @@
+schema_version: 1
+goal:
+  id: SCHEDULED-CI-COVERAGE-20261119
+  title: Repair scheduled CI and close incremental validation gaps
+  status: active
+  formal_product_layer: P4
+  layer_target: CI verification and affected-test selection
+  module: [scripts/verify, frontend-test-tools, make]
+  objective: Repair the observed scheduled failures and enforce cheap shared guards before merge.
+  baseline:
+    branch: main
+    full_sha: 5e1cb935d31209cc9ece0f317d55a5064e3f7123
+  exclusions: [product_semantics, database_changes, deployment]

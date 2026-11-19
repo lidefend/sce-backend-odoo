@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "baseline_sha": "5e1cb935d31209cc9ece0f317d55a5064e3f7123",
+  "scope": [
+    "scripts/verify/frontend_localized_display_contract_test.ts",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/frontend.mk",
+    ".agent/active-runs.json",
+    ".agent/goals/SCHEDULED-CI-COVERAGE-20261119.yaml",
+    ".agent/runs/SCHEDULED-CI-COVERAGE-20261119/run.json",
+    "docs/ops/iterations/scheduled_ci_coverage_20261119.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing Make entrypoints and browser component harness; no database or service mutation"
+  },
+  "checks": {
+    "incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "localized": {
+      "target": "verify.frontend.localized_display.unit",
+      "inputs": [
+        "frontend/apps/web/src",
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "make/frontend.mk",
+        "frontend/pnpm-lock.yaml"
+      ],
+      "kind": "offline"
+    },
+    "dialog": {
+      "target": "verify.frontend.contract_reason_dialog.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_reason_dialog_browser_test.mjs",
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/pnpm-lock.yaml",
+        "scripts/verify/playwright_runtime.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "autosave": {
+      "target": "verify.frontend.intake_autosave.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
+        "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "Independent review pending: user authorization for a read-only reviewer agent requested; no remote publication performed."
+  ],
+  "next_exact_step": "Complete independent review, publish exact-head repair PR, then dispatch full frontend release CI.",
+  "id": "SCHEDULED-CI-COVERAGE-20261119",
+  "branch": "fix/scheduled-ci-coverage-20261119",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCHEDULED-CI-COVERAGE-20261119.yaml",
+  "record": "docs/ops/iterations/scheduled_ci_coverage_20261119.md",
+  "results": {
+    "local_iteration": {
+      "status": "passed",
+      "log": ".runtime/scheduled-ci/iteration.log",
+      "targets": 5
+    },
+    "incremental_tests": {
+      "status": "passed",
+      "tests": 184,
+      "log": ".runtime/scheduled-ci/incremental-after.log"
+    },
+    "localized_display": {
+      "status": "passed",
+      "sources": 823,
+      "log": ".runtime/scheduled-ci/localized-after.log"
+    },
+    "dialog": {
+      "status": "passed",
+      "assertions": 21,
+      "log": ".runtime/scheduled-ci/dialog-before.log"
+    },
+    "autosave": {
+      "status": "passed",
+      "cases": 33,
+      "log": ".runtime/scheduled-ci/autosave.log"
+    },
+    "remote_full": {
+      "status": "not_run",
+      "reason": "awaiting reviewed candidate publication"
+    },
+    "generated_evidence": {
+      "status": "passed",
+      "log": ".runtime/scheduled-ci/prepare.log",
+      "changed_reports": [
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md"
+      ]
+    },
+    "pr_unit": {
+      "status": "passed",
+      "log": ".runtime/scheduled-ci/pr-unit.log"
+    }
+  }
+}
