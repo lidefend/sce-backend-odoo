@@ -118,6 +118,89 @@
           <ScInlineState v-if="productLicense.upgrade_hint" state="info" :label="String(productLicense.upgrade_hint)" />
         </ScSection>
 
+        <ScSection
+          title="业务场景组合"
+          description="分别核对当前维护草稿、冻结候选和当前生效版本中的业务场景与原生入口。"
+        >
+          <template #actions>
+            <ScButton
+              variant="secondary"
+              :disabled="!businessScenarioMaintenance.enabled"
+              :title="businessScenarioMaintenance.reason_code || ''"
+              @click="openBusinessScenarioMaintenance"
+            >
+              维护共享业务场景定义
+            </ScButton>
+          </template>
+          <ScInlineState
+            v-if="businessScenarioMaintenance.enabled"
+            state="info"
+            :label="`${businessScenarioMaintenance.scope.label}；将进入后冻结到 ${businessScenarioMaintenance.future_freeze_product_key}。该定义不是当前产品私有草案或当前企业配置。`"
+          />
+          <ScInlineState
+            v-else
+            state="error"
+            :label="`共享业务场景维护入口不可用：${businessScenarioMaintenance.reason_code || '契约未声明'}${businessScenarioMaintenance.blockers.length ? `（${businessScenarioMaintenance.blockers.join('、')}）` : ''}`"
+          />
+          <div class="release-operator__composition-states">
+            <ScCard
+              v-for="state in compositionStateCards"
+              :key="state.key"
+              appearance="section"
+              :title="state.title"
+            >
+              <ScDescriptions :items="state.items" :column="1" bordered />
+              <ScInlineState
+                v-if="state.state.empty"
+                state="info"
+                label="该状态存在组合载体，但当前没有业务场景。"
+              />
+              <ScInlineState
+                v-else-if="!state.state.available"
+                state="info"
+                :label="state.state.reason_code"
+              />
+            </ScCard>
+          </div>
+          <ScForm layout="inline" :prevent-submit-default="true">
+            <ScFormItem label="查看组合">
+              <ScSelect
+                v-model="selectedCompositionKey"
+                :options="compositionStateOptions"
+                aria-label="选择查看的业务组合状态"
+              />
+            </ScFormItem>
+          </ScForm>
+          <ScDescriptions
+            class="release-operator__summary"
+            :items="selectedCompositionItems"
+            :column="compactDescriptionColumns"
+            bordered
+          />
+          <ScDescriptions
+            class="release-operator__summary"
+            :items="compositionComparisonItems"
+            :column="compactDescriptionColumns"
+            bordered
+          />
+          <ScCard v-if="compositionEntryRows.length" appearance="table">
+            <ScTable
+              class="release-operator__table"
+              label="业务场景组合入口"
+              :data="compositionEntryRows"
+              :columns="compositionEntryColumns"
+              row-key="__rowKey"
+              size="small"
+            />
+          </ScCard>
+          <ScEmptyState
+            v-else
+            density="compact"
+            :heading-level="4"
+            title="当前查看状态没有业务场景入口"
+          />
+        </ScSection>
+
         <ScSection title="产品配置发布线">
           <template #actions>
             <span class="release-operator__section-meta">草案、检查、候选、发布、生效</span>
@@ -386,11 +469,15 @@ import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { contractGapError } from '../app/contract/contractGap';
+import { buildBusinessScenarioMaintenanceTarget } from '../app/businessScenarioNavigation';
 import {
   buildConfiguredOperatorParams,
   decodeConfiguredActionResult,
   decodeReleaseOperatorSurface,
   decodeProductCenterWriteEnvelope,
+  type BusinessSceneCompositionState,
+  type BusinessSceneCompositionStates,
+  type BusinessScenarioMaintenance,
   type OperatorAction,
   type ProductCenterEditor,
 } from '../app/releaseOperatorActionContract';
@@ -431,6 +518,8 @@ interface ReleaseOperatorSurface {
   product_delivery_console?: AnyRecord;
   control_scope?: AnyRecord;
   product_center_editor?: ProductCenterEditor;
+  business_scene_composition_states?: BusinessSceneCompositionStates;
+  business_scenario_maintenance?: BusinessScenarioMaintenance;
   release_pipeline?: AnyRecord;
   release_state?: AnyRecord;
   pending_approval?: { actions?: ReleaseActionRow[] };
@@ -559,6 +648,121 @@ const controlledPages = computed(() => {
   return Array.isArray(pages) ? pages as AnyRecord[] : [];
 });
 const productCenterEditor = computed(() => surface.value?.product_center_editor || null);
+const businessSceneCompositionStates = computed(() => (
+  surface.value?.business_scene_composition_states || null
+));
+const businessScenarioMaintenance = computed<BusinessScenarioMaintenance>(() => (
+  surface.value?.business_scenario_maintenance
+  || {
+    contract_version: 'business_scenario_maintenance_entry.v1',
+    product_key: String(identity.value.product_key || ''),
+    applicable: false,
+    provider: '',
+    enabled: false,
+    reason_code: 'SCENARIO_MAINTENANCE_CONTRACT_MISSING',
+    blockers: ['SCENARIO_MAINTENANCE_CONTRACT_MISSING'],
+    action: { xmlid: '', id: 0, name: '', res_model: '', view_mode: '' },
+    menu: { xmlid: '', id: 0, name: '' },
+    scope: {
+      kind: 'not_applicable',
+      label: '共享业务场景定义不可用',
+      model: '',
+      has_product_key: false,
+      has_company_id: false,
+      applies_to: '',
+      filter_by_current_product: false,
+    },
+    future_freeze_product_key: String(identity.value.product_key || ''),
+    access: { read_allowed: false, write_allowed: false },
+    return_readback: {
+      intent: '',
+      product_key: String(identity.value.product_key || ''),
+      fields: [],
+    },
+  }
+));
+const selectedCompositionKey = ref<'draft' | 'candidate' | 'active'>('draft');
+const compositionStateOptions = [
+  { value: 'draft', label: '当前维护草稿' },
+  { value: 'candidate', label: '冻结候选' },
+  { value: 'active', label: '当前生效版本' },
+];
+const selectedCompositionState = computed<BusinessSceneCompositionState | null>(() => (
+  businessSceneCompositionStates.value?.[selectedCompositionKey.value] || null
+));
+const compositionStateCards = computed(() => {
+  const states = businessSceneCompositionStates.value;
+  if (!states) return [];
+  return [
+    { key: 'draft', title: '当前维护草稿', state: states.draft },
+    { key: 'candidate', title: '冻结候选', state: states.candidate },
+    { key: 'active', title: '当前生效版本', state: states.active },
+  ].map((row) => ({
+    ...row,
+    items: [
+      { key: 'status', label: '状态', value: row.state.status_label },
+      {
+        key: 'identity',
+        label: '版本身份',
+        value: row.state.identity.snapshot_id
+          ? `快照 ${String(row.state.identity.snapshot_id)} · ${String(row.state.identity.version || '-')}`
+          : `策略 ${String(row.state.identity.policy_id || '-')} · ${String(row.state.identity.version || '-')}`,
+      },
+      {
+        key: 'counts',
+        label: '组合规模',
+        value: `${row.state.scenario_count} 个场景 / ${row.state.entry_count} 个入口`,
+      },
+      {
+        key: 'digest',
+        label: '组合摘要',
+        value: row.state.digest || row.state.reason_code,
+      },
+    ],
+  }));
+});
+const selectedCompositionItems = computed<DescriptionItem[]>(() => {
+  const state = selectedCompositionState.value;
+  if (!state) return [];
+  return [
+    { key: 'state', label: '查看状态', value: state.status_label },
+    { key: 'reason', label: '状态说明', value: state.reason_code },
+    { key: 'source_db', label: '组合来源库', value: state.source_db || '-' },
+    { key: 'scope', label: '组合作用域', value: state.runtime_scope || '-' },
+    { key: 'scenario_count', label: '场景数量', value: String(state.scenario_count) },
+    { key: 'entry_count', label: '入口数量', value: String(state.entry_count) },
+  ];
+});
+const compositionComparisonItems = computed<DescriptionItem[]>(() => {
+  const comparisons = businessSceneCompositionStates.value?.comparisons;
+  if (!comparisons) return [];
+  const rows = [
+    ['draft_vs_candidate', '草稿相对候选', comparisons.draft_vs_candidate],
+    ['draft_vs_active', '草稿相对生效', comparisons.draft_vs_active],
+    ['candidate_vs_active', '候选相对生效', comparisons.candidate_vs_active],
+  ] as const;
+  return rows.map(([key, label, diff]) => ({
+    key,
+    label,
+    value: `${diff.state} · 变化 ${diff.change_count} 项 · 场景 ${diff.changed_scenario_keys.join('、') || '无'} · 入口 ${diff.changed_entry_keys.join('、') || '无'}`,
+  }));
+});
+const compositionEntryRows = computed(() => {
+  const rows: Array<AnyRecord & { __rowKey: string }> = [];
+  for (const scenario of selectedCompositionState.value?.scenarios || []) {
+    for (const entry of scenario.entries) {
+      rows.push({
+        ...entry,
+        scenario_key: scenario.key,
+        scenario_name: scenario.name,
+        scenario_sequence: scenario.sequence,
+        scenario_active: scenario.active,
+        __rowKey: `${scenario.key}:${entry.entry_id}:${entry.menu_key}:${entry.intent}`,
+      });
+    }
+  }
+  return rows;
+});
 const selectedCenterKey = ref('');
 const centerLabelDraft = ref('');
 const centerSequenceDraft = ref('10');
@@ -1000,6 +1204,45 @@ const centerEntryColumns = computed(() => [
     },
   },
 ]);
+const compositionEntryColumns = computed(() => [
+  {
+    colKey: 'scenario_name',
+    title: '业务场景',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(
+      `${String(row.scenario_name || row.scenario_key)} · ${Number(row.scenario_sequence || 0)}`,
+    ),
+  },
+  {
+    colKey: 'scenario_active',
+    title: '定义状态',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => statusNode(
+      row.scenario_active ? 'active' : 'inactive',
+      row.scenario_active ? '启用' : '停用',
+      row.scenario_active ? 'success' : 'default',
+    ),
+  },
+  {
+    colKey: 'menu_key',
+    title: '原生入口',
+    ellipsis: true,
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.menu_key),
+  },
+  {
+    colKey: 'intent_label',
+    title: '业务用途',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.intent_label || row.intent),
+  },
+  {
+    colKey: 'sequence',
+    title: '入口顺序',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.sequence),
+  },
+  {
+    colKey: 'source_db',
+    title: '来源库',
+    cell: (_h: unknown, { row }: { row: AnyRecord }) => tableText(row.source_db),
+  },
+]);
 const candidateColumns = computed(() => [
   { colKey: 'version', title: '版本', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.version) },
   { colKey: 'state', title: '状态', cell: (_h: unknown, { row }: { row: SnapshotRow }) => statusNode(String(row.state || ''), tableText(row.state), 'info') },
@@ -1014,7 +1257,7 @@ const candidateColumns = computed(() => [
     const action = promoteActionFor(row);
     if (!action) return tableText('契约缺口');
     const confirmation = action.prerequisites.confirmation_required ? '需确认' : '无需确认';
-    return tableText(`${action.actor.login} → ${action.target_scope.product_key} · ${confirmation}`);
+    return tableText(`${action.actor.login} 至 ${action.target_scope.product_key} · ${confirmation}`);
   } },
   { colKey: 'frozen_at', title: '冻结时间', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.frozen_at) },
   { colKey: 'actions', title: '操作', width: 132, cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
@@ -1169,6 +1412,26 @@ function selectCenter(value: unknown) {
   centerSequenceDraft.value = String(center?.sequence ?? 10);
 }
 
+async function openBusinessScenarioMaintenance() {
+  const entry = businessScenarioMaintenance.value;
+  const target = buildBusinessScenarioMaintenanceTarget(entry, route.fullPath);
+  if (target) await router.push(target);
+}
+
+async function syncResolvedProduct(decoded: ReleaseOperatorSurface) {
+  const resolvedProduct = String(decoded.identity?.product_key || '').trim();
+  if (!resolvedProduct) return;
+  selectedProduct.value = resolvedProduct;
+  const routeProduct = String(route.query.product_key || '').trim();
+  if (resolvedProduct === routeProduct) return;
+  await router.replace({
+    query: {
+      ...route.query,
+      product_key: resolvedProduct,
+    },
+  });
+}
+
 async function loadSurface() {
   loading.value = true;
   error.value = '';
@@ -1185,10 +1448,7 @@ async function loadSurface() {
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) {
-      selectedProduct.value = resolvedProduct;
-    }
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '发布控制台不可用';
   } finally {
@@ -1208,8 +1468,7 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
       surface.value = decoded;
       hydratePolicyControls(decoded);
       hydrateProductCenterEditor(decoded);
-      const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-      if (resolvedProduct) selectedProduct.value = resolvedProduct;
+      await syncResolvedProduct(decoded);
     } else {
       await loadSurface();
     }
@@ -1265,8 +1524,7 @@ async function runConfiguredAction(
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '平台管理动作执行失败';
   } finally {
@@ -1381,8 +1639,7 @@ async function runCenterWrite(
     surface.value = decoded;
     hydratePolicyControls(decoded);
     hydrateProductCenterEditor(decoded);
-    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
-    if (resolvedProduct) selectedProduct.value = resolvedProduct;
+    await syncResolvedProduct(decoded);
   } catch (err) {
     error.value = err instanceof Error ? err.message : '产品中心保存失败';
   } finally {
@@ -1513,6 +1770,13 @@ onMounted(() => {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
   gap: var(--sc-product-panel-gap);
+}
+
+.release-operator__composition-states {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: var(--sc-product-panel-gap);
+  margin-block: var(--sc-product-space-3);
 }
 
 .release-operator__metric h3 {

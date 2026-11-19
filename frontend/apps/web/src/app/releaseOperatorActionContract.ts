@@ -109,6 +109,106 @@ export interface ProductCenterEditor {
   config_ref: AnyRecord;
 }
 
+export interface BusinessSceneCompositionEntry {
+  entry_id: number;
+  menu_key: string;
+  menu_id: number;
+  intent: string;
+  intent_label: string;
+  sequence: number;
+  center_key: string;
+  center_name: string;
+  center_sequence: number;
+  source_db: string;
+}
+
+export interface BusinessSceneCompositionScenario {
+  key: string;
+  name: string;
+  active: boolean;
+  sequence: number;
+  source_db: string;
+  entries: BusinessSceneCompositionEntry[];
+}
+
+export interface BusinessSceneCompositionState {
+  contract_version: 'business_scene_composition_management.v1';
+  status: 'draft' | 'candidate' | 'active' | 'not_frozen' | 'no_active_release';
+  status_label: string;
+  available: boolean;
+  reason_code: string;
+  identity: AnyRecord;
+  source_db: string;
+  runtime_scope: string;
+  scenario_count: number;
+  entry_count: number;
+  empty: boolean;
+  digest: string;
+  scenarios: BusinessSceneCompositionScenario[];
+}
+
+export interface BusinessSceneCompositionDiff {
+  state: 'changed' | 'identical' | 'unavailable';
+  changed_scenario_keys: string[];
+  changed_entry_keys: string[];
+  change_count: number;
+}
+
+export interface BusinessSceneCompositionStates {
+  contract_version: 'business_scene_composition_management.v1';
+  product_key: string;
+  scope: string;
+  draft: BusinessSceneCompositionState;
+  candidate: BusinessSceneCompositionState;
+  active: BusinessSceneCompositionState;
+  comparisons: {
+    draft_vs_candidate: BusinessSceneCompositionDiff;
+    draft_vs_active: BusinessSceneCompositionDiff;
+    candidate_vs_active: BusinessSceneCompositionDiff;
+  };
+}
+
+export interface BusinessScenarioMaintenance {
+  contract_version: 'business_scenario_maintenance_entry.v1';
+  product_key: string;
+  applicable: boolean;
+  provider: string;
+  enabled: boolean;
+  reason_code: string;
+  blockers: string[];
+  action: {
+    xmlid: string;
+    id: number;
+    name: string;
+    res_model: string;
+    view_mode: string;
+  };
+  menu: {
+    xmlid: string;
+    id: number;
+    name: string;
+  };
+  scope: {
+    kind: 'shared_maintenance_library' | 'not_applicable';
+    label: string;
+    model: string;
+    has_product_key: boolean;
+    has_company_id: boolean;
+    applies_to: string;
+    filter_by_current_product: boolean;
+  };
+  future_freeze_product_key: string;
+  access: {
+    read_allowed: boolean;
+    write_allowed: boolean;
+  };
+  return_readback: {
+    intent: string;
+    product_key: string;
+    fields: string[];
+  };
+}
+
 function gap(path: string, message: string): never {
   throw contractGapError({
     kind: 'contract_defect',
@@ -144,6 +244,27 @@ function integer(value: unknown, path: string): number {
     gap(path, `${path} 必须是数字整数`);
   }
   return value;
+}
+
+function nonNegativeInt(value: unknown, path: string): number {
+  const result = integer(value, path);
+  if (result < 0) gap(path, `${path} 必须是非负整数`);
+  return result;
+}
+
+function optionalText(value: unknown): string {
+  return typeof value === 'string' ? value.trim() : '';
+}
+
+function signedInt(value: unknown, path: string): number {
+  return integer(value, path);
+}
+
+function textList(value: unknown, path: string, required = false): string[] {
+  if (!Array.isArray(value)) gap(path, `${path} 缺失`);
+  const rows = value.map((row, index) => text(row, `${path}[${index}]`));
+  if (required && !rows.length) gap(path, `${path} 缺失`);
+  return rows;
 }
 
 function stringList(value: unknown, path: string): string[] {
@@ -735,6 +856,341 @@ export function decodeProductCenterWriteEnvelope(
   return { policy, surface, readback };
 }
 
+function decodeBusinessSceneCompositionEntry(
+  value: unknown,
+  path: string,
+): BusinessSceneCompositionEntry {
+  const entry = record(value, path);
+  const intent = text(entry.intent, `${path}.intent`);
+  return {
+    entry_id: nonNegativeInt(entry.entry_id, `${path}.entry_id`),
+    menu_key: text(entry.menu_key, `${path}.menu_key`),
+    menu_id: nonNegativeInt(entry.menu_id, `${path}.menu_id`),
+    intent,
+    intent_label: text(entry.intent_label, `${path}.intent_label`),
+    sequence: signedInt(entry.sequence, `${path}.sequence`),
+    center_key: optionalText(entry.center_key),
+    center_name: optionalText(entry.center_name),
+    center_sequence: signedInt(
+      entry.center_sequence,
+      `${path}.center_sequence`,
+    ),
+    source_db: optionalText(entry.source_db),
+  };
+}
+
+function decodeBusinessSceneCompositionScenario(
+  value: unknown,
+  path: string,
+): BusinessSceneCompositionScenario {
+  const scenario = record(value, path);
+  if (!Array.isArray(scenario.entries)) {
+    gap(`${path}.entries`, '业务场景入口必须是数组');
+  }
+  return {
+    key: text(scenario.key, `${path}.key`),
+    name: text(scenario.name, `${path}.name`),
+    active: boolean(scenario.active, `${path}.active`),
+    sequence: signedInt(scenario.sequence, `${path}.sequence`),
+    source_db: optionalText(scenario.source_db),
+    entries: scenario.entries.map((row, index) => (
+      decodeBusinessSceneCompositionEntry(row, `${path}.entries[${index}]`)
+    )),
+  };
+}
+
+function decodeBusinessSceneCompositionState(
+  value: unknown,
+  path: string,
+): BusinessSceneCompositionState {
+  const state = record(value, path);
+  const status = text(state.status, `${path}.status`);
+  const allowed = new Set([
+    'draft',
+    'candidate',
+    'active',
+    'not_frozen',
+    'no_active_release',
+  ]);
+  if (!allowed.has(status)) gap(`${path}.status`, '业务组合状态未声明');
+  if (!Array.isArray(state.scenarios)) {
+    gap(`${path}.scenarios`, '业务组合场景必须是数组');
+  }
+  const scenarios = state.scenarios.map((row, index) => (
+    decodeBusinessSceneCompositionScenario(row, `${path}.scenarios[${index}]`)
+  ));
+  const scenarioCount = nonNegativeInt(
+    state.scenario_count,
+    `${path}.scenario_count`,
+  );
+  const entryCount = nonNegativeInt(state.entry_count, `${path}.entry_count`);
+  if (scenarioCount !== scenarios.length) {
+    gap(`${path}.scenario_count`, '业务组合场景数量与投影不一致');
+  }
+  if (entryCount !== scenarios.reduce((sum, row) => sum + row.entries.length, 0)) {
+    gap(`${path}.entry_count`, '业务组合入口数量与投影不一致');
+  }
+  return {
+    contract_version: 'business_scene_composition_management.v1',
+    status: status as BusinessSceneCompositionState['status'],
+    status_label: text(state.status_label, `${path}.status_label`),
+    available: boolean(state.available, `${path}.available`),
+    reason_code: text(state.reason_code, `${path}.reason_code`),
+    identity: record(state.identity, `${path}.identity`),
+    source_db: optionalText(state.source_db),
+    runtime_scope: optionalText(state.runtime_scope),
+    scenario_count: scenarioCount,
+    entry_count: entryCount,
+    empty: boolean(state.empty, `${path}.empty`),
+    digest: optionalText(state.digest),
+    scenarios,
+  };
+}
+
+function decodeBusinessSceneCompositionDiff(
+  value: unknown,
+  path: string,
+): BusinessSceneCompositionDiff {
+  const diff = record(value, path);
+  const state = text(diff.state, `${path}.state`);
+  if (!['changed', 'identical', 'unavailable'].includes(state)) {
+    gap(`${path}.state`, '业务组合差异状态未声明');
+  }
+  const changedScenarioKeys = textList(
+    diff.changed_scenario_keys,
+    `${path}.changed_scenario_keys`,
+  );
+  const changedEntryKeys = textList(
+    diff.changed_entry_keys,
+    `${path}.changed_entry_keys`,
+  );
+  const changeCount = nonNegativeInt(diff.change_count, `${path}.change_count`);
+  if (changeCount !== changedScenarioKeys.length + changedEntryKeys.length) {
+    gap(`${path}.change_count`, '业务组合差异数量与明细不一致');
+  }
+  return {
+    state: state as BusinessSceneCompositionDiff['state'],
+    changed_scenario_keys: changedScenarioKeys,
+    changed_entry_keys: changedEntryKeys,
+    change_count: changeCount,
+  };
+}
+
+export function decodeBusinessSceneCompositionStates(
+  value: unknown,
+  expectedProductKey: string,
+): BusinessSceneCompositionStates {
+  const root = record(value, 'business_scene_composition_states');
+  if (text(
+    root.contract_version,
+    'business_scene_composition_states.contract_version',
+  ) !== 'business_scene_composition_management.v1') {
+    gap(
+      'business_scene_composition_states.contract_version',
+      '业务组合管理契约版本不支持',
+    );
+  }
+  if (text(
+    root.product_key,
+    'business_scene_composition_states.product_key',
+  ) !== expectedProductKey) {
+    gap(
+      'business_scene_composition_states.product_key',
+      '业务组合管理契约属于另一产品',
+    );
+  }
+  const comparisons = record(
+    root.comparisons,
+    'business_scene_composition_states.comparisons',
+  );
+  const draft = decodeBusinessSceneCompositionState(
+    root.draft,
+    'business_scene_composition_states.draft',
+  );
+  const candidate = decodeBusinessSceneCompositionState(
+    root.candidate,
+    'business_scene_composition_states.candidate',
+  );
+  const active = decodeBusinessSceneCompositionState(
+    root.active,
+    'business_scene_composition_states.active',
+  );
+  for (const [key, state] of Object.entries({ draft, candidate, active })) {
+    if (text(
+      state.identity.product_key,
+      `business_scene_composition_states.${key}.identity.product_key`,
+    ) !== expectedProductKey) {
+      gap(
+        `business_scene_composition_states.${key}.identity.product_key`,
+        '业务组合状态身份属于另一产品',
+      );
+    }
+  }
+  return {
+    contract_version: 'business_scene_composition_management.v1',
+    product_key: expectedProductKey,
+    scope: text(root.scope, 'business_scene_composition_states.scope'),
+    draft,
+    candidate,
+    active,
+    comparisons: {
+      draft_vs_candidate: decodeBusinessSceneCompositionDiff(
+        comparisons.draft_vs_candidate,
+        'business_scene_composition_states.comparisons.draft_vs_candidate',
+      ),
+      draft_vs_active: decodeBusinessSceneCompositionDiff(
+        comparisons.draft_vs_active,
+        'business_scene_composition_states.comparisons.draft_vs_active',
+      ),
+      candidate_vs_active: decodeBusinessSceneCompositionDiff(
+        comparisons.candidate_vs_active,
+        'business_scene_composition_states.comparisons.candidate_vs_active',
+      ),
+    },
+  };
+}
+
+export function decodeBusinessScenarioMaintenance(
+  value: unknown,
+  expectedProductKey: string,
+): BusinessScenarioMaintenance {
+  const root = record(value, 'business_scenario_maintenance');
+  if (text(
+    root.contract_version,
+    'business_scenario_maintenance.contract_version',
+  ) !== 'business_scenario_maintenance_entry.v1') {
+    gap(
+      'business_scenario_maintenance.contract_version',
+      '共享业务场景维护契约版本不支持',
+    );
+  }
+  if (text(
+    root.product_key,
+    'business_scenario_maintenance.product_key',
+  ) !== expectedProductKey) {
+    gap(
+      'business_scenario_maintenance.product_key',
+      '共享业务场景维护上下文属于另一产品',
+    );
+  }
+  const action = record(root.action, 'business_scenario_maintenance.action');
+  const menu = record(root.menu, 'business_scenario_maintenance.menu');
+  const scope = record(root.scope, 'business_scenario_maintenance.scope');
+  const enabled = boolean(root.enabled, 'business_scenario_maintenance.enabled');
+  const applicable = boolean(
+    root.applicable,
+    'business_scenario_maintenance.applicable',
+  );
+  const scopeKind = text(
+    scope.kind,
+    'business_scenario_maintenance.scope.kind',
+  );
+  if (!['shared_maintenance_library', 'not_applicable'].includes(scopeKind)) {
+    gap(
+      'business_scenario_maintenance.scope.kind',
+      '业务场景维护作用域未声明',
+    );
+  }
+  if (enabled && (!applicable || scopeKind !== 'shared_maintenance_library')) {
+    gap(
+      'business_scenario_maintenance.enabled',
+      '不可适用的业务场景维护契约不能声明可执行',
+    );
+  }
+  if (applicable && boolean(
+    scope.filter_by_current_product,
+    'business_scenario_maintenance.scope.filter_by_current_product',
+  )) {
+    gap(
+      'business_scenario_maintenance.scope.filter_by_current_product',
+      '共享维护库不能被伪装成当前产品私有过滤',
+    );
+  }
+  const access = record(root.access, 'business_scenario_maintenance.access');
+  const readback = record(
+    root.return_readback,
+    'business_scenario_maintenance.return_readback',
+  );
+  const returnIntent = text(
+    readback.intent,
+    'business_scenario_maintenance.return_readback.intent',
+  );
+  if (text(
+    readback.product_key,
+    'business_scenario_maintenance.return_readback.product_key',
+  ) !== expectedProductKey) {
+    gap(
+      'business_scenario_maintenance.return_readback',
+      '共享业务场景维护返回回读契约不匹配',
+    );
+  }
+  return {
+    contract_version: 'business_scenario_maintenance_entry.v1',
+    product_key: expectedProductKey,
+    applicable,
+    provider: optionalText(root.provider),
+    enabled,
+    reason_code: text(
+      root.reason_code,
+      'business_scenario_maintenance.reason_code',
+    ),
+    blockers: textList(
+      root.blockers,
+      'business_scenario_maintenance.blockers',
+    ),
+    action: {
+      xmlid: optionalText(action.xmlid),
+      id: nonNegativeInt(
+        action.id,
+        'business_scenario_maintenance.action.id',
+      ),
+      name: optionalText(action.name),
+      res_model: optionalText(action.res_model),
+      view_mode: optionalText(action.view_mode),
+    },
+    menu: {
+      xmlid: optionalText(menu.xmlid),
+      id: nonNegativeInt(menu.id, 'business_scenario_maintenance.menu.id'),
+      name: optionalText(menu.name),
+    },
+    scope: {
+      kind: scopeKind as BusinessScenarioMaintenance['scope']['kind'],
+      label: text(scope.label, 'business_scenario_maintenance.scope.label'),
+      model: optionalText(scope.model),
+      has_product_key: boolean(
+        scope.has_product_key,
+        'business_scenario_maintenance.scope.has_product_key',
+      ),
+      has_company_id: boolean(
+        scope.has_company_id,
+        'business_scenario_maintenance.scope.has_company_id',
+      ),
+      applies_to: optionalText(scope.applies_to),
+      filter_by_current_product: false,
+    },
+    future_freeze_product_key: optionalText(root.future_freeze_product_key),
+    access: {
+      read_allowed: boolean(
+        access.read_allowed,
+        'business_scenario_maintenance.access.read_allowed',
+      ),
+      write_allowed: boolean(
+        access.write_allowed,
+        'business_scenario_maintenance.access.write_allowed',
+      ),
+    },
+    return_readback: {
+      intent: returnIntent,
+      product_key: expectedProductKey,
+      fields: textList(
+        readback.fields,
+        'business_scenario_maintenance.return_readback.fields',
+        true,
+      ),
+    },
+  };
+}
+
 export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
   const surface = record(value, 'release.operator.surface');
   const actions = record(surface.available_actions, 'available_actions');
@@ -754,6 +1210,24 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
     surface.product_center_editor,
     productKey,
   );
+  const businessSceneCompositionStates = decodeBusinessSceneCompositionStates(
+    surface.business_scene_composition_states,
+    productKey,
+  );
+  const businessScenarioMaintenance = decodeBusinessScenarioMaintenance(
+    surface.business_scenario_maintenance,
+    productKey,
+  );
+  if (businessScenarioMaintenance.enabled
+    && (businessScenarioMaintenance.action.id <= 0
+      || businessScenarioMaintenance.menu.id <= 0
+      || !businessScenarioMaintenance.access.read_allowed
+      || !businessScenarioMaintenance.access.write_allowed)) {
+    gap(
+      'business_scenario_maintenance',
+      '共享业务场景维护入口已启用但缺少原生目标或写权限',
+    );
+  }
   const decodedActions: AnyRecord = { ...actions };
   for (const [key, intent] of Object.entries({
     freeze: 'release.operator.freeze',
@@ -826,5 +1300,7 @@ export function decodeReleaseOperatorSurface<T extends AnyRecord>(value: T): T {
       ? { pending_approval: { ...pending, actions: pendingActions } }
       : {}),
     product_center_editor: productCenterEditor,
+    business_scene_composition_states: businessSceneCompositionStates,
+    business_scenario_maintenance: businessScenarioMaintenance,
   } as unknown as T;
 }

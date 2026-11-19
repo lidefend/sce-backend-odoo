@@ -29,6 +29,8 @@ from .core_extension import (  # noqa: F401
     smart_core_authorize_work_item_origin,
     smart_core_extend_system_init,
     smart_core_scenario_surface_projection,
+    smart_core_business_scenario_maintenance,
+    smart_core_product_scene_composition,
     smart_core_list_capabilities_for_user,
     smart_core_list_capabilities_for_user_with_timings,
     smart_core_capability_groups,

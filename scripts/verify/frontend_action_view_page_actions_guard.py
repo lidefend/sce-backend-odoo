@@ -20,6 +20,8 @@ def validate(source: str | None = None) -> list[str]:
     failures: list[str] = []
     required_actions = (
         '<ScButton data-page-action="reload"',
+        '<ScLinkButton v-if="standardListOperationsInCard && contextReturnHref"',
+        'router.resolve(target).href',
         '<ScButton v-for="action in vm.header.actions"',
         '<ScButton class="clear-btn"',
         '<ScButton v-for="item in vm.focus.actions"',

@@ -606,9 +606,11 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/delivery/release_audit_trail_service.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
         "addons/smart_core/delivery/platform_management_action_contract.py",
         "addons/smart_core/delivery/release_operator_contract_registry.py",
-        "addons/smart_core/delivery/release_operator_surface_service.py",
         "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
     ), (
         "verify.admin_close_01.backend.unit",
@@ -618,6 +620,7 @@ RULES = (
         "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
         "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
         "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/app/businessScenarioNavigation.ts",
         "frontend/apps/web/src/views/ReleaseOperatorView.vue",
         "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
         "frontend/apps/web/src/app/adminRouteAccess.ts",
@@ -1177,6 +1180,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
     ), (
         "verify.daily.published_face.target.unit",

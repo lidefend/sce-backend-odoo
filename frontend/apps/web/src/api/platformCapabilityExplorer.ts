@@ -197,6 +197,15 @@ export type CapabilityExplorerCurrentUserAccess = {
   record_scope: string;
   reason_code: string;
   blockers: string[];
+  product_composition_facts: {
+    qualification_status: string;
+    qualified: boolean;
+    qualification_reason_code: string;
+    release_state: string;
+    reviewed_by_product_release: boolean;
+    enterprise_enablement_status: string;
+    enterprise_enabled: boolean;
+  };
 };
 
 export type CapabilityExplorerFactLayer = {
@@ -995,6 +1004,42 @@ export function decodeCapabilityExplorerDetailResponse(value: unknown): Capabili
         record_scope: requiredText(access.record_scope, 'entry.current_user_access.record_scope'),
         reason_code: requiredText(access.reason_code, 'entry.current_user_access.reason_code'),
         blockers: strings(access.blockers, 'entry.current_user_access.blockers'),
+        product_composition_facts: (() => {
+          const facts = object(
+            access.product_composition_facts,
+            'entry.current_user_access.product_composition_facts',
+          );
+          return {
+            qualification_status: requiredText(
+              facts.qualification_status,
+              'entry.current_user_access.product_composition_facts.qualification_status',
+            ),
+            qualified: boolean(
+              facts.qualified,
+              'entry.current_user_access.product_composition_facts.qualified',
+            ),
+            qualification_reason_code: requiredText(
+              facts.qualification_reason_code,
+              'entry.current_user_access.product_composition_facts.qualification_reason_code',
+            ),
+            release_state: requiredText(
+              facts.release_state,
+              'entry.current_user_access.product_composition_facts.release_state',
+            ),
+            reviewed_by_product_release: boolean(
+              facts.reviewed_by_product_release,
+              'entry.current_user_access.product_composition_facts.reviewed_by_product_release',
+            ),
+            enterprise_enablement_status: requiredText(
+              facts.enterprise_enablement_status,
+              'entry.current_user_access.product_composition_facts.enterprise_enablement_status',
+            ),
+            enterprise_enabled: boolean(
+              facts.enterprise_enabled,
+              'entry.current_user_access.product_composition_facts.enterprise_enabled',
+            ),
+          };
+        })(),
       },
       visibility: {
         can_use: boolean(visibility.can_use, 'entry.visibility.can_use'),

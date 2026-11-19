@@ -17,7 +17,7 @@ except Exception:  # pragma: no cover - standalone boundary tests install minima
 from .delivery_engine import DeliveryEngine
 from .edition_release_snapshot_promotion_service import EditionReleaseSnapshotPromotionService
 from .product_policy_service import ProductPolicyService
-from .product_policy_normalization import normalize_product_policy_for_env
+from .product_scene_composition import compose_product_policy
 
 
 FREEZE_SURFACE_CONTRACT_VERSION = "edition_freeze_surface_v1"
@@ -111,22 +111,7 @@ class EditionReleaseSnapshotService:
         return PLATFORM_DEFAULT_RELEASE_ROLE_CODE
 
     def _compose_policy_draft(self, policy: dict[str, Any]) -> dict[str, Any]:
-        payload = normalize_product_policy_for_env(self.env, deepcopy(_dict(policy)))
-        if callable(call_extension_hook_first):
-            composition = call_extension_hook_first(
-                self.env,
-                "smart_core_product_scene_composition",
-                self.env,
-                payload,
-            )
-            if composition is not None:
-                if not isinstance(composition, dict):
-                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
-                scenarios = composition.get("scenarios")
-                if not isinstance(scenarios, list):
-                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
-                payload["business_scene_composition"] = deepcopy(composition)
-        return payload
+        return compose_product_policy(self.env, policy)
 
     def _freeze_role_code(self, policy: dict[str, Any], explicit_role_code: str = "") -> str:
         if _text(explicit_role_code):

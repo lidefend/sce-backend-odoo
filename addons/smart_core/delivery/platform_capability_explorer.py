@@ -214,6 +214,7 @@ def access_layer_assessment(
     acl_rows: list[dict[str, Any]],
     standard_qualified: str,
     enterprise_enablement: dict[str, Any],
+    product_release_state: str = "unknown",
     menu_group_ids: list[int] | None = None,
     action_group_ids: list[int] | None = None,
     menu_groups_allowed: bool | None = None,
@@ -270,19 +271,12 @@ def access_layer_assessment(
         _text(enterprise.get("status"))
         or ("enabled" if enterprise.get("enabled") is True else "not_applicable")
     )
+    product_qualified = _text(standard_qualified) == "qualified"
     blockers = list(native_blockers)
     if not native_present:
         blockers.append("NATIVE_ENTRY_NOT_READY")
     if not consumer_supported:
         blockers.append("CONSUMER_SURFACE_UNSUPPORTED")
-    if standard_qualified != "qualified":
-        blockers.append(
-            "PRODUCT_QUALIFICATION_NOT_VERIFIED"
-            if standard_qualified == "not_verified"
-            else "PRODUCT_NOT_QUALIFIED"
-        )
-    if enterprise_status == "disabled":
-        blockers.append("ENTERPRISE_SCENARIO_NOT_ENABLED")
     if not entry_allowed:
         blockers.append("ENTRY_GROUP_DENIED")
     if not read_row_found:
@@ -303,6 +297,22 @@ def access_layer_assessment(
         "record_scope": "runtime_acl_and_record_rules",
         "reason_code": blockers[0] if blockers else "CURRENT_USER_ENTRY_AVAILABLE",
         "blockers": blockers,
+        "product_composition_facts": {
+            "qualification_status": _text(standard_qualified) or "not_verified",
+            "qualified": product_qualified,
+            "qualification_reason_code": (
+                "PRODUCT_QUALIFIED"
+                if product_qualified
+                else "PRODUCT_QUALIFICATION_NOT_VERIFIED"
+                if _text(standard_qualified) == "not_verified"
+                else "PRODUCT_NOT_QUALIFIED"
+            ),
+            "release_state": _text(product_release_state) or "unknown",
+            "reviewed_by_product_release": _text(product_release_state)
+            in {"released", "preview"},
+            "enterprise_enablement_status": enterprise_status,
+            "enterprise_enabled": enterprise_status == "enabled",
+        },
     }
 
 
@@ -1681,6 +1691,7 @@ class PlatformCapabilityExplorerService:
             acl_rows=acl_rows,
             standard_qualified=selected_qualified,
             enterprise_enablement=enterprise_enablement,
+            product_release_state=release_state,
             menu_group_ids=menu_group_ids,
             action_group_ids=action_group_ids,
             menu_groups_allowed=menu.get("groups_allowed"),

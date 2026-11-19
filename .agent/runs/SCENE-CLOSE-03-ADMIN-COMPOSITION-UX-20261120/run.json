@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120",
+  "branch": "feature/scene-close-03-admin-composition-ux-20261120",
+  "baseline_sha": "630c3338274cf3906522f06f7011cf5ba9958f66",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+  "record": "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+    ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+    ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+    ".agent/runs/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120/run.json",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/platform_capability_explorer.py",
+    "addons/smart_core/delivery/product_scene_composition.py",
+    "addons/smart_core/delivery/release_audit_trail_service.py",
+    "addons/smart_core/delivery/release_operator_read_model_service.py",
+    "addons/smart_core/delivery/release_operator_surface_service.py",
+    "addons/smart_core/tests/test_platform_capability_explorer.py",
+    "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "config/ci/contract_only_scopes.json",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/e2e_journey_matrix.md",
+    "docs/engineering_convergence/github_remote_execute.sh",
+    "docs/engineering_convergence/github_remote_execution_plan.md",
+    "docs/engineering_convergence/module_dependency_map.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
+    "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+    "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+    "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+    "frontend/apps/web/src/app/navigationContext.ts",
+    "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+    "scripts/verify/frontend_action_view_page_actions_guard.py",
+    "scripts/verify/test_frontend_action_view_page_actions_guard.py",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Contract-only source, pure-function and frontend consumption validation; no database, service, module upgrade or browser access"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.platform.capability_explorer.orm",
+      "verify.release.operator.runtime.orm",
+    "verify.admin_close_01.scene.module_baseline",
+    "verify.daily.permission_truth.capability.orm",
+    "verify.page.finalize.authority.orm",
+    "verify.page.project_finalize.authority.orm"
+    ],
+    "reason": "Owner-selected pure-contract lane excludes ORM, module baseline, fixture, browser matrix and environment rebuild"
+  },
+  "stages": [
+    {
+      "id": "BACKEND-CONTRACTS",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "Capability availability, three composition states and native maintenance entry are declared and tested"
+    },
+    {
+      "id": "FRONTEND-CONSUMPTION",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "Capability, release console and business-configuration surfaces consume the backend contracts"
+    },
+    {
+      "id": "CANDIDATE-CLOSE",
+      "status": "planned",
+      "owner": "integration_writer",
+      "exit": "Generated evidence, exact-head publication, required CI and independent review are complete"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+        ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+        ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+        ".agent/runs/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline",
+      "depends_on": [
+        "agent_resume"
+      ]
+    },
+    "platform_capability_explorer": {
+      "target": "verify.platform.capability_explorer.unit",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/handlers/platform_capability_explorer.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "scripts/verify/platform_capability_explorer_runtime_probe.py",
+        "scripts/verify/test_platform_capability_explorer_runtime_probe.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "release_operator_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
+        "addons/smart_core/delivery/release_audit_trail_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/release_operator_surface_service.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "addons/smart_construction_core/__init__.py",
+        "addons/smart_construction_core/core_extension.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_platform_capability_explorer": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/app/businessScenarioNavigation.ts",
+        "frontend/apps/web/src/app/navigationContext.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerPresentation.ts",
+        "frontend/apps/web/src/app/platformCapabilityExplorerRequestGate.ts",
+        "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_policy": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "scripts/verify/test_product_center_policy.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "published_draft_identity": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_scene_composition.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_results": {
+    "status": "passed",
+    "scope": "Contract-only P0/P1 source behavior and affected frontend consumers",
+    "passed": [
+      "verify.platform.capability_explorer.unit: passed; 40 backend capability tests",
+      "verify.admin_close_01.backend.unit: passed; release-operator and adjacent backend suites, 160 tests",
+      "verify.daily.published_face.target.unit: passed; 8 tests",
+      "verify.product_center.policy.unit: passed; 15 tests",
+      "verify.navigation.publication_consumers.unit: passed; affected scenario and navigation consumers, 276 tests",
+      "verify.frontend.platform_capability_explorer.unit: passed; Python/node/frontend contract cases incl. 100 platform explorer assertions",
+      "verify.frontend.typecheck.strict: passed",
+      "verify.frontend.lint.src: passed with pre-existing warnings only",
+      "verify.frontend.dev.incremental.unit: 186 tests passed",
+      "make ci.local.iteration: exit 0; affected targets executed with non-zero coverage"
+    ],
+    "regressions": [
+      "product qualification and enterprise enablement no longer populate native availability blockers",
+      "freeze and release-operator draft consume the same maintained composition assembler",
+      "candidate and active compositions are projected from their own immutable snapshots",
+      "name/sequence/intent-only changes are recognized by backend-owned composition comparison",
+      "native shared maintenance entry is disabled by missing action/menu/model or read/write denial"
+      ,
+      "maintenance entry uses ordinary current-user access and native menu/action group restrictions; sudo is metadata-only",
+      "P1 declares the construction maintenance provider and product applicability; platform/other products receive not-applicable state",
+      "maintenance return context survives generic action/form navigation and rebinds to the backend-declared readback product",
+      "scenario and entry sequences accept signed integers; explicit zero center sequence is preserved and participates in diffs",
+      "snapshot release-draft metadata is read from snapshot_json when meta.release_draft is absent",
+      "the registered smart_construction_core root exports both the maintenance provider and maintained-composition hook through the actual extension loader",
+      "the context-return control is visible in standard list leading actions and router resolution preserves the active platform entry base"
+    ],
+    "p4_correction": [
+      "The first remote contract-only run attempted the esbuild-dependent frontend capability-explorer target without frontend dependencies. The target remains an owning check in frontend_release_gate and was removed from the contract-only list; the Python/node-independent control-plane scope is unchanged."
+    ],
+    "not_run": [
+      "ORM and module baselines explicitly excluded by owner continuation",
+      "module upgrade and environment rebuild",
+      "browser matrix",
+      "deployment"
+    ]
+  },
+  "blockers": [],
+  "next_exact_step": "Run ci.delivery.freeze.prepare, review generated changes, commit the exact candidate and publish the single SCENE-CLOSE-03 PR."
+}

@@ -96,7 +96,7 @@ export function useBusinessConfigProductExperience(options: {
     ].filter(Boolean);
     options.setMessage(
       '当前修改检查完成',
-      `${changedAreas.join('、') || '列表与搜索'}存在未保存修改。当前版本不支持未发布效果预览；本次检查未保存、未发布，也未创建版本。`,
+      `${changedAreas.join('、') || '列表与搜索'}存在未保存修改。可先保存到待发布变更，再使用草稿预览核对效果；正式运行页面尚未改变。`,
     );
   }
 
@@ -107,7 +107,7 @@ export function useBusinessConfigProductExperience(options: {
     }
     options.setMessage(
       '当前修改检查完成',
-      '分析视图存在未保存修改。当前版本不支持未发布效果预览；本次检查未保存、未发布，也未创建版本。',
+      '分析视图存在未保存修改。可先保存到待发布变更，再使用草稿预览核对效果；正式运行页面尚未改变。',
     );
   }
 

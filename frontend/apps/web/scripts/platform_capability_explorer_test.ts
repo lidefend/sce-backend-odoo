@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { createMemoryHistory, createRouter } from 'vue-router';
 import { ApiError } from '../src/api/client';
 import {
   buildCapabilityCatalogEntryAddParams,
@@ -22,6 +23,8 @@ import {
 } from '../src/app/platformCapabilityExplorerPresentation';
 import { createCapabilityExplorerRequestGate } from '../src/app/platformCapabilityExplorerRequestGate';
 import { isContractGapError } from '../src/app/contract/contractGap';
+import { buildBusinessScenarioMaintenanceTarget } from '../src/app/businessScenarioNavigation';
+import { contextReturnHref, pickContractNavQuery } from '../src/app/navigationContext';
 import {
   buildConfiguredOperatorParams,
   decodeConfiguredActionResult,
@@ -485,6 +488,15 @@ const detailResponse = {
       record_scope: 'runtime_acl_and_record_rules',
       reason_code: 'CURRENT_USER_ENTRY_AVAILABLE',
       blockers: [],
+      product_composition_facts: {
+        qualification_status: 'not_verified',
+        qualified: false,
+        qualification_reason_code: 'PRODUCT_QUALIFICATION_NOT_VERIFIED',
+        release_state: 'unknown',
+        reviewed_by_product_release: false,
+        enterprise_enablement_status: 'enabled',
+        enterprise_enabled: true,
+      },
     },
     visibility: {
       can_use: true,
@@ -540,6 +552,16 @@ check(decodedDetail.entry.scenario_usage.scenarios[0]?.scenario_key, 'project.ma
 check(decodedDetail.entry.qualification.evidence[0]?.version, 'v9', 'product qualification evidence consumed');
 check(decodedDetail.entry.enterprise_enablement.enabled, true, 'enterprise enablement consumed');
 check(decodedDetail.entry.visibility.actor.login, 'platform.admin', 'visibility actor consumed');
+check(
+  decodedDetail.entry.current_user_access.product_composition_facts.qualified,
+  false,
+  'product composition qualification remains a separate fact',
+);
+check(
+  decodedDetail.entry.visibility.can_use,
+  true,
+  'native availability is not rejected by product qualification',
+);
 check(decodedDetail.entry.fact_layers.length, 6, 'fact layers consumed');
 const baseMeta = Object.fromEntries(Object.entries(meta).filter(([key]) => (
   !['filtered_total', 'offset', 'limit', 'next_offset', 'has_more', 'sort'].includes(key)
@@ -626,10 +648,120 @@ const configuredManagementAction = (
   ...extra,
 });
 
+const compositionEntry = {
+  entry_id: 1,
+  menu_key: 'project.menu_ledger',
+  menu_id: 21,
+  intent: 'view',
+  intent_label: '查看',
+  sequence: -2,
+  center_key: 'project',
+  center_name: '项目',
+  center_sequence: 0,
+  source_db: 'sc_test',
+};
+const compositionScenario = {
+  key: 'project',
+  name: '项目台账',
+  active: true,
+  sequence: -1,
+  source_db: 'sc_test',
+  entries: [compositionEntry],
+};
+const compositionState = (
+  status: 'draft' | 'candidate' | 'active',
+  identity: Record<string, unknown>,
+) => ({
+  contract_version: 'business_scene_composition_management.v1',
+  status,
+  status_label: status,
+  available: true,
+  reason_code: 'BUSINESS_SCENE_COMPOSITION_AVAILABLE',
+  identity: { product_key: 'construction.standard', ...identity },
+  source_db: 'sc_test',
+  runtime_scope: 'published_release',
+  scenario_count: 1,
+  entry_count: 1,
+  empty: false,
+  digest: 'a'.repeat(64),
+  scenarios: [compositionScenario],
+});
+
 const promotionSurface = {
   identity: { product_key: 'construction.standard' },
   actor_scope: { user_id: 7, login: 'platform.admin', name: 'Platform Admin' },
   candidate_snapshots: [{ id: 31, version: 'v31', state: 'approved' }],
+  business_scene_composition_states: {
+    contract_version: 'business_scene_composition_management.v1',
+    product_key: 'construction.standard',
+    scope: 'maintained_business_scenario_composition',
+    draft: compositionState('draft', { policy_id: 9, version: 'v32' }),
+    candidate: compositionState('candidate', { snapshot_id: 31, version: 'v31' }),
+    active: compositionState('active', { snapshot_id: 30, version: 'v30' }),
+    comparisons: {
+      draft_vs_candidate: {
+        state: 'identical',
+        changed_scenario_keys: [],
+        changed_entry_keys: [],
+        change_count: 0,
+      },
+      draft_vs_active: {
+        state: 'changed',
+        changed_scenario_keys: ['project'],
+        changed_entry_keys: [],
+        change_count: 1,
+      },
+      candidate_vs_active: {
+        state: 'changed',
+        changed_scenario_keys: ['project'],
+        changed_entry_keys: [],
+        change_count: 1,
+      },
+    },
+  },
+  business_scenario_maintenance: {
+    contract_version: 'business_scenario_maintenance_entry.v1',
+    product_key: 'construction.standard',
+    applicable: true,
+    provider: 'smart_construction_core',
+    enabled: true,
+    reason_code: 'SCENARIO_MAINTENANCE_AVAILABLE',
+    blockers: [],
+    action: {
+      xmlid: 'smart_construction_core.action_sc_product_scenario',
+      id: 71,
+      name: '业务场景定义',
+      res_model: 'sc.product.scenario',
+      view_mode: 'tree,form',
+    },
+    menu: {
+      xmlid: 'smart_construction_core.menu_sc_product_scenario_business_config',
+      id: 72,
+      name: '业务场景定义',
+    },
+    scope: {
+      kind: 'shared_maintenance_library',
+      label: '当前维护库共享业务场景定义',
+      model: 'sc.product.scenario',
+      has_product_key: false,
+      has_company_id: false,
+      applies_to: 'all_product_drafts_frozen_from_this_maintenance_database',
+      filter_by_current_product: false,
+    },
+    future_freeze_product_key: 'construction.standard',
+    access: {
+      read_allowed: true,
+      write_allowed: true,
+    },
+    return_readback: {
+      intent: 'release.operator.surface',
+      product_key: 'construction.standard',
+      fields: [
+        'business_scene_composition_states.draft',
+        'business_scene_composition_states.comparisons',
+      ],
+    },
+  },
   available_actions: {
     freeze: configuredManagementAction(
       'freeze:construction.standard',
@@ -899,6 +1031,162 @@ check(
   31,
   'complete promotion contract consumed',
 );
+check(
+  decodedPromotion.business_scene_composition_states.candidate.identity.snapshot_id,
+  31,
+  'candidate composition identity consumed',
+);
+check(
+  decodedPromotion.business_scene_composition_states.comparisons.draft_vs_active.state,
+  'changed',
+  'backend-owned composition difference consumed',
+);
+check(
+  decodedPromotion.business_scenario_maintenance.scope.kind,
+  'shared_maintenance_library',
+  'shared maintenance scope consumed',
+);
+check(
+  buildBusinessScenarioMaintenanceTarget(
+    decodedPromotion.business_scenario_maintenance,
+    '/admin/release-operator?product_key=construction.standard',
+  ),
+  {
+    path: '/a/71',
+    query: {
+      action_id: '71',
+      menu_id: '72',
+      return_url: '/admin/release-operator?product_key=construction.standard',
+      return_label: '返回发布控制台',
+      return_product_key: 'construction.standard',
+    },
+  },
+  'native shared maintenance target uses backend identity',
+);
+const previewMaintenance = {
+  ...decodedPromotion.business_scenario_maintenance,
+  return_readback: {
+    ...decodedPromotion.business_scenario_maintenance.return_readback,
+    product_key: 'construction.preview',
+  },
+};
+const previewTarget = buildBusinessScenarioMaintenanceTarget(
+  previewMaintenance,
+  '/admin/release-operator?product_key=construction.standard',
+);
+check(
+  previewTarget?.query.return_url,
+  '/admin/release-operator?product_key=construction.preview',
+  'return URL is rebound to the backend-declared product',
+);
+check(
+  pickContractNavQuery(previewTarget?.query || {}),
+  {
+    menu_id: '72',
+    action_id: '71',
+    return_url: '/admin/release-operator?product_key=construction.preview',
+    return_label: '返回发布控制台',
+    return_product_key: 'construction.preview',
+  },
+  'generic record navigation preserves maintenance return context',
+);
+check(
+  contextReturnHref(previewTarget?.query || {}),
+  '/admin/release-operator?product_key=construction.preview',
+  'generic action navigation consumes the backend-bound return product',
+);
+const platformRouter = createRouter({
+  history: createMemoryHistory('/platform-admin'),
+  routes: [{
+    path: '/admin/release-operator',
+    component: {},
+  }],
+});
+check(
+  platformRouter.resolve(
+    contextReturnHref(previewTarget?.query || {}),
+  ).href,
+  '/platform-admin/admin/release-operator?product_key=construction.preview',
+  'router resolution preserves the platform entry prefix',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].entries[0].sequence,
+  -2,
+  'signed entry sequence is consumed',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].sequence,
+  -1,
+  'signed scenario sequence is consumed',
+);
+check(
+  decodedPromotion.business_scene_composition_states.draft.scenarios[0].entries[0].center_sequence,
+  0,
+  'zero center sequence is preserved',
+);
+check(
+  buildBusinessScenarioMaintenanceTarget({
+    ...decodedPromotion.business_scenario_maintenance,
+    enabled: false,
+  }, '/admin/release-operator'),
+  null,
+  'disabled maintenance entry cannot navigate',
+);
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    business_scenario_maintenance: {
+      ...promotionSurface.business_scenario_maintenance,
+      product_key: 'construction.preview',
+    },
+  }),
+  (error) => isContractGapError(error),
+  'wrong-product maintenance context is rejected',
+);
+cases += 1;
+const notApplicable = decodeReleaseOperatorSurface({
+  ...promotionSurface,
+  business_scenario_maintenance: {
+    ...promotionSurface.business_scenario_maintenance,
+    applicable: false,
+    provider: '',
+    enabled: false,
+    reason_code: 'SCENARIO_MAINTENANCE_NOT_APPLICABLE',
+    blockers: ['SCENARIO_MAINTENANCE_NOT_APPLICABLE'],
+    action: { xmlid: '', id: 0, name: '', res_model: '', view_mode: '' },
+    menu: { xmlid: '', id: 0, name: '' },
+    scope: {
+      kind: 'not_applicable',
+      label: '当前产品不消费共享施工业务场景定义',
+      model: '',
+      has_product_key: false,
+      has_company_id: false,
+      applies_to: '',
+      filter_by_current_product: false,
+    },
+    future_freeze_product_key: '',
+  },
+});
+check(
+  notApplicable.business_scenario_maintenance.enabled,
+  false,
+  'not-applicable product cannot claim a maintenance entry',
+);
+assert.throws(
+  () => decodeReleaseOperatorSurface({
+    ...promotionSurface,
+    business_scene_composition_states: {
+      ...promotionSurface.business_scene_composition_states,
+      active: {
+        ...promotionSurface.business_scene_composition_states.active,
+        identity: { product_key: 'construction.preview', snapshot_id: 30 },
+      },
+    },
+  }),
+  (error) => isContractGapError(error),
+  'wrong-product composition identity cannot replace the active state',
+);
+cases += 1;
 check(
   (decodedPromotion.available_actions as Record<string, Record<string, unknown>>).freeze.intent,
   'release.operator.freeze',

@@ -44,6 +44,12 @@ class ReleaseOperatorSurfaceService:
             "product_delivery_console": dict(read_model.get("product_delivery_console") or {}),
             "control_scope": dict(read_model.get("control_scope") or {}),
             "product_center_editor": dict(read_model.get("product_center_editor") or {}),
+            "business_scene_composition_states": dict(
+                read_model.get("business_scene_composition_states") or {}
+            ),
+            "business_scenario_maintenance": dict(
+                read_model.get("business_scenario_maintenance") or {}
+            ),
             "release_pipeline": dict(read_model.get("release_pipeline") or {}),
             "release_state": dict(read_model.get("current_release_state") or {}),
             "pending_approval": dict(read_model.get("pending_approval_queue") or {}),

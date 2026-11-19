@@ -1,10 +1,13 @@
 # -*- coding: utf-8 -*-
+import ast
 import importlib.util
 import json
 import sys
 import types
 import unittest
+from copy import deepcopy
 from pathlib import Path
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -67,6 +70,15 @@ MANAGEMENT_ACTIONS = sys.modules[
 READ_MODEL = sys.modules[
     "odoo.addons.smart_core.delivery.release_operator_read_model_service"
 ].ReleaseOperatorReadModelService
+READ_MODEL_MODULE = sys.modules[
+    "odoo.addons.smart_core.delivery.release_operator_read_model_service"
+]
+COMPOSITION = sys.modules[
+    "odoo.addons.smart_core.delivery.product_scene_composition"
+]
+EXTENSION_HOOKS = sys.modules[
+    "odoo.addons.smart_core.utils.extension_hooks"
+]
 TARGET = _load_module(
     "odoo.addons.smart_core.delivery.release_operator_surface_service",
     "addons/smart_core/delivery/release_operator_surface_service.py",
@@ -112,13 +124,21 @@ class _AuditTrailService:
                 "version": "v11",
                 "state": "released",
                 "rollback_target_snapshot_id": 7,
+                "business_scene_composition": _composition("生效项目组合"),
             },
             "release_actions": [
                 {"id": 21, "action_type": "promote_snapshot", "state": "done", "approval_state": "approved"}
             ],
             "release_snapshots": [
                 {"id": 11, "product_key": product_key, "edition_key": "standard", "version": "v11", "state": "released"},
-                {"id": 12, "product_key": product_key, "edition_key": "standard", "version": "v12", "state": "candidate"},
+                {
+                    "id": 12,
+                    "product_key": product_key,
+                    "edition_key": "standard",
+                    "version": "v12",
+                    "state": "candidate",
+                    "business_scene_composition": _composition("候选项目组合"),
+                },
             ],
             "runtime": {
                 "release_audit_trail_summary": {
@@ -129,6 +149,52 @@ class _AuditTrailService:
                 "released_snapshot_lineage": {"active_snapshot_id": 11},
             },
         }
+
+
+def _composition(name, *, sequence=10, intent="view"):
+    return {
+        "schema": "construction.scenario_product_surface.v1",
+        "source_db": "sc_test",
+        "runtime_scope": "maintained_draft",
+        "scenarios": [
+            {
+                "key": "project",
+                "name": name,
+                "active": True,
+                "sequence": sequence,
+                "source_db": "sc_test",
+                "bindings": [
+                    {
+                        "entry_id": 1,
+                        "menu_id": 21,
+                        "menu_key": "project.menu_ledger",
+                        "intent": intent,
+                        "sequence": 0,
+                        "source_db": "sc_test",
+                    }
+                ],
+            }
+        ],
+    }
+
+
+def _maintenance_declaration():
+    return {
+        "provider": "smart_construction_core",
+        "action_xmlid": "smart_construction_core.action_sc_product_scenario",
+        "menu_xmlid": (
+            "smart_construction_core.menu_sc_product_scenario_business_config"
+        ),
+        "model": "sc.product.scenario",
+        "scope": {
+            "kind": "shared_maintenance_library",
+            "label": "当前维护库共享业务场景定义",
+            "applies_to": (
+                "construction_product_drafts_in_this_maintenance_database"
+            ),
+            "filter_by_current_product": False,
+        },
+    }
 
 
 class _RecordSet(list):
@@ -210,6 +276,69 @@ class _ConfigParameter:
 
 
 class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
+    def test_registered_extension_root_exports_business_scenario_hooks(self):
+        extension_path = (
+            ROOT / "addons/smart_construction_core/core_extension.py"
+        )
+        extension_tree = ast.parse(extension_path.read_text(encoding="utf-8"))
+        extension_functions = {
+            node.name
+            for node in extension_tree.body
+            if isinstance(node, ast.FunctionDef)
+        }
+        init_path = ROOT / "addons/smart_construction_core/__init__.py"
+        init_tree = ast.parse(init_path.read_text(encoding="utf-8"))
+        exported = {
+            alias.name
+            for node in init_tree.body
+            if isinstance(node, ast.ImportFrom)
+            and node.module == "core_extension"
+            for alias in node.names
+        }
+        required = {
+            "smart_core_business_scenario_maintenance",
+            "smart_core_product_scene_composition",
+        }
+        self.assertTrue(required.issubset(extension_functions))
+        self.assertTrue(required.issubset(exported))
+
+        root_module = types.ModuleType(
+            "odoo.addons.smart_construction_core"
+        )
+        for hook_name in required:
+            setattr(
+                root_module,
+                hook_name,
+                lambda *_args, _name=hook_name, **_kwargs: _name,
+            )
+
+        class Env(dict):
+            def __init__(self):
+                super().__init__({
+                    "ir.config_parameter": _ConfigParameter(
+                        "",
+                        params={
+                            "sc.core.extension_modules": (
+                                "smart_construction_core"
+                            )
+                        },
+                    )
+                })
+
+        with patch.object(
+            EXTENSION_HOOKS.importlib,
+            "import_module",
+            return_value=root_module,
+        ):
+            for hook_name in sorted(required):
+                self.assertEqual(
+                    EXTENSION_HOOKS.call_extension_hook_first(
+                        Env(),
+                        hook_name,
+                    ),
+                    hook_name,
+                )
+
     def test_platform_action_definitions_declare_complete_policy_inputs(self):
         definition = MANAGEMENT_ACTIONS.management_action_definition(
             "update_policy"
@@ -476,6 +605,413 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             .get("editor_contract"),
             "product_center_editor.v1",
         )
+
+    def test_surface_exposes_draft_candidate_and_active_composition_states(self):
+        service = TARGET.ReleaseOperatorSurfaceService(_Env())
+        service.read_model_service.audit_service = _AuditTrailService()
+        service.read_model_service.approval_policy_service = _ApprovalPolicyService()
+
+        payload = service.build_surface(
+            product_key="construction.standard",
+            action_limit=5,
+        )
+        states = payload.get("business_scene_composition_states") or {}
+        self.assertEqual(
+            states.get("contract_version"),
+            "business_scene_composition_management.v1",
+        )
+        self.assertEqual(
+            (states.get("candidate") or {}).get("status"),
+            "candidate",
+        )
+        self.assertEqual(
+            (states.get("candidate") or {}).get("identity", {}).get(
+                "snapshot_id"
+            ),
+            12,
+        )
+        self.assertEqual((states.get("active") or {}).get("status"), "active")
+        self.assertEqual(
+            (states.get("active") or {}).get("identity", {}).get(
+                "snapshot_id"
+            ),
+            11,
+        )
+        self.assertEqual(
+            (states.get("candidate") or {}).get("scenarios", [])[0].get(
+                "name"
+            ),
+            "候选项目组合",
+        )
+        self.assertEqual(
+            (states.get("active") or {}).get("scenarios", [])[0].get(
+                "name"
+            ),
+            "生效项目组合",
+        )
+
+    def test_composition_diff_detects_name_and_intent_without_count_change(self):
+        service = READ_MODEL(_Env())
+        control_scope = {
+            "business_scene_composition": _composition(
+                "项目组合",
+                sequence=10,
+                intent="view",
+            ),
+            "draft_identity": {
+                "product_key": "construction.standard",
+                "policy_id": 5,
+                "version": "v1",
+            },
+        }
+        candidate_snapshots = [
+            {
+                "id": 12,
+                "product_key": "construction.standard",
+                "version": "v12",
+                "state": "candidate",
+                "frozen_at": "2026-11-20 01:00:00",
+                "business_scene_composition": _composition(
+                    "项目组合改名",
+                    sequence=10,
+                    intent="handle",
+                ),
+            }
+        ]
+        current_release_state = {
+            "active_snapshot": {
+                "id": 11,
+                "product_key": "construction.standard",
+                "version": "v11",
+                "state": "released",
+                "released_at": "2026-11-19 01:00:00",
+                "business_scene_composition": _composition(
+                    "项目组合",
+                    sequence=10,
+                    intent="view",
+                ),
+            }
+        }
+        states = service._build_business_scene_composition_states(
+            product_key="construction.standard",
+            control_scope=control_scope,
+            candidate_snapshots=candidate_snapshots,
+            current_release_state=current_release_state,
+        )
+        candidate_diff = states["comparisons"]["draft_vs_candidate"]
+        self.assertEqual(candidate_diff["state"], "changed")
+        self.assertEqual(candidate_diff["changed_scenario_keys"], ["project"])
+        self.assertTrue(candidate_diff["changed_entry_keys"])
+        self.assertEqual(
+            states["comparisons"]["draft_vs_active"]["state"],
+            "identical",
+        )
+
+    def test_composition_preserves_signed_values_and_zero_center_sequence(self):
+        first = _composition("项目组合")
+        first["scenarios"][0]["sequence"] = -1
+        first["scenarios"][0]["bindings"][0]["sequence"] = -2
+        first["scenarios"][0]["bindings"][0]["center_sequence"] = 0
+        second = deepcopy(first)
+        second["scenarios"][0]["bindings"][0]["center_sequence"] = 10
+        left = READ_MODEL_MODULE._project_business_scene_composition(
+            first,
+            status="draft",
+            identity={"product_key": "construction.standard"},
+        )
+        right = READ_MODEL_MODULE._project_business_scene_composition(
+            second,
+            status="candidate",
+            identity={"product_key": "construction.standard"},
+        )
+        self.assertEqual(left["scenarios"][0]["sequence"], -1)
+        self.assertEqual(left["scenarios"][0]["entries"][0]["sequence"], -2)
+        self.assertEqual(
+            left["scenarios"][0]["entries"][0]["center_sequence"],
+            0,
+        )
+        self.assertEqual(
+            READ_MODEL_MODULE._business_scene_composition_diff(left, right)[
+                "state"
+            ],
+            "changed",
+        )
+
+    def test_missing_candidate_and_active_states_are_explicit(self):
+        service = READ_MODEL(_Env())
+        states = service._build_business_scene_composition_states(
+            product_key="construction.standard",
+            control_scope={
+                "business_scene_composition": {
+                    "schema": "construction.scenario_product_surface.v1",
+                    "scenarios": [],
+                }
+            },
+            candidate_snapshots=[],
+            current_release_state={"active_snapshot": {}},
+        )
+        self.assertEqual(states["draft"]["reason_code"], "BUSINESS_SCENE_COMPOSITION_EMPTY")
+        self.assertEqual(states["candidate"]["status"], "not_frozen")
+        self.assertFalse(states["candidate"]["available"])
+        self.assertEqual(states["active"]["status"], "no_active_release")
+        self.assertFalse(states["active"]["available"])
+
+    def test_snapshot_release_draft_is_read_from_snapshot_json_projection(self):
+        serialized = READ_MODEL(_Env())._serialize_snapshot({
+            "id": 12,
+            "product_key": "construction.standard",
+            "state": "candidate",
+            "release_draft": {
+                "page_count": 4,
+                "total_page_count": 6,
+                "business_scenario_count": 2,
+                "business_scene_composition_sha256": "b" * 64,
+            },
+            "meta": {},
+        })
+        self.assertEqual(
+            serialized["release_draft"]["business_scenario_count"],
+            2,
+        )
+        self.assertEqual(
+            serialized["release_draft"][
+                "business_scene_composition_sha256"
+            ],
+            "b" * 64,
+        )
+
+    def test_shared_composition_is_the_same_source_for_freeze_and_management(self):
+        policy = {"product_key": "construction.standard"}
+        composed = _composition("共享维护组合")
+        with patch.object(
+            COMPOSITION,
+            "normalize_product_policy_for_env",
+            side_effect=lambda env, value: dict(value),
+        ), patch.object(
+            COMPOSITION,
+            "call_extension_hook_first",
+            return_value=composed,
+        ):
+            result = COMPOSITION.compose_product_policy(_Env(), policy)
+        self.assertEqual(
+            result["business_scene_composition"]["scenarios"][0]["name"],
+            "共享维护组合",
+        )
+
+    def test_native_scenario_maintenance_entry_declares_shared_scope(self):
+        action = types.SimpleNamespace(
+            id=71,
+            name="业务场景定义",
+            res_model="sc.product.scenario",
+            view_mode="tree,form",
+            groups_id=[types.SimpleNamespace(id=11)],
+        )
+        menu = types.SimpleNamespace(
+            id=72,
+            name="业务场景定义",
+            action=action,
+            groups_id=[types.SimpleNamespace(id=11)],
+        )
+        elevated_model = types.SimpleNamespace(
+            _fields={
+                "name": object(),
+                "entry_ids": object(),
+            },
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        model = types.SimpleNamespace(
+            _fields={},
+            sudo=lambda: elevated_model,
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+
+        class Env(_Env):
+            user = types.SimpleNamespace(
+                id=7,
+                groups_id=[types.SimpleNamespace(id=11)],
+            )
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return {
+                    "smart_construction_core.action_sc_product_scenario": action,
+                    "smart_construction_core.menu_sc_product_scenario_business_config": menu,
+                }.get(xmlid)
+
+        Env.__getitem__ = (
+            lambda self, key: model
+            if key == "sc.product.scenario"
+            else _Env.__getitem__(self, key)
+        )
+        env = Env()
+        env.user = types.SimpleNamespace(
+            id=7,
+            groups_id=[types.SimpleNamespace(id=11)],
+        )
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            service = READ_MODEL(env)
+            entry = service._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
+        self.assertTrue(entry["enabled"])
+        self.assertTrue(entry["applicable"])
+        self.assertEqual(entry["provider"], "smart_construction_core")
+        self.assertEqual(entry["reason_code"], "SCENARIO_MAINTENANCE_AVAILABLE")
+        self.assertEqual(entry["action"]["id"], 71)
+        self.assertEqual(entry["menu"]["id"], 72)
+        self.assertEqual(
+            entry["scope"]["kind"],
+            "shared_maintenance_library",
+        )
+        self.assertFalse(entry["scope"]["has_product_key"])
+        self.assertFalse(entry["scope"]["has_company_id"])
+        self.assertFalse(entry["scope"]["filter_by_current_product"])
+        self.assertEqual(
+            entry["future_freeze_product_key"],
+            "construction.standard",
+        )
+        self.assertEqual(
+            entry["return_readback"]["intent"],
+            "release.operator.surface",
+        )
+
+    def test_native_scenario_maintenance_entry_does_not_widen_denied_write(self):
+        action = types.SimpleNamespace(
+            id=71,
+            name="业务场景定义",
+            res_model="sc.product.scenario",
+            view_mode="tree,form",
+            groups_id=[],
+        )
+        menu = types.SimpleNamespace(
+            id=72,
+            name="业务场景定义",
+            action=action,
+            groups_id=[],
+        )
+        elevated_model = types.SimpleNamespace(
+            _fields={},
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+        model = types.SimpleNamespace(
+            _fields={},
+            sudo=lambda: elevated_model,
+            check_access_rights=lambda operation, raise_exception=False: operation == "read",
+        )
+
+        class Env(_Env):
+            user = types.SimpleNamespace(id=7, groups_id=[])
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return {
+                    "smart_construction_core.action_sc_product_scenario": action,
+                    "smart_construction_core.menu_sc_product_scenario_business_config": menu,
+                }.get(xmlid)
+
+        Env.__getitem__ = (
+            lambda self, key: model
+            if key == "sc.product.scenario"
+            else _Env.__getitem__(self, key)
+        )
+        env = Env()
+        env.user = types.SimpleNamespace(id=7, groups_id=[])
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            entry = READ_MODEL(env)._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
+        self.assertFalse(entry["enabled"])
+        self.assertFalse(entry["access"]["write_allowed"])
+        self.assertEqual(
+            entry["reason_code"],
+            "SCENARIO_MAINTENANCE_WRITE_DENIED",
+        )
+
+    def test_native_scenario_maintenance_entry_honors_menu_and_action_groups(self):
+        action = types.SimpleNamespace(
+            id=71,
+            name="业务场景定义",
+            res_model="sc.product.scenario",
+            view_mode="tree,form",
+            groups_id=[types.SimpleNamespace(id=81)],
+        )
+        menu = types.SimpleNamespace(
+            id=72,
+            name="业务场景定义",
+            action=action,
+            groups_id=[types.SimpleNamespace(id=80)],
+        )
+        model = types.SimpleNamespace(
+            _fields={},
+            sudo=lambda: model,
+            check_access_rights=lambda operation, raise_exception=False: True,
+        )
+
+        class Env(_Env):
+            user = types.SimpleNamespace(
+                id=7,
+                groups_id=[types.SimpleNamespace(id=11)],
+            )
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return {
+                    "smart_construction_core.action_sc_product_scenario": action,
+                    "smart_construction_core.menu_sc_product_scenario_business_config": menu,
+                }.get(xmlid)
+
+        Env.__getitem__ = (
+            lambda self, key: model
+            if key == "sc.product.scenario"
+            else _Env.__getitem__(self, key)
+        )
+        env = Env()
+        env.user = types.SimpleNamespace(
+            id=7,
+            groups_id=[types.SimpleNamespace(id=11)],
+        )
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=_maintenance_declaration(),
+        ):
+            entry = READ_MODEL(env)._build_business_scenario_maintenance(
+                product_key="construction.standard"
+            )
+        self.assertFalse(entry["enabled"])
+        self.assertFalse(entry["access"]["menu_groups_allowed"])
+        self.assertFalse(entry["access"]["action_groups_allowed"])
+        self.assertEqual(
+            entry["reason_code"],
+            "SCENARIO_MAINTENANCE_MENU_GROUP_DENIED",
+        )
+        self.assertIn(
+            "SCENARIO_MAINTENANCE_ACTION_GROUP_DENIED",
+            entry["blockers"],
+        )
+
+    def test_native_scenario_maintenance_is_not_applicable_to_platform_product(self):
+        with patch.object(
+            READ_MODEL_MODULE,
+            "call_extension_hook_first",
+            return_value=None,
+        ):
+            entry = READ_MODEL(_Env())._build_business_scenario_maintenance(
+                product_key="platform.standard"
+            )
+        self.assertFalse(entry["applicable"])
+        self.assertFalse(entry["enabled"])
+        self.assertEqual(
+            entry["reason_code"],
+            "SCENARIO_MAINTENANCE_NOT_APPLICABLE",
+        )
+        self.assertEqual(entry["action"]["id"], 0)
+        self.assertEqual(entry["menu"]["id"], 0)
 
     def test_platform_kernel_empty_surface_is_not_reported_as_blocked(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

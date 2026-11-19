@@ -44,6 +44,9 @@ export const CONTRACT_NAV_QUERY_KEYS = [
   'allowed_business_category_codes',
   'current_business_category_label',
   'default_business_category_label',
+  'return_url',
+  'return_label',
+  'return_product_key',
 ] as const;
 
 export const BUSINESS_ENTRY_NAV_QUERY_KEYS = [
@@ -134,6 +137,26 @@ export function pickContractNavQuery(
     out[key] = normalized;
   });
   return out;
+}
+
+export function contextReturnHref(source: Record<string, unknown>): string {
+  const raw = source.return_url;
+  const path = String(Array.isArray(raw) ? raw[0] || '' : raw || '').trim();
+  if (!path.startsWith('/') || path.startsWith('//')) return '';
+  const rawProduct = source.return_product_key;
+  const productKey = String(
+    Array.isArray(rawProduct) ? rawProduct[0] || '' : rawProduct || '',
+  ).trim();
+  if (!productKey) return path;
+  const hashIndex = path.indexOf('#');
+  const hash = hashIndex >= 0 ? path.slice(hashIndex) : '';
+  const withoutHash = hashIndex >= 0 ? path.slice(0, hashIndex) : path;
+  const queryIndex = withoutHash.indexOf('?');
+  const pathname = queryIndex >= 0 ? withoutHash.slice(0, queryIndex) : withoutHash;
+  const query = new URLSearchParams(queryIndex >= 0 ? withoutHash.slice(queryIndex + 1) : '');
+  query.set('product_key', productKey);
+  const search = query.toString();
+  return `${pathname}${search ? `?${search}` : ''}${hash}`;
 }
 
 function asText(value: unknown): string {
