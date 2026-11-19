@@ -24,6 +24,7 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
     index = build_menu_index(surface)
     enabled = business_states(stored)
     rows = []
+    runtime_scope = str(surface.get("runtime_scope") or "").strip()
     for scene in surface.get("scenarios") or []:
         key = scene["key"].strip()
         menus = [
@@ -35,7 +36,15 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
                 for candidate in _scenario_locations(location)
             )
         ]
-        released = [menu for menu in menus if release_states.get(menu) == "released"]
+        if runtime_scope == "published_release":
+            released = list(menus) if scene.get("active", True) else []
+        elif runtime_scope:
+            released = []
+        else:
+            # Compatibility for callers invoking this pure function without a
+            # runtime-scope annotation. Production runtime readers always pass
+            # published_release or maintained_draft.
+            released = [menu for menu in menus if release_states.get(menu) == "released"]
         is_enabled = bool(scene.get("active", True)) and enabled.get(key, False)
         if not scene.get("active", True):
             released = []

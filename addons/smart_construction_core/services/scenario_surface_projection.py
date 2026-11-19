@@ -12,6 +12,7 @@ caller can fall back to the legacy navigation instead of emitting a broken tree.
 from __future__ import annotations
 
 import json
+from copy import deepcopy
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -622,7 +623,7 @@ def legacy_native_center_seed(env, menu) -> dict[str, Any]:
     }
 
 
-def load_runtime_surface(env):
+def load_maintained_runtime_surface(env):
     """Read maintained scenario facts; files are never a runtime fallback.
 
     Archived bindings remain present so authorization cannot mistake them for
@@ -654,7 +655,68 @@ def load_runtime_surface(env):
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
-    return {"schema": SCHEMA, "scenarios": rows}
+    return {
+        "schema": SCHEMA,
+        "scenarios": rows,
+        "runtime_scope": "maintained_draft",
+    }
+
+
+def load_published_runtime_surface(
+    env,
+    *,
+    product_key: str = "construction.standard",
+) -> dict[str, Any] | None:
+    """Return composition fixed by the active released product snapshot."""
+    if env is None:
+        return None
+    empty = {
+        "schema": SCHEMA,
+        "scenarios": [],
+        "runtime_scope": "published_release_without_composition",
+    }
+    registry_models = getattr(getattr(env, "registry", None), "models", {})
+    if "sc.edition.release.snapshot" not in registry_models:
+        return None
+    try:
+        from odoo.addons.smart_core.delivery.product_policy_service import (
+            ProductPolicyService,
+        )
+
+        policy_service = ProductPolicyService(env)
+        policy = policy_service.get_published_policy(
+            product_key=_text(product_key),
+            require_current_schema=False,
+        )
+    except Exception:
+        return empty
+    if policy is None:
+        return (
+            empty
+            if policy_service.has_active_release_snapshot(
+                product_key=_text(product_key)
+            )
+            else None
+        )
+    if not isinstance(policy, dict):
+        return empty
+    composition = policy.get("business_scene_composition")
+    if (
+        not isinstance(composition, dict)
+        or not isinstance(composition.get("scenarios"), list)
+    ):
+        return empty
+    if _text(composition.get("schema")) != SCHEMA:
+        return empty
+    published = deepcopy(composition)
+    published["runtime_scope"] = "published_release"
+    return published
+
+
+def load_runtime_surface(env):
+    """Read published composition, with live maintenance only for legacy state."""
+    published = load_published_runtime_surface(env)
+    return published if published is not None else load_maintained_runtime_surface(env)
 
 
 def runtime_menu_scope(env, surface=None):
@@ -700,29 +762,84 @@ def runtime_menu_scope(env, surface=None):
     return index, by_id, by_action
 
 
-def _scenario_entries_by_menu(env) -> dict[int, list[dict[str, Any]]]:
-    """Load every maintainable scenario reference for each native menu."""
-    if env is None:
-        return {}
-    Entry = env["sc.product.scenario.entry"].sudo()
+def _scenario_locations(location: dict[str, Any]) -> list[dict[str, Any]]:
+    candidates = location.get("scenario_locations")
+    if isinstance(candidates, list) and candidates:
+        return [row for row in candidates if isinstance(row, dict)]
+    if location.get("location") == "scenario":
+        return [location]
+    return []
+
+
+def _scenario_entries_by_menu(
+    env,
+    *,
+    surface: dict[str, Any] | None = None,
+) -> dict[int, list[dict[str, Any]]]:
+    """Index published/maintained scenario references by native menu ID."""
+    if surface is None:
+        try:
+            surface = load_runtime_surface(env)
+        except (KeyError, AttributeError):
+            surface = None
+    if surface is None:
+        if env is None:
+            return {}
+        Entry = env["sc.product.scenario.entry"].sudo()
+        result: dict[int, list[dict[str, Any]]] = {}
+        for entry in Entry.search([]):
+            if not entry.menu_id or not entry.scenario_id:
+                continue
+            intent = _text(entry.intent)
+            result.setdefault(int(entry.menu_id.id), []).append({
+                "entry_id": int(getattr(entry, "id", 0) or 0),
+                "scenario_key": _text(entry.scenario_id.code),
+                "scenario_name": _text(entry.scenario_id.name),
+                "scenario_active": bool(entry.scenario_id.active),
+                "scenario_sequence": int(entry.scenario_id.sequence),
+                "sequence": int(entry.sequence),
+                "intent": intent,
+                "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+                "center_key": _text(entry.center_key),
+                "center_name": _text(entry.center_name),
+                "center_sequence": _int_or(entry.center_sequence, 10),
+            })
+        for bindings in result.values():
+            bindings.sort(key=lambda item: (
+                item["scenario_sequence"],
+                item["sequence"],
+                item["scenario_key"],
+                item["intent"],
+                item["entry_id"],
+            ))
+        return result
+    index = build_menu_index(surface)
     result: dict[int, list[dict[str, Any]]] = {}
-    for entry in Entry.search([]):
-        if not entry.menu_id or not entry.scenario_id:
+    for menu_key, location in index.items():
+        menu_id = _int_or(location.get("menu_id"), 0)
+        if menu_id <= 0 and env is not None and "." in _text(menu_key):
+            try:
+                menu = env.ref(menu_key, raise_if_not_found=False)
+            except Exception:
+                menu = None
+            menu_id = int(getattr(menu, "id", 0) or 0)
+        if menu_id <= 0:
             continue
-        intent = _text(entry.intent)
-        result.setdefault(int(entry.menu_id.id), []).append({
-            "entry_id": int(getattr(entry, "id", 0) or 0),
-            "scenario_key": _text(entry.scenario_id.code),
-            "scenario_name": _text(entry.scenario_id.name),
-            "scenario_active": bool(entry.scenario_id.active),
-            "scenario_sequence": int(entry.scenario_id.sequence),
-            "sequence": int(entry.sequence),
-            "intent": intent,
-            "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
-            "center_key": _text(entry.center_key),
-            "center_name": _text(entry.center_name),
-            "center_sequence": _int_or(entry.center_sequence, 10),
-        })
+        for row in _scenario_locations(location):
+            intent = _text(row.get("intent"))
+            result.setdefault(menu_id, []).append({
+                "entry_id": _int_or(row.get("entry_id"), 0),
+                "scenario_key": _text(row.get("scenario_key")),
+                "scenario_name": _text(row.get("scenario_name")),
+                "scenario_active": bool(row.get("scenario_active", True)),
+                "scenario_sequence": _int_or(row.get("scenario_sequence"), 10),
+                "sequence": _int_or(row.get("sequence"), 10),
+                "intent": intent,
+                "intent_label": SCENARIO_INTENT_LABELS.get(intent, intent),
+                "center_key": _text(row.get("center_key")),
+                "center_name": _text(row.get("center_name")),
+                "center_sequence": _int_or(row.get("center_sequence"), 10),
+            })
     for bindings in result.values():
         bindings.sort(key=lambda item: (
             item["scenario_sequence"],
@@ -1080,7 +1197,20 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             },
         }
         leaf["route"] = ""
-    scenario_by_menu = _scenario_entries_by_menu(env)
+    published_surface = (
+        route_authority.get("business_scene_composition")
+        if isinstance(route_authority, dict)
+        and isinstance(route_authority.get("business_scene_composition"), dict)
+        and isinstance(
+            route_authority.get("business_scene_composition", {}).get("scenarios"),
+            list,
+        )
+        else None
+    )
+    scenario_by_menu = _scenario_entries_by_menu(
+        env,
+        surface=published_surface,
+    )
     composition = (
         route_authority.get("scenario_composition")
         if isinstance(route_authority, dict)

@@ -270,6 +270,14 @@ class DeliveryEngine:
         nav = self._normalize_delivery_nav_refs(nav)
         contextual_routes = self.menu_service.build_contextual_routes(role_surface)
         route_authority = self.menu_service.build_route_authority(role_surface, nav=nav)
+        business_scene_composition = (
+            policy.get("business_scene_composition")
+            if isinstance(policy.get("business_scene_composition"), dict)
+            else {}
+        )
+        route_authority["business_scene_composition"] = deepcopy(
+            business_scene_composition
+        )
         principal_scope = (
             route_authority.get("principal_scope")
             if isinstance(route_authority.get("principal_scope"), dict)
@@ -328,6 +336,7 @@ class DeliveryEngine:
                 "scene_version_bindings": policy.get("scene_version_bindings") if isinstance(policy.get("scene_version_bindings"), dict) else {},
                 "scene_binding_diagnostics": policy.get("scene_binding_diagnostics") if isinstance(policy.get("scene_binding_diagnostics"), dict) else {},
                 "edition_diagnostics": policy.get("edition_diagnostics") if isinstance(policy.get("edition_diagnostics"), dict) else {},
+                "business_scene_composition": deepcopy(business_scene_composition),
                 "capability_keys": [
                     str(row.get("capability_key") or row.get("key") or "").strip()
                     for row in policy.get("capabilities") or []

@@ -290,7 +290,16 @@ class TestActualPublicationConsumers(unittest.TestCase):
         for allowed in (False, True):
             with self.subTest(allowed=allowed):
                 handlers, env = self._handlers_and_env(can_manage=allowed)
-                result = handlers._catalog(env, company_id=1)
+                published = {
+                    **scenario_surface.load_surface(),
+                    "runtime_scope": "published_release",
+                }
+                with patch.object(
+                    scenario_surface,
+                    "load_runtime_surface",
+                    return_value=published,
+                ):
+                    result = handlers._catalog(env, company_id=1)
                 self.assertEqual(result["company_id"], 1)
                 self.assertEqual(len(result["business_scenarios"]), 17)
                 actions = [action for row in result["business_scenarios"] for action in row["actions"]]
@@ -1304,8 +1313,20 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         key = next(row["scene_key"] for row in rows if row["product_released"])
         rows = business_enablement.business_catalog(surface, release, {business_enablement.business_key(key): True})
         self.assertEqual([row["scene_key"] for row in rows if row["tenant_enabled"]], [key])
-        self.assertTrue(tenant_scene_activation.resolve_product_released(business_enablement.business_key(key), env=TestActualPublicationConsumers()._handlers_and_env()[1]))
-        self.assertFalse(tenant_scene_activation.resolve_product_released("business.v1:unknown", env=TestActualPublicationConsumers()._handlers_and_env()[1]))
+        published = {**surface, "runtime_scope": "published_release"}
+        with patch.object(
+            scenario_surface,
+            "load_runtime_surface",
+            return_value=published,
+        ):
+            self.assertTrue(tenant_scene_activation.resolve_product_released(
+                business_enablement.business_key(key),
+                env=TestActualPublicationConsumers()._handlers_and_env()[1],
+            ))
+            self.assertFalse(tenant_scene_activation.resolve_product_released(
+                "business.v1:unknown",
+                env=TestActualPublicationConsumers()._handlers_and_env()[1],
+            ))
 
     def test_workspace_uses_same_business_decision_without_native_grants(self):
         release = {menu: "released" for menu in self.index}
@@ -1418,6 +1439,32 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                         if actions:
                             self.assertIs(actions[0]["enabled"], not enabled)
                             self.assertEqual(actions[0]["label"], "停用" if enabled else "启用")
+
+    def test_business_catalog_uses_published_composition_not_native_release_state(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "intents": {"view": ["project.menu"]},
+            }],
+        }
+        rows = business_enablement.business_catalog(
+            surface,
+            {"project.menu": "hidden"},
+            {},
+        )
+        self.assertTrue(rows[0]["product_released"])
+        self.assertEqual(rows[0]["released_menu_count"], 1)
+
+        draft = {**surface, "runtime_scope": "maintained_draft"}
+        draft_rows = business_enablement.business_catalog(
+            draft,
+            {"project.menu": "released"},
+            {},
+        )
+        self.assertFalse(draft_rows[0]["product_released"])
 
     def test_published_authority_is_final_without_company_refilter(self):
         policy = types.SimpleNamespace(published_route_authority=lambda: self.authority)
@@ -1797,6 +1844,163 @@ class TestMaintainedScenarioScope(unittest.TestCase):
         self.assertFalse(index["menu:7"]["scenario_active"])
         with self.assertRaises(ValueError):
             scenario_surface.load_runtime_surface(None)
+
+    def test_runtime_reader_prefers_published_composition_and_empty_is_authoritative(self):
+        published = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published name",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "test.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        with patch.object(
+            scenario_surface,
+            "load_published_runtime_surface",
+            return_value=published,
+        ), patch.object(
+            scenario_surface,
+            "load_maintained_runtime_surface",
+            side_effect=AssertionError("live maintenance read"),
+        ):
+            self.assertEqual(scenario_surface.load_runtime_surface(object()), published)
+
+        empty = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [],
+            "runtime_scope": "published_release_without_composition",
+        }
+        with patch.object(
+            scenario_surface,
+            "load_published_runtime_surface",
+            return_value=empty,
+        ), patch.object(
+            scenario_surface,
+            "load_maintained_runtime_surface",
+            side_effect=AssertionError("live maintenance read"),
+        ):
+            self.assertEqual(scenario_surface.load_runtime_surface(object()), empty)
+
+    def test_published_composition_indexes_without_live_scenario_records(self):
+        surface = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published",
+                "active": True,
+                "sequence": 4,
+                "bindings": [{
+                    "menu_key": "test.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                    "center_key": "construction.center.project",
+                    "center_name": "Project",
+                    "center_sequence": 20,
+                }],
+            }],
+        }
+
+        indexed = scenario_surface._scenario_entries_by_menu(
+            None,
+            surface=surface,
+        )
+
+        self.assertEqual(indexed[7][0]["scenario_key"], "published")
+        self.assertEqual(indexed[7][0]["sequence"], 0)
+
+    def test_published_runtime_surface_reads_active_release_policy(self):
+        composition = {
+            "schema": scenario_surface.SCHEMA,
+            "scenarios": [{
+                "key": "published",
+                "name": "Published",
+                "active": True,
+                "sequence": 0,
+                "bindings": [],
+            }],
+        }
+
+        class PolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                return {
+                    "product_key": kwargs["product_key"],
+                    "business_scene_composition": composition,
+                }
+
+            def has_active_release_snapshot(self, **kwargs):
+                return True
+
+        policy_module = types.ModuleType(
+            "odoo.addons.smart_core.delivery.product_policy_service"
+        )
+        policy_module.ProductPolicyService = PolicyService
+        active = types.SimpleNamespace(id=31)
+        snapshot_model = types.SimpleNamespace(
+            search=lambda *args, **kwargs: types.SimpleNamespace(
+                __bool__=lambda self: True,
+            )
+        )
+        snapshot_model.sudo = lambda: snapshot_model
+
+        class Env:
+            registry = types.SimpleNamespace(
+                models={"sc.edition.release.snapshot": object()}
+            )
+
+            def __getitem__(self, name):
+                if name == "sc.edition.release.snapshot":
+                    return snapshot_model
+                raise KeyError(name)
+
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            surface = scenario_surface.load_published_runtime_surface(Env())
+
+        self.assertEqual(
+            surface,
+            {**composition, "runtime_scope": "published_release"},
+        )
+        class LegacyPolicyService:
+            def __init__(self, env):
+                self.env = env
+
+            def get_published_policy(self, **kwargs):
+                raise ValueError("LEGACY_PUBLISHED_POLICY_REQUIRES_REFREEZE")
+
+            def has_active_release_snapshot(self, **kwargs):
+                return True
+
+        policy_module.ProductPolicyService = LegacyPolicyService
+        with patch.dict(
+            sys.modules,
+            {
+                "odoo.addons.smart_core.delivery.product_policy_service": policy_module,
+            },
+        ):
+            legacy_surface = scenario_surface.load_published_runtime_surface(Env())
+        self.assertEqual(
+            legacy_surface,
+            {
+                "schema": scenario_surface.SCHEMA,
+                "scenarios": [],
+                "runtime_scope": "published_release_without_composition",
+            },
+        )
 
 
 if __name__ == "__main__":

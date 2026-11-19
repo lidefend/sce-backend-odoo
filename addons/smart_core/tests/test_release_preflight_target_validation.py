@@ -3,8 +3,10 @@ import importlib.util
 import sys
 import types
 import unittest
+from copy import deepcopy
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[3]
@@ -69,6 +71,113 @@ TARGET = _load_module(
 
 
 class TestReleasePreflightTargetValidation(unittest.TestCase):
+    def test_business_scene_composition_changes_draft_identity(self):
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        policy = {
+            "product_key": "construction.standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+        first = {
+            "schema": "construction.scenario_product_surface.v1",
+            "scenarios": [{"key": "project", "name": "Project", "sequence": 10}],
+        }
+        second = deepcopy(first)
+        second["scenarios"][0]["name"] = "Project renamed"
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)):
+            with patch.object(TARGET, "call_extension_hook_first", return_value=first):
+                first_policy = service._compose_policy_draft(policy)
+            with patch.object(TARGET, "call_extension_hook_first", return_value=second):
+                second_policy = service._compose_policy_draft(policy)
+
+        self.assertEqual(
+            first_policy["business_scene_composition"],
+            first,
+        )
+        self.assertNotEqual(
+            TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+                policy=first_policy,
+                pages=[],
+            ),
+            TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+                policy=second_policy,
+                pages=[],
+            ),
+        )
+
+    def test_freeze_surface_carries_published_scene_composition(self):
+        composition = {
+            "schema": "construction.scenario_product_surface.v1",
+            "scenarios": [{
+                "key": "project",
+                "name": "Project",
+                "active": True,
+                "sequence": 0,
+                "bindings": [{
+                    "menu_key": "project.menu",
+                    "menu_id": 7,
+                    "intent": "view",
+                    "sequence": 0,
+                }],
+            }],
+        }
+        policy = {
+            "product_key": "construction.standard",
+            "base_product_key": "construction",
+            "edition_key": "standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": [],
+            "label": "Construction",
+            "version": "v1",
+            "menu_groups": [],
+            "scenes": [],
+            "capabilities": [],
+        }
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        service.policy_service.resolve_policy_identity = lambda **kwargs: (
+            "construction.standard",
+            "construction",
+            "standard",
+        )
+        service.policy_service.get_policy = lambda **kwargs: deepcopy(policy)
+        service._default_requested_role_context = lambda **kwargs: {
+            "role_code": "owner",
+            "source": "explicit",
+        }
+        service._model_registered = lambda model_name: False
+        service.delivery_engine = SimpleNamespace(
+            build=lambda **kwargs: {
+                "product_key": "construction.standard",
+                "base_product_key": "construction",
+                "edition_key": "standard",
+                "nav": [],
+                "capabilities": [],
+                "scenes": [],
+                "meta": {},
+            }
+        )
+
+        with patch.object(TARGET, "normalize_product_policy_for_env", side_effect=lambda env, row: deepcopy(row)), patch.object(
+            TARGET,
+            "call_extension_hook_first",
+            return_value=composition,
+        ):
+            payload = service.build_freeze_surface(
+                product_key="construction.standard",
+            )
+
+        self.assertEqual(
+            payload["policy"]["business_scene_composition"],
+            composition,
+        )
+        self.assertEqual(payload["business_scene_composition"], composition)
+
     def test_action_menu_with_fake_scene_key_blocks_release(self):
         service = TARGET.EditionReleaseSnapshotService(env={})
         check = service._target_integrity_check(

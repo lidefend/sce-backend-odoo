@@ -1,0 +1,253 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120",
+  "branch": "feature/scene-close-02-published-scenario-composition-20261120",
+  "baseline_sha": "f0df3409eca16f0852764aca4632307b026873a4",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+  "record": "docs/ops/iterations/scene_close_02_published_scenario_composition_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+    ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+    "addons/smart_core/delivery/product_policy_service.py",
+    "addons/smart_core/delivery/release_operator_read_model_service.py",
+    "addons/smart_core/models/release_management.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "docs/ops/iterations/scene_close_02_published_scenario_composition_20261120.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Contract-only source and pure-function validation; no database, service, module upgrade or browser access"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.product_center.policy.orm",
+      "verify.capability.identity_boundary.orm",
+      "verify.daily.permission_truth.capability.orm",
+      "verify.page.finalize.authority.orm",
+      "verify.page.project_finalize.authority.orm",
+      "verify.scene.publication_authority.orm",
+      "verify.admin_close_01.runtime.orm",
+      "verify.admin_close_01.scene.module_baseline"
+    ],
+    "reason": "Owner continuation keeps this architectural batch at the established contract-only boundary; ORM, module upgrade, browser matrix, environment rebuild and deployment remain out of scope"
+  },
+  "stages": [
+    {
+      "id": "DRAFT-CARRIER",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "P0 policy/draft/freeze carries a normalized P1 business scenario composition and draft changes invalidate stale candidates"
+    },
+    {
+      "id": "PUBLISHED-RUNTIME",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "Navigation, enterprise catalog and diagnosis consume active released composition; enablement, ACL and roles remain live"
+    },
+    {
+      "id": "ROLLBACK-AND-REVIEW",
+      "status": "planned",
+      "owner": "owner_review",
+      "exit": "Rollback source selection, exact-head validation and review are closed"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120.yaml",
+        ".agent/runs/SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline",
+      "depends_on": [
+        "agent_resume"
+      ]
+    },
+    "navigation_publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "capability_identity": {
+      "target": "verify.capability.identity_boundary.unit",
+      "inputs": [
+        "addons/smart_core/delivery/capability_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_policy": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "scripts/verify/test_product_center_policy.py",
+        "scripts/verify/test_capability_identity_boundary.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_entry_publication": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "system_init_menu_boundary": {
+      "target": "verify.system_init.menu_boundary.guard",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "published_draft_identity": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_core/delivery/delivery_engine.py",
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/delivery/product_policy_service.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "admin_close_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "runtime_catalog": {
+      "target": "verify.runtime_capability_catalog.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_policy_catalog_sync_service.py",
+        "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_fact_boundary": {
+      "target": "verify.scene.fact_data.boundary.unit",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_workspace_scenario": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_results": {
+    "status": "passed",
+    "scope": "Contract-only P0/P1 source behavior and existing consumers",
+    "passed": [
+      "make verify.navigation.publication_consumers.unit: passed; tenant activation 94, center projection 9, scenario surface 24, capability authority 40 and adjacent suites non-zero",
+      "make verify.daily.published_face.target.unit: 6 tests",
+      "make verify.admin_close_01.backend.unit: aggregate passed, including tenant activation 94 tests",
+      "make verify.frontend.workspace_scenario_lifecycle.unit: passed; lifecycle 11 cases plus existing frontend scenario suites",
+      "make verify.backend.navigation_delivery.unit: passed",
+      "make verify.runtime_capability_catalog.unit: 27 tests",
+      "make verify.product_center.policy.unit: 15 tests",
+      "make verify.scene.fact_data.boundary.unit: 1 test",
+      "make ci.local.iteration: exit 0; 11 affected non-ORM targets passed"
+    ],
+    "interrupted_not_passed": [
+      "Two early ci.local.iteration attempts were interrupted after path analysis selected ORM targets outside the declared contract-only boundary; neither interrupted run is counted as a pass"
+    ],
+    "not_run": [
+      "ORM and module baselines explicitly excluded by owner continuation",
+      "module upgrade and environment rebuild",
+      "browser matrix",
+      "deployment"
+    ]
+  },
+  "blockers": [],
+  "validation_plan": {
+    "L0": "Exact base, branch and owned dirty scope",
+    "L1": "Pure P0/P1 tests prove draft composition, snapshot freeze, published consumption, rollback and live enablement",
+    "L2": "Existing navigation, activation, runtime catalog and scene boundary families run non-zero",
+    "L3": "Not applicable by owner continuation: no database or module upgrade",
+    "L4": "Not applicable by owner continuation: no browser matrix or environment rebuild",
+    "L5": "Exact-head owner review and required remote checks at publication"
+  },
+  "next_exact_step": "Run delivery freeze preparation, commit and publish the exact SCENE-CLOSE-02 candidate for owner review"
+}

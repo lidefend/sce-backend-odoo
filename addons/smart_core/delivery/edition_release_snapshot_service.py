@@ -110,6 +110,24 @@ class EditionReleaseSnapshotService:
                 return value
         return PLATFORM_DEFAULT_RELEASE_ROLE_CODE
 
+    def _compose_policy_draft(self, policy: dict[str, Any]) -> dict[str, Any]:
+        payload = normalize_product_policy_for_env(self.env, deepcopy(_dict(policy)))
+        if callable(call_extension_hook_first):
+            composition = call_extension_hook_first(
+                self.env,
+                "smart_core_product_scene_composition",
+                self.env,
+                payload,
+            )
+            if composition is not None:
+                if not isinstance(composition, dict):
+                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
+                scenarios = composition.get("scenarios")
+                if not isinstance(scenarios, list):
+                    raise ValueError("BUSINESS_SCENE_COMPOSITION_INVALID")
+                payload["business_scene_composition"] = deepcopy(composition)
+        return payload
+
     def _freeze_role_code(self, policy: dict[str, Any], explicit_role_code: str = "") -> str:
         if _text(explicit_role_code):
             return _text(explicit_role_code)
@@ -188,7 +206,7 @@ class EditionReleaseSnapshotService:
                 use_published_policy=False,
             )
         )
-        policy = normalize_product_policy_for_env(self.env, _dict(policy))
+        policy = self._compose_policy_draft(_dict(policy))
         freeze_role_code = self._freeze_role_code(policy, explicit_role_code=requested_role_code)
         delivery = self.delivery_engine.build(
             data={"role_surface": {"role_code": freeze_role_code}, "scenes": [], "capabilities": []},
@@ -245,6 +263,9 @@ class EditionReleaseSnapshotService:
             "identity": identity,
             "policy_snapshot_schema": "maintained_product_policy.v1",
             "policy": deepcopy(resolved_policy),
+            "business_scene_composition": deepcopy(
+                _dict(resolved_policy.get("business_scene_composition"))
+            ),
             "nav": deepcopy(_list(resolved_delivery.get("nav"))),
             "capabilities": deepcopy(_list(resolved_delivery.get("capabilities"))),
             "scenes": deepcopy(_list(resolved_delivery.get("scenes"))),
@@ -332,6 +353,9 @@ class EditionReleaseSnapshotService:
             "state": _text(policy.get("state")),
             "access_level": _text(policy.get("access_level")),
             "allowed_role_codes": sorted(_text(item) for item in _list(policy.get("allowed_role_codes")) if _text(item)),
+            "business_scene_composition": _dict(
+                policy.get("business_scene_composition")
+            ),
             "pages": normalized_pages,
         }
         return hashlib.sha256(_stable_json(payload).encode("utf-8")).hexdigest()
@@ -601,7 +625,7 @@ class EditionReleaseSnapshotService:
             if policy_rec
             else {}
         )
-        policy = normalize_product_policy_for_env(self.env, policy)
+        policy = self._compose_policy_draft(policy)
         pages = self._draft_pages_from_policy(policy)
         center_index = self.policy_service.center_index(policy)
         effective_pages = [row for row in pages if bool(row.get("enabled")) and _text(row.get("release_state")) in {"released", "preview"}]
@@ -723,6 +747,18 @@ class EditionReleaseSnapshotService:
         payload["release_draft"] = {
             "fingerprint": _text(draft_contract.get("fingerprint")),
             "policy_sha256": _text(draft_contract.get("policy_sha256")),
+            "business_scene_composition_sha256": hashlib.sha256(
+                _stable_json(
+                    _dict(payload["policy"].get("business_scene_composition"))
+                ).encode("utf-8")
+            ).hexdigest(),
+            "business_scenario_count": len(
+                _list(
+                    _dict(
+                        payload["policy"].get("business_scene_composition")
+                    ).get("scenarios")
+                )
+            ),
             "page_count": int(draft_contract.get("page_count") or 0),
             "total_page_count": int(draft_contract.get("total_page_count") or 0),
             "preview_page_count": int(draft_contract.get("preview_page_count") or 0),

@@ -37,6 +37,7 @@ class ScProductPolicy(models.Model):
     scene_version_bindings = fields.Json(default=dict)
     menu_groups = fields.Json(default=list)
     scenes = fields.Json(default=list)
+    business_scene_composition = fields.Json(default=dict)
     capabilities = fields.Json(default=list)
     note = fields.Text()
 
@@ -118,7 +119,7 @@ class ScProductPolicy(models.Model):
                 vals["menu_groups"] = normalized_groups[0]
                 if normalized_capabilities is not None:
                     vals["capabilities"] = normalized_capabilities
-        draft_fields = {"menu_groups", "scenes", "capabilities", "scene_version_bindings", "state",
+        draft_fields = {"menu_groups", "scenes", "business_scene_composition", "capabilities", "scene_version_bindings", "state",
                         "access_level", "allowed_role_codes", "label", "version", "active",
                         "product_key", "base_product_key", "edition_key"} & set(vals)
         if draft_fields:
@@ -194,6 +195,7 @@ class ScProductPolicy(models.Model):
                 "scene_version_bindings": policy.get("scene_version_bindings") if isinstance(policy.get("scene_version_bindings"), dict) else {},
                 "menu_groups": policy.get("menu_groups") if isinstance(policy.get("menu_groups"), list) else [],
                 "scenes": policy.get("scenes") if isinstance(policy.get("scenes"), list) else [],
+                "business_scene_composition": policy.get("business_scene_composition") if isinstance(policy.get("business_scene_composition"), dict) else {},
                 "capabilities": policy.get("capabilities") if isinstance(policy.get("capabilities"), list) else [],
                 "note": "platform seeded product policy",
             }
@@ -229,6 +231,7 @@ class ScProductPolicy(models.Model):
             "scene_version_bindings": self.scene_version_bindings if isinstance(self.scene_version_bindings, dict) else {},
             "menu_groups": self.menu_groups if isinstance(self.menu_groups, list) else [],
             "scenes": self.scenes if isinstance(self.scenes, list) else [],
+            "business_scene_composition": self.business_scene_composition if isinstance(self.business_scene_composition, dict) else {},
             "capabilities": self.capabilities if isinstance(self.capabilities, list) else [],
             "note": _text(self.note),
             "policy_source_authority": ProductPolicyService.source_authority_contract(),

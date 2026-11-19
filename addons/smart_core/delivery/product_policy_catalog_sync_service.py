@@ -232,6 +232,7 @@ class ProductPolicyCatalogSyncService:
             "scene_version_bindings": {},
             "menu_groups": [],
             "scenes": [],
+            "business_scene_composition": {},
             "capabilities": [],
             "policy_source_authority": {
                 "kind": self.SOURCE_KIND,
@@ -500,6 +501,12 @@ class ProductPolicyCatalogSyncService:
                 list,
             ),
             "scenes": self._preserved_value(merged, generated, "scenes", list),
+            "business_scene_composition": self._preserved_value(
+                current,
+                generated,
+                "business_scene_composition",
+                dict,
+            ),
             "capabilities": self._preserved_value(
                 merged,
                 generated,
@@ -541,6 +548,11 @@ class ProductPolicyCatalogSyncService:
             "scenes": copy.deepcopy(payload.get("scenes"))
             if isinstance(payload.get("scenes"), list)
             else [],
+            "business_scene_composition": copy.deepcopy(
+                payload.get("business_scene_composition")
+            )
+            if isinstance(payload.get("business_scene_composition"), dict)
+            else {},
             "capabilities": copy.deepcopy(payload.get("capabilities"))
             if isinstance(payload.get("capabilities"), list)
             else [],
@@ -752,6 +764,9 @@ class ProductPolicyCatalogSyncService:
         merged["scenes"] = copy.deepcopy(current.get("scenes")) if isinstance(
             current.get("scenes"), list
         ) else []
+        merged["business_scene_composition"] = copy.deepcopy(
+            current.get("business_scene_composition")
+        ) if isinstance(current.get("business_scene_composition"), dict) else {}
         merged["scene_version_bindings"] = copy.deepcopy(
             current.get("scene_version_bindings")
         ) if isinstance(current.get("scene_version_bindings"), dict) else {}

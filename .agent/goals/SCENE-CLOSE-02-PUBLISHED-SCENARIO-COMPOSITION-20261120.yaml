@@ -1,0 +1,55 @@
+schema_version: 1
+goal:
+  id: SCENE-CLOSE-02-PUBLISHED-SCENARIO-COMPOSITION-20261120
+  status: active
+  formal_product_layer: P0/P1
+  layer_target: >-
+    Product release snapshot carrier for business-navigation scenario composition
+    and published-only projection into runtime navigation, enterprise catalog and diagnosis
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_runtime_enterprise_selection
+  objective: >-
+    Freeze the maintained sc.product.scenario/entry composition into the existing
+    product policy and release snapshot, then make runtime navigation, enterprise
+    scenario catalog and diagnosis consume that published composition while current
+    company enablement, user roles and ACL remain live decisions.
+  product_result: >-
+    Scenario maintenance forms a product draft; publishing fixes the scenario
+    composition; ordinary navigation and enterprise catalog read the active
+    released snapshot; rollback restores the previous composition; company
+    enablement and user access continue to apply at runtime.
+  why_here: >-
+    smart_core owns generic release policy/snapshot projection. P1 owns the
+    construction business-scenario records and must map them to the composition
+    carrier. smart_construction_scene consumes the published composition together
+    with current enterprise enablement.
+  why_not_elsewhere:
+    - sc.product.scenario must not be merged with sc.scene page-version identities.
+    - Frontend code must not infer scenario publication or reorder live records.
+    - Installed native capability validity is owned by installation plus platform SEC/ACL; it is not re-qualified by product publication.
+    - Current company enablement, roles and ACL remain live runtime decisions.
+    - No parallel scenario publication table or second release engine is introduced.
+  blast_radius:
+    behavior:
+      - sc.product.policy and sc.edition.release.snapshot business scenario composition
+      - runtime navigation scenario grouping and ordering
+      - enterprise business scenario catalog and activation eligibility
+      - native capability qualification no longer derives from menu release-state metadata
+      - enterprise readiness diagnosis
+      - release draft fingerprint, rollback and capability-explorer explanation
+  exclusions:
+    - ORM, module baselines, module upgrade and environment rebuild
+    - browser matrix and deployment
+    - merging sc.scene and sc.product.scenario identities
+    - versioning all scenario fields or lifecycle state
+    - changing current-company enablement or native permission semantics
+    - introducing a replacement native-capability publication workflow
+  rollback: >-
+    Revert the P0/P1 candidate together. Existing release snapshots remain
+    immutable; a product rollback uses the existing snapshot rollback service and
+    restores the composition carried by the target snapshot.
