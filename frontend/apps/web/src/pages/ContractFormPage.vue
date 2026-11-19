@@ -1738,7 +1738,7 @@ async function applyRestoredIntakeAutosave(candidate: IntakeAutosaveCandidate) {
   for (const policyField of candidate.fields) {
     if (!Object.prototype.hasOwnProperty.call(candidate.values, policyField.name)) continue;
     const descriptor = canonicalFormFields.value[policyField.name];
-    if (!descriptor) continue;
+    if (!descriptor || !isFieldWritable(policyField.name)) continue;
     applyIncomingFormFieldValue({
       fieldName: policyField.name,
       descriptor,
@@ -1762,6 +1762,7 @@ const intakeAutosaveRuntime = useIntakeAutosaveRuntime({
   isActive: isComponentActive,
   isDirty: hasChanges,
   paused: intakeAutosavePaused,
+  isFieldWritable: (name) => isFieldWritable(name),
   applyRestoredValues: applyRestoredIntakeAutosave,
   onNotice: (notice) => { intakeAutosaveNotice.value = notice; },
 });

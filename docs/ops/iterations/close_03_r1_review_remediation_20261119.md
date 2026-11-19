@@ -77,7 +77,38 @@ Status: completed on the shared R1 candidate.
 
 ## Frontend stage
 
-Status: read-only preparation pending backend handoff.
+Status: implemented on the shared R1 candidate.
+
+- The autosave runtime distinguishes the initial clean signature from a later
+  reverted-clean state. If a draft token exists and all allowed values return to
+  the initial baseline, the exact key/token draft is cleared without pausing
+  future autosave.
+- Initial clean input does not delete a pending restore candidate.
+- Restore filters both field descriptors and values through the current
+  `isFieldWritable` contract. Fields that became readonly are not written,
+  marked changed, dirtied or sent to onchange.
+- If no persisted draft field remains writable, the exact stale draft is cleared
+  and a warning is shown.
+
+Frontend verification:
+
+- Intake autosave runtime: PASS, 33 cases.
+- Governed acceptance browser: PASS, created record 145 and cleaned one record.
+- The browser proves clean reversion does not reappear after reload, normal
+  typed/relation restore still works, payment create and saved project detail
+  remain isolated while the project draft still exists, and create cleanup
+  still removes the draft.
+
+## Candidate verification
+
+- `make ci.local.iteration`: PASS with 19 affected targets and non-zero tests.
+- Frontend lint: PASS with existing warnings only; strict typecheck: PASS.
+- Native readonly / intake contract ORM: PASS, 12 tests.
+- Actual `.183` migration entry ORM: PASS, 7 tests.
+- Acceptance backend samples: PASS, 15 assertions and three schema-valid entries.
+- Governed browser journey: PASS with no failed intent or page error.
+- Full owning-module baseline remains failed with the pre-existing debt recorded
+  above and is not claimed as a pass.
 
 ## Verification
 

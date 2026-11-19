@@ -228,6 +228,7 @@ const runtime = useIntakeAutosaveRuntime({
   isActive: ref(true),
   isDirty: ref(true),
   paused,
+  isFieldWritable: () => true,
   applyRestoredValues: async (candidate) => {
     Object.assign(formData, candidate.values);
   },
@@ -267,6 +268,7 @@ const discardRuntime = useIntakeAutosaveRuntime({
   isActive: ref(true),
   isDirty: ref(true),
   paused,
+  isFieldWritable: () => true,
   applyRestoredValues: async () => undefined,
   onNotice: (notice) => { if (notice) notices.push(notice.kind); },
 });
@@ -290,6 +292,7 @@ const createWithoutRestoreRuntime = useIntakeAutosaveRuntime({
   isActive: ref(true),
   isDirty: ref(false),
   paused,
+  isFieldWritable: () => true,
   applyRestoredValues: async () => undefined,
   onNotice: () => undefined,
 });
@@ -307,7 +310,100 @@ assert.deepEqual(createWithoutRestoreRuntime.capture(), {
   scope: policy.scope,
   draftToken: 'create-without-restore-v1',
 });
+createWithoutRestoreRuntime.persist();
+assert.equal(
+  restoreIntakeAutosavePayload({ policy, key, identity, now }).status,
+  'recoverable',
+  'initial clean must not delete a pending restore candidate',
+);
 assert.equal(createWithoutRestoreRuntime.clear(createWithoutRestoreRuntime.capture()), true);
 assert.equal(restoreIntakeAutosavePayload({ policy, key, identity, now }).status, 'none');
 
-console.log('[intake-autosave-runtime] PASS cases=30');
+const writableIdentity = { ...identity, form_instance: 'writable-intersection' };
+const writableKey = buildIntakeAutosaveKey(policy, writableIdentity);
+const writable = new Set(['name', 'sequence', 'active']);
+const writableFormData: Record<string, unknown> = {
+  name: 'Server default',
+  manager_id: false,
+  operation_strategy: 'direct',
+  sequence: 0,
+  active: true,
+};
+const writableRuntime = useIntakeAutosaveRuntime({
+  policy: ref(policy),
+  identity: ref(writableIdentity),
+  hasRecord: ref(null),
+  formData: writableFormData,
+  isActive: ref(true),
+  isDirty: ref(true),
+  paused: ref(true),
+  isFieldWritable: (name) => writable.has(name),
+  applyRestoredValues: async (candidate) => {
+    Object.assign(writableFormData, candidate.values);
+  },
+  onNotice: () => undefined,
+});
+persistIntakeAutosavePayload({
+  policy,
+  key: writableKey,
+  identity: writableIdentity,
+  draftToken: 'writable-intersection-v1',
+  now,
+  values: {
+    name: 'Draft name',
+    manager_id: 17,
+    operation_strategy: 'joint',
+    sequence: 9,
+    active: false,
+  },
+});
+assert.equal(writableRuntime.inspect(), 'recoverable');
+assert.equal(await writableRuntime.restore(), true);
+assert.deepEqual(writableFormData, {
+  name: 'Draft name',
+  manager_id: false,
+  operation_strategy: 'direct',
+  sequence: 9,
+  active: false,
+}, 'restore only writes fields writable in the current form contract');
+
+const cleanIdentity = { ...identity, form_instance: 'clean-reversion' };
+const cleanKey = buildIntakeAutosaveKey(policy, cleanIdentity);
+const cleanDirty = ref(false);
+const cleanFormData: Record<string, unknown> = {
+  name: 'Server default',
+  manager_id: false,
+  operation_strategy: 'direct',
+  sequence: 0,
+  active: true,
+};
+const cleanRuntime = useIntakeAutosaveRuntime({
+  policy: ref(policy),
+  identity: ref(cleanIdentity),
+  hasRecord: ref(null),
+  formData: cleanFormData,
+  isActive: ref(true),
+  isDirty: cleanDirty,
+  paused: ref(true),
+  isFieldWritable: () => true,
+  applyRestoredValues: async () => undefined,
+  onNotice: () => undefined,
+});
+assert.equal(cleanRuntime.inspect(), 'none');
+cleanDirty.value = true;
+cleanFormData.name = 'Temporary change';
+cleanRuntime.persist();
+assert.equal(
+  restoreIntakeAutosavePayload({ policy, key: cleanKey, identity: cleanIdentity, now }).status,
+  'recoverable',
+);
+cleanDirty.value = false;
+cleanFormData.name = 'Server default';
+cleanRuntime.persist();
+assert.equal(
+  restoreIntakeAutosavePayload({ policy, key: cleanKey, identity: cleanIdentity, now }).status,
+  'none',
+  'returning every field to the initial clean values must clear the old draft',
+);
+
+console.log('[intake-autosave-runtime] PASS cases=33');

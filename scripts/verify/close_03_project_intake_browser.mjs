@@ -132,39 +132,42 @@ async function main() {
   let createdId = 0;
   let draftKey = '';
 
-  page.on('pageerror', (error) => errors.push(String(error?.message || error)));
-  page.on('console', (message) => {
-    if (message.type() === 'error' && !message.text().includes('favicon')) {
-      errors.push(String(message.text()));
-    }
-  });
-  page.on('request', (request) => {
-    if (!request.url().includes('/api/v1/intent')) return;
-    const payload = requestPayload(request);
-    if (isMutation(payload)) mutations.push(payload);
-  });
-  page.on('response', async (response) => {
-    if (!response.url().includes('/api/v1/intent') || response.status() < 400) return;
-    const payload = requestPayload(response.request());
-    let body = {};
-    try { body = await response.json(); } catch { /* status is still evidence */ }
-    const failure = {
-      status: response.status(),
-      intent: String(payload.intent || ''),
-      op: String(payload?.params?.op || ''),
-      code: String(body?.error?.code || ''),
-      reason: String(body?.error?.reason_code || ''),
-    };
-    if (
-      failure.intent === 'chatter.followers.list'
-      && failure.code === 'INTENT_NOT_FOUND'
-      && failure.status === 404
-    ) {
-      ignoredOptionalIntents.push(failure);
-    } else {
-      failedIntents.push(failure);
-    }
-  });
+  function bindPage(target) {
+    target.on('pageerror', (error) => errors.push(String(error?.message || error)));
+    target.on('console', (message) => {
+      if (message.type() === 'error' && !message.text().includes('favicon')) {
+        errors.push(String(message.text()));
+      }
+    });
+    target.on('request', (request) => {
+      if (!request.url().includes('/api/v1/intent')) return;
+      const payload = requestPayload(request);
+      if (isMutation(payload)) mutations.push(payload);
+    });
+    target.on('response', async (response) => {
+      if (!response.url().includes('/api/v1/intent') || response.status() < 400) return;
+      const payload = requestPayload(response.request());
+      let body = {};
+      try { body = await response.json(); } catch { /* status is still evidence */ }
+      const failure = {
+        status: response.status(),
+        intent: String(payload.intent || ''),
+        op: String(payload?.params?.op || ''),
+        code: String(body?.error?.code || ''),
+        reason: String(body?.error?.reason_code || ''),
+      };
+      if (
+        failure.intent === 'chatter.followers.list'
+        && failure.code === 'INTENT_NOT_FOUND'
+        && failure.status === 404
+      ) {
+        ignoredOptionalIntents.push(failure);
+      } else {
+        failedIntents.push(failure);
+      }
+    });
+  }
+  bindPage(page);
 
   try {
     const replayIntent = await login(page);
@@ -172,6 +175,33 @@ async function main() {
     await page.goto(createUrl, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const name = page.locator('input[id*="field-field-name-occ-"]').first();
     await stage('project-intake form ready', name.waitFor({ state: 'visible', timeout: 45000 }));
+
+    const initialName = await name.inputValue();
+    await name.fill('Temporary clean reversion');
+    await stage('clean-reversion draft key created', page.waitForFunction(
+      () => Object.keys(localStorage).some((key) => key.startsWith('sc:intake:autosave:')),
+      null,
+      { timeout: 15000 },
+    ));
+    const cleanReversionKey = await page.evaluate(() => (
+      Object.keys(localStorage).find((key) => key.startsWith('sc:intake:autosave:')) || ''
+    ));
+    check(cleanReversionKey, 'clean-reversion draft key was not created');
+    await stage('clean-reversion draft saved', waitForDraftSaved(page, cleanReversionKey));
+    await name.fill(initialName);
+    await stage('clean reversion cleared draft', page.waitForFunction(
+      (key) => localStorage.getItem(key) === null,
+      cleanReversionKey,
+      { timeout: 15000 },
+    ));
+    await page.reload({ waitUntil: 'domcontentloaded', timeout: 45000 });
+    await name.waitFor({ state: 'visible', timeout: 45000 });
+    check(await name.inputValue() === initialName, 'clean reversion did not keep the initial text value');
+    check(
+      await page.locator('[data-intake-autosave][data-intake-autosave-state="recoverable"]').count() === 0,
+      'reverted clean input was resurrected after reload',
+    );
+    await page.screenshot({ path: path.join(OUTPUT_DIR, 'screenshots', '00-clean-reversion.png') });
 
     const projectName = `CLOSE-03 intake ${Date.now()}`;
     await name.fill(projectName);
@@ -212,6 +242,34 @@ async function main() {
     ));
     check(await manager.inputValue() === 'Acceptance Fixture Finance Reviewer', 'relation value was not restored');
     await page.screenshot({ path: path.join(OUTPUT_DIR, 'screenshots', '03-restored.png') });
+
+    const projectRecord = entries.project_record;
+    check(Number(projectRecord?.record_id || 0) > 0, 'saved project identity missing');
+    const isolationPage = await context.newPage();
+    bindPage(isolationPage);
+    await isolationPage.goto(`${FRONTEND_URL}/a/${payment.action_id}?menu_id=${payment.menu_id}`, {
+      waitUntil: 'domcontentloaded',
+      timeout: 45000,
+    });
+    await isolationPage.locator('input').first().waitFor({ state: 'visible', timeout: 45000 });
+    check(
+      await isolationPage.locator('[data-intake-autosave]').count() === 0,
+      'payment create inherited project intake recovery while the project draft existed',
+    );
+    await isolationPage.goto(
+      `${FRONTEND_URL}/f/project.project/${projectRecord.record_id}?menu_id=${intake.menu_id}`,
+      { waitUntil: 'domcontentloaded', timeout: 45000 },
+    );
+    await isolationPage.locator('input').first().waitFor({ state: 'visible', timeout: 45000 });
+    check(
+      await isolationPage.locator('[data-intake-autosave]').count() === 0,
+      'project detail exposed intake recovery while the project draft existed',
+    );
+    await isolationPage.close();
+    check(
+      Boolean(await page.evaluate((key) => localStorage.getItem(key), draftKey)),
+      'payment/detail isolation checks removed the active project draft',
+    );
 
     await name.fill('');
     const beforeValidationMutations = mutations.length;
@@ -276,20 +334,6 @@ async function main() {
       'created draft remains in local storage',
     );
 
-    await page.goto(`${FRONTEND_URL}/a/${payment.action_id}?menu_id=${payment.menu_id}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000,
-    });
-    await page.waitForTimeout(3000);
-    check(await page.locator('[data-intake-autosave]').count() === 0, 'payment create inherited project intake recovery');
-
-    await page.goto(`${FRONTEND_URL}/f/project.project/${createdId}?menu_id=${intake.menu_id}`, {
-      waitUntil: 'domcontentloaded',
-      timeout: 45000,
-    });
-    await page.waitForTimeout(2000);
-    check(await page.locator('[data-intake-autosave]').count() === 0, 'project detail exposed intake recovery');
-
     const cleanup = await browserIntent(context, replayIntent, 'api.data.unlink', {
       model: 'project.project',
       ids: [createdId],
@@ -325,13 +369,14 @@ async function main() {
       draft_key: draftKey,
       recovered_name: projectName,
       recovered_relation: 'Acceptance Fixture Finance Reviewer',
+      clean_reversion_cleared_draft: true,
       validation_failure_preserved_draft: true,
       created_record_id: createdId,
       created_record_readback: readback.records[0],
       draft_absent_after_create: true,
       new_form_had_no_draft: true,
-      payment_create_had_no_draft: true,
-      project_detail_had_no_draft: true,
+      payment_create_had_no_draft_while_project_draft_present: true,
+      project_detail_had_no_draft_while_project_draft_present: true,
       cleanup,
       failed_intents: failedIntents,
       ignored_optional_intents: ignoredOptionalIntents,

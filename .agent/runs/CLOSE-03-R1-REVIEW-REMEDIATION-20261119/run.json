@@ -3,7 +3,7 @@
   "id": "CLOSE-03-R1-REVIEW-REMEDIATION-20261119",
   "branch": "fix/close-03-r1-review-remediation-20261119",
   "baseline_sha": "61d1b98d3c80e3e2c1f6e0f6947a9ce2221d7138",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/CLOSE-03-R1-REVIEW-REMEDIATION-20261119.yaml",
   "record": "docs/ops/iterations/close_03_r1_review_remediation_20261119.md",
   "scope": [
@@ -19,7 +19,11 @@
     "addons/smart_construction_core/tests/test_project_intake_contract_governance.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/ops/iterations/close_03_project_intake_draft_restore_20261119.md",
-    "docs/ops/iterations/close_03_r1_review_remediation_20261119.md"
+    "docs/ops/iterations/close_03_r1_review_remediation_20261119.md",
+    "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+    "scripts/verify/close_03_project_intake_browser.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -36,9 +40,10 @@
     },
     {
       "id": "FE-CLOSE-03-R1",
-      "status": "planned",
+      "status": "completed",
       "owner": "single_writer",
-      "exit": "Clean reversion clears the old draft, restore intersects current writable fields, and the governed browser journey passes"
+      "exit": "Clean reversion clears the old draft, restore intersects current writable fields, and the governed browser journey passes",
+      "browser_summary": ".runtime/agent-runs/CLOSE-03-R1-REVIEW-REMEDIATION-20261119/browser_journey/summary.json"
     }
   ],
   "checks": {
@@ -86,6 +91,7 @@
       "inputs": [
         "frontend/apps/web/src/pages/ContractFormPage.vue",
         "frontend/apps/web/src/pages/contractForm/",
+        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
         "make/ci.mk",
         "scripts/verify/close_03_project_intake_browser.mjs",
         "scripts/verify/close_03_intake_autosave_samples.mjs"
@@ -106,5 +112,5 @@
     "Daily demo upgrade failed before module version commit: migration 17.0.0.183 required an exact total of 132 menu rows, while the maintained sc_demo policy correctly contains 274 released rows. The transaction rolled back and a verified recovery point exists at /data/backups/daily-demo-dev/sc_demo-20261118T231606Z-c91dd0bb/database.dump.",
     "Pre-existing owning-module baseline debt remains outside this correction: the full smart_construction_core ORM run reports 117 failures and 38 errors, while the CLOSE-03 starter run recorded 120 failures and 38 errors on the same broad module baseline. The first failures (duplicate-label namespacing, component-capability projection, native-lowcode action/view binding) are outside the product-policy migration files changed here; the full result remains failed and is not claimed as covered."
   ],
-  "next_exact_step": "Hand the committed BE-CLOSE-03-R1 SHA, readonly contract sample and remaining FE work items to the frontend executor."
+  "next_exact_step": "Freeze and publish the reviewed R1 candidate, merge through the protected Make entrypoint, then resume the governed daily upgrade and frontend build."
 }
