@@ -277,6 +277,7 @@
         </ScSection>
       </template>
     </DashboardPattern>
+    <IntentConfirmationDialog ref="promotionConfirmationRef" />
   </ScPage>
 </template>
 
@@ -298,12 +299,17 @@ import ScActionBar from '../components/design-system/ScActionBar.vue';
 import ScForm from '../components/design-system/ScForm.vue';
 import ScFormItem from '../components/design-system/ScFormItem.vue';
 import ScInlineState from '../components/design-system/ScInlineState.vue';
+import IntentConfirmationDialog from '../components/business/IntentConfirmationDialog.vue';
 import ProductPageHeader from '../components/product-page-header/ProductPageHeader.vue';
 import DashboardPattern from '../components/product-page-patterns/DashboardPattern.vue';
 import { useNarrowViewport } from '../composables/useNarrowViewport';
 import { intentRequest } from '../api/intents';
 import { usePageContract } from '../app/pageContract';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
+import {
+  decodeReleaseOperatorSurface,
+  type OperatorAction,
+} from '../app/releaseOperatorActionContract';
 
 type AnyRecord = Record<string, unknown>;
 
@@ -331,30 +337,6 @@ interface ReleaseActionRow {
   approval_state?: string;
   requested_at?: string;
   can_approve?: boolean;
-}
-
-interface OperatorActionScope {
-  kind?: string;
-  scope_key?: string;
-  product_key?: string;
-  company_ids?: number[];
-  target_role_codes?: string[];
-  is_global_product_release?: boolean;
-  meaning?: string;
-}
-
-interface OperatorAction {
-  key?: string;
-  label?: string;
-  intent?: string;
-  enabled?: boolean;
-  reason_code?: string;
-  params?: AnyRecord;
-  actor?: AnyRecord;
-  target_scope?: OperatorActionScope;
-  operation_object?: AnyRecord;
-  prerequisites?: AnyRecord;
-  readback?: AnyRecord;
 }
 
 interface ReleaseOperatorSurface {
@@ -430,6 +412,7 @@ const error = ref('');
 const busyKey = ref('');
 const policyState = ref('stable');
 const policyAccessLevel = ref('public');
+const promotionConfirmationRef = ref<InstanceType<typeof IntentConfirmationDialog> | null>(null);
 
 const copy = computed<Record<string, string>>(() => {
   const raw = surface.value?.copy || {};
@@ -498,7 +481,7 @@ const controlDefinitions = computed(() => {
 const releaseState = computed(() => surface.value?.release_state || {});
 const activeSnapshot = computed(() => (releaseState.value.active_snapshot || {}) as AnyRecord);
 const actorScope = computed(() => surface.value?.actor_scope || {});
-const operationReadback = computed(() => surface.value?.operation_readback || {});
+const operationReadback = computed(() => surface.value?.operation_readback ?? null);
 const runtimeSummary = computed(() => (releaseState.value.runtime_summary || {}) as AnyRecord);
 const candidateSnapshots = computed(() => surface.value?.candidate_snapshots || []);
 const pendingActions = computed(() => surface.value?.pending_approval?.actions || []);
@@ -582,7 +565,7 @@ const operationScopeItems = computed<DescriptionItem[]>(() => [
   {
     key: 'target_scope',
     label: '目标范围',
-    value: String(operationReadback.value.product_key || identity.value.product_key || '—'),
+    value: String(operationReadback.value?.product_key || identity.value.product_key || '—'),
   },
   {
     key: 'scope_meaning',
@@ -595,32 +578,32 @@ const operationReadbackItems = computed<DescriptionItem[]>(() => [
   {
     key: 'readback_product',
     label: '产品',
-    value: String(operationReadback.value.product_key || '—'),
+    value: String(operationReadback.value?.product_key || '—'),
   },
   {
     key: 'readback_version',
     label: '当前生效版本',
-    value: String((operationReadback.value.active_snapshot || {}).version || activeSnapshot.value.version || '无'),
+    value: String(operationReadback.value?.active_snapshot?.version || activeSnapshot.value.version || '无'),
   },
   {
     key: 'readback_state',
     label: '版本状态',
-    value: String((operationReadback.value.active_snapshot || {}).state || '—'),
+    value: String(operationReadback.value?.active_snapshot?.state || '—'),
   },
   {
     key: 'readback_rollback',
     label: '回滚目标',
-    value: String(operationReadback.value.rollback_target_snapshot_id || '无'),
+    value: String(operationReadback.value?.rollback_target_snapshot_id || '无'),
   },
   {
     key: 'readback_draft',
     label: '草案页数',
-    value: String((operationReadback.value.draft || {}).page_count ?? '—'),
+    value: String(operationReadback.value?.draft?.page_count ?? '—'),
   },
   {
     key: 'readback_delta',
     label: '页面差异',
-    value: String((operationReadback.value.change_summary || {}).page_count_delta ?? '—'),
+    value: String(operationReadback.value?.change_summary?.page_count_delta ?? '—'),
   },
 ]);
 
@@ -784,10 +767,16 @@ const candidateColumns = computed(() => [
     const action = promoteActionFor(row);
     return statusNode(candidateReady(row) ? 'ready' : action?.reason_code || 'blocked', candidateReady(row) ? '可发布产品版本' : action?.reason_code || '后端未返回可发布动作', candidateReady(row) ? 'success' : 'danger');
   } },
+  { colKey: 'contract', title: '发布契约', cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
+    const action = promoteActionFor(row);
+    if (!action) return tableText('契约缺口');
+    const confirmation = action.prerequisites.confirmation_required ? '需确认' : '无需确认';
+    return tableText(`${action.actor.login} → ${action.target_scope.product_key} · ${confirmation}`);
+  } },
   { colKey: 'frozen_at', title: '冻结时间', cell: (_h: unknown, { row }: { row: SnapshotRow }) => tableText(row.frozen_at) },
   { colKey: 'actions', title: '操作', width: 132, cell: (_h: unknown, { row }: { row: SnapshotRow }) => {
     const action = promoteActionFor(row);
-    return actionNode(action?.label || '发布产品版本', busyKey.value === `promote:${row.id}` || !candidateReady(row), () => promote(row), 'primary', action?.reason_code || '');
+    return actionNode(action?.label || '发布产品版本', busyKey.value === (action?.key || `promote:${row.id}`) || !candidateReady(row), () => promote(row), 'primary', action?.reason_code || '');
   } },
 ]);
 const pendingActionColumns = computed(() => [
@@ -920,9 +909,12 @@ async function loadSurface() {
         product_key: selectedProduct.value,
       },
     });
-    surface.value = payload;
-    hydratePolicyControls(payload);
-    const resolvedProduct = String(payload.identity?.product_key || '').trim();
+    const decoded = decodeReleaseOperatorSurface(
+      payload as unknown as AnyRecord,
+    ) as unknown as ReleaseOperatorSurface;
+    surface.value = decoded;
+    hydratePolicyControls(decoded);
+    const resolvedProduct = String(decoded.identity?.product_key || '').trim();
     if (resolvedProduct) {
       selectedProduct.value = resolvedProduct;
     }
@@ -939,9 +931,12 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
   try {
     const result = await intentRequest<{ surface?: ReleaseOperatorSurface }>({ intent, params });
     if (result.surface) {
-      surface.value = result.surface;
-      hydratePolicyControls(result.surface);
-      const resolvedProduct = String(result.surface.identity?.product_key || '').trim();
+      const decoded = decodeReleaseOperatorSurface(
+        result.surface as unknown as AnyRecord,
+      ) as unknown as ReleaseOperatorSurface;
+      surface.value = decoded;
+      hydratePolicyControls(decoded);
+      const resolvedProduct = String(decoded.identity?.product_key || '').trim();
       if (resolvedProduct) selectedProduct.value = resolvedProduct;
     } else {
       await loadSurface();
@@ -953,16 +948,18 @@ async function runWrite(intent: string, params: AnyRecord, key: string) {
   }
 }
 
-function promote(snapshot: SnapshotRow) {
-  void runWrite(
-    'release.operator.promote',
-    {
-      product_key: selectedProduct.value,
-      snapshot_id: snapshot.id,
-      replace_active: true,
-    },
-    `promote:${snapshot.id}`,
-  );
+async function promote(snapshot: SnapshotRow) {
+  const action = promoteActionFor(snapshot);
+  if (!action || !action.enabled) return;
+  if (action.prerequisites.confirmation_required) {
+    const confirmed = await promotionConfirmationRef.value?.confirm({
+      actionLabel: action.label,
+      message: `确认将候选快照 ${action.params.snapshot_id} 发布为产品版本？`
+        + ` 操作者 ${action.actor.login}，影响产品 ${action.target_scope.product_key}。`,
+    });
+    if (!confirmed) return;
+  }
+  await runWrite(action.intent, action.params, action.key);
 }
 
 function approve(action: ReleaseActionRow) {

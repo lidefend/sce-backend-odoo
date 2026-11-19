@@ -628,6 +628,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
     def test_explicit_disable_reaches_existing_record_without_enable_diagnosis(self):
         handlers, env = self._handlers_and_env()
         calls = []
+        params = {}
         record = types.SimpleNamespace(enabled=True)
         def set_enabled(value):
             calls.append(value)
@@ -644,7 +645,13 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 if name == "res.company":
                     return types.SimpleNamespace(browse=lambda company_id: company)
                 if name == "ir.config_parameter":
-                    model = types.SimpleNamespace(set_param=lambda key, value: calls.append(value))
+                    def set_param(key, value):
+                        params[key] = value
+                        calls.append(value)
+                    model = types.SimpleNamespace(
+                        set_param=set_param,
+                        get_param=lambda key, default="0": params.get(key, default),
+                    )
                     return types.SimpleNamespace(sudo=lambda: model)
                 raise AssertionError(f"disable must not read enable dependencies: {name}")
         handler = handlers.ScenarioActivationSetHandler()
@@ -654,6 +661,16 @@ class TestActualPublicationConsumers(unittest.TestCase):
             self.assertTrue(result["ok"])
             self.assertIs(result["data"]["enabled"], False)
             self.assertEqual(result["data"]["scene_key"], "test.scene")
+            readback = result["data"]["readback"]
+            self.assertEqual(readback["source"], "ir.config_parameter")
+            self.assertEqual(
+                readback["storage_key"],
+                "sc.scene.tenant.enablement.1.test.scene",
+            )
+            self.assertIs(readback["target_state"], False)
+            self.assertEqual(readback["company_id"], 1)
+            self.assertEqual(readback["stored_scene_key"], "test.scene")
+            self.assertEqual(readback["enablement_scope"], "scene_entry.v1")
         self.assertEqual(calls, ["0", "0"])
 
     def test_catalog_binds_company_without_changing_principal_or_language(self):
@@ -716,6 +733,15 @@ class TestActualPublicationConsumers(unittest.TestCase):
         )
         self.assertTrue(result["data"]["readback"]["enabled"])
         self.assertFalse(result["data"]["readback"]["access_granted"])
+        self.assertEqual(
+            result["data"]["readback"]["source"],
+            "ir.config_parameter",
+        )
+        self.assertEqual(
+            result["data"]["readback"]["storage_key"],
+            "sc.scene.tenant.enablement.2.test.scene",
+        )
+        self.assertIs(result["data"]["readback"]["target_state"], True)
         self.assertIn("actor", result["data"])
         self.assertEqual(events, [
             ("diagnose", 2, 2, 7),

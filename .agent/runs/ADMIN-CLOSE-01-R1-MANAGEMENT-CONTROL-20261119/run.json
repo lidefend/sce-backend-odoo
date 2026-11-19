@@ -1,0 +1,205 @@
+{
+  "schema_version": 1,
+  "id": "ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119",
+  "branch": "feature/admin-close-01-r1-management-control-20261119",
+  "baseline_sha": "68828a9a3919b95ca931d41559889a93bf7fa622",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119.yaml",
+  "record": "docs/ops/iterations/admin_close_01_r1_management_control_20261119.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119.yaml",
+    ".agent/runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/run.json",
+    "addons/smart_core/delivery/platform_capability_explorer.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/release_operator_read_model_service.py",
+    "addons/smart_core/tests/",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/",
+    "docs/ops/iterations/admin_close_01_r1_management_control_20261119.md",
+    "frontend/apps/web/scripts/",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/app/releaseOperatorActionContract.ts",
+    "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+    "make/guards.mk",
+    "scripts/verify/"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Existing local.test disposable ORM lane and registered isolated candidate acceptance profile only; no new project, database, port, volume, fixture or credential"
+  },
+  "stages": [
+    {
+      "id": "BE-ADMIN-CLOSE-01-R1",
+      "status": "completed",
+      "owner": "single_writer_backend",
+      "exit": "BE-R1-01 through BE-R1-04 complete with focused tests, scene module baseline and real contract samples",
+      "samples": {
+        "management": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/backend_contract_sample/management_contract.json",
+        "project_ledger": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/backend_contract_sample/project_ledger_runtime.json",
+        "denied": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/backend_contract_sample/project_ledger_denied.json",
+        "handoff": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/backend_contract_sample/handoff.json"
+      }
+    },
+    {
+      "id": "FE-ADMIN-CLOSE-01-R1",
+      "status": "completed",
+      "owner": "single_writer_frontend_after_backend_handoff",
+      "exit": "FE-R1-01 through FE-R1-05 consume strict contracts and complete the joined enterprise enable/use/disable journey",
+      "browser_summary": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json"
+    },
+    {
+      "id": "REVIEW-ADMIN-CLOSE-01-R1",
+      "status": "active",
+      "owner": "owner_independent_review",
+      "exit": "Owner reviews the exact frozen candidate and current remote checks"
+    },
+    {
+      "id": "FE-942-R2",
+      "status": "completed",
+      "owner": "frontend_executor",
+      "exit": "Mutation-bound readback, mandatory promotion declaration, limited impact mappings and the same-user disable journey are implemented"
+    },
+    {
+      "id": "BE-942-R2",
+      "status": "completed",
+      "owner": "backend_executor",
+      "exit": "Real promote/approve execution and current full-baseline failure classification are captured"
+    }
+  ],
+  "checks": {
+    "admin_close_01_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ]
+    },
+    "admin_close_01_runtime": {
+      "target": "verify.admin_close_01.runtime.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_admin_close_01_platform_to_enterprise.py",
+        "make/guards.mk"
+      ]
+    },
+    "scene_module_baseline": {
+      "target": "verify.admin_close_01.scene.module_baseline",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/",
+        "make/guards.mk"
+      ]
+    },
+    "platform_capability_explorer": {
+      "target": "verify.platform.capability_explorer.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_core/tests/test_platform_capability_explorer.py",
+        "addons/smart_construction_core/services/platform_capability_explorer_contributions.py",
+        "make/guards.mk"
+      ]
+    },
+    "navigation_publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/delivery/menu_service.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_platform_capability_explorer": {
+      "target": "verify.frontend.platform_capability_explorer.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/api/platformCapabilityExplorer.ts",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/scripts/platform_capability_explorer_test.ts",
+        "frontend/apps/web/scripts/platform_capability_explorer_browser_support_test.mjs",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_scenario_lifecycle": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/scripts/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/vite.config.ts",
+        "scripts/dev/frontend_static_build.sh",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_management_browser": {
+      "target": "verify.frontend.platform_capability_explorer.browser",
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119/browser/readback.json"
+      },
+      "inputs": [
+        "frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue",
+        "frontend/apps/web/src/views/ReleaseOperatorView.vue",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/scripts/admin_close_01_management_browser.mjs",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [
+    "The current exact smart_core full-module baseline at 6dd747c still fails with no usable count: 29 failures and 76 errors. The dominant root causes are the minimal local.test template lacking a sc_test namespace and construction role XMLIDs, producing UnknownNamespace/NS_NAMESPACE_REQUIRED and missing external ID setup failures. Remote managed_orm selected 23 tests passed on the same source and the focused AdminClose01 ORM group passed 4 tests, but the full module failure remains an environment/baseline coverage blocker and is not represented as green.",
+    "The isolated candidate tenant has the enterprise configuration administrator and ordinary project user, but no platform-control administrator. Its browser journey therefore proves enterprise enable, ordinary-user project-ledger use and enterprise disable; candidate promotion actions are covered by the real governed ORM contract and strict frontend consumer tests, not by a candidate-tenant platform-release browser click."
+  ],
+  "next_exact_step": "Run final affected validation, refresh generated evidence, commit the R2 backend sample and records, update PR #942, and bind the next owner review to the new exact head."
+}

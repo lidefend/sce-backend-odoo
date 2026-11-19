@@ -183,11 +183,15 @@ def access_layer_assessment(
     native_present: bool,
     native_blockers: list[str],
     consumer_supported: bool,
-    entry_group_ids: list[int],
+    entry_group_ids: list[int] | None = None,
     held_group_ids: list[int],
     acl_rows: list[dict[str, Any]],
     standard_qualified: str,
     enterprise_enablement: dict[str, Any],
+    menu_group_ids: list[int] | None = None,
+    action_group_ids: list[int] | None = None,
+    menu_groups_allowed: bool | None = None,
+    action_groups_allowed: bool | None = None,
 ) -> dict[str, Any]:
     """Explain access from independent facts without inventing a grant.
 
@@ -195,8 +199,36 @@ def access_layer_assessment(
     Record-level visibility still executes in Odoo at query time.
     """
     held = {_int(value) for value in held_group_ids if _int(value) > 0}
-    required = {_int(value) for value in entry_group_ids if _int(value) > 0}
-    entry_allowed = required.issubset(held)
+    legacy_required = {
+        _int(value) for value in (entry_group_ids or []) if _int(value) > 0
+    }
+    menu_required = {
+        _int(value) for value in (menu_group_ids or []) if _int(value) > 0
+    }
+    action_required = {
+        _int(value) for value in (action_group_ids or []) if _int(value) > 0
+    }
+    required = menu_required | action_required | legacy_required
+    menu_allowed = (
+        bool(menu_groups_allowed)
+        if menu_groups_allowed is not None
+        else not menu_required or bool(menu_required & held)
+    )
+    action_allowed = (
+        bool(action_groups_allowed)
+        if action_groups_allowed is not None
+        else not action_required or bool(action_required & held)
+    )
+    # Odoo menu groups are an OR set and action groups are a separate OR set.
+    # The two independent layers must both authorize the entry. The legacy
+    # entry_group_ids value is diagnostic only when callers provide neither
+    # layered group set; it must never collapse menu and action restrictions.
+    entry_allowed = (
+        menu_allowed and action_allowed
+        if menu_group_ids is not None or action_group_ids is not None
+        or menu_groups_allowed is not None or action_groups_allowed is not None
+        else legacy_required.issubset(held)
+    )
     read_row_found = False
     read_allowed = False
     for row in acl_rows:
@@ -234,6 +266,10 @@ def access_layer_assessment(
     blockers = list(dict.fromkeys(blockers))
     return {
         "entry_groups_allowed": entry_allowed,
+        "menu_groups_allowed": menu_allowed,
+        "action_groups_allowed": action_allowed,
+        "menu_group_ids": sorted(menu_required),
+        "action_group_ids": sorted(action_required),
         "required_group_ids": sorted(required),
         "held_group_ids": sorted(held),
         "model_read_acl_present": read_row_found,
@@ -1065,7 +1101,11 @@ class PlatformCapabilityExplorerService:
             xmlid_ambiguities,
         )
         menu_facts = {}
+        from odoo.addons.smart_core.delivery.menu_service import MenuService
+
+        menu_group_service = MenuService(env)
         for menu in menus:
+            groups = menu.groups_id
             menu_facts[int(menu.id)] = {
                 "id": int(menu.id),
                 "xmlid": _text(menu_xmlids.get(int(menu.id))),
@@ -1074,24 +1114,24 @@ class PlatformCapabilityExplorerService:
                 "parent_path": _text(menu.parent_path),
                 "sequence": int(menu.sequence or 0),
                 "active": bool(menu.active),
-                "groups": _group_xmlids(menu.groups_id, group_xmlids),
-                "group_ids": sorted(int(group.id) for group in menu.groups_id),
+                "groups": _group_xmlids(groups, group_xmlids),
+                "group_ids": sorted(int(group.id) for group in groups),
+                "groups_allowed": menu_group_service._groups_authorize_current_user(groups),
             }
         action_facts = {}
         for action in action_records:
+            groups = getattr(action, "groups_id", []) or []
             action_facts[int(action.id)] = {
                 "id": int(action.id),
                 "xmlid": _text(action_xmlids.get(int(action.id))),
                 "type": _text(action._name),
                 "res_model": _text(getattr(action, "res_model", "")),
-                "groups": _group_xmlids(
-                    getattr(action, "groups_id", []) or [],
-                    group_xmlids,
-                ),
+                "groups": _group_xmlids(groups, group_xmlids),
                 "group_ids": sorted(
                     int(group.id)
-                    for group in (getattr(action, "groups_id", []) or [])
+                    for group in groups
                 ),
+                "groups_allowed": menu_group_service._groups_authorize_current_user(groups),
             }
         module_facts = {}
         for module in modules:
@@ -1315,12 +1355,13 @@ class PlatformCapabilityExplorerService:
         held_group_ids = [
             _int(value) for value in _list(actor.get("group_ids"))
         ]
-        entry_group_ids = sorted(
-            {
-                *[_int(value) for value in _list(menu.get("group_ids"))],
-                *[_int(value) for value in _list(action.get("group_ids"))],
-            }
+        menu_group_ids = sorted(
+            _int(value) for value in _list(menu.get("group_ids")) if _int(value) > 0
         )
+        action_group_ids = sorted(
+            _int(value) for value in _list(action.get("group_ids")) if _int(value) > 0
+        )
+        entry_group_ids = sorted({*menu_group_ids, *action_group_ids})
         module_installed = module_state in INSTALLED_MODULE_STATES
         native_present = bool(action_exists and menu_action_matches and module_installed)
         consumer_supported = bool(
@@ -1343,6 +1384,10 @@ class PlatformCapabilityExplorerService:
             acl_rows=acl_rows,
             standard_qualified=standard_qualified,
             enterprise_enablement=enterprise_enablement,
+            menu_group_ids=menu_group_ids,
+            action_group_ids=action_group_ids,
+            menu_groups_allowed=menu.get("groups_allowed"),
+            action_groups_allowed=action.get("groups_allowed"),
         )
         enterprise_status = (
             _text(enterprise_enablement.get("status"))

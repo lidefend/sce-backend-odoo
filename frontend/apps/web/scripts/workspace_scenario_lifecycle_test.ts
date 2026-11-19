@@ -535,7 +535,62 @@ console.log('[workspace_scenario_lifecycle_test] PASS cases=11 transport=control
 
 // Actual business management consumer: server-declared actions, explicit company
 // scope, refresh after commit and stale transport completion rejection.
-const { useScenarioActivation } = await import('../src/composables/useScenarioActivation.ts');
+const {
+  requireScenarioReadback,
+  useScenarioActivation,
+} = await import('../src/composables/useScenarioActivation.ts');
+const validReadback = (enabled: boolean, sceneKey = 'project.management') => ({
+  scene_key: sceneKey,
+  stored_scene_key: `business.v1:${sceneKey}`,
+  enablement_scope: 'business.v1',
+  enabled,
+  target_scope: {
+    kind: 'enterprise_scenario_enablement',
+    company_id: 1,
+    company_name: 'Company 1',
+    is_global_product_release: false,
+    source: 'res.company + ir.config_parameter',
+    target_role_scope: {
+      mode: 'not_role_scoped',
+      target_role_key: '',
+      reason_code: 'SCENARIO_ENABLEMENT_COMPANY_SCOPED',
+      meaning: 'company scoped',
+    },
+  },
+  readback: {
+    enabled,
+    company_id: 1,
+    requested_scene_key: sceneKey,
+    stored_scene_key: `business.v1:${sceneKey}`,
+    enablement_scope: 'business.v1',
+    target_state: enabled,
+    source: 'ir.config_parameter',
+    storage_key: `sc.scene.tenant.enablement.1.business.v1:${sceneKey}`,
+    write_committed: true,
+    access_granted: false,
+  },
+});
+const disabledReadback = requireScenarioReadback(validReadback(false), {
+  companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: false,
+});
+assert.equal(disabledReadback.readback.target_state, false);
+assert.throws(
+  () => requireScenarioReadback(validReadback(true), {
+    companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: false,
+  }),
+  /回读.*不一致/,
+  'target-state mismatch never reports success',
+);
+assert.throws(
+  () => requireScenarioReadback({
+    ...validReadback(true),
+    readback: { ...validReadback(true).readback, storage_key: '' },
+  }, {
+    companyId: 1, sceneKey: 'project.management', enablementScope: 'business.v1', targetState: true,
+  }),
+  /回读.*不一致/,
+  'missing storage identity is a contract gap',
+);
 session.initStatus = 'ready';
 session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
 const managementScope = effectScope();
@@ -573,7 +628,10 @@ const catalogResponse = (company = 1, actions = true) => ({
     },
     enablement_blockers: [],
     enable_allowed: true,
-    actions: actions ? [{ key: 'enable', label: '启用', enabled: true }] : [],
+    actions: actions ? [
+      { key: 'enable', label: '启用', enabled: true },
+      { key: 'disable', label: '停用', enabled: false },
+    ] : [],
   }],
 });
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
@@ -605,21 +663,7 @@ assert.deepEqual(mutationRequest.request.params, { company_id: 1, scene_key: 'pr
 const countDuringMutation = pending.length;
 await management.execute(row, row.actions[0]);
 assert.equal(pending.length, countDuringMutation, 'double-click cannot submit twice');
-mutationRequest.request.settle({
-  scene_key: row.scene_key,
-  stored_scene_key: 'business.v1:project.management',
-  enablement_scope: 'business.v1',
-  enabled: true,
-  target_scope: catalogResponse(1).target_scope,
-  readback: {
-    enabled: true,
-    company_id: 1,
-    stored_scene_key: 'business.v1:project.management',
-    source: 'sc.scene.company.enablement',
-    write_committed: true,
-    access_granted: false,
-  },
-});
+mutationRequest.request.settle(validReadback(true));
 await flush();
 assert.equal(management.readback.value?.readback.access_granted, false);
 assert.equal(bootstraps, 1);
@@ -692,10 +736,11 @@ const failBootstrap = async () => {
 session.loadAppInit = failBootstrap;
 const committedRow = management.rows.value[0];
 const committed = await nextRequest(() => management.execute(committedRow, committedRow.actions[0]));
-committed.request.settle({ enabled: true });
+committed.request.settle(validReadback(true));
 await committed.result;
 assert.equal(management.state.value, 'error');
 assert.match(management.errorMessage.value, /状态已保存.*导航刷新失败/);
+assert.equal(management.readback.value?.readback.enabled, true);
 assert.deepEqual(management.rows.value, []);
 const writesAfterCommit = pending.filter(item => item.intent === 'scenario.activation.set').length;
 
@@ -772,6 +817,49 @@ assert.equal(pending.filter(item => item.intent === 'scenario.activation.set').l
 managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
+
+// A later unconfirmed write cannot reuse the previous mutation's success.
+session.initStatus = 'ready';
+const previousReadbackCompanyId = session.recordContext?.company_id;
+session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullable<typeof session.recordContext>;
+const staleReadbackScope = effectScope();
+const staleReadback = staleReadbackScope.run(() => useScenarioActivation())!;
+await flush();
+pending.at(-1)!.settle(catalogResponse());
+await flush();
+const staleBootstrap = session.loadAppInit;
+let staleBootstraps = 0;
+session.loadAppInit = async () => {
+  staleBootstraps += 1;
+  session.initStatus = 'loading';
+  await nextTick();
+  session.initStatus = 'ready';
+  await nextTick();
+};
+const firstMutation = await nextRequest(() => staleReadback.execute(
+  staleReadback.rows.value[0],
+  staleReadback.rows.value[0].actions.find(action => action.key === 'enable')!,
+));
+firstMutation.request.settle(validReadback(true));
+await flush();
+pending.at(-1)!.settle(catalogResponse());
+await firstMutation.result;
+assert.equal(staleReadback.readback.value?.readback.enabled, true);
+const disableAction = staleReadback.rows.value[0].actions.find(action => action.key === 'disable')!;
+const secondMutation = await nextRequest(() => staleReadback.execute(staleReadback.rows.value[0], disableAction));
+secondMutation.request.settle({ enabled: false });
+await secondMutation.result;
+assert.equal(staleReadback.state.value, 'error');
+assert.equal(staleReadback.readback.value, null, 'old success receipt cannot survive an unconfirmed later write');
+assert.match(staleReadback.errorMessage.value, /尚未确认/);
+assert.equal(staleBootstraps, 1, 'unconfirmed response must not trigger navigation refresh');
+staleReadbackScope.stop();
+session.loadAppInit = staleBootstrap;
+session.recordContext = {
+  ...session.recordContext,
+  company_id: previousReadbackCompanyId,
+} as NonNullable<typeof session.recordContext>;
+console.log('[business_scenario_mutation_receipt_isolation_test] PASS cases=4');
 
 // Readiness consumes native remediation and never displays another company's late response.
 const { useEnterpriseReadiness } = await import('../src/composables/useEnterpriseReadiness.ts');

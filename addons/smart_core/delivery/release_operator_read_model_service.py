@@ -860,8 +860,6 @@ class ReleaseOperatorReadModelService:
             "rollback": self._build_rollback_action(product_key=identity["product_key"], active_snapshot=active_snapshot),
         }
         for key, action in list(available_operator_actions.items()):
-            if not isinstance(action, dict) or key == "write_model_contract_version":
-                continue
             if key == "promote":
                 available_operator_actions[key] = [
                     self._decorate_operator_action(
@@ -871,7 +869,7 @@ class ReleaseOperatorReadModelService:
                         operation_object={
                             "kind": "release_snapshot",
                             "snapshot_id": int(
-                                (item.get("params") or {}).get("snapshot_id") or 0
+                                _dict(item.get("params")).get("snapshot_id") or 0
                             ),
                             "product_key": identity["product_key"],
                         },
@@ -880,6 +878,8 @@ class ReleaseOperatorReadModelService:
                     for item in action
                     if isinstance(item, dict)
                 ]
+                continue
+            if not isinstance(action, dict) or key == "write_model_contract_version":
                 continue
             operation_kind = (
                 "release_snapshot"

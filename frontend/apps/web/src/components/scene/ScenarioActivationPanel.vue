@@ -13,7 +13,7 @@
     <ScInlineState
       v-if="readback"
       state="success"
-      :label="`已回读：${readback.enabled ? '已启用' : '已停用'} · 公司 ${readback.readback.company_id} · 未授予用户访问权限`"
+      :label="`已回读：${readback.readback.enabled ? '已启用' : '已停用'} · 公司 ${readback.readback.company_id} · ${readback.readback.source} · 未授予用户访问权限`"
     />
     <ScInlineState v-if="state === 'loading'" state="loading" label="正在读取场景目录…" />
     <ScInlineState v-else-if="state === 'error'" state="error" :label="errorMessage" />
@@ -38,8 +38,8 @@
           size="small"
           variant="ghost"
           type="button"
-          :disabled="busy || !action.enabled"
-          :title="row.enablement_blockers.join(' · ') || row.product_qualification.reason_code"
+          :disabled="busy"
+          :title="row.enablement_blockers.join(' · ') || action.key + ' → ' + String(action.enabled)"
           @click="execute(row, action)"
         >
           {{ action.label }}

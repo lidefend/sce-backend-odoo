@@ -7,10 +7,21 @@ const ENTRY_NAMESPACE = String(process.env.SC_ENTRY_NAMESPACE || 'demo').trim();
 const BROWSER_LOCALE = String(process.env.E2E_LOCALE || 'zh-CN');
 const LOGIN = String(process.env.E2E_LOGIN || 'admin').trim();
 const PASSWORD = String(process.env.E2E_PASSWORD || '123456').trim();
+const ADMIN_LOGIN = String(process.env.ADMIN_CLOSE_01_ADMIN_LOGIN || LOGIN).trim();
+const ADMIN_PASSWORD = String(process.env.ADMIN_CLOSE_01_ADMIN_PASSWORD || PASSWORD).trim();
 const CONFIG_LOGIN = String(process.env.ADMIN_CLOSE_01_CONFIG_LOGIN || 'sc_demo_business_config').trim();
 const CONFIG_PASSWORD = String(process.env.ADMIN_CLOSE_01_CONFIG_PASSWORD || PASSWORD).trim();
 const BUSINESS_LOGIN = String(process.env.ADMIN_CLOSE_01_BUSINESS_LOGIN || 'wutao').trim();
 const BUSINESS_PASSWORD = String(process.env.ADMIN_CLOSE_01_BUSINESS_PASSWORD || PASSWORD).trim();
+const REQUIRE_POSITIVE = process.env.ADMIN_CLOSE_01_REQUIRE_POSITIVE === '1';
+const REQUIRE_PLATFORM_RELEASE = process.env.ADMIN_CLOSE_01_REQUIRE_PLATFORM_RELEASE === undefined
+  ? REQUIRE_POSITIVE
+  : process.env.ADMIN_CLOSE_01_REQUIRE_PLATFORM_RELEASE === '1';
+const REQUIRE_ENTERPRISE_POSITIVE = process.env.ADMIN_CLOSE_01_REQUIRE_ENTERPRISE_POSITIVE === undefined
+  ? REQUIRE_POSITIVE
+  : process.env.ADMIN_CLOSE_01_REQUIRE_ENTERPRISE_POSITIVE === '1';
+const PROJECT_SCENE_KEY = String(process.env.ADMIN_CLOSE_01_PROJECT_SCENE_KEY || '').trim();
+const SKIP_EXPLORER = process.env.ADMIN_CLOSE_01_SKIP_EXPLORER === '1';
 const ARTIFACT_DIR = path.resolve(
   process.cwd(),
   process.env.ARTIFACTS_DIR || 'artifacts/playwright/admin-close-01-management',
@@ -22,7 +33,7 @@ const report = {
   generated_at: new Date().toISOString(),
   runtime: {
     base_url: BASE_URL,
-    admin_login: LOGIN,
+    admin_login: ADMIN_LOGIN,
     config_login: CONFIG_LOGIN,
     business_login: BUSINESS_LOGIN,
   },
@@ -45,10 +56,29 @@ function intentOf(request) {
   }
 }
 
+function intentParams(request) {
+  try {
+    return request.postDataJSON()?.params || {};
+  } catch {
+    return {};
+  }
+}
+
 function intentData(body) {
   if (body?.data?.data !== undefined) return body.data.data;
   if (body?.data !== undefined) return body.data;
   return body;
+}
+
+function watchPage(page, label) {
+  page.on('console', (message) => {
+    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
+      report.errors.push({ type: 'console', page: label, text: message.text(), url: page.url() });
+    }
+  });
+  page.on('pageerror', (error) => report.errors.push({
+    type: 'pageerror', page: label, text: error.message, url: page.url(),
+  }));
 }
 
 async function screenshot(page, name) {
@@ -66,67 +96,158 @@ async function login(page, loginName, password) {
   await page.locator('.layout-shell').waitFor({ timeout: 60000 });
 }
 
+function findNavigationNode(nodes, predicate) {
+  for (const node of Array.isArray(nodes) ? nodes : []) {
+    if (!node || typeof node !== 'object') continue;
+    if (predicate(node)) return node;
+    const child = findNavigationNode(node.children || node.nodes || [], predicate);
+    if (child) return child;
+  }
+  return null;
+}
+
+function checkActivationReadback(payload, expected, label) {
+  const readback = payload?.readback || {};
+  check(payload?.scene_key === expected.sceneKey, `${label} returns requested scene`, payload);
+  check(payload?.enabled === expected.targetState, `${label} returns target state`, payload);
+  check(readback?.company_id === expected.companyId, `${label} binds target company`, readback);
+  check(readback?.requested_scene_key === expected.sceneKey, `${label} binds requested scene`, readback);
+  check(readback?.enabled === expected.targetState, `${label} binds persisted state`, readback);
+  check(readback?.target_state === expected.targetState, `${label} declares target state`, readback);
+  check(readback?.enablement_scope === expected.scope, `${label} binds enablement scope`, readback);
+  check(readback?.source === 'ir.config_parameter', `${label} declares storage source`, readback);
+  check(Boolean(readback?.storage_key), `${label} declares storage key`, readback);
+  check(readback?.write_committed === true, `${label} confirms committed write`, readback);
+  check(readback?.access_granted === false, `${label} does not grant user access`, readback);
+}
+
+async function executeScenarioAction(configPage, scenario, actionKey) {
+  const actionLabel = actionKey === 'enable' ? '启用' : '停用';
+  const panel = configPage.locator('#enterprise-scenario-activation[data-state="ready"]');
+  const row = panel.locator('li').filter({ hasText: scenario.name }).first();
+  const button = row.getByRole('button', { name: actionLabel, exact: true });
+  const writeResponse = configPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'scenario.activation.set'
+    && response.status() === 200
+  ));
+  const refreshResponse = configPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'scenario.activation.catalog.get'
+    && response.status() === 200
+  ));
+  await button.click();
+  const payload = intentData(await (await writeResponse).json());
+  checkActivationReadback(payload, {
+    companyId: Number(scenario.company_id),
+    sceneKey: scenario.scene_key,
+    scope: scenario.enablement_scope,
+    targetState: actionKey === 'enable',
+  }, `enterprise ${actionLabel}`);
+  const refreshed = intentData(await (await refreshResponse).json());
+  await panel.waitFor({ state: 'visible', timeout: 60000 });
+  return { payload, refreshed };
+}
+
+async function loadScenarioCatalog(configPage) {
+  const response = configPage.waitForResponse((item) => (
+    item.url().includes('/api/v1/intent')
+    && intentOf(item.request()) === 'scenario.activation.catalog.get'
+    && item.status() === 200
+  ));
+  await configPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/s/enterprise.setup`, { waitUntil: 'domcontentloaded' });
+  return intentData(await (await response).json());
+}
+
+async function restoreScenarioState(configPage, restoration) {
+  const catalog = await loadScenarioCatalog(configPage);
+  const scenario = (catalog.business_scenarios || []).find(
+    row => row.scene_key === restoration.sceneKey,
+  );
+  if (!scenario) throw new Error(`restore scenario missing: ${restoration.sceneKey}`);
+  if (scenario.tenant_enabled === restoration.initialEnabled) return;
+  scenario.company_id = catalog.company_id;
+  const result = await executeScenarioAction(
+    configPage,
+    scenario,
+    restoration.initialEnabled ? 'enable' : 'disable',
+  );
+  const restored = (result.refreshed.business_scenarios || []).find(
+    row => row.scene_key === restoration.sceneKey,
+  );
+  if (restored?.tenant_enabled !== restoration.initialEnabled) {
+    throw new Error('restore scenario readback mismatch');
+  }
+}
+
+let restorationTarget = null;
+let restorationPage = null;
 const browser = await launchChromium({ headless: true });
 try {
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
   const context = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const page = await context.newPage();
-  page.on('console', (message) => {
-    if (message.type() === 'error' && !/favicon|ResizeObserver/i.test(message.text())) {
-      report.errors.push({ type: 'console', text: message.text(), url: page.url() });
-    }
-  });
-  page.on('pageerror', (error) => report.errors.push({ type: 'pageerror', text: error.message, url: page.url() }));
+  watchPage(page, 'platform');
 
-  await login(page, LOGIN, PASSWORD);
-  const initialExplorer = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
-  const initialPayload = intentData(await (await initialExplorer).json());
-  await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
-
-  const filteredExplorer = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill('menu_sc_project_project');
-  const filteredPayload = intentData(await (await filteredExplorer).json());
-  const projectRow = (filteredPayload.rows || []).find((row) => (
-    row.entry_ref?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
-  ));
-  const selectedRow = projectRow || (initialPayload.rows || [])[0];
-  check(selectedRow, 'governed catalog exposes at least one capability entry');
-  if (!projectRow) {
+  await login(page, ADMIN_LOGIN, ADMIN_PASSWORD);
+  let projectRow = null;
+  if (SKIP_EXPLORER) {
+    await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
     report.api.project_ledger_browser_available = false;
-    report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
+    report.api.project_ledger_browser_reason = 'EXPLORER_SEPARATELY_VERIFIED_BY_PLATFORM_ADMIN';
   } else {
-    report.api.project_ledger_browser_available = true;
+    const initialExplorer = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/admin/capability-explorer`, { waitUntil: 'domcontentloaded' });
+    const initialPayload = intentData(await (await initialExplorer).json());
+    await page.getByRole('heading', { name: '平台能力浏览器' }).waitFor({ timeout: 60000 });
+
+    const filteredExplorer = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill('menu_sc_project_project');
+    const filteredPayload = intentData(await (await filteredExplorer).json());
+    projectRow = (filteredPayload.rows || []).find((row) => (
+      row.entry_ref?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    ));
+    const selectedRow = projectRow || (initialPayload.rows || [])[0];
+    check(selectedRow, 'governed catalog exposes at least one capability entry');
+    if (REQUIRE_POSITIVE) {
+      check(projectRow, 'positive journey exposes the project-ledger capability', filteredPayload.rows);
+    }
+    if (!projectRow) {
+      report.api.project_ledger_browser_available = false;
+      report.api.project_ledger_browser_reason = 'ACTIVE_ACCEPTANCE_MENU_SET_EXCLUDES_PROJECT_LEDGER';
+    } else {
+      report.api.project_ledger_browser_available = true;
+    }
+    const selectedEntryResponse = page.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'platform.capability.explorer.list'
+      && response.status() === 200
+    ));
+    await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill(selectedRow.entry_ref.menu_xmlid);
+    await selectedEntryResponse;
+    await page.locator('[data-semantic-component="ScTable"]').getByText(selectedRow.label, { exact: true }).first().click();
+    const drawer = page.getByRole('dialog');
+    await drawer.waitFor({ state: 'visible', timeout: 60000 });
+    await page.waitForFunction(() => {
+      const node = document.querySelector('.sc-design-drawer [role="dialog"]');
+      const text = node?.textContent || '';
+      return !text.includes('正在读取入口详情并执行诊断');
+    }, null, { timeout: 60000 });
+    const drawerText = await drawer.innerText();
+    for (const label of ['最终可用性', '事实分层', '原生存在', '产品资格', '入口发布', '企业启用', '当前用户权限', '生效产品版本']) {
+      check(drawerText.includes(label), `capability detail exposes ${label}`);
+    }
+    report.api.selected_entry = selectedRow.entry_ref;
+    await screenshot(page, '01-project-capability');
   }
-  const selectedEntryResponse = page.waitForResponse((response) => (
-    response.url().includes('/api/v1/intent')
-    && intentOf(response.request()) === 'platform.capability.explorer.list'
-    && response.status() === 200
-  ));
-  await page.getByPlaceholder('搜索名称、模块、模型、Action 或场景').fill(selectedRow.entry_ref.menu_xmlid);
-  await selectedEntryResponse;
-  await page.locator('[data-semantic-component="ScTable"]').getByText(selectedRow.label, { exact: true }).first().click();
-  const drawer = page.getByRole('dialog');
-  await drawer.waitFor({ state: 'visible', timeout: 60000 });
-  await page.waitForFunction(() => {
-    const node = document.querySelector('.sc-design-drawer [role="dialog"]');
-    const text = node?.textContent || '';
-    return !text.includes('正在读取入口详情并执行诊断');
-  }, null, { timeout: 60000 });
-  const drawerText = await drawer.innerText();
-  for (const label of ['最终可用性', '事实分层', '原生存在', '产品资格', '入口发布', '企业启用', '当前用户权限', '生效产品版本']) {
-    check(drawerText.includes(label), `capability detail exposes ${label}`);
-  }
-  report.api.selected_entry = selectedRow.entry_ref;
-  await screenshot(page, '01-project-capability');
 
   const releaseResponsePromise = page.waitForResponse((response) => (
     response.url().includes('/api/v1/intent')
@@ -138,6 +259,9 @@ try {
   });
   const releaseResponse = await releaseResponsePromise;
   if (!releaseResponse) {
+    if (REQUIRE_PLATFORM_RELEASE) {
+      check(false, 'positive journey opens the platform release console', { url: page.url() });
+    }
     check(
       page.url().includes('/access-denied') || page.url().includes('/s/workspace.home'),
       'tenant identity is routed away from the platform-control surface',
@@ -155,6 +279,40 @@ try {
     for (const label of ['操作身份与影响范围', '发布后回读', '当前生效版本', '回滚目标']) {
       check(releaseText.includes(label), `release console exposes ${label}`);
     }
+    const promotionActions = Array.isArray(release.available_actions?.promote)
+      ? release.available_actions.promote
+      : [];
+    if (REQUIRE_PLATFORM_RELEASE) {
+      check(promotionActions.length > 0, 'positive journey exposes a candidate promotion contract');
+      const action = promotionActions.find((item) => (
+        item?.enabled === true
+        && item?.actor?.user_id === release.actor_scope?.user_id
+        && item?.target_scope?.product_key === 'construction.standard'
+        && item?.operation_object?.kind === 'release_snapshot'
+        && item?.prerequisites?.satisfied === true
+        && item?.readback?.mode === 'authoritative_after_write'
+      ));
+      check(action, 'candidate promotion declares complete executable contract', promotionActions);
+      const promotedSnapshotId = Number(action.params?.snapshot_id || 0);
+      const writeResponse = page.waitForResponse((response) => (
+        response.url().includes('/api/v1/intent')
+        && intentOf(response.request()) === 'release.operator.promote'
+        && response.status() === 200
+      ));
+      await page.getByRole('button', { name: action.label, exact: true }).first().click();
+      const dialog = page.getByRole('dialog');
+      await dialog.waitFor({ state: 'visible', timeout: 30000 });
+      await dialog.getByRole('button', { name: `确认${action.label}`, exact: true }).click();
+      const result = intentData(await (await writeResponse).json());
+      const promotedReadback = result?.surface?.operation_readback || result?.operation_readback || {};
+      check(
+        Number(promotedReadback?.active_snapshot?.id || 0) === promotedSnapshotId,
+        'promotion is confirmed by authoritative snapshot readback',
+        promotedReadback,
+      );
+      report.api.promoted_snapshot_id = promotedSnapshotId;
+      report.api.promotion_readback = promotedReadback;
+    }
     report.api.release = {
       browser_status: 'platform_admin_surface_available',
       actor: release.actor_scope,
@@ -166,6 +324,7 @@ try {
 
   const configContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const configPage = await configContext.newPage();
+  watchPage(configPage, 'enterprise');
   await login(configPage, CONFIG_LOGIN, CONFIG_PASSWORD);
   const activationResponse = configPage.waitForResponse((response) => (
     response.url().includes('/api/v1/intent')
@@ -192,6 +351,33 @@ try {
     target_scope: activation.target_scope,
     row_count: activation.business_scenarios?.length || 0,
   };
+  let positiveScenario = null;
+  if (REQUIRE_ENTERPRISE_POSITIVE) {
+    const sceneKey = String(projectRow?.business_domain?.key || PROJECT_SCENE_KEY).trim();
+    positiveScenario = (activation.business_scenarios || []).find((scenario) => (
+      scenario.scene_key === sceneKey
+      && scenario.enable_allowed === true
+      && Array.isArray(scenario.actions)
+      && scenario.actions.some((action) => action.key === 'enable' || action.key === 'disable')
+    ));
+    check(positiveScenario, 'project-ledger scene exposes an executable enterprise action', {
+      sceneKey,
+      rows: activation.business_scenarios,
+    });
+    positiveScenario.company_id = activation.company_id;
+    restorationTarget = {
+      sceneKey: positiveScenario.scene_key,
+      initialEnabled: positiveScenario.tenant_enabled === true,
+    };
+    restorationPage = configPage;
+    if (positiveScenario.tenant_enabled) {
+      await executeScenarioAction(configPage, positiveScenario, 'disable');
+      positiveScenario.tenant_enabled = false;
+    }
+    const enabled = await executeScenarioAction(configPage, positiveScenario, 'enable');
+    positiveScenario.tenant_enabled = true;
+    report.api.enterprise_activation.enable_readback = enabled.payload;
+  }
   await configPage.screenshot({
     path: path.join(ARTIFACT_DIR, '03-enterprise-activation.png'),
     fullPage: true,
@@ -201,16 +387,64 @@ try {
     file: path.join(ARTIFACT_DIR, '03-enterprise-activation.png'),
     url: configPage.url(),
   });
-  await configContext.close();
-
   const businessContext = await browser.newContext({ viewport: { width: 1440, height: 960 }, locale: BROWSER_LOCALE });
   const businessPage = await businessContext.newPage();
+  watchPage(businessPage, 'business');
+  const businessStartupResponse = businessPage.waitForResponse((response) => (
+    response.url().includes('/api/v1/intent')
+    && intentOf(response.request()) === 'system.init'
+    && response.status() === 200
+  ));
   await login(businessPage, BUSINESS_LOGIN, BUSINESS_PASSWORD);
-  await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
+  const businessStartup = intentData(await (await businessStartupResponse).json());
+  check(
+    Number(businessStartup?.record_context?.company_id || 0) === Number(activation.company_id),
+    'ordinary business user remains in the enterprise target company',
+  );
+  const ledgerNode = findNavigationNode(businessStartup?.navigation?.nav || [], (node) => (
+    node.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    || node.meta?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+  ));
+  const ledgerActionXmlid = String(
+    ledgerNode?.action_xmlid
+    || ledgerNode?.meta?.action_xmlid
+    || '',
+  ).trim();
+  const ledgerMenuId = Number(
+    ledgerNode?.menu_id
+    || ledgerNode?.meta?.menu_id
+    || ledgerNode?.id
+    || 0,
+  );
+  let businessPositiveFailure = '';
+  if (ledgerMenuId > 0) {
+    check(
+      ledgerActionXmlid === 'smart_construction_core.action_sc_project_list',
+      'project-ledger navigation binds the expected action identity',
+      { menuId: ledgerMenuId, actionXmlid: ledgerActionXmlid },
+    );
+    const listResponse = businessPage.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'api.data'
+      && ['list', 'search'].includes(String(intentParams(response.request()).op || ''))
+      && response.status() === 200
+    ));
+    await businessPage.goto(
+      `${BASE_URL}/t/${ENTRY_NAMESPACE}/m/${ledgerMenuId}`,
+      { waitUntil: 'domcontentloaded' },
+    );
+    await listResponse;
+  } else {
+    await businessPage.goto(`${BASE_URL}/t/${ENTRY_NAMESPACE}/`, { waitUntil: 'domcontentloaded' });
+  }
   const ledgerMenu = businessPage.getByText('项目台账', { exact: true }).first();
   const dashboardMenu = businessPage.getByText('项目看板', { exact: true }).first();
-  if (await ledgerMenu.count()) {
+  if (ledgerMenuId > 0) {
+    // The resolved formal navigation identity is the authoritative route.
+  } else if (await ledgerMenu.count()) {
     await ledgerMenu.click();
+  } else if (REQUIRE_ENTERPRISE_POSITIVE) {
+    businessPositiveFailure = 'positive journey reaches the project-ledger formal menu';
   } else {
     const navigationMenuId = await dashboardMenu.evaluate((element) => (
       element.closest('li[data-navigation-menu-id]')?.getAttribute('data-navigation-menu-id') || ''
@@ -221,15 +455,22 @@ try {
       { waitUntil: 'domcontentloaded' },
     );
   }
-  await businessPage.waitForFunction(() => {
-    const text = document.body?.textContent || '';
-    return text.includes('项目台账') || text.includes('项目看板') || text.includes('访问被拒绝') || text.includes('权限');
-  }, null, { timeout: 60000 });
-  const businessText = await businessPage.locator('body').innerText();
-  check(
-    businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
-    'ordinary business user receives an explicit formal project result',
-  );
+  const businessSurface = businessPage.locator('main').first();
+  await businessSurface.waitFor({ state: 'visible', timeout: 60000 });
+  const businessText = await businessSurface.innerText();
+  if (REQUIRE_ENTERPRISE_POSITIVE) {
+    if (!businessText.includes('项目台账')) {
+      businessPositiveFailure = 'ordinary business user opens the enabled project ledger';
+    }
+    if (!businessPositiveFailure) {
+      report.assertions.push({ pass: true, message: 'ordinary business user opens the enabled project ledger' });
+    }
+  } else {
+    check(
+      businessText.includes('项目台账') || businessText.includes('项目看板') || businessText.includes('访问被拒绝') || businessText.includes('权限'),
+      'ordinary business user receives an explicit formal project result',
+    );
+  }
   report.api.business_entry = {
     login: BUSINESS_LOGIN,
     route: businessPage.url(),
@@ -240,13 +481,68 @@ try {
         : 'explicit_denial',
   };
   await businessPage.screenshot({ path: path.join(ARTIFACT_DIR, '04-business-entry.png'), fullPage: true });
+
+  if (positiveScenario) {
+    const disabled = await executeScenarioAction(configPage, positiveScenario, 'disable');
+    report.api.enterprise_activation.disable_readback = disabled.payload;
+    const afterDisable = (disabled.refreshed.business_scenarios || []).find(
+      (scenario) => scenario.scene_key === positiveScenario.scene_key,
+    );
+    check(afterDisable?.tenant_enabled === false, 'enterprise disable is read back as disabled');
+    const afterDisableStartupResponse = businessPage.waitForResponse((response) => (
+      response.url().includes('/api/v1/intent')
+      && intentOf(response.request()) === 'system.init'
+      && response.status() === 200
+    ));
+    await businessPage.reload({ waitUntil: 'domcontentloaded' });
+    const afterDisableStartup = intentData(await (await afterDisableStartupResponse).json());
+    const afterDisableLedger = findNavigationNode(afterDisableStartup?.navigation?.nav || [], (node) => (
+      node.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+      || node.meta?.menu_xmlid === 'smart_construction_core.menu_sc_project_project'
+    ));
+    check(
+      !afterDisableLedger,
+      'disabled enterprise scenario is removed from the same user formal navigation',
+    );
+    check(
+      Number(afterDisableStartup?.record_context?.company_id || 0) === Number(activation.company_id),
+      'same business user remains bound to the enterprise target company after disable',
+    );
+    await configPage.screenshot({
+      path: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
+      fullPage: true,
+    });
+    report.screenshots.push({
+      name: '05-enterprise-readback',
+      file: path.join(ARTIFACT_DIR, '05-enterprise-readback.png'),
+      url: configPage.url(),
+    });
+    if (businessPositiveFailure) check(false, businessPositiveFailure);
+    await restoreScenarioState(configPage, restorationTarget);
+    restorationTarget = null;
+  }
   await businessContext.close();
+  await configContext.close();
 
   check(report.errors.length === 0, 'management journey has no browser errors', report.errors);
   report.pass = true;
   await fs.writeFile(path.join(ARTIFACT_DIR, 'summary.json'), JSON.stringify(report, null, 2));
   console.log(`[admin_close_01.management_browser] PASS assertions=${report.assertions.length}`);
 } catch (error) {
+  if (restorationTarget && restorationPage && !restorationPage.isClosed()) {
+    try {
+      await restoreScenarioState(restorationPage, restorationTarget);
+      report.assertions.push({
+        pass: true,
+        message: 'enterprise scenario initial state restored after journey failure',
+      });
+    } catch (restoreError) {
+      report.errors.push({
+        type: 'restore',
+        text: restoreError instanceof Error ? restoreError.message : String(restoreError),
+      });
+    }
+  }
   report.errors.push({ type: 'journey', text: error instanceof Error ? error.message : String(error) });
   await fs.mkdir(ARTIFACT_DIR, { recursive: true });
   await fs.writeFile(path.join(ARTIFACT_DIR, 'summary.json'), JSON.stringify(report, null, 2));
