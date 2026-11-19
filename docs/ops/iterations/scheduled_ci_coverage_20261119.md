@@ -33,3 +33,7 @@ Passed local `ci.local.iteration` (5 selected targets), 184 incremental planner 
 Rollback: revert this P4 repair commit through a protected PR. Rollback restores the coverage gap and the observed false failure; no database restoration is needed. Batch/mainline status remains verification_pending; deployment and user acceptance are outside this task.
 
 The complete `verify.frontend.pr.unit` target passed with the new prerequisites. `ci.delivery.freeze.prepare` and generated-evidence preflight passed; generated diffs only update the regression test file line count. The same-head main push run 44418320636 also explicitly skipped the full release command, confirming that green push status did not prove full release readiness. Independent review and remote full release remain pending.
+
+## PR 939 follow-up
+
+The owner authorized PR publication; PR 939 was created as draft at bfb55ef958043139840a2d5bbeeca5f116cddbfd. Public guard run 44432090116 failed because `test_frontend_lane_commands_are_explicit` reads only the first `verify.frontend.pr.unit` declaration. Make itself merges prerequisites, so local execution passed, but adding a new first declaration broke the existing textual contract. This was introduced by this repair and missed by the original local validation selection. The correction merges the added prerequisites into the original first declaration without removing any checks. `verify.ci.scheduled_gates` is now explicitly registered for this run. Independent review remains pending.

@@ -58,12 +58,29 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "ci_contract": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci",
+        "scripts/verify/frontend_release_gate.py",
+        "scripts/verify/test_frontend_release_gate.py",
+        "scripts/verify/test_frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_identity.py",
+        "scripts/verify/ci_artifact_host_write_guard.py",
+        "scripts/verify/test_ci_artifact_host_write_guard.py",
+        ".github/workflows",
+        "make/frontend.mk",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [
-    "Independent review pending: user authorization for a read-only reviewer agent requested; no remote publication performed."
+    "Independent review and successful current-head remote checks pending."
   ],
-  "next_exact_step": "Complete independent review, publish exact-head repair PR, then dispatch full frontend release CI.",
+  "next_exact_step": "Validate the Make declaration compatibility correction, push to PR 939, and verify current-head remote results.",
   "id": "SCHEDULED-CI-COVERAGE-20261119",
   "branch": "fix/scheduled-ci-coverage-20261119",
   "status": "verification_pending",
@@ -110,6 +127,17 @@
     "pr_unit": {
       "status": "passed",
       "log": ".runtime/scheduled-ci/pr-unit.log"
+    },
+    "remote_public_guard": {
+      "status": "failed",
+      "run_id": 44432090116,
+      "head": "bfb55ef958043139840a2d5bbeeca5f116cddbfd",
+      "reason": "CI contract parser reads only the first PR unit target declaration; correction merges prerequisites into the existing declaration."
+    },
+    "ci_contract": {
+      "status": "passed",
+      "target": "verify.ci.scheduled_gates",
+      "log": ".runtime/scheduled-ci/ci-contract-followup.log"
     }
   }
 }
