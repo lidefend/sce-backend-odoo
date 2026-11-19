@@ -1,0 +1,61 @@
+schema_version: 1
+goal:
+  id: ADMIN-CLOSE-01-R1-MANAGEMENT-CONTROL-20261119
+  status: active
+  formal_product_layer: P0/P1
+  layer_target: >-
+    Platform capability diagnostics, release-operator action contracts,
+    enterprise scenario activation readback and their shared frontend consumers
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - frontend/apps/web
+    - scripts/verify
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_runtime_scope
+  objective: >-
+    Correct the management-action and diagnostic defects confirmed after #941:
+    native entry permission diagnosis must match formal navigation; candidate
+    release actions must carry complete operator contracts; enterprise
+    enable/disable actions must remain executable and return an identity-bound
+    authoritative readback; and the frontend must fail closed on missing or
+    mismatched action and readback declarations.
+  product_result: >-
+    Platform and enterprise administrators can operate the existing release and
+    enterprise-activation surfaces without disabled legal actions, misleading
+    permission diagnostics, incomplete promotion contracts or unverified success
+    messages. The project-ledger entry is the single cross-role sample for
+    platform qualification, company enablement, ordinary-user reachability and
+    explicit disablement.
+  why_here: >-
+    smart_core owns generic native-access diagnosis and release-operator action
+    contracts. smart_construction_core owns construction product qualification.
+    smart_construction_scene owns company scenario enablement and its persistence
+    carrier. The shared frontend only consumes these declarations.
+  why_not_elsewhere:
+    - The frontend must not derive native OR permission or manufacture release action metadata.
+    - Enterprise enablement must not grant user access or infer a broader company scope.
+    - P4 acceptance tooling may exercise but must not own management semantics.
+    - Center ownership migration and scenario-version convergence remain in later batches.
+  blast_radius:
+    entries:
+      - smart_construction_core.menu_sc_project_project
+      - smart_construction_core.menu_sc_business_config_workbench
+      - smart_construction_core.menu_sc_enterprise_initialization
+    behavior:
+      - capability explorer native group diagnosis and ACL explanation
+      - candidate promotion action metadata and authoritative release readback
+      - enterprise scenario enable and disable target-state execution
+      - company/scene/scope/storage-bound scenario readback
+      - platform, enterprise and ordinary-user browser evidence
+  exclusions:
+    - SCENE-CLOSE-01 center ownership and product-version organization
+    - SCENE-CLOSE-02 composite dependency and version convergence
+    - LC-CLOSE-01 form configuration editing
+    - deployment, product package publication and production mutation
+    - all-entry browser matrix or unrelated menu redesign
+  rollback: >-
+    Revert the R1 backend and frontend commits together. Restore any acceptance
+    company enablement value through the same governed scenario activation intent
+    and verify the prior persisted value. No schema migration is introduced.

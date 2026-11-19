@@ -12,6 +12,7 @@ from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
 )
 from odoo.addons.smart_core.delivery.platform_capability_explorer import (
     PlatformCapabilityExplorerService,
+    access_layer_assessment,
     _merge_extension_contributions,
 )
 from odoo.addons.smart_core.delivery.release_operator_read_model_service import (
@@ -20,8 +21,14 @@ from odoo.addons.smart_core.delivery.release_operator_read_model_service import 
 from odoo.addons.smart_construction_core.services.platform_capability_explorer_contributions import (
     get_platform_capability_explorer_contributions,
 )
-from odoo.addons.smart_construction_scene.handlers.scenario_activation import _catalog
+from odoo.addons.smart_construction_scene.handlers.scenario_activation import (
+    ScenarioActivationSetHandler,
+    _catalog,
+)
 from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+    ENABLEMENT_STORAGE_SOURCE,
+    enablement_param_key,
+    read_tenant_enablement,
     write_tenant_enablement,
 )
 
@@ -373,6 +380,228 @@ class TestAdminClose01PlatformToEnterprise(TransactionCase):
                     "actor": detail["current_user_access"],
                     "visibility": detail["visibility"],
                     "enterprise_enablement": detail["enterprise_enablement"],
+                },
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+            )
+        )
+
+    def test_r1_management_contract_enable_disable_and_readback(self):
+        candidate = EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard",
+            version="admin-close-01-r1-candidate",
+            note="ADMIN-CLOSE-01-R1 candidate contract sample",
+            replace_active=False,
+        )
+        self.assertEqual(candidate.get("state"), "approved")
+        release_model = ReleaseOperatorReadModelService(self.actor_env).build_read_model(
+            product_key="construction.standard"
+        )
+        promote_actions = (
+            release_model.get("available_operator_actions") or {}
+        ).get("promote") or []
+        candidate_action = next(
+            (
+                action
+                for action in promote_actions
+                if int((action.get("params") or {}).get("snapshot_id") or 0)
+                == int(candidate.get("id") or 0)
+            ),
+            None,
+        )
+        self.assertIsNotNone(candidate_action)
+        for field in (
+            "actor",
+            "target_scope",
+            "operation_object",
+            "prerequisites",
+            "readback",
+        ):
+            self.assertTrue(candidate_action.get(field), field)
+        self.assertEqual(
+            candidate_action["operation_object"]["snapshot_id"],
+            int(candidate["id"]),
+        )
+
+        config_actor = self.env["res.users"].with_context(
+            no_reset_password=True
+        ).create(
+            {
+                "name": "ADMIN CLOSE 01 R1 Config Admin",
+                "login": "admin_close_01_r1_config_admin",
+                "company_id": self.env.company.id,
+                "company_ids": [(6, 0, [self.env.company.id])],
+                "groups_id": [
+                    (
+                        6,
+                        0,
+                        [
+                            self.env.ref("base.group_user").id,
+                            self.env.ref(
+                                "smart_construction_core.group_sc_cap_business_config_admin"
+                            ).id,
+                            *sorted(
+                                set(self.menu.groups_id.ids)
+                                | set(self.action.groups_id.ids)
+                            ),
+                        ],
+                    )
+                ],
+            }
+        )
+        config_env = self.env(user=config_actor)
+        catalog = _catalog(config_env, company_id=config_env.company.id)
+        contribution = get_platform_capability_explorer_contributions(
+            config_env,
+            [int(self.menu.id)],
+            {int(self.menu.id): PROJECT_MENU_XMLID},
+        )
+        bindings = (contribution.get("scene_bindings") or {}).get(
+            str(int(self.menu.id))
+        ) or []
+        scene_key = next(
+            (
+                str(row.get("scenario_key") or "").strip()
+                for row in bindings
+                if isinstance(row, dict) and str(row.get("scenario_key") or "").strip()
+            ),
+            "",
+        )
+        self.assertTrue(scene_key)
+        scenario = next(
+            (
+                row
+                for row in catalog.get("business_scenarios") or []
+                if row.get("scene_key") == scene_key
+            ),
+            None,
+        )
+        self.assertIsNotNone(scenario)
+        self.assertTrue(scenario["enable_allowed"], scenario)
+
+        other_company = self.env["res.company"].create(
+            {"name": "ADMIN CLOSE 01 R1 Other Company"}
+        )
+        handler = ScenarioActivationSetHandler(config_env)
+        handler.params = {}
+        enable_result = handler.handle(
+            {
+                "company_id": config_env.company.id,
+                "scene_key": scene_key,
+                "enablement_scope": scenario["enablement_scope"],
+                "enabled": True,
+            }
+        )
+        self.assertTrue(enable_result["ok"], enable_result)
+        enable_readback = enable_result["data"]["readback"]
+        self.assertTrue(enable_readback["enabled"])
+        self.assertEqual(enable_readback["source"], ENABLEMENT_STORAGE_SOURCE)
+        self.assertEqual(
+            enable_readback["storage_key"],
+            enablement_param_key(
+                config_env.company.id,
+                enable_readback["stored_scene_key"],
+            ),
+        )
+        self.assertIs(enable_readback["target_state"], True)
+        self.assertFalse(enable_readback["access_granted"])
+        self.assertTrue(
+            read_tenant_enablement(
+                config_env,
+                config_env.company.id,
+                enable_readback["stored_scene_key"],
+            )
+        )
+        self.assertFalse(
+            read_tenant_enablement(
+                config_env,
+                other_company.id,
+                enable_readback["stored_scene_key"],
+            )
+        )
+
+        disable_result = handler.handle(
+            {
+                "company_id": config_env.company.id,
+                "scene_key": scene_key,
+                "enablement_scope": scenario["enablement_scope"],
+                "enabled": False,
+            }
+        )
+        self.assertTrue(disable_result["ok"], disable_result)
+        disable_readback = disable_result["data"]["readback"]
+        self.assertFalse(disable_readback["enabled"])
+        self.assertIs(disable_readback["target_state"], False)
+        self.assertEqual(disable_readback["source"], ENABLEMENT_STORAGE_SOURCE)
+        self.assertFalse(
+            read_tenant_enablement(
+                config_env,
+                config_env.company.id,
+                disable_readback["stored_scene_key"],
+            )
+        )
+        self.assertFalse(
+            read_tenant_enablement(
+                config_env,
+                other_company.id,
+                disable_readback["stored_scene_key"],
+            )
+        )
+
+        held_groups = config_env.user.groups_id.ids
+        positive_access = access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=held_groups,
+            acl_rows=[
+                {
+                    "read": True,
+                    "group_id": group_id,
+                }
+                for group_id in self.env["ir.model.access"]
+                .sudo()
+                .search([("model_id.model", "=", "project.project"), ("perm_read", "=", True)])
+                .mapped("group_id")
+                .ids
+            ],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+            entry_group_ids=sorted(
+                set(self.menu.groups_id.ids) | set(self.action.groups_id.ids)
+            ),
+            menu_group_ids=self.menu.groups_id.ids,
+            action_group_ids=self.action.groups_id.ids,
+        )
+        self.assertTrue(positive_access["entry_groups_allowed"], positive_access)
+
+        print(
+            "ADMIN_CLOSE_01_R1_SAMPLE="
+            + json.dumps(
+                {
+                    "schema": "admin_close_01_r1.management_contract.v1",
+                    "database": self.env.cr.dbname,
+                    "entry": {
+                        "menu_xmlid": PROJECT_MENU_XMLID,
+                        "menu_id": int(self.menu.id),
+                        "action_xmlid": self.action.get_external_id()[self.action.id],
+                        "action_id": int(self.action.id),
+                        "model": self.action.res_model,
+                    },
+                    "candidate": {
+                        "snapshot": candidate,
+                        "promote_action": candidate_action,
+                    },
+                    "enterprise": {
+                        "company_id": config_env.company.id,
+                        "other_company_id": other_company.id,
+                        "scene_key": scene_key,
+                        "enablement_scope": scenario["enablement_scope"],
+                        "enable": enable_result["data"],
+                        "disable": disable_result["data"],
+                    },
+                    "native_group_diagnosis": positive_access,
                 },
                 ensure_ascii=False,
                 sort_keys=True,

@@ -41,7 +41,7 @@ def register_customer_acceptance_group_label(label: str) -> None:
 class MenuService:
     ROUTE_AUTHORITY_CONTRACT_VERSION = "2.0.0"
 
-    def _groups_authorize_current_user(self, groups) -> bool:
+    def groups_authorize_current_user(self, groups) -> bool:
         """Apply Odoo group closure, including implied groups."""
         if not groups:
             return True
@@ -82,6 +82,10 @@ class MenuService:
             return bool(set(resolved_groups) & set(user_groups))
         except TypeError:
             return False
+
+    def _groups_authorize_current_user(self, groups) -> bool:
+        """Backward-compatible name for native menu/action group authorization."""
+        return self.groups_authorize_current_user(groups)
 
     @staticmethod
     def _role_surface_menu_allowed(menu: dict, role_surface: dict | None) -> bool:

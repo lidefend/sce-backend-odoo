@@ -494,6 +494,72 @@ class ProjectionContractTests(unittest.TestCase):
         self.assertEqual(denied["reason_code"], "ENTRY_GROUP_DENIED")
         self.assertIn("MODEL_READ_ACL_DENIED", denied["blockers"])
 
+    def test_native_group_layers_use_or_within_each_layer_and_both_layers_must_pass(self):
+        menu_or = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=[11],
+            acl_rows=[{"read": True, "group_id": 0}],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+            entry_group_ids=[11, 12],
+            menu_group_ids=[11, 12],
+            action_group_ids=[],
+        )
+        self.assertTrue(menu_or["entry_groups_allowed"])
+        self.assertTrue(menu_or["menu_groups_allowed"])
+        self.assertTrue(menu_or["action_groups_allowed"])
+        self.assertEqual(menu_or["reason_code"], "CURRENT_USER_ENTRY_AVAILABLE")
+
+        action_denied = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=[11],
+            acl_rows=[{"read": True, "group_id": 0}],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+            entry_group_ids=[11, 12],
+            menu_group_ids=[11],
+            action_group_ids=[12],
+        )
+        self.assertFalse(action_denied["entry_groups_allowed"])
+        self.assertTrue(action_denied["menu_groups_allowed"])
+        self.assertFalse(action_denied["action_groups_allowed"])
+        self.assertEqual(action_denied["reason_code"], "ENTRY_GROUP_DENIED")
+
+        unrestricted = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=[],
+            acl_rows=[{"read": True, "group_id": 0}],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+            entry_group_ids=[],
+            menu_group_ids=[],
+            action_group_ids=[],
+        )
+        self.assertTrue(unrestricted["entry_groups_allowed"])
+        self.assertEqual(unrestricted["reason_code"], "CURRENT_USER_ENTRY_AVAILABLE")
+
+        implied_closure = MODULE.access_layer_assessment(
+            native_present=True,
+            native_blockers=[],
+            consumer_supported=True,
+            held_group_ids=[],
+            acl_rows=[{"read": True, "group_id": 0}],
+            standard_qualified="qualified",
+            enterprise_enablement={"status": "enabled"},
+            entry_group_ids=[11, 12],
+            menu_group_ids=[11, 12],
+            action_group_ids=[12],
+            menu_groups_allowed=True,
+            action_groups_allowed=True,
+        )
+        self.assertTrue(implied_closure["entry_groups_allowed"])
+
     def test_missing_scene_authority_blocks_assignment_without_changing_native_validity(self):
         payload = contributions()
         payload["scene_authority_available"] = False

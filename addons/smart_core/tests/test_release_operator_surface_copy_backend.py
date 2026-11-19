@@ -225,6 +225,32 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             (freeze.get("readback") or {}).get("mode"),
             "authoritative_after_write",
         )
+        promote = (payload.get("available_actions") or {}).get("promote") or []
+        self.assertEqual(len(promote), 1)
+        self.assertEqual((promote[0].get("params") or {}).get("snapshot_id"), 12)
+        self.assertEqual(
+            (promote[0].get("operation_object") or {}).get("snapshot_id"),
+            12,
+        )
+        self.assertEqual(
+            (promote[0].get("actor") or {}).get("operator_kind"),
+            "authorized_release_operator",
+        )
+        self.assertEqual(
+            (promote[0].get("target_scope") or {}).get("product_key"),
+            "construction.standard",
+        )
+        self.assertEqual(
+            (promote[0].get("prerequisites") or {}).get("reason_code"),
+            "OK",
+        )
+        self.assertTrue(
+            (promote[0].get("prerequisites") or {}).get("confirmation_required")
+        )
+        self.assertEqual(
+            (promote[0].get("readback") or {}).get("mode"),
+            "authoritative_after_write",
+        )
 
     def test_surface_copy_has_no_legacy_english_operator_labels(self):
         service = TARGET.ReleaseOperatorSurfaceService(_Env())

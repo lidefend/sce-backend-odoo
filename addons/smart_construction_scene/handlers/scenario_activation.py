@@ -6,6 +6,10 @@ from odoo.addons.smart_construction_scene.services.workspace_scenario_projection
     resolve_request_company,
     bind_company_context,
 )
+from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+    ENABLEMENT_STORAGE_SOURCE,
+    enablement_param_key,
+)
 
 
 def _resolve_request_company(env, params):
@@ -68,7 +72,7 @@ def _target_scope(env, company_id: int) -> dict:
             "meaning": "enablement exposes an eligible scenario for this company; user permission is evaluated separately",
         },
         "is_global_product_release": False,
-        "source": "res.company + sc.scene.company.enablement",
+        "source": "res.company + ir.config_parameter",
     }
 
 
@@ -203,7 +207,13 @@ class ScenarioActivationCatalogGetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "scenario_activation_projection",
-        "authorities": ["sc.scene", "sc.product.scenario", "ir.config_parameter", "sc.scene.company.enablement", "product_menu_source"],
+        "authorities": [
+            "sc.scene",
+            "sc.product.scenario",
+            "ir.config_parameter",
+            "sc.scene.company.enablement.legacy_read",
+            "product_menu_source",
+        ],
         "projection_only": True,
         "no_business_fact_authority": True,
     }
@@ -225,7 +235,11 @@ class ScenarioActivationSetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "scenario_activation_mutation",
-        "authorities": ["sc.scene.company.enablement", "product_menu_source"],
+        "authorities": [
+            "ir.config_parameter",
+            "sc.scene.company.enablement.legacy_read",
+            "product_menu_source",
+        ],
         "projection_only": False,
         "no_business_fact_authority": True,
     }
@@ -317,8 +331,12 @@ class ScenarioActivationSetHandler(BaseIntentHandler):
                 "readback": {
                     "enabled": persisted_enabled,
                     "company_id": int(company.id),
+                    "requested_scene_key": scene_key,
                     "stored_scene_key": stored_key,
-                    "source": "sc.scene.company.enablement",
+                    "enablement_scope": scope,
+                    "target_state": enabled,
+                    "source": ENABLEMENT_STORAGE_SOURCE,
+                    "storage_key": enablement_param_key(company.id, stored_key),
                     "write_committed": True,
                     "access_granted": False,
                 },
@@ -334,7 +352,12 @@ class WorkspaceScenarioProjectionGetHandler(BaseIntentHandler):
     ETAG_ENABLED = False
     SOURCE_AUTHORITY = {
         "kind": "workspace_scenario_projection",
-        "authorities": ["sc.scene.company.enablement", "sc.edition.release.snapshot", "published_route_authority"],
+        "authorities": [
+            "ir.config_parameter",
+            "sc.scene.company.enablement.legacy_read",
+            "sc.edition.release.snapshot",
+            "published_route_authority",
+        ],
         "projection_only": True,
         "no_business_fact_authority": True,
     }

@@ -15,10 +15,16 @@ ENTERPRISE_SETUP_CODE = "enterprise.setup"
 ENTERPRISE_SETUP_MENU_XMLID = "smart_construction_core.menu_sc_enterprise_initialization"
 ENTERPRISE_SETUP_ACTION_XMLID = "smart_construction_core.action_sc_enterprise_initialization"
 ENABLEMENT_PARAM_PREFIX = "sc.scene.tenant.enablement."
+ENABLEMENT_STORAGE_SOURCE = "ir.config_parameter"
+
+
+def enablement_param_key(company_id, scene_key) -> str:
+    return f"{ENABLEMENT_PARAM_PREFIX}{int(company_id)}.{str(scene_key or '').strip()}"
 
 
 def _enablement_param_key(company_id, scene_key) -> str:
-    return f"{ENABLEMENT_PARAM_PREFIX}{int(company_id)}.{str(scene_key or '').strip()}"
+    """Backward-compatible key helper."""
+    return enablement_param_key(company_id, scene_key)
 
 
 def read_tenant_enablement(env, company_id, scene_key) -> bool:
@@ -26,7 +32,9 @@ def read_tenant_enablement(env, company_id, scene_key) -> bool:
     if env is None:
         return False
     try:
-        value = env["ir.config_parameter"].sudo().get_param(_enablement_param_key(company_id, scene_key))
+        value = env["ir.config_parameter"].sudo().get_param(
+            enablement_param_key(company_id, scene_key)
+        )
         if value:
             return str(value or "").strip().lower() in ("1", "true", "yes", "on")
     except Exception:
@@ -48,7 +56,7 @@ def write_tenant_enablement(env, company_id, scene_key, enabled: bool) -> None:
     if env is None:
         return
     env["ir.config_parameter"].sudo().set_param(
-        _enablement_param_key(company_id, scene_key), "1" if enabled else "0"
+        enablement_param_key(company_id, scene_key), "1" if enabled else "0"
     )
 
 
