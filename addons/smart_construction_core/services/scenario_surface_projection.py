@@ -1205,6 +1205,57 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         env,
         surface=published_surface,
     )
+    represented_pairs = {
+        (
+            int(leaf.get("menu_id") or 0),
+            int(leaf.get("action_id") or 0),
+        )
+        for leaf in leaves
+        if int(leaf.get("menu_id") or 0) > 0
+    }
+    for bucket in (
+        "primary_actions",
+        "role_home_actions",
+        "contextual_actions",
+        "admin_actions",
+    ):
+        for row in (
+            route_authority.get(bucket)
+            if isinstance(route_authority, dict)
+            else []
+        ) or []:
+            if not isinstance(row, dict):
+                continue
+            pair = (
+                int(row.get("menu_id") or 0),
+                int(row.get("action_id") or 0),
+            )
+            if pair in represented_pairs or pair[0] <= 0 or pair[1] <= 0:
+                continue
+            bindings = scenario_by_menu.get(pair[0]) or []
+            if not bindings:
+                continue
+            binding = _selected_scenario_binding(
+                bindings,
+                route_authority,
+                pair[0],
+            )
+            if not binding or not binding.get("scenario_active"):
+                continue
+            menu_xmlid = _text(row.get("menu_xmlid") or row.get("menu_key"))
+            if not menu_xmlid:
+                menu_xmlid = f"menu:{pair[0]}"
+            leaves.append({
+                **row,
+                "menu_id": pair[0],
+                "action_id": pair[1],
+                "menu_xmlid": menu_xmlid,
+                "label": _text(row.get("name") or row.get("label")) or menu_xmlid,
+                "route": _text(row.get("route")) or f"/a/{pair[1]}?menu_id={pair[0]}",
+                "sequence": _int_or(binding.get("sequence"), 1000),
+                "children": [],
+            })
+            represented_pairs.add(pair)
     composition = (
         route_authority.get("scenario_composition")
         if isinstance(route_authority, dict)

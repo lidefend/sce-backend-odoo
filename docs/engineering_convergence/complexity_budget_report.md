@@ -113,6 +113,7 @@ Generated from repository source files. This report is informational during the 
 | 1398 | Python source | `addons/smart_core/model/ui_menu_config_policy.py` |
 | 1392 | Python source | `scripts/ops/change_impact_planner.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
+| 1361 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1361 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1353 | Python source | `scripts/ops/local_quick_evidence.py` |
@@ -123,7 +124,6 @@ Generated from repository source files. This report is informational during the 
 | 1320 | Python source | `addons/smart_core/tests/test_contract_governance_project_form.py` |
 | 1316 | Python source | `addons/smart_construction_core/tests/test_p1_funding_authority.py` |
 | 1316 | Python source | `addons/smart_core/core/view_orchestrator.py` |
-| 1310 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1300 | Python source | `addons/smart_construction_core/tests/test_workflow_contract_backend.py` |
 | 1299 | Python source | `addons/smart_core/tests/test_backend_semantic_copy_supply.py` |
 | 1289 | TypeScript source | `frontend/apps/web/src/pages/contractForm/nativeLayoutUtils.ts` |
@@ -161,6 +161,7 @@ Generated from repository source files. This report is informational during the 
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
 | 1106 | Python source | `scripts/verify/test_local_development_lifecycle.py` |
+| 1101 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 1097 | TypeScript source | `frontend/apps/web/src/api/platformCapabilityExplorer.ts` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
@@ -170,7 +171,6 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
-| 1069 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1044 | Python source | `scripts/contract/snapshot_export.py` |
@@ -194,11 +194,11 @@ Generated from repository source files. This report is informational during the 
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
+| 964 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 949 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
-| 945 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 939 | Python source | `scripts/verify/test_local_quick_evidence.py` |
 | 920 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 917 | Python source | `addons/smart_construction_core/handlers/my_work_summary.py` |
@@ -244,8 +244,8 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 595 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
-| 500 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
+| 596 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

@@ -424,7 +424,10 @@ class EditionReleaseSnapshotService:
                     continue
                 if validate_native:
                     try:
-                        menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+                        menu = self._resolve_business_scene_menu(
+                            menu_key=menu_xmlid,
+                            binding=binding,
+                        )
                     except Exception:
                         menu = None
                     if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
@@ -462,6 +465,35 @@ class EditionReleaseSnapshotService:
             "ready_binding_count": ready_bindings,
             "issues": issues[:20],
         }
+
+    def _resolve_business_scene_menu(
+        self,
+        *,
+        menu_key: str,
+        binding: dict[str, Any],
+    ):
+        """Resolve a stable XMLID or same-database ``menu:<id>`` reference."""
+        reference = _text(menu_key)
+        if reference.startswith("menu:"):
+            try:
+                menu_id = int(reference.split(":", 1)[1])
+            except (TypeError, ValueError):
+                return None
+            declared_id = _to_int(binding.get("menu_id"))
+            if declared_id and declared_id != menu_id:
+                return None
+            menu = self.env["ir.ui.menu"].sudo().browse(menu_id).exists()
+            if not menu:
+                return None
+            actual_xmlid = _text(menu.get_external_id().get(menu.id))
+            if actual_xmlid:
+                return None
+            return menu
+        menu = self.env.ref(reference, raise_if_not_found=False)
+        declared_id = _to_int(binding.get("menu_id"))
+        if declared_id and int(getattr(menu, "id", 0) or 0) != declared_id:
+            return None
+        return menu
 
     def _preflight_checks_from_pages(
         self,

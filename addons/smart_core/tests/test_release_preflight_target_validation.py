@@ -119,7 +119,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 "active": True,
                 "sequence": 0,
                 "bindings": [{
-                    "menu_key": "project.menu",
+                    "menu_key": "menu:7",
                     "menu_id": 7,
                     "intent": "view",
                     "sequence": 0,
@@ -139,7 +139,30 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             "scenes": [],
             "capabilities": [],
         }
-        service = TARGET.EditionReleaseSnapshotService(env={})
+        action = SimpleNamespace(res_model="project.project")
+        menu = SimpleNamespace(
+            id=7,
+            _name="ir.ui.menu",
+            action=action,
+            get_external_id=lambda: {},
+        )
+        menu_model = SimpleNamespace(
+            sudo=lambda: menu_model,
+            browse=lambda menu_id: SimpleNamespace(
+                exists=lambda: menu if menu_id == 7 else [],
+            ),
+        )
+        class Env:
+            def __getitem__(self, model_name):
+                if model_name == "ir.ui.menu":
+                    return menu_model
+                raise KeyError(model_name)
+
+            def ref(self, *args, **kwargs):
+                return None
+
+        env = Env()
+        service = TARGET.EditionReleaseSnapshotService(env=env)
         service.policy_service.resolve_policy_identity = lambda **kwargs: (
             "construction.standard",
             "construction",
@@ -154,7 +177,10 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             "role_code": "owner",
             "source": "explicit",
         }
-        service._model_registered = lambda model_name: False
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "project.project",
+        }
         service.delivery_engine = SimpleNamespace(
             build=lambda **kwargs: {
                 "product_key": "construction.standard",
