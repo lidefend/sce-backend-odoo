@@ -72,7 +72,8 @@ verify the previous persisted value. No schema migration is introduced.
 BE-R1-01 now evaluates menu groups and action groups as two independent native
 authorization layers. Each layer uses Odoo's OR-within-layer group semantics;
 both layers must pass. `PlatformCapabilityExplorerService` reuses the public
-`MenuService.groups_authorize_current_user()` decision, including implied groups.
+`MenuService._groups_authorize_current_user()` decision, including implied
+groups; no second permission algorithm is introduced.
 
 BE-R1-02 decorates each non-empty candidate promotion array before the generic
 dictionary guard. Every promotion action now carries actor, product scope,

@@ -1116,7 +1116,7 @@ class PlatformCapabilityExplorerService:
                 "active": bool(menu.active),
                 "groups": _group_xmlids(groups, group_xmlids),
                 "group_ids": sorted(int(group.id) for group in groups),
-                "groups_allowed": menu_group_service.groups_authorize_current_user(groups),
+                "groups_allowed": menu_group_service._groups_authorize_current_user(groups),
             }
         action_facts = {}
         for action in action_records:
@@ -1131,7 +1131,7 @@ class PlatformCapabilityExplorerService:
                     int(group.id)
                     for group in groups
                 ),
-                "groups_allowed": menu_group_service.groups_authorize_current_user(groups),
+                "groups_allowed": menu_group_service._groups_authorize_current_user(groups),
             }
         module_facts = {}
         for module in modules:
