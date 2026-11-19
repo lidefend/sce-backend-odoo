@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import copy
 from typing import Any
 
 from odoo import api
@@ -12,7 +13,12 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 
 from .product_identity import resolve_product_identity
 from .product_policy_service import ProductPolicyService
-from .runtime_capability_catalog import RuntimeCapabilityCatalogService, capability_identity
+from .runtime_capability_catalog import (
+    RuntimeCapabilityCatalogService,
+    _action_model,
+    _action_view_modes,
+    capability_identity,
+)
 
 
 def _text(value: Any) -> str:
@@ -23,9 +29,51 @@ def _slug(value: str) -> str:
     return _text(value).replace(".", "_").replace("-", "_").replace(" ", "_").lower() or "menu"
 
 
+class ProductPolicyCatalogSyncError(ValueError):
+    """Fail-closed synchronization error with a stable operator reason code."""
+
+    def __init__(self, code: str, detail: str = "", *, entry: str = ""):
+        self.code = _text(code) or "PRODUCT_SYNC_FAILED"
+        self.reason_code = self.code
+        self.detail = _text(detail)
+        self.entry = _text(entry)
+        message = self.code
+        if self.entry:
+            message = f"{message}: {self.entry}"
+        if self.detail:
+            message = f"{message}: {self.detail}"
+        super().__init__(message)
+
+
 class ProductPolicyCatalogSyncService:
     SOURCE_KIND = "product_policy_catalog_sync"
     NO_BUSINESS_FACT_AUTHORITY = True
+    NATIVE_SOURCE_FIELDS = (
+        "menu_id",
+        "menu_xmlid",
+        "menu_key",
+        "action_id",
+        "action_xmlid",
+        "action_model",
+        "res_model",
+        "model",
+        "view_modes",
+        "visible_menu_path",
+    )
+    CAPABILITY_SOURCE_FIELDS = (
+        "action_id",
+        "action_xmlid",
+        "action_model",
+        "res_model",
+        "model",
+        "visible_menu_path",
+    )
+    SCENE_SOURCE_FIELDS = (
+        "action_id",
+        "action_xmlid",
+        "res_model",
+        "model",
+    )
 
     def __init__(self, env):
         self.env = env
@@ -133,7 +181,17 @@ class ProductPolicyCatalogSyncService:
         source_db = self._catalog_source_db()
         current_db = _text(getattr(getattr(self.env, "cr", None), "dbname", ""))
         if source_db == current_db:
-            return self._extract_user_menu_pages(self.env), {"source_db": current_db, "source": "current_db_ir_ui_menu"}
+            try:
+                return self._extract_user_menu_pages(self.env), {
+                    "source_db": current_db,
+                    "source": "current_db_ir_ui_menu",
+                }
+            except Exception as exc:
+                return [], {
+                    "source_db": current_db,
+                    "source": "current_db_ir_ui_menu_failed",
+                    "error": str(exc),
+                }
         try:
             registry = Registry(source_db)
             with registry.cursor() as cr:
@@ -367,30 +425,494 @@ class ProductPolicyCatalogSyncService:
         identity = resolve_product_identity(product_key=product_key)
         payload = self.build_policy_payload(product_key=identity["product_key"])
         model = self.env["sc.product.policy"].sudo()
-        rec = model.search([("product_key", "=", identity["product_key"])], limit=1)
+        rec = model.with_context(active_test=False).search(
+            [("product_key", "=", identity["product_key"])],
+            limit=1,
+        )
         current = rec.to_runtime_dict() if rec else {}
-        self._merge_existing_page_controls(payload, current)
-        values = {
-            "active": True,
-            "product_key": identity["product_key"],
-            "base_product_key": _text(payload.get("base_product_key")) or identity["base_product_key"],
-            "edition_key": _text(payload.get("edition_key")) or identity["edition_key"],
-            "state": _text(current.get("state")) if preserve_state and current else (_text(payload.get("state")) or "stable"),
-            "access_level": _text(current.get("access_level")) if preserve_access_level and current else (_text(payload.get("access_level")) or "public"),
-            "allowed_role_codes": payload.get("allowed_role_codes") if isinstance(payload.get("allowed_role_codes"), list) else [],
-            "label": _text(payload.get("label")) or identity["product_key"],
-            "version": _text(payload.get("version")) or "v1",
-            "scene_version_bindings": payload.get("scene_version_bindings") if isinstance(payload.get("scene_version_bindings"), dict) else {},
-            "menu_groups": payload.get("menu_groups") if isinstance(payload.get("menu_groups"), list) else [],
-            "scenes": payload.get("scenes") if isinstance(payload.get("scenes"), list) else [],
-            "capabilities": payload.get("capabilities") if isinstance(payload.get("capabilities"), list) else [],
-            "note": "synced from productized scene catalog",
-        }
+        values = self.build_sync_values(
+            payload=payload,
+            current=current,
+            identity=identity,
+            preserve_state=preserve_state,
+            preserve_access_level=preserve_access_level,
+        )
         if rec:
             rec.write(values)
         else:
             rec = model.create(values)
         return rec
+
+    def build_sync_values(
+        self,
+        *,
+        payload: dict[str, Any],
+        current: dict[str, Any],
+        identity: dict[str, str],
+        preserve_state: bool = True,
+        preserve_access_level: bool = True,
+    ) -> dict[str, Any]:
+        """Build values for one sync; all source validation happens before return.
+
+        A missing policy keeps the existing initialization behavior. An existing
+        policy is a maintenance fact carrier: the actual execution database
+        refreshes source identity for entries that are already selected, but it
+        cannot replace the policy's maintained organization or expand its
+        selection.
+        """
+        generated = payload if isinstance(payload, dict) else {}
+        if not current:
+            return self._initial_sync_values(generated, identity)
+        merged = self._merge_existing_draft(generated, current)
+        return {
+            "active": current.get("active", True),
+            "product_key": identity["product_key"],
+            "base_product_key": _text(current.get("base_product_key"))
+            or _text(generated.get("base_product_key"))
+            or identity["base_product_key"],
+            "edition_key": _text(current.get("edition_key"))
+            or _text(generated.get("edition_key"))
+            or identity["edition_key"],
+            "state": current.get("state")
+            if preserve_state
+            else (_text(generated.get("state")) or "stable"),
+            "access_level": current.get("access_level")
+            if preserve_access_level
+            else (_text(generated.get("access_level")) or "public"),
+            "allowed_role_codes": self._preserved_value(
+                current,
+                generated,
+                "allowed_role_codes",
+                list,
+            ),
+            "label": self._preserved_value(current, generated, "label", str),
+            "version": self._preserved_value(current, generated, "version", str),
+            "scene_version_bindings": self._preserved_value(
+                current,
+                generated,
+                "scene_version_bindings",
+                dict,
+            ),
+            "menu_groups": self._preserved_value(
+                merged,
+                generated,
+                "menu_groups",
+                list,
+            ),
+            "scenes": self._preserved_value(merged, generated, "scenes", list),
+            "capabilities": self._preserved_value(
+                merged,
+                generated,
+                "capabilities",
+                list,
+            ),
+            "note": self._preserved_value(current, generated, "note", str),
+        }
+
+    def _initial_sync_values(
+        self,
+        payload: dict[str, Any],
+        identity: dict[str, str],
+    ) -> dict[str, Any]:
+        self._assert_catalog_source_usable(payload)
+        payload = self._resolve_initial_native_sources(payload)
+        return {
+            "active": True,
+            "product_key": identity["product_key"],
+            "base_product_key": _text(payload.get("base_product_key"))
+            or identity["base_product_key"],
+            "edition_key": _text(payload.get("edition_key"))
+            or identity["edition_key"],
+            "state": _text(payload.get("state")) or "stable",
+            "access_level": _text(payload.get("access_level")) or "public",
+            "allowed_role_codes": copy.deepcopy(payload.get("allowed_role_codes"))
+            if isinstance(payload.get("allowed_role_codes"), list)
+            else [],
+            "label": _text(payload.get("label")) or identity["product_key"],
+            "version": _text(payload.get("version")) or "v1",
+            "scene_version_bindings": copy.deepcopy(
+                payload.get("scene_version_bindings")
+            )
+            if isinstance(payload.get("scene_version_bindings"), dict)
+            else {},
+            "menu_groups": copy.deepcopy(payload.get("menu_groups"))
+            if isinstance(payload.get("menu_groups"), list)
+            else [],
+            "scenes": copy.deepcopy(payload.get("scenes"))
+            if isinstance(payload.get("scenes"), list)
+            else [],
+            "capabilities": copy.deepcopy(payload.get("capabilities"))
+            if isinstance(payload.get("capabilities"), list)
+            else [],
+            "note": "synced from productized scene catalog",
+        }
+
+    def _resolve_initial_native_sources(
+        self,
+        payload: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Resolve source-database discovery rows to execution identities."""
+        resolved = copy.deepcopy(payload)
+        groups = resolved.get("menu_groups")
+        groups = groups if isinstance(groups, list) else []
+        validated_sources: dict[str, dict[str, Any]] = {}
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            menus = group.get("menus")
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict) or not self._is_native_entry(menu):
+                    continue
+                menu_ref = _text(menu.get("menu_xmlid"))
+                if not menu_ref:
+                    raise ProductPolicyCatalogSyncError(
+                        "PRODUCT_SYNC_SOURCE_MISSING",
+                        "selected native entry has no stable menu XMLID",
+                        entry=_text(menu.get("menu_key") or menu.get("page_key")),
+                    )
+                source = self._read_native_source_facts(menu)
+                self._assert_action_identity(current_row=menu, source_row=source)
+                validated_sources[menu_ref] = source
+
+        refreshed_menus: dict[str, dict[str, Any]] = {}
+        for group in groups:
+            if not isinstance(group, dict):
+                continue
+            menus = group.get("menus")
+            next_menus = []
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict):
+                    continue
+                next_menu = copy.deepcopy(menu)
+                source = validated_sources.get(_text(menu.get("menu_xmlid")))
+                if source:
+                    self._overlay_source_fields(
+                        next_menu,
+                        source,
+                        self.NATIVE_SOURCE_FIELDS,
+                    )
+                    refreshed_menus[_text(next_menu.get("menu_xmlid"))] = next_menu
+                next_menus.append(next_menu)
+            group["menus"] = next_menus
+
+        capabilities = resolved.get("capabilities")
+        next_capabilities = []
+        for capability in capabilities if isinstance(capabilities, list) else []:
+            if not isinstance(capability, dict):
+                continue
+            next_capability = copy.deepcopy(capability)
+            menu_ref = _text(capability.get("menu_xmlid"))
+            source = validated_sources.get(menu_ref)
+            if source and self._is_native_capability_alias(next_capability):
+                self._overlay_source_fields(
+                    next_capability,
+                    {
+                        **source,
+                        "visible_menu_path": _text(
+                            (refreshed_menus.get(menu_ref) or {}).get(
+                                "visible_menu_path"
+                            )
+                        ),
+                    },
+                    self.CAPABILITY_SOURCE_FIELDS,
+                )
+            next_capabilities.append(next_capability)
+        resolved["capabilities"] = next_capabilities
+
+        scenes = resolved.get("scenes")
+        next_scenes = []
+        for scene in scenes if isinstance(scenes, list) else []:
+            if not isinstance(scene, dict):
+                continue
+            next_scene = copy.deepcopy(scene)
+            source = validated_sources.get(_text(scene.get("menu_xmlid")))
+            if source:
+                self._overlay_source_fields(
+                    next_scene,
+                    source,
+                    self.SCENE_SOURCE_FIELDS,
+                )
+            next_scenes.append(next_scene)
+        resolved["scenes"] = next_scenes
+        return resolved
+
+    @staticmethod
+    def _preserved_value(
+        current: dict[str, Any],
+        generated: dict[str, Any],
+        key: str,
+        expected_type: type,
+    ) -> Any:
+        if key in current:
+            value = current.get(key)
+            return copy.deepcopy(value) if isinstance(value, expected_type) else value
+        value = generated.get(key)
+        if isinstance(value, expected_type):
+            return copy.deepcopy(value)
+        if expected_type is list:
+            return []
+        if expected_type is dict:
+            return {}
+        return ""
+
+    def _assert_catalog_source_usable(self, payload: dict[str, Any]) -> None:
+        source = payload.get("policy_source_authority")
+        if not isinstance(source, dict):
+            return
+        source_name = _text(source.get("source"))
+        if source.get("error") or source_name.endswith("_failed") or source_name == "menu_fact_unavailable":
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_READ_FAILED",
+                source_name or "catalog source unavailable",
+            )
+
+    def _merge_existing_draft(
+        self,
+        generated: dict[str, Any],
+        current: dict[str, Any],
+    ) -> dict[str, Any]:
+        """Refresh selected native sources without replacing maintained facts."""
+        self._assert_catalog_source_usable(generated)
+        merged = copy.deepcopy(current)
+        validated_sources: dict[str, dict[str, Any]] = {}
+        current_groups = current.get("menu_groups")
+        current_groups = current_groups if isinstance(current_groups, list) else []
+        for group in current_groups:
+            if not isinstance(group, dict):
+                continue
+            menus = group.get("menus")
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict) or not self._is_native_entry(menu):
+                    continue
+                menu_ref = _text(menu.get("menu_xmlid"))
+                if not menu_ref:
+                    raise ProductPolicyCatalogSyncError(
+                        "PRODUCT_SYNC_SOURCE_MISSING",
+                        "selected native entry has no stable menu XMLID",
+                        entry=_text(menu.get("menu_key") or menu.get("page_key")),
+                    )
+                source = self._read_native_source_facts(menu)
+                self._assert_action_identity(current_row=menu, source_row=source)
+                validated_sources[menu_ref] = source
+
+        # No write occurs before every selected source has been resolved and
+        # checked. Only then apply source-only overlays to existing rows.
+        merged_groups = []
+        for group in current_groups:
+            if not isinstance(group, dict):
+                continue
+            next_group = copy.deepcopy(group)
+            menus = group.get("menus")
+            next_menus = []
+            for menu in menus if isinstance(menus, list) else []:
+                if not isinstance(menu, dict):
+                    continue
+                next_menu = copy.deepcopy(menu)
+                source = validated_sources.get(_text(menu.get("menu_xmlid")))
+                if source:
+                    self._overlay_source_fields(
+                        next_menu,
+                        source,
+                        self.NATIVE_SOURCE_FIELDS,
+                    )
+                next_menus.append(next_menu)
+            next_group["menus"] = next_menus
+            merged_groups.append(next_group)
+        merged["menu_groups"] = merged_groups
+        refreshed_menus = {
+            _text(menu.get("menu_xmlid")): menu
+            for group in merged_groups
+            for menu in group.get("menus") or []
+            if isinstance(menu, dict) and _text(menu.get("menu_xmlid"))
+        }
+
+        capabilities = current.get("capabilities")
+        next_capabilities = []
+        for capability in capabilities if isinstance(capabilities, list) else []:
+            if not isinstance(capability, dict):
+                continue
+            next_capability = copy.deepcopy(capability)
+            menu_ref = _text(capability.get("menu_xmlid"))
+            source = validated_sources.get(menu_ref)
+            if source and self._is_native_capability_alias(next_capability):
+                self._overlay_source_fields(
+                    next_capability,
+                    {
+                        **source,
+                        "visible_menu_path": _text(
+                            (refreshed_menus.get(menu_ref) or {}).get(
+                                "visible_menu_path"
+                            )
+                        ),
+                    },
+                    self.CAPABILITY_SOURCE_FIELDS,
+                )
+            next_capabilities.append(next_capability)
+        merged["capabilities"] = next_capabilities
+        merged["scenes"] = copy.deepcopy(current.get("scenes")) if isinstance(
+            current.get("scenes"), list
+        ) else []
+        merged["scene_version_bindings"] = copy.deepcopy(
+            current.get("scene_version_bindings")
+        ) if isinstance(current.get("scene_version_bindings"), dict) else {}
+        return merged
+
+    @staticmethod
+    def _is_native_entry(row: dict[str, Any]) -> bool:
+        return bool(int(row.get("action_id") or 0) or _text(row.get("action_xmlid")))
+
+    @staticmethod
+    def _is_native_capability_alias(row: dict[str, Any]) -> bool:
+        if row.get("business_capability") is True:
+            return False
+        identity_kind = _text(row.get("identity_kind"))
+        if identity_kind and identity_kind != "entry_compatibility_alias":
+            return False
+        provider_authority = _text(row.get("provider_authority"))
+        return not provider_authority or provider_authority == "native_menu_action_entry"
+
+    @staticmethod
+    def _source_action_identity(row: dict[str, Any]) -> tuple[str, int]:
+        return _text(row.get("action_xmlid")), int(row.get("action_id") or 0)
+
+    def _assert_action_identity(
+        self,
+        *,
+        current_row: dict[str, Any],
+        source_row: dict[str, Any],
+    ) -> None:
+        current_xmlid, current_id = self._source_action_identity(current_row)
+        source_xmlid, source_id = self._source_action_identity(source_row)
+        changed = False
+        if current_xmlid:
+            changed = source_xmlid != current_xmlid
+        elif current_id and source_id:
+            changed = source_id != current_id
+        if changed:
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+                (
+                    f"stored action identity "
+                    f"{current_xmlid or current_id} resolved to "
+                    f"{source_xmlid or source_id}"
+                ),
+                entry=_text(
+                    current_row.get("menu_xmlid")
+                    or current_row.get("menu_key")
+                    or current_row.get("page_key")
+                ),
+            )
+        if not source_xmlid:
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_MISSING",
+                "native source has no stable action XMLID",
+                entry=_text(current_row.get("menu_xmlid") or source_row.get("menu_xmlid")),
+            )
+        source_model = _text(
+            source_row.get("res_model") or source_row.get("model")
+        )
+        source_action_model = _text(source_row.get("action_model"))
+        for field_name, source_value in (
+            ("action_model", source_action_model),
+            ("model", source_model),
+            ("res_model", source_model),
+        ):
+            current_value = _text(current_row.get(field_name))
+            if current_value and current_value != source_value:
+                raise ProductPolicyCatalogSyncError(
+                    "PRODUCT_SYNC_ACTION_IDENTITY_CHANGED",
+                    (
+                        f"stored {field_name} binding {current_value} resolved to "
+                        f"{source_value}"
+                    ),
+                    entry=_text(
+                        current_row.get("menu_xmlid")
+                        or current_row.get("menu_key")
+                        or current_row.get("page_key")
+                    ),
+                )
+
+    @staticmethod
+    def _overlay_source_fields(
+        target: dict[str, Any],
+        source: dict[str, Any],
+        fields: tuple[str, ...],
+    ) -> None:
+        for field in fields:
+            if field not in source:
+                continue
+            value = source.get(field)
+            if value in (None, ""):
+                continue
+            if field.endswith("_id") and not value:
+                continue
+            target[field] = copy.deepcopy(value)
+
+    def _read_native_source_facts(self, row: dict[str, Any]) -> dict[str, Any]:
+        menu_xmlid = _text(row.get("menu_xmlid"))
+        try:
+            menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+        except Exception as exc:
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_READ_FAILED",
+                str(exc),
+                entry=menu_xmlid,
+            ) from exc
+        if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_MISSING",
+                "native menu source not found",
+                entry=menu_xmlid,
+            )
+        try:
+            action = menu.action
+            if not action:
+                raise ProductPolicyCatalogSyncError(
+                    "PRODUCT_SYNC_SOURCE_MISSING",
+                    "native menu has no action",
+                    entry=menu_xmlid,
+                )
+            actual_menu_xmlid = _text(menu.get_external_id().get(menu.id))
+            action_xmlid = _text(action.get_external_id().get(action.id))
+            action_model = _text(getattr(action, "_name", ""))
+            res_model = _action_model(action)
+            view_modes = _action_view_modes(action)
+            return {
+                "menu_id": int(menu.id),
+                "menu_xmlid": actual_menu_xmlid or menu_xmlid,
+                "menu_key": actual_menu_xmlid or menu_xmlid,
+                "action_id": int(action.id),
+                "action_xmlid": action_xmlid,
+                "action_model": action_model,
+                "res_model": res_model,
+                "model": res_model,
+                "view_modes": view_modes,
+                "visible_menu_path": self._native_menu_path(menu),
+            }
+        except ProductPolicyCatalogSyncError:
+            raise
+        except Exception as exc:
+            raise ProductPolicyCatalogSyncError(
+                "PRODUCT_SYNC_SOURCE_READ_FAILED",
+                str(exc),
+                entry=menu_xmlid,
+            ) from exc
+
+    @staticmethod
+    def _native_menu_path(menu: Any) -> str:
+        labels: list[str] = []
+        seen: set[int] = set()
+        node = menu
+        while node:
+            node_id = int(getattr(node, "id", 0) or 0)
+            if not node_id or node_id in seen:
+                break
+            seen.add(node_id)
+            label = _text(getattr(node, "name", ""))
+            if label:
+                labels.append(label)
+            node = getattr(node, "parent_id", None)
+        return " / ".join(reversed(labels))
 
     def _merge_existing_page_controls(self, payload: dict[str, Any], current: dict[str, Any]) -> None:
         current_controls: dict[str, dict[str, Any]] = {}
