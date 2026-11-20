@@ -15,6 +15,7 @@
     "config/ci/contract_only_scopes.json",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/ops/local_development_environment_v1.md",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
     "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
@@ -79,6 +80,7 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_local_dev_product_release_prepare.py",
     "scripts/verify/test_local_platform_control.py",
+    "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     "scripts/verify/test_local_development_lifecycle.py"
