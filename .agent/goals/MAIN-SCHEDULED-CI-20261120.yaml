@@ -9,5 +9,5 @@ goal:
   objective: Restore discovered native routes and establish real published test prerequisites without weakening runtime gates.
   baseline:
     branch: main
-    full_sha: d2fb27530f5c1bf56719660af64199c6b343d8ff
+    full_sha: f2f7fd02f0f28f84e6190102f3bf559db0c28457
   exclusions: [customer_production, frontend_product_semantics, deployment]

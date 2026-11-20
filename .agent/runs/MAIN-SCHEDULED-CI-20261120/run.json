@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "MAIN-SCHEDULED-CI-20261120",
   "branch": "fix/main-scheduled-ci-20261120",
-  "baseline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+  "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
   "status": "active",
   "goal": ".agent/goals/MAIN-SCHEDULED-CI-20261120.yaml",
   "record": "docs/ops/iterations/main_scheduled_ci_20261120.md",
@@ -113,7 +113,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run sealed corrected fixture and new role-admission candidate; inspect prior remote frontend and coverage failures; keep PR950 Draft.",
+  "next_exact_step": "Diagnose remaining business_full projection error under new main, rerun fixture and exact-head candidate; PR950 stays Draft.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -243,7 +243,23 @@
       "status": "failed",
       "head": "ce1da712e174f002890fdbef8ad7f9320d631060",
       "reason": "Four backend shards passed. Frontend now reaches payment detail but retained-detail contract count fails. Coverage waits on same frontend managed ORM producer and correctly fails when producer fails. No coverage exemption warranted."
+    },
+    "fixture_orm_c7": {
+      "status": "failed",
+      "head": "c7fd87f189d0c6c18b18a5756a0880e9e95f2432",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-s2.log",
+      "reason": "Only business_full newly created principal lacks scenario_surface. Replay same-principal projection in failing test to expose swallowed provider exception, without altering result or privileges."
+    },
+    "iteration_412": {
+      "status": "passed",
+      "head": "412ff2f6d736fcd8bbea18981c80626bdff1c34e",
+      "log": ".runtime/ci-recovery/pr-push-s2.log",
+      "publication": "Push stopped because main advanced via PR949 and generated report merge conflicts. Governed append preserves candidate history; regenerate evidence before publication."
     }
   },
-  "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics."
+  "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
+  "original_baseline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff"
 }

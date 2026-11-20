@@ -96,6 +96,16 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         leaves = flatten_authorized_nav_leaves(navigation["nav"], navigation["route_authority"])
         self.authorized_ids = {row["menu_id"] for row in leaves}
         self.account_leaves = [row for row in leaves if str(row.get("menu_xmlid", "")).startswith("account.")]
+        if "scenario_surface" not in navigation:
+            # The optional extension wrapper suppresses provider exceptions.
+            # Replay only to expose their original traceback for this principal;
+            # never replace the production result with the diagnostic result.
+            from odoo.addons.smart_construction_core.services.scenario_surface_projection import project_authorized_nav_with_env
+            project_authorized_nav_with_env(
+                actor_env, nav=navigation["nav"],
+                route_authority=navigation["route_authority"],
+            )
+        self.assertIn("scenario_surface", navigation)
         surface = navigation["scenario_surface"]
         self.assertTrue(surface["ok"])
         return navigation, surface["tree"]["centers"]
