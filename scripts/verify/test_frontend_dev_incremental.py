@@ -1575,6 +1575,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_enterprise_readiness_contract_routes_to_navigation_consumers(self) -> None:
         for path in (
             "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+            "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
             "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
         ):
             with self.subTest(path=path):

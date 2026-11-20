@@ -1921,6 +1921,7 @@ RULES = (
     # navigation regressions.
     Rule((
         "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
         "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
     ), (
         "verify.navigation.publication_consumers.unit",

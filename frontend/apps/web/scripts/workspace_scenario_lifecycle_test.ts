@@ -991,6 +991,79 @@ assert.equal(
   }),
   false,
 );
+for (const entryKey of [
+  'smart_construction_core.action_sc_enterprise_company',
+  'smart_construction_core.action_sc_organization_department',
+  'smart_construction_core.action_sc_product_job_management_v1',
+  'smart_construction_core.action_sc_runtime_user_management',
+  'smart_construction_core.action_sc_product_data_permission_v1',
+]) {
+  const query = withEnterpriseSetupReturnTarget({ entry_key: entryKey }, {
+    sourceSceneKey: 'enterprise.setup',
+    sourcePath: `/s/enterprise.setup?entry_key=${entryKey}`,
+    sourceLabel: '企业初始化',
+  });
+  assert.equal(query.return_url, `/s/enterprise.setup?entry_key=${entryKey}`);
+  assert.equal(query.return_label, '返回企业初始化');
+}
+
+const {
+  groupEnterpriseReadinessRules,
+} = await import('../src/app/enterpriseReadinessPresentation.ts');
+const enterpriseRules = [
+  ['enterprise.identity', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.organization', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.positions', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.users', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.employees', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.user_employee_link', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.user_org_position', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.roles', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.project_responsibility', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.scenario_enablement', 'scenario_enablement', '业务场景与启用验证', 30],
+  ['enterprise.scenario_dependencies', 'scenario_enablement', '业务场景与启用验证', 30],
+  ['enterprise.role_delivery', 'scenario_enablement', '业务场景与启用验证', 30],
+].map(([rule_key, section_key, section_label, section_sequence]) => ({
+  rule_key: String(rule_key),
+  label: String(rule_key),
+  section_key: String(section_key),
+  section_label: String(section_label),
+  section_sequence: Number(section_sequence),
+  applicability: true,
+  status: 'CONFIGURED',
+  status_label: '已配置',
+  failure_reason: '',
+  suggested_responsible_party: '企业管理员',
+  remediation: null,
+})) as Parameters<typeof groupEnterpriseReadinessRules>[0];
+const enterpriseRuleGroups = groupEnterpriseReadinessRules(enterpriseRules);
+assert.deepEqual(
+  enterpriseRuleGroups.map(group => [group.key, group.label, group.rules.length]),
+  [
+    ['enterprise_foundation', '企业与组织', 3],
+    ['people_access', '人员、账号与权限', 6],
+    ['scenario_enablement', '业务场景与启用验证', 3],
+  ],
+);
+assert.deepEqual(
+  enterpriseRuleGroups.map(group => group.rules.map(rule => rule.rule_key)),
+  [
+    ['enterprise.identity', 'enterprise.organization', 'enterprise.positions'],
+    [
+      'enterprise.users',
+      'enterprise.employees',
+      'enterprise.user_employee_link',
+      'enterprise.user_org_position',
+      'enterprise.roles',
+      'enterprise.project_responsibility',
+    ],
+    [
+      'enterprise.scenario_enablement',
+      'enterprise.scenario_dependencies',
+      'enterprise.role_delivery',
+    ],
+  ],
+);
 assert.equal(
   'return_url' in withEnterpriseSetupReturnTarget({}, {
     sourceSceneKey: 'enterprise.setup',
@@ -1097,4 +1170,4 @@ diagnosisScope.stop();
 afterUnmount.request.settle(diagnosisResponse(1));
 await afterUnmount.result;
 assert.deepEqual(diagnosis.rules.value, []);
-console.log('[enterprise_readiness_lifecycle_test] PASS cases=14 consumer=actual transport=controlled');
+console.log('[enterprise_readiness_lifecycle_test] PASS cases=20 consumer=actual transport=controlled');

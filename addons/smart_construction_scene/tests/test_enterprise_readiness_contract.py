@@ -52,6 +52,7 @@ class ControlledEnv:
         positioned_employee_count=1,
         role_user_count=1,
         project_responsibility_count=0,
+        project_count=0,
     ):
         self.company = types.SimpleNamespace(
             id=7,
@@ -65,9 +66,10 @@ class ControlledEnv:
         self.counts = {
             "hr.department": department_count,
             "hr.job": job_count,
-            "res.users": user_count if role_user_count is None else role_user_count,
+            "res.users": user_count,
             "hr.employee": employee_count,
             "sc.project.member.assignment": project_responsibility_count,
+            "project.project": project_count,
         }
         self.linked_employee_count = linked_employee_count
         self.positioned_employee_count = positioned_employee_count
@@ -83,32 +85,29 @@ class ControlledEnv:
         if model == "hr.job":
             return self._counter(self.counts[model])
         if model == "res.users":
-            calls = {"count": 0}
-
             class Users:
                 def sudo(self):
                     return self
 
                 def search_count(self, domain):
-                    calls["count"] += 1
-                    return self_model.counts["res.users"] if calls["count"] == 1 else self_model.role_user_count
+                    if any(field_name == "groups_id" for field_name, _operator, _value in domain):
+                        return self_model.role_user_count
+                    return self_model.counts["res.users"]
 
             self_model = self
             return Users()
         if model == "hr.employee":
-            employee_calls = {"count": 0}
-
             class Employees:
                 def sudo(self):
                     return self
 
                 def search_count(self, domain):
-                    employee_calls["count"] += 1
-                    if employee_calls["count"] == 1:
-                        return self_model.counts["hr.employee"]
-                    if employee_calls["count"] == 2:
+                    fields = {field_name for field_name, _operator, _value in domain}
+                    if {"department_id", "job_id"}.issubset(fields):
+                        return self_model.positioned_employee_count
+                    if "user_id.active" in fields:
                         return self_model.linked_employee_count
-                    return self_model.positioned_employee_count
+                    return self_model.counts["hr.employee"]
 
             self_model = self
             return Employees()
@@ -122,6 +121,8 @@ class ControlledEnv:
 
             return Groups()
         if model == "sc.project.member.assignment":
+            return self._counter(self.counts[model])
+        if model == "project.project":
             return self._counter(self.counts[model])
         if model == "sc.scene":
             scene = types.SimpleNamespace(to_public_dict=lambda _user: {"code": "enterprise.setup"})
@@ -219,6 +220,7 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
                 {"key": "finance.payments", "active": True},
             ],
             enabled_scene_keys={"project.management"},
+            project_count=1,
         )
         diagnosis = _load_diagnosis(env)
         result = diagnosis.evaluate_enterprise_readiness(env, company_id=7)
@@ -258,6 +260,26 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
             "not_applicable_count": 0,
         })
         rules = {rule["rule_key"]: rule for rule in result["rules"]}
+        self.assertEqual(
+            {
+                rule_key: rule["section_key"]
+                for rule_key, rule in rules.items()
+            },
+            {
+                "enterprise.identity": "enterprise_foundation",
+                "enterprise.organization": "enterprise_foundation",
+                "enterprise.positions": "enterprise_foundation",
+                "enterprise.users": "people_access",
+                "enterprise.employees": "people_access",
+                "enterprise.user_employee_link": "people_access",
+                "enterprise.user_org_position": "people_access",
+                "enterprise.roles": "people_access",
+                "enterprise.project_responsibility": "people_access",
+                "enterprise.scenario_enablement": "scenario_enablement",
+                "enterprise.scenario_dependencies": "scenario_enablement",
+                "enterprise.role_delivery": "scenario_enablement",
+            },
+        )
         self.assertEqual(rules["enterprise.identity"]["section_key"], "enterprise_foundation")
         self.assertEqual(rules["enterprise.roles"]["section_label"], "人员、账号与权限")
         self.assertEqual(rules["enterprise.scenario_enablement"]["section_sequence"], 30)
@@ -289,6 +311,73 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
                 "key": "enterprise-scenario-activation",
                 "label": "前往场景管理",
             },
+        )
+
+    def test_user_role_and_employee_relations_are_counted_distinctly(self):
+        env = ControlledEnv(
+            surface_scenes=[{"key": "project.management", "active": True}],
+            enabled_scene_keys={"project.management"},
+            user_count=3,
+            role_user_count=0,
+            employee_count=3,
+            linked_employee_count=0,
+            positioned_employee_count=0,
+        )
+        diagnosis = _load_diagnosis(env)
+        rules = {
+            rule["rule_key"]: rule
+            for rule in diagnosis.evaluate_enterprise_readiness(env, company_id=7)["rules"]
+        }
+
+        self.assertEqual(rules["enterprise.users"]["evidence"]["user_count"], 3)
+        self.assertEqual(rules["enterprise.users"]["status"], "CONFIGURED")
+        self.assertEqual(rules["enterprise.roles"]["evidence"]["role_user_count"], 0)
+        self.assertEqual(rules["enterprise.roles"]["status"], "NOT_CONFIGURED")
+        self.assertEqual(rules["enterprise.employees"]["evidence"]["employee_count"], 3)
+        self.assertEqual(rules["enterprise.employees"]["status"], "CONFIGURED")
+        self.assertEqual(
+            rules["enterprise.user_employee_link"]["evidence"]["linked_employee_count"],
+            0,
+        )
+        self.assertEqual(
+            rules["enterprise.user_employee_link"]["status"],
+            "NOT_CONFIGURED",
+        )
+        self.assertEqual(
+            rules["enterprise.user_org_position"]["evidence"]["positioned_employee_count"],
+            0,
+        )
+        self.assertEqual(
+            rules["enterprise.user_org_position"]["status"],
+            "NOT_CONFIGURED",
+        )
+
+    def test_project_responsibility_waits_for_an_existing_project(self):
+        env = ControlledEnv(
+            surface_scenes=[{"key": "project.management", "active": True}],
+            enabled_scene_keys={"project.management"},
+        )
+        diagnosis = _load_diagnosis(env)
+        before = {
+            rule["rule_key"]: rule
+            for rule in diagnosis.evaluate_enterprise_readiness(env, company_id=7)["rules"]
+        }
+        self.assertFalse(before["enterprise.project_responsibility"]["applicability"])
+        self.assertEqual(
+            before["enterprise.project_responsibility"]["status"],
+            "NOT_EVALUATED",
+        )
+        self.assertIn("创建项目后", before["enterprise.project_responsibility"]["failure_reason"])
+
+        env.counts["project.project"] = 1
+        after = {
+            rule["rule_key"]: rule
+            for rule in diagnosis.evaluate_enterprise_readiness(env, company_id=7)["rules"]
+        }
+        self.assertTrue(after["enterprise.project_responsibility"]["applicability"])
+        self.assertEqual(
+            after["enterprise.project_responsibility"]["status"],
+            "NOT_CONFIGURED",
         )
 
     def test_inapplicable_project_and_scenario_rules_are_not_reported_as_attention(self):

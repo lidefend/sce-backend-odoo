@@ -46,18 +46,39 @@ Branch: `feature/scene-product-01-enterprise-base-config-20261120`
 - Enterprise setup UI: current company and responsibility boundary are visible; rules are grouped by declared section; summary never collapses the diagnosis into “enterprise ready”.
 - Enterprise setup return journey: native enterprise, organization, position, personnel/account and permission entries receive a declared return target to the same `/s/enterprise.setup` company/page context.
 - Scenario activation remains below the readiness facts. Enabling a scene does not manufacture role delivery or business-journey acceptance.
+- The 12 readiness rules now declare their product section by rule identity. User, employee, user-employee relation, organization-position relation, role and project responsibility facts belong to “人员、账号与权限”; the old `evaluation_layer` remains a separate evaluation field.
+- Project responsibility is applicable only when the company has an existing project and the project scene is selected. Before the first project exists, the rule is a later business-validation item instead of a misleading enterprise-opening blocker.
+- Saved enterprise scene selections remain counted when the product is temporarily unavailable, matching the scene catalog's saved-versus-current-availability semantics.
+
+## 五个原生维护入口审查
+
+| 入口 | 实际 action / view | 维护字段与可编辑性 | 关联、权限与保存回读边界 |
+| --- | --- | --- | --- |
+| 企业信息 | `action_sc_enterprise_company` / `view_sc_enterprise_company_form` | 企业名称、税号、电话、邮箱、网站和地址可维护；币种只读 | 只查看当前公司；禁止创建和删除；业务配置管理员组；保存由 `res.company` 原生写权限和公司规则裁决 |
+| 组织架构 | `action_sc_organization_department` / `view_sc_organization_department_form` | 名称、上级部门、负责人、公司、启用状态可维护；下级部门只读 | 业务配置管理员可写，数据读取角色只读；排除系统管理部门；无物理删除入口 |
+| 岗位管理 | `action_sc_product_job_management_v1` / `view_sc_product_job_form_v1` | 岗位编码、名称、部门、公司、启用、编制、职责和任职要求可维护；在职人数只读 | 禁止删除；记录规则限制允许公司；业务配置管理员 ACL 含写权限 |
+| 人员与账号 | `action_sc_runtime_user_management` / `view_sc_runtime_user_form` | 姓名、联系方式、部门、岗位、在职、登录账号、账号启用、主公司和密码可维护；建立后的人事档案字段只读 | 只显示当前公司范围内可维护的非特权内部用户；创建需要受控初始密码；公司、部门、岗位和角色写入经过白名单与范围校验；角色、允许公司和项目授权不在该页面重复维护 |
+| 业务权限 | `action_sc_product_data_permission_v1` / `view_sc_data_permission_user_form` | 人员身份只读；主公司、允许公司、可分配角色和项目成员授权可维护 | 用户范围复用 `sc_runtime_company_maintainable`；角色只接受 `sc_assignable_user_permission`；项目授权必须引用现有项目和原维护用户；禁止物理删除用户与项目授权 |
+
+五个入口都由原生模型完成持久化和回读，配置中心只提供入口、公司/页面上下文与返回路径。静态原生契约审查未发现需要重写页面的缺口；本批没有改变这些模型的保存语义，也没有把受控替身或纯契约测试冒充为真实数据库保存。
 
 ## 验证结果
 
-- `test_enterprise_readiness_contract.py`：3 项通过，覆盖分组声明、当前公司维护范围、摘要计数、待业务验证、不适用规则，以及产品暂时不可用时仍准确统计企业已保存的场景选择。
-- `verify.navigation.publication_consumers.unit`：269 项前置及目标测试通过。
-- `verify.frontend.workspace_scenario_lifecycle.unit`：readiness lifecycle 14 案通过；完整目标 481 项前置、消费及持久化案例通过。
+- `test_enterprise_readiness_contract.py`：5 项通过，覆盖 12 条规则显式分组、有用户无角色、有员工无账号关联、有关联无岗位、无项目时不启用项目责任待办，以及产品暂时不可用时仍准确统计企业已保存的场景选择。
+- `test_enterprise_setup_native_contracts.py`：5 项通过，逐项核对五个原生维护入口的 action/view、维护字段、可编辑性、公司/角色/项目关联和 ACL/记录规则。
+- `verify.navigation.publication_consumers.unit`：274 项前置及目标测试通过。
+- `verify.frontend.workspace_scenario_lifecycle.unit`：readiness lifecycle 20 案通过，使用完整 12 条规则和三组投影；真实 `EnterpriseReadinessPanel` SFC 挂载 14 案通过，覆盖当前企业、三组 12 条规则、摘要、组织整改按钮和刷新后新回读结果；完整目标 501 项前置、消费及持久化案例通过。
 - `verify.frontend.scene_entry_contract.unit`：scene entry 61、runtime fetch 73、diagnostic 85、hydration 94 案通过。
 - `verify.frontend.navigation_shell.unit`、`verify.frontend.lint.src`、`verify.frontend.typecheck.strict` 通过；lint 仅有仓库既有警告，无错误。
 - `verify.frontend.component_driver_takeover.unit`：18 项通过，组件驱动接管清单 current。
 - `verify.frontend.dev.incremental.unit`：188 项通过。
 - 场景中心投影守卫 9 项、场景事实边界 1 项通过。
-- `make ci.local.iteration`：exit 0，实际执行 11 个必需目标；无缺失登记、无未映射路径、无 ORM 执行项。
+- `make ci.local.iteration`：exit 0；最终解析 11 个必需目标，其中 9 个实际执行、2 个按未变输入复用；无缺失登记、无未映射路径、无 ORM 执行项。
 - `ci.delivery.freeze.prepare`：通过，生成证据 current。
+- 生成测试清单包含 1735 条，新增的挂载式页面消费测试已登记；组件驱动接管清单与源码指纹一致。
 
 本轮仅使用真实纯生产函数、前端实际消费函数和受控传输。企业资料、组织、岗位、人员、角色和场景的原生写入仍由各自模型、ACL 与记录规则执行；目标环境中真实账号使用结果不在本轮伪证。
+
+场景启停能力复用已合入的 SCENE-CLOSE-04：企业保存值、当前发布可用性、停用动作、原公司回读与目录重读均有既有纯契约和消费证据。本批只补充其与诊断的公共口径，不重复声称目标角色已获得业务访问。
+
+当前验证可以支持“场景声明与消费闭环完成”的候选结论，但不能替代实际运行环境中的用户可用性验收。五个原生入口的保存仍由真实 Odoo 模型、ACL、记录规则和受控表单机制执行；本轮通过静态原生契约、模型源码审查和受控组件/传输验证证明接线与边界，尚未执行真实账号保存、数据库回读或浏览器旅程。

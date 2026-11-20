@@ -80,26 +80,14 @@ import { computed } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { useEnterpriseReadiness, type ReadinessRemediation } from '../../composables/useEnterpriseReadiness';
+import { groupEnterpriseReadinessRules } from '../../app/enterpriseReadinessPresentation';
 
 defineEmits<{ (e: 'remediate', target: ReadinessRemediation): void }>();
 const {
   rules, companyName, maintenanceScope, summary, state, errorMessage, busy, load,
 } = useEnterpriseReadiness();
 
-const groupedRules = computed(() => {
-  const groups = new Map<string, { key: string; label: string; sequence: number; rules: typeof rules.value }>();
-  rules.value.forEach((rule) => {
-    const group = groups.get(rule.section_key) || {
-      key: rule.section_key,
-      label: rule.section_label,
-      sequence: rule.section_sequence,
-      rules: [],
-    };
-    group.rules.push(rule);
-    groups.set(rule.section_key, group);
-  });
-  return [...groups.values()].sort((left, right) => left.sequence - right.sequence);
-});
+const groupedRules = computed(() => groupEnterpriseReadinessRules(rules.value));
 </script>
 
 <style scoped>

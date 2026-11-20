@@ -13,18 +13,23 @@
     ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
     ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
     "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
     "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
     "config/ci/contract_only_scopes.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
     "docs/frontend_productization/decision-authority-inventory-v1.json",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
+    "frontend/apps/web/src/app/enterpriseReadinessPresentation.ts",
     "frontend/apps/web/src/app/enterpriseSetupNavigation.ts",
     "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
     "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
     "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/enterprise_readiness_component_test.mjs",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
@@ -69,6 +74,7 @@
       "target": "verify.navigation.publication_consumers.unit",
       "inputs": [
         "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py",
         "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "addons/smart_construction_core/services/scenario_surface_projection.py",
@@ -79,10 +85,12 @@
     "enterprise_readiness_frontend": {
       "target": "verify.frontend.workspace_scenario_lifecycle.unit",
       "inputs": [
+        "frontend/apps/web/src/app/enterpriseReadinessPresentation.ts",
         "frontend/apps/web/src/app/enterpriseSetupNavigation.ts",
         "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
         "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
         "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/enterprise_readiness_component_test.mjs",
         "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
         "make/frontend.mk"
       ],
@@ -195,9 +203,10 @@
   "validation_results": {
     "status": "passed",
     "passed": [
-      "test_enterprise_readiness_contract.py: 3 tests passed for section declarations, scope, summary, pending business validation and saved scene selection during temporary product unavailability",
-      "verify.navigation.publication_consumers.unit: 269 prerequisite and target tests passed",
-      "verify.frontend.workspace_scenario_lifecycle.unit: readiness lifecycle cases=14; full target 481 prerequisite/lifecycle/persistence cases passed",
+      "test_enterprise_readiness_contract.py: 5 tests passed for explicit rule grouping, distinct missing user/employee facts, project responsibility applicability, scope, summary and saved scene selection",
+      "test_enterprise_setup_native_contracts.py: 5 tests passed for the five native maintenance entries, fields, editability, relationships, ACL and record-rule boundaries",
+      "verify.navigation.publication_consumers.unit: 274 prerequisite and target tests passed",
+      "verify.frontend.workspace_scenario_lifecycle.unit: readiness lifecycle cases=20 with all 12 rules plus 14 mounted SFC cases; full target 501 prerequisite/lifecycle/persistence cases passed",
       "verify.frontend.scene_entry_contract.unit: passed; scene entry 61, runtime fetch 73, diagnostic 85 and hydration 94 cases",
       "verify.frontend.navigation_shell.unit: passed",
       "verify.frontend.component_driver_takeover.unit: 18 tests passed; component-driver inventory current",
@@ -206,7 +215,7 @@
       "verify.frontend.dev.incremental.unit: 188 tests passed",
       "verify.scenario.center_projection.guard: 9 tests passed",
       "verify.scene.fact_data.boundary.unit: 1 test passed",
-      "make ci.local.iteration: exit 0; 11 required targets executed, with no missing registration, unmapped path or excluded ORM target",
+      "make ci.local.iteration: exit 0; 11 required targets resolved, 9 executed and 2 reused after the final input reconciliation, with no missing registration, unmapped path or excluded ORM target",
       "ci.delivery.freeze.prepare: passed; generated evidence is current"
     ],
     "not_run": [

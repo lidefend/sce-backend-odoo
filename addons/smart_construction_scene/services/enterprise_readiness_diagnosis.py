@@ -40,12 +40,26 @@ SECTION_DEFINITIONS = {
         "sequence": 30,
     },
 }
+RULE_SECTIONS = {
+    "enterprise.identity": "enterprise",
+    "enterprise.organization": "enterprise",
+    "enterprise.positions": "enterprise",
+    "enterprise.users": "user",
+    "enterprise.employees": "user",
+    "enterprise.user_employee_link": "user",
+    "enterprise.user_org_position": "user",
+    "enterprise.roles": "user",
+    "enterprise.project_responsibility": "user",
+    "enterprise.scenario_enablement": "scenario",
+    "enterprise.scenario_dependencies": "scenario",
+    "enterprise.role_delivery": "scenario",
+}
 
 
-def _section(layer: str) -> dict[str, Any]:
-    section = SECTION_DEFINITIONS.get(layer)
+def _section(rule_key: str) -> dict[str, Any]:
+    section = SECTION_DEFINITIONS.get(RULE_SECTIONS.get(rule_key, ""))
     if not section:
-        raise ValueError(f"unknown enterprise readiness section: {layer}")
+        raise ValueError(f"unknown enterprise readiness section for rule: {rule_key}")
     return section
 
 
@@ -77,7 +91,7 @@ def _rule(
     remediation_entry: str,
     responsible_party: str,
 ) -> dict[str, Any]:
-    section = _section(layer)
+    section = _section(rule_key)
     return {
         "rule_key": rule_key,
         "label": RULE_LABELS[rule_key],
@@ -131,6 +145,9 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
             [("share", "=", False), ("active", "=", True), ("groups_id", "in", assignable_group_ids), ("company_ids", "in", [company_id])]
         )
     project_responsibility_count = env["sc.project.member.assignment"].sudo().search_count(
+        [("company_id", "=", company_id)]
+    )
+    project_count = env["project.project"].sudo().search_count(
         [("company_id", "=", company_id)]
     )
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
@@ -250,11 +267,24 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
         _rule(
             rule_key="enterprise.project_responsibility",
             layer="user",
-            applicability=project_enabled,
-            status=_count_status(project_responsibility_count, "项目责任未建立"),
+            applicability=project_enabled and project_count > 0,
+            status=(
+                _count_status(project_responsibility_count, "项目责任未建立")
+                if project_enabled and project_count > 0
+                else "NOT_EVALUATED"
+            ),
             source="sc.project.member.assignment",
-            evidence={"project_responsibility_count": project_responsibility_count},
-            failure_reason="" if project_responsibility_count else "项目责任未建立",
+            evidence={
+                "project_count": project_count,
+                "project_responsibility_count": project_responsibility_count,
+            },
+            failure_reason=(
+                ""
+                if project_responsibility_count
+                else "尚未建立项目；创建项目后再配置项目成员责任"
+                if project_enabled
+                else ""
+            ),
             affected_scenarios=["project_management"],
             remediation_entry="project.member.permission",
             responsible_party="项目负责人",
