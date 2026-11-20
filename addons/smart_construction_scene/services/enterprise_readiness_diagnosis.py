@@ -23,6 +23,45 @@ RULE_LABELS = {
 }
 STATUS_LABELS = {"VERIFIED": "已验证", "CONFIGURED": "已配置",
                  "NOT_CONFIGURED": "未配置", "NOT_EVALUATED": "待业务验证"}
+SECTION_DEFINITIONS = {
+    "enterprise": {
+        "key": "enterprise_foundation",
+        "label": "企业与组织",
+        "sequence": 10,
+    },
+    "user": {
+        "key": "people_access",
+        "label": "人员、账号与权限",
+        "sequence": 20,
+    },
+    "scenario": {
+        "key": "scenario_enablement",
+        "label": "业务场景与启用验证",
+        "sequence": 30,
+    },
+}
+
+
+def _section(layer: str) -> dict[str, Any]:
+    section = SECTION_DEFINITIONS.get(layer)
+    if not section:
+        raise ValueError(f"unknown enterprise readiness section: {layer}")
+    return section
+
+
+def _summary(rules: list[dict[str, Any]]) -> dict[str, int]:
+    applicable = [rule for rule in rules if rule["applicability"]]
+    return {
+        "rule_count": len(rules),
+        "applicable_count": len(applicable),
+        "verified_count": sum(rule["status"] == "VERIFIED" for rule in applicable),
+        "configured_count": sum(rule["status"] == "CONFIGURED" for rule in applicable),
+        "needs_attention_count": sum(rule["status"] == "NOT_CONFIGURED" for rule in applicable),
+        "pending_business_validation_count": sum(
+            rule["status"] == "NOT_EVALUATED" for rule in applicable
+        ),
+        "not_applicable_count": len(rules) - len(applicable),
+    }
 
 
 def _rule(
@@ -38,9 +77,13 @@ def _rule(
     remediation_entry: str,
     responsible_party: str,
 ) -> dict[str, Any]:
+    section = _section(layer)
     return {
         "rule_key": rule_key,
         "label": RULE_LABELS[rule_key],
+        "section_key": section["key"],
+        "section_label": section["label"],
+        "section_sequence": section["sequence"],
         "status_label": STATUS_LABELS[status] if applicability else "不适用",
         "evaluation_layer": layer,
         "applicability": applicability,
@@ -256,10 +299,34 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     scene = env["sc.scene"].search([("code", "=", "enterprise.setup"), ("state", "=", "published")], limit=1)
     catalog = project_native_handling_catalog(env, scene.to_public_dict(env.user)) if scene else None
     decorate_remediation(rules, catalog)
+    company_name = company.display_name if company else ""
     return {
         "contract_version": "enterprise_readiness.v2",
         "company_id": company_id,
-        "company_name": company.display_name if company else "",
+        "company_name": company_name,
+        "maintenance_scope": {
+            "kind": "enterprise_configuration",
+            "company_id": company_id,
+            "company_name": company_name,
+            "enterprise_managed": [
+                "企业信息",
+                "组织架构与岗位",
+                "人员与账号",
+                "业务角色与允许公司",
+                "企业场景选择",
+            ],
+            "platform_managed": [
+                "企业创建",
+                "首个企业管理员",
+                "产品版本发布",
+                "平台技术配置",
+            ],
+            "business_validation_required": [
+                "场景依赖",
+                "角色工作空间交付",
+            ],
+        },
+        "summary": _summary(rules),
         "checked_at": env.cr.now(),
         "rules": rules,
     }

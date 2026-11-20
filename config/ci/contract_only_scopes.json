@@ -240,6 +240,50 @@
       "excluded_targets": [
         "verify.daily.permission_truth.capability.orm"
       ]
+    },
+    {
+      "id": "SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120",
+      "branch": "feature/scene-product-01-enterprise-base-config-20261120",
+      "base_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+      "reason": "Owner-approved contract-only validation for enterprise initialization readiness declarations, configuration responsibilities, return continuation and existing scene activation.",
+      "allowed_paths": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
+        ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
+        ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
+        ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
+        "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
+        "config/ci/contract_only_scopes.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
+        "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
+        "frontend/apps/web/src/app/enterpriseSetupNavigation.ts",
+        "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
+        "frontend/apps/web/src/components/scene/EnterpriseReadinessPanel.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "targets": [
+        "verify.agent.resume.unit",
+        "verify.agent.ledger.unit",
+        "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+        "verify.frontend.dev.incremental.unit",
+        "verify.scene.fact_data.boundary.unit",
+        "verify.ci.workflow.contract"
+      ],
+      "excluded_targets": [
+        "verify.daily.permission_truth.capability.orm",
+        "verify.business_config.full_acceptance",
+        "verify.business_config.browser_acceptance"
+      ]
     }
   ]
 }

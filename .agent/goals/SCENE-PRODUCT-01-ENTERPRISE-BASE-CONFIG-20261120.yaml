@@ -1,0 +1,63 @@
+schema_version: 1
+
+goal:
+  id: SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120
+  title: enterprise_base_configuration_and_activation
+  status: verification_pending
+  formal_product_layer: P1/P4
+  layer_target: >-
+    Existing enterprise initialization scene, enterprise readiness diagnosis
+    contract, and the custom frontend configuration journey.
+  module:
+    - addons/smart_construction_scene
+    - addons/smart_construction_core
+    - frontend/apps/web
+    - make/frontend.mk
+    - config/ci
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_company_runtime_configuration
+  objective: >-
+    Let an established enterprise configuration administrator complete the
+    necessary company, organization, position, personnel, account, role,
+    company-scope and business-scenario configuration through the existing
+    enterprise initialization entry, understand outstanding facts and
+    responsibility, return to the same enterprise, and reread the resulting
+    diagnosis without platform administration or fabricated business acceptance.
+  product_result: >-
+    A configuration administrator can enter enterprise initialization before
+    business scenarios are enabled, work through declared configuration groups,
+    return to the same company and orientation, select or revoke qualified
+    business scenarios, and distinguish configured facts from business journeys
+    that still require target-role validation.
+  why_here: >-
+    Enterprise readiness facts, scenario eligibility and remediation authority
+    are P1 construction product semantics. The existing frontend already owns
+    the generic enterprise setup presentation and must consume those declarations.
+  why_not_elsewhere:
+    - Platform administration continues to own enterprise creation, the first administrator and product release.
+    - Business models continue to own company, organization, personnel, role and scenario facts.
+    - The frontend must not infer readiness, invent maintenance responsibility or synthesize business acceptance.
+    - Project responsibility remains tied to an existing project rather than blocking enterprise account setup.
+  blast_radius:
+    behavior:
+      - enterprise initialization entry when no business scene is enabled
+      - company, organization, position, personnel, account and role remediation
+      - enterprise readiness grouping, summary, current-company context and return journey
+      - enterprise scenario enablement and post-save diagnosis reread
+      - separation of platform administration, enterprise configuration and target-role business validation
+  exclusions:
+    - enterprise creation, first-administrator provisioning and product release
+    - ORM, module baselines, module upgrade and fixture rebuild
+    - browser matrix, deployment and target-environment user acceptance
+    - project processing, contract processing and finance business closures
+    - fabricated organization, personnel, project or business data
+  rollback: >-
+    Revert the readiness contract presentation, enterprise setup return journey
+    and focused regressions together. Existing native actions, authority, company
+    facts, scenario selections and business models remain unchanged.
+
+  completion:
+    batch: pending
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: not_run

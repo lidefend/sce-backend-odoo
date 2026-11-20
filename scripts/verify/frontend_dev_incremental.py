@@ -1915,6 +1915,16 @@ RULES = (
     ), (
         "verify.business_config.approval_targets.unit",
     )),
+    # Enterprise initialization facts and scene enablement share the navigation
+    # publication consumer suite. Its focused readiness contract test is
+    # registered in the same Make target as the existing tenant activation and
+    # navigation regressions.
+    Rule((
+        "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+        "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
+    ), (
+        "verify.navigation.publication_consumers.unit",
+    )),
     # Request-scoped route authority and contract projection identity are both
     # backend consumers of the assembled page contract. Keep each path on its
     # existing non-zero L2 owner so the inner loop cannot silently skip a cache

@@ -1572,6 +1572,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertIn("verify.business_config.unit", shared_context_targets)
         self.assertIn("verify.business_config.approval_targets.unit", shared_context_targets)
 
+    def test_enterprise_readiness_contract_routes_to_navigation_consumers(self) -> None:
+        for path in (
+            "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+            "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
+        ):
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.navigation.publication_consumers.unit", targets)
+                self.assertFalse(any(".orm" in target for target in targets))
+
     def test_controlled_feedback_chain_routes_to_unit_and_orm_owners(self) -> None:
         for path in (
             "addons/smart_core/core/native_advisory.py",
