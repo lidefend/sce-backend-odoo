@@ -49,8 +49,8 @@ Branch: `feature/scene-product-01-enterprise-base-config-20261120`
 
 ## 验证结果
 
-- `test_enterprise_readiness_contract.py`：2 项通过，覆盖分组声明、当前公司维护范围、摘要计数、待业务验证和不适用规则。
-- `verify.navigation.publication_consumers.unit`：268 项前置及目标测试通过。
+- `test_enterprise_readiness_contract.py`：3 项通过，覆盖分组声明、当前公司维护范围、摘要计数、待业务验证、不适用规则，以及产品暂时不可用时仍准确统计企业已保存的场景选择。
+- `verify.navigation.publication_consumers.unit`：269 项前置及目标测试通过。
 - `verify.frontend.workspace_scenario_lifecycle.unit`：readiness lifecycle 14 案通过；完整目标 481 项前置、消费及持久化案例通过。
 - `verify.frontend.scene_entry_contract.unit`：scene entry 61、runtime fetch 73、diagnostic 85、hydration 94 案通过。
 - `verify.frontend.navigation_shell.unit`、`verify.frontend.lint.src`、`verify.frontend.typecheck.strict` 通过；lint 仅有仓库既有警告，无错误。

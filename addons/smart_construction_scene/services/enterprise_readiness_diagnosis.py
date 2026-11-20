@@ -136,7 +136,11 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     from odoo.addons.smart_construction_core.services.scenario_surface_projection import load_runtime_surface
     from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
     from odoo.addons.smart_construction_scene.services.tenant_scene_activation import read_tenant_enablement
-    business_keys = [business_key(row["key"]) for row in load_runtime_surface(env)["scenarios"] if row["active"]]
+    business_keys = [
+        business_key(row["key"])
+        for row in load_runtime_surface(env)["scenarios"]
+        if str(row.get("key") or "").strip()
+    ]
     enabled_scene_keys = [key for key in business_keys if read_tenant_enablement(env, company_id, key)]
     enabled_scene_count = len(enabled_scene_keys)
     project_enabled = business_key("project.management") in enabled_scene_keys

@@ -195,8 +195,8 @@
   "validation_results": {
     "status": "passed",
     "passed": [
-      "test_enterprise_readiness_contract.py: 2 tests passed for section declarations, scope, summary and pending business validation",
-      "verify.navigation.publication_consumers.unit: 268 prerequisite and target tests passed",
+      "test_enterprise_readiness_contract.py: 3 tests passed for section declarations, scope, summary, pending business validation and saved scene selection during temporary product unavailability",
+      "verify.navigation.publication_consumers.unit: 269 prerequisite and target tests passed",
       "verify.frontend.workspace_scenario_lifecycle.unit: readiness lifecycle cases=14; full target 481 prerequisite/lifecycle/persistence cases passed",
       "verify.frontend.scene_entry_contract.unit: passed; scene entry 61, runtime fetch 73, diagnostic 85 and hydration 94 cases",
       "verify.frontend.navigation_shell.unit: passed",

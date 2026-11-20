@@ -317,6 +317,30 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
             )),
         )
 
+    def test_saved_scene_selection_is_counted_when_product_is_temporarily_unavailable(self):
+        env = ControlledEnv(
+            surface_scenes=[
+                {"key": "finance.payments", "active": False},
+            ],
+            enabled_scene_keys={"finance.payments"},
+        )
+        diagnosis = _load_diagnosis(env)
+        result = diagnosis.evaluate_enterprise_readiness(env, company_id=7)
+        rules = {rule["rule_key"]: rule for rule in result["rules"]}
+
+        self.assertEqual(
+            rules["enterprise.scenario_enablement"]["evidence"]["enabled_scene_count"],
+            1,
+        )
+        self.assertEqual(
+            rules["enterprise.scenario_enablement"]["status"],
+            "CONFIGURED",
+        )
+        self.assertEqual(
+            rules["enterprise.scenario_dependencies"]["status"],
+            "NOT_EVALUATED",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
