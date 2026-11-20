@@ -151,7 +151,8 @@
     },
     "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
     "candidate_health": "passed: backend source revision and 5176 frontend both 93e261258381c4d9d70b583472363fe4adf7ee17",
-    "current_product_source": "91bc9a0b4538a76d6b7c476dbe4517ae57b24632 plus the field-context and native-command fixes in this result index",
+    "current_product_source": "4c844f25b2fb081541ba94f0c6a49fd20c63bbc6",
+    "candidate_fingerprint_sha256": "486d478c3640c245bdde2ef60cfdb0c851469b311e20f743aa34c9e5415d263b",
     "system_init_after_schema_upgrade": "passed"
   },
   "release_prerequisite": {
@@ -803,5 +804,5 @@
     "targeted_checks": "Native field contexts, Command enum inputs, person-employee identity, role/company scope and target-user scenario delivery now have focused regressions.",
     "user_acceptance": "Passed in sc-local-dev for the verified role and company; exact final candidate must still complete the affected delivery gates."
   },
-  "next_exact_step": "Run make ci.local.iteration for the current P0/P1/test/tool impact set, resolve any generated-evidence drift, then freeze and review the exact candidate."
+  "next_exact_step": "Publish the clean exact candidate for independent review and exact-head required CI; do not claim deployment or broader user acceptance."
 }
