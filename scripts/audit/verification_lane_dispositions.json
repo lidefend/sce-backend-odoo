@@ -2583,6 +2583,12 @@
       "reason": "unit coverage for the local.dev entry identity repair/verify tooling",
       "review_by": "2026-12-31"
     },
+    "verify.local.dev.enterprise_configuration.consumer": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "construction-product-team",
+      "reason": "SCENE-PRODUCT-02 on-demand enterprise configuration browser probe bound to the governed local.dev candidate frontend. It verifies visible handling-entry contract feedback and the independently readable enterprise scenario catalog; it requires an active 5176 candidate service and is not a recurring CI lane.",
+      "review_by": "2026-12-31"
+    },
     "verify.local.dev.journal.draft": {
       "disposition": "ops_runbook",
       "owner": "platform-team",

@@ -48,6 +48,7 @@ WATCH_ROOTS = (
     "frontend/packages/ui/tsconfig.json",
     "frontend/packages/design-tokens",
     "scripts/verify/frontend_",
+    "scripts/verify/local_dev_enterprise_configuration_consumer",
     "scripts/ops/incremental_execution.py",
 )
 CHECKPOINT_AUTHORITY_PATHS = (
@@ -825,6 +826,12 @@ RULES = (
         "verify.local.dev.payment_settlement_journey.unit",
     )),
     Rule((
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+    ), (
+        "verify.local.dev.enterprise_configuration.consumer.unit",
+    )),
+    Rule((
         "/views/LoginView.vue",
         "/views/AccountActivationView.vue",
         "/views/PasswordRecoveryView.vue",
@@ -1351,6 +1358,8 @@ RULES = (
     Rule((
         "scripts/verify/frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/error_state_component_test.cjs",
+        "frontend/apps/web/src/components/StatusPanel.vue",
         "frontend/apps/web/src/pages/ContractFormRoute.vue",
         "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
         "frontend/apps/web/src/App.vue",

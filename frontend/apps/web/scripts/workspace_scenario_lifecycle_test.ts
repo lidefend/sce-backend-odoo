@@ -597,6 +597,9 @@ session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullab
 const managementScope = effectScope();
 const management = managementScope.run(() => useScenarioActivation())!;
 const catalogResponse = (company = 1, actions = true) => ({
+  contract_version: 'scenario_activation_catalog.v1',
+  rows: [],
+  row_count: 0,
   company_id: company,
   actor: {
     user_id: 9,
@@ -819,6 +822,48 @@ managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
 
+const previousDiagnosticsCompanyId = session.recordContext?.company_id;
+session.initStatus = 'ready';
+session.initError = '';
+session.recordContext = {
+  ...session.recordContext,
+  company_id: 1,
+} as NonNullable<typeof session.recordContext>;
+const diagnosticsScope = effectScope();
+const diagnostics = diagnosticsScope.run(() => useScenarioActivation())!;
+await flush();
+pending.at(-1)!.settle({
+  ...catalogResponse(),
+  rows: [{
+    scene_key: 'project.management',
+    name: '项目管理',
+    release_state: 'preview',
+    product_released: false,
+    tenant_enabled: false,
+    product_qualification: {
+      status: 'not_verified',
+      reason_code: 'PRODUCT_RELEASE_UNVERIFIED',
+      evidence: {},
+    },
+    enablement_blockers: ['PRODUCT_RELEASE_UNVERIFIED'],
+    enable_allowed: false,
+  }],
+  row_count: 1,
+  business_scenarios: [],
+});
+await flush();
+assert.equal(diagnostics.state.value, 'ready', diagnostics.errorMessage.value);
+assert.deepEqual(diagnostics.rows.value, []);
+assert.equal(diagnostics.catalogRowCount.value, 1);
+assert.equal(diagnostics.catalogRows.value[0].product_qualification.reason_code, 'PRODUCT_RELEASE_UNVERIFIED');
+assert.deepEqual(diagnostics.catalogRows.value[0].enablement_blockers, ['PRODUCT_RELEASE_UNVERIFIED']);
+diagnosticsScope.stop();
+session.recordContext = {
+  ...session.recordContext,
+  company_id: previousDiagnosticsCompanyId,
+} as NonNullable<typeof session.recordContext>;
+console.log('[business_scenario_catalog_diagnostics_test] PASS cases=6 consumer=actual transport=controlled');
+
 // An unavailable scene still preserves the enterprise's saved enablement and
 // exposes only the server-declared disable action. The action target false is
 // not a disabled button; it is the state written by the real consumer.
@@ -832,6 +877,9 @@ const unavailableScope = effectScope();
 const unavailable = unavailableScope.run(() => useScenarioActivation())!;
 await flush();
 const unavailableCatalog = (disabled: boolean) => ({
+  contract_version: 'scenario_activation_catalog.v1',
+  rows: [],
+  row_count: 0,
   company_id: 1,
   actor: {
     user_id: 9,

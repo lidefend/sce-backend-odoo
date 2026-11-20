@@ -675,6 +675,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.scene_shell_contract.unit"],
         )
 
+    def test_enterprise_configuration_consumer_tool_selects_its_unit_guard(self) -> None:
+        for path in (
+            "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+            "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.local.dev.enterprise_configuration.consumer.unit"],
+                )
+
     def test_menu_metadata_batch_selects_its_executable_suite(self) -> None:
         self.assertEqual(select_targets(['scripts/verify/test_menu_metadata_batch.py']),
                          ['verify.product.menu.metadata_batch.unit'])

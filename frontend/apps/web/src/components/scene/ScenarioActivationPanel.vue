@@ -17,7 +17,7 @@
     />
     <ScInlineState v-if="state === 'loading'" state="loading" label="正在读取场景目录…" />
     <ScInlineState v-else-if="state === 'error'" state="error" :label="errorMessage" />
-    <ScInlineState v-else-if="!rows.length" state="empty" label="暂无场景目录。" />
+    <ScInlineState v-else-if="!rows.length" state="empty" :label="catalogEmptyLabel" />
     <ul v-else class="scenario-activation-panel__list">
       <li v-for="row in rows" :key="row.scene_key" class="scenario-activation-panel__row">
         <div class="scenario-activation-panel__row-main">
@@ -50,12 +50,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { useScenarioActivation, type BusinessScenario } from '../../composables/useScenarioActivation';
 
 const {
-  rows,
+  rows, catalogRows, catalogRowCount,
   actor,
   targetScope,
   readback,
@@ -65,6 +66,15 @@ const {
   refresh,
   execute,
 } = useScenarioActivation();
+
+const catalogEmptyLabel = computed(() => {
+  if (!catalogRowCount.value) return '暂无场景目录。';
+  const blockers = Array.from(new Set(
+    catalogRows.value.flatMap((row) => row.enablement_blockers),
+  )).sort();
+  const detail = blockers.length ? `启用阻断：${blockers.join(' · ')}` : '当前没有可启用场景';
+  return `场景目录共 ${catalogRowCount.value} 项，${detail}。`;
+});
 
 function qualificationLabel(status: string) {
   if (status === 'qualified') return '成立';

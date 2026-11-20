@@ -53,7 +53,7 @@
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
     }
   ],
-  "max_targets_zero_reference": 671,
+  "max_targets_zero_reference": 672,
   "max_scripts_unreferenced_anywhere": 103,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -68,8 +68,8 @@
   "max_unregistered_remote_only_scripts": 0,
   "max_stale_local_only_exemptions": 0,
   "max_stale_remote_only_exemptions": 0,
-  "recorded_targets_defined": 2496,
-  "recorded_targets_unreached_from_anchor": 2239,
+  "recorded_targets_defined": 2498,
+  "recorded_targets_unreached_from_anchor": 2241,
   "recorded_anchor_union_targets": 265,
   "max_registrations_missing_owner": 0,
   "max_registrations_missing_basis": 0,
@@ -583,6 +583,7 @@
       "verify.local.dev.conditioned.feedback",
       "verify.local.dev.cost.feedback",
       "verify.local.dev.create_authority",
+      "verify.local.dev.enterprise_configuration.consumer",
       "verify.local.dev.entry_identity.unit",
       "verify.local.dev.journal.draft",
       "verify.local.dev.journal.role",

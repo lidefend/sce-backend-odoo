@@ -1744,6 +1744,22 @@ verify.local.dev.readiness.readback: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_readiness_browser.sh --readback
 
+.PHONY: verify.local.dev.enterprise_configuration.consumer.unit verify.local.dev.enterprise_configuration.consumer
+verify.local.dev.enterprise_configuration.consumer.unit: guard.prod.forbid
+	@bash -n scripts/verify/local_dev_enterprise_configuration_consumer.sh
+	@node --check scripts/verify/local_dev_enterprise_configuration_consumer.mjs
+
+verify.local.dev.enterprise_configuration.consumer: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit
+	@CANDIDATE_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
+	  CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND=SERVE_FROZEN_LOCAL_DEV_CANDIDATE \
+	  $(MAKE) --no-print-directory local.dev.candidate.frontend.health
+	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev CANDIDATE_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
+	  CONFIG_ADMIN_LOGIN="$${SC_CONFIG_ADMIN_LOGIN:-sc_demo_business_config}" \
+	  CONFIG_ADMIN_USER_ID="$${SC_CONFIG_ADMIN_USER_ID:-24}" \
+	  CONFIG_COMPANY_ID="$${SC_CONFIG_COMPANY_ID:-1}" \
+	  bash scripts/verify/local_dev_enterprise_configuration_consumer.sh
+
 .PHONY: verify.local.dev.capability.browser verify.local.dev.capability.readback
 verify.local.dev.capability.browser: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \

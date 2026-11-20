@@ -3,7 +3,7 @@
   "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
   "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
   "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
-  "status": "blocked",
+  "status": "active",
   "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
   "scope": [
@@ -13,7 +13,18 @@
     ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
     ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
-    "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md"
+    "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "make/dev.mk",
+    "scripts/verify/error_state_component_test.cjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+    "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -45,11 +56,20 @@
     "C02-01": {
       "status": "blocked_before_write",
       "observed": "The enterprise information button produced no request or route change. Direct /a/960 returned NAVIGATION_AUTHORITY_DENIED.",
-      "write_attempted": false
+      "write_attempted": false,
+      "frontend_feedback": "candidate fix pending runtime verification: visible ContractGapError and no guessed navigation"
     },
-    "C02-02_to_C02-06": {
+    "C02-02_to_C02-05": {
       "status": "not_run",
-      "reason": "All five handling entries share the same unresolved native route authority"
+      "reason": "All five handling entries share the same unresolved native route authority under upstream PR #950"
+    },
+    "C02-06A": {
+      "status": "blocked_by_declared_product_release_qualification",
+      "observed": "The catalog returned 92 source rows and zero business_scenarios. All 92 rows declare PRODUCT_RELEASE_UNVERIFIED, product_released=false and enable_allowed=false; no enable or disable action was available, so no scenario write was attempted."
+    },
+    "C02-06B": {
+      "status": "not_run",
+      "reason": "No scenario was enabled and target-user route reachability may also depend on PR #950"
     }
   },
   "validation_exclusions": {
@@ -73,6 +93,53 @@
         "scripts/verify/test_agent_ledger_consistency_guard.py"
       ],
       "kind": "offline"
+    },
+    "enterprise_configuration_frontend": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "error_state_feedback": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "scripts/verify/error_state_component_test.cjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "enterprise_configuration_consumer_unit": {
+      "target": "verify.local.dev.enterprise_configuration.consumer.unit",
+      "inputs": [
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "enterprise_configuration_consumer_runtime": {
+      "target": "verify.local.dev.enterprise_configuration.consumer",
+      "inputs": [
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
+      }
     }
   },
   "blockers": [
@@ -84,5 +151,5 @@
       "evidence": "The handling_entry_catalog exposes action_xmlid for all five entries, but route resolution yields no action/menu and direct action /a/960 is denied with NAVIGATION_AUTHORITY_DENIED. PR #950 changes DeliveryEngine to pass the native ACL/action-group/role-filtered navigation to build_route_authority."
     }
   ],
-  "next_exact_step": "After PR #950 is integrated or an approved dependency branch is rebased, resume on this branch with runtime identities c7de01f85, user 24, company 1; rerun C02-01 from the visible enterprise initialization entry."
+  "next_exact_step": "Commit the focused frontend consumer fix, rebuild the candidate frontend at the new HEAD, run the governed enterprise configuration consumer probe, then record its entry feedback and C02-06 catalog evidence."
 }

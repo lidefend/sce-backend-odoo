@@ -50,6 +50,20 @@ export type BusinessScenario = {
   enable_allowed: boolean;
   actions: ScenarioAction[];
 };
+export type ScenarioCatalogRow = {
+  scene_key: string;
+  name: string;
+  release_state: string;
+  product_released: boolean;
+  tenant_enabled: boolean;
+  product_qualification: {
+    status: string;
+    reason_code: string;
+    evidence: Record<string, unknown>;
+  };
+  enablement_blockers: string[];
+  enable_allowed: boolean;
+};
 export type ScenarioReadback = {
   scene_key: string;
   stored_scene_key: string;
@@ -70,6 +84,9 @@ export type ScenarioReadback = {
   };
 };
 type Catalog = {
+  contract_version: string;
+  rows: ScenarioCatalogRow[];
+  row_count: number;
   company_id: number;
   actor: ScenarioActor;
   target_scope: ScenarioTargetScope;
@@ -77,7 +94,23 @@ type Catalog = {
 };
 
 function requireCatalog(value: Catalog): Catalog {
-  if (!value || !Number.isInteger(value.company_id) || value.company_id <= 0
+  if (!value || value.contract_version !== 'scenario_activation_catalog.v1'
+    || !Array.isArray(value.rows)
+    || value.rows.some(row => !row || typeof row.scene_key !== 'string' || !row.scene_key
+      || typeof row.name !== 'string' || !row.name
+      || typeof row.release_state !== 'string'
+      || typeof row.product_released !== 'boolean'
+      || typeof row.tenant_enabled !== 'boolean'
+      || !row.product_qualification
+      || typeof row.product_qualification.status !== 'string'
+      || typeof row.product_qualification.reason_code !== 'string'
+      || !row.product_qualification.evidence
+      || typeof row.product_qualification.evidence !== 'object'
+      || !Array.isArray(row.enablement_blockers)
+      || row.enablement_blockers.some((item: unknown) => typeof item !== 'string')
+      || typeof row.enable_allowed !== 'boolean')
+    || !Number.isInteger(value.row_count) || value.row_count !== value.rows.length
+    || !Number.isInteger(value.company_id) || value.company_id <= 0
     || !value.actor || !Number.isInteger(value.actor.user_id) || value.actor.user_id <= 0
     || typeof value.actor.can_manage_enterprise_configuration !== 'boolean'
     || !value.target_scope || value.target_scope.company_id !== value.company_id
@@ -147,6 +180,8 @@ export function requireScenarioReadback(
 export function useScenarioActivation() {
   const session = useSessionStore();
   const rows = ref<BusinessScenario[]>([]);
+  const catalogRows = ref<ScenarioCatalogRow[]>([]);
+  const catalogRowCount = ref(0);
   const actor = ref<ScenarioActor | null>(null);
   const targetScope = ref<ScenarioTargetScope | null>(null);
   const readback = ref<ScenarioReadback | null>(null);
@@ -167,6 +202,8 @@ export function useScenarioActivation() {
   async function load() {
     const request = ++sequence;
     rows.value = [];
+    catalogRows.value = [];
+    catalogRowCount.value = 0;
     actor.value = null;
     targetScope.value = null;
     companyId = 0;
@@ -188,6 +225,8 @@ export function useScenarioActivation() {
       if (!current(key, epoch) || request !== sequence) return;
       const catalog = requireCatalog(response);
       if (company && catalog.company_id !== company) throw new Error('场景目录公司与当前上下文不一致');
+      catalogRows.value = catalog.rows;
+      catalogRowCount.value = catalog.row_count;
       rows.value = catalog.business_scenarios;
       actor.value = catalog.actor;
       targetScope.value = catalog.target_scope;
@@ -229,6 +268,8 @@ export function useScenarioActivation() {
     } catch (error) {
       if (!current(key, epoch) || operation !== mutation) return;
       rows.value = [];
+      catalogRows.value = [];
+      catalogRowCount.value = 0;
       readback.value = verifiedReadback;
       state.value = 'error';
       const message = error instanceof Error ? error.message : '场景操作失败';
@@ -251,6 +292,8 @@ export function useScenarioActivation() {
     busy.value = true;
     state.value = 'loading';
     rows.value = [];
+    catalogRows.value = [];
+    catalogRowCount.value = 0;
     try {
       // Read-only recovery: never replay scenario.activation.set after a
       // successful write whose following navigation refresh failed.
@@ -272,6 +315,9 @@ export function useScenarioActivation() {
     busy.value = false;
     refreshRequired = false;
     readback.value = null;
+    rows.value = [];
+    catalogRows.value = [];
+    catalogRowCount.value = 0;
     actor.value = null;
     targetScope.value = null;
   });
@@ -279,6 +325,8 @@ export function useScenarioActivation() {
     if (busy.value) {
       sequence += 1;
       rows.value = [];
+      catalogRows.value = [];
+      catalogRowCount.value = 0;
       state.value = 'loading';
       return;
     }
@@ -287,5 +335,8 @@ export function useScenarioActivation() {
     void load();
   }, { immediate: true });
   onScopeDispose(() => { disposed = true; sequence += 1; mutation += 1; });
-  return { rows, actor, targetScope, readback, state, errorMessage, busy, load, refresh, execute };
+  return {
+    rows, catalogRows, catalogRowCount, actor, targetScope, readback, state, errorMessage, busy,
+    load, refresh, execute,
+  };
 }

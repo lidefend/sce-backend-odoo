@@ -67,5 +67,22 @@ artifacts/local-dev/snapshots/20261120T043906Z
 - C02-01 在“点击企业信息”处阻断：按钮没有发出请求或改变路由；直接访问 `/a/960?action_id=960` 被前端以 `NAVIGATION_AUTHORITY_DENIED` 拒绝。
 - 运行契约中五个入口只声明 `action_xmlid`，而当前执行权限路由没有解析出对应 action/menu。
 - 这与未合并的 #950 所修复的 native route discovery 丢失一致。本批依赖 PR #950，当前观察 HEAD 为 `ce1da712e174f002890fdbef8ad7f9320d631060`；不在本分支重复修改同一路由链。
-- C02-01 到 C02-06 均未发生业务写入；实际保存、拒绝、回读和用户可用性结论仍为 `not_run`。
-- 尚未修改产品代码。
+- C02-01 到 C02-05 均未发生业务写入；实际保存、拒绝、回读和用户可用性结论仍为 `not_run`。
+- C02-06A 已独立读取：目录返回 92 个源行、0 个可启用业务场景；92 行全部声明 `PRODUCT_RELEASE_UNVERIFIED`、`product_released=false`、`enable_allowed=false`，没有启停动作，因此没有执行场景写入。
+- C02-06B 目标用户业务入口可达性未执行，且仍可能依赖 #950 的路由恢复。
+
+## 本批消费修复
+
+- `SceneView` 在办理目录声明存在、但无法解析为当前用户获准目标时，不再静默返回。页面通过现有 `ContractGapError` 错误表面显示入口不可用，并携带缺失契约路径和声明层，不猜测动作 ID、不拼接兜底路由、不发业务写请求。
+- `StatusPanel` 优先显示显式传入的契约缺口，不再把已知 `ContractDefectRef` 降级成普通 unknown/permission 状态。
+- 场景目录消费者按后端已声明的 `rows`、`row_count` 和 `enablement_blockers` 保留资格诊断。没有可启用场景时，页面显示真实目录数量和启用阻断原因，不再只显示笼统的空目录。
+
+定向验证：
+
+- real `StatusPanel` component 契约缺口渲染与无恢复按钮：通过。
+- `verify.frontend.workspace_scenario_lifecycle.unit`：通过，新增目录资格诊断 6 案。
+- `verify.frontend.delivery_hardening.guard`：18 项通过。
+- `verify.frontend.dev.incremental.unit`：189 项通过。
+- frontend lint 仅有仓库既有 warning；strict typecheck 通过。
+
+实际浏览器消费探针和场景目录读取结果待当前修复提交后的 5176 候选构建绑定。
