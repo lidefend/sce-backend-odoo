@@ -23,7 +23,9 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "addons/smart_core/delivery/menu_service.py",
-    "scripts/verify/frontend_delivery_hardening_browser.mjs"
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -110,10 +112,32 @@
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "frontend/apps/web/src/pages/ContractFormPage.vue"
       ]
+    },
+    "workflow_actions": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py"
+      ]
+    },
+    "workflow_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Diagnose remaining business_full projection error under new main, rerun fixture and exact-head candidate; PR950 stays Draft.",
+  "next_exact_step": "Finish principal-specific fixture diagnosis, then run affected workflow ORM and new exact-head full candidate.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -258,6 +282,12 @@
       "head": "412ff2f6d736fcd8bbea18981c80626bdff1c34e",
       "log": ".runtime/ci-recovery/pr-push-s2.log",
       "publication": "Push stopped because main advanced via PR949 and generated report merge conflicts. Governed append preserves candidate history; regenerate evidence before publication."
+    },
+    "workflow_actions": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/workflow-final.log",
+      "tests": 71,
+      "reason": "Actual required professional check exposed 3 failures and 2 errors. Restore ten resubmission profiles to business-method state authority; real helper dependencies and precise disabled/success contract assertions. New parameterized regression covers all ten models."
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
