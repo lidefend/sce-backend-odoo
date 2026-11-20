@@ -311,7 +311,9 @@ try {
         pathname: new URL(page.url()).pathname,
         search: new URL(page.url()).search,
       };
-      await page.locator('button[data-semantic-action="open-record"]:visible').first().click();
+      await page.locator(
+        'tr[data-record-key] button[data-semantic-cell-kind="primary"]:visible',
+      ).first().click();
       await page.waitForFunction(
         () => /^\/f\/res\.company\/\d+$/.test(location.pathname),
         null,
