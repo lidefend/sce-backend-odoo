@@ -43,6 +43,13 @@ initialization, enterprise scene publication/enablement and release composition.
 - Added `17.0.0.186` migration to append missing standard scenario bindings on
   an existing database through the existing idempotent, add-only importer. It
   does not delete maintained scenarios or overwrite administrator changes.
+- Runtime readback showed the database held 63 scenario definitions: the 17
+  retired process scenarios plus the current 46 business-result scenarios.
+  Because add-only import never deletes, the retired 79 menu bindings blocked
+  their replacement scenarios. `17.0.0.187` now retires only the exact 17
+  known standard process identities, keeps the same menus and native actions,
+  then adds the current 46 groups. Administrator-created scenario codes are
+  outside the retired set and are preserved.
 - Replaced the acceptance fixture's retired 17-scene list with the current 46
   declared scenarios. Bundle tests now use `finance.intercompany`,
   `contract.registration`, `cost.budgeting` and `contract.settlement` instead

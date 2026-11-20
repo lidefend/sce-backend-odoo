@@ -296,6 +296,12 @@ class TestScenarioDirectInitialization(TransactionCase):
         )
         return runpy.run_path(str(path))["migrate"]
 
+    def _post_migration(self, version_dir):
+        path = Path(__file__).resolve().parents[1] / (
+            "migrations/%s/post-migrate.py" % version_dir
+        )
+        return runpy.run_path(str(path))["migrate"]
+
     @staticmethod
     def _cursor(table_exists, xmlid_row=None):
         class Cursor:
@@ -392,3 +398,30 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertTrue(entry)
         self.assertEqual(entry.scenario_id.code, "admin.organization")
         self.assertTrue(menu.sc_scenario_exempt)
+
+    def test_post_187_retires_only_known_legacy_standard_scenarios(self):
+        Scenario = self.env["sc.product.scenario"].sudo().with_context(
+            active_test=False
+        )
+        Entry = self.env["sc.product.scenario.entry"].sudo()
+        legacy = Scenario.create({
+            "code": "project.management",
+            "name": "Retired process scenario",
+        })
+        menu = self.env.ref("smart_construction_core.menu_sc_project_project")
+        Entry.create({
+            "scenario_id": legacy.id,
+            "menu_id": menu.id,
+            "intent": "view",
+        })
+        result = self._post_migration("17.0.0.187")(
+            self.cr,
+            "17.0.0.186",
+        )
+        self.assertIn(
+            "project.management",
+            result["retired_legacy_scenarios"],
+        )
+        self.assertFalse(legacy.exists())
+        self.assertEqual(Scenario.search_count([]), 46)
+        self.assertEqual(Entry.search_count([]), 132)

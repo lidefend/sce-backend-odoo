@@ -16,6 +16,7 @@
     "addons/smart_construction_core/data/scenario_product_surface.json",
     "addons/smart_construction_core/__manifest__.py",
     "addons/smart_construction_core/migrations/17.0.0.186/post-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.187/post-migrate.py",
     "addons/smart_construction_core/models/support/product_scenario.py",
     "addons/smart_construction_core/services/scenario_product_declarations.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
