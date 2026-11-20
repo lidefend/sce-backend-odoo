@@ -200,12 +200,12 @@
     "C02-01": {
       "status": "passed",
       "candidate": "93e261258381c4d9d70b583472363fe4adf7ee17",
-      "test_tool_head": "bb6ad844b04817f26e1cfa7b637c6a72556504ea",
+      "test_tool_head": "405f4b1726d97381f9074df947b9efcfd124d8da",
       "entry_xmlid": "smart_construction_core.action_sc_enterprise_company",
       "company_context_id": 1,
       "company_record_id": 1,
       "observations": "Visible entry resolved from action_xmlid to company 1 list and form. Company name, phone, email, currency, and address were readable; street2 was editable.",
-      "submitted": "C02-01-1795186050640",
+      "submitted": "C02-01-1795188509063",
       "authoritative_readback": "street2 matched the submitted marker on res.company(1)",
       "restore": "street2 restored to the original empty value and independently read back as empty",
       "return": "form -> company list -> enterprise initialization; the new readiness response retained company_id=1 and enterprise.identity=VERIFIED",
@@ -290,7 +290,7 @@
     "status": "passed",
     "candidate_sha": "93e261258381c4d9d70b583472363fe4adf7ee17",
     "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
-    "report_sha256": "b4ab4e583f5ff42ee77e333d8155b2b6d0966b03dd0661699421068ccffe7c21",
+    "report_sha256": "e4decc3543ed10d76da4ddc48aa6c80af2fbfa96572b2828522bcf17141ad121",
     "entry_feedback": "resolved_target",
     "scenario_catalog": "132 published pages, 46 actionable scenarios",
     "business_writes": 4,
@@ -340,7 +340,7 @@
     },
     "final_parameter_value": "0",
     "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
-    "report_sha256": "b4ab4e583f5ff42ee77e333d8155b2b6d0966b03dd0661699421068ccffe7c21"
+    "report_sha256": "e4decc3543ed10d76da4ddc48aa6c80af2fbfa96572b2828522bcf17141ad121"
   },
   "validation_results": {
     "implemented_scope": "passed",
