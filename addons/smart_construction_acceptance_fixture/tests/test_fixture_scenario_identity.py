@@ -16,6 +16,11 @@ class TestFixtureScenarioIdentity(TransactionCase):
             set(fixture.FIXTURE_BUSINESS_SCENARIOS),
             current_codes,
         )
+        self.assertTrue(all(
+            scenario_code in current_codes
+            for scenario_code, _menu_xmlid, _intent
+            in fixture.ACCEPTANCE_SCENARIO_BINDINGS
+        ))
 
         company = self.env["res.company"].sudo().create({
             "name": "Fixture scenario identity company",

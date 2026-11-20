@@ -86,7 +86,7 @@ FIXTURE_BUSINESS_SCENARIOS = (
 
 ACCEPTANCE_SCENARIO_BINDINGS = (
     (
-        "project.management",
+        "reporting.project_portfolio",
         "smart_construction_core.menu_sc_project_kanban",
         "view",
     ),

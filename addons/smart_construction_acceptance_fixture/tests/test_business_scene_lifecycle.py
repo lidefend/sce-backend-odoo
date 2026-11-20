@@ -88,7 +88,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             limit=1,
         )
         self.assertTrue(entry, "project Kanban must have an acceptance scenario binding")
-        self.assertEqual(entry.scenario_id.code, "project.management")
+        self.assertEqual(entry.scenario_id.code, "reporting.project_portfolio")
 
         for login in (
             "fixture_role_config_admin",
