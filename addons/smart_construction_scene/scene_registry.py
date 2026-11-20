@@ -211,6 +211,7 @@ def _derive_native_config_scene(env):
         "code": "enterprise.setup",
         "name": str(action.name or "企业初始化").strip(),
         "tags": [],
+        "enablement_scope": "enterprise_initialization",
         "target": {
             "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
             "action_xmlid": "smart_construction_core.action_sc_enterprise_initialization",

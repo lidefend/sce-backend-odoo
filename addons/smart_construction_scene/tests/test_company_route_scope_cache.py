@@ -37,15 +37,18 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(first, authority)
         self.assertEqual(authority["denied_actions"], [])
 
-    def test_internal_actions_preserve_lifecycle_and_native_denial(self):
+    def test_internal_actions_preserve_initialization_lifecycle_and_native_denial(self):
         from odoo.addons.smart_core.delivery import effective_delivery_service as module
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_core.core import native_handling_entry_catalog, scene_ready_contract_builder
         service = module.EffectiveDeliveryService(self.env)
-        source = {"code": "enterprise.setup"}
+        source = {
+            "code": "enterprise.setup",
+            "enablement_scope": "enterprise_initialization",
+        }
         catalog = {"groups": [{"items": [{"key": "open", "action_xmlid": "smart_construction_core.action_sc_project_list"}]}]}
-        # A released contextual scene need not occupy the sidebar.
-        authority = {"contextual_actions": [{"scene_key": source["code"]}]}
+        # Initialization actions do not need a business-scene nav node.
+        authority = {}
         with patch.object(module, "call_extension_hook_first", return_value=[source]), \
                 patch.object(native_handling_entry_catalog, "project_native_handling_catalog", return_value=None), \
                 patch.object(scene_ready_contract_builder, "_resolve_scene_provider_payload", return_value={"handling_entry_catalog": catalog}):
@@ -58,6 +61,27 @@ class TestCompanyRouteScopeCache(TransactionCase):
                 patch.object(native_handling_entry_catalog, "project_native_handling_catalog", return_value={"groups": []}), \
                 patch.object(scene_ready_contract_builder, "_resolve_scene_provider_payload", side_effect=AssertionError("native denial must not fall back")):
             self.assertEqual(service._internal_actions([], authority, MenuService(self.env), {}), [])
+
+    def test_internal_actions_do_not_promote_unscoped_business_scenes(self):
+        from odoo.addons.smart_core.delivery import effective_delivery_service as module
+        from odoo.addons.smart_core.delivery.menu_service import MenuService
+        source = {"code": "project.management"}
+        with patch.object(module, "call_extension_hook_first", return_value=[source]):
+            self.assertEqual(
+                module.EffectiveDeliveryService(self.env)._internal_actions(
+                    [], {}, MenuService(self.env), {},
+                ),
+                [],
+            )
+
+    def test_native_enterprise_projection_keeps_initialization_scope(self):
+        from odoo.addons.smart_construction_scene import scene_registry
+        row = scene_registry._derive_native_config_scene(self.env)
+        self.assertEqual(row.get("code"), "enterprise.setup")
+        self.assertEqual(
+            row.get("enablement_scope"),
+            "enterprise_initialization",
+        )
 
     def test_imported_handling_override_reaches_page_authority_and_direct_gate(self):
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
@@ -177,17 +201,53 @@ class TestCompanyRouteScopeCache(TransactionCase):
         # Discovery alone is intentionally unpublished. Explicitly release the
         # native setup entry for this positive landing scenario.
         from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        from odoo.addons.smart_core.delivery.product_scene_composition import compose_product_policy
+        from odoo.addons.smart_core.delivery.product_policy_service import ProductPolicyService
         catalog = ProductPolicyCatalogSyncService(self.env).build_catalog_policy_payload(product_key="construction.standard")
         setup = next(deepcopy(row) for group in catalog["menu_groups"] for row in group["menus"]
                      if row.get("menu_xmlid") == "smart_construction_core.menu_sc_enterprise_initialization")
         setup.update(enabled=True, release_state="released", access_level="public")
         policy = self.env["sc.product.policy"].search([("product_key", "=", "construction.standard")], limit=1)
         self.assertTrue(policy)
-        groups = deepcopy(policy.menu_groups)
-        groups.append({"group_key": "test_setup", "group_label": "Setup", "menus": [setup]})
-        policy.menu_groups = groups
-        EditionReleaseSnapshotService(self.env).freeze_release_surface(
-            product_key="construction.standard", version="effective-landing-test", replace_active=True)
+        source_policy = ProductPolicyService(self.env).get_policy(
+            product_key="construction.standard",
+            enforce_release=True,
+            enforce_access=True,
+            use_published_policy=False,
+        )
+        source_policy = compose_product_policy(self.env, source_policy)
+        groups = deepcopy(source_policy.get("menu_groups") or [])
+        setup_found = False
+        for group in groups:
+            for menu in group.get("menus") or []:
+                if menu.get("menu_xmlid") == setup.get("menu_xmlid"):
+                    menu.update(setup)
+                    setup_found = True
+        if not setup_found:
+            groups.append({"group_key": "test_setup", "group_label": "Setup", "menus": [setup]})
+        composition = deepcopy(source_policy.get("business_scene_composition") or {})
+        scenarios = composition.setdefault("scenarios", [])
+        centers = composition.setdefault("centers", [])
+        center_key = centers[0]["key"]
+        scenarios.append({
+            "key": "test.enterprise_setup",
+            "active": True,
+            "bindings": [{
+                "menu_key": setup["menu_xmlid"],
+                "center_key": center_key,
+            }],
+        })
+        centers[0].setdefault("scenarios", []).append("test.enterprise_setup")
+        source_policy["menu_groups"] = groups
+        source_policy["business_scene_composition"] = composition
+        snapshot_service = EditionReleaseSnapshotService(self.env)
+        with patch.object(snapshot_service, "_compose_policy_draft", side_effect=lambda policy: policy):
+            snapshot_service.freeze_release_surface(
+                product_key="construction.standard",
+                version="effective-landing-test",
+                replace_active=True,
+                policy_override=source_policy,
+            )
         from odoo.addons.smart_core.delivery import effective_delivery_service as delivery
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_construction_scene.services.tenant_scene_activation import write_tenant_enablement
