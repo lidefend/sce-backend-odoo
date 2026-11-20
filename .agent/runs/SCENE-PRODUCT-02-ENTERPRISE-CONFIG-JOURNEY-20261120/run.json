@@ -151,8 +151,7 @@
     },
     "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
     "candidate_health": "passed: backend source revision and 5176 frontend both 93e261258381c4d9d70b583472363fe4adf7ee17",
-    "current_product_source": "4c844f25b2fb081541ba94f0c6a49fd20c63bbc6",
-    "candidate_fingerprint_sha256": "486d478c3640c245bdde2ef60cfdb0c851469b311e20f743aa34c9e5415d263b",
+    "product_code_source": "4c844f25b2fb081541ba94f0c6a49fd20c63bbc6",
     "system_init_after_schema_upgrade": "passed"
   },
   "release_prerequisite": {
