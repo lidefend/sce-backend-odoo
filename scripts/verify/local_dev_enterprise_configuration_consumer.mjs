@@ -101,8 +101,12 @@ async function toggleScenario(page, catalog, sceneKey) {
   assert.equal(readback.readback.write_committed, true);
   assert.equal(readback.readback.access_granted, false);
   const refreshed = await catalogBodyFrom(await refreshResponsePromise);
+  assert.equal(refreshed.company_id, COMPANY_ID);
+  const refreshedRow = (refreshed.business_scenarios || []).find((row) => row.scene_key === sceneKey);
+  assert.ok(refreshedRow, `scenario ${sceneKey} must remain in the refreshed business catalog`);
+  assert.equal(refreshedRow.tenant_enabled, action.enabled);
   await panel.waitFor({ timeout: 30000 });
-  assert.ok((await panel.innerText()).includes('已回读'));
+  assert.equal(await panel.getAttribute('data-state'), 'ready');
   return { before, action, readback, refreshed };
 }
 
