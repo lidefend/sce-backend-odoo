@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120
   title: low_code_workbench_read_context_and_safe_continuation
-  status: active
+  status: completed
   formal_product_layer: P0/P4
   layer_target: >-
     Generic low-code workbench frontend request ownership and the integration
@@ -51,3 +51,12 @@ goal:
     Revert the frontend request-ownership change, its tests and the related
     incremental-selection registration together. No schema, stored data or
     backend contract changes are introduced.
+  completion:
+    batch: contract_only_implementation_and_independent_review_completed
+    mainline_integration: completed
+    pr: 947
+    candidate_head: 8b4a0039b38c6fb9913448bd896a571b1bd4013a
+    merge_commit: 80f98fa25deea70f658ffecd93b0668103928c85
+    mainline_sha: 80f98fa25deea70f658ffecd93b0668103928c85
+    deployment: not_run
+    user_acceptance: not_run

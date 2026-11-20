@@ -3,7 +3,7 @@
   "id": "LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120",
   "branch": "feature/lc-context-01-workspace-async-context-20261120",
   "baseline_sha": "d10d2b42d747c89be39abb89dac25bd6051812eb",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
   "record": "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
   "scope": [
@@ -72,9 +72,9 @@
     },
     {
       "id": "CANDIDATE-CLOSE",
-      "status": "active",
+      "status": "completed",
       "owner": "integration_writer",
-      "exit": "Targeted behavior tests, generated evidence, exact-head publication, required CI and independent review are complete"
+      "exit": "Targeted behavior tests, generated evidence, exact-head publication, required CI, independent review and protected mainline integration are complete"
     }
   ],
   "checks": {
@@ -234,7 +234,7 @@
       "verify.frontend.typecheck.strict: passed",
       "verify.frontend.standard_preview.unit: passed",
       "verify.verification.lane_coverage: passed after reviewed baseline rewrite; unregistered and stale divergences are 0",
-      "make ci.local.iteration: exit 0; 11 affected targets executed with non-zero coverage",
+      "make ci.local.iteration: exit 0; 12 affected targets resolved, with the final remediation executing 6 changed inputs and reusing 6 unchanged passing targets",
       "ci.delivery.freeze.prepare: passed; all content-bound generated evidence is current"
     ],
     "regressions": [
@@ -256,5 +256,24 @@
     ]
   },
   "blockers": [],
-  "next_exact_step": "Run the final freeze preparation, review the exact candidate diff and scope, commit, then publish the single LC-CONTEXT-01 PR."
+  "completion": {
+    "batch_acceptance": "completed",
+    "mainline_integration": "completed",
+    "pr": 947,
+    "candidate_head": "8b4a0039b38c6fb9913448bd896a571b1bd4013a",
+    "candidate_tree": "4f27a5a434beba68c0e236839251c4f84d91a60c",
+    "merge_commit": "80f98fa25deea70f658ffecd93b0668103928c85",
+    "mainline_sha": "80f98fa25deea70f658ffecd93b0668103928c85",
+    "merge_tree": "4f27a5a434beba68c0e236839251c4f84d91a60c",
+    "merged_at": "2026-11-20T01:34:34Z",
+    "required_checks": {
+      "public_guard": "success",
+      "professional_quality_gate": "success",
+      "merge_policy_gate": "success",
+      "frontend_release_gate": "success"
+    },
+    "deployment": "not_run",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Completed; start SCENE-CLOSE-04 from main 80f98fa25deea70f658ffecd93b0668103928c85 and carry this local post-merge bookkeeping commit with that real product candidate."
 }
