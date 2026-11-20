@@ -99,7 +99,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Complete acceptance upgrade, bind current clean artifact and rerun failed fixture contract consumers; refresh independent review and publish review-only candidate through governed Make.",
+  "next_exact_step": "Seal corrected test fixture artifact, restart same-schema acceptance carrier and rerun 49 consumer tests; retain exact-head draft PR950 until required evidence closes.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -180,6 +180,21 @@
       "head": "998ffcc6b8d9fd7f57718a57f749f80cd129264c",
       "report": ".runtime/ci-recovery/independent-review-998ffcc.json",
       "findings": "No confirmed runtime/assertion defect. Correct coverage inputs; full module baseline and acceptance/remote evidence prevent merge-readiness claim."
+    },
+    "fixture_orm_ce1da71": {
+      "status": "failed",
+      "log": ".runtime/ci-recovery/fixture-orm-ce1da71.log",
+      "reason": "Historical preview snapshot enters the two-edition catalog; positive setup-entry consumer test has no explicitly published setup entry. Test prerequisites corrected; rerun pending."
+    },
+    "acceptance_schema_upgrade": {
+      "status": "passed",
+      "source_sha": "0572684a5b732f6cce3e4748161212547c066894",
+      "log": ".runtime/ci-recovery/acceptance-upgrade-2.log"
+    },
+    "acceptance_registry_restart": {
+      "status": "passed",
+      "source_sha": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "log": ".runtime/ci-recovery/acceptance-up-ce1da71.log"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics."

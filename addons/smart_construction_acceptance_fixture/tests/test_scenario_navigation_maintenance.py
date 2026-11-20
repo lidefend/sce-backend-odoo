@@ -5,6 +5,7 @@ TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
 from .test_business_scene_lifecycle import publish_scenarios
 
+from copy import deepcopy
 import runpy
 import json
 from pathlib import Path
@@ -35,6 +36,23 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         policy = self.env["sc.product.policy"].sudo()
         policy.search([("product_key", "in", ["construction.standard", "construction.preview"])]).unlink()
         policy.sync_construction_menu_product_policies()
+        # Discovery grants no publication. This fixture explicitly declares
+        # the setup entry before testing its consumption by allowed/denied roles.
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        catalog = ProductPolicyCatalogSyncService(self.env).build_catalog_policy_payload(
+            product_key="construction.standard")
+        setup_xmlid = "smart_construction_core.menu_sc_enterprise_initialization"
+        setup = next(deepcopy(row) for group in catalog["menu_groups"]
+                     for row in group["menus"] if row.get("menu_xmlid") == setup_xmlid)
+        setup.update(enabled=True, release_state="released", access_level="public")
+        standard = policy.search([("product_key", "=", "construction.standard")], limit=1)
+        self.assertTrue(standard)
+        groups = deepcopy(standard.menu_groups)
+        for group in groups:
+            group["menus"] = [row for row in group.get("menus") or []
+                              if row.get("menu_xmlid") != setup_xmlid]
+        groups.append({"group_key": "acceptance_setup", "group_label": "Setup", "menus": [setup]})
+        standard.menu_groups = groups
         publish_scenarios(self.env)
 
     def _upgrade_seed(self):

@@ -13,11 +13,25 @@ def publish_scenarios(env):
     params = env["ir.config_parameter"].sudo()
     params.set_param("smart_core.platform_release_db", env.cr.dbname)
     params.set_param("smart_core.release_operator.catalog_source_db", env.cr.dbname)
-    return EditionReleaseSnapshotService(env).freeze_release_surface(
+    # The catalog reads both editions. Isolate historical carrier releases
+    # inside the caller's rollback transaction, then produce a real snapshot.
+    Snapshot = env["sc.edition.release.snapshot"].sudo()
+    Snapshot.search([
+        ("product_key", "in", ["construction.standard", "construction.preview"]),
+        ("is_active", "=", True),
+    ]).write({"is_active": False})
+    result = EditionReleaseSnapshotService(env).freeze_release_surface(
         product_key="construction.standard",
         version="acceptance-maintained-scenarios",
         replace_active=True,
     )
+    snapshot = Snapshot.browse(result["id"])
+    assert snapshot.is_active and snapshot.state == "released", "test publication must be active and released"
+    assert not Snapshot.search_count([
+        ("product_key", "=", "construction.preview"), ("is_active", "=", True),
+    ]), "historical preview must not enter this standard-edition fixture"
+    return result
+
 
 @tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle")
 class TestBusinessSceneLifecycle(TransactionCase):
