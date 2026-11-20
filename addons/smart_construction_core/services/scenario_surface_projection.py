@@ -666,23 +666,30 @@ def load_maintained_runtime_surface(env):
             xmlid = menu_xmlids[menu.id] if menu.id in menu_xmlids else _menu_external_id(env, menu)
             key = xmlid or f"menu:{menu.id}"
             intents.setdefault(entry.intent, []).append(key)
+            center_key = _text(getattr(entry, "center_key", ""))
+            center_name = _text(getattr(entry, "center_name", ""))
+            center_sequence = _int_or(getattr(entry, "center_sequence", 10), 10)
+            if not center_key:
+                center = legacy_native_center_seed(env, menu)
+                center_key = _text(center.get("center_key"))
+                center_name = _text(center.get("center_name"))
+                center_sequence = _int_or(center.get("center_sequence"), 10)
             bindings.append({
                 "entry_id": int(getattr(entry, "id", 0) or 0),
                 "menu_id": menu.id,
                 "menu_key": key,
                 "sequence": entry.sequence,
                 "intent": entry.intent,
-                "center_key": getattr(entry, "center_key", ""),
-                "center_name": getattr(entry, "center_name", ""),
-                "center_sequence": getattr(entry, "center_sequence", 10),
+                "center_key": center_key,
+                "center_name": center_name,
+                "center_sequence": center_sequence,
                 "source_db": source_db,
             })
-            center_key = _text(getattr(entry, "center_key", ""))
             if center_key:
                 center = centers.setdefault(center_key, {
                     "key": center_key,
-                    "name": _text(getattr(entry, "center_name", "")) or center_key,
-                    "sequence": _int_or(getattr(entry, "center_sequence", 10), 10),
+                    "name": center_name or center_key,
+                    "sequence": center_sequence,
                     "scenarios": [],
                 })
                 if scenario.code not in center["scenarios"]:

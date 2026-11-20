@@ -212,6 +212,30 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertIn(menu.id, by_id)
         self.assertEqual(index[by_id[menu.id]]['location'], 'exempt')
 
+    def test_maintained_surface_falls_back_to_native_center_when_policy_is_incomplete(self):
+        scenario = self.env["sc.product.scenario"].sudo().create({
+            "code": "test.native.center.fallback",
+            "name": "Native center fallback",
+        })
+        menu = self.env.ref("smart_construction_core.menu_sc_construction_contract")
+        self.env["sc.product.scenario.entry"].sudo().create({
+            "scenario_id": scenario.id,
+            "menu_id": menu.id,
+            "intent": "view",
+        })
+        surface = load_maintained_runtime_surface(self.env)
+        row = next(
+            row
+            for row in surface["scenarios"]
+            if row["key"] == scenario.code
+        )
+        self.assertEqual(len(row["bindings"]), 1)
+        self.assertEqual(
+            row["bindings"][0]["center_key"],
+            "construction.center.contract",
+        )
+        self.assertTrue(row["bindings"][0]["center_name"])
+
     def test_xmlid_batches_match_native_choice_and_keep_group_authority_live(self):
         from unittest.mock import patch
         from odoo.addons.smart_core.delivery.menu_service import MenuService
