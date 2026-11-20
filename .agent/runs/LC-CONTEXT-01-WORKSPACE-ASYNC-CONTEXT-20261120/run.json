@@ -1,0 +1,260 @@
+{
+  "schema_version": 1,
+  "id": "LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120",
+  "branch": "feature/lc-context-01-workspace-async-context-20261120",
+  "baseline_sha": "d10d2b42d747c89be39abb89dac25bd6051812eb",
+  "status": "active",
+  "goal": ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+  "record": "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+    ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+    ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+    ".agent/runs/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120/run.json",
+    "config/ci/contract_only_scopes.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
+    "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
+    "frontend/apps/web/scripts/business_config_context_race_test.mjs",
+    "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+    "frontend/apps/web/src/app/contextEpoch.ts",
+    "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigRemediationLifecycle.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+    "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
+    "make/frontend.mk",
+    "make/runtime_ops.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/low_code_workbench_product_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/low_code_publish_boundary_guard.mjs"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Contract-only frontend source, pure consumer tests and Make/CI selection checks; no database, service, module upgrade or browser access"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.business_config.full_acceptance",
+      "verify.business_config.coverage",
+      "verify.business_config.snapshot",
+      "verify.business_config.browser_acceptance",
+      "verify.business_config.approval_runtime"
+    ],
+    "reason": "Owner-selected contract-only lane excludes ORM, fixture, module upgrade, browser matrix, deployment and full acceptance"
+  },
+  "stages": [
+    {
+      "id": "OWNER-PREP",
+      "status": "completed",
+      "owner": "integration_writer",
+      "exit": "Branch, run and pure-contract validation responsibility established on main d10d2b42d"
+    },
+    {
+      "id": "FRONTEND-CONTEXT",
+      "status": "completed",
+      "owner": "frontend_writer",
+      "exit": "Coverage, editor, version and approval consumers reject stale contexts and unsafe continuations"
+    },
+    {
+      "id": "CANDIDATE-CLOSE",
+      "status": "active",
+      "owner": "integration_writer",
+      "exit": "Targeted behavior tests, generated evidence, exact-head publication, required CI and independent review are complete"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+        ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "business_config_behavior": {
+      "target": "verify.business_config.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_config_context_race_test.mjs",
+        "frontend/apps/web/src/app/contextEpoch.ts",
+        "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigRemediationLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
+        "make/frontend.mk",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_config_approval": {
+      "target": "verify.business_config.approval_targets.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+        "frontend/apps/web/src/app/contextEpoch.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_selection": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "iteration_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "AGENTS.md",
+        "docs/architecture/stable_baseline_iteration_invariants_v1.md",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/.eslintrc.cjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/package.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/apps/web/tsconfig.json",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_component_driver": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_standard_preview": {
+      "target": "verify.frontend.standard_preview.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/standard_project_save_scope_test.mjs",
+        "scripts/verify/frontend_my_work_approval_browser.mjs",
+        "scripts/verify/frontend_menu_navigation_diagnostic.py",
+        "scripts/verify/frontend_my_work_approval_runtime.py",
+        "scripts/verify/frontend_my_work_approval_runtime_ids.py",
+        "scripts/verify/test_frontend_release_local_entry.py",
+        "scripts/verify/test_frontend_standard_preview.py",
+        "scripts/verify/test_frontend_standard_preview_candidate.py",
+        "scripts/dev/frontend_acceptance_runtime.sh",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "make/frontend.mk",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_results": {
+    "status": "passed",
+    "scope": "Contract-only frontend request ownership, safe continuation and affected validation lanes",
+    "passed": [
+      "verify.business_config.unit: passed; aggregate low-code guards plus business_config_context_race 12 cases and existing draft/presentation regressions",
+      "verify.business_config.approval_targets.unit: passed; backend 26+8 tests and approval frontend 17 cases",
+      "verify.frontend.pr.unit: passed through the locked frontend toolchain and includes both business-config behavior targets",
+      "verify.frontend.dev.incremental.unit: 187 tests passed",
+      "verify.frontend.lint.src: passed with repository-existing warnings only",
+      "verify.frontend.typecheck.strict: passed",
+      "verify.frontend.standard_preview.unit: passed",
+      "verify.verification.lane_coverage: passed after reviewed baseline rewrite; unregistered and stale divergences are 0",
+      "make ci.local.iteration: exit 0; 11 affected targets executed with non-zero coverage",
+      "ci.delivery.freeze.prepare: passed; all content-bound generated evidence is current"
+    ],
+    "regressions": [
+      "coverage scans share one request family and reject stale context, epoch, model/action/view and sequence ownership",
+      "list/search and analysis reads share one editor-intent sequence and bind baselines and panel opening to the initiating context and source view",
+      "unread or invalidated editor content cannot be staged into a new context",
+      "version reads and rollback confirmations stop before write or readback when the initiating object changes",
+      "approval reads and multi-step saves stop after the initiating company, role, page or target model changes",
+      "approved read tickets survive neither epoch changes nor a newer editor-open intent; confirmation captures the original save intent before the dialog",
+      "list/search, analysis and approval share one workbench editor-open sequence, so the last opened panel keeps ownership even when it already contains unsaved changes",
+      "switching to list/search or analysis after an approval save has started does not interrupt the original config and steps writes; stale presentation is suppressed",
+      "shared busy refs are owned by the newest activity so stale finally blocks cannot clear newer work",
+      "component unmount and company/role transitions invalidate request ownership and clear obsolete loading state",
+      "workbench copy now describes staging, draft preview and unified publication accurately"
+    ],
+    "not_run": [
+      "ORM and module baselines are excluded by owner continuation",
+      "browser matrix, full acceptance, fixture and deployment are excluded"
+    ]
+  },
+  "blockers": [],
+  "next_exact_step": "Run the final freeze preparation, review the exact candidate diff and scope, commit, then publish the single LC-CONTEXT-01 PR."
+}

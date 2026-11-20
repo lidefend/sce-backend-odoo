@@ -51,7 +51,7 @@ REQUIRED_TOKENS = (
     "openCurrentEffectivePage",
     "inspectListSearchDraft",
     "inspectAnalysisDraft",
-    "当前版本不支持未发布效果预览",
+    "保存到待发布变更，草稿预览用于核对效果，统一发布后正式页面生效",
     "BusinessConfigContextBar",
     "BusinessConfigImpactDialog",
     "ScButton",

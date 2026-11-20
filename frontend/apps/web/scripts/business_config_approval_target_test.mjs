@@ -5,22 +5,31 @@ import vm from 'node:vm';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../package.json', import.meta.url));
 const ts = require('typescript'), vue = require('vue');
+const contextSource = fs.readFileSync(new URL('../src/app/contextEpoch.ts', import.meta.url), 'utf8');
+const contextCode = ts.transpileModule(contextSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const context = {};
+vm.runInNewContext(contextCode, { exports: context, AbortController });
 const source = fs.readFileSync(new URL('../src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts', import.meta.url), 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 
 function setup(overrides = {}) {
   const calls = [], parent = vue.ref('parent'), targets = vue.ref([{ value: 'child', label: '子单据' }]), error = vue.ref('');
+  const messages = [];
+  const requestIdentity = () => ({ companyId: 1, actorRoleCode: 'config_admin', targetRoleKey: '', model: parent.value, actionId: 11, viewId: 22 });
+  const editorIntentOwner = context.createContextRequestOwner(requestIdentity);
   const payload = model => ({ model, amount_condition: { supported: false, field: '', label: '', reason_code: 'amount_field_not_declared', message: '该单据不支持金额条件。' }, policy: { target_model: model, target_model_label: '子单据', approval_required: false, mode: 'none', manager_scope_key: '', steps: [] }, scope_options: [{ value: 'executive', label: '管理层' }], runtime_approval_required: false });
   const api = Object.fromEntries(['loadApprovalPolicyConfig', 'saveApprovalPolicyConfig', 'saveApprovalPolicySteps'].map(name => [name, async params => { calls.push({ name, params }); return payload(params.model); }]));
   Object.assign(api, overrides);
   const exports = {};
-  vm.runInNewContext(code, { exports, require: name => name === 'vue' ? vue : api });
+  vm.runInNewContext(code, { exports, require: name => name === 'vue' ? { ...vue, onScopeDispose: () => {} } : (name === '../../app/contextEpoch' ? context : api) });
   const editor = exports.useBusinessConfigApprovalEditor({
     currentModel: vue.computed(() => parent.value), targetOptions: vue.computed(() => targets.value),
-    selectedPageLabel: vue.ref('父业务'), error, setMessage() {}, clearMessage() {},
+    selectedPageLabel: vue.ref('父业务'), error, setMessage(text) { messages.push(text); }, clearMessage() {},
     async loadSurface() {}, async focusActiveEditorPanel() {}, onOpenPanel() {},
+    requestIdentity,
+    editorIntentOwner,
   });
-  return { editor, calls, parent, targets, error, payload };
+  return { editor, calls, parent, targets, error, payload, context, editorIntentOwner, messages };
 }
 
 test('child target and label come from declared configuration contract', async () => {
@@ -62,8 +71,90 @@ test('parent switch during save prevents a subsequent step write', async () => {
   const pending = s.editor.saveApprovalConfig(); s.parent.value = 'other'; release(s.payload('child'));
   assert.equal(await pending, false);
   assert.equal(s.calls.filter(c => c.name === 'saveApprovalPolicySteps').length, 0);
-  assert.match(s.error.value, /配置页面已变化/);
+  assert.equal(s.error.value, '');
 });
+test('context epoch switch during the first approval write stops the second write', async () => {
+  let release;
+  const s = setup({ saveApprovalPolicyConfig: () => new Promise(resolve => { release = resolve; }) });
+  await s.editor.loadApprovalConfig(); s.editor.enableApprovalWithDefaultStep();
+  const pending = s.editor.saveApprovalConfig();
+  s.context.beginContextTransition();
+  release(s.payload('child'));
+  assert.equal(await pending, false);
+  assert.equal(s.calls.filter(c => c.name === 'saveApprovalPolicySteps').length, 0);
+  assert.equal(s.editor.approvalLoading.value, false);
+});
+test('a successful approval read cannot seed a save after its context epoch changes', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  assert.equal(s.editor.approvalEditorReady.value, true);
+  s.context.beginContextTransition();
+  assert.equal(s.editor.approvalEditorReady.value, false);
+  assert.equal(await s.editor.saveApprovalConfig(), false);
+  assert.equal(s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).length, 0);
+  assert.match(s.error.value, /重新读取/);
+});
+test('save intent is bound before confirmation and cannot rebind after a context switch', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  const intent = s.editor.beginApprovalSaveIntent();
+  assert.ok(intent);
+  s.context.beginContextTransition();
+  assert.equal(await s.editor.saveApprovalConfig(intent), false);
+  assert.equal(s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).length, 0);
+});
+test('late approval read cannot reclaim the panel after a newer editor intent', async () => {
+  let release;
+  const s = setup({ loadApprovalPolicyConfig: () => new Promise(resolve => { release = resolve; }) });
+  const pending = s.editor.loadApprovalConfig();
+  s.editorIntentOwner.begin('editor-open', { viewType: 'list-search' });
+  release(s.payload('child'));
+  await pending;
+  assert.equal(s.editor.approvalPanelOpen.value, false);
+  assert.equal(s.editor.approvalTargetModel.value, '');
+});
+test('stable save intent still executes the normal approval writes', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  const intent = s.editor.beginApprovalSaveIntent();
+  assert.ok(intent);
+  assert.equal(await s.editor.saveApprovalConfig(intent), true);
+  assert.deepEqual(
+    s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).map(c => c.name),
+    ['saveApprovalPolicyConfig', 'saveApprovalPolicySteps'],
+  );
+});
+for (const viewType of ['list-search', 'analysis']) {
+  test(`opening ${viewType} during the first approval write still completes the original save`, async () => {
+    let releaseConfig;
+    const s = setup({
+      saveApprovalPolicyConfig: (params) => {
+        s.calls.push({ name: 'saveApprovalPolicyConfig', params });
+        return new Promise((resolve) => {
+          releaseConfig = () => resolve(s.payload(params.model));
+        });
+      },
+    });
+    await s.editor.loadApprovalConfig();
+    s.editor.enableApprovalWithDefaultStep();
+    const pending = s.editor.saveApprovalConfig();
+    for (let index = 0; index < 6 && !releaseConfig; index += 1) await Promise.resolve();
+    assert.ok(releaseConfig);
+    s.editorIntentOwner.begin('editor-open', { viewType });
+    s.editor.approvalPanelOpen.value = false;
+    releaseConfig();
+    assert.equal(await pending, true);
+    assert.deepEqual(
+      s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).map(c => c.name),
+      ['saveApprovalPolicyConfig', 'saveApprovalPolicySteps'],
+    );
+    assert.equal(s.editor.approvalPanelOpen.value, false);
+    assert.equal(s.messages.length, 0);
+  });
+}
 
 test('unsupported and missing amount capabilities hide inputs without deleting stored values', async () => {
   const s = setup();

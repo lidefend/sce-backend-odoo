@@ -65,7 +65,7 @@
     />
   </div>
   <div class="edit-meta">
-    <span v-if="hasAnalysisDraftChanges" class="edit-dirty">配置已调整；可先检查修改，保存后才会发布生效</span>
+    <span v-if="hasAnalysisDraftChanges" class="edit-dirty">配置已调整；保存到待发布变更，草稿预览用于核对效果，统一发布后正式页面生效</span>
     <span v-if="advancedPanelOpen">生效来源：{{ boundaryLabel(analysisAudit?.business_config_boundary || 'business_contract') }}</span>
   </div>
 </ScCard>
@@ -193,7 +193,7 @@
     />
   </div>
   <div class="edit-meta">
-    <span v-if="hasListSearchDraftChanges" class="edit-dirty">配置已调整；可先检查修改，保存后才会发布生效</span>
+    <span v-if="hasListSearchDraftChanges" class="edit-dirty">配置已调整；保存到待发布变更，草稿预览用于核对效果，统一发布后正式页面生效</span>
     <span v-if="advancedPanelOpen">个人设置记录：{{ listSearchAudit?.user_preference_count ?? 0 }}</span>
     <span v-if="advancedPanelOpen">生效来源：{{ boundaryLabel(listSearchAudit?.user_preference_boundary || 'ui_only') }}</span>
   </div>

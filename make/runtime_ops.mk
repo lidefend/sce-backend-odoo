@@ -41,6 +41,7 @@ verify.business_config.publish_boundary_guard: guard.prod.forbid
 verify.business_config.unit: guard.prod.forbid verify.frontend.product_language.guard verify.business_config.product_guard verify.business_config.publish_boundary_guard
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/business_config_change_set_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/business-config-change-set-presentation-test.mjs >/dev/null
 	@node /tmp/business-config-change-set-presentation-test.mjs
+	@node frontend/apps/web/scripts/business_config_context_race_test.mjs
 	@node frontend/apps/web/scripts/business_config_draft_scope_race_test.mjs
 	@node frontend/apps/web/scripts/designer_draft_ownership_test.mjs
 	@node frontend/apps/web/scripts/designer_popup_readiness_test.mjs

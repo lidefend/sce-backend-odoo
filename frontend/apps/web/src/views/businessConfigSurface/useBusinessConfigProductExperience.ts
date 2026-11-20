@@ -1,5 +1,10 @@
-import { computed, onBeforeUnmount, onMounted, watch, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onScopeDispose, watch, ref, type ComputedRef, type Ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
+import {
+  createContextRequestOwner,
+  onContextEpochChange,
+  type ContextRequestIdentity,
+} from '../../app/contextEpoch';
 import type {
   BusinessConfigAnalysisAuditPayload,
   BusinessConfigListSearchAuditPayload,
@@ -39,6 +44,10 @@ export function useBusinessConfigProductExperience(options: {
   analysisPanelOpen: Ref<boolean>;
   approvalPanelOpen: Ref<boolean>;
   versionsPanelOpen: Ref<boolean>;
+  listSearchBusy: Ref<boolean>;
+  listSearchSaving: Ref<boolean>;
+  approvalLoading: Ref<boolean>;
+  versionsLoading: Ref<boolean>;
   resetListSearchDraft: () => void;
   resetAnalysisDraft: () => void;
   resetApprovalDraft: () => void;
@@ -47,6 +56,7 @@ export function useBusinessConfigProductExperience(options: {
   scanSystemRootCoverage: () => Promise<void>;
   setMessage: (text: string, detail?: string) => void;
   openImpactDialog: (options: { summary: string; immediate?: boolean; rollbackText?: string }) => Promise<boolean>;
+  requestIdentity: () => ContextRequestIdentity;
 }) {
   const workbenchCompanyLabel = computed(() => String(
     options.session.recordContext?.company_name
@@ -62,11 +72,30 @@ export function useBusinessConfigProductExperience(options: {
     || options.hasApprovalDraftChanges.value
   ));
   const currentEffectiveVersionLabel = ref('请先选择业务页面');
-  let effectiveLoad = 0;
+  const requestOwner = createContextRequestOwner(options.requestIdentity);
+  const stopContextEpochListener = onContextEpochChange(() => {
+    options.resetListSearchDraft();
+    options.resetAnalysisDraft();
+    options.resetApprovalDraft();
+    options.resetUnifiedDraftScope();
+    options.listSearchAudit.value = null;
+    options.analysisAudit.value = null;
+    options.versionContracts.value = [];
+    options.listSearchPanelOpen.value = false;
+    options.analysisPanelOpen.value = false;
+    options.approvalPanelOpen.value = false;
+    options.versionsPanelOpen.value = false;
+    options.listSearchBusy.value = false;
+    options.listSearchSaving.value = false;
+    options.approvalLoading.value = false;
+    options.versionsLoading.value = false;
+  });
   watch(() => [options.currentModel.value, options.scopeAction.value, options.scopeView.value,
     options.selectedViewType.value, options.surface.value, options.session.recordContext?.company_id,
     options.session.roleSurface?.role_code], async () => {
-    const sequence = ++effectiveLoad;
+    const request = requestOwner.begin('effective-version-label', {
+      viewType: options.selectedViewType.value,
+    });
     if (!options.currentModel.value || !options.scopeAction.value) {
       currentEffectiveVersionLabel.value = '请先选择业务页面'; return;
     }
@@ -78,9 +107,9 @@ export function useBusinessConfigProductExperience(options: {
         view_id: options.scopeView.value, view_type: options.selectedViewType.value,
         render_profile: options.selectedViewType.value === 'form' ? 'create' : 'readonly',
       } });
-      if (sequence === effectiveLoad) currentEffectiveVersionLabel.value = effectiveConfigurationLabel(contract, options.selectedViewType.value, options.snapshotSummary.value?.source_categories);
+      if (requestOwner.isCurrent(request)) currentEffectiveVersionLabel.value = effectiveConfigurationLabel(contract, options.selectedViewType.value, options.snapshotSummary.value?.source_categories);
     } catch {
-      if (sequence === effectiveLoad) currentEffectiveVersionLabel.value = '当前页面配置核验失败，请刷新重试';
+      if (requestOwner.isCurrent(request)) currentEffectiveVersionLabel.value = '当前页面配置核验失败，请刷新重试';
     }
   }, { immediate: true });
 
@@ -138,12 +167,22 @@ export function useBusinessConfigProductExperience(options: {
       options.analysisPanelOpen.value = false;
       options.approvalPanelOpen.value = false;
       options.versionsPanelOpen.value = false;
+      options.listSearchBusy.value = false;
+      options.listSearchSaving.value = false;
+      options.approvalLoading.value = false;
+      options.versionsLoading.value = false;
       await options.loadSurface();
       await options.scanSystemRootCoverage();
     },
   );
   onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
-  onBeforeUnmount(() => window.removeEventListener('beforeunload', handleBeforeUnload));
+  onScopeDispose(() => {
+    stopContextEpochListener();
+    requestOwner.dispose();
+  });
+  onBeforeUnmount(() => {
+    window.removeEventListener('beforeunload', handleBeforeUnload);
+  });
 
   return {
     workbenchCompanyLabel,

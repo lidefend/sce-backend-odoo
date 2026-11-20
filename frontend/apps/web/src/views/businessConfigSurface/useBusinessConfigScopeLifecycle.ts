@@ -1,5 +1,7 @@
 import type { BusinessConfigCoverageScanItem } from '../../api/businessConfig';
 import { isBusinessConfigRuntimeModel } from '../../app/businessConfigBoundaries';
+import { createContextRequestOwner, type ContextRequestIdentity } from '../../app/contextEpoch';
+import { onScopeDispose } from 'vue';
 import { onBeforeRouteUpdate } from 'vue-router';
 import { findActionMeta } from '../../app/menu';
 import { ApiError } from '../../api/client';
@@ -38,10 +40,13 @@ export type BusinessConfigScopeLifecycleDependencies = {
   resetScopeDrafts: () => void;
   scopeRoleKey: import('vue').Ref<string>;
   scopeBusy: () => boolean;
+  requestIdentity: () => ContextRequestIdentity;
 };
 
 export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecycleDependencies) {
   const { scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery, confirmScopeChange, hasUnsavedEdits, resetScopeDrafts } = deps;
+  const requestOwner = createContextRequestOwner(deps.requestIdentity);
+  onScopeDispose(() => requestOwner.dispose());
   onBeforeRouteUpdate(async (to) => {
     const actionId = Number(to.query.action_id || 0);
     const model = String(to.query.model || findActionMeta(session.menuTree, actionId)?.model || '').trim();
@@ -98,6 +103,7 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
 
   async function loadSurface() {
     const seq = ++surfaceLoadSeq.value;
+    const request = requestOwner.begin('surface', { viewType: 'surface' });
     loading.value = true;
     surfaceError.value = '';
     clearMessage();
@@ -113,27 +119,47 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         }),
         SURFACE_LOAD_TIMEOUT_MS,
       );
-      if (seq !== surfaceLoadSeq.value) return;
+      if (seq !== surfaceLoadSeq.value || !requestOwner.isCurrent(request)) return;
       surface.value = nextSurface;
     } catch (err) {
-      if (seq !== surfaceLoadSeq.value) return;
+      if (seq !== surfaceLoadSeq.value || !requestOwner.isCurrent(request)) return;
       if (err instanceof ApiError && err.status === 401) { await session.logout(); await router.replace({ path: '/login', query: { next: route.fullPath } }); return; }
       if (err instanceof ApiError && err.status === 403 && !String(err.message).includes('CONFIG_SCOPE_CONFLICT')) { await router.replace({ path: '/access-denied', query: { from: route.fullPath, reason: err.reasonCode || 'PERMISSION_DENIED' } }); return; }
       surface.value = null;
       surfaceError.value = err instanceof Error ? err.message : '业务配置工作台加载失败';
     } finally {
-      if (seq === surfaceLoadSeq.value) {
+      if (seq === surfaceLoadSeq.value
+        && (requestOwner.isCurrent(request) || requestOwner.isLatest(request))) {
         loading.value = false;
       }
     }
   }
 
-  async function scanCoverage() {
+  async function scanCoverageRequest(
+    params: Parameters<typeof scanBusinessConfigCoverage>[0],
+    fallbackError: string,
+  ) {
+    const request = requestOwner.begin('coverage', { viewType: 'coverage' });
     scanLoading.value = true;
     error.value = '';
     clearMessage();
     try {
-      coverageScan.value = await scanBusinessConfigCoverage({
+      const nextScan = await scanBusinessConfigCoverage(params);
+      if (!requestOwner.isCurrent(request)) return;
+      coverageScan.value = nextScan;
+      hydrateSelectedCoverageRowFromScan();
+    } catch (err) {
+      if (!requestOwner.isCurrent(request)) return;
+      error.value = err instanceof Error ? err.message : fallbackError;
+    } finally {
+      if (requestOwner.isCurrent(request) || requestOwner.isLatest(request)) {
+        scanLoading.value = false;
+      }
+    }
+  }
+
+  async function scanCoverage() {
+    await scanCoverageRequest({
         business_catalog: true,
         exclude_configuration_models: true,
         model: currentModel.value || undefined,
@@ -141,22 +167,12 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: false,
-      });
-      hydrateSelectedCoverageRowFromScan();
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '业务配置覆盖检查失败';
-    } finally {
-      scanLoading.value = false;
-    }
+      }, '业务配置覆盖检查失败');
   }
 
   async function scanSystemRootCoverage() {
     if (!surface.value && currentModel.value) { await loadSurface(); if (!surface.value) return; }
-    scanLoading.value = true;
-    error.value = '';
-    clearMessage();
-    try {
-      coverageScan.value = await scanBusinessConfigCoverage({
+    await scanCoverageRequest({
         business_catalog: true,
         exclude_configuration_models: true,
         model: undefined,
@@ -164,22 +180,12 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: true,
-      });
-      hydrateSelectedCoverageRowFromScan();
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '系统根菜单覆盖检查失败';
-    } finally {
-      scanLoading.value = false;
-    }
+      }, '系统根菜单覆盖检查失败');
   }
 
   async function scanCurrentModel() {
     if (!currentModel.value) return;
-    scanLoading.value = true;
-    error.value = '';
-    clearMessage();
-    try {
-      coverageScan.value = await scanBusinessConfigCoverage({
+    await scanCoverageRequest({
         business_catalog: true,
         exclude_configuration_models: true,
         model: currentModel.value,
@@ -187,13 +193,7 @@ export function useBusinessConfigScopeLifecycle(deps: BusinessConfigScopeLifecyc
         role_key: scopeRole.value || session.roleSurface?.role_code || undefined,
         root_menu_xmlid: rootMenuXmlid.value || undefined,
         include_all_root_menu_actions: Boolean(coverageScan.value?.include_all_root_menu_actions),
-      });
-      hydrateSelectedCoverageRowFromScan();
-    } catch (err) {
-      error.value = err instanceof Error ? err.message : '当前业务对象覆盖检查失败';
-    } finally {
-      scanLoading.value = false;
-    }
+      }, '当前业务对象覆盖检查失败');
   }
 
   async function rescanCoverageAfterBootstrap() {

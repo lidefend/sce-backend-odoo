@@ -1,4 +1,9 @@
-import { computed, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, onScopeDispose, ref, type ComputedRef, type Ref } from 'vue';
+import {
+  beginBooleanActivity,
+  createContextRequestOwner,
+  type ContextRequestIdentity,
+} from '../../app/contextEpoch';
 import {
   loadBusinessConfigContractVersions,
   rollbackBusinessConfigContract,
@@ -41,6 +46,7 @@ type UseBusinessConfigVersionsOptions = {
   loadSurface: () => Promise<void>;
   rescanCoverageAfterBootstrap: () => Promise<void>;
   rollbackConfirm: RollbackConfirm;
+  requestIdentity: () => ContextRequestIdentity;
 };
 
 export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOptions) {
@@ -49,6 +55,8 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
   const versionTitle = ref('配置版本');
   const activeVersionSection = ref<VersionSectionKey>('');
   const versionContracts = ref<BusinessConfigContractVersionsPayload['contracts']>([]);
+  const requestOwner = createContextRequestOwner(options.requestIdentity);
+  onScopeDispose(() => requestOwner.dispose());
 
   const versionPanelDescription = computed(() => (
     options.advancedPanelOpen.value
@@ -95,15 +103,17 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
 
   async function loadVersions(sectionKey: string) {
     if (!options.currentModel.value) return;
+    const request = requestOwner.begin('versions', { viewType: sectionKey || 'all' });
     activeVersionSection.value = sectionKey === 'form' || sectionKey === 'list_search' || sectionKey === 'analysis'
       ? sectionKey
       : '';
-    versionsLoading.value = true;
+    const releaseLoading = beginBooleanActivity(versionsLoading);
     options.error.value = '';
     options.clearMessage();
     try {
       if (sectionKey === 'form') {
         const result = await loadBusinessConfigContractVersions(versionParams('form'));
+        if (!requestOwner.isCurrent(request)) return;
         versionTitle.value = '表单配置版本';
         versionContracts.value = result.contracts || [];
       } else if (sectionKey === 'list_search') {
@@ -111,6 +121,7 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
           loadBusinessConfigContractVersions(versionParams('tree')),
           loadBusinessConfigContractVersions(versionParams('search')),
         ]);
+        if (!requestOwner.isCurrent(request)) return;
         versionTitle.value = '列表/搜索配置版本';
         versionContracts.value = [...(treeResult.contracts || []), ...(searchResult.contracts || [])];
       } else {
@@ -119,14 +130,16 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
             loadBusinessConfigContractVersions(versionParams(viewType))
           )),
         );
+        if (!requestOwner.isCurrent(request)) return;
         versionTitle.value = '分析视图配置版本';
         versionContracts.value = results.flatMap((result) => result.contracts || []);
       }
       versionsPanelOpen.value = true;
     } catch (err) {
+      if (!requestOwner.isCurrent(request)) return;
       options.error.value = err instanceof Error ? err.message : '配置版本读取失败';
     } finally {
-      versionsLoading.value = false;
+      releaseLoading();
     }
   }
 
@@ -206,6 +219,11 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
 
   async function rollbackContractFromWorkbench(contract: VersionContract, versionNo?: number) {
     if (!contract?.name || (versionNo ? versionNo === contract.version_no : contract.versions.length < 2)) return;
+    const request = requestOwner.begin('version-rollback', {
+      viewType: contract.view_type,
+      contractName: contract.name,
+      versionNo: versionNo || 0,
+    });
     const targetText = versionNo ? `v${versionNo}` : '上一版';
     const confirmed = await options.rollbackConfirm.open({
       title: '确认恢复配置版本',
@@ -218,8 +236,8 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
       cancelLabel: '取消',
       tone: 'danger',
     });
-    if (!confirmed) return;
-    options.listSearchSaving.value = true;
+    if (!confirmed || !requestOwner.isCurrent(request)) return;
+    const releaseSaving = beginBooleanActivity(options.listSearchSaving);
     options.error.value = '';
     options.clearMessage();
     try {
@@ -232,16 +250,21 @@ export function useBusinessConfigVersions(options: UseBusinessConfigVersionsOpti
         role_key: contract.role_key || undefined,
         version_no: versionNo,
       });
+      if (!requestOwner.isCurrent(request)) return;
       await options.loadSurface();
+      if (!requestOwner.isCurrent(request)) return;
       await loadVersions(sectionKeyForViewType(contract.view_type));
+      if (!requestOwner.isCurrent(request)) return;
       if (options.coverageScan.value) {
         await options.rescanCoverageAfterBootstrap();
+        if (!requestOwner.isCurrent(request)) return;
       }
       options.setMessage('配置已回滚并发布', `已回滚到 v${result.rolled_back_to_version}，刷新页面后按该版本生效`);
     } catch (err) {
+      if (!requestOwner.isCurrent(request)) return;
       options.error.value = err instanceof Error ? err.message : '业务配置回滚失败';
     } finally {
-      options.listSearchSaving.value = false;
+      releaseSaving();
     }
   }
 

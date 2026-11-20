@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import ts from '../../frontend/apps/web/node_modules/typescript/lib/typescript.js';
 
+const webRequire = createRequire(new URL('../../frontend/apps/web/package.json', import.meta.url));
+const vue = webRequire('vue');
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const webRoot = path.join(root, 'frontend/apps/web/src');
 const scanRoots = [
@@ -86,13 +89,30 @@ function analyzeSource(source, fileName) {
 }
 
 function loadPublishLifecycle() {
+  const contextSource = fs.readFileSync(path.join(webRoot, 'app/contextEpoch.ts'), 'utf8');
+  const contextOutput = ts.transpileModule(contextSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const contextModule = { exports: {} };
+  Function('module', 'exports', contextOutput)(contextModule, contextModule.exports);
   const source = fs.readFileSync(path.join(webRoot, 'views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts'), 'utf8');
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const loaded = { exports: {} };
-  Function('module', 'exports', output)(loaded, loaded.exports);
-  return loaded.exports.useBusinessConfigPublishLifecycle;
+  Function('module', 'exports', 'require', output)(
+    loaded,
+    loaded.exports,
+    (name) => {
+      if (name === 'vue') return vue;
+      if (name === '../../app/contextEpoch') return contextModule.exports;
+      throw new Error(`unexpected publish lifecycle dependency: ${name}`);
+    },
+  );
+  return {
+    useBusinessConfigPublishLifecycle: loaded.exports.useBusinessConfigPublishLifecycle,
+    context: contextModule.exports,
+  };
 }
 
 async function explicitEmptyRoundtripBehavior() {
@@ -124,12 +144,22 @@ async function explicitEmptyRoundtripBehavior() {
   };
   const deps = {
     ...refs, namesToText, normalizeNamesText, clearMessage() {}, setMessage(text, detail) { messages.push([text, detail]); },
+    requestIdentity: () => ({
+      companyId: 1,
+      actorRoleCode: 'business_config_admin',
+      targetRoleKey: refs.scopeRole.value,
+      model: refs.currentModel.value,
+      actionId: refs.scopeAction.value,
+      viewId: refs.scopeView.value,
+    }),
     async focusActiveEditorPanel() {}, async auditBusinessListSearchConfig() { return explicitListSearch; },
     async auditBusinessAnalysisConfig() { return explicitAnalysis; },
     stageUnifiedDraftItem() { writeCalls += 1; }, publishDraft() { writeCalls += 1; }, rollbackPublished() { writeCalls += 1; },
     discardDraft() { writeCalls += 1; }, previewDraft() { writeCalls += 1; }, openImpactDialog() { writeCalls += 1; },
   };
-  const lifecycle = loadPublishLifecycle()(deps);
+  const publishModule = loadPublishLifecycle();
+  deps.editorIntentOwner = publishModule.context.createContextRequestOwner(deps.requestIdentity);
+  const lifecycle = publishModule.useBusinessConfigPublishLifecycle(deps);
   await lifecycle.loadListSearchConfig();
   const listDirty = [refs.listColumnsText.value, refs.searchFiltersText.value, refs.searchGroupByText.value]
     .some((value, index) => normalizeNamesText(value) !== Object.values(refs.listSearchBase.value)[index]);
@@ -158,7 +188,9 @@ async function explicitEmptyRoundtripBehavior() {
     has_business_search_config: false,
   });
   messages.length = 0;
-  await loadPublishLifecycle()(deps).loadListSearchConfig();
+  const retryModule = loadPublishLifecycle();
+  deps.editorIntentOwner = retryModule.context.createContextRequestOwner(deps.requestIdentity);
+  await retryModule.useBusinessConfigPublishLifecycle(deps).loadListSearchConfig();
   if (refs.listColumnsText.value !== 'name' || refs.searchFiltersText.value !== 'state' || refs.searchGroupByText.value !== 'company_id') {
     errors.push('absent list/search contracts did not expose suggestions');
   }

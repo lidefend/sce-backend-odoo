@@ -1,0 +1,53 @@
+schema_version: 1
+goal:
+  id: LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120
+  title: low_code_workbench_read_context_and_safe_continuation
+  status: active
+  formal_product_layer: P0/P4
+  layer_target: >-
+    Generic low-code workbench frontend request ownership and the integration
+    tests that execute the affected consumer behavior.
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make/runtime_ops.mk
+    - config/ci
+    - docs/ops/iterations
+  standard_vs_user_specific: platform_mechanism
+  objective: >-
+    Bind every workbench read and continuation to the authenticated context,
+    company, target configuration role and exact configuration object that
+    initiated it, so stale responses cannot overwrite the current page or seed
+    edits and writes for another context.
+  product_result: >-
+    After switching company, role or business page, the workbench only displays,
+    edits and submits content from the current configuration object. Late reads,
+    failures and continuations remain owned by their original request and cannot
+    reopen editors, alter baselines, clear current loading, continue writes or
+    report stale success.
+  why_here: >-
+    The defect is in the shared Vue workbench consumer. Backend authority already
+    resolves company, page and target-role scope; duplicating that judgment in the
+    client would create a second policy source.
+  why_not_elsewhere:
+    - Backend handlers must continue to own authorization and scope validation.
+    - The stale content enters through generic asynchronous frontend reads, so module-specific backend compensation would not close the defect.
+    - Global request cancellation would incorrectly couple independent coverage, editor and version reads.
+    - Approval policy semantics and immediate-effect behavior remain unchanged.
+  blast_radius:
+    behavior:
+      - business configuration coverage scans
+      - list/search and analysis reads and staging
+      - configuration version reads and rollback continuation
+      - approval configuration reads and multi-step save continuation
+      - workbench context-change and unmount cleanup
+  exclusions:
+    - backend product code and authorization policy
+    - ORM, module baselines, module upgrade and environment rebuild
+    - fixture reset, browser matrix and deployment
+    - approval policy semantics, intent, steps or immediate-effect rules
+    - multi-product enterprise runtime context and SCENE-CLOSE-04
+  rollback: >-
+    Revert the frontend request-ownership change, its tests and the related
+    incremental-selection registration together. No schema, stored data or
+    backend contract changes are introduced.

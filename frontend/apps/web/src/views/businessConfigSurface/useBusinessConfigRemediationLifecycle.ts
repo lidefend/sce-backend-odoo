@@ -29,11 +29,12 @@ export type BusinessConfigRemediationLifecycleDependencies = {
   coverageScan: import('vue').Ref<import('../../api/businessConfig').BusinessConfigCoverageScanPayload | null>;
   rescanCoverageAfterBootstrap: ReturnType<typeof import('./useBusinessConfigScopeLifecycle').useBusinessConfigScopeLifecycle>['rescanCoverageAfterBootstrap'];
   approvalImpactSummaryText: ReturnType<typeof import('./useBusinessConfigApprovalEditor').useBusinessConfigApprovalEditor>['approvalImpactSummaryText'];
+  beginApprovalSaveIntent: ReturnType<typeof import('./useBusinessConfigApprovalEditor').useBusinessConfigApprovalEditor>['beginApprovalSaveIntent'];
   saveApprovalConfig: ReturnType<typeof import('./useBusinessConfigApprovalEditor').useBusinessConfigApprovalEditor>['saveApprovalConfig'];
 };
 
 export function useBusinessConfigRemediationLifecycle(deps: BusinessConfigRemediationLifecycleDependencies) {
-  const { focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, saveApprovalConfig } = deps;
+  const { focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, beginApprovalSaveIntent, saveApprovalConfig } = deps;
   async function runRemediationAction(row: BusinessConfigCoverageScanItem, action: BusinessConfigRemediationAction) {
     await focusScanRow(row);
     if (action.code === 'configure_contract') {
@@ -183,12 +184,14 @@ export function useBusinessConfigRemediationLifecycle(deps: BusinessConfigRemedi
   }
 
   async function confirmAndSaveApprovalConfig() {
+    const intent = beginApprovalSaveIntent();
+    if (!intent) return;
     const confirmed = await openImpactDialog({
       summary: approvalImpactSummaryText.value || '调整当前页面的审批规则',
       rollbackText: '审批规则会立即被运行态消费；请使用可复位配置恢复原状态。',
     });
     if (!confirmed) return;
-    await saveApprovalConfig();
+    await saveApprovalConfig(intent);
   }
   return { runRemediationAction, openVersionsForRuntimeGaps, bootstrapMissingContracts, bootstrapCoverageMissing, confirmAndSaveApprovalConfig };
 }
