@@ -1,6 +1,6 @@
 # Mainline and scheduled CI recovery
 
-Base: d2fb27530f5c1bf56719660af64199c6b343d8ff. Branch: fix/main-scheduled-ci-20261120.
+Current base: f2f7fd02f0f28f84e6190102f3bf559db0c28457. Original base: d2fb27530f5c1bf56719660af64199c6b343d8ff. Branch: fix/main-scheduled-ci-20261120.
 
 Formal Product Layer: P4. Layer Target: CI regression prerequisites. Modules: acceptance fixture and owning module tests. Standard vs User-Specific: verification mechanism. Why Here: tests must explicitly establish the publication they exercise. Why Not Elsewhere: runtime must not restore draft fallback. Blast Radius: test and verification carriers only; exclude all preexisting worktrees and persistent runtime data.
 
@@ -78,3 +78,5 @@ P1 workflow_contract_service: PR933 changed ten submitted-state profiles from su
 The same-principal diagnostic at ee215ae410a01270e006b36e125a1812797e78f5 identified canonical navigation duplicate identity (49 tests, 0 failures, 1 error), not missing configuration privileges. Real flatten + center composition + native node builders + canonical validator reproduce the mechanism: an actionless directory with /m/:id route and children was collected as a leaf, then reattached under a center using the same native menu ID. P1 flattening now keeps that node as a directory while still descending into its children. Actionless scene leaves and action-backed entries remain represented. Regression retains the strict duplicate validator, proves exact parent/leaf identities and verifies that an actual repeated leaf still fails.
 
 The affected owning-module selection at 47a0e77de35e389027e5c707c1565848573485f4 ran 609 tests (sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract): 1 failure, 0 errors. The sole failure was the existing shared-template/profile equality test; the ten concrete profiles were corrected but their reference helper still declared approve. Synchronize that helper, preserving the ORM equality assertion. This failed receipt is retained; final corrected 49/609 runs remain required.
+
+The corrected owning-module selection passed all 609 tests at 89680de3f70f8f900e7b9ffc3fa805d0d135451f (.runtime/test-baseline/1795150211270439515/receipt.json). The 49-test acceptance rerun still has the same single business_full duplicate-identity error. The controlled routed-directory fix alone does not close that actual case; capture exact key/menu/parent identity before any further production fix. No fixture success claim.

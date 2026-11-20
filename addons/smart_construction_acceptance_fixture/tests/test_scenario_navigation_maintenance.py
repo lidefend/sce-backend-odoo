@@ -101,10 +101,34 @@ class TestScenarioNavigationMaintenance(TransactionCase):
             # Replay only to expose their original traceback for this principal;
             # never replace the production result with the diagnostic result.
             from odoo.addons.smart_construction_core.services.scenario_surface_projection import project_authorized_nav_with_env
-            project_authorized_nav_with_env(
-                actor_env, nav=navigation["nav"],
-                route_authority=navigation["route_authority"],
-            )
+            try:
+                project_authorized_nav_with_env(
+                    actor_env, nav=navigation["nav"],
+                    route_authority=navigation["route_authority"],
+                )
+            except ValueError as exc:
+                # Identity-only diagnostics: no business record payloads.
+                frames = []
+                tb = exc.__traceback__
+                while tb:
+                    frames.append(tb.tb_frame)
+                    tb = tb.tb_next
+                walks = [frame for frame in frames if frame.f_code.co_name == "walk"]
+                if walks:
+                    values = walks[-1].f_locals
+                    menu_id = values.get("menu_id")
+                    key = values.get("key")
+                    projection = next((frame.f_locals for frame in frames
+                        if frame.f_code.co_name == "project_authorized_nav_with_env"), {})
+                    fields = ("menu_id", "action_id", "menu_xmlid", "parent_menu_xmlid", "center_menu_id", "policy_center_key", "route")
+                    identities = [{field: row.get(field) for field in fields}
+                        for row in projection.get("leaves", []) if row.get("menu_id") == menu_id]
+                    parents = [{field: row.get(field) for field in ("key", "menu_id")}
+                        for row in values.get("parents", [])]
+                    raise AssertionError(json.dumps({"projection_error": str(exc),
+                        "key": key, "menu_id": menu_id, "action_id": values.get("action_id"),
+                        "parents": parents, "matching_leaves": identities}, ensure_ascii=False)) from exc
+                raise
         self.assertIn("scenario_surface", navigation)
         surface = navigation["scenario_surface"]
         self.assertTrue(surface["ok"])

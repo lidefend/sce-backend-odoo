@@ -150,7 +150,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Seal directory/template corrections; rerun 49 acceptance cases and 609 owning ORM selection, then exact-head Draft PR update and full candidate.",
+  "next_exact_step": "Collect exact remaining duplicate native identity from same-principal fixture failure; retain passed owning 609 evidence and Draft-only status.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -327,6 +327,22 @@
       "tests": 166,
       "before_log": ".runtime/ci-recovery/scenario-directory-unit-before.log",
       "canonical_before_log": ".runtime/ci-recovery/scenario-directory-before.log"
+    },
+    "owning_orm_896": {
+      "status": "passed",
+      "head": "89680de3f70f8f900e7b9ffc3fa805d0d135451f",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795150211270439515/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract"
+    },
+    "fixture_orm_896": {
+      "status": "failed",
+      "head": "89680de3f70f8f900e7b9ffc3fa805d0d135451f",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-896.log",
+      "reason": "Controlled routed-directory counterexample fixed but actual business_full still has duplicate canonical identity. Capture exact key/menu/parent IDs before further production changes."
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
