@@ -78,7 +78,7 @@ verify.local.dev.layout_authority.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LayoutAuthorityReadonlyProbeTest
 
 verify.local.development_lifecycle.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner scripts.verify.test_local_dev_product_release_prepare
 
 .PHONY: verify.local.dev.payment_settlement_journey.unit
 verify.local.dev.payment_settlement_journey.unit: guard.prod.forbid
