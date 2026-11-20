@@ -147,6 +147,16 @@ async function assertMeaningfulScreenshot(page, buffer, label) {
   return metrics;
 }
 function recordRoute(target) { return `/r/${target.model}/${target.record_id}?action_id=${target.action_id}&menu_id=${target.menu_id}`; }
+function readyRecordSelector(target) {
+  // A visible content card can precede loadRecord completion. Warm and measure
+  // the exact completed record, otherwise leaving early cancels the initial
+  // load and the next visit correctly reloads instead of testing retention.
+  return `[data-product-page-mode="form"][data-state="ok"]`
+    + `[data-form-model="${target.model}"][data-form-record="${target.record_id}"]`
+    + `[data-form-action-id="${target.action_id}"][data-form-menu-id="${target.menu_id}"]`
+    + ` ${FORM_SURFACE_SELECTOR}`;
+}
+
 function listRoute(target) { return `/a/${target.action_id}?menu_id=${target.menu_id}`; }
 function waitForRecordContractResponse(page, target) {
   return page.waitForResponse((response) => {
@@ -1144,9 +1154,9 @@ async function main() {
       let performanceRole = FINANCE_LOGIN;
       for (const [name, route, readySelector, role] of [
         ['my_work', '/my-work', '.product-work', FINANCE_LOGIN],
-        ['payment_detail', recordRoute(TARGETS.payment_request), FORM_SURFACE_SELECTOR, FINANCE_LOGIN],
-        ['settlement_detail', recordRoute(TARGETS.settlement), FORM_SURFACE_SELECTOR, PROJECT_MANAGER_LOGIN],
-        ['execution_detail', recordRoute(TARGETS.payment_execution), FORM_SURFACE_SELECTOR, FINANCE_LOGIN],
+        ['payment_detail', recordRoute(TARGETS.payment_request), readyRecordSelector(TARGETS.payment_request), FINANCE_LOGIN],
+        ['settlement_detail', recordRoute(TARGETS.settlement), readyRecordSelector(TARGETS.settlement), PROJECT_MANAGER_LOGIN],
+        ['execution_detail', recordRoute(TARGETS.payment_execution), readyRecordSelector(TARGETS.payment_execution), FINANCE_LOGIN],
       ]) {
         if (role !== performanceRole) {
           await logout(page).catch(() => {});

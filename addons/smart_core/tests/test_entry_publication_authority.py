@@ -254,7 +254,7 @@ class EntryPublicationTest(unittest.TestCase):
         handler.params = params if params is not None else {"action_id": action_id}
         return handler.handle(), calls
 
-    def native_role_authority(self, *, batch_fails=False):
+    def native_role_authority(self, *, batch_fails=False, released_policy=False):
         """Real admission methods; doubles supply only native ORM facts."""
         import runpy
         path = ROOT / "delivery/menu_service.py"
@@ -274,7 +274,8 @@ class EntryPublicationTest(unittest.TestCase):
             def get_external_id(self): return {self.id: self.xmlid}
         actions = {
             ident: Record(id=ident, xmlid=xmlid, _name="ir.actions.act_window",
-                          name="Plan", active=True, groups_id=[], res_model="sc.plan")
+                          name="Plan", active=True, groups_id=[], res_model="sc.plan",
+                          view_mode="tree,form", view_id=None, domain="[]", context="{}")
             for ident, xmlid in ((601, "smart_construction_core.action_sc_plan"),
                                 (602, "tenant.action_allowed"))}
         class ActionModel:
@@ -308,6 +309,13 @@ class EntryPublicationTest(unittest.TestCase):
         native = service._authorization_native_nav(role, [])
         nav = service._filter_primary_native_nodes(native, role)
         self.assertIn((502, 601), list(service._walk_nav_action_refs(nav)))
+        if released_policy:
+            # Released policy can carry inactive native menus with explicit
+            # action identities. Force the separate policy admission path.
+            service._menu_fact_cache["visible"] = SimpleNamespace(tree=[], flat=[])
+            for node in nav:
+                node["action_xmlid"] = actions[node["action_id"]].xmlid
+                refs[node["menu_xmlid"]].active = False
         authority = service.build_route_authority(role, nav=nav)
         scene = runpy.run_path(str(ROOT.parent / "smart_construction_scene/services/business_scene_enablement.py"))
         surface = {row["menu_xmlid"]: {"location": "scenario", "scenario_key": "published.plan",
@@ -336,6 +344,15 @@ class EntryPublicationTest(unittest.TestCase):
                 self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
                 for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
                     self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
+
+    def test_released_policy_fallback_preserves_role_action_blocklist(self):
+        authority = self.native_role_authority(released_policy=True)
+        allowed = next(row for row in authority["primary_actions"] if row["action_id"] == 602)
+        self.assertEqual(allowed["route_kind"], "PRIMARY_NAV")
+        result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+        self.assertTrue(result.ok)
+        result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+        self.assertFalse(result.ok)
 
     def test_runtime_validator_rejects_unpublished_declared_action(self):
         result, calls = self.handler(655)

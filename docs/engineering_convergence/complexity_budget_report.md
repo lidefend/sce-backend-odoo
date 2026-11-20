@@ -5,8 +5,8 @@ Generated from repository source files. This report is informational during the 
 ## Summary
 
 - Scanned files: `5296`
-- Files requiring split plan: `83`
-- Files above warning threshold: `161`
+- Files requiring split plan: `84`
+- Files above warning threshold: `160`
 
 ## Split Plan Required
 
@@ -91,6 +91,7 @@ Generated from repository source files. This report is informational during the 
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1518 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
+| 1501 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1094 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 823 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -102,7 +103,6 @@ Generated from repository source files. This report is informational during the 
 | ---: | --- | --- |
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1538 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
-| 1491 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
 | 1479 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |

@@ -22,7 +22,8 @@
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
-    "addons/smart_core/delivery/menu_service.py"
+    "addons/smart_core/delivery/menu_service.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -99,6 +100,16 @@
       "kind": "runtime",
       "module": "smart_construction_scene",
       "command": "make local.test.test MODULE=smart_construction_scene"
+    },
+    "browser_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/pages/ContractFormPage.vue"
+      ]
     }
   },
   "blockers": [],
@@ -215,6 +226,23 @@
       "status": "interrupted",
       "log": ".runtime/ci-recovery/fixture-orm-isolation.log",
       "reason": "Stopped own test to share immutable real catalog declaration once per class; policy, snapshot and runtime remain per-test. Not a passing run."
+    },
+    "role_alias_fallback": {
+      "status": "passed",
+      "tests": 25,
+      "log": ".runtime/ci-recovery/s2-fallback.log",
+      "reason": "Adds explicit action_xmlid released-policy fallback with inactive menu; both allowed and blocked consumer cases."
+    },
+    "browser_readiness": {
+      "status": "passed",
+      "scope": "56 unit tests, static guard and controlled real Chromium DOM loading/ready/wrong-record selection; full application measurement pending",
+      "log": ".runtime/ci-recovery/browser-readiness-unit.log",
+      "dom_log": ".runtime/ci-recovery/browser-readiness-dom.log"
+    },
+    "remote_ce1_candidate": {
+      "status": "failed",
+      "head": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "reason": "Four backend shards passed. Frontend now reaches payment detail but retained-detail contract count fails. Coverage waits on same frontend managed ORM producer and correctly fails when producer fails. No coverage exemption warranted."
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics."
