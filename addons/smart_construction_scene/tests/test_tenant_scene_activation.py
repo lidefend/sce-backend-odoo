@@ -1800,6 +1800,42 @@ class TestEnablementModelLifecycle(unittest.TestCase):
 
 
 class TestTenantSceneActivation(unittest.TestCase):
+    def test_write_invalidates_parameter_cache_after_save(self):
+        events = []
+        values = {}
+        cached = {"value": None}
+
+        class Config:
+            def set_param(self, key, value):
+                events.append(("set", key, value))
+                values[key] = value
+
+            def get_param(self, key, default=""):
+                if cached["value"] is None:
+                    cached["value"] = values.get(key, default)
+                return cached["value"]
+
+        class Registry:
+            def clear_cache(self):
+                events.append(("clear",))
+                cached["value"] = None
+
+        class Env:
+            registry = Registry()
+
+            def __getitem__(self, name):
+                self_test.assertEqual(name, "ir.config_parameter")
+                return types.SimpleNamespace(sudo=lambda: Config())
+
+        self_test = self
+        env = Env()
+        tenant_scene_activation.write_tenant_enablement(env, 1, "project.management", True)
+        self.assertTrue(tenant_scene_activation.read_tenant_enablement(env, 1, "project.management"))
+        tenant_scene_activation.write_tenant_enablement(env, 1, "project.management", False)
+        self.assertFalse(tenant_scene_activation.read_tenant_enablement(env, 1, "project.management"))
+        self.assertEqual(events[-2], ("set", "sc.scene.tenant.enablement.1.project.management", "0"))
+        self.assertEqual(events[-1], ("clear",))
+
     def test_preview_scene_cannot_be_tenant_enabled(self):
         allowed, next_enabled = tenant_scene_activation.decide_tenant_enablement(
             product_released=False, currently_enabled=False, requested=True

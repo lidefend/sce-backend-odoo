@@ -229,6 +229,8 @@
         "docs/ops/local_development_environment_v1.md",
         "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
         "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
         "frontend/apps/web/src/components/StatusPanel.vue",
         "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
@@ -249,6 +251,7 @@
       "targets": [
         "verify.agent.resume.unit",
         "verify.agent.ledger.unit",
+        "verify.admin_close_01.backend.unit",
         "verify.baseline.iteration.execution.policy",
         "verify.frontend.dev.incremental.unit",
         "verify.local.development_lifecycle.unit",
