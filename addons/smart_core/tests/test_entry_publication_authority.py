@@ -351,8 +351,12 @@ class EntryPublicationTest(unittest.TestCase):
         self.assertEqual(allowed["route_kind"], "PRIMARY_NAV")
         result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
         self.assertTrue(result.ok)
+        self.assertTrue(result.data["allowed"])
         result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
         self.assertFalse(result.ok)
+        self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
 
     def test_runtime_validator_rejects_unpublished_declared_action(self):
         result, calls = self.handler(655)
