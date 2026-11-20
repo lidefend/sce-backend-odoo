@@ -128,6 +128,17 @@ class ScenarioProductOrganizationTest(unittest.TestCase):
         )
         scenarios = surface["scenarios"]
         self.assertEqual(len(scenarios), 46)
+        direct_pages = surface["direct_platform_pages"]
+        self.assertEqual(len(direct_pages), 16)
+        self.assertEqual(
+            len({row["menu_xmlid"] for row in direct_pages}),
+            16,
+        )
+        self.assertEqual(
+            {row["kind"] for row in direct_pages},
+            {"workbench_direct", "configuration", "platform_initialization"},
+        )
+        self.assertEqual(surface["validation"]["direct_platform_count"], 16)
         self.assertEqual(
             [row["key"] for row in scenarios],
             [row["key"] for row in self.payload["scenarios"]],

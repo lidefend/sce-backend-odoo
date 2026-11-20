@@ -1,0 +1,62 @@
+schema_version: 1
+
+goal:
+  id: SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120
+  title: scene_product_02_ci_integration_closure
+  status: active
+  formal_product_layer: P0/P1/P4
+  layer_target: >-
+    Product scenario organization, platform direct-entry lifecycle, release
+    composition validation, enterprise scene enablement fixture identity, and
+    the frontend state-surface mutation guard.
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - frontend/apps/web
+    - scripts/verify
+    - scripts/ci
+    - docs/ops/iterations
+    - .agent
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Close every integration failure on PR #951 without changing the approved
+    workbench plus ten-center skeleton, the 46 business groups, or the 132
+    organized handling surfaces.
+  product_result: >-
+    The same 132-page product organization is accepted by release composition,
+    platform initialization entries remain directly reachable under their
+    existing native authorization, enterprise enablement consumes real
+    published sc.scene identities, and both independent frontend state
+    surfaces are guarded by discriminating mutation tests.
+  why_here: >-
+    The failures span P0 release and contract consumers, P1 product scenario and
+    direct-entry semantics, and P4 acceptance fixture identity. Each fix stays
+    in the layer that owns the conflicting fact.
+  why_not_elsewhere:
+    - Do not remove pages or groups to satisfy old lifecycle tests.
+    - Do not grant access through sc_scenario_exempt.
+    - Do not bypass Preview, ACL, company-scope, or release-composition checks.
+    - Do not treat sc.product.scenario groups as published sc.scene identities.
+  blast_radius:
+    behavior:
+      - release composition validation of the 132-page organization
+      - platform initialization menu lifecycle and direct reachability
+      - enterprise scene enablement used by acceptance fixture preparation
+      - frontend state-surface mutation coverage
+      - backend impact receipt scope
+    exclusions:
+      - no redesign of the ten centers or 132-page organization
+      - no broad Preview-to-GA promotion
+      - no new business journey simulation
+      - no production deployment
+      - no permission expansion
+  rollback: >-
+    Revert the focused layer fixes and their regressions together. The previous
+    candidate 77bad6caf94e3ab01d18b8d45d4614bd2730b6ad remains the rollback point.
+  completion:
+    batch: in_progress
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: pending

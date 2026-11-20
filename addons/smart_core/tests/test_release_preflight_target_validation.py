@@ -493,6 +493,142 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
         self.assertFalse(check["blocking"], check["issues"])
         self.assertEqual(check["ready_binding_count"], 1)
 
+    def test_platform_direct_page_has_explicit_composition_ownership(self):
+        workspace = SimpleNamespace(
+            id=10,
+            action=False,
+            _name="ir.ui.menu",
+            get_external_id=lambda: {
+                10: "smart_construction_core.menu_sc_workspace_home"
+            },
+        )
+        config_action = SimpleNamespace(
+            id=20,
+            res_model="sc.product.scenario",
+        )
+        config = SimpleNamespace(
+            id=11,
+            action=config_action,
+            _name="ir.ui.menu",
+            get_external_id=lambda: {
+                11: "smart_construction_core.menu_sc_product_scenario_business_config"
+            },
+        )
+        menus = {
+            workspace.get_external_id()[workspace.id]: workspace,
+            config.get_external_id()[config.id]: config,
+        }
+        env = SimpleNamespace(
+            cr=SimpleNamespace(dbname="sc_dev_demo"),
+            context={},
+            ref=lambda xmlid, raise_if_not_found=False: menus.get(xmlid),
+        )
+        service = TARGET.EditionReleaseSnapshotService(env=env)
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "sc.product.scenario",
+        }
+        composition = {
+            "schema": "construction.scenario_product_surface.v2",
+            "centers": [{
+                "key": "workspace.home.workbench",
+                "name": "Workbench",
+                "sequence": 10,
+                "scenarios": ["work.my_queue"],
+            }],
+            "source_db": "sc_dev_demo",
+            "scenarios": [{
+                "key": "work.my_queue",
+                "active": True,
+                "bindings": [{
+                    "menu_key": "smart_construction_core.menu_sc_workspace_home",
+                    "menu_id": 10,
+                    "center_key": "workspace.home.workbench",
+                    "source_db": "sc_dev_demo",
+                }],
+            }],
+            "direct_platform_pages": [{
+                "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+                "menu_id": 11,
+                "center_key": "configuration",
+                "kind": "platform_initialization",
+                "source_db": "sc_dev_demo",
+            }],
+        }
+        check = service._business_scene_composition_check(
+            {"business_scene_composition": composition},
+            published_pages=[{
+                "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+                "action_id": 20,
+                "res_model": "sc.product.scenario",
+                "entry_target_policy": "native_action",
+            }],
+        )
+        self.assertFalse(check["blocking"], check["issues"])
+        self.assertEqual(check["direct_platform_page_count"], 1)
+        self.assertEqual(check["unassigned_page_count"], 0)
+
+    def test_direct_platform_page_without_declaration_stays_unassigned(self):
+        action = SimpleNamespace(id=20, res_model="sc.product.scenario")
+        config = SimpleNamespace(
+            id=11,
+            action=action,
+            _name="ir.ui.menu",
+            get_external_id=lambda: {
+                11: "smart_construction_core.menu_sc_product_scenario_business_config"
+            },
+        )
+        env = SimpleNamespace(
+            cr=SimpleNamespace(dbname="sc_dev_demo"),
+            context={},
+            ref=lambda xmlid, raise_if_not_found=False: (
+                config
+                if xmlid
+                == "smart_construction_core.menu_sc_product_scenario_business_config"
+                else None
+            ),
+        )
+        service = TARGET.EditionReleaseSnapshotService(env=env)
+        service._model_registered = lambda model_name: model_name in {
+            "ir.ui.menu",
+            "sc.product.scenario",
+        }
+        check = service._business_scene_composition_check(
+            {
+                "business_scene_composition": {
+                    "schema": "construction.scenario_product_surface.v2",
+                    "centers": [{
+                        "key": "construction.center.project",
+                        "name": "Project",
+                        "sequence": 20,
+                        "scenarios": ["project.initiation"],
+                    }],
+                    "source_db": "sc_dev_demo",
+                    "scenarios": [{
+                        "key": "project.initiation",
+                        "active": True,
+                        "bindings": [{
+                            "menu_key": "smart_construction_core.menu_sc_project_initiation",
+                            "menu_id": 10,
+                            "center_key": "construction.center.project",
+                            "source_db": "sc_dev_demo",
+                        }],
+                    }],
+                },
+            },
+            published_pages=[{
+                "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+                "action_id": 20,
+                "res_model": "sc.product.scenario",
+                "entry_target_policy": "native_action",
+            }],
+        )
+        self.assertTrue(check["blocking"])
+        self.assertIn(
+            "BUSINESS_SCENE_PAGE_UNASSIGNED",
+            [row["code"] for row in check["issues"]],
+        )
+
     def test_release_requires_every_published_page_to_belong_to_a_scenario(self):
         service = TARGET.EditionReleaseSnapshotService(env={})
         check = service._business_scene_composition_check(

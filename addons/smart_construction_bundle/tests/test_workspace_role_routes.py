@@ -16,7 +16,7 @@ class TestWorkspaceExclusiveRoleRoutes(BusinessTransactionCase):
         # Product publication and company scenario choice are independent prerequisites.
         self.env["sc.scene.company.enablement"].create({
             "company_id": self.env.company.id,
-            "scene_key": "business.v1:payment.capital",
+            "scene_key": "business.v1:finance.intercompany",
         }).set_enabled(True)
         actor = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Synthetic full business operator", "login": "synthetic-workspace-full",
@@ -70,15 +70,15 @@ class TestPublishedRoleReplacementMenus(BusinessTransactionCase):
         # Product publication and company scenario choice are independent prerequisites.
         self.env["sc.scene.company.enablement"].create({
             "company_id": self.env.company.id,
-            "scene_key": "business.v1:contract.performance",
+            "scene_key": "business.v1:contract.registration",
         }).set_enabled(True)
         self.env["sc.scene.company.enablement"].create({
             "company_id": self.env.company.id,
-            "scene_key": "business.v1:cost.budget",
+            "scene_key": "business.v1:cost.budgeting",
         }).set_enabled(True)
         self.env["sc.scene.company.enablement"].create({
             "company_id": self.env.company.id,
-            "scene_key": "business.v1:payment.capital",
+            "scene_key": "business.v1:contract.settlement",
         }).set_enabled(True)
         cases = {
             "owner": ("group_sc_role_owner", ["menu_sc_p1_daily_contract"]),

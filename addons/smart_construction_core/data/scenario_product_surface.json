@@ -25,6 +25,72 @@
     "report": "报表",
     "master_data": "基础信息维护"
   },
+  "direct_platform_pages": [
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_kanban",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+      "kind": "platform_initialization"
+    }
+  ],
   "scenarios": [
     {
       "key": "work.my_queue",
@@ -1824,6 +1890,7 @@
   "validation": {
     "scenario_count": 46,
     "binding_count": 132,
-    "unique_menu_count": 132
+    "unique_menu_count": 132,
+    "direct_platform_count": 16
   }
 }

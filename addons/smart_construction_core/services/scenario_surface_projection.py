@@ -28,6 +28,17 @@ from .product_menu_source import center_identity, stable_center_key
 
 SURFACE_PATH = Path(__file__).resolve().parents[1] / "data" / "scenario_product_surface.json"
 SCHEMA = "construction.scenario_product_surface.v2"
+DIRECT_PLATFORM_DECLARATIONS = tuple(
+    {
+        "menu_xmlid": str(row.get("menu_xmlid") or "").strip(),
+        "kind": str(row.get("kind") or "").strip(),
+    }
+    for row in json.loads(SURFACE_PATH.read_text(encoding="utf-8")).get(
+        "direct_platform_pages",
+        [],
+    )
+    if isinstance(row, dict)
+)
 INTENT_ORDER = ("handle", "view", "approve", "report", "master_data")
 INTENT_LABELS = {
     "handle": "办理",
@@ -679,6 +690,28 @@ def load_maintained_runtime_surface(env):
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
+    direct_declarations = DIRECT_PLATFORM_DECLARATIONS
+    if not direct_declarations:
+        raise ValueError("scenario product surface requires direct_platform_pages")
+    direct_platform_pages = []
+    ref = getattr(env, "ref", None)
+    if not callable(ref):
+        ref = None
+    for declaration in direct_declarations:
+        if ref is None:
+            break
+        xmlid = declaration["menu_xmlid"]
+        menu = ref(xmlid, raise_if_not_found=False)
+        if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
+            continue
+        center = legacy_native_center_seed(env, menu)
+        direct_platform_pages.append({
+            "menu_xmlid": xmlid,
+            "menu_id": int(menu.id),
+            "kind": declaration["kind"],
+            **center,
+            "source_db": source_db,
+        })
     return {
         "schema": SCHEMA,
         "centers": sorted(
@@ -686,6 +719,7 @@ def load_maintained_runtime_surface(env):
             key=lambda item: (item["sequence"], item["key"]),
         ),
         "scenarios": rows,
+        "direct_platform_pages": direct_platform_pages,
         "source_db": source_db,
         "runtime_scope": "maintained_draft",
     }
@@ -829,6 +863,16 @@ def runtime_menu_scope(env, surface=None):
     The index and ID/action maps share the same current native identities.
     """
     surface = load_runtime_surface(env) if surface is None else surface
+    direct_platform_keys = {
+        _text(row.get("menu_xmlid"))
+        for row in DIRECT_PLATFORM_DECLARATIONS
+        if _text(row.get("menu_xmlid"))
+    }
+    direct_platform_keys.update({
+        _text(row.get("menu_xmlid"))
+        for row in surface.get("direct_platform_pages") or []
+        if isinstance(row, dict) and _text(row.get("menu_xmlid"))
+    })
     index = _resolved_menu_index(env, surface)
     declared_keys_by_menu_id: dict[int, list[str]] = {}
     for menu_key, location in index.items():
@@ -855,6 +899,9 @@ def runtime_menu_scope(env, surface=None):
             [key] if key in index else declared_keys_by_menu_id.get(menu.id, [])
         )
         if not declared_keys:
+            direct_platform_exempt = bool(
+                menu.sc_scenario_exempt and key in direct_platform_keys
+            )
             index[key] = {
                 "location": (
                     "exempt"
@@ -867,11 +914,15 @@ def runtime_menu_scope(env, surface=None):
                 "scenario_name": "",
                 "scenario_locations": [],
                 "menu_id": menu.id,
+                "direct_platform_exempt": direct_platform_exempt,
             }
             continue
         for declared_key in declared_keys:
             location = index.pop(declared_key)
             location["menu_id"] = menu.id
+            location["direct_platform_exempt"] = bool(
+                menu.sc_scenario_exempt and xmlid in direct_platform_keys
+            )
             for scenario_location in location.get("scenario_locations") or []:
                 scenario_location["menu_id"] = menu.id
             existing = index.get(key)

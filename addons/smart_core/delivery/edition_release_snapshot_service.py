@@ -297,6 +297,15 @@ class EditionReleaseSnapshotService:
                         "action_xmlid": _text(menu.get("action_xmlid")),
                         "res_model": _text(menu.get("res_model")),
                         "scene_key": scene_key,
+                        "entry_target_policy": _text(
+                            menu.get("entry_target_policy")
+                        ),
+                        "target_scene_key": _text(
+                            menu.get("target_scene_key")
+                        ),
+                        "provider_authority": _text(
+                            menu.get("provider_authority")
+                        ),
                         "center_key": _text(
                             menu.get("center_key")
                             or group.get("center_key")
@@ -365,24 +374,83 @@ class EditionReleaseSnapshotService:
             if isinstance(row, dict)
             and _text(row.get("menu_xmlid") or row.get("page_key"))
         }
+        direct_pages = _list(composition.get("direct_platform_pages"))
+        direct_by_menu: dict[str, dict[str, Any]] = {}
+        direct_page_keys: set[str] = set()
+        issues: list[dict[str, Any]] = []
+        for index, direct in enumerate(direct_pages):
+            if not isinstance(direct, dict):
+                issues.append({
+                    "code": "DIRECT_PLATFORM_PAGE_INVALID",
+                    "message": f"direct page index {index} is not an object",
+                })
+                continue
+            menu_xmlid = _text(direct.get("menu_xmlid"))
+            if not menu_xmlid:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_MENU_MISSING",
+                    "message": f"direct page index {index}",
+                })
+                continue
+            if menu_xmlid in direct_page_keys:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_PAGE_DUPLICATE",
+                    "message": menu_xmlid,
+                })
+                continue
+            if not _text(direct.get("center_key")):
+                issues.append({
+                    "code": "DIRECT_PLATFORM_CENTER_UNASSIGNED",
+                    "message": menu_xmlid,
+                })
+                continue
+            if _text(direct.get("kind")) not in {
+                "workbench_direct",
+                "configuration",
+                "platform_initialization",
+            }:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_KIND_INVALID",
+                    "message": menu_xmlid,
+                })
+                continue
+            direct_page_keys.add(menu_xmlid)
+            direct_by_menu[menu_xmlid] = direct
         if not scenarios:
+            unassigned = sorted(published_menu_keys - direct_page_keys)
+            issues.extend(
+                {
+                    "code": "BUSINESS_SCENE_PAGE_UNASSIGNED",
+                    "message": menu_xmlid,
+                }
+                for menu_xmlid in unassigned
+            )
+            ready_direct = len(published_menu_keys & direct_page_keys)
             return {
                 "key": "business_scene_composition",
                 "label": "业务场景组合",
-                "status": "fail" if published_menu_keys else "not_configured",
+                "status": (
+                    "fail"
+                    if issues
+                    else "pass"
+                    if published_menu_keys
+                    else "not_configured"
+                ),
                 "message": (
-                    "已发布页面没有业务场景组合"
+                    f"业务组合问题 {len(issues)} 个"
+                    if issues
+                    else f"平台直接入口 {ready_direct} 个"
                     if published_menu_keys
                     else "未声明业务场景组合"
                 ),
-                "blocking": bool(published_menu_keys),
+                "blocking": bool(issues),
                 "ready_binding_count": 0,
+                "direct_platform_page_count": ready_direct,
                 "published_page_count": len(published_menu_keys),
                 "scenario_bound_page_count": 0,
-                "unassigned_page_count": len(published_menu_keys),
-                "issues": [],
+                "unassigned_page_count": len(unassigned),
+                "issues": issues[:20],
             }
-        issues: list[dict[str, Any]] = []
         seen_scenarios: set[str] = set()
         ready_bindings = 0
         scenario_bound_menu_keys: set[str] = set()
@@ -467,14 +535,17 @@ class EditionReleaseSnapshotService:
                         })
                         continue
                     action = getattr(menu, "action", None)
+                    published = published_by_menu.get(menu_xmlid) or {}
                     if not action:
-                        published = published_by_menu.get(menu_xmlid) or {}
-                        if not (
+                        if published and not (
                             _text(published.get("scene_key"))
                             and (
                                 _text(published.get("route")).startswith("/s/")
                                 or not _to_int(published.get("action_id"))
                             )
+                            and _text(
+                                published.get("entry_target_policy")
+                            ) in {"", "scene_entry"}
                         ):
                             issues.append({
                                 "code": "BUSINESS_SCENE_ACTION_MISSING",
@@ -521,8 +592,49 @@ class EditionReleaseSnapshotService:
                 "code": "BUSINESS_SCENE_CENTER_REFERENCE_MISSING",
                 "message": scenario_key,
             })
+        if validate_native:
+            for menu_xmlid, direct in direct_by_menu.items():
+                published = published_by_menu.get(menu_xmlid)
+                if not published:
+                    continue
+                try:
+                    menu = self._resolve_business_scene_menu(
+                        menu_key=menu_xmlid,
+                        binding=direct,
+                        composition_source_db=_text(composition.get("source_db")),
+                    )
+                except Exception:
+                    menu = None
+                if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_MENU_UNRESOLVED",
+                        "message": menu_xmlid,
+                    })
+                    continue
+                action = getattr(menu, "action", None)
+                if not action and not (
+                    _text(published.get("scene_key"))
+                    and (
+                        _text(published.get("route")).startswith("/s/")
+                        or not _to_int(published.get("action_id"))
+                    )
+                    and _text(
+                        published.get("entry_target_policy")
+                    ) in {"", "scene_entry"}
+                ):
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_ACTION_MISSING",
+                        "message": menu_xmlid,
+                    })
+                    continue
+                res_model = _text(getattr(action, "res_model", ""))
+                if res_model and not self._model_registered(res_model):
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_MODEL_MISSING",
+                        "message": res_model,
+                    })
         unassigned_menu_keys = sorted(
-            published_menu_keys - scenario_bound_menu_keys
+            published_menu_keys - scenario_bound_menu_keys - direct_page_keys
         )
         for menu_xmlid in unassigned_menu_keys:
             issues.append({
@@ -540,6 +652,9 @@ class EditionReleaseSnapshotService:
             ),
             "blocking": bool(issues),
             "ready_binding_count": ready_bindings,
+            "direct_platform_page_count": len(
+                published_menu_keys & direct_page_keys
+            ),
             "published_page_count": len(published_menu_keys),
             "center_count": len(centers),
             "scenario_bound_page_count": len(
@@ -926,7 +1041,21 @@ class EditionReleaseSnapshotService:
                 or frozen_draft.get("policy_sha256") != current.get("policy_sha256")):
             raise ValueError("CANDIDATE_DRAFT_OUTDATED")
         if int(frozen_draft.get("blocking_issue_count") or 0) > 0:
-            raise ValueError("CANDIDATE_PREFLIGHT_BLOCKED")
+            blocking = [
+                "%s[%s]" % (
+                    _text(row.get("key")),
+                    ",".join(
+                        _text(issue.get("code"))
+                        for issue in _list(row.get("issues"))
+                        if isinstance(issue, dict) and _text(issue.get("code"))
+                    ),
+                )
+                for row in _list(frozen_draft.get("preflight_checks"))
+                if isinstance(row, dict) and row.get("blocking")
+            ]
+            raise ValueError(
+                "CANDIDATE_PREFLIGHT_BLOCKED:" + ",".join(blocking)
+            )
 
     def _lineage_meta(self, rec) -> dict[str, Any]:
         runtime = rec.snapshot_json if isinstance(rec.snapshot_json, dict) else {}
@@ -999,7 +1128,21 @@ class EditionReleaseSnapshotService:
             policy_override=policy_override,
         )
         if int(draft_contract.get("blocking_issue_count") or 0) > 0:
-            raise ValueError("RELEASE_PREFLIGHT_BLOCKED")
+            blocking = [
+                "%s[%s]" % (
+                    _text(row.get("key")),
+                    ",".join(
+                        _text(issue.get("code"))
+                        for issue in _list(row.get("issues"))
+                        if isinstance(issue, dict) and _text(issue.get("code"))
+                    ),
+                )
+                for row in _list(draft_contract.get("preflight_checks"))
+                if isinstance(row, dict) and row.get("blocking")
+            ]
+            raise ValueError(
+                "RELEASE_PREFLIGHT_BLOCKED:" + ",".join(blocking)
+            )
         payload["release_draft"] = {
             "fingerprint": _text(draft_contract.get("fingerprint")),
             "policy_sha256": _text(draft_contract.get("policy_sha256")),

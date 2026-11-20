@@ -56,7 +56,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
 
     def _state(self, company):
         row = self.states.search([('company_id', '=', company.id),
-                                  ('scene_key', '=', 'business.v1:payment.capital')])
+                                  ('scene_key', '=', 'business.v1:finance.payment_approval')])
         self.assertEqual(len(row), 1, 'run the governed fixture before lifecycle acceptance')
         return row
 
@@ -154,7 +154,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.assertFalse(self._allowed(self.company_a))
         self.states.create({
             'company_id': self.company_a.id,
-            'scene_key': 'business.v1:payment.capital',
+            'scene_key': 'business.v1:finance.payment_approval',
             'enabled': True,
         })
         self.assertTrue(self._allowed(self.company_a))
@@ -165,6 +165,15 @@ class TestBusinessSceneLifecycle(TransactionCase):
         with self.assertRaises(AccessError), self.cr.savepoint():
             a.with_env(actor).set_enabled(not a.enabled)
         self.assertFalse(actor['sc.scene.company.enablement'].search([('id', '=', b.id)]))
+
+    def test_fixture_scenario_choices_match_current_product_identity(self):
+        from odoo.addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
+            FIXTURE_BUSINESS_SCENARIOS,
+        )
+        current = set(self.env["sc.product.scenario"].sudo().with_context(
+            active_test=False
+        ).search([]).mapped("code"))
+        self.assertEqual(set(FIXTURE_BUSINESS_SCENARIOS), current)
 
     def test_maintained_membership_drives_scenario_catalog_without_seed_file(self):
         from unittest.mock import patch

@@ -13,6 +13,18 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
         sources[key] = sources[key].replace(old, new, 1)
         return sources
 
+    def without_marker_occurrence(self, occurrence: int) -> dict[str, str]:
+        marker = 'data-semantic-state-surface="page"'
+        status = self.sources["status"]
+        start = -1
+        for _ in range(occurrence):
+            start = status.find(marker, start + 1)
+            if start < 0:
+                self.fail(f"semantic state marker occurrence {occurrence} not found")
+        sources = dict(self.sources)
+        sources["status"] = status[:start] + status[start + len(marker):]
+        return sources
+
     def test_repository_surfaces_pass(self):
         self.assertEqual(validate(self.sources), [])
 
@@ -40,6 +52,14 @@ class FrontendStatePresentationGuardTest(unittest.TestCase):
 
     def test_status_deterministic_state_is_required(self):
         self.assertTrue(any("semantic-state-surface" in error for error in validate(self.altered("status", 'data-semantic-state-surface="page"'))))
+
+    def test_status_contract_gap_surface_is_required(self):
+        errors = validate(self.without_marker_occurrence(1))
+        self.assertTrue(any("contract-gap" in error for error in errors))
+
+    def test_status_product_state_surface_is_required(self):
+        errors = validate(self.without_marker_occurrence(2))
+        self.assertTrue(any("product-state" in error for error in errors))
 
     def test_activity_tabs_require_tdesign_component(self):
         self.assertTrue(any("TDesignTabs" in error for error in validate(self.altered("tabs", "<TDesignTabs"))))

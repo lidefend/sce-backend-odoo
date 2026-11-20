@@ -20,6 +20,24 @@ CENTER_PATH = ROOT / "config/product_primary_center_baseline_v1.json"
 JSON_OUTPUT = ROOT / "config/product_scenario_organization_v1.json"
 MARKDOWN_OUTPUT = ROOT / "docs/product/product_scenario_organization_v1.md"
 SURFACE_OUTPUT = MODULE / "data/scenario_product_surface.json"
+DIRECT_PLATFORM_PAGES = (
+    ("smart_construction_core.menu_sc_workspace_home", "workbench_direct"),
+    ("smart_construction_core.menu_sc_my_work", "workbench_direct"),
+    ("smart_construction_core.menu_sc_operating_metrics_project", "workbench_direct"),
+    ("smart_construction_core.menu_sc_project_kanban", "workbench_direct"),
+    ("smart_construction_core.menu_sc_workbench_my_todo_fact", "workbench_direct"),
+    ("smart_construction_core.menu_sc_product_message_notification_v1", "workbench_direct"),
+    ("smart_construction_core.menu_sc_business_config_workbench", "configuration"),
+    ("smart_construction_core.menu_sc_approval_policy", "configuration"),
+    ("smart_construction_core.menu_ui_form_field_policy_business_config", "configuration"),
+    ("smart_construction_core.menu_ui_menu_config_policy_business_config", "configuration"),
+    ("smart_construction_core.menu_sc_enterprise_initialization", "platform_initialization"),
+    ("smart_construction_core.menu_sc_product_data_permission_v1", "platform_initialization"),
+    ("smart_construction_core.menu_sc_product_scenario_business_config", "platform_initialization"),
+    ("smart_construction_core.menu_sc_product_system_parameter_v1", "platform_initialization"),
+    ("smart_construction_core.menu_sc_product_numbering_rule_v1", "platform_initialization"),
+    ("smart_construction_core.menu_sc_runtime_user_management", "platform_initialization"),
+)
 APPROVAL_STATUS = "APPROVED_FOR_IMPLEMENTATION"
 APPROVAL_DATE = "2026-11-20"
 
@@ -1991,6 +2009,10 @@ def build_runtime_surface(payload):
             "report": "报表",
             "master_data": "基础信息维护",
         },
+        "direct_platform_pages": [
+            {"menu_xmlid": menu_xmlid, "kind": kind}
+            for menu_xmlid, kind in DIRECT_PLATFORM_PAGES
+        ],
         "scenarios": scenarios,
         "validation": {
             "scenario_count": len(scenarios),
@@ -2000,6 +2022,7 @@ def build_runtime_surface(payload):
                 for scenario in scenarios
                 for binding in scenario["bindings"]
             }),
+            "direct_platform_count": len(DIRECT_PLATFORM_PAGES),
         },
     }
 

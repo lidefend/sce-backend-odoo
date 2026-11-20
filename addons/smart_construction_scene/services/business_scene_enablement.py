@@ -106,6 +106,8 @@ def enabled_scenario_locations(location, enabled):
 def location_business_enabled(location, enabled):
     if not location or location["location"] == "missing":
         return False
+    if location.get("direct_platform_exempt"):
+        return True
     scenario_locations = _scenario_locations(location)
     if scenario_locations:
         return bool(enabled_scenario_locations(location, enabled))
@@ -138,7 +140,15 @@ def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu
         menu_id = int(location.get("menu_id") or 0)
         if menu_id <= 0:
             continue
-        selected = dict(enabled_locations[0]) if enabled_locations else {}
+        selected = (
+            dict(enabled_locations[0])
+            if enabled_locations
+            else dict(candidates[0])
+            if location.get("direct_platform_exempt")
+            else {}
+        )
+        if selected and not enabled_locations:
+            selected["direct_exempt"] = True
         selected["menu_key"] = menu_key
         selected["available_scenario_keys"] = [
             str(candidate.get("scenario_key") or "") for candidate in candidates

@@ -1,14 +1,25 @@
 import runpy
 from pathlib import Path
 
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from ..models.support.product_scenario import (
     DIRECT_CONFIGURATION_MENU_XMLIDS,
     DIRECT_PLATFORM_MENU_XMLIDS,
     DIRECT_WORKSPACE_MENU_XMLIDS,
+    NAVIGATION_ENTRY_SCOPE_MARKER,
 )
-from ..services.scenario_surface_projection import runtime_menu_scope
+from ..services.scenario_surface_projection import (
+    load_maintained_runtime_surface,
+    runtime_menu_scope,
+)
+from odoo.addons.smart_construction_scene.services.business_scene_enablement import (
+    business_key,
+    business_states,
+    filter_business_authority,
+    location_business_enabled,
+)
 
 
 @tagged('post_install', '-at_install', 'sc_gate', 'scenario_direct_initialization')
@@ -23,19 +34,31 @@ class TestScenarioDirectInitialization(TransactionCase):
             self.env.ref(xmlid).id for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS
         ])
         self.env.user.write({'groups_id': [(4, group.id) for group in menus.mapped('groups_id')]})
-        index, by_id, _ = runtime_menu_scope(self.env)
+        index, by_id, _ = runtime_menu_scope(
+            self.env,
+            load_maintained_runtime_surface(self.env),
+        )
         self.assertEqual(len(DIRECT_CONFIGURATION_MENU_XMLIDS), 4)
         for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
             with self.subTest(xmlid=xmlid):
                 menu = self.env.ref(xmlid)
                 self.assertTrue(menu.sc_scenario_exempt)
                 self.assertIn(menu.id, by_id, (xmlid, menu.active, menu.get_external_id()))
-                self.assertEqual(index[by_id[menu.id]]['location'], 'exempt')
-                self.assertFalse(self.env['sc.product.scenario.entry'].search_count([
+                self.assertEqual(index[by_id[menu.id]]['location'], 'scenario')
+                self.assertTrue(index[by_id[menu.id]]['direct_platform_exempt'])
+                entry = self.env['sc.product.scenario.entry'].sudo().search([
                     ('menu_id', '=', menu.id),
-                ]))
+                ], limit=1)
+                self.assertTrue(entry)
+                self.assertEqual(entry.scenario_id.code, "config.presentation"
+                                 if xmlid in {
+                                     "smart_construction_core.menu_sc_business_config_workbench",
+                                     "smart_construction_core.menu_ui_form_field_policy_business_config",
+                                     "smart_construction_core.menu_ui_menu_config_policy_business_config",
+                                 }
+                                 else "config.approval")
 
-    def test_upgrade_without_marker_does_not_restore_revocation_or_deleted_binding(self):
+    def test_upgrade_preserves_direct_declarations_and_revoked_generic_entries(self):
         Scenario = self.env['sc.product.scenario']
         Entry = self.env['sc.product.scenario.entry']
         params = self.env['ir.config_parameter'].sudo()
@@ -45,43 +68,115 @@ class TestScenarioDirectInitialization(TransactionCase):
         for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
             menu = self.env.ref(xmlid)
             Entry.create({'scenario_id': custom.id, 'menu_id': menu.id}).unlink()
-            self.assertFalse(menu.sc_scenario_exempt)
+            self.assertTrue(menu.sc_scenario_exempt)
         unknown = self.env['ir.ui.menu'].create({'name': 'Unknown leaf'})
         params.set_param('smart_construction_core.scenario_entry_scope.v1', False)
         Scenario.initialize_direct_entry_exemptions()
         for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
-            self.assertFalse(self.env.ref(xmlid).sc_scenario_exempt)
+            self.assertTrue(self.env.ref(xmlid).sc_scenario_exempt)
         self.assertFalse(unknown.sc_scenario_exempt)
         Scenario.initialize_direct_entry_exemptions()
-        self.assertFalse(self.env.ref(DIRECT_CONFIGURATION_MENU_XMLIDS[0]).sc_scenario_exempt)
+        self.assertTrue(self.env.ref(DIRECT_CONFIGURATION_MENU_XMLIDS[0]).sc_scenario_exempt)
 
     def test_fresh_install_declares_shell_and_platform_direct_entries(self):
-        index, by_id, _ = runtime_menu_scope(self.env)
+        index, by_id, _ = runtime_menu_scope(
+            self.env,
+            load_maintained_runtime_surface(self.env),
+        )
+        Entry = self.env["sc.product.scenario.entry"].sudo()
         for xmlid in DIRECT_WORKSPACE_MENU_XMLIDS + DIRECT_PLATFORM_MENU_XMLIDS:
             with self.subTest(xmlid=xmlid):
                 menu = self.env.ref(xmlid)
-                self.assertTrue(menu.action)
+                if xmlid != "smart_construction_core.menu_sc_workspace_home":
+                    self.assertTrue(menu.action)
                 self.assertTrue(menu.sc_scenario_exempt)
-                self.assertEqual(index[by_id[menu.id]]["location"], "exempt")
+                location = index[by_id[menu.id]]
+                self.assertTrue(location.get("direct_platform_exempt"))
+                self.assertTrue(location_business_enabled(location, {}))
+                bound = bool(Entry.search_count([("menu_id", "=", menu.id)]))
+                self.assertEqual(
+                    location["location"],
+                    "scenario" if bound else "exempt",
+                )
 
-    def test_navigation_exemption_is_one_time_and_binding_wins(self):
+    def test_navigation_exemption_is_one_time_and_direct_binding_survives(self):
         Scenario = self.env["sc.product.scenario"]
-        Entry = self.env["sc.product.scenario.entry"]
         Param = self.env["ir.config_parameter"].sudo()
         menu = self.env.ref(DIRECT_WORKSPACE_MENU_XMLIDS[0])
-        scenario = Scenario.create({"code": "test.shell.binding", "name": "Shell binding"})
-        Entry.create({"scenario_id": scenario.id, "menu_id": menu.id})
-        Param.set_param("smart_construction_core.navigation_entry_scope.v1", False)
+        Param.set_param(NAVIGATION_ENTRY_SCOPE_MARKER, False)
         Scenario.initialize_navigation_entry_exemptions()
-        self.assertFalse(menu.sc_scenario_exempt)
-        self.assertTrue(Entry.search_count([
-            ("scenario_id", "=", scenario.id),
-            ("menu_id", "=", menu.id),
-        ]))
-        Entry.search([("scenario_id", "=", scenario.id)]).unlink()
+        self.assertTrue(menu.sc_scenario_exempt)
         menu.sc_scenario_exempt = False
         Scenario.initialize_navigation_entry_exemptions()
         self.assertFalse(menu.sc_scenario_exempt)
+        self.assertTrue(Param.get_param(NAVIGATION_ENTRY_SCOPE_MARKER))
+
+    def test_direct_platform_exemption_survives_disabled_scenario_filter(self):
+        Scenario = self.env["sc.product.scenario"]
+        Param = self.env["ir.config_parameter"].sudo()
+        menu = self.env.ref("smart_construction_core.menu_sc_runtime_user_management")
+        entry = self.env["sc.product.scenario.entry"].sudo().search([
+            ("menu_id", "=", menu.id),
+        ], limit=1)
+        self.assertTrue(entry)
+        self.assertTrue(menu.sc_scenario_exempt)
+        Scenario.initialize_navigation_entry_exemptions()
+        self.assertTrue(menu.sc_scenario_exempt)
+        index, menu_ids, _ = runtime_menu_scope(
+            self.env,
+            load_maintained_runtime_surface(self.env),
+        )
+        location = index[menu_ids[menu.id]]
+        self.assertEqual(location["location"], "scenario")
+        self.assertEqual(entry.scenario_id.code, "admin.organization")
+        authority = {
+            "primary_actions": [{
+                "menu_id": menu.id,
+                "action_id": menu.action.id,
+                "menu_xmlid": menu.get_external_id()[menu.id],
+            }],
+        }
+        filtered = filter_business_authority(
+            authority,
+            surface_index=index,
+            enabled=business_states({business_key(entry.scenario_id.code): False}),
+            entries=[],
+            menu_xmlids_by_id=menu_ids,
+            menu_xmlids_by_action={menu.action.id: [menu.get_external_id()[menu.id]]},
+            company_id=self.env.company.id,
+        )
+        self.assertEqual(filtered["primary_actions"], authority["primary_actions"])
+        self.assertTrue(
+            filtered["scenario_composition"]["selected_by_menu"][str(menu.id)][
+                "direct_exempt"
+            ]
+        )
+
+    def test_bound_business_page_still_cannot_claim_direct_exemption(self):
+        menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
+        self.assertTrue(self.env["sc.product.scenario.entry"].sudo().search_count([
+            ("menu_id", "=", menu.id),
+        ]))
+        menu.sc_scenario_exempt = False
+        with self.assertRaises(ValidationError):
+            menu.sc_scenario_exempt = True
+
+    def test_direct_exemption_does_not_expand_native_menu_visibility(self):
+        config_group = self.env.ref(
+            "smart_construction_core.group_sc_cap_business_config_admin"
+        )
+        menu = self.env.ref("smart_construction_core.menu_sc_runtime_user_management")
+        self.assertTrue(menu.sc_scenario_exempt)
+        self.assertIn(config_group, menu.groups_id)
+        principal = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Direct exemption ACL principal",
+            "login": "direct.exemption.acl.principal",
+            "groups_id": [(6, 0, [self.env.ref("base.group_user").id])],
+        })
+        self.assertNotIn(
+            menu.id,
+            self.env["ir.ui.menu"].with_user(principal)._visible_menu_ids(),
+        )
 
     def test_completed_install_does_not_restore_revoked_declaration(self):
         menu = self.env.ref(DIRECT_CONFIGURATION_MENU_XMLIDS[0])
@@ -261,12 +356,15 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertEqual(2, len(cursor.queries))
         self.assertFalse(any("DELETE FROM" in query for query, _params in cursor.queries))
 
-    def test_runtime_user_management_is_not_scenario_bound(self):
+    def test_runtime_user_management_keeps_scenario_identity_and_direct_access(self):
         menu = self.env.ref(
             "smart_construction_core.menu_sc_runtime_user_management",
             raise_if_not_found=False,
         )
         self.assertTrue(menu)
-        self.assertFalse(self.env["sc.product.scenario.entry"].sudo().search_count([
+        entry = self.env["sc.product.scenario.entry"].sudo().search([
             ("menu_id", "=", menu.id),
-        ]))
+        ], limit=1)
+        self.assertTrue(entry)
+        self.assertEqual(entry.scenario_id.code, "admin.organization")
+        self.assertTrue(menu.sc_scenario_exempt)
