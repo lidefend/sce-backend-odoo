@@ -22,9 +22,12 @@
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
     "addons/smart_construction_scene/services/business_scene_enablement.py",
     "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
     "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
     "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
     "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
@@ -32,6 +35,7 @@
     "frontend/apps/web/src/components/StatusPanel.vue",
     "scripts/verify/frontend_state_presentation_guard.py",
     "scripts/verify/test_frontend_state_presentation_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
     "scripts/audit/build_scenario_product_organization.py",
     "scripts/audit/test_build_scenario_product_organization.py",
     "docs/engineering_convergence",
@@ -80,7 +84,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the clean interim candidate, apply the 17.0.0.186 migration through acceptance.module.upgrade, then run acceptance.frontend.fixture, acceptance.frontend.fixture_orm and the bundle workspace tests.",
+  "next_exact_step": "Commit the fixture identity test and planner path mappings, then complete the registered local iteration gates and form the final clean candidate.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

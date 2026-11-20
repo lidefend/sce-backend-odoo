@@ -290,6 +290,7 @@ class TestLockedMenuPolicyInitialization(TransactionCase):
                 "construction.center.project",
                 "construction.center.contract",
                 "construction.center.cost",
+                "construction.center.supply_chain",
                 "construction.center.finance",
                 "construction.center.tax",
                 "construction.center.accounting",

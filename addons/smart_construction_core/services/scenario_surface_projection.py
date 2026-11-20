@@ -669,7 +669,7 @@ def load_maintained_runtime_surface(env):
             center_key = _text(getattr(entry, "center_key", ""))
             center_name = _text(getattr(entry, "center_name", ""))
             center_sequence = _int_or(getattr(entry, "center_sequence", 10), 10)
-            if not center_key:
+            if not center_key and hasattr(menu, "parent_id"):
                 center = legacy_native_center_seed(env, menu)
                 center_key = _text(center.get("center_key"))
                 center_name = _text(center.get("center_name"))

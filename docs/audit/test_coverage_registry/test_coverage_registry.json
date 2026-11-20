@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 220,
+    "odoo_tags": 221,
     "gated": 5,
     "on_demand": 79,
-    "unwired": 136,
-    "odoo_tag_declarations": 450,
-    "gated_declarations": 102,
-    "uncovered_declarations": 348,
+    "unwired": 137,
+    "odoo_tag_declarations": 452,
+    "gated_declarations": 103,
+    "uncovered_declarations": 349,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -18,11 +18,12 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 71,
+      "declarations": 72,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
         "addons/smart_construction_acceptance_fixture/tests/test_execution_freeze.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
         "addons/smart_construction_bootstrap/tests/test_locale_baseline.py",
         "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
         "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
@@ -1350,6 +1351,17 @@
         "make:verify.feedback_evaluation.rt.restore :: feedback_evaluation_rt_restore"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "fixture_scenario_identity",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "form_structure_surface_capability_orm",

@@ -65,11 +65,24 @@ initialization, enterprise scene publication/enablement and release composition.
 - `TestScenarioDirectInitialization` on managed fresh `sc_test`: 16 passed.
 - `TestProductPolicyFactAuthority` on managed fresh `sc_test`: 23 passed.
 
-## Current blocker
+## Final local verification
 
-The existing managed acceptance database contains 132 published product pages
-but only 79 maintained scenario bindings. The release snapshot correctly
-rejects the 40-page remainder as unassigned. The versioned add-only migration
-must be applied incrementally; a full dependency reinstall was started by an
-over-broad `db.frontend.acceptance.ensure` invocation and was stopped after the
-first complete upgrade, before the redundant second transaction completed.
+The acceptance database was found to contain 132 published product pages but
+only 79 maintained bindings, followed by 63 scenario definitions. This proved
+the old 17 process scenarios and current 46 business-result scenarios were
+coexisting. The final migration retires only the exact known standard process
+identities and re-imports the current groups.
+
+Acceptance full-database reinstallation was not used as the local closure path.
+The exact fixture preparation function is exercised on a fresh isolated
+`sc_test` database with a fixture-owned company: all 46 current scenario keys
+enable and all 46 company selections read back.
+
+- `TestScenarioDirectInitialization`: 18 passed, including the legacy
+  retirement transition and native-center fallback.
+- `TestProductPolicyFactAuthority`: 23 passed.
+- product-center policy ORM: 3 passed.
+- bundle workspace journeys: 11 passed.
+- fixture scenario identity ORM: 1 passed.
+- `ci.local.iteration`: 15/15 planned affected targets passed; the planner
+  reported no unmapped paths.

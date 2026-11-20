@@ -1436,7 +1436,9 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/__init__.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
         "scripts/verify/test_daily_acceptance_fixture_lane.py",
         "scripts/ops/dev_acceptance_release_probe.py",
@@ -1588,6 +1590,9 @@ RULES = (
         "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_core/data/product_scenario_seed.xml",
         "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/migrations/17.0.0.186/post-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.187/post-migrate.py",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
         "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
         "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
@@ -1599,12 +1604,15 @@ RULES = (
     Rule((
         "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
         "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.186/post-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.187/post-migrate.py",
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     ), (
         "verify.smart_construction_core.migration_compatibility.orm",
     )),
     Rule((
         "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
         "addons/smart_core/core/navigation_identity.py",
         "scripts/verify/scenario_center_projection_guard.py",
         "scripts/verify/scenario_surface_projection_guard.py",
@@ -1612,6 +1620,12 @@ RULES = (
     ), (
         "verify.navigation.publication_consumers.unit",
         "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_state_presentation_guard.py",
+        "scripts/verify/test_frontend_state_presentation_guard.py",
+    ), (
+        "verify.frontend.state_dashboard.unit",
     )),
     Rule((
         "addons/smart_core/core/navigation_identity.py",
