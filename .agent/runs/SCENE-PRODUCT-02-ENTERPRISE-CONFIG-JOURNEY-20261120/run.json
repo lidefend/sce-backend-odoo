@@ -3,7 +3,7 @@
   "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
   "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
   "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
-  "status": "active",
+  "status": "blocked",
   "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
   "scope": [
@@ -17,7 +17,40 @@
   ],
   "environment": {
     "kind": "runtime",
-    "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176"
+    "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176",
+    "backend_source_revision": "c7de01f85d9fc572ea1c7bbf6d979f93c9c15bce",
+    "frontend_build_revision": "c7de01f85d9fc572ea1c7bbf6d979f93c9c15bce",
+    "database": "sc_dev_demo",
+    "dbfilter": "^sc_dev_demo$",
+    "entry": "/t/demo",
+    "recovery_snapshot": "artifacts/local-dev/snapshots/20261120T043906Z",
+    "schema_upgrade": "smart_core upgraded through the governed local.dev write lease"
+  },
+  "runtime_identity": {
+    "configuration_admin": {
+      "user_id": 24,
+      "login": "sc_demo_business_config",
+      "name": "徐磊",
+      "company_id": 1,
+      "company_name": "四川智汇某某建设集团有限公司",
+      "allowed_company_ids": [
+        1
+      ]
+    },
+    "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
+    "candidate_health": "passed: backend source revision and 5176 frontend both c7de01f85",
+    "system_init_after_schema_upgrade": "passed"
+  },
+  "journey_results": {
+    "C02-01": {
+      "status": "blocked_before_write",
+      "observed": "The enterprise information button produced no request or route change. Direct /a/960 returned NAVIGATION_AUTHORITY_DENIED.",
+      "write_attempted": false
+    },
+    "C02-02_to_C02-06": {
+      "status": "not_run",
+      "reason": "All five handling entries share the same unresolved native route authority"
+    }
   },
   "validation_exclusions": {
     "targets": [
@@ -42,6 +75,14 @@
       "kind": "offline"
     }
   },
-  "blockers": [],
-  "next_exact_step": "Confirm backend and candidate-frontend runtime identity, authenticate the configuration administrator, then execute C02-01 enterprise information save and authoritative readback."
+  "blockers": [
+    {
+      "owner": "P0 smart_core native execution route discovery",
+      "dependency": "PR #950",
+      "observed_head": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "classification": "known_upstream_dependency_not_duplicated",
+      "evidence": "The handling_entry_catalog exposes action_xmlid for all five entries, but route resolution yields no action/menu and direct action /a/960 is denied with NAVIGATION_AUTHORITY_DENIED. PR #950 changes DeliveryEngine to pass the native ACL/action-group/role-filtered navigation to build_route_authority."
+    }
+  ],
+  "next_exact_step": "After PR #950 is integrated or an approved dependency branch is rebased, resume on this branch with runtime identities c7de01f85, user 24, company 1; rerun C02-01 from the visible enterprise initialization entry."
 }
