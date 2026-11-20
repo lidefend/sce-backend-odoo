@@ -27,6 +27,7 @@
     "addons/smart_construction_core/data/scenario_product_surface.json",
     "addons/smart_construction_core/models/support/product_scenario.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
     "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
     "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
     "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
@@ -78,6 +79,7 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_local_dev_product_release_prepare.py",
     "scripts/verify/test_local_platform_control.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     "scripts/verify/test_local_development_lifecycle.py"
   ],
   "environment": {
