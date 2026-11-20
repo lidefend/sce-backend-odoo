@@ -44,3 +44,11 @@ Independent review found no confirmed runtime permission expansion or assertion 
 ## Acceptance prerequisite correction
 
 The old synthetic carrier schema upgrade completed and the ce1da712 registry restarted successfully. Its 49-test run exposed a historical preview snapshot in the two-edition catalog and an undeclared positive setup-entry publication. The test helper now isolates historical standard/preview snapshots within TransactionCase and asserts its real replacement is active/released. Navigation tests explicitly select the setup entry from the real catalog before publication; allowed and denied roles consume the same published fixture. Original consumer/permission assertions remain intact. No runtime publication bypass or contract_only policy change.
+
+## Review S2: complete action identity at admission
+
+The ce1da712 review reproduced a finance-blocked action through another authorized menu. Native facts omit action XMLID; discovery resolves it after the first role filter. Reapply the same role predicate after complete identity resolution, including the released-policy fallback, before admitting executable primary authority. No ACL or publication exception is introduced.
+
+The regression executes actual MenuService authorization, role projection and discovery, the actual finance policy, enabled-scene filtering and route validation; only ORM facts and publication inputs are bounded doubles. Both menus are publication-eligible, so publication cannot hide an erroneous role grant. Before the fix the blocked alias was accepted with batch and singleton XMLID resolution (two failing subtests); after the fix all 24 entry tests passed, including the unblocked action positive. Focused publication, metadata batch, navigation and fixture unit targets passed 266 tests (.runtime/ci-recovery/s2-focused.log).
+
+The 07310b fixture run was interrupted, not passed: repeated full catalog construction was moved to class setup as a plain immutable declaration. Every test still creates its own maintained policy and released snapshot, then consumes as the real user. No runtime authority or ORM recordset is cached across tests. New sealed-candidate 49-test execution remains required.

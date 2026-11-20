@@ -21,7 +21,8 @@
     "addons/smart_core/tests/test_entry_publication_authority.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
-    "docs/engineering_convergence/split_plan_queue.md"
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_core/delivery/menu_service.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -45,7 +46,9 @@
         "addons/smart_core/delivery",
         "addons/smart_core/tests/test_entry_publication_authority.py",
         "addons/smart_core/core",
-        "addons/smart_core/handlers"
+        "addons/smart_core/handlers",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py"
       ],
       "kind": "offline"
     },
@@ -99,7 +102,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Seal corrected test fixture artifact, restart same-schema acceptance carrier and rerun 49 consumer tests; retain exact-head draft PR950 until required evidence closes.",
+  "next_exact_step": "Run sealed corrected fixture and new role-admission candidate; inspect prior remote frontend and coverage failures; keep PR950 Draft.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -195,6 +198,23 @@
       "status": "passed",
       "source_sha": "ce1da712e174f002890fdbef8ad7f9320d631060",
       "log": ".runtime/ci-recovery/acceptance-up-ce1da71.log"
+    },
+    "role_alias_regression": {
+      "status": "passed",
+      "tests": 24,
+      "before_log": ".runtime/ci-recovery/s2-before.log",
+      "after_log": ".runtime/ci-recovery/s2-after.log",
+      "reason": "Real finance role + native admission + enabled scene + route consumer; forbidden alias rejected with batch and singleton XMLID resolution. Before fix both consumer checks incorrectly allowed."
+    },
+    "s2_focused": {
+      "status": "passed",
+      "tests": 266,
+      "log": ".runtime/ci-recovery/s2-focused.log"
+    },
+    "fixture_orm_07310b": {
+      "status": "interrupted",
+      "log": ".runtime/ci-recovery/fixture-orm-isolation.log",
+      "reason": "Stopped own test to share immutable real catalog declaration once per class; policy, snapshot and runtime remain per-test. Not a passing run."
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics."

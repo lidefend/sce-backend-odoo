@@ -254,6 +254,89 @@ class EntryPublicationTest(unittest.TestCase):
         handler.params = params if params is not None else {"action_id": action_id}
         return handler.handle(), calls
 
+    def native_role_authority(self, *, batch_fails=False):
+        """Real admission methods; doubles supply only native ORM facts."""
+        import runpy
+        path = ROOT / "delivery/menu_service.py"
+        cls = next(n for n in ast.parse(path.read_text()).body
+                   if isinstance(n, ast.ClassDef) and n.name == "MenuService")
+        scope = vars(load_entry_target_module()).copy()
+        scope["MenuFactService"] = SimpleNamespace(ACTION_MODELS={"ir.actions.act_window"})
+        tree = ast.Module(body=[ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0), cls], type_ignores=[])
+        exec(compile(ast.fix_missing_locations(tree), str(path), "exec"), scope)
+        role = deepcopy(runpy.run_path(str(ROOT.parent / "smart_construction_core/core_extension_policy_maps.py"))["ROLE_SURFACE_OVERRIDES"]["finance"])
+        role.update(role_code="finance", exposure_policy_declared=True)
+        self.assertIn("smart_construction_core.action_sc_plan", role["action_blocklist_xmlids"])
+
+        class Record(SimpleNamespace):
+            def sudo(self): return self
+            def exists(self): return self
+            def get_external_id(self): return {self.id: self.xmlid}
+        actions = {
+            ident: Record(id=ident, xmlid=xmlid, _name="ir.actions.act_window",
+                          name="Plan", active=True, groups_id=[], res_model="sc.plan")
+            for ident, xmlid in ((601, "smart_construction_core.action_sc_plan"),
+                                (602, "tenant.action_allowed"))}
+        class ActionModel:
+            def sudo(self): return self
+            def browse(self, ids):
+                if isinstance(ids, int): return actions[ids]
+                class Batch:
+                    def get_external_id(self):
+                        if batch_fails: raise RuntimeError("batch unavailable")
+                        return {ident: actions[ident].xmlid for ident in ids}
+                return Batch()
+        class Env(dict):
+            user = SimpleNamespace(id=34, groups_id=[])
+            company = SimpleNamespace(id=8)
+            def ref(self, xmlid, raise_if_not_found=False): return refs.get(xmlid)
+        facts = [dict(menu_id=mid, menu_xmlid=xmlid, name="Plan", action_id=aid,
+                      action_model="ir.actions.act_window", action_exists=True,
+                      action_meta=dict(res_model="sc.plan", view_mode="tree,form", context="{}"), children=[])
+                 for mid, xmlid, aid in ((501, "smart_construction_core.menu_sc_plan", 601),
+                                         (502, "tenant.menu_plan_alias", 601),
+                                         (503, "tenant.menu_allowed_alias", 602))]
+        refs = {row["menu_xmlid"]: Record(id=row["menu_id"], _name="ir.ui.menu", active=True,
+                                         groups_id=[], action=actions[row["action_id"]]) for row in facts}
+        refs.update({record.xmlid: record for record in actions.values()})
+        env = Env({"ir.actions.act_window": ActionModel(), "ir.actions.actions": ActionModel(),
+                   "res.groups": [], "sc.plan": SimpleNamespace(check_access_rights=lambda *a, **kw: True)})
+        service = scope["MenuService"].__new__(scope["MenuService"])
+        service.env = env
+        service._menu_fact_cache = {kind: SimpleNamespace(tree=facts, flat=facts) for kind in ("visible", "authorized")}
+        service._group_xmlid_cache = {}
+        native = service._authorization_native_nav(role, [])
+        nav = service._filter_primary_native_nodes(native, role)
+        self.assertIn((502, 601), list(service._walk_nav_action_refs(nav)))
+        authority = service.build_route_authority(role, nav=nav)
+        scene = runpy.run_path(str(ROOT.parent / "smart_construction_scene/services/business_scene_enablement.py"))
+        surface = {row["menu_xmlid"]: {"location": "scenario", "scenario_key": "published.plan",
+                    "scenario_active": True, "menu_id": row["menu_id"]} for row in facts}
+        self.authority = scene["filter_business_authority"](authority, surface_index=surface,
+            enabled={"published.plan": True}, entries=[], company_id=8,
+            menu_xmlids_by_id={row["menu_id"]: row["menu_xmlid"] for row in facts})
+        # Both targets are published, so release filtering cannot mask a role grant.
+        self.published = {601, 602}
+        return self.authority
+
+    def test_native_role_allows_unblocked_action_through_enabled_scene(self):
+        authority = self.native_role_authority()
+        allowed = next(row for row in authority["primary_actions"] if row["action_id"] == 602)
+        self.assertEqual(allowed["route_kind"], "DISCOVERED_PRIMARY_NAV")
+        result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+        self.assertTrue(result.ok)
+        self.assertTrue(result.data["allowed"])
+
+    def test_native_role_blocks_action_alias_through_enabled_scene(self):
+        for batch_fails in (False, True):
+            with self.subTest(batch_fails=batch_fails):
+                authority = self.native_role_authority(batch_fails=batch_fails)
+                result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+                self.assertFalse(result.ok)
+                self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+                for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+                    self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
+
     def test_runtime_validator_rejects_unpublished_declared_action(self):
         result, calls = self.handler(655)
         self.assertFalse(result.ok)

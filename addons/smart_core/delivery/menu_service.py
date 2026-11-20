@@ -1539,7 +1539,10 @@ class MenuService:
                     source="delivery_engine.nav",
                     action_xmlids=action_xmlids,
                 )
-                if entry:
+                # Native menu facts may omit the action XMLID. Apply the same
+                # role restriction again after resolving the complete identity,
+                # so another menu cannot reintroduce a role-blocked action.
+                if entry and self._role_surface_menu_allowed(entry, surface):
                     buckets["primary_actions"].append(entry)
                     existing_pairs.add(pair)
 
@@ -1565,7 +1568,7 @@ class MenuService:
             if not self._policy_target_is_runtime_allowed(spec):
                 continue
             entry = self._route_entry_from_action_spec(spec, route_kind="PRIMARY_NAV")
-            if entry:
+            if entry and self._role_surface_menu_allowed(entry, surface):
                 buckets["primary_actions"].append(entry)
                 authorized_pairs.add(pair)
 

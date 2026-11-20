@@ -20,6 +20,22 @@ from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
 @tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle",
         "acceptance_scenario_navigation_maintenance")
 class TestScenarioNavigationMaintenance(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "smart_core.release_operator.catalog_source_db", cls.env.cr.dbname)
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        catalog = ProductPolicyCatalogSyncService(cls.env).build_catalog_policy_payload(
+            product_key="construction.standard")
+        rows = [row for group in catalog["menu_groups"] for row in group["menus"]
+                if row.get("menu_xmlid") == "smart_construction_core.menu_sc_enterprise_initialization"]
+        if len(rows) != 1:
+            raise AssertionError("setup fixture requires one real catalog declaration")
+        # Only immutable declaration data is shared. Every test still produces
+        # its own maintained policy, snapshot and role-dependent runtime result.
+        cls.setup_declaration = deepcopy(rows[0])
+
     def setUp(self):
         super().setUp()
         self.Scenario = self.env["sc.product.scenario"].sudo().with_context(active_test=False)
@@ -36,14 +52,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         policy = self.env["sc.product.policy"].sudo()
         policy.search([("product_key", "in", ["construction.standard", "construction.preview"])]).unlink()
         policy.sync_construction_menu_product_policies()
-        # Discovery grants no publication. This fixture explicitly declares
-        # the setup entry before testing its consumption by allowed/denied roles.
-        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
-        catalog = ProductPolicyCatalogSyncService(self.env).build_catalog_policy_payload(
-            product_key="construction.standard")
-        setup_xmlid = "smart_construction_core.menu_sc_enterprise_initialization"
-        setup = next(deepcopy(row) for group in catalog["menu_groups"]
-                     for row in group["menus"] if row.get("menu_xmlid") == setup_xmlid)
+        # Discovery grants no publication. Declare the positive fixture before
+        # testing its consumption by both allowed and denied roles.
+        setup = deepcopy(self.setup_declaration)
+        setup_xmlid = setup["menu_xmlid"]
         setup.update(enabled=True, release_state="released", access_level="public")
         standard = policy.search([("product_key", "=", "construction.standard")], limit=1)
         self.assertTrue(standard)
