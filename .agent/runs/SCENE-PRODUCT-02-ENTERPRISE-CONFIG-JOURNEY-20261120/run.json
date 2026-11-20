@@ -219,8 +219,8 @@
       "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
     },
     "C02-02_to_C02-05": {
-      "status": "not_run",
-      "reason": "C02-01 and C02-06A now pass on the synced candidate; the remaining organization, position, personnel, and permission journeys are next."
+      "status": "unique_semantics_validation_pending",
+      "reason": "The shared entry/form/save/readback/return mechanism is proven by C02-01. These entries are no longer replayed one by one in a browser; only their unique declaration and business semantics require targeted checks."
     },
     "C02-06A": {
       "status": "passed",
@@ -331,6 +331,7 @@
       "local.dev.product_release.prepare on 9fc60101e: PASS; tenant runtime snapshot 1 and independent platform snapshot 2 share source_policy_sha256=412d744f..., page_count=132 and scenario_count=46",
       "C02-06A on 93e261258: PASS; 132 published pages, 46 actionable scenarios, 11 navigation centers; user 24/company 1 enabled and restored work.my_queue with authoritative readback and no access grant",
       "C02-01 on 93e261258: PASS; action_xmlid resolved to company 1; street2 write/readback/restore matched; return to enterprise initialization produced a fresh 12-rule diagnosis with enterprise.identity=VERIFIED",
+      "C02-02 targeted spot check: required-name rejection produced no create request; a department was created with company 1 and an existing parent, read back by Odoo, deactivated and deleted; residue readback was empty",
       "verify.native_occurrence.contract.orm: PASS, 8 tests; pageInfo.model now consumes head.model and strict action model comparison is restored",
       "verify.product_center.policy.unit: PASS, 15 tests; locked skeleton now asserts the workbench plus ten centers including supply_chain",
       "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v94 and all contract inputs re-pinned",
@@ -344,7 +345,7 @@
       "frontend strict typecheck: passed"
     ],
     "not_run": [
-      "C02-02 organization, C02-03 position, C02-04 personnel/account, and C02-05 permission remain next",
+      "C02-02 through C02-05 shared browser rendering is covered by C02-01; only department parent/company, position code/organization, user-employee identity, and role/company scope require targeted declaration or behavior checks",
       "C02-06B target-user route reachability: target-user access remains separate and requires an applicable project/role journey",
       "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
     ]
@@ -668,5 +669,10 @@
     "quick_use": "explicit full audit, baseline rebuild or release freeze only",
     "root_cause": "The extended-sync helper self-imposed exact-head Quick evidence, contradicting AGENTS.md incremental delivery rules and duplicating the remote daily full lane."
   },
-  "next_exact_step": "Continue the same visible-entry journey with C02-02 organization creation, company/parent relations, save, authoritative readback and return to diagnosis."
+  "acceptance_strategy": {
+    "shared_ui_mechanism": "Proven once through C02-01 real save/readback/restore/return/diagnosis.",
+    "five_entries": "Keep static contract audit; do not repeat the same browser interaction for every entry.",
+    "targeted_checks": "Validate only entry-specific semantics and constraints that the shared mechanism cannot prove."
+  },
+  "next_exact_step": "Run targeted semantic checks for organization hierarchy, job code/organization constraints, user-employee-department-job identity, and role/company scope; fix only demonstrated gaps."
 }
