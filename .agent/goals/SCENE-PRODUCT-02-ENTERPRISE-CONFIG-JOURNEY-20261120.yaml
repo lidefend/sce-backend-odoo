@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120
   title: enterprise_configuration_admin_journey_and_usability_closure
-  status: active
+  status: blocked
   formal_product_layer: P1/P4
   layer_target: >-
     Existing enterprise initialization entries, native company/organization/
@@ -59,7 +59,7 @@ goal:
     and are deleted through the governed probe after authoritative readback unless
     a failure requires retaining them for diagnosis.
   completion:
-    batch: active
+    batch: consumer_fix_passed_remaining_journeys_blocked_by_upstream_950
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_run

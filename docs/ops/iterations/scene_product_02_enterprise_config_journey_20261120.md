@@ -85,4 +85,45 @@ artifacts/local-dev/snapshots/20261120T043906Z
 - `verify.frontend.dev.incremental.unit`：189 项通过。
 - frontend lint 仅有仓库既有 warning；strict typecheck 通过。
 
-实际浏览器消费探针和场景目录读取结果待当前修复提交后的 5176 候选构建绑定。
+## 实际浏览器消费结果
+
+候选源码/构建：`a36f24f423148445a30a650d94685cbfc0f2f042`
+
+使用 `sc_demo_business_config`（user 24）/ company 1，在 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$` 的候选前端 5176 执行：
+
+```text
+[enterprise_configuration_consumer] PASS entry=contract_gap catalog=blocked_by_declared_qualification rows=92
+```
+
+入口反例结果：
+
+- 点击可见“企业信息”后仍停留在 `/s/enterprise.setup`。
+- 页面显示“页面执行契约暂不可用”，而不是静默无反馈或普通权限不足。
+- 契约缺口为 `scene_ready_contract.scene_internal_actions.enterprise.setup:smart_construction_core.action_sc_enterprise_company`。
+- 声明层为 `P0:smart_core:system_init_scene_runtime_surface_builder`。
+- 未导航到猜测目标，未发出业务写请求。
+
+五入口只读对账：
+
+| 入口 | XMLID | 当前 action / model | 原生授权 | 原始内部动作 | 最终 `scene_internal_actions` |
+| --- | --- | --- | --- | --- | --- |
+| 企业信息 | `action_sc_enterprise_company` | 960 / `res.company` | action group、ACL read/write 通过 | 已解析 | 缺失 |
+| 组织架构 | `action_sc_organization_department` | 804 / `hr.department` | action group、ACL read/write 通过 | 已解析 | 缺失 |
+| 岗位管理 | `action_sc_product_job_management_v1` | 954 / `hr.job` | action group、ACL read/write 通过 | 已解析 | 缺失 |
+| 人员与账号 | `action_sc_runtime_user_management` | 807 / `res.users` | action group、ACL read/write 通过 | 已解析 | 缺失 |
+| 业务权限分配 | `action_sc_product_data_permission_v1` | 957 / `res.users` | action group、ACL read/write 通过 | 已解析 | 缺失 |
+
+结论：稳定 XMLID 和原始内部动作解析成立，原生授权未阻断；阻断发生在最终 effective delivery 输出/消费边界。该 P0 生产链仍归 #950，当前候选只在消费端显式报告缺口。
+
+C02-06A 结果：
+
+- 目录契约：`scenario_activation_catalog.v1`。
+- `row_count=92`，`business_scenarios=0`，`actionable_count=0`。
+- 92 项全部为 `PRODUCT_RELEASE_UNVERIFIED`，`product_released=false`，`enable_allowed=false`。
+- 页面明确显示“场景目录共 92 项，启用阻断：PRODUCT_RELEASE_UNVERIFIED。”，不再伪装成无目录。
+- 没有可执行启停动作，因此未写入场景选择；C02-06B 目标用户访问验证继续 `not_run`。
+
+运行证据：
+
+- `.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json`
+- SHA-256：`2c56d2176d9fa1b1ea9fed63eb1cee8dd789efcbb2920ff58e7d261b37ec822a`

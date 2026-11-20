@@ -3,7 +3,7 @@
   "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
   "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
   "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
-  "status": "active",
+  "status": "blocked",
   "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
   "scope": [
@@ -20,6 +20,8 @@
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "make/dev.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/error_state_component_test.cjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
@@ -29,8 +31,8 @@
   "environment": {
     "kind": "runtime",
     "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176",
-    "backend_source_revision": "c7de01f85d9fc572ea1c7bbf6d979f93c9c15bce",
-    "frontend_build_revision": "c7de01f85d9fc572ea1c7bbf6d979f93c9c15bce",
+    "backend_source_revision": "a36f24f423148445a30a650d94685cbfc0f2f042",
+    "frontend_build_revision": "a36f24f423148445a30a650d94685cbfc0f2f042",
     "database": "sc_dev_demo",
     "dbfilter": "^sc_dev_demo$",
     "entry": "/t/demo",
@@ -49,7 +51,7 @@
       ]
     },
     "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
-    "candidate_health": "passed: backend source revision and 5176 frontend both c7de01f85",
+    "candidate_health": "passed: backend source revision and 5176 frontend both a36f24f42",
     "system_init_after_schema_upgrade": "passed"
   },
   "journey_results": {
@@ -57,7 +59,7 @@
       "status": "blocked_before_write",
       "observed": "The enterprise information button produced no request or route change. Direct /a/960 returned NAVIGATION_AUTHORITY_DENIED.",
       "write_attempted": false,
-      "frontend_feedback": "candidate fix pending runtime verification: visible ContractGapError and no guessed navigation"
+      "frontend_feedback": "passed at a36f24f42: visible ContractGapError page, unchanged enterprise.setup URL, no business write request"
     },
     "C02-02_to_C02-05": {
       "status": "not_run",
@@ -65,12 +67,39 @@
     },
     "C02-06A": {
       "status": "blocked_by_declared_product_release_qualification",
-      "observed": "The catalog returned 92 source rows and zero business_scenarios. All 92 rows declare PRODUCT_RELEASE_UNVERIFIED, product_released=false and enable_allowed=false; no enable or disable action was available, so no scenario write was attempted."
+      "observed": "At a36f24f42 the catalog returned 92 source rows and zero business_scenarios. All 92 rows declare PRODUCT_RELEASE_UNVERIFIED, product_released=false and enable_allowed=false; no enable or disable action was available, so no scenario write was attempted. The visible panel reports: 场景目录共 92 项，启用阻断：PRODUCT_RELEASE_UNVERIFIED。"
     },
     "C02-06B": {
       "status": "not_run",
       "reason": "No scenario was enabled and target-user route reachability may also depend on PR #950"
     }
+  },
+  "authorization_reconciliation": {
+    "source_scene_admitted": true,
+    "entry_catalog_items": 5,
+    "raw_internal_action_count": 5,
+    "native_checks": "all five actions have allowed action groups, model read/write access and a valid current database action identity",
+    "raw_internal_actions": {
+      "enterprise_info": "action_id=960 model=res.company",
+      "organization": "action_id=804 model=hr.department",
+      "position": "action_id=954 model=hr.job",
+      "personnel": "action_id=807 model=res.users",
+      "permissions": "action_id=957 model=res.users"
+    },
+    "final_contract": "scene_ready_contract.scene_internal_actions contains no enterprise.setup entries",
+    "final_catalog": "five action_xmlid entries remain visible",
+    "frontend_target_resolution": "no authorized action/menu target; visible ContractGapError is now shown instead of a silent return",
+    "owner": "P0 smart_core native execution route discovery / upstream PR #950"
+  },
+  "runtime_evidence": {
+    "status": "passed",
+    "candidate_sha": "a36f24f423148445a30a650d94685cbfc0f2f042",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
+    "report_sha256": "2c56d2176d9fa1b1ea9fed63eb1cee8dd789efcbb2920ff58e7d261b37ec822a",
+    "entry_feedback": "contract_gap",
+    "scenario_catalog": "92 rows, zero actionable scenarios, PRODUCT_RELEASE_UNVERIFIED=92",
+    "business_writes": 0,
+    "browser_errors": 0
   },
   "validation_exclusions": {
     "targets": [
@@ -151,5 +180,5 @@
       "evidence": "The handling_entry_catalog exposes action_xmlid for all five entries, but route resolution yields no action/menu and direct action /a/960 is denied with NAVIGATION_AUTHORITY_DENIED. PR #950 changes DeliveryEngine to pass the native ACL/action-group/role-filtered navigation to build_route_authority."
     }
   ],
-  "next_exact_step": "Commit the focused frontend consumer fix, rebuild the candidate frontend at the new HEAD, run the governed enterprise configuration consumer probe, then record its entry feedback and C02-06 catalog evidence."
+  "next_exact_step": "After PR #950 is integrated, sync this branch to the new main and rerun C02-01 from the visible enterprise information entry; continue C02-02 through C02-05 and C02-06B using the same local.dev identity."
 }
