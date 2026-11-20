@@ -13,6 +13,7 @@
     ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
     ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
     "config/ci/contract_only_scopes.json",
+    "contracts/registry/semantic.yaml",
     "docs/engineering_convergence/test_inventory.csv",
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
@@ -319,6 +320,7 @@
       "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v93 and the four source inputs re-pinned",
       "verify.unified_page_contract.v2.runtime: PASS, 149 tests; unified page-contract runtime score 6",
       "verify.unified_page_contract.v2.web_architecture: PASS, debt-lock findings 0",
+      "verify.semantic.registry.lint: PASS; field_partner_autocomplete is declared as a generic visual fallback without claiming native takeover",
       "make ci.local.iteration: PASS; 44 affected targets executed, testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261120T123643Z-2201996-755971495/receipt.json",
       "[historical before scenario-seed implementation] make ci.local.iteration: exit 0; 13 required targets executed",
       "ci.delivery.freeze.prepare: passed; generated evidence current with 1738 inventory entries",
@@ -624,6 +626,13 @@
       "classification": "product_defect",
       "finding": "The native enterprise.setup override removed enablement_scope=enterprise_initialization, and effective delivery only generated internal actions for scenes already present in business navigation. The five setup actions therefore never reached scene_ready_contract.",
       "resolution": "Preserve the initialization lifecycle on the native scene projection and admit that explicit lifecycle scope into internal-action resolution without promoting unscoped business scenes.",
+      "status": "resolved_pending_runtime_retry"
+    },
+    {
+      "owner": "P0 semantic contract consumer",
+      "classification": "product_defect",
+      "finding": "The Odoo partner_autocomplete extension rewrites res.company name and vat to field_partner_autocomplete at effective-view generation time. The contract registry omitted that native widget, so the whole enterprise information form stopped with PROFESSIONAL_COMPONENT_UNREGISTERED.",
+      "resolution": "Declare field_partner_autocomplete in the semantic registry as an explicit generic visual fallback while preserving the native widget identity and field editability.",
       "status": "resolved_pending_runtime_retry"
     }
   ],

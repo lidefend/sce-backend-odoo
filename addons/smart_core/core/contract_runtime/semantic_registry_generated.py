@@ -99,6 +99,7 @@ NATIVE_WIDGET_STATUS = {
     'display': {'status': 'ready', 'reasonCode': ''},
     'domain': {'status': 'unsupported', 'reasonCode': 'NATIVE_WIDGET_DOMAIN_EDITOR_UNSUPPORTED'},
     'email': {'status': 'ready', 'reasonCode': ''},
+    'field_partner_autocomplete': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'float_time': {'status': 'ready', 'reasonCode': ''},
     'handle': {'status': 'fallback', 'reasonCode': 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
     'html': {'status': 'ready', 'reasonCode': ''},

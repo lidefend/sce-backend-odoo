@@ -75,6 +75,9 @@ native_widgets:
   res_partner_many2one:
     status: fallback
     reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
+  field_partner_autocomplete:
+    status: fallback
+    reason_code: NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK
   domain:
     status: unsupported
     reason_code: NATIVE_WIDGET_DOMAIN_EDITOR_UNSUPPORTED
