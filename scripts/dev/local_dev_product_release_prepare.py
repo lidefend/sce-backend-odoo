@@ -72,6 +72,47 @@ def _stable_sha256(value):
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
+def activate_runtime_release(env, *, source_policy, source_revision):
+    from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+        EditionReleaseSnapshotService,
+    )
+
+    database = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
+    if database != EXPECTED_DATABASE:
+        raise RuntimeError(
+            f"LOCAL_DEV_RUNTIME_RELEASE_DATABASE_DENIED:{database}"
+        )
+    version = release_version(source_revision)
+    service = EditionReleaseSnapshotService(env)
+    result = service.freeze_release_surface(
+        product_key=PRODUCT_KEY,
+        version=version,
+        note="local.dev tenant runtime projection of the approved product release",
+        replace_active=True,
+        policy_override=source_policy,
+    )
+    snapshot = env["sc.edition.release.snapshot"].sudo().browse(
+        int(result.get("id") or 0)
+    )
+    if not snapshot.exists():
+        raise RuntimeError("LOCAL_DEV_RUNTIME_RELEASE_SNAPSHOT_NOT_FOUND")
+    if snapshot.state != "released" or not snapshot.is_active or not snapshot.active:
+        raise RuntimeError("LOCAL_DEV_RUNTIME_RELEASE_SNAPSHOT_NOT_EFFECTIVE")
+    integrity = service.assert_frozen_release_integrity(snapshot)
+    env.cr.commit()
+    return {
+        "database": database,
+        "snapshot_id": int(snapshot.id),
+        "version": str(snapshot.version or ""),
+        "state": str(snapshot.state or ""),
+        "is_active": bool(snapshot.is_active),
+        "active": bool(snapshot.active),
+        "effective_page_count": int(integrity.get("effective_count") or 0),
+        "released_page_count": int(integrity.get("released_count") or 0),
+        "policy_source_sha256": _stable_sha256(source_policy),
+    }
+
+
 def prepare_product_release(env, *, source_revision, environment, artifact_path):
     database = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
     identity = validate_identity(
@@ -166,6 +207,11 @@ def prepare_product_release(env, *, source_revision, environment, artifact_path)
         encoding="utf-8",
     )
     temporary.replace(path)
+    runtime_release = activate_runtime_release(
+        source_env,
+        source_policy=source_policy,
+        source_revision=identity["source_revision"],
+    )
     return {
         "status": "PASS",
         "identity": identity,
@@ -174,6 +220,7 @@ def prepare_product_release(env, *, source_revision, environment, artifact_path)
         "artifact_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "source_policy_sha256": artifact["source_policy_sha256"],
         "source_draft": artifact["source_draft"],
+        "runtime_release": runtime_release,
     }
 
 

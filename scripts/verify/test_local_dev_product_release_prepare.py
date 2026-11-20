@@ -2,8 +2,11 @@ from __future__ import annotations
 
 import importlib.util
 import re
+import sys
+import types
 import unittest
 from pathlib import Path
+from unittest import mock
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -64,6 +67,78 @@ class LocalDevProductReleasePrepareTest(unittest.TestCase):
         self.assertEqual(MODULE.release_version(revision), "local-dev-fab3415370b5")
         with self.assertRaisesRegex(RuntimeError, "SOURCE_REVISION_REQUIRED"):
             MODULE.release_version("fab3415")
+
+    def test_runtime_release_uses_the_same_policy_and_commits_only_after_integrity(self):
+        revision = "a" * 40
+        policy = {
+            "product_key": "construction.standard",
+            "business_scene_composition": {"scenarios": []},
+        }
+
+        class Cursor:
+            dbname = "sc_dev_demo"
+
+            def __init__(self):
+                self.commits = 0
+
+            def commit(self):
+                self.commits += 1
+
+        class Snapshot:
+            id = 17
+            version = MODULE.release_version(revision)
+            state = "released"
+            is_active = True
+            active = True
+
+            def exists(self):
+                return True
+
+        class SnapshotModel:
+            def sudo(self):
+                return self
+
+            def browse(self, record_id):
+                self.record_id = record_id
+                return Snapshot()
+
+        class Service:
+            def __init__(self, env):
+                self.env = env
+                self.policy = None
+
+            def freeze_release_surface(self, **kwargs):
+                self.policy = kwargs["policy_override"]
+                return {"id": 17}
+
+            def assert_frozen_release_integrity(self, snapshot):
+                if self.env.cr.commits:
+                    raise AssertionError("integrity must be checked before commit")
+                return {"effective_count": 132, "released_count": 120}
+
+        cursor = Cursor()
+        env = type(
+            "Env",
+            (dict,),
+            {"cr": cursor},
+        )({"sc.edition.release.snapshot": SnapshotModel()})
+        service_module = types.ModuleType(
+            "odoo.addons.smart_core.delivery.edition_release_snapshot_service"
+        )
+        service_module.EditionReleaseSnapshotService = lambda current_env: Service(current_env)
+        with mock.patch.dict(
+            sys.modules,
+            {service_module.__name__: service_module},
+        ):
+            result = MODULE.activate_runtime_release(
+                env,
+                source_policy=policy,
+                source_revision=revision,
+            )
+        self.assertEqual(cursor.commits, 1)
+        self.assertEqual(result["snapshot_id"], 17)
+        self.assertEqual(result["effective_page_count"], 132)
+        self.assertEqual(result["policy_source_sha256"], MODULE._stable_sha256(policy))
 
     def test_catalog_source_and_platform_release_database_are_separate(self):
         self.assertEqual(

@@ -308,6 +308,7 @@
       "local.platform ACTION=install: PASS; independent sc_platform_control created with smart_core only",
       "local.platform ACTION=health: PASS; independent roles, owner, exact dbfilter and module state",
       "local.dev.product_release.prepare: PASS; published 46 scenarios / 132 pages from sc_dev_demo into sc_platform_control snapshot 1",
+      "local.dev.product_release.prepare on 9fc60101e: PASS; tenant runtime snapshot 1 and independent platform snapshot 2 share source_policy_sha256=412d744f..., page_count=132 and scenario_count=46",
       "verify.native_occurrence.contract.orm: PASS, 8 tests; pageInfo.model now consumes head.model and strict action model comparison is restored",
       "verify.product_center.policy.unit: PASS, 15 tests; locked skeleton now asserts the workbench plus ten centers including supply_chain",
       "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v93 and the four source inputs re-pinned",
@@ -604,6 +605,13 @@
       "classification": "product_defect",
       "finding": "After an enable request, the immediate disable readback could observe a stale registry-cached true value and return INTERNAL_ERROR instead of committing the disable.",
       "resolution": "Clear the registry cache after the parameter row write completes and added a focused stale-cache regression.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P4 local.dev product release projection",
+      "classification": "acceptance_environment_defect",
+      "finding": "After moving the authoritative release to sc_platform_control, sc_dev_demo had no active runtime release snapshot. The enterprise scenario catalog therefore returned ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND and no rows.",
+      "resolution": "The governed prepare entry now creates a tenant runtime snapshot in sc_dev_demo from the same approved policy artifact and exact revision, while the independent platform control snapshot remains the authoritative product release.",
       "status": "resolved"
     }
   ],
