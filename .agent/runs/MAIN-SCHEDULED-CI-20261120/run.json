@@ -27,7 +27,8 @@
     "addons/smart_construction_core/models/support/workflow_contract_service.py",
     "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
-    "scripts/verify/scenario_surface_projection_guard.py"
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -146,6 +147,19 @@
         "scripts/verify/scenario_center_projection_guard.py",
         "scripts/verify/fact_layer_authority_guard.py",
         "scripts/ops/test_scene_internal_action_authority.py"
+      ]
+    },
+    "statusbar_guard": {
+      "target": "verify.unified_page_contract.v2.web_architecture",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "make/ci.mk",
+        "docs/audit/workflow_state_unification_plan.md"
       ]
     }
   },
@@ -343,6 +357,12 @@
       "errors": 1,
       "log": ".runtime/ci-recovery/fixture-orm-896.log",
       "reason": "Controlled routed-directory counterexample fixed but actual business_full still has duplicate canonical identity. Capture exact key/menu/parent IDs before further production changes."
+    },
+    "statusbar_guard": {
+      "status": "passed",
+      "scope": "Architecture/stable projection guards and existing canonical presenter consumer tests; current-source positive and five negative guard mutations",
+      "log": ".runtime/ci-recovery/statusbar-guard-consumer.log",
+      "mutation_log": ".runtime/ci-recovery/statusbar-guard-mutations.log"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
