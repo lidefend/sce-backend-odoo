@@ -41,10 +41,10 @@ Generated from repository source files. This report is informational during the 
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2639 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
+| 2463 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
-| 2252 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2213 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
@@ -295,10 +295,10 @@ Generated from repository source files. This report is informational during the 
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2639 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
+| 2463 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
-| 2252 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
 | 2213 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |

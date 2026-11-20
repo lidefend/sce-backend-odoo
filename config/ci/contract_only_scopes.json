@@ -207,6 +207,39 @@
         "verify.business_config.browser_acceptance",
         "verify.business_config.approval_runtime"
       ]
+    },
+    {
+      "id": "SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120",
+      "branch": "fix/scene-close-04-tenant-enablement-state-20261120",
+      "base_sha": "80f98fa25deea70f658ffecd93b0668103928c85",
+      "reason": "Owner-approved contract-only validation for enterprise scene enablement facts, disable/readback continuity and existing frontend activation consumption.",
+      "allowed_paths": [
+        ".agent/active-runs.json",
+        ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+        ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
+        ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+        ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "config/ci/contract_only_scopes.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
+        "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
+      ],
+      "targets": [
+        "verify.agent.resume.unit",
+        "verify.agent.ledger.unit",
+        "verify.navigation.publication_consumers.unit",
+        "verify.scenario.center_projection.guard",
+        "verify.frontend.dev.incremental.unit",
+        "verify.scene.fact_data.boundary.unit",
+        "verify.ci.workflow.contract"
+      ],
+      "excluded_targets": [
+        "verify.daily.permission_truth.capability.orm"
+      ]
     }
   ]
 }

@@ -45,14 +45,14 @@ def business_catalog(surface, release_states, stored, *, can_manage=False):
             # runtime-scope annotation. Production runtime readers always pass
             # published_release or maintained_draft.
             released = [menu for menu in menus if release_states.get(menu) == "released"]
-        is_enabled = bool(scene.get("active", True)) and enabled.get(key, False)
+        is_enabled = enabled.get(key, False)
         if not scene.get("active", True):
             released = []
         actions = []
-        if can_manage and (is_enabled or released):
-            actions.append({"key": "disable" if is_enabled else "enable",
-                            "label": "停用" if is_enabled else "启用",
-                            "enabled": not is_enabled})
+        if can_manage and is_enabled:
+            actions.append({"key": "disable", "label": "停用", "enabled": False})
+        elif can_manage and released:
+            actions.append({"key": "enable", "label": "启用", "enabled": True})
         rows.append({"scene_key": key, "name": scene.get("name") or key,
                      "enablement_scope": BUSINESS_SCOPE, "product_released": bool(released),
                      "tenant_enabled": is_enabled, "released_menu_count": len(released),

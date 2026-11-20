@@ -125,6 +125,7 @@
     "fix/quick-input-scoped-reuse": ".agent/runs/QUICK-INPUT-SCOPED-REUSE/run.json",
     "fix/scenario-entry-nav-contract-20261111": ".agent/runs/SCENARIO-ENTRY-NAV-CONTRACT-20261111/run.json",
     "fix/scenario-menu-fact-enumeration-20261106": ".agent/runs/SCENARIO-MENU-FACT-ENUMERATION-20261106/run.json",
+    "fix/scene-close-04-tenant-enablement-state-20261120": ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
     "fix/scene-fact-data-convergence-20261104": ".agent/runs/SCENE-FACT-DATA-CONVERGENCE-20261104/run.json",
     "fix/scheduled-ci-mechanism-impact-rg": ".agent/runs/CI-SCHEDULED-MECHANISM-IMPACT-20261107/run.json",
     "fix/scheduled-navigation-closeout-20261103": ".agent/runs/SCHEDULED-NAVIGATION-CLOSEOUT-20261103/run.json",

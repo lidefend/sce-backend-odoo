@@ -818,6 +818,113 @@ managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
 
+// An unavailable scene still preserves the enterprise's saved enablement and
+// exposes only the server-declared disable action. The action target false is
+// not a disabled button; it is the state written by the real consumer.
+const previousUnavailableCompanyId = session.recordContext?.company_id;
+session.initStatus = 'ready';
+session.recordContext = {
+  ...session.recordContext,
+  company_id: 1,
+} as NonNullable<typeof session.recordContext>;
+const unavailableScope = effectScope();
+const unavailable = unavailableScope.run(() => useScenarioActivation())!;
+await flush();
+const unavailableCatalog = (disabled: boolean) => ({
+  company_id: 1,
+  actor: {
+    user_id: 9,
+    login: 'config.admin',
+    name: 'Config Admin',
+    can_manage_enterprise_configuration: true,
+    platform_admin: false,
+    source: 'res.users',
+  },
+  target_scope: {
+    kind: 'enterprise_scenario_enablement',
+    company_id: 1,
+    company_name: 'Company 1',
+    is_global_product_release: false,
+    source: 'res.company',
+    target_role_scope: {
+      mode: 'not_role_scoped',
+      target_role_key: '',
+      reason_code: 'SCENARIO_ENABLEMENT_COMPANY_SCOPED',
+      meaning: 'company scoped',
+    },
+  },
+  business_scenarios: [{
+    scene_key: 'project.management',
+    name: '项目管理',
+    enablement_scope: 'business.v1',
+    product_released: false,
+    tenant_enabled: !disabled,
+    status_label: disabled ? '未启用' : '企业已启用',
+    release_label: '未发布',
+    product_qualification: {
+      status: 'not_qualified',
+      reason_code: 'PRODUCT_NOT_RELEASED',
+      evidence: { version: 'v9', snapshot_id: 9, applied: true },
+    },
+    enablement_blockers: ['PRODUCT_NOT_RELEASED'],
+    enable_allowed: false,
+    actions: disabled ? [] : [{ key: 'disable', label: '停用', enabled: false }],
+  }],
+});
+pending.at(-1)!.settle(unavailableCatalog(false));
+await flush();
+assert.equal(unavailable.state.value, 'ready');
+assert.equal(unavailable.rows.value[0].status_label, '企业已启用');
+assert.equal(unavailable.rows.value[0].enable_allowed, false);
+assert.deepEqual(unavailable.rows.value[0].enablement_blockers, ['PRODUCT_NOT_RELEASED']);
+assert.deepEqual(unavailable.rows.value[0].actions, [
+  { key: 'disable', label: '停用', enabled: false },
+]);
+
+const previousUnavailableBootstrap = session.loadAppInit;
+let unavailableBootstraps = 0;
+session.loadAppInit = async () => {
+  unavailableBootstraps += 1;
+  session.initStatus = 'loading';
+  await nextTick();
+  session.initStatus = 'ready';
+  await nextTick();
+};
+const unavailableRow = unavailable.rows.value[0];
+const unavailableMutation = await nextRequest(
+  () => unavailable.execute(unavailableRow, unavailableRow.actions[0]),
+);
+assert.equal(unavailableMutation.request.intent, 'scenario.activation.set');
+assert.deepEqual(unavailableMutation.request.params, {
+  company_id: 1,
+  scene_key: 'project.management',
+  enablement_scope: 'business.v1',
+  enabled: false,
+});
+unavailableMutation.request.settle(validReadback(false));
+await flush();
+assert.equal(unavailableBootstraps, 1);
+assert.equal(pending.at(-1)!.intent, 'scenario.activation.catalog.get');
+pending.at(-1)!.settle(unavailableCatalog(true));
+await unavailableMutation.result;
+assert.equal(unavailable.readback.value?.readback.enabled, false);
+assert.equal(unavailable.state.value, 'ready');
+assert.equal(unavailable.rows.value[0].tenant_enabled, false);
+assert.equal(unavailable.rows.value[0].status_label, '未启用');
+assert.deepEqual(unavailable.rows.value[0].actions, []);
+assert.equal(
+  unavailable.rows.value[0].actions.some(action => action.key === 'disable'),
+  false,
+  'the pre-disable action cannot survive the authoritative catalog reread',
+);
+unavailableScope.stop();
+session.loadAppInit = previousUnavailableBootstrap;
+session.recordContext = {
+  ...session.recordContext,
+  company_id: previousUnavailableCompanyId,
+} as NonNullable<typeof session.recordContext>;
+console.log('[business_scenario_unavailable_disable_test] PASS cases=5 consumer=actual transport=controlled');
+
 // A later unconfirmed write cannot reuse the previous mutation's success.
 session.initStatus = 'ready';
 const previousReadbackCompanyId = session.recordContext?.company_id;
