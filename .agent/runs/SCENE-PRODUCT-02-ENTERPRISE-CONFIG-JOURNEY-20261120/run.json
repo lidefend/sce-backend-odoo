@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
+  "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
+  "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+  "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
+    ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+    ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
+    ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
+    "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
+    "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.daily.permission_truth.capability.orm",
+      "verify.business_config.full_acceptance",
+      "verify.business_config.browser_acceptance"
+    ],
+    "reason": "Owner-selected focused real configuration journeys; full ORM/module baselines, full browser matrix, production deployment and unrelated centers are excluded."
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
+        ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+        ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
+        ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Confirm backend and candidate-frontend runtime identity, authenticate the configuration administrator, then execute C02-01 enterprise information save and authoritative readback."
+}

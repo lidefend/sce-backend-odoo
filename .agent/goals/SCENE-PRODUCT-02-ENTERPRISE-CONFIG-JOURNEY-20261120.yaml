@@ -1,0 +1,66 @@
+schema_version: 1
+
+goal:
+  id: SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120
+  title: enterprise_configuration_admin_journey_and_usability_closure
+  status: active
+  formal_product_layer: P1/P4
+  layer_target: >-
+    Existing enterprise initialization entries, native company/organization/
+    position/user/permission facts, enterprise scene selection and the custom
+    frontend that consumes those declarations.
+  module:
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - frontend/apps/web
+    - scripts/verify
+    - make/dev.mk
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_company_runtime_configuration
+  objective: >-
+    Let the fixture business configuration administrator complete six real
+    journeys in order: enterprise information, department, position,
+    personnel/account, same-user business permissions and enterprise scene
+    selection. Each journey must expose the entry, accept or reject input with a
+    clear reason, persist through the existing native model, support authoritative
+    readback, return to the same enterprise initialization context and display a
+    newly read diagnosis.
+  product_result: >-
+    Actual user-visible configuration operations and authoritative persisted facts
+    replace static declaration-only evidence. Any discovered gap is fixed in its
+    owning P1, P0 or frontend layer; P4 only adds the minimum governed journey
+    probe and evidence binding.
+  why_here: >-
+    The configuration facts belong to construction product models and native
+    views. The frontend owns generic form consumption, while the journey probe
+    belongs to governed delivery tooling.
+  why_not_elsewhere:
+    - Platform enterprise creation and first-administrator provisioning remain platform responsibilities.
+    - Scene selection does not grant user access or prove role workspace delivery.
+    - The frontend must not synthesize readiness counts or permission outcomes.
+    - P4 tools must not write business models outside the user-visible application flow.
+  blast_radius:
+    behavior:
+      - current-company enterprise information edit and readback
+      - department creation, parent/company relation and later manager assignment
+      - position creation and department relation
+      - ordinary internal user, employee relation, department and position on the same identity
+      - same-user assignable role and allowed-company scope grant/revoke with target-user readback
+      - enterprise scene enable/revoke, refreshed catalog and diagnosis
+    exclusions:
+      - ORM test suites, owning-module baselines, module upgrade and fixture rebuild
+      - full browser matrix and unrelated product centers
+      - project creation when an applicable project is absent
+      - production deployment and cross-product tenant migration
+      - strengthening write permissions beyond the existing native declarations
+  rollback: >-
+    Revert any owned product or journey-tool fix together with its focused
+    regression. Business records created by the journey use a unique batch marker
+    and are deleted through the governed probe after authoritative readback unless
+    a failure requires retaining them for diagnosis.
+  completion:
+    batch: not_run
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: pending
