@@ -179,6 +179,7 @@ try {
     assert.ok(report.scenario_catalog.restore_readback);
     report.entry_feedback = { kind: 'not_run', reason: 'scenario_only' };
   } else {
+    const businessWritesBeforeEntry = requests.filter(isBusinessWrite).length;
     await page.goto(`${BASE_URL}/s/enterprise.setup`, { waitUntil: 'domcontentloaded', timeout: 45000 });
     const entry = page.getByRole('button', { name: '企业信息', exact: true }).first();
     await entry.waitFor({ timeout: 30000 });
@@ -200,7 +201,11 @@ try {
       assert.match(await gap.innerText(), /页面执行契约暂不可用/);
       assert.match(await gap.innerText(), /ContractGapError/);
       assert.doesNotMatch(await page.locator('body').innerText(), /无权访问/);
-      assert.equal(requests.filter(isBusinessWrite).length, 0, 'a blocked entry must not issue a business write');
+      assert.equal(
+        requests.filter(isBusinessWrite).length,
+        businessWritesBeforeEntry,
+        'a blocked entry must not issue an additional business write',
+      );
       report.entry_feedback = { kind: 'contract_gap', missing, layer, path: page.url() };
     } else {
       assert.notEqual(new URL(page.url()).pathname, '/access-denied');
