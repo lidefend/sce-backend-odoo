@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120
   title: enterprise_base_configuration_and_activation
-  status: verification_pending
+  status: completed
   formal_product_layer: P1/P4
   layer_target: >-
     Existing enterprise initialization scene, enterprise readiness diagnosis
@@ -58,10 +58,16 @@ goal:
 
   completion:
     affected_mechanisms: passed
-    scenario_declaration_and_consumption: candidate_passed_pending_independent_review
-    batch: verification_pending
-    independent_review: not_run
-    mainline_integration: not_run
+    scenario_declaration_and_consumption: completed
+    batch: completed
+    independent_review: approved
+    mainline_integration: completed
+    pr: 949
+    candidate_head: 832b52ad2e6705866d14b71f0a17c4d0326d8767
+    candidate_tree: 3e22b32298794573a3c7d8f294df9961f58573f1
+    merge_commit: f2f7fd02f0f28f84e6190102f3bf559db0c28457
+    mainline_sha: f2f7fd02f0f28f84e6190102f3bf559db0c28457
+    merge_tree: 3e22b32298794573a3c7d8f294df9961f58573f1
     deployment: not_run
     user_acceptance: not_run
     user_acceptance_boundary: >-
