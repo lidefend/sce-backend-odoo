@@ -332,6 +332,7 @@
       "C02-06A on 93e261258: PASS; 132 published pages, 46 actionable scenarios, 11 navigation centers; user 24/company 1 enabled and restored work.my_queue with authoritative readback and no access grant",
       "C02-01 on 93e261258: PASS; action_xmlid resolved to company 1; street2 write/readback/restore matched; return to enterprise initialization produced a fresh 12-rule diagnosis with enterprise.identity=VERIFIED",
       "C02-02 targeted spot check: required-name rejection produced no create request; a department was created with company 1 and an existing parent, read back by Odoo, deactivated and deleted; residue readback was empty",
+      "verify.navigation.publication_consumers.unit: PASS; five native entry declarations, organization/job/user/permission field and access boundaries, scene registry and diagnostics contracts all passed",
       "verify.native_occurrence.contract.orm: PASS, 8 tests; pageInfo.model now consumes head.model and strict action model comparison is restored",
       "verify.product_center.policy.unit: PASS, 15 tests; locked skeleton now asserts the workbench plus ten centers including supply_chain",
       "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v94 and all contract inputs re-pinned",
