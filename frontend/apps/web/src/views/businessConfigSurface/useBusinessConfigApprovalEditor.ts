@@ -2,8 +2,12 @@ import { computed, onScopeDispose, ref, type ComputedRef, type Ref } from 'vue';
 import {
   beginBooleanActivity,
   createContextRequestOwner,
+  currentContextEpoch,
+  onContextEpochChange,
   type ContextRequestIdentity,
+  type ContextRequestTicket,
 } from '../../app/contextEpoch';
+import type { BusinessConfigEditorIntentOwner } from './useBusinessConfigEditorIntent';
 import {
   loadApprovalPolicyConfig,
   saveApprovalPolicyConfig,
@@ -34,7 +38,15 @@ type UseBusinessConfigApprovalEditorOptions = {
   focusActiveEditorPanel: () => Promise<void>;
   onOpenPanel: () => void;
   requestIdentity: () => ContextRequestIdentity;
+  editorIntentOwner: BusinessConfigEditorIntentOwner;
 };
+
+export type ApprovalSaveIntent = Readonly<{
+  request: ContextRequestTicket;
+  readIdentity: string;
+  targetModel: string;
+  parentModel: string;
+}>;
 
 export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprovalEditorOptions) {
   const approvalLoading = ref(false);
@@ -49,8 +61,36 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   const approvalStepDragIndex = ref<number | null>(null);
   const approvalStepDropIndex = ref<number | null>(null);
   let approvalStepTempId = 0;
+  let loadedApprovalIdentity = '';
+  let loadedEditorIntent: ContextRequestTicket | null = null;
   const requestOwner = createContextRequestOwner(options.requestIdentity);
-  onScopeDispose(() => requestOwner.dispose());
+  const approvalContextRevision = ref(currentContextEpoch());
+  const stopContextEpochListener = onContextEpochChange(() => {
+    approvalContextRevision.value = currentContextEpoch();
+    loadedApprovalIdentity = '';
+    loadedEditorIntent = null;
+    approvalAudit.value = null;
+    approvalTargetModel.value = '';
+    approvalAuditParentModel.value = '';
+    approvalPanelOpen.value = false;
+    approvalLoading.value = false;
+  });
+  onScopeDispose(() => {
+    stopContextEpochListener();
+    requestOwner.dispose();
+  });
+
+  function approvalReadIdentityKey(model = approvalTargetModel.value) {
+    return requestOwner.currentIdentityKey({ viewType: 'approval', targetModel: model });
+  }
+
+  function hasCurrentApprovalRead(model = approvalTargetModel.value) {
+    return approvalContextRevision.value === currentContextEpoch()
+      && Boolean(loadedApprovalIdentity && loadedEditorIntent)
+      && loadedApprovalIdentity === approvalReadIdentityKey(model)
+      && loadedEditorIntent !== null
+      && options.editorIntentOwner.isCurrent(loadedEditorIntent);
+  }
 
   const approvalModeOptions = computed(() => approvalAudit.value?.mode_options?.length
     ? approvalAudit.value.mode_options
@@ -62,10 +102,11 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
   const approvalAmountCondition = computed(() => {
     const audit = approvalAudit.value;
     if (approvalLoading.value || approvalAuditParentModel.value !== options.currentModel.value
-      || !audit || audit.model !== approvalTargetModel.value) return null;
+      || !audit || audit.model !== approvalTargetModel.value
+      || !hasCurrentApprovalRead()) return null;
     return audit.amount_condition || null;
   });
-  const approvalEditorReady = computed(() => Boolean(approvalAmountCondition.value));
+  const approvalEditorReady = computed(() => Boolean(approvalAmountCondition.value) && hasCurrentApprovalRead());
   const approvalAmountSupported = computed(() => approvalAmountCondition.value?.supported === true);
   const approvalAmountMessage = computed(() => approvalAmountCondition.value?.message || '金额条件能力尚未读取。');
   const approvalScopeOptions = computed(() => approvalAudit.value?.scope_options || []);
@@ -137,7 +178,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     if (invalidAmountIndex >= 0) return `第 ${invalidAmountIndex + 1} 步金额条件必须为非负有限数值，且下限不能大于上限。`;
     return '';
   });
-  const canSaveApprovalDraft = computed(() => !approvalLoading.value && Boolean(approvalAmountCondition.value)
+  const canSaveApprovalDraft = computed(() => !approvalLoading.value && approvalEditorReady.value
     && hasApprovalDraftChanges.value && !approvalValidationMessage.value);
 
   function applyApprovalAudit(result: ApprovalPolicyConfigPayload) {
@@ -201,46 +242,84 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     }
     const parentModel = options.currentModel.value;
     const request = requestOwner.begin('approval-load', { viewType: 'approval', targetModel: model });
+    const editorIntent = options.editorIntentOwner.begin('editor-open', {
+      viewType: 'approval',
+      targetModel: model,
+    });
     const releaseLoading = beginBooleanActivity(approvalLoading);
+    loadedApprovalIdentity = '';
+    loadedEditorIntent = null;
     approvalAudit.value = null;
     approvalTargetModel.value = '';
     options.error.value = '';
     options.clearMessage();
     try {
       const result = await loadApprovalPolicyConfig({ model });
-      if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value) return;
+      if (!requestOwner.isCurrent(request) || !options.editorIntentOwner.isCurrent(editorIntent)
+        || parentModel !== options.currentModel.value) return;
       if (result.model !== model) throw new Error('审批配置对象不匹配，请重新读取。');
       approvalTargetModel.value = model;
       applyApprovalAudit(result);
       options.onOpenPanel();
       approvalPanelOpen.value = true;
       await options.focusActiveEditorPanel();
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !options.editorIntentOwner.isCurrent(editorIntent)) return;
+      loadedApprovalIdentity = request.identityKey;
+      loadedEditorIntent = editorIntent;
     } catch (err) {
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !options.editorIntentOwner.isCurrent(editorIntent)) return;
       options.error.value = err instanceof Error ? err.message : '审批设置读取失败';
     } finally {
       releaseLoading();
     }
   }
 
-  async function saveApprovalConfig() {
+  function beginApprovalSaveIntent(): ApprovalSaveIntent | null {
     const model = approvalTargetModel.value;
     const parentModel = options.currentModel.value;
-    if (approvalLoading.value || !hasApprovalDraftChanges.value) return false;
+    if (approvalLoading.value || !hasApprovalDraftChanges.value) return null;
     if (!model || !options.targetOptions.value.some((target) => target.value === model)) {
       options.error.value = '审批配置对象已变化，请重新读取。';
-      return false;
+      return null;
     }
-    if (!approvalAmountCondition.value) {
+    if (!hasCurrentApprovalRead(model)) {
+      options.error.value = '审批配置对象尚未完成有效读取，请重新读取后再保存。';
+      return null;
+    }
+    if (!approvalEditorReady.value) {
       options.error.value = '审批配置能力尚未读取，请重新读取。';
-      return false;
+      return null;
     }
     if (approvalValidationMessage.value) {
       options.error.value = approvalValidationMessage.value;
+      return null;
+    }
+    return {
+      request: requestOwner.begin('approval-save', { viewType: 'approval', targetModel: model }),
+      readIdentity: loadedApprovalIdentity,
+      targetModel: model,
+      parentModel,
+    };
+  }
+
+  function approvalSaveIntentIsCurrent(intent: ApprovalSaveIntent) {
+    return requestOwner.isCurrent(intent.request)
+      && intent.parentModel === options.currentModel.value
+      && intent.targetModel === approvalTargetModel.value
+      && intent.readIdentity === loadedApprovalIdentity
+      && hasCurrentApprovalRead(intent.targetModel);
+  }
+
+  async function saveApprovalConfig(intent?: ApprovalSaveIntent) {
+    const operation = intent || beginApprovalSaveIntent();
+    if (!operation) return false;
+    if (!approvalSaveIntentIsCurrent(operation)) {
+      options.error.value = '审批配置对象或读取上下文已变化，请重新读取后再保存。';
       return false;
     }
-    const request = requestOwner.begin('approval-save', { viewType: 'approval', targetModel: model });
+    const model = operation.targetModel;
+    const parentModel = operation.parentModel;
+    const request = operation.request;
     const releaseLoading = beginBooleanActivity(approvalLoading);
     options.error.value = '';
     options.clearMessage();
@@ -265,17 +344,20 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
         mode: nextMode,
         manager_scope_key: approvalForm.value.manager_scope_key || '',
       });
-      if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value) return false;
+      if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value
+        || !hasCurrentApprovalRead(model)) return false;
       if (stepDraftChanged) {
         result = await saveApprovalPolicySteps({
           model,
           steps: approvalForm.value.approval_required ? stepPayload : [],
         });
       }
-      if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value) return false;
+      if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value
+        || !hasCurrentApprovalRead(model)) return false;
       applyApprovalAudit(result);
+      loadedApprovalIdentity = request.identityKey;
       await options.loadSurface();
-      if (!requestOwner.isCurrent(request)) return false;
+      if (!requestOwner.isCurrent(request) || !hasCurrentApprovalRead(model)) return false;
       options.setMessage('审批设置已保存', result.runtime_approval_required ? '当前业务提交后会进入审批。' : '当前业务提交后无需审批。');
       return true;
     } catch (err) {
@@ -394,6 +476,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     onApprovalRequiredChange,
     enableApprovalWithDefaultStep,
     loadApprovalConfig,
+    beginApprovalSaveIntent,
     saveApprovalConfig,
     addApprovalStep,
     removeApprovalStep,

@@ -1,6 +1,10 @@
-import { computed, onBeforeUnmount, onMounted, watch, ref, type ComputedRef, type Ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, onScopeDispose, watch, ref, type ComputedRef, type Ref } from 'vue';
 import { onBeforeRouteLeave } from 'vue-router';
-import { createContextRequestOwner, type ContextRequestIdentity } from '../../app/contextEpoch';
+import {
+  createContextRequestOwner,
+  onContextEpochChange,
+  type ContextRequestIdentity,
+} from '../../app/contextEpoch';
 import type {
   BusinessConfigAnalysisAuditPayload,
   BusinessConfigListSearchAuditPayload,
@@ -69,6 +73,23 @@ export function useBusinessConfigProductExperience(options: {
   ));
   const currentEffectiveVersionLabel = ref('请先选择业务页面');
   const requestOwner = createContextRequestOwner(options.requestIdentity);
+  const stopContextEpochListener = onContextEpochChange(() => {
+    options.resetListSearchDraft();
+    options.resetAnalysisDraft();
+    options.resetApprovalDraft();
+    options.resetUnifiedDraftScope();
+    options.listSearchAudit.value = null;
+    options.analysisAudit.value = null;
+    options.versionContracts.value = [];
+    options.listSearchPanelOpen.value = false;
+    options.analysisPanelOpen.value = false;
+    options.approvalPanelOpen.value = false;
+    options.versionsPanelOpen.value = false;
+    options.listSearchBusy.value = false;
+    options.listSearchSaving.value = false;
+    options.approvalLoading.value = false;
+    options.versionsLoading.value = false;
+  });
   watch(() => [options.currentModel.value, options.scopeAction.value, options.scopeView.value,
     options.selectedViewType.value, options.surface.value, options.session.recordContext?.company_id,
     options.session.roleSurface?.role_code], async () => {
@@ -155,8 +176,11 @@ export function useBusinessConfigProductExperience(options: {
     },
   );
   onMounted(() => window.addEventListener('beforeunload', handleBeforeUnload));
-  onBeforeUnmount(() => {
+  onScopeDispose(() => {
+    stopContextEpochListener();
     requestOwner.dispose();
+  });
+  onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', handleBeforeUnload);
   });
 

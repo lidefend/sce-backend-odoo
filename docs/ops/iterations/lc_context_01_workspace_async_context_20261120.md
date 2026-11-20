@@ -37,6 +37,8 @@ Branch: `feature/lc-context-01-workspace-async-context-20261120`
 - 审批读取与多步保存绑定父页面、目标模型和当前上下文；第一步等待期间切换上下文时不会继续第二步。
 - 公司、角色或页面变化后，旧 `catch`/`finally` 不再覆盖新错误或新 loading；组件销毁也会使请求失效。
 - 列表与分析编辑提示统一为“保存到待发布变更；草稿预览用于核对效果；统一发布后正式页面生效”。
+- 审批成功读取保存独立 read ticket；`approvalEditorReady`、保存入口和确认后的续办均验证同一 ticket，旧草稿不能在新 epoch 下重新绑定。
+- 列表/搜索、分析与审批共享一个 `editor-open` 顺序；审计、编辑基线、面板与焦点只在当前响应仍是最后一次打开意图时安装。
 
 ## 增量与验证接线
 
@@ -46,8 +48,8 @@ Branch: `feature/lc-context-01-workspace-async-context-20261120`
 
 ## 验证结果
 
-- `business_config_context_race`：10 组受控异步场景通过，覆盖共享 busy 归属、A/B 目录竞态、A→B→A、同对象双请求、旧失败、编辑器跨面板旧回包、无效读取暂存、版本确认切换、有效版本标签与稳定暂存。
-- 审批目标：后端 26+8 项及前端 11 个案例通过。
+- `business_config_context_race`：12 组受控异步场景通过，覆盖共享 busy 归属、A/B 目录竞态、A→B→A、同对象双请求、旧失败、列表/分析与审批两个方向的跨面板旧回包、新面板未保存修改、无效读取暂存、版本确认切换、有效版本标签与稳定暂存。
+- 审批目标：后端 26+8 项及前端 15 个案例通过；包含读取后 epoch 变化禁止保存、确认前绑定后上下文变化禁止续办、旧审批回包不抢回面板及稳定保存正例。
 - `verify.frontend.pr.unit`：完整标准前端聚合入口通过，实际包含两个 business-config 行为目标。
 - `make ci.local.iteration`：11 个受影响目标执行通过，无 ORM、浏览器或 full acceptance 目标。
 - `ci.delivery.freeze.prepare`：通过，生成证据与源码输入一致。

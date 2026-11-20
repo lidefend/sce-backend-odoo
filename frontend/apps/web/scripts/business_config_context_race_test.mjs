@@ -30,6 +30,7 @@ const scopeModule = loadTypeScriptModule('../src/views/businessConfigSurface/use
 const publishModule = loadTypeScriptModule('../src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts');
 const versionsModule = loadTypeScriptModule('../src/views/businessConfigSurface/useBusinessConfigVersions.ts');
 const productExperienceModule = loadTypeScriptModule('../src/views/businessConfigSurface/useBusinessConfigProductExperience.ts');
+const approvalModule = loadTypeScriptModule('../src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts');
 
 class ApiError extends Error {
   constructor(message, status, reasonCode = '') {
@@ -143,7 +144,7 @@ function loadScopeLifecycle(api) {
   };
 }
 
-function loadPublishLifecycle(getIdentity) {
+function loadPublishLifecycle(getIdentity, editorIntentOwner = context.createContextRequestOwner(getIdentity)) {
   const exports = {};
   vm.runInNewContext(publishModule.code, {
     exports,
@@ -214,10 +215,77 @@ function loadPublishLifecycle(getIdentity) {
     rollbackPublished: async () => ({ id: 1 }),
     discardDraft: async () => {},
     requestIdentity: getIdentity,
+    editorIntentOwner,
   };
   const scope = vue.effectScope();
   const lifecycle = scope.run(() => exports.useBusinessConfigPublishLifecycle(deps));
-  return { lifecycle, scope, refs, listRequests, analysisRequests, staged, messages };
+  return { lifecycle, scope, refs, listRequests, analysisRequests, staged, messages, editorIntentOwner };
+}
+
+function loadApprovalEditor(getIdentity, editorIntentOwner) {
+  const exports = {};
+  const requests = [];
+  const calls = [];
+  const payload = (model) => ({
+    model,
+    amount_condition: {
+      supported: true,
+      field: 'amount_total',
+      label: '金额',
+      reason_code: 'amount_field_declared',
+      message: '按金额判断',
+    },
+    policy: {
+      target_model: model,
+      target_model_label: '子单据',
+      approval_required: false,
+      mode: 'none',
+      manager_scope_key: '',
+      steps: [],
+    },
+    scope_options: [{ value: 'manager', label: '管理层' }],
+    runtime_approval_required: false,
+  });
+  vm.runInNewContext(approvalModule.code, {
+    exports,
+    require: (name) => {
+      if (name === 'vue') return vue;
+      if (name === '../../app/contextEpoch') return context;
+      if (name === '../../api/businessConfig') {
+        return {
+          loadApprovalPolicyConfig: (params) => new Promise((resolve, reject) => {
+            requests.push({ params, resolve, reject });
+          }),
+          saveApprovalPolicyConfig: async (params) => {
+            calls.push({ name: 'saveApprovalPolicyConfig', params });
+            return payload(params.model);
+          },
+          saveApprovalPolicySteps: async (params) => {
+            calls.push({ name: 'saveApprovalPolicySteps', params });
+            return payload(params.model);
+          },
+        };
+      }
+      throw new Error(`unexpected approval dependency: ${name}`);
+    },
+  });
+  const parent = vue.ref('parent.model');
+  const error = vue.ref('');
+  const scope = vue.effectScope();
+  const editor = scope.run(() => exports.useBusinessConfigApprovalEditor({
+    currentModel: vue.computed(() => parent.value),
+    targetOptions: vue.computed(() => [{ value: 'child.model', label: '子单据' }]),
+    selectedPageLabel: vue.ref('父业务'),
+    error,
+    setMessage() {},
+    clearMessage() {},
+    loadSurface: async () => {},
+    focusActiveEditorPanel: async () => {},
+    onOpenPanel() {},
+    requestIdentity: getIdentity,
+    editorIntentOwner,
+  }));
+  return { editor, scope, requests, calls, error, payload };
 }
 
 function listPayload(columns) {
@@ -436,6 +504,67 @@ let cases = 0;
   assert.equal(harness.refs.listColumnsText.value, '');
   assert.equal(harness.refs.listSearchBusy.value, false);
   harness.scope.stop();
+  cases += 1;
+}
+
+// The last opened editor owns the panel even when list/analysis and approval overlap.
+{
+  const identity = () => ({
+    companyId: 1,
+    actorRoleCode: 'actor-a',
+    targetRoleKey: 'target-a',
+    model: 'parent.model',
+    actionId: 11,
+    viewId: 21,
+  });
+  const editorIntentOwner = context.createContextRequestOwner(identity);
+  const publish = loadPublishLifecycle(identity, editorIntentOwner);
+  const approval = loadApprovalEditor(identity, editorIntentOwner);
+  context.beginContextTransition();
+  const slowList = publish.lifecycle.loadListSearchConfig();
+  const approvalRead = approval.editor.loadApprovalConfig();
+  approval.requests[0].resolve(approval.payload('child.model'));
+  await approvalRead;
+  approval.editor.enableApprovalWithDefaultStep();
+  assert.equal(approval.editor.approvalPanelOpen.value, true);
+  assert.equal(approval.editor.hasApprovalDraftChanges.value, true);
+  publish.listRequests[0].resolve(listPayload(['name']));
+  await slowList;
+  assert.equal(approval.editor.approvalPanelOpen.value, true);
+  assert.equal(publish.refs.listSearchPanelOpen.value, false);
+  assert.equal(approval.editor.hasApprovalDraftChanges.value, true);
+  publish.scope.stop();
+  approval.scope.stop();
+  editorIntentOwner.dispose();
+  cases += 1;
+}
+{
+  const identity = () => ({
+    companyId: 1,
+    actorRoleCode: 'actor-a',
+    targetRoleKey: 'target-a',
+    model: 'parent.model',
+    actionId: 11,
+    viewId: 21,
+  });
+  const editorIntentOwner = context.createContextRequestOwner(identity);
+  const publish = loadPublishLifecycle(identity, editorIntentOwner);
+  const approval = loadApprovalEditor(identity, editorIntentOwner);
+  context.beginContextTransition();
+  const slowApproval = approval.editor.loadApprovalConfig();
+  const currentList = publish.lifecycle.loadListSearchConfig();
+  publish.listRequests[0].resolve(listPayload(['name']));
+  await currentList;
+  publish.refs.listColumnsText.value = 'name\nowner';
+  assert.equal(publish.refs.listSearchPanelOpen.value, true);
+  approval.requests[0].resolve(approval.payload('child.model'));
+  await slowApproval;
+  assert.equal(publish.refs.listSearchPanelOpen.value, true);
+  assert.equal(approval.editor.approvalPanelOpen.value, false);
+  assert.notEqual(publish.refs.listColumnsText.value, publish.refs.listSearchBase.value.list);
+  publish.scope.stop();
+  approval.scope.stop();
+  editorIntentOwner.dispose();
   cases += 1;
 }
 

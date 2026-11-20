@@ -14,6 +14,8 @@ const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKi
 
 function setup(overrides = {}) {
   const calls = [], parent = vue.ref('parent'), targets = vue.ref([{ value: 'child', label: '子单据' }]), error = vue.ref('');
+  const requestIdentity = () => ({ companyId: 1, actorRoleCode: 'config_admin', targetRoleKey: '', model: parent.value, actionId: 11, viewId: 22 });
+  const editorIntentOwner = context.createContextRequestOwner(requestIdentity);
   const payload = model => ({ model, amount_condition: { supported: false, field: '', label: '', reason_code: 'amount_field_not_declared', message: '该单据不支持金额条件。' }, policy: { target_model: model, target_model_label: '子单据', approval_required: false, mode: 'none', manager_scope_key: '', steps: [] }, scope_options: [{ value: 'executive', label: '管理层' }], runtime_approval_required: false });
   const api = Object.fromEntries(['loadApprovalPolicyConfig', 'saveApprovalPolicyConfig', 'saveApprovalPolicySteps'].map(name => [name, async params => { calls.push({ name, params }); return payload(params.model); }]));
   Object.assign(api, overrides);
@@ -23,9 +25,10 @@ function setup(overrides = {}) {
     currentModel: vue.computed(() => parent.value), targetOptions: vue.computed(() => targets.value),
     selectedPageLabel: vue.ref('父业务'), error, setMessage() {}, clearMessage() {},
     async loadSurface() {}, async focusActiveEditorPanel() {}, onOpenPanel() {},
-    requestIdentity: () => ({ companyId: 1, actorRoleCode: 'config_admin', targetRoleKey: '', model: parent.value, actionId: 11, viewId: 22 }),
+    requestIdentity,
+    editorIntentOwner,
   });
-  return { editor, calls, parent, targets, error, payload, context };
+  return { editor, calls, parent, targets, error, payload, context, editorIntentOwner };
 }
 
 test('child target and label come from declared configuration contract', async () => {
@@ -79,6 +82,49 @@ test('context epoch switch during the first approval write stops the second writ
   assert.equal(await pending, false);
   assert.equal(s.calls.filter(c => c.name === 'saveApprovalPolicySteps').length, 0);
   assert.equal(s.editor.approvalLoading.value, false);
+});
+test('a successful approval read cannot seed a save after its context epoch changes', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  assert.equal(s.editor.approvalEditorReady.value, true);
+  s.context.beginContextTransition();
+  assert.equal(s.editor.approvalEditorReady.value, false);
+  assert.equal(await s.editor.saveApprovalConfig(), false);
+  assert.equal(s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).length, 0);
+  assert.match(s.error.value, /重新读取/);
+});
+test('save intent is bound before confirmation and cannot rebind after a context switch', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  const intent = s.editor.beginApprovalSaveIntent();
+  assert.ok(intent);
+  s.context.beginContextTransition();
+  assert.equal(await s.editor.saveApprovalConfig(intent), false);
+  assert.equal(s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).length, 0);
+});
+test('late approval read cannot reclaim the panel after a newer editor intent', async () => {
+  let release;
+  const s = setup({ loadApprovalPolicyConfig: () => new Promise(resolve => { release = resolve; }) });
+  const pending = s.editor.loadApprovalConfig();
+  s.editorIntentOwner.begin('editor-open', { viewType: 'list-search' });
+  release(s.payload('child'));
+  await pending;
+  assert.equal(s.editor.approvalPanelOpen.value, false);
+  assert.equal(s.editor.approvalTargetModel.value, '');
+});
+test('stable save intent still executes the normal approval writes', async () => {
+  const s = setup();
+  await s.editor.loadApprovalConfig();
+  s.editor.enableApprovalWithDefaultStep();
+  const intent = s.editor.beginApprovalSaveIntent();
+  assert.ok(intent);
+  assert.equal(await s.editor.saveApprovalConfig(intent), true);
+  assert.deepEqual(
+    s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).map(c => c.name),
+    ['saveApprovalPolicyConfig', 'saveApprovalPolicySteps'],
+  );
 });
 
 test('unsupported and missing amount capabilities hide inputs without deleting stored values', async () => {

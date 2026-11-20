@@ -1540,8 +1540,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/apps/web/src/app/contextEpoch.ts",
             "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
             "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
             "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
             "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigRemediationLifecycle.ts",
             "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
             "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
             "frontend/apps/web/scripts/business_config_context_race_test.mjs",
@@ -1564,6 +1566,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 *BASE_FRONTEND_TARGETS,
             },
         )
+        shared_context_targets = set(select_targets([
+            "frontend/apps/web/src/app/contextEpoch.ts",
+        ]))
+        self.assertIn("verify.business_config.unit", shared_context_targets)
+        self.assertIn("verify.business_config.approval_targets.unit", shared_context_targets)
 
     def test_controlled_feedback_chain_routes_to_unit_and_orm_owners(self) -> None:
         for path in (

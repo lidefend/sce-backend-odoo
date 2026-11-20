@@ -1,10 +1,12 @@
 let activeContextEpoch = 0;
 let activeContextController = new AbortController();
+const contextEpochListeners = new Set<() => void>();
 
 function rotateContext(): number {
   activeContextController.abort('context_changed');
   activeContextController = new AbortController();
   activeContextEpoch += 1;
+  contextEpochListeners.forEach((listener) => listener());
   return activeContextEpoch;
 }
 
@@ -26,6 +28,11 @@ export function currentContextSignal(): AbortSignal {
 
 export function invalidateContextRequests(): void {
   rotateContext();
+}
+
+export function onContextEpochChange(listener: () => void): () => void {
+  contextEpochListeners.add(listener);
+  return () => contextEpochListeners.delete(listener);
 }
 
 export type ContextRequestIdentity = Record<string, string | number | boolean | null | undefined>;

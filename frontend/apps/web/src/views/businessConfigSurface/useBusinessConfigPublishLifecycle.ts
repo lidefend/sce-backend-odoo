@@ -4,6 +4,7 @@ import {
   createContextRequestOwner,
   type ContextRequestIdentity,
 } from '../../app/contextEpoch';
+import type { BusinessConfigEditorIntentOwner } from './useBusinessConfigEditorIntent';
 
 export type BusinessConfigPublishLifecycleDependencies = {
   currentModel: Readonly<import('vue').Ref<string>>;
@@ -55,6 +56,7 @@ export type BusinessConfigPublishLifecycleDependencies = {
   rollbackPublished: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['rollbackPublished'];
   discardDraft: ReturnType<typeof import('./useBusinessConfigDraftSession').useBusinessConfigDraftSession>['discardDraft'];
   requestIdentity: () => ContextRequestIdentity;
+  editorIntentOwner: BusinessConfigEditorIntentOwner;
 };
 
 export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLifecycleDependencies) {
@@ -83,6 +85,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
   async function loadListSearchConfig() {
     if (!currentModel.value) return;
     const request = requestOwner.begin('editor-read', { viewType: 'tree+search' });
+    const editorIntent = deps.editorIntentOwner.begin('editor-open', { viewType: 'list-search' });
     const releaseBusy = beginBooleanActivity(listSearchBusy);
     loadedListSearchIdentity = '';
     error.value = '';
@@ -94,7 +97,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
         view_id: scopeView.value,
         role_key: scopeRole.value,
       });
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       listSearchAudit.value = result;
       const configuredListColumns = result.business_config_list_columns || [];
       const configuredSearchFilters = result.business_config_search_filters || [];
@@ -120,13 +123,13 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
       approvalPanelOpen.value = false;
       listSearchPanelOpen.value = true;
       await focusActiveEditorPanel();
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       loadedListSearchIdentity = request.identityKey;
       if ((!hasListConfig && suggestedListColumns.length) || (!hasSearchConfig && (suggestedSearchFilters.length || suggestedSearchGroupBy.length))) {
         setMessage('建议配置，尚未保存', '采用或调整建议后点击保存，才会加入待发布变更');
       }
     } catch (err) {
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       error.value = err instanceof Error ? err.message : '列表与搜索设置读取失败';
     } finally {
       releaseBusy();
@@ -136,6 +139,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
   async function loadAnalysisConfig() {
     if (!currentModel.value) return;
     const request = requestOwner.begin('editor-read', { viewType: 'pivot+graph+calendar+dashboard' });
+    const editorIntent = deps.editorIntentOwner.begin('editor-open', { viewType: 'analysis' });
     const releaseBusy = beginBooleanActivity(listSearchBusy);
     loadedAnalysisIdentity = '';
     error.value = '';
@@ -147,7 +151,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
         view_id: scopeView.value,
         role_key: scopeRole.value,
       });
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       analysisAudit.value = result;
       const configuredPivotMeasures = result.pivot_measures || [];
       const configuredPivotDimensions = result.pivot_dimensions || [];
@@ -182,7 +186,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
       analysisPanelOpen.value = true;
       activeAnalysisEditor.value = requestedAnalysisTab.value;
       await focusActiveEditorPanel();
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       loadedAnalysisIdentity = request.identityKey;
       if (
         (!hasPivotConfig && (suggestedPivotMeasures.length || suggestedPivotDimensions.length))
@@ -191,7 +195,7 @@ export function useBusinessConfigPublishLifecycle(deps: BusinessConfigPublishLif
         setMessage('建议配置，尚未保存', '采用或调整建议后点击保存，才会加入待发布变更');
       }
     } catch (err) {
-      if (!requestOwner.isCurrent(request)) return;
+      if (!requestOwner.isCurrent(request) || !deps.editorIntentOwner.isCurrent(editorIntent)) return;
       error.value = err instanceof Error ? err.message : '分析视图设置读取失败';
     } finally {
       releaseBusy();

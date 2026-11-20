@@ -82,6 +82,7 @@ import { useBusinessConfigSurfaceRuntimeRoute } from './businessConfigSurface/us
 import { useBusinessConfigSurfaceScopeParams } from './businessConfigSurface/useBusinessConfigSurfaceScopeParams';
 import { useBusinessConfigPublishLifecycle } from './businessConfigSurface/useBusinessConfigPublishLifecycle';
 import { useBusinessConfigRemediationLifecycle } from './businessConfigSurface/useBusinessConfigRemediationLifecycle';
+import { useBusinessConfigEditorIntent } from './businessConfigSurface/useBusinessConfigEditorIntent';
 import { analysisContractPayload, contractTargetKey, listContractPayload, searchContractPayload } from './businessConfigSurface/changeSetPayloads';
 import { clearConsumedOpenIntent, replaceWorkbenchQuerySilently, withSurfaceLoadTimeout } from './businessConfigSurface/workbenchUtils';
 import { focusActiveEditorPanel, focusSelectedConfigPanelOnMobile } from './businessConfigSurface/workbenchFocus';
@@ -154,6 +155,7 @@ function businessConfigRequestIdentity() {
     viewId: Number(scopeView.value || 0),
   };
 }
+const editorIntentOwner = useBusinessConfigEditorIntent(businessConfigRequestIdentity);
 
 const sections = computed(() => surface.value?.sections || []);
 const visibleSections = computed(() => sections.value.filter((section) => {
@@ -292,6 +294,7 @@ const {
   onApprovalRequiredChange,
   enableApprovalWithDefaultStep,
   loadApprovalConfig,
+  beginApprovalSaveIntent,
   saveApprovalConfig,
   addApprovalStep,
   removeApprovalStep,
@@ -309,6 +312,7 @@ const {
   loadSurface,
   focusActiveEditorPanel,
   requestIdentity: businessConfigRequestIdentity,
+  editorIntentOwner,
   onOpenPanel: () => {
     listSearchPanelOpen.value = false;
     analysisPanelOpen.value = false;
@@ -579,7 +583,7 @@ const {
   openImpactDialog,
   requestIdentity: businessConfigRequestIdentity,
 });
-const { loadListSearchConfig, loadAnalysisConfig, saveListSearchConfig, saveAnalysisConfig, previewUnifiedDraft, publishUnifiedDraft, rollbackUnifiedDraft, discardUnifiedDraft } = useBusinessConfigPublishLifecycle({ currentModel, listSearchBusy, error, clearMessage, auditBusinessListSearchConfig, scopeAction, scopeView, scopeRole, listSearchAudit, namesToText, normalizeNamesText, listColumnsText, searchFiltersText, searchGroupByText, listSearchBase, activeListSearchEditor, requestedListSearchTab, analysisPanelOpen, approvalPanelOpen, listSearchPanelOpen, focusActiveEditorPanel, setMessage, auditBusinessAnalysisConfig, analysisAudit, pivotMeasuresText, pivotDimensionsText, graphMeasuresText, graphDimensionsText, graphType, analysisBase, activeAnalysisEditor, requestedAnalysisTab, listSearchSaving, hasListSearchDraftChanges, parseNames, stageUnifiedDraftItem, contractTargetKey, listContractPayload, searchContractPayload, hasAnalysisDraftChanges, analysisContractPayload, previewDraft, openImpactDialog, changeSet, publishDraft, loadSurface, rollbackPublished, discardDraft, requestIdentity: businessConfigRequestIdentity });
+const { loadListSearchConfig, loadAnalysisConfig, saveListSearchConfig, saveAnalysisConfig, previewUnifiedDraft, publishUnifiedDraft, rollbackUnifiedDraft, discardUnifiedDraft } = useBusinessConfigPublishLifecycle({ currentModel, listSearchBusy, error, clearMessage, auditBusinessListSearchConfig, scopeAction, scopeView, scopeRole, listSearchAudit, namesToText, normalizeNamesText, listColumnsText, searchFiltersText, searchGroupByText, listSearchBase, activeListSearchEditor, requestedListSearchTab, analysisPanelOpen, approvalPanelOpen, listSearchPanelOpen, focusActiveEditorPanel, setMessage, auditBusinessAnalysisConfig, analysisAudit, pivotMeasuresText, pivotDimensionsText, graphMeasuresText, graphDimensionsText, graphType, analysisBase, activeAnalysisEditor, requestedAnalysisTab, listSearchSaving, hasListSearchDraftChanges, parseNames, stageUnifiedDraftItem, contractTargetKey, listContractPayload, searchContractPayload, hasAnalysisDraftChanges, analysisContractPayload, previewDraft, openImpactDialog, changeSet, publishDraft, loadSurface, rollbackPublished, discardDraft, requestIdentity: businessConfigRequestIdentity, editorIntentOwner });
 const {
   sectionImpactText,
   sectionStatusLabel,
@@ -597,7 +601,7 @@ const {
   loadListSearchConfig,
   openFormConfig,
 });
-const { runRemediationAction, openVersionsForRuntimeGaps, bootstrapMissingContracts, bootstrapCoverageMissing, confirmAndSaveApprovalConfig } = useBusinessConfigRemediationLifecycle({ focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, saveApprovalConfig });
+const { runRemediationAction, openVersionsForRuntimeGaps, bootstrapMissingContracts, bootstrapCoverageMissing, confirmAndSaveApprovalConfig } = useBusinessConfigRemediationLifecycle({ focusScanRow, loadAnalysisConfig, loadVersions, setMessage, openMenuConfig, loadListSearchConfig, rowBootstrapMissingViewTypes, listSearchSaving, error, clearMessage, bootstrapBusinessFormConfig, coverageRowActionId, coverageRowViewId, scopeRole, bootstrapBusinessListSearchConfig, bootstrapBusinessAnalysisConfig, loadSurface, scanCurrentModel, openFormConfig, coverageBatchBootstrapRows, openImpactDialog, bootstrapCoverageMissingConfig, currentModel, scopeView, rootMenuXmlid, coverageScan, rescanCoverageAfterBootstrap, approvalImpactSummaryText, beginApprovalSaveIntent, saveApprovalConfig });
 
 useBusinessConfigWorkbenchBootstrap({
   shouldOpenPageList, shouldOpenFormConfig, shouldOpenListSearch, shouldOpenAnalysis,

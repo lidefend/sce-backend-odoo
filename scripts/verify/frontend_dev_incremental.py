@@ -1894,8 +1894,10 @@ RULES = (
         "frontend/apps/web/src/app/contextEpoch.ts",
         "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
         "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigRemediationLifecycle.ts",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
         "frontend/apps/web/scripts/business_config_context_race_test.mjs",
@@ -1905,7 +1907,10 @@ RULES = (
         "verify.business_config.unit",
     )),
     Rule((
+        "frontend/apps/web/src/app/contextEpoch.ts",
         "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigEditorIntent.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigRemediationLifecycle.ts",
         "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
     ), (
         "verify.business_config.approval_targets.unit",

@@ -109,7 +109,10 @@ function loadPublishLifecycle() {
       throw new Error(`unexpected publish lifecycle dependency: ${name}`);
     },
   );
-  return loaded.exports.useBusinessConfigPublishLifecycle;
+  return {
+    useBusinessConfigPublishLifecycle: loaded.exports.useBusinessConfigPublishLifecycle,
+    context: contextModule.exports,
+  };
 }
 
 async function explicitEmptyRoundtripBehavior() {
@@ -154,7 +157,9 @@ async function explicitEmptyRoundtripBehavior() {
     stageUnifiedDraftItem() { writeCalls += 1; }, publishDraft() { writeCalls += 1; }, rollbackPublished() { writeCalls += 1; },
     discardDraft() { writeCalls += 1; }, previewDraft() { writeCalls += 1; }, openImpactDialog() { writeCalls += 1; },
   };
-  const lifecycle = loadPublishLifecycle()(deps);
+  const publishModule = loadPublishLifecycle();
+  deps.editorIntentOwner = publishModule.context.createContextRequestOwner(deps.requestIdentity);
+  const lifecycle = publishModule.useBusinessConfigPublishLifecycle(deps);
   await lifecycle.loadListSearchConfig();
   const listDirty = [refs.listColumnsText.value, refs.searchFiltersText.value, refs.searchGroupByText.value]
     .some((value, index) => normalizeNamesText(value) !== Object.values(refs.listSearchBase.value)[index]);
@@ -183,7 +188,9 @@ async function explicitEmptyRoundtripBehavior() {
     has_business_search_config: false,
   });
   messages.length = 0;
-  await loadPublishLifecycle()(deps).loadListSearchConfig();
+  const retryModule = loadPublishLifecycle();
+  deps.editorIntentOwner = retryModule.context.createContextRequestOwner(deps.requestIdentity);
+  await retryModule.useBusinessConfigPublishLifecycle(deps).loadListSearchConfig();
   if (refs.listColumnsText.value !== 'name' || refs.searchFiltersText.value !== 'state' || refs.searchGroupByText.value !== 'company_id') {
     errors.push('absent list/search contracts did not expose suggestions');
   }
