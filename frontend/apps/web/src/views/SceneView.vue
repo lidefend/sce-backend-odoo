@@ -132,6 +132,7 @@
               appearance="surface-tile"
               :disabled="!isHandlingEntryActionable(item)"
               :title="item.business_category_code"
+              :data-action-xmlid="item.action_xmlid"
               @click="openHandlingEntry(item)"
             >
               <span>{{ item.label }}</span>

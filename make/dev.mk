@@ -1805,9 +1805,9 @@ verify.local.dev.enterprise_configuration.consumer.run: guard.prod.forbid local.
 	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  SC_ENVIRONMENT=dev CANDIDATE_GIT_HEAD="$$RUNTIME_CANDIDATE_SHA" \
 	  TEST_TOOL_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
-	  CONFIG_ADMIN_LOGIN="$${SC_CONFIG_ADMIN_LOGIN:-sc_demo_business_config}" \
-	  CONFIG_ADMIN_USER_ID="$${SC_CONFIG_ADMIN_USER_ID:-24}" \
-	  CONFIG_COMPANY_ID="$${SC_CONFIG_COMPANY_ID:-1}" \
+	  CONFIG_ADMIN_LOGIN="$${SC_CONFIG_ADMIN_LOGIN:?SC_CONFIG_ADMIN_LOGIN is required}" \
+	  CONFIG_ADMIN_USER_ID="$${SC_CONFIG_ADMIN_USER_ID:?SC_CONFIG_ADMIN_USER_ID is required}" \
+	  CONFIG_COMPANY_ID="$${SC_CONFIG_COMPANY_ID:?SC_CONFIG_COMPANY_ID is required}" \
 	  SCENARIO_ONLY="$(C02_SCENARIO_ONLY)" \
 	  bash scripts/verify/local_dev_enterprise_configuration_consumer.sh
 
