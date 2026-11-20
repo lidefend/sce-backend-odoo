@@ -305,6 +305,98 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 actions = [action for row in result["business_scenarios"] for action in row["actions"]]
                 self.assertEqual(bool(actions), allowed)
 
+    def test_actual_catalog_disable_action_round_trips_saved_selection(self):
+        handlers, base_env = self._handlers_and_env(can_manage=True)
+        scene_key = "project.management"
+        stored_key = business_enablement.business_key(scene_key)
+        storage_key = "sc.scene.tenant.enablement.1." + stored_key
+        params = {storage_key: "1"}
+
+        class Env(ContextEnv):
+            company = base_env.company
+            user = base_env.user
+            roots = base_env.roots
+
+            def ref(self, xmlid, raise_if_not_found=False):
+                return base_env.ref(xmlid, raise_if_not_found=raise_if_not_found)
+
+            def __getitem__(self, name):
+                runtime = _runtime_model(name, self)
+                if runtime is not None:
+                    return runtime
+                if name == "res.company":
+                    company = types.SimpleNamespace(id=1)
+                    company.exists = lambda: company
+                    return types.SimpleNamespace(browse=lambda company_id: company)
+                if name == "ir.config_parameter":
+                    def set_param(key, value):
+                        params[key] = value
+
+                    model = types.SimpleNamespace(
+                        set_param=set_param,
+                        get_param=lambda key, default="0": params.get(key, default),
+                    )
+                    return types.SimpleNamespace(sudo=lambda: model)
+                return base_env[name]
+
+        env = Env()
+        surface = copy.deepcopy(scenario_surface.load_surface())
+        surface["runtime_scope"] = "published_release"
+        focus = next(scene for scene in surface["scenarios"] if scene["key"] == scene_key)
+        focus["active"] = False
+
+        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface):
+            catalog = handlers._catalog(env, company_id=1)
+            row = next(item for item in catalog["business_scenarios"]
+                       if item["scene_key"] == scene_key)
+            self.assertTrue(row["tenant_enabled"])
+            self.assertFalse(row["product_released"])
+            self.assertEqual(row["status_label"], "企业已启用")
+            self.assertEqual(row["actions"], [
+                {"key": "disable", "label": "停用", "enabled": False},
+            ])
+
+            handler = handlers.ScenarioActivationSetHandler()
+            handler.env, handler.params = env, {}
+            action = row["actions"][0]
+            result = handler.handle({
+                "company_id": 1,
+                "scene_key": row["scene_key"],
+                "enablement_scope": row["enablement_scope"],
+                "enabled": action["enabled"],
+            })
+            self.assertTrue(result["ok"])
+            self.assertFalse(result["data"]["enabled"])
+            self.assertFalse(result["data"]["readback"]["enabled"])
+            self.assertEqual(result["data"]["stored_scene_key"], stored_key)
+            self.assertEqual(params[storage_key], "0")
+
+            reread = handlers._catalog(env, company_id=1)
+            reread_row = next(item for item in reread["business_scenarios"]
+                              if item["scene_key"] == scene_key)
+            self.assertFalse(reread_row["tenant_enabled"])
+            self.assertEqual(reread_row["status_label"], "未启用")
+            self.assertEqual(reread_row["actions"], [])
+
+            rejected = handler.handle({
+                "company_id": 1,
+                "scene_key": scene_key,
+                "enablement_scope": business_enablement.BUSINESS_SCOPE,
+                "enabled": True,
+            })
+            self.assertFalse(rejected["ok"])
+            self.assertEqual(rejected["error"]["code"], 409)
+            self.assertEqual(params[storage_key], "0")
+
+            focus["active"] = True
+            reactivated = handlers._catalog(env, company_id=1)
+            reactivated_row = next(item for item in reactivated["business_scenarios"]
+                                   if item["scene_key"] == scene_key)
+            self.assertFalse(reactivated_row["tenant_enabled"])
+            self.assertEqual(reactivated_row["actions"], [
+                {"key": "enable", "label": "启用", "enabled": True},
+            ])
+
     def test_workspace_handler_uses_actual_publication(self):
         handlers, env = self._handlers_and_env()
         handler = handlers.WorkspaceScenarioProjectionGetHandler()
@@ -1424,6 +1516,125 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         # Enabled scenarios cannot create entries when the native authority is empty.
         self.assertEqual(scenario_surface.project_authorized_nav(
             nav=[], route_authority={}, surface=surface)["tree"]["domains"], [])
+
+    def test_inactive_saved_selection_is_disableable_but_never_navigable(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "test.scene",
+                "name": "Inactive scene",
+                "active": False,
+                "intents": {"view": ["test.menu"]},
+            }],
+        }
+        stored = {business_enablement.business_key("test.scene"): True}
+        rows = business_enablement.business_catalog(
+            surface, {}, stored, can_manage=True,
+        )
+        row = rows[0]
+        self.assertTrue(row["tenant_enabled"])
+        self.assertFalse(row["product_released"])
+        self.assertEqual(row["status_label"], "企业已启用")
+        self.assertEqual(row["release_label"], "未发布")
+        self.assertEqual(row["actions"], [
+            {"key": "disable", "label": "停用", "enabled": False},
+        ])
+        self.assertEqual(stored, {business_enablement.business_key("test.scene"): True})
+
+        index = scenario_surface.build_menu_index(surface)
+        filtered = business_enablement.filter_business_authority(
+            {"primary_actions": [{"menu_id": 1, "action_id": 11, "menu_xmlid": "test.menu"}]},
+            surface_index=index,
+            enabled={"test.scene": True},
+            entries=[{"code": "test.scene", "target": {"menu_xmlid": "test.menu"}}],
+            menu_xmlids_by_id={1: "test.menu"},
+        )
+        self.assertEqual(filtered["primary_actions"], [])
+        self.assertEqual(
+            filtered["denied_actions"][0]["reason_code"],
+            "BUSINESS_SCENARIO_NOT_ENABLED",
+        )
+
+    def test_inactive_false_selection_has_no_enable_action(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "test.scene",
+                "active": False,
+                "intents": {"view": ["test.menu"]},
+            }],
+        }
+        rows = business_enablement.business_catalog(
+            surface,
+            {"test.menu": "released"},
+            {business_enablement.business_key("test.scene"): False},
+            can_manage=True,
+        )
+        self.assertFalse(rows[0]["tenant_enabled"])
+        self.assertFalse(rows[0]["product_released"])
+        self.assertEqual(rows[0]["actions"], [])
+
+    def test_saved_selection_is_independent_of_current_product_availability(self):
+        active = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "test.scene",
+                "active": True,
+                "intents": {"view": ["test.menu"]},
+            }],
+        }
+        inactive = copy.deepcopy(active)
+        inactive["scenarios"][0]["active"] = False
+        for enabled in (False, True):
+            with self.subTest(enabled=enabled):
+                stored = {business_enablement.business_key("test.scene"): enabled}
+                available = business_enablement.business_catalog(
+                    active, {"test.menu": "hidden"}, stored, can_manage=True,
+                )[0]
+                unavailable = business_enablement.business_catalog(
+                    inactive, {"test.menu": "released"}, stored, can_manage=True,
+                )[0]
+                self.assertIs(available["tenant_enabled"], enabled)
+                self.assertIs(unavailable["tenant_enabled"], enabled)
+                self.assertEqual(stored, {business_enablement.business_key("test.scene"): enabled})
+                self.assertNotIn("enable", [action["key"] for action in unavailable["actions"]])
+
+    def test_saved_true_without_qualified_menu_keeps_only_disable(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{"key": "test.scene", "active": True, "intents": {}}],
+        }
+        row = business_enablement.business_catalog(
+            surface,
+            {},
+            {business_enablement.business_key("test.scene"): True},
+            can_manage=True,
+        )[0]
+        self.assertTrue(row["tenant_enabled"])
+        self.assertFalse(row["product_released"])
+        self.assertEqual(row["released_menu_count"], 0)
+        self.assertEqual(row["actions"], [
+            {"key": "disable", "label": "停用", "enabled": False},
+        ])
+
+    def test_saved_selection_is_readable_without_maintenance_rights(self):
+        surface = {
+            "runtime_scope": "published_release",
+            "scenarios": [{
+                "key": "test.scene",
+                "active": False,
+                "intents": {"view": ["test.menu"]},
+            }],
+        }
+        row = business_enablement.business_catalog(
+            surface,
+            {},
+            {business_enablement.business_key("test.scene"): True},
+            can_manage=False,
+        )[0]
+        self.assertTrue(row["tenant_enabled"])
+        self.assertEqual(row["status_label"], "企业已启用")
+        self.assertEqual(row["actions"], [])
 
     def test_management_actions_follow_native_rights_and_release_state(self):
         surface = {"scenarios": [{"key": "test", "intents": {"view": ["test.menu"]}}]}

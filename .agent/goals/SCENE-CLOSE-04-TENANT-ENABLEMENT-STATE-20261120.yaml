@@ -1,0 +1,57 @@
+schema_version: 1
+goal:
+  id: SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120
+  title: enterprise_scene_saved_selection_and_current_availability
+  status: verification_pending
+  formal_product_layer: P1
+  layer_target: >-
+    Construction enterprise business-scene catalog enablement facts and the
+    existing frontend activation consumer.
+  module:
+    - addons/smart_construction_scene
+    - frontend/apps/web
+    - scripts/verify
+    - config/ci
+    - docs/ops/iterations
+  standard_vs_user_specific: construction_product_standard_with_company_runtime_selection
+  objective: >-
+    Preserve and expose the enterprise's saved scene-enablement choice
+    independently from current product availability, while retaining disable
+    capability for scenes that remain in the current published composition and
+    retaining all existing navigation, authorization and release restrictions.
+  product_result: >-
+    Administrators can see that a scene remains enabled for their company even
+    when the product definition is no longer currently available, can disable
+    that saved selection through the existing write/readback contract, and see
+    the resulting catalog and navigation state after authoritative refresh.
+  why_here: >-
+    The persisted enterprise choice and current product availability are
+    construction-scene domain facts produced by smart_construction_scene.
+    Backend enablement must own their projection; the frontend already consumes
+    declared actions and must not infer a second state model.
+  why_not_elsewhere:
+    - The frontend must not override tenant_enabled or manufacture disable actions.
+    - Product publication must continue to own current scene availability and release blockers.
+    - Native authorization, company scope and record rules continue to own executable access.
+    - Historical keys absent from the current catalog must not be resurrected into navigation.
+  blast_radius:
+    behavior:
+      - enterprise scene catalog status, actions and enablement blockers
+      - existing scenario activation write/readback and refresh
+      - navigation eligibility under inactive or unreleased product scenes
+      - frontend activation lifecycle consumption
+  exclusions:
+    - historical scene-key discovery, restoration or cleanup
+    - multi-product enterprise scene context and migration
+    - backend security, workflow or publication-service redesign
+    - ORM, module baselines, module upgrade and environment rebuild
+    - fixture reset, browser matrix, deployment and product acceptance
+  rollback: >-
+    Revert the catalog projection and its focused regressions together. Existing
+    persisted company selections, release snapshots and native authority remain
+    unchanged; navigation continues to fail closed for unavailable scenes.
+  completion:
+    batch: pending_remote_checks_and_independent_review
+    mainline_integration: not_run
+    deployment: not_run
+    user_acceptance: not_run

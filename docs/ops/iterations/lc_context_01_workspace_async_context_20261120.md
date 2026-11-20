@@ -52,7 +52,18 @@ Branch: `feature/lc-context-01-workspace-async-context-20261120`
 - `business_config_context_race`：12 组受控异步场景通过，覆盖共享 busy 归属、A/B 目录竞态、A→B→A、同对象双请求、旧失败、列表/分析与审批两个方向的跨面板旧回包、新面板未保存修改、无效读取暂存、版本确认切换、有效版本标签与稳定暂存。
 - 审批目标：后端 26+8 项及前端 17 个案例通过；包含读取后 epoch 变化禁止保存、确认前绑定后上下文变化禁止续办、旧审批回包不抢回面板、稳定保存正例，以及第一步写入期间打开列表或分析仍完成原保存。
 - `verify.frontend.pr.unit`：完整标准前端聚合入口通过，实际包含两个 business-config 行为目标。
-- `make ci.local.iteration`：11 个受影响目标执行通过，无 ORM、浏览器或 full acceptance 目标。
+- `make ci.local.iteration`：12 个受影响目标通过；最终修订实际重跑 6 个变化输入并复用 6 个未变通过目标。无 ORM、浏览器或 full acceptance 目标。
 - `ci.delivery.freeze.prepare`：通过，生成证据与源码输入一致。
 
 ORM、模块基线、模块升级、fixture、浏览器矩阵、部署和 `verify.business_config.full_acceptance` 未执行。
+
+## 主线集成
+
+- PR：#947
+- 候选 HEAD：`8b4a0039b38c6fb9913448bd896a571b1bd4013a`
+- Base：`d10d2b42d747c89be39abb89dac25bd6051812eb`
+- Squash 合并提交 / 当前 main：`80f98fa25deea70f658ffecd93b0668103928c85`
+- 候选树：`4f27a5a434beba68c0e236839251c4f84d91a60c`
+- 合并树：`4f27a5a434beba68c0e236839251c4f84d91a60c`
+
+四项必需检查均在候选 HEAD 上成功，候选与主线源码树一致。本批次与主线集成为完成状态；版本发布和产品交付验收未执行。

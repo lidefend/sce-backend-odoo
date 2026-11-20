@@ -1,0 +1,214 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120",
+  "branch": "fix/scene-close-04-tenant-enablement-state-20261120",
+  "baseline_sha": "80f98fa25deea70f658ffecd93b0668103928c85",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
+  "record": "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+    ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
+    ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+    ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "config/ci/contract_only_scopes.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
+    "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Contract-only scene catalog, activation/readback and frontend consumer validation; no database, service, module upgrade or browser access"
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.daily.permission_truth.capability.orm"
+    ],
+    "reason": "Owner-selected contract-only validation; ORM, module baselines, module upgrade, fixture, browser matrix, deployment and full acceptance are excluded."
+  },
+  "stages": [
+    {
+      "id": "OWNER-PREP",
+      "status": "completed",
+      "owner": "integration_writer",
+      "exit": "Branch, run and pure-contract responsibility established on main 80f98fa2"
+    },
+    {
+      "id": "PRODUCT-CATALOG",
+      "status": "completed",
+      "owner": "single_writer",
+      "exit": "Saved enterprise selection and current product availability are projected independently with safe disable, authoritative readback and unchanged navigation eligibility"
+    },
+    {
+      "id": "CANDIDATE-CLOSE",
+      "status": "active",
+      "owner": "integration_writer",
+      "exit": "Affected pure/consumer validation, generated evidence, exact-head publication, required CI and independent review are complete"
+    }
+  ],
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+        ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
+        ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+        ".agent/runs/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "navigation_publication_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "inputs": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_center_projection": {
+      "target": "verify.scenario.center_projection.guard",
+      "inputs": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_workspace_scenario": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_fact_boundary": {
+      "target": "verify.scene.fact_data.boundary.unit",
+      "inputs": [
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "scripts/verify/scene_fact_data_boundary_guard.py",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_selection": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_results": {
+    "status": "passed",
+    "gate_responsibility": [
+      {
+        "gate": "exact base/head identity",
+        "state": "passed",
+        "owner_target": "make agent.run.resume; frontend_dev_incremental --plan-worktree",
+        "result": "Base 80f98fa25 matched origin/main; worktree HEAD plus owned dirty scope resolved; registrationMissingTargets and unmappedPaths were empty"
+      },
+      {
+        "gate": "owning module baseline coverage",
+        "state": "excluded",
+        "owner_target": "smart_construction_scene ORM baseline",
+        "result": "Explicitly excluded by the owner's contract-only scope; no ORM, module upgrade, fixture or browser evidence is claimed"
+      },
+      {
+        "gate": "existing affected test families",
+        "state": "passed",
+        "owner_target": "verify.navigation.publication_consumers.unit",
+        "result": "266 prerequisite and target tests passed, including the existing tenant scene activation suite"
+      },
+      {
+        "gate": "focused changed tests",
+        "state": "passed",
+        "owner_target": "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "result": "103 tests passed; includes actual catalog -> disable action -> handler write/readback -> catalog reread and the inactive/rights/menu/action matrix"
+      },
+      {
+        "gate": "contract and frontend consumer",
+        "state": "passed",
+        "owner_target": "verify.frontend.workspace_scenario_lifecycle.unit",
+        "result": "471 prerequisite, lifecycle and persistence cases passed; business_scenario_unavailable_disable_test executed 5 cases with enabled:false request, readback, navigation refresh and catalog replacement"
+      },
+      {
+        "gate": "frontend source lint/type/build",
+        "state": "excluded",
+        "owner_target": "frontend source lanes",
+        "result": "Only an existing TypeScript consumer test changed; it executed through esbuild in the registered lifecycle target. No frontend production source changed"
+      },
+      {
+        "gate": "runtime/browser journey",
+        "state": "excluded",
+        "owner_target": "governed runtime and browser lanes",
+        "result": "Excluded by owner contract-only scope; no runtime or user-acceptance result is claimed"
+      },
+      {
+        "gate": "remote required gates",
+        "state": "not_run",
+        "owner_target": "public_guard; professional_quality_gate; merge_policy_gate; frontend_release_gate",
+        "result": "Pending clean commit, exact-head PR publication and current-base CI"
+      }
+    ],
+    "passed": [
+      "addons/smart_construction_scene/tests/test_tenant_scene_activation.py: 103 tests passed",
+      "verify.navigation.publication_consumers.unit: 266 prereq/target tests passed",
+      "verify.frontend.workspace_scenario_lifecycle.unit: 471 prereq/lifecycle/persistence cases passed; unavailable disable case=5",
+      "verify.agent.ledger.unit: 18 tests passed",
+      "verify.ci.workflow.contract: 475 tests passed",
+      "verify.scenario.center_projection.guard: 9 tests passed",
+      "verify.agent.resume.unit: 67 tests passed",
+      "verify.frontend.dev.incremental.unit: 187 tests passed",
+      "verify.scene.fact_data.boundary.unit: 1 test passed",
+      "make ci.local.iteration: exit 0; 5 required targets executed with non-zero logs and no reuse",
+      "frontend_dev_incremental --plan-worktree: executionReady=true; registrationMissingTargets=[]; unmappedPaths=[]; ORM only in excludedTargets",
+      "ci.delivery.freeze.prepare: passed; test inventory, complexity report, split plan and all content-bound generated evidence are current"
+    ],
+    "not_run": [
+      "ORM and module baselines are excluded by owner continuation",
+      "module upgrade, browser matrix, fixture, deployment and full acceptance are excluded",
+      "Current-head PR required checks have not yet run"
+    ]
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the reconciled 13-file candidate, publish the branch through the governed PR entrypoint, then verify all four required checks on the exact head."
+}
