@@ -29,7 +29,8 @@
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
-    "scripts/verify/scenario_center_projection_guard.py"
+    "scripts/verify/scenario_center_projection_guard.py",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
   ],
   "environment": {
     "kind": "runtime",
@@ -162,10 +163,24 @@
         "make/ci.mk",
         "docs/audit/workflow_state_unification_plan.md"
       ]
+    },
+    "readiness_type_import": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish same Draft PR through exact-head preflight, dispatch full candidate lane, collect original failure-chain and coverage reconciliation evidence. No merge until owner independent re-review.",
+  "next_exact_step": "Verify P4 type-only import against lifecycle/full lint/strict typecheck; gather remaining 70f results, publish same Draft and dispatch exact new candidate. Existing 7ee runtime receipts remain explicitly scoped.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -408,6 +423,35 @@
       "status": "no_new_blocker_for_draft",
       "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
       "scope": "Read-only diff/identity review; no remote review or merge approval"
+    },
+    "remote_frontend_70f": {
+      "status": "failed",
+      "head": "70f9cdaf7d0331c9015c3f8d4571bc3b0c560c05",
+      "run": 44681625331,
+      "log": ".runtime/ci-recovery/remote-frontend-70f.log",
+      "reason": "New base PR949 test imported requireReadiness as runtime value only used in Parameters<typeof>. Full ESLint rejects unused value; browser and managed ORM not reached. Correct to type-only import, preserve assertions."
+    },
+    "readiness_type_import": {
+      "status": "passed",
+      "targets": [
+        "verify.frontend.workspace_scenario_lifecycle.unit",
+        "verify.frontend.lint",
+        "verify.frontend.typecheck.strict"
+      ],
+      "log": ".runtime/ci-recovery/readiness-type-import.log",
+      "reason": "Actual lifecycle assertions retained, full lint zero errors, strict typecheck exits zero."
+    },
+    "remote_backend_70f": {
+      "status": "shards_passed_coverage_failed",
+      "head": "70f9cdaf7d0331c9015c3f8d4571bc3b0c560c05",
+      "run": 44681625378,
+      "affected_collection": {
+        "TestCompanyRouteScopeCache": 6,
+        "TestProductPolicyFactAuthority": 23,
+        "TestScenarioDirectInitialization": 13
+      },
+      "coverage_log": ".runtime/ci-recovery/remote-coverage-70f.log",
+      "reason": "All four shards pass; coverage correctly rejects failed frontend managed ORM producer; professional quality still running."
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
