@@ -32,7 +32,9 @@
       "target": "verify.test.coverage.registry",
       "inputs": [
         "scripts/verify/test_coverage_registry.yaml",
-        "scripts/verify/test_coverage_report.py",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "make/guards.mk",
         "addons"
       ],
       "kind": "offline"
@@ -97,7 +99,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Complete acceptance schema upgrade and registry restart, validate fixture ORM, then run mapped ci.local.iteration and exact-head review/publication.",
+  "next_exact_step": "Complete acceptance upgrade, bind current clean artifact and rerun failed fixture contract consumers; refresh independent review and publish review-only candidate through governed Make.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -107,7 +109,13 @@
     "industry_baseline": {
       "status": "passed",
       "tests": 566,
-      "receipt": ".runtime/test-baseline/1795144350779613509/receipt.json"
+      "receipt": ".runtime/test-baseline/1795144350779613509/receipt.json",
+      "selection": "sc_smoke,sc_gate",
+      "source_identity": "d2fb27530f5c1bf56719660af64199c6b343d8ff plus recorded dirty source fingerprint",
+      "affected_families": {
+        "TestProductPolicyFactAuthority": 23,
+        "TestScenarioDirectInitialization": 13
+      }
     },
     "publication_unit": {
       "status": "passed",
@@ -141,7 +149,7 @@
       "failures": 29,
       "errors": 75,
       "receipt": ".runtime/test-baseline/1795144669825946926/receipt.json",
-      "reason": "Standalone smart_core carrier lacks industry models and HTTP namespace. This diagnostic is not a passed baseline; actual CI tags separately verified."
+      "reason": "Observed failures include missing industry models and namespace, maintenance requester identity, signed capability, ACTION_VIEW_SCOPE_MISMATCH, and business-config/form contract assertions. Causes beyond demonstrated missing prerequisites remain unclassified; not a passed baseline."
     },
     "static_consumers": {
       "status": "passed",
@@ -151,6 +159,28 @@
     "affected_orm": {
       "status": "passed",
       "log": ".runtime/ci-recovery/affected-orm.log"
+    },
+    "platform_bundle_diagnostic": {
+      "status": "failed",
+      "tests": 638,
+      "failures": 56,
+      "errors": 88,
+      "receipt": ".runtime/test-baseline/1795146387016971210/receipt.json",
+      "selection": "/smart_core",
+      "template": "smart_construction_bundle",
+      "reason": "Broad diagnostic includes authentication, maintenance identity, contract-test prerequisites and installed-industry interaction failures. Not a passed module baseline; classification/merge readiness remain open."
+    },
+    "iteration": {
+      "status": "passed",
+      "head": "998ffcc6b8d9fd7f57718a57f749f80cd129264c",
+      "log": ".runtime/ci-recovery/iteration-2.log"
+    },
+    "independent_review": {
+      "status": "draft_only",
+      "head": "998ffcc6b8d9fd7f57718a57f749f80cd129264c",
+      "report": ".runtime/ci-recovery/independent-review-998ffcc.json",
+      "findings": "No confirmed runtime/assertion defect. Correct coverage inputs; full module baseline and acceptance/remote evidence prevent merge-readiness claim."
     }
-  }
+  },
+  "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics."
 }
