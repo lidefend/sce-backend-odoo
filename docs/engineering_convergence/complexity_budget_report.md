@@ -27,7 +27,7 @@ Generated from repository source files. This report is informational during the 
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 3509 | Python source | `addons/smart_core/delivery/menu_service.py` |
+| 3564 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 3505 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
@@ -281,7 +281,7 @@ Generated from repository source files. This report is informational during the 
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 3509 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
+| 3564 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 3505 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |

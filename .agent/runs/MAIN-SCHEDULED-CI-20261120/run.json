@@ -180,7 +180,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Verify P4 type-only import against lifecycle/full lint/strict typecheck; gather remaining 70f results, publish same Draft and dispatch exact new candidate. Existing 7ee runtime receipts remain explicitly scoped.",
+  "next_exact_step": "Freeze multi-XMLID identity correction; run affected P0/industry/navigation ORM and sealed 49 fixture; review exact HEAD and publish same Draft full candidate. Retain passed af7 long-chain evidence with original SHA; no merge.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -452,6 +452,37 @@
       },
       "coverage_log": ".runtime/ci-recovery/remote-coverage-70f.log",
       "reason": "All four shards pass; coverage correctly rejects failed frontend managed ORM producer; professional quality still running."
+    },
+    "remote_af7_full_candidate": {
+      "status": "passed",
+      "head": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
+      "base": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+      "runs": {
+        "public": 44683498507,
+        "professional_backend_coverage": 44683498505,
+        "frontend_managed_orm": 44683498565,
+        "merge_policy": 44683498562,
+        "release_candidate": 44683498570
+      },
+      "limitation": "Original long CI chain recovered, but subsequent independent multi-XMLID S2 means no merge approval; new identity correction needs new exact-head evidence.",
+      "managed_fixture_tests": 49,
+      "logs": [
+        ".runtime/ci-recovery/remote-frontend-af7.log",
+        ".runtime/ci-recovery/remote-quality-af7.log"
+      ]
+    },
+    "action_identity_review_followup": {
+      "status": "unit_passed_runtime_pending",
+      "logs": [
+        ".runtime/ci-recovery/action-identity-before.log",
+        ".runtime/ci-recovery/action-identity-final-unit.log",
+        ".runtime/ci-recovery/action-identity-related.log"
+      ],
+      "before_failures": 15,
+      "before_errors": 0,
+      "publication_tests": 49,
+      "reason": "Resolve role exclusions to real action model/id and close all executable buckets; unknown policy or candidate identity explicitly denied, lawful missing XMLID remains allowed. S3 top scope/gates corrected.",
+      "related_tests": 462
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",

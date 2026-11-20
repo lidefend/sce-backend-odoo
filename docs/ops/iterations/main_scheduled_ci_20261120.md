@@ -2,26 +2,32 @@
 
 Current base: f2f7fd02f0f28f84e6190102f3bf559db0c28457. Original base: d2fb27530f5c1bf56719660af64199c6b343d8ff. Branch: fix/main-scheduled-ci-20261120.
 
-Formal Product Layer: P4. Layer Target: CI regression prerequisites. Modules: acceptance fixture and owning module tests. Standard vs User-Specific: verification mechanism. Why Here: tests must explicitly establish the publication they exercise. Why Not Elsewhere: runtime must not restore draft fallback. Blast Radius: test and verification carriers only; exclude all preexisting worktrees and persistent runtime data.
+## Current scope and gate responsibilities
 
-| Gate | State | Owner | Reason |
-|---|---|---|---|
-| Identity | required | exact HEAD and dirty scope | Always |
-| Existing affected ORM families | required | local.test.test / acceptance.frontend.fixture_orm | Changed test prerequisites |
-| Module baseline | required | local.test.test | Existing families changed; unknown impact fails closed |
-| Coverage registry | required | verify.test.coverage.registry | Missing tag |
-| Iteration | required | ci.local.iteration | Publication precondition |
-| Frontend lint/type/build | excluded | none | No frontend source changes |
-| Browser | required, not_run | governed frontend release audit | Scheduled missing released payment route |
-| Remote gates | required, not_run | exact-head PR and scheduled equivalent | Local tests are not remote success |
+Formal Product Layers: **P0 / P1 / P4**. P0 `smart_core` owns native executable authority and role action identity admission, including multi-XMLID record identity. P1 `smart_construction_core` owns industry workflow declarations and scenario navigation composition. P4 owns real publication fixtures, verification probes/guards, test type imports and evidence. These are platform mechanisms, industry standards and verification prerequisites respectively; no P2/P3 customer configuration or frontend product-semantic change is included. All edits are confined to this recovery worktree. The owner explicitly confirmed that the full mainline/scheduled-equivalent candidate chain is the intended recovery scope.
+
+| Gate | Responsibility | Current evidence / remaining requirement |
+|---|---|---|
+| Identity and independent review | required for each published candidate | Clean full SHA, exact base, scoped independent review; keep #950 Draft |
+| P0 identity/route contracts | required | Multi-XMLID, metadata failure, unresolved policy, model-scoped identity, lawful no-XMLID action, and discovery/fallback real-method regressions |
+| P1 owning families | required, reusable only for unchanged inputs | Workflow/scenario changes and dependency-selected ORM; original assertions retained |
+| Main acceptance fixture | required | 49/49 passed at 7ee; P0 identity change requires new affected runtime evidence |
+| Module / affected ORM coverage | required | Scoped owning 609 passed at 7ee; exact receipt scope retained; broad platform diagnostics remain failed, not presented as a green baseline |
+| Coverage registry and execution reconciliation | required | Registry guard plus final remote managed-ORM producer/receipt reconciliation |
+| Frontend lint, strict typecheck, build and browser | required | Test import fix passed full lint and strict typecheck; full candidate lane owns build and actual browser validation |
+| Local iteration and publication | required | Governed `ci.local.iteration`, public scope, generated evidence and fast-forward checks |
+| Four remote required gates | required on final exact HEAD/base | Full `ci:candidate` is intentional for this recovery; partial shards or old HEAD success cannot substitute |
+| Production deployment / customer data changes | excluded | No deployment, merge or customer data mutation authorized by this batch |
+
+The sections below retain the chronology of investigation and earlier attempts. Their old statuses and scope statements describe those historical stages; this table and the current run/PR evidence index define the current candidate.
 
 Failures: main 44659427467 managed ORM 12 failures/1 error; scheduled 44643045425 missing admin_close_01, scene ORM 2 failures, core ORM 3 errors; scheduled 44645213929 missing released payment navigation. Downstream merge/release gates correctly reject failures.
 
 The primary worktree run is superseded; two other worktrees are clean detached archives. The product worktree remains active; this independent CI recovery is the second active writer.
 
-## Expanded owning layer
+## Historical initial expansion into P0
 
-P0 smart_core DeliveryEngine: native route discovery lost primary actions because build_route_authority received no navigation. Supply the native ACL/action-group and role-filtered tree, preserving product metadata separately. No industry/menu special case. P0 baseline and affected scene/acceptance consumers required. P1/P2/P3 runtime unchanged.
+P0 smart_core DeliveryEngine: native route discovery lost primary actions because build_route_authority received no navigation. Supply the native ACL/action-group and role-filtered tree, preserving product metadata separately. No industry/menu special case. At that initial stage P0 baseline and affected scene/acceptance consumers were required; later P1 workflow/scenario changes are included in the current scope above.
 
 Industry CI selection sc_smoke,sc_gate passed 566 tests (baseline HEAD plus recorded dirty source; affected ProductPolicyFactAuthority 23 and ScenarioDirectInitialization 13 cases were collected); initial focused family passed 23; publication unit passed 41; coverage registry passed. Source inputs unchanged since industry baseline except this result metadata. Acceptance attempt failed on missing schema column, not a valid candidate result. Upgrade required before retry.
 
@@ -104,3 +110,11 @@ This evidence-only follow-up changes no runtime/test inputs. Exact-head publicat
 The exact-head publication preflight and public guard passed. Full frontend run `44681625331` stopped in full ESLint before browser/managed ORM: `workspace_scenario_lifecycle_test.ts:1078` imported `requireReadiness` as a value used only by `Parameters<typeof requireReadiness>`. Blame identifies the synchronized base PR949 (`f2f7fd02`). P4 correction makes this a type-only import; the dynamically initialized composable, exact parameter type and all behavioral assertions are unchanged. Required validation: actual lifecycle test, full frontend lint and strict typecheck. Backend runtime and ORM test inputs are unchanged, so existing scoped 7ee 49/609 receipts are retained, not rewritten. Remote frontend/full coverage remain failed/pending and require a new exact-head candidate. No workflow exemption or lint-rule suppression.
 
 The type-only correction passed the actual lifecycle target, full lint (zero errors) and strict typecheck (`.runtime/ci-recovery/readiness-type-import.log`). Independent read-only review confirmed type erasure preserves initialization order and assertions. All four 70f backend shards passed; logs explicitly collect CompanyRouteScopeCache 6, ProductPolicyFactAuthority 23 and ScenarioDirectInitialization 13. Coverage reconciliation correctly rejected the failed frontend producer (`.runtime/ci-recovery/remote-coverage-70f.log`). No coverage exemption is needed; a successful new frontend run is required.
+
+### Review follow-up: stable action record identity (S2) and current scope (S3)
+
+The af7 review showed that an action with multiple XMLIDs can return a different name from `get_external_id()`, bypassing string-only role action exclusions. The P0 authority producer now records the actual action model in both native and policy entries and closes all four executable buckets against policy references resolved to `(model, id)`. Display XMLID lookup does not decide authorization. Policy references that cannot resolve to an existing supported action produce explicit `ROLE_ACTION_POLICY_UNRESOLVED` denial; missing candidate model identity produces `ROLE_ACTION_IDENTITY_UNRESOLVED`. No-blocklist roles and genuine actionless scene declarations keep their existing behavior. A valid action without an XMLID remains allowed when its record is not blocked and existing ACL/group checks pass.
+
+The true-method regression failed on af7 with 15 assertion failures and no runtime errors, then passed after the identity fix. It covers both discovery and published-policy admission, alternate XMLID choice, batch/singleton metadata failures, missing/invalid policy references, legal no-XMLID discovery and same-ID/different-model identity. Existing canonical cases remain. The top-level scope and gate table now reflect P0/P1/P4 and required frontend checks, closing the stale P4-only summary. This is a further P0 correction; existing af7 remote results remain af7 evidence, not success for the new candidate.
+
+Before publishing the identity correction, af7 completed **all four required checks plus release_candidate_gate successfully**. Its complete browser release audit passed and the same remote fixture producer executed **49 tests, zero failures/errors**; coverage reconciliation passed. Logs: `.runtime/ci-recovery/remote-frontend-af7.log`, `.runtime/ci-recovery/remote-quality-af7.log`. This proves recovery of the original long CI chain at af7, while the independent S2 still requires this new correction and new candidate validation. The identity correction passes 30 publication tests plus 15/4 companion tests and 462 related navigation/metadata/consumer tests. The four bucket cases now also run the actual build→enabled-scene filter→route validator chain with bounded ORM facts; these remain pure contract tests, not real ORM evidence.
