@@ -1,23 +1,19 @@
 # -*- coding: utf-8 -*-
-"""Prepare the published product surface required by local.dev acceptance.
-
-Execute only through ``make local.dev.product_release.prepare`` in the
-registered ``sc-local-dev / sc_dev_demo`` profile. The command uses the
-existing Odoo product release services; it does not insert snapshot rows or
-define product policy itself.
-"""
+"""Export the approved product policy from the local demo database."""
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
+from pathlib import Path
 
 
 EXPECTED_DATABASE = "sc_dev_demo"
+EXPECTED_PLATFORM_CONTROL_DATABASE = "sc_platform_control"
 EXPECTED_ENVIRONMENT = "dev"
 PRODUCT_KEY = "construction.standard"
-CATALOG_SOURCE_DB_PARAM = "smart_core.release_operator.catalog_source_db"
-PLATFORM_RELEASE_DB_PARAM = "smart_core.platform_release_db"
+ARTIFACT_SCHEMA = "sce.local_platform_release_source.v1"
 
 
 def validate_identity(*, database, environment, source_revision):
@@ -46,34 +42,86 @@ def release_version(source_revision):
     return f"local-dev-{revision[:12]}"
 
 
-def prepare_product_release(env, *, source_revision, environment):
+def validate_release_databases(*, catalog_source_db, platform_release_db):
+    catalog_source_db = str(catalog_source_db or "").strip()
+    platform_release_db = str(platform_release_db or "").strip()
+    if catalog_source_db != EXPECTED_DATABASE:
+        raise RuntimeError(
+            f"LOCAL_DEV_PRODUCT_RELEASE_CATALOG_SOURCE_DENIED:{catalog_source_db}"
+        )
+    if platform_release_db != EXPECTED_PLATFORM_CONTROL_DATABASE:
+        raise RuntimeError(
+            f"LOCAL_DEV_PRODUCT_RELEASE_PLATFORM_DATABASE_DENIED:{platform_release_db}"
+        )
+    if catalog_source_db == platform_release_db:
+        raise RuntimeError("LOCAL_DEV_PRODUCT_RELEASE_DATABASE_SEPARATION_REQUIRED")
+    return {
+        "catalog_source_db": catalog_source_db,
+        "platform_release_db": platform_release_db,
+    }
+
+
+def _stable_sha256(value):
+    payload = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        default=str,
+    )
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def prepare_product_release(env, *, source_revision, environment, artifact_path):
     database = str(getattr(getattr(env, "cr", None), "dbname", "") or "").strip()
     identity = validate_identity(
         database=database,
         environment=environment,
         source_revision=source_revision,
     )
+    release_databases = validate_release_databases(
+        catalog_source_db=database,
+        platform_release_db=EXPECTED_PLATFORM_CONTROL_DATABASE,
+    )
+    from odoo import api
     from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
         EditionReleaseSnapshotService,
     )
-    from odoo.addons.smart_core.delivery.effective_delivery_inputs import (
-        _load_platform_release_gate,
+    from odoo.addons.smart_core.delivery.product_policy_service import (
+        ProductPolicyService,
+    )
+    from odoo.addons.smart_core.delivery.product_scene_composition import (
+        compose_product_policy,
     )
 
-    params = env["ir.config_parameter"].sudo()
-    before = {
-        "catalog_source_db": str(params.get_param(CATALOG_SOURCE_DB_PARAM, "") or ""),
-        "platform_release_db": str(params.get_param(PLATFORM_RELEASE_DB_PARAM, "") or ""),
-        "snapshot_count": env["sc.edition.release.snapshot"]
-        .sudo()
-        .with_context(active_test=False)
-        .search_count([("product_key", "=", PRODUCT_KEY)]),
-    }
-    params.set_param(CATALOG_SOURCE_DB_PARAM, database)
-    params.set_param(PLATFORM_RELEASE_DB_PARAM, database)
-
-    service = EditionReleaseSnapshotService(env)
-    draft = service.build_policy_draft_contract(product_key=PRODUCT_KEY)
+    source_policy = ProductPolicyService(env).get_policy(
+        product_key=PRODUCT_KEY,
+        enforce_release=True,
+        enforce_access=True,
+        use_published_policy=False,
+    )
+    source_policy = compose_product_policy(env, source_policy)
+    composition = source_policy.get("business_scene_composition")
+    if not isinstance(composition, dict):
+        raise RuntimeError("LOCAL_DEV_PRODUCT_RELEASE_SCENE_COMPOSITION_MISSING")
+    scenarios = composition.get("scenarios")
+    if not isinstance(scenarios, list) or len(scenarios) != 46:
+        raise RuntimeError(
+            "LOCAL_DEV_PRODUCT_RELEASE_SCENE_COUNT_MISMATCH:"
+            f"{len(scenarios) if isinstance(scenarios, list) else 'invalid'}"
+        )
+    source_env = api.Environment(
+        env.cr,
+        env.uid,
+        {
+            **env.context,
+            "sc_release_catalog_source_db": database,
+        },
+    )
+    draft = EditionReleaseSnapshotService(source_env).build_policy_draft_contract(
+        product_key=PRODUCT_KEY,
+        policy_override=source_policy,
+    )
     blocking = [
         row
         for row in (draft.get("preflight_checks") or [])
@@ -82,95 +130,65 @@ def prepare_product_release(env, *, source_revision, environment):
     if blocking:
         raise RuntimeError(
             "LOCAL_DEV_PRODUCT_RELEASE_PREFLIGHT_BLOCKED:"
-            + json.dumps(blocking, ensure_ascii=False, sort_keys=True, default=str)
+            + json.dumps(
+                blocking,
+                ensure_ascii=False,
+                sort_keys=True,
+                default=str,
+            )
         )
-
-    version = release_version(identity["source_revision"])
-    result = service.freeze_release_surface(
-        product_key=PRODUCT_KEY,
-        version=version,
-        note="SCENE-PRODUCT-02 governed local.dev acceptance precondition",
-        replace_active=True,
-    )
-    snapshot = env["sc.edition.release.snapshot"].sudo().browse(
-        int(result.get("id") or 0)
-    )
-    if not snapshot.exists():
-        raise RuntimeError("LOCAL_DEV_PRODUCT_RELEASE_SNAPSHOT_NOT_FOUND")
-    if snapshot.state != "released" or not snapshot.is_active or not snapshot.active:
-        raise RuntimeError("LOCAL_DEV_PRODUCT_RELEASE_SNAPSHOT_NOT_EFFECTIVE")
-
-    active_count = (
-        env["sc.edition.release.snapshot"]
-        .sudo()
-        .with_context(active_test=False)
-        .search_count(
-            [
-                ("product_key", "=", PRODUCT_KEY),
-                ("state", "=", "released"),
-                ("is_active", "=", True),
-                ("active", "=", True),
-            ]
-        )
-    )
-    if active_count != 1:
+    if int(draft.get("page_count") or 0) != 132:
         raise RuntimeError(
-            f"LOCAL_DEV_PRODUCT_RELEASE_ACTIVE_SNAPSHOT_NOT_UNIQUE:{active_count}"
+            f"LOCAL_DEV_PRODUCT_RELEASE_PAGE_COUNT_MISMATCH:{draft.get('page_count')}"
         )
-
-    gate = _load_platform_release_gate(env, product_key=PRODUCT_KEY)
-    if not gate.get("applied") or int(gate.get("snapshot_id") or 0) != snapshot.id:
-        raise RuntimeError(
-            "LOCAL_DEV_PRODUCT_RELEASE_GATE_READBACK_MISMATCH:"
-            + json.dumps(gate, ensure_ascii=False, sort_keys=True, default=str)
-        )
+    artifact = {
+        "schema": ARTIFACT_SCHEMA,
+        "source_revision": identity["source_revision"],
+        "catalog_source_db": release_databases["catalog_source_db"],
+        "platform_release_db": release_databases["platform_release_db"],
+        "product_key": PRODUCT_KEY,
+        "release_version": release_version(identity["source_revision"]),
+        "source_policy": source_policy,
+        "source_policy_sha256": _stable_sha256(source_policy),
+        "source_draft": {
+            "fingerprint": str(draft.get("fingerprint") or ""),
+            "policy_sha256": str(draft.get("policy_sha256") or ""),
+            "page_count": int(draft.get("page_count") or 0),
+            "total_page_count": int(draft.get("total_page_count") or 0),
+            "scenario_count": len(scenarios),
+        },
+    }
+    path = Path(artifact_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_suffix(path.suffix + ".tmp")
+    temporary.write_text(
+        json.dumps(artifact, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
     return {
         "status": "PASS",
         "identity": identity,
-        "before": before,
-        "after": {
-            "catalog_source_db": str(
-                params.get_param(CATALOG_SOURCE_DB_PARAM, "") or ""
-            ),
-            "platform_release_db": str(
-                params.get_param(PLATFORM_RELEASE_DB_PARAM, "") or ""
-            ),
-            "snapshot_id": int(snapshot.id),
-            "snapshot_version": str(snapshot.version or ""),
-            "snapshot_state": str(snapshot.state or ""),
-            "snapshot_is_active": bool(snapshot.is_active),
-            "snapshot_active": bool(snapshot.active),
-            "active_snapshot_count": active_count,
-            "release_gate": {
-                key: gate.get(key)
-                for key in (
-                    "applied",
-                    "reason",
-                    "snapshot_id",
-                    "version",
-                    "page_count",
-                    "platform_db",
-                )
-            },
-        },
-        "fingerprint": str(draft.get("fingerprint") or ""),
-        "policy_sha256": str(draft.get("policy_sha256") or ""),
+        "release_databases": release_databases,
+        "artifact": str(path),
+        "artifact_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "source_policy_sha256": artifact["source_policy_sha256"],
+        "source_draft": artifact["source_draft"],
     }
 
 
 def main():
-    try:
-        result = prepare_product_release(
-            env,  # noqa: F821 - Odoo shell supplies the execution environment.
-            source_revision=os.environ.get(
-                "PRODUCT_RELEASE_SOURCE_REVISION", ""
-            ),
-            environment=os.environ.get("SC_ENVIRONMENT", ""),
-        )
-        env.cr.commit()  # noqa: F821 - explicit persistent acceptance setup.
-    except Exception:
-        env.cr.rollback()  # noqa: F821 - leave no partial release configuration.
-        raise
+    artifact_path = os.environ.get("PRODUCT_RELEASE_ARTIFACT", "").strip()
+    if not artifact_path:
+        raise RuntimeError("PRODUCT_RELEASE_ARTIFACT_REQUIRED")
+    result = prepare_product_release(
+        env,  # noqa: F821 - Odoo shell supplies the execution environment.
+        source_revision=os.environ.get(
+            "PRODUCT_RELEASE_SOURCE_REVISION", ""
+        ),
+        environment=os.environ.get("SC_ENVIRONMENT", ""),
+        artifact_path=artifact_path,
+    )
     print(
         "LOCAL_DEV_PRODUCT_RELEASE="
         + json.dumps(result, ensure_ascii=False, sort_keys=True, default=str)

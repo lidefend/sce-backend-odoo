@@ -143,27 +143,169 @@ C02 父候选：7c4c5e32fb028fc8dcdf6bd844b26ddaec4ab9ab
 sha256=4723d8e7fa8fa97e08b41da04fbc1b98673855f97cd395a56c50c44c89326c68
 ```
 
-C02-06A 结果：
+### 发布前置与 C02-06A 收口
 
-- 目录契约：`scenario_activation_catalog.v1`。
-- `row_count=92`，`business_scenarios=0`，`actionable_count=0`。
-- 92 项全部为 `PRODUCT_RELEASE_UNVERIFIED`，`product_released=false`，`enable_allowed=false`。
-- 页面明确显示“场景目录共 92 项，启用阻断：PRODUCT_RELEASE_UNVERIFIED。”，不再伪装成无目录。
-- 没有可执行启停动作，因此未写入场景选择；C02-06B 目标用户访问验证继续 `not_run`。
+前面的 `92 × PRODUCT_RELEASE_UNVERIFIED` 已确认为验收前置数据缺陷，不是场景目录消费错误：
 
-运行证据：
+- `smart_core.release_operator.catalog_source_db` 为空，发布预检回退到 `sc_demo`；
+- 当前运行库 `sc_dev_demo` 没有任何 `construction.standard` 发布快照；
+- 错误源库导致预检产生 137 个 `SOURCE_MENU_NOT_FOUND`，发布无法完成。
 
-- `.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json`
-- SHA-256：`2c56d2176d9fa1b1ea9fed63eb1cee8dd789efcbb2920ff58e7d261b37ec822a`
+新增 `local.dev.product_release.prepare`，固定当前数据库、要求完整源码 SHA、显式确认和写租约，并调用既有 `EditionReleaseSnapshotService`。实际执行后：
+
+- `catalog_source_db=sc_dev_demo`、`platform_release_db=sc_dev_demo`；
+- 唯一活动快照 ID `4`，版本 `local-dev-fab3415370b5`；
+- 状态 `released`、`is_active=true`，发布门禁 `applied=true`；
+- 发布范围 132 页；
+- policy SHA-256：`30181d9a0432ac81c5a6c71066b2bdf676edd9868a96383856ba07d1b69b6ce0`。
+
+发布前置使用以下恢复点：
+
+```text
+artifacts/local-dev/snapshots/20261120T063623Z
+```
+
+该准备只建立产品发布事实，不授予用户访问权限。配置管理员 user 24 的实际 `company_ids` 为 `[2, 1]`；本轮固定 company 1 上下文办理，不修改其公司授权。
+
+### C02-06A 真实浏览器启停
+
+最终验证身份：
+
+```text
+candidate / backend / frontend build:
+65a7bd0cd85ac5732535c670c6fff4fd4a98ed41
+```
+
+使用 user 24 / company 1，在现有 5176 候选前端完成：
+
+1. 读取目录：92 行，17 个可执行业务场景；
+2. 在页面启用 `governance.organization`；
+3. 服务端回读 `enabled=true`、company 1、`write_committed=true`、`access_granted=false`；
+4. 刷新导航并重新读取目录；
+5. 在页面停用同一场景；
+6. 服务端回读 `enabled=false`；
+7. 独立 Odoo 回读确认参数值为 `0`。
+
+浏览器实际发出两次 `scenario.activation.set`，目标值分别为 `true` 和 `false`；浏览器错误为 0。运行证据：
+
+```text
+.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json
+sha256=c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69
+```
+
+该旅程同时定位并修复了一个真实 P1 缺陷：启用后立即停用时，参数写入完成后的同请求回读可能命中旧 registry 缓存，返回 `INTERNAL_ERROR`。现在写入完成后再次清理缓存，并增加“写 false 后立即读 false”的回归。
+
+C02-06B 继续 `not_run`：企业选择、导航刷新和独立访问授权已分开；`demo_role_pm`（user 48）只读回读得到 `role_surface=pm` 和项目中心声明，但本批没有适用的业务项目旅程，且企业维护入口仍被 #950 的 P0 绑定缺口阻断。
 
 ## 本批验证结果
 
 - `verify.frontend.workspace_scenario_lifecycle.unit`：515 案通过；其中新增目录资格诊断 6 案。
 - `verify.frontend.delivery_hardening.guard`：18 项通过；真实 `StatusPanel` 的显式契约缺口渲染与无恢复按钮断言通过。
+- `verify.admin_close_01.backend.unit`：167 项通过，包含场景启停缓存失效回归。
+- `verify.local.development_lifecycle.unit`：58 项通过，包含发布前置入口身份、租约和确认断言。
 - `verify.frontend.dev.incremental.unit`：189 项通过。
-- `verify.local.dev.enterprise_configuration.consumer`：PASS；入口契约缺口可见、路由不变化、零业务写请求；场景目录 92 项且全部带发布资格阻断。
+- `verify.local.dev.enterprise_configuration.consumer` scenario-only：PASS；17 个可执行场景，启用和停用均完成回读及目录刷新。
+- 候选前端构建：PASS，后端、前端构建和 5176 服务均绑定 `65a7bd0cd85ac5732535c670c6fff4fd4a98ed41`。
 - `make ci.local.iteration`：exit 0；13 个必需目标实际执行，无缺失登记、无未映射路径、无 ORM 执行项。
 - `ci.delivery.freeze.prepare`：通过；生成测试清单 1735 条且证据 current。
 - frontend lint 无 error；strict typecheck 通过。
 
-仍未执行：C02-01 保存和回读、C02-02 至 C02-05、C02-06B 目标用户访问。这些均保留在 #950 路由生产链恢复之后。
+仍未执行：C02-01 保存和回读、C02-02 至 C02-05、C02-06B 目标用户项目/业务访问。这些保留在 #950 路由生产链恢复和适用项目旅程形成之后。
+
+## 132 个办理面业务组织设计
+
+本轮将此前 17/19 项导航分组视为过程资料，不再作为产品场景结论。新的设计输入固定为：
+
+- 一个工作台＋十个业务中心；
+- `product_menu_source` 中实际发布的 132 个办理面；
+- 原生模型和现有状态机测试所证明的业务用途。
+
+设计结果：
+
+- `config/product_scenario_organization_v1.json`：机器可读组织契约；
+- `docs/product/product_scenario_organization_v1.md`：完整总表、中心目录、工作台路由、跨中心衔接和缺口；
+- `scripts/audit/build_scenario_product_organization.py`：从真实菜单源生成并校验组织结果；
+- `make verify.product.scenario.organization.unit`：13 项非零验证。
+
+当前结果：
+
+```text
+released_page_count=132
+organized_page_count=132
+unique_page_count=132
+duplicate_page_count=0
+unassigned_page_count=0
+unknown_page_count=0
+scenario_group_count=46
+center_count=11
+```
+
+该设计按“用户能完成什么结果”组织办理面，不把菜单名称自动等同于场景。46 个分组是本次组织结果，不是产品常量。工作台待办/消息和快捷办理已声明目标中心、目标办理面、结果展示和返回位置；18 个可执行衔接明确来源模型、来源记录 ID、触发条件、目标 XMLID、携带对象和返回位置。
+
+## 定稿后的场景种子实施
+
+产品负责人已审核通过上述组织结果，状态更新为：
+
+```text
+APPROVED_FOR_IMPLEMENTATION
+approved_at=2026-11-20
+```
+
+运行时场景种子由同一生成器写入 `addons/smart_construction_core/data/scenario_product_surface.json`：
+
+- 46 个已批准业务分组；
+- 132 个唯一菜单 XMLID；
+- 每个办理面显式声明办理、查看、报表或基础资料维护意图；
+- 旧 19 个过程场景键不再进入运行时场景定义；
+- 场景与页面顺序来自定稿 JSON，不在前端或数据库中重新推导。
+
+`sc.product.scenario` 种子导入已支持逐页 `bindings` 和场景顺序。场景导航投影按批准顺序输出，不再按场景编码字母排序。
+
+实际验证：
+
+- `verify.product.scenario.organization.unit`：13 项通过；
+- `verify.nav01.native_authority.unit`：25 项通过；
+- `verify.admin_close_01.backend.unit`：103 项通过；
+- `verify.frontend.workspace_scenario_lifecycle.unit`：通过，包含真实 SFC 消费；
+- `local.dev.rebuild_demo`：从当前源码完整重建 `sc_dev_demo` 并加载 `demo_full`，通过；
+- `local.clean.rebuild LOCAL_CLEAN_MODULES=smart_construction_core`：空库安装通过；
+- 数据库权威回读：`sc_dev_demo` 与 `sc_clean` 均为 46 场景、132 绑定、132 唯一菜单，旧场景键为 0。
+
+发布组合已改为强制分离：
+
+- 业务目录与场景组合来源：`sc_dev_demo`；
+- 发布快照目标：`sc_platform_control`；
+- 两者相同直接拒绝，不再允许 demo 租户兼任平台发布库。
+
+本地平台控制面已通过受管入口创建：
+
+- Compose project：`sc-local-platform`；
+- database：`sc_platform_control`；
+- application role：`sc_platform_control_app`；
+- maintenance role：`sc_platform_control_maintenance`；
+- 独立数据库、Redis、Odoo 数据卷；
+- 仅安装 `smart_core`，无 demo、行业或客户业务数据。
+
+共享开发环境 `VITE_PLATFORM_ADMIN_DB` 已切换到 `sc_platform_control`。原 `.env.dev` 在修改前保留为私有 `0600` 备份。
+
+跨库发布通过两段式受管入口完成：
+
+1. `sc_dev_demo` 输出策略包：132 页面、46 场景，来源策略 SHA-256
+   `412d744ff47b70ea4bd1277cc73f2a54efccd4787e661197548abc87be6b076f`；
+2. `sc_platform_control` 校验策略包后冻结快照。
+
+权威回读：
+
+```text
+snapshot_id=1
+product=construction.standard
+version=local-dev-65a7bd0cd85a
+state=released
+is_active=true
+active=true
+page_count=132
+scenario_count=46
+catalog_source_db=sc_dev_demo
+platform_release_db=sc_platform_control
+release_gate=applied
+```

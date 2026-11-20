@@ -1731,6 +1731,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/verify/test_product_menu_contract_v1_guard.py": [
                 "verify.product.menu.contract_v1.guard",
             ],
+            "config/product_scenario_organization_v1.json": [
+                "verify.product.scenario.organization.unit",
+            ],
+            "scripts/audit/build_scenario_product_organization.py": [
+                "verify.product.scenario.organization.unit",
+            ],
+            "scripts/audit/test_build_scenario_product_organization.py": [
+                "verify.product.scenario.organization.unit",
+            ],
             "scripts/ops/test_promote_product_ten_center_policy.py": [
                 "verify.product.menu.contract_v1.guard",
             ],
@@ -2334,6 +2343,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/dev/local_test_runner.py",
             "scripts/verify/test_local_test_runner.py",
             "scripts/verify/test_local_development_lifecycle.py",
+            "scripts/dev/local_platform_control.py",
+            "scripts/dev/local_platform_release_apply.py",
+            "scripts/verify/test_local_platform_control.py",
+            "config/ops/local_platform_control.v1.json",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

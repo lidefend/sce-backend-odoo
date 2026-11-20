@@ -17,19 +17,20 @@ EXPECTED_CENTERS = (
     ("project", 20, "项目中心"),
     ("contract", 30, "合同中心"),
     ("cost", 40, "成本中心"),
-    ("finance", 50, "财务中心"),
-    ("tax", 60, "税务中心"),
-    ("accounting", 70, "会计账务中心"),
-    ("reporting", 80, "报表中心"),
-    ("administration", 90, "行政中心"),
-    ("product_configuration", 100, "产品配置"),
+    ("supply_chain", 50, "供应链与资源中心"),
+    ("finance", 60, "财务中心"),
+    ("tax", 70, "税务中心"),
+    ("accounting", 80, "会计账务中心"),
+    ("reporting", 90, "报表中心"),
+    ("administration", 100, "行政中心"),
+    ("product_configuration", 110, "产品配置"),
 )
 EXPECTED_RUNTIME_CENTERS = (
-    "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
+    "工作台", "项目中心", "合同中心", "成本中心", "供应链与资源中心", "财务中心",
     "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 )
 EXPECTED_TRANSITIONS = {
-    ("物资与分包", "项目中心"),
+    ("物资与分包", "供应链与资源中心"),
     ("施工管理", "项目中心"),
     ("组织行政", "行政中心"),
     ("产品配置", "产品配置"),
@@ -62,7 +63,7 @@ def validate(baseline: dict, release_manifest: dict) -> list[str]:
         for item in baseline.get("primary_centers", [])
     )
     if actual_centers != EXPECTED_CENTERS:
-        errors.append("primary_centers must match the locked ten-center name/order contract")
+        errors.append("primary_centers must match the locked workbench plus ten-center contract")
     for item in baseline.get("primary_centers", []):
         if not str(item.get("responsibility", "")).strip():
             errors.append(f"center {item.get('name')!r} must define a responsibility boundary")
@@ -106,7 +107,7 @@ def validate(baseline: dict, release_manifest: dict) -> list[str]:
     ]:
         errors.append("系统管理 must remain a non-primary internal-governance center")
     if baseline.get("runtime_migration_status") != "ALIGNED":
-        errors.append("runtime_migration_status must remain ALIGNED after ten-center promotion")
+        errors.append("runtime_migration_status must remain ALIGNED after product-center promotion")
     return errors
 
 

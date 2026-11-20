@@ -817,7 +817,11 @@ RULES = (
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
         "scripts/dev/local_dev_product_release_prepare.py",
+        "scripts/dev/local_platform_control.py",
+        "scripts/dev/local_platform_release_apply.py",
+        "config/ops/local_platform_control.v1.json",
         "scripts/verify/test_local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_platform_control.py",
     ), (
         "verify.local.development_lifecycle.unit",
     )),
@@ -969,6 +973,13 @@ RULES = (
         "scripts/verify/test_product_menu_contract_v1_guard.py",
     ), (
         "verify.product.menu.contract_v1.guard",
+    )),
+    Rule((
+        "config/product_scenario_organization_v1.json",
+        "scripts/audit/build_scenario_product_organization.py",
+        "scripts/audit/test_build_scenario_product_organization.py",
+    ), (
+        "verify.product.scenario.organization.unit",
     )),
     Rule((
         "frontend/apps/web/src/pages/ContractFormRoute.vue",

@@ -86,7 +86,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
             "capabilities": [],
         }
         first = {
-            "schema": "construction.scenario_product_surface.v1",
+            "schema": "construction.scenario_product_surface.v2",
             "scenarios": [{"key": "project", "name": "Project", "sequence": 10}],
         }
         second = deepcopy(first)
@@ -115,7 +115,13 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
 
     def test_freeze_surface_carries_published_scene_composition(self):
         composition = {
-            "schema": "construction.scenario_product_surface.v1",
+            "schema": "construction.scenario_product_surface.v2",
+            "centers": [{
+                "key": "construction.center.project",
+                "name": "Project",
+                "sequence": 20,
+                "scenarios": ["project"],
+            }],
             "source_db": "product_db",
             "scenarios": [{
                 "key": "project",
@@ -125,6 +131,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 "bindings": [{
                     "menu_key": "menu:7",
                     "menu_id": 7,
+                    "center_key": "construction.center.project",
                     "intent": "view",
                     "sequence": 0,
                 }],
@@ -216,7 +223,13 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
 
     def test_freeze_accepts_valid_scene_composition_without_legacy_pages(self):
         composition = {
-            "schema": "construction.scenario_product_surface.v1",
+            "schema": "construction.scenario_product_surface.v2",
+            "centers": [{
+                "key": "construction.center.project",
+                "name": "Project",
+                "sequence": 20,
+                "scenarios": ["project"],
+            }],
             "source_db": "product_db",
             "scenarios": [{
                 "key": "project",
@@ -226,6 +239,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                 "bindings": [{
                     "menu_key": "menu:7",
                     "menu_id": 7,
+                    "center_key": "construction.center.project",
                     "intent": "view",
                     "sequence": 0,
                 }],
@@ -366,7 +380,13 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
 
         check = service._business_scene_composition_check({
             "business_scene_composition": {
-                "schema": "construction.scenario_product_surface.v1",
+                "schema": "construction.scenario_product_surface.v2",
+                "centers": [{
+                    "key": "construction.center.project",
+                    "name": "Project",
+                    "sequence": 20,
+                    "scenarios": ["project"],
+                }],
                 "source_db": "catalog_db",
                 "scenarios": [{
                     "key": "project",
@@ -374,6 +394,7 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
                     "bindings": [{
                         "menu_key": "menu:21",
                         "menu_id": 21,
+                        "center_key": "construction.center.project",
                         "source_db": "catalog_db",
                     }],
                 }],
@@ -382,6 +403,135 @@ class TestReleasePreflightTargetValidation(unittest.TestCase):
 
         self.assertTrue(check["blocking"])
         self.assertEqual(check["issues"][0]["code"], "BUSINESS_SCENE_MENU_UNRESOLVED")
+
+    def test_cross_database_stable_xmlid_uses_source_validation(self):
+        class Env:
+            cr = SimpleNamespace(dbname="sc_platform_control")
+            context = {}
+
+            def __getitem__(self, model_name):
+                raise KeyError(model_name)
+
+        service = TARGET.EditionReleaseSnapshotService(env=Env())
+        service._model_registered = lambda model_name: model_name == "ir.ui.menu"
+        check = service._business_scene_composition_check(
+            {
+                "business_scene_composition": {
+                    "schema": "construction.scenario_product_surface.v2",
+                    "centers": [{
+                        "key": "construction.center.project",
+                        "name": "Project",
+                        "sequence": 20,
+                        "scenarios": ["project.initiation"],
+                    }],
+                    "source_db": "sc_dev_demo",
+                    "scenarios": [{
+                        "key": "project.initiation",
+                        "active": True,
+                        "bindings": [{
+                            "menu_key": "smart_construction_core.menu_sc_project_initiation",
+                            "center_key": "construction.center.project",
+                            "source_db": "sc_dev_demo",
+                        }],
+                    }],
+                },
+            },
+            published_pages=[{
+                "menu_xmlid": "smart_construction_core.menu_sc_project_initiation",
+                "scene_key": "project.initiation",
+                "route": "",
+                "action_id": 0,
+            }],
+        )
+        self.assertFalse(check["blocking"], check["issues"])
+        self.assertEqual(check["ready_binding_count"], 1)
+
+    def test_actionless_scene_entry_is_a_valid_business_composition_page(self):
+        menu = SimpleNamespace(
+            id=10,
+            action=False,
+            _name="ir.ui.menu",
+            get_external_id=lambda: {10: "smart_construction_core.menu_sc_workspace_home"},
+        )
+        env = SimpleNamespace(
+            cr=SimpleNamespace(dbname="sc_dev_demo"),
+            context={},
+            ref=lambda xmlid, raise_if_not_found=False: menu,
+        )
+        service = TARGET.EditionReleaseSnapshotService(env=env)
+        service._model_registered = lambda model_name: model_name == "ir.ui.menu"
+        check = service._business_scene_composition_check(
+            {
+                "business_scene_composition": {
+                    "schema": "construction.scenario_product_surface.v2",
+                    "centers": [{
+                        "key": "workspace.home.workbench",
+                        "name": "Workbench",
+                        "sequence": 10,
+                        "scenarios": ["work.my_queue"],
+                    }],
+                    "source_db": "sc_dev_demo",
+                    "scenarios": [{
+                        "key": "work.my_queue",
+                        "active": True,
+                        "bindings": [{
+                            "menu_key": "smart_construction_core.menu_sc_workspace_home",
+                            "menu_id": 10,
+                            "center_key": "workspace.home.workbench",
+                            "source_db": "sc_dev_demo",
+                        }],
+                    }],
+                },
+            },
+            published_pages=[{
+                "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+                "scene_key": "workspace.home",
+                "route": "",
+                "action_id": 0,
+            }],
+        )
+        self.assertFalse(check["blocking"], check["issues"])
+        self.assertEqual(check["ready_binding_count"], 1)
+
+    def test_release_requires_every_published_page_to_belong_to_a_scenario(self):
+        service = TARGET.EditionReleaseSnapshotService(env={})
+        check = service._business_scene_composition_check(
+            {
+                "business_scene_composition": {
+                    "schema": "construction.scenario_product_surface.v2",
+                    "centers": [{
+                        "key": "construction.center.project",
+                        "name": "Project",
+                        "sequence": 20,
+                        "scenarios": ["project.management"],
+                    }],
+                    "source_db": "product_db",
+                    "scenarios": [{
+                        "key": "project.management",
+                        "active": True,
+                        "bindings": [{
+                            "menu_key": "menu.project",
+                            "menu_id": 10,
+                            "center_key": "construction.center.project",
+                            "source_db": "product_db",
+                        }],
+                    }],
+                },
+            },
+            published_pages=[
+                {"menu_xmlid": "menu.project"},
+                {"menu_xmlid": "menu.unassigned"},
+            ],
+        )
+
+        self.assertTrue(check["blocking"])
+        self.assertEqual(check["published_page_count"], 2)
+        self.assertEqual(check["scenario_bound_page_count"], 1)
+        self.assertEqual(check["unassigned_page_count"], 1)
+        self.assertIn(
+            "BUSINESS_SCENE_PAGE_UNASSIGNED",
+            [row["code"] for row in check["issues"]],
+        )
 
     def test_action_menu_with_fake_scene_key_blocks_release(self):
         service = TARGET.EditionReleaseSnapshotService(env={})

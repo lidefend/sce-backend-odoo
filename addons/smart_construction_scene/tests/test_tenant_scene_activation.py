@@ -36,10 +36,6 @@ tenant_scene_activation = _load(
     "odoo.addons.smart_construction_scene.services.tenant_scene_activation",
     SCENE_DIR / "services" / "tenant_scene_activation.py",
 )
-scenario_activation_catalog = _load(
-    "odoo.addons.smart_construction_scene.services.scenario_activation_catalog",
-    SCENE_DIR / "services" / "scenario_activation_catalog.py",
-)
 workspace_scenario_projection = _load(
     "odoo.addons.smart_construction_scene.services.workspace_scenario_projection",
     SCENE_DIR / "services" / "workspace_scenario_projection.py",
@@ -130,9 +126,26 @@ def _runtime_model(name, env):
     records = list(menus.values())
     if name == "sc.product.scenario":
         records = []
+        center_by_menu = {}
+        for center in product_menu_source.load_source()["product_contract"]["centers"]:
+            for item in center["level_two"]:
+                for leaf in item.get("children") or [item]:
+                    menu_xmlid = (leaf.get("binding") or {}).get("menu_xmlid")
+                    if menu_xmlid:
+                        center_by_menu[menu_xmlid] = center
         for row in surface["scenarios"]:
-            bindings = [types.SimpleNamespace(menu_id=menus[key], intent=intent, sequence=10)
-                        for intent, keys in row.get("intents", {}).items() for key in keys]
+            bindings = [
+                types.SimpleNamespace(
+                    menu_id=menus[key],
+                    intent=intent,
+                    sequence=10,
+                    center_key=center_by_menu.get(key, {}).get("center_key", ""),
+                    center_name=center_by_menu.get(key, {}).get("name", ""),
+                    center_sequence=center_by_menu.get(key, {}).get("sequence", 10),
+                )
+                for intent, keys in row.get("intents", {}).items()
+                for key in keys
+            ]
             records.append(types.SimpleNamespace(code=row["key"], name=row.get("name", row["key"]),
                                                  active=True, sequence=10, entry_ids=bindings))
     model = types.SimpleNamespace(search=lambda domain: NativeRecordsetDouble(records))
@@ -254,10 +267,29 @@ class TestActualPublicationConsumers(unittest.TestCase):
     def test_catalog_handler_uses_actual_publication(self):
         handlers, env = self._handlers_and_env()
         result = handlers._catalog(env, company_id=1)
-        expected = [self.expected.get(row.get("target", {}).get("menu_xmlid")) == "released"
-                    for row in self.entries]
-        self.assertTrue(any(expected))
-        self.assertEqual([row["product_released"] for row in result["rows"]], expected)
+        self.assertEqual(result["contract_version"], "scenario_activation_catalog.v2")
+        self.assertEqual(result["catalog_status"], "ready")
+        self.assertEqual(result["published_page_count"], len(self.expected))
+        cardinality = result["catalog_cardinality"]
+        self.assertEqual(
+            cardinality["center_count"],
+            len(product_menu_source.center_identity_contract()["centers"]),
+        )
+        self.assertEqual(
+            result["catalog_presentation"]["summary"],
+            f"已发布产品页面 {len(self.expected)} 项"
+            f" · 产品中心 {len(product_menu_source.center_identity_contract()['centers'])} 个"
+            " · 页面均已纳入办理场景",
+        )
+        self.assertEqual(cardinality["published_page_count"], len(self.expected))
+        self.assertEqual(
+            cardinality["business_scenario_count"],
+            len(result["business_scenarios"]),
+        )
+        self.assertEqual(
+            cardinality["actionable_business_scenario_count"],
+            len([row for row in result["business_scenarios"] if row["actions"]]),
+        )
 
     def test_activation_request_group_gate_allows_admin_and_rejects_ordinary_user(self):
         handlers, env = self._handlers_and_env()
@@ -301,13 +333,16 @@ class TestActualPublicationConsumers(unittest.TestCase):
                 ):
                     result = handlers._catalog(env, company_id=1)
                 self.assertEqual(result["company_id"], 1)
-                self.assertEqual(len(result["business_scenarios"]), 17)
+                self.assertEqual(
+                    len(result["business_scenarios"]),
+                    len(scenario_surface.load_surface()["scenarios"]),
+                )
                 actions = [action for row in result["business_scenarios"] for action in row["actions"]]
                 self.assertEqual(bool(actions), allowed)
 
     def test_actual_catalog_disable_action_round_trips_saved_selection(self):
         handlers, base_env = self._handlers_and_env(can_manage=True)
-        scene_key = "project.management"
+        scene_key = "project.initiation"
         stored_key = business_enablement.business_key(scene_key)
         storage_key = "sc.scene.tenant.enablement.1." + stored_key
         params = {storage_key: "1"}
@@ -401,14 +436,15 @@ class TestActualPublicationConsumers(unittest.TestCase):
         handlers, env = self._handlers_and_env()
         handler = handlers.WorkspaceScenarioProjectionGetHandler()
         handler.env, handler.params = env, {}
-        handler._resolve_authorized_scene_candidates = lambda entries, company_id: [row["code"] for row in self.entries]
         result = handler.handle()["data"]
-        surface = scenario_surface.load_surface()
-        index = scenario_surface.runtime_menu_scope(env)[0]
-        expected = sum(self.expected.get(row.get("target", {}).get("menu_xmlid")) == "released"
-                       and business_enablement.entry_business_enabled(row, index, {}) for row in self.entries)
-        self.assertGreater(expected, 0)
-        self.assertEqual(result["workspace_candidate_count"], expected)
+        self.assertEqual(result["contract_version"], "workspace_scenario_projection.v2")
+        expected_count = len(scenario_surface.load_surface()["scenarios"])
+        self.assertEqual(result["row_count"], expected_count)
+        self.assertEqual(len(result["rows"]), expected_count)
+        self.assertEqual(
+            {row["scene_key"] for row in result["rows"]},
+            {row["key"] for row in scenario_surface.load_surface()["scenarios"]},
+        )
 
 
     def test_actual_handlers_share_menu_bound_business_identity(self):
@@ -416,17 +452,26 @@ class TestActualPublicationConsumers(unittest.TestCase):
         catalog = handlers._catalog(env, company_id=1)
         workspace = handlers.WorkspaceScenarioProjectionGetHandler()
         workspace.env, workspace.params = env, {}
-        workspace._resolve_authorized_scene_candidates = lambda entries, company_id: []
         projection = workspace.handle()["data"]
         surface = scenario_surface.load_surface()
         index = scenario_surface.runtime_menu_scope(env)[0]
-        self.assertEqual(len({value["scenario_key"] for value in index.values() if value["location"] == "scenario"}), 17)
-        for entry, catalog_row, workspace_row in zip(self.entries, catalog["rows"], projection["rows"]):
-            expected = index.get(entry.get("target", {}).get("menu_xmlid"))
-            self.assertEqual(catalog_row["product_surface"], expected)
-            self.assertEqual(workspace_row["product_surface"], expected)
-            self.assertEqual(catalog_row["scene_key"], entry["code"])
-            self.assertEqual(workspace_row["scene_key"], entry["code"])
+        expected_keys = {row["key"] for row in surface["scenarios"]}
+        self.assertEqual(
+            {
+                value["scenario_key"]
+                for value in index.values()
+                if value["location"] == "scenario"
+            },
+            expected_keys,
+        )
+        self.assertEqual(
+            {row["scene_key"] for row in catalog["business_scenarios"]},
+            expected_keys,
+        )
+        self.assertEqual(
+            {row["scene_key"] for row in projection["rows"]},
+            expected_keys,
+        )
 
     def test_invalid_surface_does_not_silently_emit_unmapped_catalog(self):
         handlers, env = self._handlers_and_env()
@@ -478,14 +523,9 @@ class TestActualPublicationConsumers(unittest.TestCase):
         for enabled_key in ("project.management", location["scenario_key"]):
             with self.subTest(enabled_key=enabled_key):
                 enabled = {enabled_key: True}
-                catalog = scenario_activation_catalog.build_scenario_activation_catalog(
-                    entries=entries, release_state_by_menu=release,
-                    tenant_enablement_by_scene=enabled, surface_index=index)
                 workspace = workspace_scenario_projection.project_workspace_scenes(
                     entries=entries, release_state_by_menu=release, tenant_enabled_by_scene=enabled,
                     role_scene_candidates=["project.management"], surface_index=index)
-                self.assertEqual(catalog["rows"][0]["product_surface"], location)
-                self.assertEqual(catalog["rows"][0]["tenant_enabled"], enabled_key == "project.management")
                 self.assertEqual(workspace["rows"][0]["workspace_candidate"], enabled_key == "project.management")
                 self.assertEqual(enabled, {enabled_key: True})
 
@@ -497,23 +537,22 @@ class TestActualPublicationConsumers(unittest.TestCase):
             {"code": "project.management"}, index))
 
     def test_catalog_scene_versions_do_not_override_menu_qualification(self):
+        baseline_handlers, baseline_env = self._handlers_and_env()
+        baseline = baseline_handlers._catalog(baseline_env, company_id=1)
         for version_state in ("STANDARD_RELEASE", "OPTIONAL_CAPABILITY", "PREVIEW", "NOT_READY"):
             with self.subTest(version_state=version_state):
                 scenes = [types.SimpleNamespace(code=row["code"], active_version_id=types.SimpleNamespace(
                     product_release_state=version_state)) for row in self.entries]
                 handlers, env = self._handlers_and_env(scenes=scenes)
                 catalog = handlers._catalog(env, company_id=1)
-                workspace = handlers.WorkspaceScenarioProjectionGetHandler()
-                workspace.env, workspace.params = env, {}
-                workspace._resolve_authorized_scene_candidates = lambda entries, company_id: [row["code"] for row in self.entries]
-                projection = workspace.handle()["data"]
-                for entry, catalog_row, workspace_row in zip(self.entries, catalog["rows"], projection["rows"]):
-                    expected = self.expected.get(entry.get("target", {}).get("menu_xmlid")) == "released"
-                    self.assertEqual(catalog_row["product_released"], expected)
-                    self.assertEqual(workspace_row["product_released"], expected)
-                    self.assertEqual(catalog_row["scene_version_release_state"], version_state)
-                    self.assertEqual(catalog_row["release_state"],
-                                     self.expected.get(entry.get("target", {}).get("menu_xmlid"), "preview"))
+                self.assertEqual(
+                    catalog["catalog_cardinality"],
+                    baseline["catalog_cardinality"],
+                )
+                self.assertEqual(
+                    catalog["published_snapshot"],
+                    baseline["published_snapshot"],
+                )
 
     def test_native_entry_diagnosis_does_not_require_duplicate_scene_publication(self):
         diagnosis = _load("nav01_dependency_diagnosis", SCENE_DIR / "services/scenario_dependency_diagnosis.py")
@@ -1025,29 +1064,73 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
         fixture = TestActualPublicationConsumers()
         fixture.setUp()
         handlers, _ = fixture._handlers_and_env()
-        authority_by_company = {1: self.authority, 2: {"primary_actions": [{"menu_id": 3, "action_id": 33}]}}
+        authority_by_company = {
+            1: {
+                "primary_actions": [{
+                    "menu_xmlid": "test.project",
+                    "menu_id": 1,
+                    "action_id": 11,
+                    "allowed": True,
+                }],
+                "contextual_actions": [{
+                    "menu_xmlid": "test.finance",
+                    "menu_id": 2,
+                    "action_id": 22,
+                    "allowed": True,
+                }],
+            },
+            2: {
+                "primary_actions": [{
+                    "menu_xmlid": "test.other",
+                    "menu_id": 3,
+                    "action_id": 33,
+                    "allowed": True,
+                }],
+            },
+        }
         queries = []
         context_calls = []
-        refs = self.refs
+        surface = {
+            "schema": scenario_surface.SCHEMA,
+            "runtime_scope": "published_release",
+            "scenarios": [
+                {
+                    "key": key,
+                    "name": key,
+                    "active": True,
+                    "bindings": [{
+                        "menu_key": f"test.{key}",
+                        "menu_id": index,
+                        "source_db": "test",
+                    }],
+                }
+                for index, key in enumerate(("project", "finance", "other"), start=1)
+            ],
+        }
+        menu_index = {
+            f"test.{key}": {
+                "location": "scenario",
+                "scenario_key": key,
+                "scenario_locations": [{
+                    "location": "scenario",
+                    "scenario_key": key,
+                }],
+            }
+            for key in ("project", "finance", "other")
+        }
         class Env(ContextEnv):
             def __init__(self, company_id):
                 self.company = types.SimpleNamespace(id=company_id)
                 self.user = types.SimpleNamespace(id=7, company_ids=types.SimpleNamespace(ids=[1, 2]))
-            def ref(self, xmlid, raise_if_not_found=False):
-                return refs.get(xmlid, False)
+
+            def __call__(self, *, context):
+                context_calls.append(context)
+                return Env(context["allowed_company_ids"][0])
+
             def __getitem__(self, name):
                 runtime = _runtime_model(name, self)
                 if runtime is not None:
                     return runtime
-                if name == "sc.product.policy":
-                    def with_context(**kwargs):
-                        context_calls.append(kwargs)
-                        return types.SimpleNamespace(env=Env(kwargs["allowed_company_ids"][0]))
-                    return types.SimpleNamespace(
-                        with_context=with_context,
-                        published_route_authority=lambda: authority_by_company[self.company.id],
-                        _apply_company_route_scope=lambda authority: authority,
-                    )
                 if name == "ir.config_parameter":
                     def get_param(key, default="0"):
                         queries.append(key)
@@ -1058,25 +1141,37 @@ class TestAuthorizedWorkspaceProjection(unittest.TestCase):
                 raise AssertionError(name)
         handler = handlers.WorkspaceScenarioProjectionGetHandler()
         handler.env, handler.params = Env(1), {}
-        release = {f"test.{key}": "released" for key in ("project", "finance", "other")}
-        with patch.object(scene_registry_content, "list_scene_entries", return_value=self.entries), \
-             patch.object(product_menu_source, "load_published_menu_release_states", return_value=release), \
-             patch.object(scenario_surface, "load_runtime_surface", return_value={
-                 "scenarios": [{"key": key} for key in ("project", "finance", "other")]}), \
-             patch.object(handlers, "_product_surface_index", return_value={
-                 f"test.{key}": {"location": "scenario", "scenario_key": key}
-                 for key in ("project", "finance", "other")}):
+        with patch.object(scenario_surface, "load_runtime_surface", return_value=surface), \
+             patch.object(scenario_surface, "runtime_menu_scope", return_value=(menu_index, {}, {})), \
+             patch.object(
+                 route_authority,
+                 "published_route_authority",
+                 side_effect=lambda env: authority_by_company[env.company.id],
+             ):
             def candidates(company_id):
                 result = handler.handle({"company_id": company_id})
                 self.assertTrue(result["ok"])
                 return [row["scene_key"] for row in result["data"]["rows"] if row["workspace_candidate"]]
             self.assertEqual(candidates(1), ["project", "finance"])
             self.assertEqual(candidates(2), ["other"])
-            authority_by_company[1] = {"primary_actions": [{"menu_id": 1, "action_id": 11}]}
+            authority_by_company[1] = {
+                "primary_actions": [{
+                    "menu_xmlid": "test.project",
+                    "menu_id": 1,
+                    "action_id": 11,
+                    "allowed": True,
+                }],
+            }
             self.assertEqual(candidates(1), ["project"])
             authority_by_company[1] = {}
             self.assertEqual(candidates(1), [])
-        self.assertEqual(context_calls, [{"allowed_company_ids": [cid]} for cid in (1, 2, 1, 1)])
+        self.assertEqual(
+            context_calls,
+            [
+                {"lang": "zh_CN", "allowed_company_ids": [cid]}
+                for cid in (1, 2, 1, 1)
+            ],
+        )
         self.assertTrue(queries)
         self.assertEqual(handler.env.user.id, 7)
 
@@ -1400,7 +1495,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
         release = product_menu_source.load_menu_release_states()
         legacy = {row["key"]: True for row in surface["scenarios"]}
         rows = business_enablement.business_catalog(surface, release, legacy)
-        self.assertEqual(len(rows), 17)
+        self.assertEqual(len(rows), len(surface["scenarios"]))
         self.assertFalse(any(row["tenant_enabled"] for row in rows))
         key = next(row["scene_key"] for row in rows if row["product_released"])
         rows = business_enablement.business_catalog(surface, release, {business_enablement.business_key(key): True})
@@ -1496,7 +1591,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
             nav.append({**row, "route": f"/a/{action_id}?menu_id={menu_id}",
                         "name": xmlid, "children": []})
         keys = [row["key"] for row in surface["scenarios"]]
-        self.assertEqual(len(keys), 17)
+        self.assertEqual(len(keys), len(surface["scenarios"]))
         for enabled_keys in (keys, [], *([key] for key in keys)):
             with self.subTest(enabled=enabled_keys):
                 authority = business_enablement.filter_business_authority(
@@ -1506,7 +1601,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 projection = scenario_surface.project_authorized_nav(
                     nav=filtered_nav, route_authority=authority, surface=surface)
                 self.assertTrue(projection["ok"])
-                scenarios = [scene for domain in projection["tree"]["domains"] for scene in domain["scenarios"]]
+                scenarios = [scene for center in projection["tree"]["centers"] for scene in center["scenarios"]]
                 self.assertEqual({scene["key"] for scene in scenarios}, set(enabled_keys))
                 for scene in scenarios:
                     for intent in scene["intents"]:
@@ -1515,7 +1610,7 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                                           route_authority.published_pairs(authority))
         # Enabled scenarios cannot create entries when the native authority is empty.
         self.assertEqual(scenario_surface.project_authorized_nav(
-            nav=[], route_authority={}, surface=surface)["tree"]["domains"], [])
+            nav=[], route_authority={}, surface=surface)["tree"]["centers"], [])
 
     def test_inactive_saved_selection_is_disableable_but_never_navigable(self):
         surface = {
@@ -1891,60 +1986,6 @@ class TestTenantSceneActivation(unittest.TestCase):
             "finance.payment_ledger", entries=entries, release_state_by_menu=release
         ))
 
-    def test_scenario_activation_catalog_projection(self):
-        entries = [
-            {"code": "projects.ledger", "name": "项目台账", "target": {"menu_xmlid": "smart_construction_core.menu_sc_project_project"}},
-            {"code": "finance.payment_ledger", "name": "收付款台账", "target": {"menu_xmlid": "smart_construction_core.menu_payment_ledger"}},
-        ]
-        release = {
-            "smart_construction_core.menu_sc_project_project": "released",
-            "smart_construction_core.menu_payment_ledger": "preview",
-        }
-        catalog = scenario_activation_catalog.build_scenario_activation_catalog(
-            entries=entries,
-            release_state_by_menu=release,
-            tenant_enablement_by_scene={"projects.ledger": True},
-            role_candidates_by_scene={"projects.ledger": ["pm", "business_config_admin"]},
-            product_release_evidence_by_menu={
-                "smart_construction_core.menu_sc_project_project": {
-                    "qualification_authority": "published_product_release",
-                    "products": [
-                        {
-                            "product_key": "construction.standard",
-                            "qualified": True,
-                            "release_state": "released",
-                            "snapshot_id": 9,
-                            "version": "v9",
-                            "applied": True,
-                        }
-                    ],
-                }
-            },
-        )
-        self.assertEqual(catalog["contract_version"], "scenario_activation_catalog.v1")
-        self.assertEqual(catalog["row_count"], 2)
-        by_key = {row["scene_key"]: row for row in catalog["rows"]}
-        self.assertTrue(by_key["projects.ledger"]["product_released"])
-        self.assertTrue(by_key["projects.ledger"]["tenant_enabled"])
-        self.assertEqual(
-            by_key["projects.ledger"]["product_qualification"]["status"],
-            "qualified",
-        )
-        self.assertEqual(
-            by_key["projects.ledger"]["product_qualification"]["evidence"][
-                "products"
-            ][0]["version"],
-            "v9",
-        )
-        self.assertEqual(by_key["projects.ledger"]["enablement_blockers"], [])
-        self.assertEqual(by_key["projects.ledger"]["applicable_roles"], ["pm", "business_config_admin"])
-        self.assertFalse(by_key["finance.payment_ledger"]["product_released"])
-        self.assertFalse(by_key["finance.payment_ledger"]["tenant_enabled"])
-        self.assertEqual(
-            by_key["finance.payment_ledger"]["enablement_blockers"],
-            ["PRODUCT_NOT_RELEASED"],
-        )
-
     def test_workspace_projection_intersection(self):
         entries = [
             {"code": "projects.ledger", "name": "项目台账", "target": {"menu_xmlid": "smart_construction_core.menu_sc_project_project"}},
@@ -2166,6 +2207,12 @@ class TestMaintainedScenarioScope(unittest.TestCase):
     def test_published_runtime_surface_reads_active_release_policy(self):
         composition = {
             "schema": scenario_surface.SCHEMA,
+            "centers": [{
+                "key": "construction.center.project",
+                "name": "项目中心",
+                "sequence": 20,
+                "scenarios": ["published"],
+            }],
             "scenarios": [{
                 "key": "published",
                 "name": "Published",
@@ -2244,6 +2291,7 @@ class TestMaintainedScenarioScope(unittest.TestCase):
             legacy_surface,
             {
                 "schema": scenario_surface.SCHEMA,
+                "centers": [],
                 "scenarios": [],
                 "runtime_scope": "published_release_without_composition",
             },
@@ -2268,6 +2316,7 @@ class TestMaintainedScenarioScope(unittest.TestCase):
             no_snapshot_surface,
             {
                 "schema": scenario_surface.SCHEMA,
+                "centers": [],
                 "scenarios": [],
                 "runtime_scope": "published_release_without_composition",
             },

@@ -28,11 +28,18 @@
         <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
         <field name="sequence">40</field>
     </record>
+    <record id="menu_sc_supply_chain_center" model="ir.ui.menu">
+        <field name="name">供应链与资源中心</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
+        <field name="sequence">50</field>
+        <field name="action" eval="False"/>
+    </record>
     <record id="menu_sc_project_budget" model="ir.ui.menu"><field name="name">目标成本计划</field></record>
     <record id="menu_sc_cost_reports" model="ir.ui.menu"><field name="name">成本汇总</field></record>
     <record id="menu_sc_material_center" model="ir.ui.menu">
-        <field name="name">物资与分包</field>
-        <field name="sequence">50</field>
+        <field name="name">材料收发</field>
+        <field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/>
+        <field name="sequence">30</field>
     </record>
     <record id="menu_sc_construction_management_center" model="ir.ui.menu">
         <field name="name">施工管理</field>
@@ -40,31 +47,31 @@
     </record>
     <record id="menu_sc_finance_center" model="ir.ui.menu">
         <field name="name">财务中心</field>
-        <field name="sequence">70</field>
+        <field name="sequence">60</field>
     </record>
     <record id="menu_sc_tax_center" model="ir.ui.menu">
         <field name="name">税务中心</field>
         <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
-        <field name="sequence">75</field>
+        <field name="sequence">70</field>
     </record>
     <record id="menu_sc_accounting_center" model="ir.ui.menu">
         <field name="name">会计账务中心</field>
         <field name="parent_id" ref="smart_construction_core.menu_sc_root"/>
-        <field name="sequence">77</field>
+        <field name="sequence">80</field>
         <field name="action" eval="False"/>
         <field name="groups_id" eval="[(6, 0, [ref('smart_construction_core.group_sc_cap_accounting_read')])]"/>
     </record>
     <record id="menu_sc_data_center" model="ir.ui.menu">
         <field name="name">报表中心</field>
-        <field name="sequence">80</field>
+        <field name="sequence">90</field>
     </record>
     <record id="menu_sc_hr_admin_center" model="ir.ui.menu">
         <field name="name">组织行政</field>
-        <field name="sequence">85</field>
+        <field name="sequence">100</field>
     </record>
     <record id="menu_sc_business_config_center" model="ir.ui.menu">
         <field name="name">产品配置</field>
-        <field name="sequence">90</field>
+        <field name="sequence">110</field>
     </record>
     <record id="menu_sc_config_center" model="ir.ui.menu">
         <field name="name">系统管理</field>

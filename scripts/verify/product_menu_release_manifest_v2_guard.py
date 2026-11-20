@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fail closed when the locked ten-center product menu drifts.
+"""Fail closed when the locked product-center menu drifts.
 
 The product menu contract owns navigation shape. Capability maturity remains
 metadata and is intentionally not allowed to hide a contracted entry.
@@ -27,7 +27,7 @@ MANIFEST = ROOT / "addons/smart_construction_core/__manifest__.py"
 COMPLETION_XML = ROOT / "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml"
 
 EXPECTED_CENTERS = [
-    "工作台", "项目中心", "合同中心", "成本中心", "财务中心",
+    "工作台", "项目中心", "合同中心", "成本中心", "供应链与资源中心", "财务中心",
     "税务中心", "会计账务中心", "报表中心", "行政中心", "产品配置",
 ]
 # The delivered menu count is a versioned contract value, not a frozen
@@ -50,15 +50,15 @@ def _contract_paths(payload: dict, states=None) -> set[tuple[str, ...]]:
         for level_two in center.get("level_two") or []:
             level_two_name = str(level_two.get("name") or "").strip()
             children = level_two.get("children") or []
-            if center_name == "项目中心":
+            if center_name in {"项目中心", "供应链与资源中心"}:
                 if not children:
-                    raise ValueError(f"project level-two menu has no level-three pages: {level_two_name}")
+                    raise ValueError(f"level-three center menu has no level-three pages: {level_two_name}")
                 for child in children:
                     if states is None or child.get("release_state") in states:
                         paths.add((center_name, level_two_name, str(child.get("name") or "").strip()))
             else:
                 if children:
-                    raise ValueError(f"non-project center illegally uses level three: {center_name}/{level_two_name}")
+                    raise ValueError(f"two-level center illegally uses level three: {center_name}/{level_two_name}")
                 if states is None or level_two.get("release_state") in states:
                     paths.add((center_name, level_two_name))
     return paths

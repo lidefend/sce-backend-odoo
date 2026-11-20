@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120
   title: enterprise_configuration_admin_journey_and_usability_closure
-  status: blocked
+  status: active
   formal_product_layer: P1/P4
   layer_target: >-
     Existing enterprise initialization entries, native company/organization/
@@ -14,23 +14,27 @@ goal:
     - addons/smart_construction_scene
     - frontend/apps/web
     - scripts/verify
+    - scripts/audit
     - scripts/dev/local_dev_product_release_prepare.py
+    - config
+    - docs/product
     - make/dev.mk
     - docs/ops/iterations
   standard_vs_user_specific: construction_product_standard_with_company_runtime_configuration
   objective: >-
-    Let the fixture business configuration administrator complete six real
-    journeys in order: enterprise information, department, position,
-    personnel/account, same-user business permissions and enterprise scene
-    selection. Each journey must expose the entry, accept or reject input with a
-    clear reason, persist through the existing native model, support authoritative
-    readback, return to the same enterprise initialization context and display a
-    newly read diagnosis.
+    First organize all 132 released handling surfaces into the fixed workbench
+    plus ten-center skeleton using explicit business-result groups. Every page
+    must state its purpose, prerequisite/related step, continuation and entry
+    context. Cross-center handoffs and workbench routing must retain the same
+    stable object identity and return path. Only after this organization is
+    reviewed may the runtime scenario seed, release snapshot and the enterprise
+    configuration journeys consume it.
   product_result: >-
-    Actual user-visible configuration operations and authoritative persisted facts
-    replace static declaration-only evidence. Any discovered gap is fixed in its
-    owning P1, P0 or frontend layer; P4 only adds the minimum governed journey
-    probe and evidence binding.
+    A complete product-owner review set: one 132/132 organization table, a
+    center-by-center user directory, workbench routing, cross-center handoffs,
+    and a bounded gap list. Machine-readable output is generated from the real
+    released menu source rather than copied counts. Runtime product changes are
+    not made until this design is reviewed.
   why_here: >-
     The configuration facts belong to construction product models and native
     views. The frontend owns generic form consumption, while the journey probe
@@ -49,7 +53,7 @@ goal:
       - same-user assignable role and allowed-company scope grant/revoke with target-user readback
       - enterprise scene enable/revoke, refreshed catalog and diagnosis
     exclusions:
-      - ORM test suites, owning-module baselines, module upgrade and fixture rebuild
+      - full ORM suites and owning-module baselines
       - full browser matrix and unrelated product centers
       - project creation when an applicable project is absent
       - production deployment and cross-product tenant migration
@@ -60,7 +64,9 @@ goal:
     and are deleted through the governed probe after authoritative readback unless
     a failure requires retaining them for diagnosis.
   completion:
-    batch: release_prerequisite_prepared_remaining_entries_blocked_by_upstream_950
+    batch: approved_scenario_seed_verified_demo_and_clean
+    runtime_seed: scenario_surface_generated_46_scenarios_132_bindings
+    platform_release_composition: passed_in_separate_sc_platform_control
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_run

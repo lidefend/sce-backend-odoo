@@ -16,9 +16,10 @@ EVOLUTION_POLICY_PATH = REPO_ROOT / "config/product_evolution_policy_v1.json"
 EXPECTED_CENTERS = (
     ("workbench", 10, "工作台"), ("project", 20, "项目中心"),
     ("contract", 30, "合同中心"), ("cost", 40, "成本中心"),
-    ("finance", 50, "财务中心"), ("tax", 60, "税务中心"),
-    ("accounting", 70, "会计账务中心"), ("reporting", 80, "报表中心"),
-    ("administration", 90, "行政中心"), ("product_configuration", 100, "产品配置"),
+    ("supply_chain", 50, "供应链与资源中心"), ("finance", 60, "财务中心"),
+    ("tax", 70, "税务中心"), ("accounting", 80, "会计账务中心"),
+    ("reporting", 90, "报表中心"), ("administration", 100, "行政中心"),
+    ("product_configuration", 110, "产品配置"),
 )
 EXPECTED_CONTRACT_LEVEL_TWO = ("收入合同", "支出合同", "合同变更", "日常合同", "日常合同结算", "收入结算", "支出结算")
 DELIVERY_RELEASE_STATE = {"RELEASED_FOUNDATION": "released", "PREVIEW_FOUNDATION": "preview"}
@@ -38,16 +39,16 @@ def validate(contract: dict, baseline: dict, evolution_policy: dict | None = Non
         if contract.get(key) != expected:
             errors.append(f"contract.{key} must be {expected!r}")
     if contract.get("runtime_migration_status") != "ALIGNED":
-        errors.append("contract.runtime_migration_status must remain ALIGNED after ten-center promotion")
+        errors.append("contract.runtime_migration_status must remain ALIGNED after product-center promotion")
     rules = contract.get("rules", {})
-    if rules.get("maximum_business_depth") != 3 or not rules.get("project_center_is_only_center_with_level_three"):
-        errors.append("only 项目中心 may use the locked third menu level")
-    if rules.get("all_non_project_centers_maximum_depth") != 2:
-        errors.append("all non-project centers must be limited to two business levels")
+    if rules.get("maximum_business_depth") != 3:
+        errors.append("product contract must allow the locked maximum business depth")
+    if rules.get("level_three_centers") != ["project", "supply_chain"]:
+        errors.append("only 项目中心 and 供应链与资源中心 may use the locked third menu level")
     centers = contract.get("centers", [])
     actual_centers = tuple((item.get("key"), item.get("sequence"), item.get("name")) for item in centers)
     if actual_centers != EXPECTED_CENTERS:
-        errors.append("centers must exactly match the locked ten-center baseline")
+        errors.append("centers must exactly match the locked workbench plus ten-center baseline")
     baseline_centers = tuple((item.get("key"), item.get("sequence"), item.get("name")) for item in baseline.get("primary_centers", []))
     if actual_centers != baseline_centers:
         errors.append("menu contract centers must match product primary-center baseline")
@@ -62,14 +63,14 @@ def validate(contract: dict, baseline: dict, evolution_policy: dict | None = Non
                 expected_state = DELIVERY_RELEASE_STATE.get(leaf.get("delivery"))
                 if expected_state and leaf.get("release_state") != expected_state:
                     errors.append(f"delivery/release_state mismatch for menu {leaf.get('name')!r}: expected {expected_state}")
-            if center.get("key") == "project":
+            if center.get("key") in {"project", "supply_chain"}:
                 if not children:
-                    errors.append(f"project level-two menu {item.get('name')!r} must define its third-level pages")
+                    errors.append(f"level-three center menu {item.get('name')!r} must define its third-level pages")
                 for child in children:
                     if child.get("delivery") not in ALLOWED_DELIVERY:
                         errors.append(f"invalid delivery for project page {child.get('name')!r}")
             elif children:
-                errors.append(f"non-project center {center.get('name')!r} must not define a third menu level")
+                errors.append(f"two-level center {center.get('name')!r} must not define a third menu level")
             elif item.get("delivery") not in ALLOWED_DELIVERY:
                 errors.append(f"invalid delivery for menu {item.get('name')!r}")
     contract_center = next((item for item in centers if item.get("key") == "contract"), {})

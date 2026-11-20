@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-    <!-- P1 project-center wave one: the only product center allowed to expose L3. -->
+    <!-- P1 project and supply-chain wave one: the two centers allowed to expose L3. -->
     <data>
         <!-- Retire superseded project groupings and incomplete capability groups. -->
         <record id="menu_sc_project_overview_group_v2" model="ir.ui.menu"><field name="active">False</field></record>
@@ -38,11 +38,15 @@
         <record id="menu_sc_quality_delivery_group_v2" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">80</field><field name="active">True</field></record>
         <record id="menu_sc_safety_delivery_group_v2" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">90</field><field name="active">True</field></record>
 
-        <record id="menu_sc_material_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">100</field><field name="active">True</field></record>
-        <record id="menu_sc_labor_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">110</field><field name="active">True</field></record>
-        <record id="menu_sc_equipment_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">120</field><field name="active">True</field></record>
-        <record id="menu_sc_material_rental_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">130</field><field name="active">True</field></record>
-        <record id="menu_sc_subcontract_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/><field name="sequence">140</field><field name="active">True</field></record>
+        <menuitem id="menu_sc_procurement_management_group"
+                  name="采购与供应商"
+                  parent="smart_construction_core.menu_sc_supply_chain_center"
+                  sequence="10"/>
+        <record id="menu_sc_material_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/><field name="sequence">20</field><field name="active">True</field></record>
+        <record id="menu_sc_labor_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/><field name="sequence">40</field><field name="active">True</field></record>
+        <record id="menu_sc_equipment_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/><field name="sequence">50</field><field name="active">True</field></record>
+        <record id="menu_sc_material_rental_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/><field name="sequence">60</field><field name="active">True</field></record>
+        <record id="menu_sc_subcontract_management_group" model="ir.ui.menu"><field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/><field name="sequence">70</field><field name="active">True</field></record>
 
         <!-- Locked level-two project domains. -->
         <record id="menu_sc_project_management_group" model="ir.ui.menu">
@@ -68,9 +72,9 @@
             <field name="active">True</field>
         </record>
         <record id="menu_sc_material_center" model="ir.ui.menu">
-            <field name="name">材料成本</field>
-            <field name="parent_id" ref="smart_construction_core.menu_sc_project_center"/>
-            <field name="sequence">60</field>
+            <field name="name">材料收发</field>
+            <field name="parent_id" ref="smart_construction_core.menu_sc_supply_chain_center"/>
+            <field name="sequence">30</field>
             <field name="active">True</field>
         </record>
 
@@ -82,7 +86,7 @@
             <field name="name">客户档案</field><field name="parent_id" ref="smart_construction_core.menu_sc_project_partner_group_wave1"/><field name="sequence">10</field><field name="active">True</field>
         </record>
         <record id="menu_sc_supplier_partner" model="ir.ui.menu">
-            <field name="name">供应商档案</field><field name="parent_id" ref="smart_construction_core.menu_sc_project_partner_group_wave1"/><field name="sequence">20</field><field name="active">True</field>
+            <field name="name">供应商档案</field><field name="parent_id" ref="smart_construction_core.menu_sc_procurement_management_group"/><field name="sequence">10</field><field name="active">True</field>
         </record>
         <record id="menu_sc_project_tender" model="ir.ui.menu">
             <field name="name">投标项目</field><field name="parent_id" ref="smart_construction_core.menu_sc_tender_management_group"/><field name="sequence">20</field><field name="active">True</field>

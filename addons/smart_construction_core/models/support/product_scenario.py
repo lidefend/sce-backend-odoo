@@ -141,7 +141,13 @@ class ScProductScenario(models.Model):
                 "smart_construction_core.menu_sc_runtime_user_management"
             )
             menu = self.env.ref(runtime_user_xmlid, raise_if_not_found=False)
-            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu":
+            bound = (
+                menu
+                and self.env["sc.product.scenario.entry"].sudo().search_count([
+                    ("menu_id", "=", menu.id),
+                ])
+            )
+            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu" and not bound:
                 if not menu.sc_scenario_exempt:
                     menu.sudo().write({"sc_scenario_exempt": True})
             params.set_param(runtime_user_marker, "1")
@@ -168,18 +174,21 @@ class ScProductScenario(models.Model):
         params.set_param(marker, "1")
 
     @api.model
-    def import_scenario_product_surface(self):
+    def import_scenario_product_surface(self, force=False):
         """Initialize once, atomically; later upgrades preserve even deletions.
 
         A versioned migration marks legacy installations initialized before
         this method is called. Future seed changes require explicit migrations.
+        ``force`` is reserved for those migrations and only adds missing
+        standard scenarios/entries; it never overwrites or deletes maintained
+        records.
         """
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
             load_surface,
         )
 
         Param = self.env["ir.config_parameter"].sudo()
-        if Param.get_param(SCENARIO_SEED_KEY):
+        if Param.get_param(SCENARIO_SEED_KEY) and not force:
             return {"created_scenarios": 0, "skipped_scenarios": 0, "created_entries": 0}
         surface = load_surface()
         Scenario = self.sudo().with_context(active_test=False)
@@ -196,31 +205,51 @@ class ScProductScenario(models.Model):
                 continue
             record = existing_codes.get(code)
             if not record:
-                record = Scenario.create({"code": code, "name": name})
+                record = Scenario.create({
+                    "code": code,
+                    "name": name,
+                    "description": str(scenario.get("description") or "").strip(),
+                    "sequence": int(scenario.get("sequence") or 10),
+                })
                 existing_codes[code] = record
                 created_scenarios += 1
             else:
                 skipped_scenarios += 1
-            for intent, menu_xmlids in (scenario.get("intents") or {}).items():
-                intent_code = intent if intent in SCENARIO_INTENT_CODES else "view"
-                for menu_xmlid in menu_xmlids or []:
-                    menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
-                    if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
-                        continue
-                    if menu.id in prebound_menu_ids:
-                        continue
-                    exists = Entry.search([
-                        ("scenario_id", "=", record.id),
-                        ("menu_id", "=", menu.id),
-                    ], limit=1)
-                    if not exists:
-                        Entry.create({
-                            "scenario_id": record.id,
-                            "menu_id": menu.id,
-                            "intent": intent_code,
-                            "sequence": 10,
-                        })
-                        created_entries += 1
+            bindings = scenario.get("bindings")
+            if isinstance(bindings, list) and bindings:
+                binding_rows = [
+                    (
+                        binding.get("menu_key"),
+                        binding.get("intent"),
+                        binding.get("sequence"),
+                    )
+                    for binding in bindings
+                    if isinstance(binding, dict)
+                ]
+            else:
+                binding_rows = [
+                    (menu_xmlid, intent, 10)
+                    for intent, menu_xmlids in (scenario.get("intents") or {}).items()
+                    for menu_xmlid in menu_xmlids or []
+                ]
+            for menu_xmlid, intent, sequence in binding_rows:
+                menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+                if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
+                    continue
+                if menu.id in prebound_menu_ids:
+                    continue
+                exists = Entry.search([
+                    ("scenario_id", "=", record.id),
+                    ("menu_id", "=", menu.id),
+                ], limit=1)
+                if not exists:
+                    Entry.create({
+                        "scenario_id": record.id,
+                        "menu_id": menu.id,
+                        "intent": intent if intent in SCENARIO_INTENT_CODES else "view",
+                        "sequence": int(sequence or 10),
+                    })
+                    created_entries += 1
         Param.set_param(SCENARIO_SEED_KEY, "1")
         return {
             "created_scenarios": created_scenarios,

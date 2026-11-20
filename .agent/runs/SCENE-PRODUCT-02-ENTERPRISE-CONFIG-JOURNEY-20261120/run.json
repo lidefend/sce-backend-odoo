@@ -3,7 +3,7 @@
   "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
   "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
   "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
-  "status": "blocked",
+  "status": "verification_pending",
   "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
   "scope": [
@@ -18,35 +18,100 @@
     "docs/ops/local_development_environment_v1.md",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
     "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
+    "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+    "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
     "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "config/product_menu_contract_v1.json",
+    "config/product_menu_release_manifest_v2.json",
+    "config/ops/local-platform-empty-addons/.gitkeep",
+    "config/ops/local_platform_control.v1.json",
+    "config/product_primary_center_baseline_v1.json",
+    "config/product_scenario_organization_v1.json",
+    "docs/product/product_scenario_organization_v1.md",
     "frontend/apps/web/src/components/StatusPanel.vue",
     "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
     "frontend/apps/web/src/composables/useScenarioActivation.ts",
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
     "make/dev.mk",
+    "make/dev_test.mk",
+    "make/guards.mk",
+    "scripts/audit/build_scenario_product_organization.py",
+    "scripts/audit/test_build_scenario_product_organization.py",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/dev/local_dev_product_release_prepare.py",
+    "scripts/dev/local_platform_control.py",
+    "scripts/dev/local_platform_release_apply.py",
     "scripts/verify/error_state_component_test.cjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
     "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/product_menu_contract_v1_guard.py",
+    "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    "scripts/verify/product_primary_center_baseline_guard.py",
+    "scripts/verify/product_primary_center_candidate_guard.py",
+    "scripts/verify/scenario_seed_runtime_readback.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_local_dev_product_release_prepare.py",
+    "scripts/verify/test_local_platform_control.py",
     "scripts/verify/test_local_development_lifecycle.py"
   ],
   "environment": {
     "kind": "runtime",
     "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176",
-    "backend_source_revision": "a36f24f423148445a30a650d94685cbfc0f2f042",
-    "frontend_build_revision": "a36f24f423148445a30a650d94685cbfc0f2f042",
+    "backend_source_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
+    "frontend_build_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
     "database": "sc_dev_demo",
     "dbfilter": "^sc_dev_demo$",
     "entry": "/t/demo",
-    "recovery_snapshot": "artifacts/local-dev/snapshots/20261120T043906Z",
-    "schema_upgrade": "smart_core upgraded through the governed local.dev write lease"
+    "recovery_snapshot": "artifacts/local-dev/snapshots/20261120T105139Z",
+    "rebuild": "PASS: local.dev.rebuild_demo reset sc_dev_demo and loaded demo_full from current source",
+    "clean_install": "PASS: local.clean.rebuild installed smart_construction_core on sc_clean",
+    "platform_control": "PASS: sc-local-platform / sc_platform_control / smart_core only"
+  },
+  "local_platform_control": {
+    "status": "passed",
+    "project": "sc-local-platform",
+    "database": "sc_platform_control",
+    "database_owner": "sc_platform_control_app",
+    "database_role": "sc_platform_control_app",
+    "maintenance_role": "sc_platform_control_maintenance",
+    "dbfilter": "^sc_platform_control$",
+    "module": "smart_core",
+    "module_state": "installed",
+    "database_volume": "sc_local_platform_db_data",
+    "redis_volume": "sc_local_platform_redis_data",
+    "odoo_volume": "sc_local_platform_odoo_data",
+    "admin_login": "admin",
+    "namespace": "ns_000000000001",
+    "dev_platform_admin_db_binding": "sc_platform_control",
+    "env_file": "/home/lidefend/workspace/sce-backend-odoo/.env.local.platform",
+    "env_mode": "0600",
+    "dev_env_backup": "/home/lidefend/workspace/sce-backend-odoo/.env.dev.before-platform-control-20261120"
   },
   "runtime_identity": {
     "configuration_admin": {
@@ -56,12 +121,60 @@
       "company_id": 1,
       "company_name": "四川智汇某某建设集团有限公司",
       "allowed_company_ids": [
+        2,
         1
       ]
     },
     "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
-    "candidate_health": "passed: backend source revision and 5176 frontend both a36f24f42",
+    "candidate_health": "passed: backend source revision and 5176 frontend both 65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
     "system_init_after_schema_upgrade": "passed"
+  },
+  "release_prerequisite": {
+    "status": "passed",
+    "catalog_source_db": "sc_dev_demo",
+    "platform_release_db": "sc_platform_control",
+    "snapshot_id": 1,
+    "snapshot_version": "local-dev-65a7bd0cd85a",
+    "snapshot_state": "released",
+    "snapshot_active": true,
+    "active_snapshot_count": 1,
+    "page_count": 132,
+    "scenario_count": 46,
+    "source_policy_sha256": "412d744ff47b70ea4bd1277cc73f2a54efccd4787e661197548abc87be6b076f",
+    "release_artifact_sha256": "af4e6904a8f462448fc6867cb943726a7cd2214948f59fc7d9baa71ae41ec6f0",
+    "local_platform_project": "sc-local-platform",
+    "local_platform_database_role": "sc_platform_control_app",
+    "local_platform_maintenance_role": "sc_platform_control_maintenance",
+    "candidate_frontend_platform_admin_db": "sc_platform_control",
+    "root_cause": "The earlier local acceptance preparation used sc_dev_demo as both catalog source and platform release database.",
+    "resolution": "Created a separate sc-local-platform lifecycle, exported the approved policy from sc_dev_demo, and froze the release snapshot inside sc_platform_control after digest validation."
+  },
+  "scenario_organization": {
+    "status": "approved_and_runtime_verified",
+    "design": "config/product_scenario_organization_v1.json",
+    "review": "docs/product/product_scenario_organization_v1.md",
+    "generator": "scripts/audit/build_scenario_product_organization.py",
+    "runtime_seed": "addons/smart_construction_core/data/scenario_product_surface.json",
+    "validation": "make verify.product.scenario.organization.unit",
+    "released_page_count": 132,
+    "organized_page_count": 132,
+    "unique_page_count": 132,
+    "unassigned_page_count": 0,
+    "duplicate_page_count": 0,
+    "unknown_page_count": 0,
+    "scenario_group_count": 46,
+    "center_count": 11,
+    "workbench_route_count": 7,
+    "cross_center_connection_count": 18,
+    "organization_gap_count": 5,
+    "validation_test_count": 13,
+    "runtime_seed_changed_by_this_step": true,
+    "runtime_scenario_count": 46,
+    "runtime_binding_count": 132,
+    "runtime_unique_menu_count": 132,
+    "legacy_scenario_keys": 0,
+    "runtime_readback": "PASS on sc_dev_demo and sc_clean",
+    "note": "The product owner approved the organization. The runtime scenario seed was regenerated and verified from both the demo rebuild and a clean installation; release composition remains separate."
   },
   "journey_results": {
     "C02-01": {
@@ -75,12 +188,14 @@
       "reason": "All five handling entries share the same unresolved native route authority under upstream PR #950"
     },
     "C02-06A": {
-      "status": "blocked_by_declared_product_release_qualification",
-      "observed": "At a36f24f42 the catalog returned 92 source rows and zero business_scenarios. All 92 rows declare PRODUCT_RELEASE_UNVERIFIED, product_released=false and enable_allowed=false; no enable or disable action was available, so no scenario write was attempted. The visible panel reports: 场景目录共 92 项，启用阻断：PRODUCT_RELEASE_UNVERIFIED。"
+      "status": "passed",
+      "observed": "The exact candidate 65a7bd0cd85ac5732535c670c6fff4fd4a98ed41 returned 92 catalog rows and 17 actionable business scenarios. The browser enabled governance.organization for company 1, read back enabled=true without access grant, refreshed the catalog, then disabled it and read back enabled=false. A final independent Odoo readback confirmed the stored parameter is 0.",
+      "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
+      "report_sha256": "c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69"
     },
     "C02-06B": {
       "status": "not_run",
-      "reason": "No scenario was enabled and target-user route reachability may also depend on PR #950"
+      "reason": "The action journey proves enterprise selection and navigation refresh, but target-user access remains a separate Navigation Authority and role result. The read-only check on demo_role_pm/user 48 exposes role_surface=pm and the project-center declarations, but there is no applicable business record/project journey in this batch and the P0 enterprise entry binding is still blocked by #950."
     }
   },
   "authorization_reconciliation": {
@@ -129,14 +244,58 @@
     "click_result": "action_id=961 reason=CAPABILITY_MISSING",
     "business_writes": 0
   },
+  "scenario_runtime_evidence": {
+    "status": "passed",
+    "candidate": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
+    "backend_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
+    "frontend_build_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
+    "identity": {
+      "login": "sc_demo_business_config",
+      "user_id": 24,
+      "company_id": 1
+    },
+    "catalog_rows": 92,
+    "business_scenarios": 17,
+    "actionable_scenarios": 17,
+    "selected_scene": "governance.organization",
+    "enable_readback": {
+      "enabled": true,
+      "company_id": 1,
+      "write_committed": true,
+      "access_granted": false
+    },
+    "disable_readback": {
+      "enabled": false,
+      "company_id": 1,
+      "write_committed": true,
+      "access_granted": false
+    },
+    "final_parameter_value": "0",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
+    "report_sha256": "c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69"
+  },
   "validation_results": {
     "implemented_scope": "passed",
     "passed": [
       "verify.frontend.workspace_scenario_lifecycle.unit: 515 total cases passed; enterprise scenario catalog diagnostics added 6 cases",
       "verify.frontend.delivery_hardening.guard: 18 tests passed; real StatusPanel contract-gap rendering and no recovery action verified",
-      "verify.frontend.dev.incremental.unit: 189 tests passed",
       "verify.local.dev.enterprise_configuration.consumer: PASS with user 24, company 1; entry contract gap visible, unchanged route, zero business writes",
-      "make ci.local.iteration: exit 0; 13 required targets executed with no missing registration or unmapped path",
+      "local.dev.product_release.prepare: PASS; source/platform DB sc_dev_demo, unique active construction.standard snapshot 4, release gate applied with 132 pages",
+      "verify.admin_close_01.backend.unit: 167 tests passed across the selected backend contract families",
+      "verify.local.development_lifecycle.unit: 58 tests passed including release prerequisite guard coverage",
+      "verify.frontend.dev.incremental.unit: 189 tests passed after local.dev probe changes",
+      "candidate frontend build: PASS on 65a7bd0cd85ac5732535c670c6fff4fd4a98ed41; backend/frontend/5176 identity matched",
+      "verify.local.dev.enterprise_configuration.consumer scenario-only: PASS; enable/readback/refresh/disable/readback with two actual scenario.activation.set writes and zero browser errors",
+      "verify.product.scenario.organization.unit: 13 tests passed; approved design and generated runtime seed cover 132/132 pages",
+      "verify.nav01.native_authority.unit: 25 projection tests passed with approved scenario order and 132-page coverage",
+      "demo rebuild from current source: PASS on sc_dev_demo",
+      "scenario seed runtime readback: PASS on sc_dev_demo; 46 scenarios, 132 bindings, 132 unique menus, zero legacy keys",
+      "clean installation: PASS on sc_clean with smart_construction_core",
+      "scenario seed runtime readback: PASS on sc_clean; 46 scenarios, 132 bindings, 132 unique menus, zero legacy keys",
+      "local.platform ACTION=install: PASS; independent sc_platform_control created with smart_core only",
+      "local.platform ACTION=health: PASS; independent roles, owner, exact dbfilter and module state",
+      "local.dev.product_release.prepare: PASS; published 46 scenarios / 132 pages from sc_dev_demo into sc_platform_control snapshot 1",
+      "[historical before scenario-seed implementation] make ci.local.iteration: exit 0; 13 required targets executed",
       "ci.delivery.freeze.prepare: passed; generated evidence current with 1735 inventory entries",
       "frontend lint: zero errors, repository-existing warnings only",
       "frontend strict typecheck: passed"
@@ -144,13 +303,15 @@
     "not_run": [
       "C02-01 business save and readback: blocked until native entry binding is restored by upstream PR #950",
       "C02-02 through C02-05: blocked by the same native entry binding",
-      "C02-06B target-user route reachability: no scenario was eligible to enable",
+      "C02-06B target-user route reachability: the selected scenario proves enterprise selection and navigation refresh, but target-user access still requires an applicable project/role journey and remains separate from tenant enablement",
       "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
     ]
   },
   "validation_exclusions": {
     "targets": [
+      "verify.admin_close_01.runtime.orm",
       "verify.daily.permission_truth.capability.orm",
+      "verify.product_center.policy.orm",
       "verify.business_config.full_acceptance",
       "verify.business_config.browser_acceptance"
     ],
@@ -208,6 +369,38 @@
         "addons/smart_construction_scene/services/tenant_scene_activation.py",
         "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
         "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "published_release_preflight": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_surface_projection": {
+      "target": "verify.nav01.native_authority.unit",
+      "inputs": [
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_product_organization": {
+      "target": "verify.product.scenario.organization.unit",
+      "inputs": [
+        "config/product_primary_center_baseline_v1.json",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "config/product_scenario_organization_v1.json",
+        "docs/product/product_scenario_organization_v1.md",
+        "scripts/audit/build_scenario_product_organization.py",
+        "scripts/audit/test_build_scenario_product_organization.py",
+        "make/dev_test.mk"
       ],
       "kind": "offline"
     },
@@ -354,6 +547,22 @@
       }
     }
   },
+  "resolved_findings": [
+    {
+      "owner": "P4 governed local.dev acceptance precondition",
+      "classification": "environment_defect",
+      "finding": "The catalog source parameter was empty, so release preflight inspected sc_demo and produced 137 source-menu failures; no active release snapshot existed.",
+      "resolution": "Added an explicit local.dev product-release preparation entry, bound source/platform identities to sc_dev_demo, and created/verified active snapshot 4 through EditionReleaseSnapshotService.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P1 smart_construction_scene tenant enablement",
+      "classification": "product_defect",
+      "finding": "After an enable request, the immediate disable readback could observe a stale registry-cached true value and return INTERNAL_ERROR instead of committing the disable.",
+      "resolution": "Clear the registry cache after the parameter row write completes and added a focused stale-cache regression.",
+      "status": "resolved"
+    }
+  ],
   "blockers": [
     {
       "owner": "P0 smart_core native execution route discovery",
@@ -363,5 +572,5 @@
       "evidence": "The handling_entry_catalog exposes five action_xmlid entries and raw internal action resolution plus native ACL/action-group checks all succeed. In the combined candidate, effective delivery scene_keys contains only workspace.home, final scene_internal_actions is empty, and clicking enterprise info routes to action_id=961 with CAPABILITY_MISSING."
     }
   ],
-  "next_exact_step": "The upstream #950 owner must include enterprise.setup in effective delivery scene_keys and expose the five authorized internal actions in final system.init. After that candidate is integrated, sync this branch and rerun C02-01 from the visible enterprise information entry."
+  "next_exact_step": "Review the final dirty implementation set, run the affected local iteration gate, then commit and publish the exact candidate through the governed PR flow."
 }

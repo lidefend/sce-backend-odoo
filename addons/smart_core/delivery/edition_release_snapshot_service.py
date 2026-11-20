@@ -348,23 +348,49 @@ class EditionReleaseSnapshotService:
     def _business_scene_composition_check(
         self,
         policy: dict[str, Any],
+        published_pages: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         composition = _dict(policy.get("business_scene_composition"))
         scenarios = _list(composition.get("scenarios"))
+        centers = _list(composition.get("centers"))
+        published_menu_keys = {
+            _text(row.get("menu_xmlid") or row.get("page_key"))
+            for row in published_pages or []
+            if isinstance(row, dict)
+            and _text(row.get("menu_xmlid") or row.get("page_key"))
+        }
+        published_by_menu = {
+            _text(row.get("menu_xmlid") or row.get("page_key")): row
+            for row in published_pages or []
+            if isinstance(row, dict)
+            and _text(row.get("menu_xmlid") or row.get("page_key"))
+        }
         if not scenarios:
             return {
                 "key": "business_scene_composition",
                 "label": "业务场景组合",
-                "status": "not_configured",
-                "message": "未声明业务场景组合",
-                "blocking": False,
+                "status": "fail" if published_menu_keys else "not_configured",
+                "message": (
+                    "已发布页面没有业务场景组合"
+                    if published_menu_keys
+                    else "未声明业务场景组合"
+                ),
+                "blocking": bool(published_menu_keys),
                 "ready_binding_count": 0,
+                "published_page_count": len(published_menu_keys),
+                "scenario_bound_page_count": 0,
+                "unassigned_page_count": len(published_menu_keys),
                 "issues": [],
             }
         issues: list[dict[str, Any]] = []
         seen_scenarios: set[str] = set()
         ready_bindings = 0
-        validate_native = self._model_registered("ir.ui.menu")
+        scenario_bound_menu_keys: set[str] = set()
+        current_db = _text(getattr(getattr(self.env, "cr", None), "dbname", ""))
+        composition_source_db = _text(composition.get("source_db"))
+        validate_native = self._model_registered("ir.ui.menu") and (
+            not composition_source_db or composition_source_db == current_db
+        )
         for index, scenario in enumerate(scenarios):
             if not isinstance(scenario, dict):
                 issues.append({
@@ -407,6 +433,22 @@ class EditionReleaseSnapshotService:
                         "message": f"{scenario_key}[{binding_index}]",
                     })
                     continue
+                if not _text(binding.get("center_key")):
+                    issues.append({
+                        "code": "BUSINESS_SCENE_CENTER_UNASSIGNED",
+                        "message": f"{scenario_key}:{menu_xmlid}",
+                    })
+                    continue
+                if (
+                    composition_source_db
+                    and composition_source_db != current_db
+                    and menu_xmlid.startswith("menu:")
+                ):
+                    issues.append({
+                        "code": "BUSINESS_SCENE_MENU_UNRESOLVED",
+                        "message": menu_xmlid,
+                    })
+                    continue
                 if validate_native:
                     try:
                         menu = self._resolve_business_scene_menu(
@@ -426,11 +468,20 @@ class EditionReleaseSnapshotService:
                         continue
                     action = getattr(menu, "action", None)
                     if not action:
-                        issues.append({
-                            "code": "BUSINESS_SCENE_ACTION_MISSING",
-                            "message": menu_xmlid,
-                        })
-                        continue
+                        published = published_by_menu.get(menu_xmlid) or {}
+                        if not (
+                            _text(published.get("scene_key"))
+                            and (
+                                _text(published.get("route")).startswith("/s/")
+                                or not _to_int(published.get("action_id"))
+                            )
+                        ):
+                            issues.append({
+                                "code": "BUSINESS_SCENE_ACTION_MISSING",
+                                "message": menu_xmlid,
+                            })
+                            continue
+                        action = None
                     res_model = _text(getattr(action, "res_model", ""))
                     if res_model and not self._model_registered(res_model):
                         issues.append({
@@ -440,6 +491,44 @@ class EditionReleaseSnapshotService:
                         continue
                 if active:
                     ready_bindings += 1
+                    scenario_bound_menu_keys.add(menu_xmlid)
+        composed_scenarios: set[str] = set()
+        for center_index, center in enumerate(centers):
+            if not isinstance(center, dict):
+                issues.append({
+                    "code": "BUSINESS_SCENE_CENTER_INVALID",
+                    "message": f"center index {center_index} is not an object",
+                })
+                continue
+            center_key = _text(center.get("key"))
+            if not center_key:
+                issues.append({
+                    "code": "BUSINESS_SCENE_CENTER_KEY_MISSING",
+                    "message": f"center index {center_index}",
+                })
+                continue
+            for scenario_key in _list(center.get("scenarios")):
+                scenario_key = _text(scenario_key)
+                if scenario_key not in seen_scenarios:
+                    issues.append({
+                        "code": "BUSINESS_SCENE_CENTER_REFERENCE_INVALID",
+                        "message": f"{center_key}:{scenario_key}",
+                    })
+                    continue
+                composed_scenarios.add(scenario_key)
+        for scenario_key in sorted(seen_scenarios - composed_scenarios):
+            issues.append({
+                "code": "BUSINESS_SCENE_CENTER_REFERENCE_MISSING",
+                "message": scenario_key,
+            })
+        unassigned_menu_keys = sorted(
+            published_menu_keys - scenario_bound_menu_keys
+        )
+        for menu_xmlid in unassigned_menu_keys:
+            issues.append({
+                "code": "BUSINESS_SCENE_PAGE_UNASSIGNED",
+                "message": menu_xmlid,
+            })
         return {
             "key": "business_scene_composition",
             "label": "业务场景组合",
@@ -451,6 +540,12 @@ class EditionReleaseSnapshotService:
             ),
             "blocking": bool(issues),
             "ready_binding_count": ready_bindings,
+            "published_page_count": len(published_menu_keys),
+            "center_count": len(centers),
+            "scenario_bound_page_count": len(
+                published_menu_keys & scenario_bound_menu_keys
+            ),
+            "unassigned_page_count": len(unassigned_menu_keys),
             "issues": issues[:20],
         }
 
@@ -508,7 +603,8 @@ class EditionReleaseSnapshotService:
         preview_pages = [row for row in effective_pages if _text(row.get("release_state")) == "preview"]
         hidden_pages = [row for row in pages if not bool(row.get("enabled")) or _text(row.get("release_state")) in {"hidden", "retired"}]
         composition_check = self._business_scene_composition_check(
-            _dict(policy)
+            _dict(policy),
+            published_pages=effective_pages,
         )
         has_release_surface = bool(effective_pages) or (
             composition_check.get("status") == "pass"
@@ -629,6 +725,9 @@ class EditionReleaseSnapshotService:
         }
 
     def _source_db_name(self) -> str:
+        context_source = _text(
+            self.env.context.get("sc_release_catalog_source_db")
+        )
         try:
             configured = self.env["ir.config_parameter"].sudo().get_param(
                 "smart_core.release_operator.catalog_source_db",
@@ -636,7 +735,7 @@ class EditionReleaseSnapshotService:
             )
         except Exception:
             configured = ""
-        return _text(configured) or "sc_demo"
+        return _text(configured) or context_source or "sc_demo"
 
     def _source_target_check(self, pages: list[dict[str, Any]]) -> dict[str, Any]:
         action_pages = [
@@ -1004,7 +1103,10 @@ class EditionReleaseSnapshotService:
         if self._draft_fingerprint(policy=policy, pages=pages) != _text(draft.get("fingerprint")):
             raise ValueError("RELEASE_SNAPSHOT_FINGERPRINT_MISMATCH")
         effective = [row for row in pages if row.get("enabled") and row.get("release_state") in {"released", "preview"}]
-        composition_check = self._business_scene_composition_check(policy)
+        composition_check = self._business_scene_composition_check(
+            policy,
+            published_pages=effective,
+        )
         if composition_check.get("blocking"):
             raise ValueError("RELEASE_SNAPSHOT_BUSINESS_SCENE_COMPOSITION_INVALID")
         if not effective and composition_check.get("status") != "pass":

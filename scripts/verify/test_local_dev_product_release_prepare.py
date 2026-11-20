@@ -65,6 +65,38 @@ class LocalDevProductReleasePrepareTest(unittest.TestCase):
         with self.assertRaisesRegex(RuntimeError, "SOURCE_REVISION_REQUIRED"):
             MODULE.release_version("fab3415")
 
+    def test_catalog_source_and_platform_release_database_are_separate(self):
+        self.assertEqual(
+            MODULE.validate_release_databases(
+                catalog_source_db="sc_dev_demo",
+                platform_release_db="sc_platform_control",
+            ),
+            {
+                "catalog_source_db": "sc_dev_demo",
+                "platform_release_db": "sc_platform_control",
+            },
+        )
+        for catalog_source_db, platform_release_db, message in (
+            (
+                "sc_demo",
+                "sc_platform_control",
+                "CATALOG_SOURCE_DENIED",
+            ),
+            (
+                "sc_dev_demo",
+                "sc_dev_demo",
+                "PLATFORM_DATABASE_DENIED",
+            ),
+        ):
+            with self.subTest(
+                catalog_source_db=catalog_source_db,
+                platform_release_db=platform_release_db,
+            ), self.assertRaisesRegex(RuntimeError, message):
+                MODULE.validate_release_databases(
+                    catalog_source_db=catalog_source_db,
+                    platform_release_db=platform_release_db,
+                )
+
     def test_make_entry_acquires_write_lease_and_binds_exact_database(self):
         makefile = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
         wrapper = makefile.split(

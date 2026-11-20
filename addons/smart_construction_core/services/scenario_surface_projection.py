@@ -27,7 +27,7 @@ from .product_menu_source import center_identity, stable_center_key
 
 
 SURFACE_PATH = Path(__file__).resolve().parents[1] / "data" / "scenario_product_surface.json"
-SCHEMA = "construction.scenario_product_surface.v1"
+SCHEMA = "construction.scenario_product_surface.v2"
 INTENT_ORDER = ("handle", "view", "approve", "report", "master_data")
 INTENT_LABELS = {
     "handle": "办理",
@@ -125,23 +125,6 @@ def build_menu_assignments(
             if same_scenario or any(item.get("location") != "scenario" for item in existing):
                 raise ValueError(f"duplicate menu assignment in scenario product surface: {key}")
         existing.append(row)
-
-    horizontal_root = _text(surface.get("horizontal_work_center", {}).get("root_menu_xmlid"))
-    platform_root = _text(surface.get("platform_support", {}).get("root_menu_xmlid"))
-    if parent_by_menu:
-        for menu_xmlid, parent_xmlid in parent_by_menu.items():
-            key = _text(menu_xmlid)
-            if not key:
-                continue
-            if horizontal_root and _text(parent_xmlid) == horizontal_root:
-                claim(key, "horizontal")
-            elif platform_root and _text(parent_xmlid) == platform_root:
-                claim(key, "platform")
-    else:
-        for menu in surface.get("horizontal_work_center", {}).get("menus", []) or []:
-            claim(menu, "horizontal")
-        for menu in surface.get("platform_support", {}).get("menus", []) or []:
-            claim(menu, "platform")
 
     scenario_keys: set[str] = set()
     for scenario in surface.get("scenarios", []) or []:
@@ -308,62 +291,81 @@ def project_scenario_navigation(
         _text(s.get("key")): s for s in (source.get("scenarios") or []) if _text(s.get("key"))
     }
 
-    domains: list[dict[str, Any]] = []
-    for domain in source.get("domains", []) or []:
-        scenario_nodes: list[dict[str, Any]] = []
-        for scenario_key in domain.get("scenarios", []) or []:
-            key = _text(scenario_key)
-            scenario = scenario_rows.get(key)
-            if not scenario:
-                continue
-            intent_nodes: list[dict[str, Any]] = []
-            for intent in INTENT_ORDER:
-                entries = [
-                    leaf
-                    for menu in (scenario.get("intents") or {}).get(intent, []) or []
-                    for leaf in by_menu.get(_text(menu), [])
-                ]
-                if entries:
-                    intent_nodes.append({
-                        "intent": intent,
-                        "label": INTENT_LABELS.get(intent, intent),
-                        "entries": entries,
+    centers: dict[str, dict[str, Any]] = {}
+    for key, scenario in scenario_rows.items():
+        by_center: dict[str, dict[str, Any]] = {}
+        for intent in INTENT_ORDER:
+            for menu in (scenario.get("intents") or {}).get(intent, []) or []:
+                for leaf in by_menu.get(_text(menu), []):
+                    center_key = _text(leaf.get("policy_center_key")) or "system.entry"
+                    center = by_center.setdefault(center_key, {
+                        "key": center_key,
+                        "name": _text(leaf.get("policy_center_label")) or "系统入口",
+                        "sequence": _int_or(leaf.get("policy_center_sequence"), 900),
+                        "scenario": {
+                            "key": key,
+                            "name": _text(scenario.get("name") or key),
+                            "type": _text(scenario.get("type")),
+                            "sequence": _int_or(scenario.get("sequence"), 10),
+                            "intents": {},
+                        },
                     })
-            if intent_nodes:
-                scenario_nodes.append({
+                    center["scenario"]["intents"].setdefault(intent, []).append(leaf)
+        for center_key, center in by_center.items():
+            target_center = centers.setdefault(center_key, {
+                "key": center_key,
+                "name": center["name"],
+                "sequence": center["sequence"],
+                "scenarios": {},
+            })
+            scenario_node = target_center["scenarios"].setdefault(
+                key,
+                {
                     "key": key,
                     "name": _text(scenario.get("name") or key),
                     "type": _text(scenario.get("type")),
-                    "intents": intent_nodes,
-                })
-        if scenario_nodes:
-            domains.append({
-                "key": _text(domain.get("key")),
-                "name": _text(domain.get("name") or domain.get("key")),
-                "scenarios": scenario_nodes,
-            })
+                    "sequence": _int_or(scenario.get("sequence"), 10),
+                    "intents": [],
+                },
+            )
+            scenario_node["intents"] = [
+                {
+                    "intent": intent,
+                    "label": INTENT_LABELS.get(intent, intent),
+                    "entries": center["scenario"]["intents"][intent],
+                }
+                for intent in INTENT_ORDER
+                if center["scenario"]["intents"].get(intent)
+            ]
+    center_rows = []
+    for center in sorted(centers.values(), key=lambda item: (item["sequence"], item["key"])):
+        center_rows.append({
+            "key": center["key"],
+            "name": center["name"],
+            "scenarios": [
+                center["scenarios"][key]
+                for key in sorted(
+                    center["scenarios"],
+                    key=lambda key: (
+                        _int_or(center["scenarios"][key].get("sequence"), 10),
+                        key,
+                    ),
+                )
+            ],
+        })
 
-    horizontal_root = _text(source.get("horizontal_work_center", {}).get("root_menu_xmlid"))
-    platform_root = _text(source.get("platform_support", {}).get("root_menu_xmlid"))
-    horizontal = [
-        dict(leaf) for leaf in authorized_leaves
-        if horizontal_root and _text(leaf.get("parent_menu_xmlid")) == horizontal_root
-    ]
-    platform = [
-        dict(leaf) for leaf in authorized_leaves
-        if platform_root and _text(leaf.get("parent_menu_xmlid")) == platform_root
-        and _text(leaf.get("menu_xmlid")) not in native_platform_keys
-    ]
-    platform = native_platform + platform
+    platform = list(native_platform)
+    product_configuration = center_identity(
+        "construction.center.product_configuration"
+    ) or {}
 
     grouped_menu_count = sum(len(v) for v in by_menu.values()) + len(native_platform)
     return {
         "ok": True,
         "tree": {
-            "domains": domains,
-            "horizontal": horizontal,
+            "centers": center_rows,
             "platform": platform if include_platform else [],
-            "platform_label": _text(source.get("platform_support", {}).get("name")),
+            "platform_label": _text(product_configuration.get("name")),
         },
         "diagnostics": {
             "authorized_leaf_count": sum(1 for leaf in authorized_leaves if isinstance(leaf, dict) and _text(leaf.get("menu_xmlid") or leaf.get("xmlid"))),
@@ -371,9 +373,9 @@ def project_scenario_navigation(
             "grouped_leaf_count": grouped_menu_count,
             "unmapped_menu_xmlids": unmapped,
             "unmapped_count": len(unmapped),
-            "domain_count": len(domains),
-            "scenario_count": sum(len(d["scenarios"]) for d in domains),
-            "intent_count": sum(len(s["intents"]) for d in domains for s in d["scenarios"]),
+            "center_count": len(center_rows),
+            "scenario_count": sum(len(c["scenarios"]) for c in center_rows),
+            "intent_count": sum(len(s["intents"]) for c in center_rows for s in c["scenarios"]),
         },
     }
 
@@ -644,6 +646,7 @@ def load_maintained_runtime_surface(env):
     menu_xmlids = _menu_external_ids(scenarios.mapped("entry_ids.menu_id"))
     source_db = _text(getattr(getattr(env, "cr", None), "dbname", ""))
     rows = []
+    centers: dict[str, dict[str, Any]] = {}
     for scenario in scenarios:
         intents = {}
         bindings = []
@@ -663,11 +666,25 @@ def load_maintained_runtime_surface(env):
                 "center_sequence": getattr(entry, "center_sequence", 10),
                 "source_db": source_db,
             })
+            center_key = _text(getattr(entry, "center_key", ""))
+            if center_key:
+                center = centers.setdefault(center_key, {
+                    "key": center_key,
+                    "name": _text(getattr(entry, "center_name", "")) or center_key,
+                    "sequence": _int_or(getattr(entry, "center_sequence", 10), 10),
+                    "scenarios": [],
+                })
+                if scenario.code not in center["scenarios"]:
+                    center["scenarios"].append(scenario.code)
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
     return {
         "schema": SCHEMA,
+        "centers": sorted(
+            centers.values(),
+            key=lambda item: (item["sequence"], item["key"]),
+        ),
         "scenarios": rows,
         "source_db": source_db,
         "runtime_scope": "maintained_draft",
@@ -684,6 +701,7 @@ def load_published_runtime_surface(
         return None
     empty = {
         "schema": SCHEMA,
+        "centers": [],
         "scenarios": [],
         "runtime_scope": "published_release_without_composition",
     }
@@ -709,6 +727,7 @@ def load_published_runtime_surface(
     composition = policy.get("business_scene_composition")
     if (
         not isinstance(composition, dict)
+        or not isinstance(composition.get("centers"), list)
         or not isinstance(composition.get("scenarios"), list)
     ):
         return empty
@@ -979,12 +998,13 @@ def is_workspace_home_leaf(leaf: dict[str, Any]) -> bool:
 
 
 def resolve_horizontal_work_center(env, surface: dict[str, Any] | None = None) -> dict[str, Any] | None:
-    """Resolve the declared workbench center identity from the product surface."""
+    """Resolve the workbench center from the product-center skeleton."""
     if env is None:
         return None
     try:
         source = surface if isinstance(surface, dict) else load_surface()
-        root_xmlid = _text((source.get("horizontal_work_center") or {}).get("root_menu_xmlid"))
+        identity = center_identity(WORKBENCH_GROUP_KEY)
+        root_xmlid = _text((identity or {}).get("native_menu_xmlid"))
         menu = env.ref(root_xmlid, raise_if_not_found=False) if root_xmlid else None
     except Exception:
         return None

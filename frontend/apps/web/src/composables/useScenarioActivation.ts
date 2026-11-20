@@ -28,6 +28,7 @@ export type ScenarioTargetScope = {
 };
 export type ScenarioProductQualification = {
   status: string;
+  label: string;
   reason_code: string;
   evidence: {
     product_key?: string;
@@ -50,19 +51,18 @@ export type BusinessScenario = {
   enable_allowed: boolean;
   actions: ScenarioAction[];
 };
-export type ScenarioCatalogRow = {
-  scene_key: string;
-  name: string;
-  release_state: string;
-  product_released: boolean;
-  tenant_enabled: boolean;
-  product_qualification: {
-    status: string;
-    reason_code: string;
-    evidence: Record<string, unknown>;
-  };
-  enablement_blockers: string[];
-  enable_allowed: boolean;
+export type ScenarioCatalogCardinality = {
+  published_page_count: number;
+  scenario_bound_page_count: number;
+  unscenarioized_published_page_count: number;
+  center_count: number;
+  business_scenario_count: number;
+  actionable_business_scenario_count: number;
+};
+export type ScenarioCatalogPresentation = {
+  title: string;
+  summary: string;
+  empty_label: string;
 };
 export type ScenarioReadback = {
   scene_key: string;
@@ -85,8 +85,17 @@ export type ScenarioReadback = {
 };
 type Catalog = {
   contract_version: string;
-  rows: ScenarioCatalogRow[];
-  row_count: number;
+  published_page_count: number;
+  published_snapshot: {
+    snapshot_id: number;
+    version: string;
+    fingerprint: string;
+    applied: boolean;
+  };
+  catalog_status: string;
+  catalog_blockers: string[];
+  catalog_presentation: ScenarioCatalogPresentation;
+  catalog_cardinality: ScenarioCatalogCardinality;
   company_id: number;
   actor: ScenarioActor;
   target_scope: ScenarioTargetScope;
@@ -94,22 +103,34 @@ type Catalog = {
 };
 
 function requireCatalog(value: Catalog): Catalog {
-  if (!value || value.contract_version !== 'scenario_activation_catalog.v1'
-    || !Array.isArray(value.rows)
-    || value.rows.some(row => !row || typeof row.scene_key !== 'string' || !row.scene_key
-      || typeof row.name !== 'string' || !row.name
-      || typeof row.release_state !== 'string'
-      || typeof row.product_released !== 'boolean'
-      || typeof row.tenant_enabled !== 'boolean'
-      || !row.product_qualification
-      || typeof row.product_qualification.status !== 'string'
-      || typeof row.product_qualification.reason_code !== 'string'
-      || !row.product_qualification.evidence
-      || typeof row.product_qualification.evidence !== 'object'
-      || !Array.isArray(row.enablement_blockers)
-      || row.enablement_blockers.some((item: unknown) => typeof item !== 'string')
-      || typeof row.enable_allowed !== 'boolean')
-    || !Number.isInteger(value.row_count) || value.row_count !== value.rows.length
+  if (!value || value.contract_version !== 'scenario_activation_catalog.v2'
+    || !Number.isInteger(value.published_page_count) || value.published_page_count < 0
+    || !value.published_snapshot
+    || !Number.isInteger(value.published_snapshot.snapshot_id)
+    || typeof value.published_snapshot.version !== 'string'
+    || typeof value.published_snapshot.fingerprint !== 'string'
+    || typeof value.published_snapshot.applied !== 'boolean'
+    || !['ready', 'blocked'].includes(value.catalog_status)
+    || !Array.isArray(value.catalog_blockers)
+    || value.catalog_blockers.some((item: unknown) => typeof item !== 'string')
+    || !value.catalog_presentation
+    || ['title', 'summary', 'empty_label'].some(
+      key => typeof value.catalog_presentation[key as keyof ScenarioCatalogPresentation] !== 'string'
+        || !value.catalog_presentation[key as keyof ScenarioCatalogPresentation],
+    )
+    || !value.catalog_cardinality
+    || !Number.isInteger(value.catalog_cardinality.published_page_count)
+    || value.catalog_cardinality.published_page_count !== value.published_page_count
+    || !Number.isInteger(value.catalog_cardinality.scenario_bound_page_count)
+    || value.catalog_cardinality.scenario_bound_page_count < 0
+    || !Number.isInteger(value.catalog_cardinality.unscenarioized_published_page_count)
+    || value.catalog_cardinality.unscenarioized_published_page_count < 0
+    || !Number.isInteger(value.catalog_cardinality.center_count)
+    || value.catalog_cardinality.center_count < 0
+    || !Number.isInteger(value.catalog_cardinality.business_scenario_count)
+    || value.catalog_cardinality.business_scenario_count !== value.business_scenarios.length
+    || !Number.isInteger(value.catalog_cardinality.actionable_business_scenario_count)
+    || value.catalog_cardinality.actionable_business_scenario_count < 0
     || !Number.isInteger(value.company_id) || value.company_id <= 0
     || !value.actor || !Number.isInteger(value.actor.user_id) || value.actor.user_id <= 0
     || typeof value.actor.can_manage_enterprise_configuration !== 'boolean'
@@ -123,6 +144,7 @@ function requireCatalog(value: Catalog): Catalog {
         || typeof action.key !== 'string' || !action.key || typeof action.label !== 'string' || !action.label
         || typeof action.enabled !== 'boolean')
       || !row.product_qualification || typeof row.product_qualification.status !== 'string'
+      || typeof row.product_qualification.label !== 'string' || !row.product_qualification.label
       || typeof row.product_qualification.reason_code !== 'string'
       || !row.product_qualification.evidence || typeof row.product_qualification.evidence !== 'object'
       || !Array.isArray(row.enablement_blockers)
@@ -180,8 +202,10 @@ export function requireScenarioReadback(
 export function useScenarioActivation() {
   const session = useSessionStore();
   const rows = ref<BusinessScenario[]>([]);
-  const catalogRows = ref<ScenarioCatalogRow[]>([]);
-  const catalogRowCount = ref(0);
+  const catalogCardinality = ref<ScenarioCatalogCardinality | null>(null);
+  const catalogPresentation = ref<ScenarioCatalogPresentation | null>(null);
+  const catalogStatus = ref('');
+  const catalogBlockers = ref<string[]>([]);
   const actor = ref<ScenarioActor | null>(null);
   const targetScope = ref<ScenarioTargetScope | null>(null);
   const readback = ref<ScenarioReadback | null>(null);
@@ -202,8 +226,10 @@ export function useScenarioActivation() {
   async function load() {
     const request = ++sequence;
     rows.value = [];
-    catalogRows.value = [];
-    catalogRowCount.value = 0;
+    catalogCardinality.value = null;
+    catalogPresentation.value = null;
+    catalogStatus.value = '';
+    catalogBlockers.value = [];
     actor.value = null;
     targetScope.value = null;
     companyId = 0;
@@ -225,8 +251,10 @@ export function useScenarioActivation() {
       if (!current(key, epoch) || request !== sequence) return;
       const catalog = requireCatalog(response);
       if (company && catalog.company_id !== company) throw new Error('场景目录公司与当前上下文不一致');
-      catalogRows.value = catalog.rows;
-      catalogRowCount.value = catalog.row_count;
+      catalogCardinality.value = catalog.catalog_cardinality;
+      catalogPresentation.value = catalog.catalog_presentation;
+      catalogStatus.value = catalog.catalog_status;
+      catalogBlockers.value = catalog.catalog_blockers;
       rows.value = catalog.business_scenarios;
       actor.value = catalog.actor;
       targetScope.value = catalog.target_scope;
@@ -268,8 +296,11 @@ export function useScenarioActivation() {
     } catch (error) {
       if (!current(key, epoch) || operation !== mutation) return;
       rows.value = [];
-      catalogRows.value = [];
-      catalogRowCount.value = 0;
+      catalogCardinality.value = null;
+      catalogPresentation.value = null;
+      catalogStatus.value = '';
+      catalogBlockers.value = [];
+      catalogCardinality.value = null;
       readback.value = verifiedReadback;
       state.value = 'error';
       const message = error instanceof Error ? error.message : '场景操作失败';
@@ -292,8 +323,12 @@ export function useScenarioActivation() {
     busy.value = true;
     state.value = 'loading';
     rows.value = [];
-    catalogRows.value = [];
-    catalogRowCount.value = 0;
+    catalogCardinality.value = null;
+    catalogPresentation.value = null;
+    catalogStatus.value = '';
+    catalogBlockers.value = [];
+    catalogCardinality.value = null;
+    catalogPresentation.value = null;
     try {
       // Read-only recovery: never replay scenario.activation.set after a
       // successful write whose following navigation refresh failed.
@@ -316,8 +351,11 @@ export function useScenarioActivation() {
     refreshRequired = false;
     readback.value = null;
     rows.value = [];
-    catalogRows.value = [];
-    catalogRowCount.value = 0;
+    catalogCardinality.value = null;
+    catalogPresentation.value = null;
+    catalogStatus.value = '';
+    catalogBlockers.value = [];
+    catalogCardinality.value = null;
     actor.value = null;
     targetScope.value = null;
   });
@@ -325,8 +363,11 @@ export function useScenarioActivation() {
     if (busy.value) {
       sequence += 1;
       rows.value = [];
-      catalogRows.value = [];
-      catalogRowCount.value = 0;
+      catalogCardinality.value = null;
+      catalogPresentation.value = null;
+      catalogStatus.value = '';
+      catalogBlockers.value = [];
+      catalogCardinality.value = null;
       state.value = 'loading';
       return;
     }
@@ -336,7 +377,7 @@ export function useScenarioActivation() {
   }, { immediate: true });
   onScopeDispose(() => { disposed = true; sequence += 1; mutation += 1; });
   return {
-    rows, catalogRows, catalogRowCount, actor, targetScope, readback, state, errorMessage, busy,
+    rows, catalogCardinality, catalogPresentation, catalogStatus, catalogBlockers, actor, targetScope, readback, state, errorMessage, busy,
     load, refresh, execute,
   };
 }
