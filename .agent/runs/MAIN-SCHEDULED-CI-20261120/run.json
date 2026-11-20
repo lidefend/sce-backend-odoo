@@ -180,7 +180,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Freeze multi-XMLID identity correction; run affected P0/industry/navigation ORM and sealed 49 fixture; review exact HEAD and publish same Draft full candidate. Retain passed af7 long-chain evidence with original SHA; no merge.",
+  "next_exact_step": "Publish same Draft with exact-head preflight and independent review; dispatch new full candidate and collect all required gates. P0 code/tests verified at b3d; evidence-only follow-up changes no runtime inputs. Owner independent re-review remains required before merge.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -472,7 +472,7 @@
       ]
     },
     "action_identity_review_followup": {
-      "status": "unit_passed_runtime_pending",
+      "status": "local_passed_remote_pending",
       "logs": [
         ".runtime/ci-recovery/action-identity-before.log",
         ".runtime/ci-recovery/action-identity-final-unit.log",
@@ -483,6 +483,30 @@
       "publication_tests": 49,
       "reason": "Resolve role exclusions to real action model/id and close all executable buckets; unknown policy or candidate identity explicitly denied, lawful missing XMLID remains allowed. S3 top scope/gates corrected.",
       "related_tests": 462
+    },
+    "platform_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 17,
+      "receipt": ".runtime/test-baseline/1795155964396493225/receipt.json",
+      "tags": "sc_smoke/smart_core,sc_gate/smart_core",
+      "source_unchanged": true
+    },
+    "owning_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795156005919425232/receipt.json",
+      "tags": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "source_unchanged": true
+    },
+    "fixture_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-b3d.log"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
