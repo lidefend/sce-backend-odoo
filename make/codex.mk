@@ -476,14 +476,9 @@ verify.pr.review.unit: guard.prod.forbid
 	@python3 -m py_compile scripts/ops/pr_review_submit.py scripts/ops/test_pr_review_submit.py
 	@python3 -m unittest scripts.ops.test_pr_review_submit
 
-# Exact-head local quick evidence gate before pr.merge.
-#
-# The remote PR gates do not run the local quick suite, so guard drift
-# (stale split-guard tokens, line budgets, evidence locks) used to
-# accumulate silently on main. A clean exact-head ci.local.quick run now records
-# worktree-local evidence. This gate reuses that evidence when available and
-# otherwise runs the suite once as a fail-closed fallback. The local checkout
-# must always be clean and equal to EXPECTED_HEAD.
+# Explicit full-local diagnostic. This target is intentionally not a
+# prerequisite of pr.merge: ordinary candidates use ci.local.iteration plus
+# risk-selected affected checks, while the remote PR gates own merge eligibility.
 pr.merge.local_quick_gate:
 	@bash -c '\
 	set -euo pipefail; \

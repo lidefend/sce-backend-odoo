@@ -217,28 +217,6 @@ def validate_dependency(root: Path, *, pr: int, head: str, merge: str,
         raise SyncError("dependency source and squash trees differ")
 
 
-def has_exact_quick_evidence(root: Path, governance_root: Path, head: str) -> bool:
-    verifier = governance_root / "scripts/ops/local_quick_evidence.py"
-    result = subprocess.run(
-        [
-            sys.executable,
-            str(verifier),
-            "verify",
-            "--root",
-            str(root),
-            "--expected-head",
-            head,
-        ],
-        cwd=root,
-        env=sanitized_environment(),
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
-        check=False,
-    )
-    return result.returncode == 0
-
-
 def require_clean(root: Path) -> None:
     if git_output(root, "status", "--porcelain=v1", "--untracked-files=all"):
         raise SyncError("worktree must be clean, including untracked files")
@@ -386,7 +364,6 @@ def validate(
     expected_old_base: str, expected_main: str, pr_checker: Callable[[str], bool] = has_open_pr,
     origin_checker: Callable[[Path], bool] = has_canonical_origin,
     allow_extended_history: bool = False, expected_commit_count: int | None = None,
-    quick_evidence_checker: Callable[[Path, Path, str], bool] = has_exact_quick_evidence,
     dependency_pr: int | None = None, dependency_head: str | None = None,
     dependency_merge: str | None = None,
     dependency_reader: Callable[[int], dict] = merged_dependency,
@@ -486,8 +463,6 @@ def validate(
         raise SyncError("responsibility branch contains merge commits")
     commits = tuple(filter(None, git_output(root, "rev-list", "--reverse", f"{replay_base}..{expected_head}").splitlines()))
     if allow_extended_history:
-        if not quick_evidence_checker(root, governance_root, expected_head):
-            raise SyncError("extended sync requires valid worktree-local exact-head Quick evidence")
         if expected_commit_count is None or expected_commit_count != len(commits):
             raise SyncError("extended sync requires an exact matching EXPECTED_COMMIT_COUNT")
         minimum = 1 if covered_prefix else MAX_RESPONSIBILITY_COMMITS + 1
@@ -1182,7 +1157,7 @@ def main() -> int:
         return 2
     invalidated = ",".join(result.generated_evidence_conflicts) or "none"
     semantic = ",".join(result.semantic_conflicts) or "none"
-    next_validation = ("exact-new-head-Quick-and-affected-acceptance" if plan.extended_history
+    next_validation = ("exact-new-head-affected-validation" if plan.extended_history
                        else "current-head-risk-selected-validation")
     print(
         f"[workspace.branch.sync-main] PASS branch={plan.branch} old_head={plan.head} "

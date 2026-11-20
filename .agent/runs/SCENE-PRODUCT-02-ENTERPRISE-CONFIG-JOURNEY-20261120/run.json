@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
   "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
-  "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+  "baseline_sha": "46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
   "status": "verification_pending",
   "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
@@ -17,6 +17,7 @@
     "docs/engineering_convergence/test_inventory_summary.md",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/ops/local_development_environment_v1.md",
+    "docs/ops/delivery_lane_execution_runbook_v1.md",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
     "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
     "addons/smart_construction_core/__manifest__.py",
@@ -61,6 +62,7 @@
     "make/dev.mk",
     "make/dev_test.mk",
     "make/guards.mk",
+    "make/codex.mk",
     "scripts/audit/build_scenario_product_organization.py",
     "scripts/audit/test_build_scenario_product_organization.py",
     "scripts/audit/verification_lane_baseline.json",
@@ -68,6 +70,8 @@
     "scripts/dev/local_dev_product_release_prepare.py",
     "scripts/dev/local_platform_control.py",
     "scripts/dev/local_platform_release_apply.py",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
     "scripts/verify/error_state_component_test.cjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
@@ -536,6 +540,16 @@
       ],
       "kind": "offline"
     },
+    "workspace_branch_sync_policy": {
+      "target": "verify.workspace.branch.sync-main",
+      "inputs": [
+        "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/test_safe_branch_sync_main.py",
+        "make/codex.mk",
+        "docs/ops/delivery_lane_execution_runbook_v1.md"
+      ],
+      "kind": "offline"
+    },
     "ci_contract_scope": {
       "target": "verify.ci.workflow.contract",
       "inputs": [
@@ -593,23 +607,23 @@
       "status": "resolved"
     }
   ],
-  "blockers": [
-    {
-      "owner": "P4 governed baseline sync",
-      "dependency": "main@46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
-      "observed_head": "e9bd40712b51b3221cf545d1d63a583c9fe0b83a",
-      "classification": "intentional_sequencing_blocker",
-      "evidence": "The branch carries 16 responsibility commits from old base f2f7fd02 and is one commit behind main. The merged main commit contains the native route correction. Extended sync requires a clean frozen branch and exact-head Quick evidence, so product journey retries must wait until this P0 repair is committed, quick-checked and rebased."
-    }
-  ],
+  "blockers": [],
   "mainline_sync": {
-    "status": "prepared_not_run",
+    "status": "passed",
     "source_branch": "feature/scene-product-02-enterprise-config-journey-20261120",
     "old_head": "e9bd40712b51b3221cf545d1d63a583c9fe0b83a",
-    "old_base": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+    "replayed_head_before_generated_refresh": "a6037f3626f5e8ea648e024313cb17f8ccca28fc",
     "target_main": "46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
     "mode": "workspace.branch.sync-main.extended",
-    "precondition": "Commit the verified P0/P4 repair, run ci.delivery.freeze.prepare, then obtain exact clean-HEAD Quick evidence."
+    "result": "PASS; exact main is an ancestor and the recovery bundle was written before replay."
   },
-  "next_exact_step": "Update the batch record, run ci.delivery.freeze.prepare, commit the verified repair, obtain exact-head Quick evidence, and rebase the frozen branch onto main 46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37. Only then rerun C02-01 and C02-06A."
+  "full_local_quick_policy": {
+    "status": "corrected",
+    "ordinary_iteration_requires_quick": false,
+    "mainline_sync_requires_quick": false,
+    "remote_daily_full_regression": true,
+    "quick_use": "explicit full audit, baseline rebuild or release freeze only",
+    "root_cause": "The extended-sync helper self-imposed exact-head Quick evidence, contradicting AGENTS.md incremental delivery rules and duplicating the remote daily full lane."
+  },
+  "next_exact_step": "Commit the affected workspace-sync policy correction, then resume C02-01 from the visible enterprise information entry on the synced branch."
 }

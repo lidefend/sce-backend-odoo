@@ -142,13 +142,13 @@ Generated from repository source files. This report is informational during the 
 | 1209 | JavaScript source | `scripts/verify/local_dev_workspace_feedback.mjs` |
 | 1208 | Python source | `scripts/ops/daily_candidate_data_sentinel.py` |
 | 1205 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
-| 1201 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1197 | Vue source | `frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue` |
-| 1196 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
+| 1185 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1182 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1179 | Python source | `addons/smart_core/tests/test_native_view_parser_surfaces.py` |
+| 1176 | Python source | `scripts/ops/safe_branch_sync_main.py` |
 | 1171 | Python source | `scripts/verify/lowcode_config_boundary_guard.py` |
 | 1169 | Python source | `scripts/ci/backend_test_receipt.py` |
 | 1160 | Python source | `addons/smart_construction_core/tests/test_role_surface_project_member.py` |

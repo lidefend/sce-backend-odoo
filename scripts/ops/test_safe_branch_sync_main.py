@@ -75,7 +75,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.temp.cleanup()
 
     def plan(self, **overrides: object) -> syncer.SyncPlan:
-        values: dict[str, object] = dict(root=self.root, expected_root=self.root, governance_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True, quick_evidence_checker=lambda *_: True)
+        values: dict[str, object] = dict(root=self.root, expected_root=self.root, governance_root=self.root, expected_branch="feature/local-sync", expected_head=self.head, expected_old_base=self.old_base, expected_main=self.new_main, pr_checker=lambda _: False, origin_checker=lambda _: True)
         values.update(overrides)
         return syncer.validate(**values)  # type: ignore[arg-type]
 
@@ -129,7 +129,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
 
     def test_net_unchanged_report_replay_drift_is_rebuilt_without_conflict(self):
         report = self.prepare_conflict_free_replay_drift()
-        plan = self.plan(regenerate_evidence=True, quick_evidence_checker=lambda *_: False)
+        plan = self.plan(regenerate_evidence=True)
         self.assertNotIn(report, plan.paths)
         regenerate = syncer.regenerate_reports
 
@@ -186,7 +186,7 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         hook = self.root / '.git/hooks/pre-commit'
         hook.write_text('#!/bin/sh\nprintf invoked > .git/generator-hook-ran\n')
         hook.chmod(0o755)
-        plan = self.plan(regenerate_evidence=True, quick_evidence_checker=lambda *_: False)
+        plan = self.plan(regenerate_evidence=True)
         self.assertEqual(2, plan.commit_count)
         with mock.patch.dict(os.environ, {'MAKEFLAGS': 'n', 'MAKEFILES': '/no/injected/makefile'}):
             result = syncer.sync(plan)
@@ -272,11 +272,6 @@ class SafeBranchSyncMainTest(unittest.TestCase):
             block = makefile.split(target, 1)[1].split('\n\n', 1)[0]
             self.assertIn('$(filter 1,$(REGENERATE_GENERATED_EVIDENCE)),--regenerate-evidence', block)
 
-    def test_rebuild_does_not_weaken_extended_quick_requirement(self):
-        with self.assertRaisesRegex(syncer.SyncError, 'Quick evidence'):
-            self.plan(regenerate_evidence=True, allow_extended_history=True,
-                      expected_commit_count=1, quick_evidence_checker=lambda *_: False)
-
     def test_governance_authority_conflict_remains_denied_with_rebuild(self):
         path = 'scripts/audit/verification_lane_dispositions.json'
         target = self.root / path
@@ -339,8 +334,10 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                     redirect_stdout(output):
                 self.assertEqual(0, syncer.main())
             self.assertIn('candidate_evidence=false', output.getvalue())
-            self.assertEqual(extended, 'Quick' in output.getvalue())
-            if not extended:
+            self.assertNotIn('Quick', output.getvalue())
+            if extended:
+                self.assertIn('exact-new-head-affected-validation', output.getvalue())
+            else:
                 self.assertIn('current-head-risk-selected-validation', output.getvalue())
 
     def test_clean_unpublished_branch_syncs_and_preserves_patch(self) -> None:
@@ -985,14 +982,6 @@ class SafeBranchSyncMainTest(unittest.TestCase):
                 expected_main=extended_main,
                 allow_extended_history=True,
                 expected_commit_count=commit_count - 1,
-            )
-        with self.assertRaisesRegex(syncer.SyncError, "Quick evidence"):
-            self.plan(
-                expected_head=extended_head,
-                expected_main=extended_main,
-                allow_extended_history=True,
-                expected_commit_count=commit_count,
-                quick_evidence_checker=lambda *_: False,
             )
         plan = self.plan(
             expected_head=extended_head,

@@ -68,6 +68,7 @@ goal:
     runtime_seed: scenario_surface_generated_46_scenarios_132_bindings
     platform_release_composition: passed_in_separate_sc_platform_control
     independent_review: not_run
+    mainline_sync: passed_to_46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37
     mainline_integration: not_run
     deployment: not_run
     user_acceptance: pending
