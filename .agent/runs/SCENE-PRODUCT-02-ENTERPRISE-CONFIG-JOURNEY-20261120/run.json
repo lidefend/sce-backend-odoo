@@ -40,7 +40,10 @@
     "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
     "config/product_menu_contract_v1.json",
     "config/product_menu_release_manifest_v2.json",
@@ -82,6 +85,8 @@
     "scripts/verify/test_local_platform_control.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/verify/test_product_center_policy.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     "scripts/verify/test_local_development_lifecycle.py"
   ],
@@ -183,24 +188,22 @@
   },
   "journey_results": {
     "C02-01": {
-      "status": "blocked_before_write",
+      "status": "pending_retry_after_main_sync",
       "observed": "On the C02 standalone candidate a36f24f42 the enterprise information button produced no request or route change. On combined acceptance candidate fab341537 with PR #950 af7bf0002 it routed to action_id=961 and reason=CAPABILITY_MISSING instead of action_id=960 for company 1.",
       "write_attempted": false,
       "frontend_feedback": "passed at a36f24f42: visible ContractGapError page, unchanged enterprise.setup URL, no business write request"
     },
     "C02-02_to_C02-05": {
-      "status": "not_run",
-      "reason": "All five handling entries share the same unresolved native route authority under upstream PR #950"
+      "status": "pending_retry_after_main_sync",
+      "reason": "The shared native route correction is now merged in main commit 46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37; this branch must sync before rerunning the five native journeys."
     },
     "C02-06A": {
-      "status": "passed",
-      "observed": "The exact candidate 65a7bd0cd85ac5732535c670c6fff4fd4a98ed41 returned 92 catalog rows and 17 actionable business scenarios. The browser enabled governance.organization for company 1, read back enabled=true without access grant, refreshed the catalog, then disabled it and read back enabled=false. A final independent Odoo readback confirmed the stored parameter is 0.",
-      "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
-      "report_sha256": "c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69"
+      "status": "pending_revalidation_after_scenario_organization",
+      "observed": "The earlier 92-row / 17-scenario browser run predates the approved 46-scenario, 132-page seed and is historical only. Current governed readback for sc_dev_demo and sc_clean is 46 scenarios, 132 bindings and 132 unique menus. Enable, refresh and disable must be rerun against the synced candidate before claiming journey completion."
     },
     "C02-06B": {
       "status": "not_run",
-      "reason": "The action journey proves enterprise selection and navigation refresh, but target-user access remains a separate Navigation Authority and role result. The read-only check on demo_role_pm/user 48 exposes role_surface=pm and the project-center declarations, but there is no applicable business record/project journey in this batch and the P0 enterprise entry binding is still blocked by #950."
+      "reason": "Scenario selection and target-user access remain separate. The route correction is now in main, but this branch has not yet loaded that baseline and has no applicable business project journey."
     }
   },
   "authorization_reconciliation": {
@@ -250,7 +253,7 @@
     "business_writes": 0
   },
   "scenario_runtime_evidence": {
-    "status": "passed",
+    "status": "superseded_by_approved_scenario_organization",
     "candidate": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
     "backend_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
     "frontend_build_revision": "65a7bd0cd85ac5732535c670c6fff4fd4a98ed41",
@@ -259,9 +262,9 @@
       "user_id": 24,
       "company_id": 1
     },
-    "catalog_rows": 92,
-    "business_scenarios": 17,
-    "actionable_scenarios": 17,
+    "catalog_rows": 132,
+    "business_scenarios": 46,
+    "actionable_scenarios": 46,
     "selected_scene": "governance.organization",
     "enable_readback": {
       "enabled": true,
@@ -277,7 +280,8 @@
     },
     "final_parameter_value": "0",
     "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
-    "report_sha256": "c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69"
+    "report_sha256": "c0a3684bc2099d2b5a748159b13870a72c3145177b51557800d26f2821d23e69",
+    "superseded_reason": "The report was captured before the approved scenario seed replaced the old 92-page / 17-scenario catalog. Its write/readback mechanics remain historical evidence only."
   },
   "validation_results": {
     "implemented_scope": "passed",
@@ -290,7 +294,7 @@
       "verify.local.development_lifecycle.unit: 58 tests passed including release prerequisite guard coverage",
       "verify.frontend.dev.incremental.unit: 189 tests passed after local.dev probe changes",
       "candidate frontend build: PASS on 65a7bd0cd85ac5732535c670c6fff4fd4a98ed41; backend/frontend/5176 identity matched",
-      "verify.local.dev.enterprise_configuration.consumer scenario-only: PASS; enable/readback/refresh/disable/readback with two actual scenario.activation.set writes and zero browser errors",
+      "[historical before 46-scenario seed] verify.local.dev.enterprise_configuration.consumer scenario-only: PASS on the earlier 92-row catalog; enable/readback/refresh/disable/readback mechanics remain valid evidence, final seed-specific journey requires rerun",
       "verify.product.scenario.organization.unit: 13 tests passed; approved design and generated runtime seed cover 132/132 pages",
       "verify.nav01.native_authority.unit: 25 projection tests passed with approved scenario order and 132-page coverage",
       "demo rebuild from current source: PASS on sc_dev_demo",
@@ -300,15 +304,22 @@
       "local.platform ACTION=install: PASS; independent sc_platform_control created with smart_core only",
       "local.platform ACTION=health: PASS; independent roles, owner, exact dbfilter and module state",
       "local.dev.product_release.prepare: PASS; published 46 scenarios / 132 pages from sc_dev_demo into sc_platform_control snapshot 1",
+      "verify.native_occurrence.contract.orm: PASS, 8 tests; pageInfo.model now consumes head.model and strict action model comparison is restored",
+      "verify.product_center.policy.unit: PASS, 15 tests; locked skeleton now asserts the workbench plus ten centers including supply_chain",
+      "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v93 and the four source inputs re-pinned",
+      "verify.unified_page_contract.v2.runtime: PASS, 149 tests; unified page-contract runtime score 6",
+      "verify.unified_page_contract.v2.web_architecture: PASS, debt-lock findings 0",
+      "make ci.local.iteration: PASS; 44 affected targets executed, testsRun=true, blocked=0, not_run=0, unmapped=0; receipt=.runtime/frontend-dev-validation/executions/20261120T123643Z-2201996-755971495/receipt.json",
       "[historical before scenario-seed implementation] make ci.local.iteration: exit 0; 13 required targets executed",
-      "ci.delivery.freeze.prepare: passed; generated evidence current with 1735 inventory entries",
+      "ci.delivery.freeze.prepare: passed; generated evidence current with 1738 inventory entries",
       "frontend lint: zero errors, repository-existing warnings only",
       "frontend strict typecheck: passed"
     ],
     "not_run": [
-      "C02-01 business save and readback: blocked until native entry binding is restored by upstream PR #950",
-      "C02-02 through C02-05: blocked by the same native entry binding",
-      "C02-06B target-user route reachability: the selected scenario proves enterprise selection and navigation refresh, but target-user access still requires an applicable project/role journey and remains separate from tenant enablement",
+      "C02-01 business save and readback: pending retry after this branch is rebased onto main 46f323cd, which contains the merged native route correction",
+      "C02-02 through C02-05: pending the same exact-baseline sync",
+      "C02-06A final-seed browser enable/disable: the historical journey used the previous catalog; rerun against the synced 46-scenario / 132-page candidate",
+      "C02-06B target-user route reachability: target-user access remains separate and requires an applicable project/role journey",
       "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
     ]
   },
@@ -382,6 +393,20 @@
       "inputs": [
         "addons/smart_core/delivery/edition_release_snapshot_service.py",
         "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_policy": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "config/product_primary_center_baseline_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/test_product_center_policy.py",
         "make/guards.mk"
       ],
       "kind": "offline"
@@ -570,12 +595,21 @@
   ],
   "blockers": [
     {
-      "owner": "P0 smart_core native execution route discovery",
-      "dependency": "PR #950",
-      "observed_head": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
-      "classification": "known_upstream_dependency_not_duplicated",
-      "evidence": "The handling_entry_catalog exposes five action_xmlid entries and raw internal action resolution plus native ACL/action-group checks all succeed. In the combined candidate, effective delivery scene_keys contains only workspace.home, final scene_internal_actions is empty, and clicking enterprise info routes to action_id=961 with CAPABILITY_MISSING."
+      "owner": "P4 governed baseline sync",
+      "dependency": "main@46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
+      "observed_head": "e9bd40712b51b3221cf545d1d63a583c9fe0b83a",
+      "classification": "intentional_sequencing_blocker",
+      "evidence": "The branch carries 16 responsibility commits from old base f2f7fd02 and is one commit behind main. The merged main commit contains the native route correction. Extended sync requires a clean frozen branch and exact-head Quick evidence, so product journey retries must wait until this P0 repair is committed, quick-checked and rebased."
     }
   ],
-  "next_exact_step": "Review the final dirty implementation set, run the affected local iteration gate, then commit and publish the exact candidate through the governed PR flow."
+  "mainline_sync": {
+    "status": "prepared_not_run",
+    "source_branch": "feature/scene-product-02-enterprise-config-journey-20261120",
+    "old_head": "e9bd40712b51b3221cf545d1d63a583c9fe0b83a",
+    "old_base": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+    "target_main": "46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
+    "mode": "workspace.branch.sync-main.extended",
+    "precondition": "Commit the verified P0/P4 repair, run ci.delivery.freeze.prepare, then obtain exact clean-HEAD Quick evidence."
+  },
+  "next_exact_step": "Update the batch record, run ci.delivery.freeze.prepare, commit the verified repair, obtain exact-head Quick evidence, and rebase the frozen branch onto main 46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37. Only then rerun C02-01 and C02-06A."
 }

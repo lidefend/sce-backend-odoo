@@ -309,3 +309,45 @@ catalog_source_db=sc_dev_demo
 platform_release_db=sc_platform_control
 release_gate=applied
 ```
+
+## 主线更新前的契约收口
+
+最新 `origin/main` 为 `46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37`；本分支从
+`f2f7fd02f0f28f84e6190102f3bf559db0c28457` 出发，携带 16 个责任提交，并且尚未包含
+上述主线提交。该主线提交包含本批此前等待的原生路由生产链修复，因此后续用户旅程必须先
+在冻结候选上执行精确 HEAD Quick，再通过 `workspace.branch.sync-main.extended` 重放到
+该主线，不能继续在旧基线上验证。
+
+同步前定位并修复了三个契约问题：
+
+- `ActionDispatcher` 的模型事实位于 `head.model`，V2 装配器此前只读取顶层
+  `model`，导致 `pageInfo.model` 为空；现改为消费 `head.model`，并恢复严格 Action
+  身份模型比较，不再允许空模型绕过校验；
+- `sc_stage_requirements` 在当前环境中是已识别但缺少 payload provider 的节点，正确
+  拒绝原因是 `NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE`，不是未知 widget；
+- 装配输入变化后，租约缓存版本提升为 `ui-contract-v2-demand-driven-snapshot-v93`，
+  四源输入摘要重新固定为
+  `adf726b4d74c1f2e430a7b0762347d0aa53d119e812bbf61aa4a9f171a73101b`。
+
+同时修正了产品中心行为锁：当前骨架是工作台加十个业务中心，`supply_chain` 是第十个
+业务中心，不再沿用工作台加九个中心的旧断言。
+
+最终增量门禁实际执行 44 个受影响目标并全部通过，包括：
+
+- `verify.native_occurrence.contract.orm`：8 项；
+- `verify.product_center.policy.unit`：15 项；
+- `verify.unified_page_contract.v2.assembler`；
+- `verify.unified_page_contract.v2.runtime`：149 项；
+- `verify.unified_page_contract.v2.web_architecture`；
+- 真实 SFC 14 案和既有 20 案生命周期；
+- `unmappedPathCount=0`、`blocked=0`、`not_run=0`。
+
+增量回执：
+
+```text
+.runtime/frontend-dev-validation/executions/20261120T123643Z-2201996-755971495/receipt.json
+```
+
+此前 92 行 / 17 场景的浏览器启停只保留为历史机制证据，不能证明当前 46 场景 / 132
+办理面的最终选择结果；C02-06A 因此改为同步后重新验证。C02-01 至 C02-05 也尚未在包含
+`46f323cd` 的精确运行版本上完成，整体用户可用性仍为 pending。

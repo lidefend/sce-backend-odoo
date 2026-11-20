@@ -975,6 +975,41 @@ RULES = (
         "verify.product.menu.contract_v1.guard",
     )),
     Rule((
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
+        "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    ), (
+        "verify.product.menu.runtime_closeout.guard",
+    )),
+    Rule((
+        "config/ops/local-platform-empty-addons/.gitkeep",
+    ), (
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
+        "config/product_menu_release_manifest_v2.json",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    ), (
+        "verify.product.menu.contract_v1.guard",
+        "verify.product.primary_center.baseline.guard",
+    )),
+    Rule((
+        "scripts/verify/product_primary_center_baseline_guard.py",
+    ), (
+        "verify.product.primary_center.baseline.guard",
+    )),
+    Rule((
+        "scripts/verify/product_primary_center_candidate_guard.py",
+    ), (
+        "verify.product.primary_center.candidate.guard",
+    )),
+    Rule((
+        "scripts/verify/scenario_seed_runtime_readback.py",
+    ), (
+        "verify.nav01.native_authority.unit",
+    )),
+    Rule((
         "config/product_scenario_organization_v1.json",
         "scripts/audit/build_scenario_product_organization.py",
         "scripts/audit/test_build_scenario_product_organization.py",
