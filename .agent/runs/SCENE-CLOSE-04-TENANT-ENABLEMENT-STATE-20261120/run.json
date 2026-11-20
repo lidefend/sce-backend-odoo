@@ -3,7 +3,7 @@
   "id": "SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120",
   "branch": "fix/scene-close-04-tenant-enablement-state-20261120",
   "baseline_sha": "80f98fa25deea70f658ffecd93b0668103928c85",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120.yaml",
   "record": "docs/ops/iterations/scene_close_04_tenant_enablement_state_20261120.md",
   "scope": [
@@ -46,9 +46,9 @@
     },
     {
       "id": "CANDIDATE-CLOSE",
-      "status": "active",
+      "status": "completed",
       "owner": "integration_writer",
-      "exit": "Affected pure/consumer validation, generated evidence, exact-head publication, required CI and independent review are complete"
+      "exit": "Affected pure/consumer validation, generated evidence, exact-head publication, required CI, independent review and protected mainline integration are complete"
     }
   ],
   "checks": {
@@ -184,9 +184,9 @@
       },
       {
         "gate": "remote required gates",
-        "state": "not_run",
+        "state": "passed",
         "owner_target": "public_guard; professional_quality_gate; merge_policy_gate; frontend_release_gate",
-        "result": "Pending clean commit, exact-head PR publication and current-base CI"
+        "result": "All four required checks succeeded on candidate 33fc0d7c8 against base 80f98fa25"
       }
     ],
     "passed": [
@@ -201,14 +201,36 @@
       "verify.scene.fact_data.boundary.unit: 1 test passed",
       "make ci.local.iteration: exit 0; 5 required targets executed with non-zero logs and no reuse",
       "frontend_dev_incremental --plan-worktree: executionReady=true; registrationMissingTargets=[]; unmappedPaths=[]; ORM only in excludedTargets",
-      "ci.delivery.freeze.prepare: passed; test inventory, complexity report, split plan and all content-bound generated evidence are current"
+      "ci.delivery.freeze.prepare: passed; test inventory, complexity report, split plan and all content-bound generated evidence are current",
+      "PR 948 required checks: public_guard, professional_quality_gate, merge_policy_gate and frontend_release_gate all succeeded on 33fc0d7c8",
+      "Protected squash integration: d2fb27530f5c1bf56719660af64199c6b343d8ff; main and candidate trees both equal e110e16d6ba7c1cb163ca738eb090b066925ed89"
     ],
     "not_run": [
       "ORM and module baselines are excluded by owner continuation",
       "module upgrade, browser matrix, fixture, deployment and full acceptance are excluded",
-      "Current-head PR required checks have not yet run"
+      "Version deployment and user acceptance were not executed"
     ]
   },
   "blockers": [],
-  "next_exact_step": "Commit the reconciled 13-file candidate, publish the branch through the governed PR entrypoint, then verify all four required checks on the exact head."
+  "completion": {
+    "batch_acceptance": "completed",
+    "independent_review": "approved",
+    "mainline_integration": "completed",
+    "pr": 948,
+    "candidate_head": "33fc0d7c8a74df68847348a544e0cc489ce0d968",
+    "candidate_tree": "e110e16d6ba7c1cb163ca738eb090b066925ed89",
+    "merge_commit": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+    "mainline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+    "merge_tree": "e110e16d6ba7c1cb163ca738eb090b066925ed89",
+    "merged_at": "2026-11-20T02:15:04Z",
+    "required_checks": {
+      "public_guard": "success",
+      "professional_quality_gate": "success",
+      "merge_policy_gate": "success",
+      "frontend_release_gate": "success"
+    },
+    "deployment": "not_run",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Completed; the next independent product batch starts from main d2fb27530f5c1bf56719660af64199c6b343d8ff."
 }

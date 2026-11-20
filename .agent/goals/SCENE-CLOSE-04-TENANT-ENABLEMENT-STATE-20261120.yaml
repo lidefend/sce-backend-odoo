@@ -2,7 +2,7 @@ schema_version: 1
 goal:
   id: SCENE-CLOSE-04-TENANT-ENABLEMENT-STATE-20261120
   title: enterprise_scene_saved_selection_and_current_availability
-  status: verification_pending
+  status: completed
   formal_product_layer: P1
   layer_target: >-
     Construction enterprise business-scene catalog enablement facts and the
@@ -51,7 +51,12 @@ goal:
     persisted company selections, release snapshots and native authority remain
     unchanged; navigation continues to fail closed for unavailable scenes.
   completion:
-    batch: pending_remote_checks_and_independent_review
-    mainline_integration: not_run
+    batch: completed
+    independent_review: approved
+    mainline_integration: completed
+    pr: 948
+    candidate_head: 33fc0d7c8a74df68847348a544e0cc489ce0d968
+    merge_commit: d2fb27530f5c1bf56719660af64199c6b343d8ff
+    mainline_sha: d2fb27530f5c1bf56719660af64199c6b343d8ff
     deployment: not_run
     user_acceptance: not_run
