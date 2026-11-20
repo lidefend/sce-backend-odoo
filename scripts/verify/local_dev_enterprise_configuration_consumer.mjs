@@ -9,6 +9,10 @@ const USER_ID = Number(process.env.CONFIG_ADMIN_USER_ID || 0);
 const COMPANY_ID = Number(process.env.CONFIG_COMPANY_ID || 0);
 const PASSWORD = String(process.env.E2E_PASSWORD || '');
 const CANDIDATE_SHA = String(process.env.CANDIDATE_GIT_HEAD || '');
+const TEST_TOOL_GIT_HEAD = String(process.env.TEST_TOOL_GIT_HEAD || '');
+const SCENARIO_ONLY = ['1', 'true', 'yes'].includes(
+  String(process.env.C02_SCENARIO_ONLY || '').trim().toLowerCase(),
+);
 const OUTPUT = path.resolve(
   process.env.ARTIFACT_DIR
     || '.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer',
@@ -16,6 +20,7 @@ const OUTPUT = path.resolve(
 
 assert.equal(BASE_URL, 'http://127.0.0.1:5176');
 assert.match(CANDIDATE_SHA, /^[0-9a-f]{40}$/);
+assert.match(TEST_TOOL_GIT_HEAD, /^[0-9a-f]{40}$/);
 assert.ok(LOGIN);
 assert.ok(USER_ID > 0);
 assert.ok(COMPANY_ID > 0);
@@ -26,7 +31,9 @@ const report = {
   schema: 'local_dev_enterprise_configuration_consumer.v1',
   status: 'failed',
   candidate_sha: CANDIDATE_SHA,
+  test_tool_git_head: TEST_TOOL_GIT_HEAD,
   identity: { login: LOGIN, user_id: USER_ID, company_id: COMPANY_ID },
+  scenario_only: SCENARIO_ONLY,
   entry_feedback: null,
   scenario_catalog: null,
   writes: [],
@@ -104,6 +111,10 @@ try {
   const context = await browser.newContext({ viewport: { width: 1440, height: 1000 }, locale: 'zh-CN' });
   const page = await context.newPage();
   page.on('pageerror', (error) => report.errors.push(error.message));
+  const requests = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/api/v1/intent')) requests.push(request);
+  });
   await login(page);
 
   const catalogResponsePromise = page.waitForResponse((response) => (
@@ -158,44 +169,53 @@ try {
     report.scenario_catalog.restore_readback = restored.readback;
   }
 
-  await page.goto(`${BASE_URL}/s/enterprise.setup`, { waitUntil: 'domcontentloaded', timeout: 45000 });
-  const entry = page.getByRole('button', { name: '企业信息', exact: true }).first();
-  await entry.waitFor({ timeout: 30000 });
-  const requests = [];
-  page.on('request', (request) => {
-    if (request.method() === 'POST' && request.url().includes('/api/v1/intent')) requests.push(request);
-  });
-  const urlBefore = page.url();
-  await entry.click();
-  await page.waitForFunction(
-    () => location.pathname !== '/s/enterprise.setup' || document.querySelector('[data-contract-gap]') !== null,
-    null,
-    { timeout: 10000 },
-  );
-  const gap = page.locator('[data-contract-gap]').first();
-  const gapCount = await gap.count();
-  if (gapCount) {
-    const missing = await gap.getAttribute('data-contract-gap');
-    const layer = await gap.getAttribute('data-contract-gap-layer');
-    assert.equal(page.url(), urlBefore, 'a contract gap must not navigate to a guessed target');
-    assert.equal(missing, 'scene_ready_contract.scene_internal_actions.enterprise.setup:smart_construction_core.action_sc_enterprise_company');
-    assert.equal(layer, 'P0:smart_core:system_init_scene_runtime_surface_builder');
-    assert.match(await gap.innerText(), /页面执行契约暂不可用/);
-    assert.match(await gap.innerText(), /ContractGapError/);
-    assert.doesNotMatch(await page.locator('body').innerText(), /无权访问/);
-    assert.equal(requests.filter(isBusinessWrite).length, 0, 'a blocked entry must not issue a business write');
-    report.entry_feedback = { kind: 'contract_gap', missing, layer, path: page.url() };
+  if (SCENARIO_ONLY) {
+    assert.equal(report.scenario_catalog.mode, 'executed');
+    assert.ok(report.scenario_catalog.selection_readback);
+    assert.ok(report.scenario_catalog.restore_readback);
+    report.entry_feedback = { kind: 'not_run', reason: 'scenario_only' };
   } else {
-    assert.notEqual(new URL(page.url()).pathname, '/access-denied');
-    assert.match(new URL(page.url()).pathname, /^\/a\/\d+$/);
-    report.entry_feedback = { kind: 'resolved_target', path: page.url() };
+    await page.goto(`${BASE_URL}/s/enterprise.setup`, { waitUntil: 'domcontentloaded', timeout: 45000 });
+    const entry = page.getByRole('button', { name: '企业信息', exact: true }).first();
+    await entry.waitFor({ timeout: 30000 });
+    const urlBefore = page.url();
+    await entry.click();
+    await page.waitForFunction(
+      () => location.pathname !== '/s/enterprise.setup' || document.querySelector('[data-contract-gap]') !== null,
+      null,
+      { timeout: 10000 },
+    );
+    const gap = page.locator('[data-contract-gap]').first();
+    const gapCount = await gap.count();
+    if (gapCount) {
+      const missing = await gap.getAttribute('data-contract-gap');
+      const layer = await gap.getAttribute('data-contract-gap-layer');
+      assert.equal(page.url(), urlBefore, 'a contract gap must not navigate to a guessed target');
+      assert.equal(missing, 'scene_ready_contract.scene_internal_actions.enterprise.setup:smart_construction_core.action_sc_enterprise_company');
+      assert.equal(layer, 'P0:smart_core:system_init_scene_runtime_surface_builder');
+      assert.match(await gap.innerText(), /页面执行契约暂不可用/);
+      assert.match(await gap.innerText(), /ContractGapError/);
+      assert.doesNotMatch(await page.locator('body').innerText(), /无权访问/);
+      assert.equal(requests.filter(isBusinessWrite).length, 0, 'a blocked entry must not issue a business write');
+      report.entry_feedback = { kind: 'contract_gap', missing, layer, path: page.url() };
+    } else {
+      assert.notEqual(new URL(page.url()).pathname, '/access-denied');
+      assert.match(new URL(page.url()).pathname, /^\/a\/\d+$/);
+      report.entry_feedback = { kind: 'resolved_target', path: page.url() };
+    }
   }
 
   report.writes = requests.filter(isBusinessWrite).map((request) => intentBody(request));
+  if (SCENARIO_ONLY) {
+    assert.ok(
+      report.writes.some((body) => body?.intent === 'scenario.activation.set'),
+      'scenario-only execution must record its actual enable/restore writes',
+    );
+  }
   assert.deepEqual(report.errors, []);
   report.status = 'passed';
   fs.writeFileSync(path.join(OUTPUT, 'report.json'), JSON.stringify(report, null, 2));
-  console.log(`[enterprise_configuration_consumer] PASS entry=${report.entry_feedback.kind} catalog=${report.scenario_catalog.mode} rows=${report.scenario_catalog.row_count}`);
+  console.log(`[enterprise_configuration_consumer] PASS entry=${report.entry_feedback.kind} catalog=${report.scenario_catalog.mode} rows=${report.scenario_catalog.row_count} scenario_only=${SCENARIO_ONLY}`);
   await context.close();
 } catch (error) {
   report.failure = error instanceof Error ? error.stack || error.message : String(error);

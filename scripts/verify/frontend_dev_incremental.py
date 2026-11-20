@@ -816,6 +816,8 @@ RULES = (
         "docker-compose.test-isolation.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/dev/local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_dev_product_release_prepare.py",
     ), (
         "verify.local.development_lifecycle.unit",
     )),

@@ -685,6 +685,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.local.dev.enterprise_configuration.consumer.unit"],
                 )
+        makefile = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        wrapper = makefile.split(
+            "verify.local.dev.enterprise_configuration.consumer:", 1
+        )[1].split("\n\n", 1)[0]
+        runner = makefile.split(
+            "verify.local.dev.enterprise_configuration.consumer.run:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("local_dev_write_lease.sh", wrapper)
+        self.assertIn("local.dev.write_lease.require", runner)
+        self.assertIn("C02_RUNTIME_CANDIDATE_SHA", runner)
+        self.assertIn("TEST_TOOL_GIT_HEAD", runner)
+        self.assertIn('SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"', runner)
+        script = (
+            ROOT / "scripts/verify/local_dev_enterprise_configuration_consumer.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("process.env.C02_SCENARIO_ONLY", script)
+        self.assertIn("scenario_only", script)
 
     def test_menu_metadata_batch_selects_its_executable_suite(self) -> None:
         self.assertEqual(select_targets(['scripts/verify/test_menu_metadata_batch.py']),

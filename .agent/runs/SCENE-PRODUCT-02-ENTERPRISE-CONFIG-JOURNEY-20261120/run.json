@@ -13,6 +13,9 @@
     ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
     ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
     "config/ci/contract_only_scopes.json",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/ops/local_development_environment_v1.md",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
     "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
     "frontend/apps/web/src/components/StatusPanel.vue",
@@ -23,11 +26,14 @@
     "make/dev.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/dev/local_dev_product_release_prepare.py",
     "scripts/verify/error_state_component_test.cjs",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
     "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_dev_product_release_prepare.py",
+    "scripts/verify/test_local_development_lifecycle.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -219,6 +225,17 @@
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "local_dev_lifecycle": {
+      "target": "verify.local.development_lifecycle.unit",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/dev/local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
       ],
       "kind": "offline"
     },

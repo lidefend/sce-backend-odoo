@@ -14,6 +14,7 @@ goal:
     - addons/smart_construction_scene
     - frontend/apps/web
     - scripts/verify
+    - scripts/dev/local_dev_product_release_prepare.py
     - make/dev.mk
     - docs/ops/iterations
   standard_vs_user_specific: construction_product_standard_with_company_runtime_configuration
@@ -59,7 +60,7 @@ goal:
     and are deleted through the governed probe after authoritative readback unless
     a failure requires retaining them for diagnosis.
   completion:
-    batch: consumer_fix_passed_remaining_journeys_blocked_by_upstream_950
+    batch: release_prerequisite_prepared_remaining_entries_blocked_by_upstream_950
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_run

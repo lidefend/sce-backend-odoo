@@ -268,6 +268,26 @@ local.dev.snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_dev_snapshot.sh persistent
 
+.PHONY: local.dev.product_release.prepare local.dev.product_release.prepare.run local.dev.product_release.prepare.shell
+local.dev.product_release.prepare: guard.prod.forbid
+	@test -n "$(PRODUCT_RELEASE_SOURCE_REVISION)" || (echo "PRODUCT_RELEASE_SOURCE_REVISION is required" >&2; exit 2)
+	@test "$${CONFIRM_LOCAL_DEV_PRODUCT_RELEASE:-}" = "I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE" || { echo "CONFIRM_LOCAL_DEV_PRODUCT_RELEASE=I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE is required" >&2; exit 2; }
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "product_release:$(PRODUCT_RELEASE_SOURCE_REVISION)" -- \
+	  $(MAKE) --no-print-directory local.dev.product_release.prepare.run PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)"
+
+local.dev.product_release.prepare.run: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  ROOT_DIR="$(ROOT_DIR)" DB_NAME=sc_dev_demo SC_ENVIRONMENT=dev \
+	  PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)" \
+	  local.dev.product_release.prepare.shell
+
+local.dev.product_release.prepare.shell: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@python3 -m py_compile scripts/dev/local_dev_product_release_prepare.py
+	@$(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  DB_NAME=sc_dev_demo SC_ENVIRONMENT=dev \
+	  PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/dev/local_dev_product_release_prepare.py
+
 local.dev.contract_snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  CONTRACT_START_CASE="$(CONTRACT_START_CASE)" CONTRACT_CASE_ONLY="$(CONTRACT_CASE_ONLY)" \
@@ -1744,20 +1764,28 @@ verify.local.dev.readiness.readback: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_readiness_browser.sh --readback
 
-.PHONY: verify.local.dev.enterprise_configuration.consumer.unit verify.local.dev.enterprise_configuration.consumer
+.PHONY: verify.local.dev.enterprise_configuration.consumer.unit verify.local.dev.enterprise_configuration.consumer verify.local.dev.enterprise_configuration.consumer.run
 verify.local.dev.enterprise_configuration.consumer.unit: guard.prod.forbid
 	@bash -n scripts/verify/local_dev_enterprise_configuration_consumer.sh
 	@node --check scripts/verify/local_dev_enterprise_configuration_consumer.mjs
 
 verify.local.dev.enterprise_configuration.consumer: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit
-	@CANDIDATE_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "enterprise_configuration_consumer" -- \
+	  $(MAKE) --no-print-directory verify.local.dev.enterprise_configuration.consumer.run C02_SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"
+
+verify.local.dev.enterprise_configuration.consumer.run: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit local.dev.write_lease.require
+	@RUNTIME_CANDIDATE_SHA="$${C02_RUNTIME_CANDIDATE_SHA:-$$(git -C $(ROOT_DIR) rev-parse HEAD)}"; \
+	  CANDIDATE_GIT_HEAD="$$RUNTIME_CANDIDATE_SHA" \
 	  CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND=SERVE_FROZEN_LOCAL_DEV_CANDIDATE \
 	  $(MAKE) --no-print-directory local.dev.candidate.frontend.health
-	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
-	  SC_ENVIRONMENT=dev CANDIDATE_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
+	@RUNTIME_CANDIDATE_SHA="$${C02_RUNTIME_CANDIDATE_SHA:-$$(git -C $(ROOT_DIR) rev-parse HEAD)}"; \
+	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev CANDIDATE_GIT_HEAD="$$RUNTIME_CANDIDATE_SHA" \
+	  TEST_TOOL_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
 	  CONFIG_ADMIN_LOGIN="$${SC_CONFIG_ADMIN_LOGIN:-sc_demo_business_config}" \
 	  CONFIG_ADMIN_USER_ID="$${SC_CONFIG_ADMIN_USER_ID:-24}" \
 	  CONFIG_COMPANY_ID="$${SC_CONFIG_COMPANY_ID:-1}" \
+	  SCENARIO_ONLY="$(C02_SCENARIO_ONLY)" \
 	  bash scripts/verify/local_dev_enterprise_configuration_consumer.sh
 
 .PHONY: verify.local.dev.capability.browser verify.local.dev.capability.readback

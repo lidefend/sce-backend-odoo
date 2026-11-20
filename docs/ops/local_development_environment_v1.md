@@ -56,6 +56,8 @@ make local.dev.reset_payment_request_fixture
 make local.dev.sync_demo
 make local.dev.verify_demo
 make local.dev.contract_snapshot
+CONFIRM_LOCAL_DEV_PRODUCT_RELEASE=I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE \
+  PRODUCT_RELEASE_SOURCE_REVISION=<full-sha> make local.dev.product_release.prepare
 CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo
 make local.dev.down
 make local.dev.snapshot
@@ -141,6 +143,12 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 `local.dev.contract_snapshot` 使用同一固定 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`
 身份调用既有 `contract.export_all`，用于功能迭代后的契约快照刷新。禁止通过通用
 `codex.snapshot` 手工覆盖 Compose project、数据库或凭据来替代该入口。
+
+`local.dev.product_release.prepare` 仅在固定开发库上调用既有
+`EditionReleaseSnapshotService`，把发布源、平台发布库和当前源码对应的
+`construction.standard` 发布快照收敛到同一精确数据库。它要求完整源码 SHA 和显式确认，
+使用写租约，并在提交前回读唯一活动快照及发布门禁。该入口只准备企业场景启停所需的已发布
+产品事实，不代表部署、发布验收或用户权限授予。
 
 `local.dev.frontend.watch` 是受管的 Vite HMR 入口。它固定复用 `.env.dev` 的
 `sc_dev_demo` 与 `ODOO_PORT` 身份，在 `127.0.0.1:5174` 上启动开发服务器，并统一
