@@ -1,0 +1,13 @@
+schema_version: 1
+goal:
+  id: MAIN-SCHEDULED-CI-20261120
+  title: Restore mainline and scheduled CI
+  status: active
+  formal_product_layer: P0
+  layer_target: Native execution authority and publication test prerequisites
+  module: [smart_core, smart_construction_core, smart_construction_scene, smart_construction_acceptance_fixture]
+  objective: Restore discovered native routes and establish real published test prerequisites without weakening runtime gates.
+  baseline:
+    branch: main
+    full_sha: f2f7fd02f0f28f84e6190102f3bf559db0c28457
+  exclusions: [customer_production, frontend_product_semantics, deployment]

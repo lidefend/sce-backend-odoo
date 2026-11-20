@@ -645,7 +645,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.admin_close_01.runtime.orm :: /TestAdminClose01PlatformToEnterprise (class selection)"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "admin_vis_patch_a",

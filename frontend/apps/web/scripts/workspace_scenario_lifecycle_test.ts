@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import type { requireReadiness } from '../src/composables/useEnterpriseReadiness.ts';
 import './browser_globals_shim.ts';
 import './scenario_surface_parser_test.ts';
 import { resolveActivityCacheKey } from '../src/app/activityPageCacheIdentity';
@@ -1074,10 +1075,7 @@ assert.equal(
 );
 
 // Readiness consumes native remediation and never displays another company's late response.
-const {
-  requireReadiness,
-  useEnterpriseReadiness,
-} = await import('../src/composables/useEnterpriseReadiness.ts');
+const { useEnterpriseReadiness } = await import('../src/composables/useEnterpriseReadiness.ts');
 session.initStatus = 'ready';
 const diagnosisScope = effectScope();
 const diagnosis = diagnosisScope.run(() => useEnterpriseReadiness())!;

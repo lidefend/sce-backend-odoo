@@ -127,7 +127,7 @@ class EntryPublicationTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(
-            "native_authority = self.menu_service.build_route_authority(role_surface)",
+            "role_surface, nav=execution_nav,",
             source,
         )
         self.assertIn(
@@ -141,6 +141,35 @@ class EntryPublicationTest(unittest.TestCase):
             "            )",
             source,
         )
+
+    def test_native_discovery_receives_acl_and_role_filtered_navigation(self):
+        path = ROOT / "delivery" / "delivery_engine.py"
+        cls = next(node for node in ast.parse(path.read_text()).body
+                   if isinstance(node, ast.ClassDef) and node.name == "DeliveryEngine")
+        build = next(node for node in cls.body
+                     if isinstance(node, ast.FunctionDef) and node.name == "build")
+        statements = [node for node in build.body if isinstance(node, ast.Assign)
+                      and any(isinstance(target, ast.Name) and target.id in
+                              {"execution_nav", "native_authority"} for target in node.targets)]
+        self.assertEqual(len(statements), 2)
+        visible = [{"menu_id": 10}, {"menu_id": 20}]
+        role = {"exposure_policy_declared": True}
+        class Menus:
+            def _authorization_native_nav(inner, surface, supplied):
+                self.assertIs(surface, role)
+                self.assertEqual(supplied, [])
+                return visible
+            def _filter_primary_native_nodes(inner, rows, surface):
+                self.assertIs(rows, visible)
+                self.assertIs(surface, role)
+                return [rows[0]]
+            def build_route_authority(inner, surface, *, nav):
+                self.assertIs(surface, role)
+                return {"primary_actions": list(nav)}
+        scope = {"self": SimpleNamespace(menu_service=Menus()),
+                 "role_surface": role, "native_nav": None}
+        exec(compile(ast.Module(body=statements, type_ignores=[]), str(path), "exec"), scope)
+        self.assertEqual(scope["native_authority"]["primary_actions"], [{"menu_id": 10}])
 
     def test_native_authority_merge_keeps_actions_outside_product_nav(self):
         path = ROOT / "delivery" / "delivery_engine.py"
@@ -224,6 +253,227 @@ class EntryPublicationTest(unittest.TestCase):
         handler.env = env if env is not None else SimpleNamespace(user=object())
         handler.params = params if params is not None else {"action_id": action_id}
         return handler.handle(), calls
+
+    def native_role_authority(self, *, batch_fails=False, released_policy=False,
+                              returned_xmlid=None, singleton_fails=False,
+                              allowed_xmlid_missing=False, policy_failure=None,
+                              same_id_other_model=False, declared_bucket=None):
+        """Real admission methods; doubles supply only native ORM facts."""
+        import runpy
+        path = ROOT / "delivery/menu_service.py"
+        cls = next(n for n in ast.parse(path.read_text()).body
+                   if isinstance(n, ast.ClassDef) and n.name == "MenuService")
+        scope = vars(load_entry_target_module()).copy()
+        scope["MenuFactService"] = SimpleNamespace(ACTION_MODELS={"ir.actions.act_window", "ir.actions.server"})
+        tree = ast.Module(body=[ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0), cls], type_ignores=[])
+        exec(compile(ast.fix_missing_locations(tree), str(path), "exec"), scope)
+        role = deepcopy(runpy.run_path(str(ROOT.parent / "smart_construction_core/core_extension_policy_maps.py"))["ROLE_SURFACE_OVERRIDES"]["finance"])
+        role.update(role_code="finance", exposure_policy_declared=True)
+        self.assertIn("smart_construction_core.action_sc_plan", role["action_blocklist_xmlids"])
+
+        class Record(SimpleNamespace):
+            def sudo(self): return self
+            def exists(self): return self
+            def get_external_id(self):
+                if singleton_fails: raise RuntimeError("singleton metadata unavailable")
+                return {self.id: self.xmlid}
+        actions = {
+            ident: Record(id=ident, xmlid=xmlid, _name="ir.actions.act_window",
+                          name="Plan", active=True, groups_id=[], res_model="sc.plan",
+                          view_mode="tree,form", view_id=None, domain="[]", context="{}")
+            for ident, xmlid in ((601, "smart_construction_core.action_sc_plan"),
+                                (602, "tenant.action_allowed"))}
+        class ActionModel:
+            def sudo(self): return self
+            def browse(self, ids):
+                if isinstance(ids, int): return actions[ids]
+                class Batch:
+                    def get_external_id(self):
+                        if batch_fails: raise RuntimeError("batch unavailable")
+                        return {ident: actions[ident].xmlid for ident in ids}
+                return Batch()
+        class Env(dict):
+            user = SimpleNamespace(id=34, groups_id=[])
+            company = SimpleNamespace(id=8)
+            def ref(self, xmlid, raise_if_not_found=False):
+                if xmlid == "smart_construction_core.action_sc_plan_report" and policy_failure:
+                    if policy_failure == "error": raise RuntimeError("policy identity unavailable")
+                    if policy_failure == "missing": return None
+                    return Record(id=900, _name="res.users")
+                return refs.get(xmlid)
+        facts = [dict(menu_id=mid, menu_xmlid=xmlid, name="Plan", action_id=aid,
+                      action_model="ir.actions.act_window", action_exists=True,
+                      action_meta=dict(res_model="sc.plan", view_mode="tree,form", context="{}"), children=[])
+                 for mid, xmlid, aid in ((501, "smart_construction_core.menu_sc_plan", 601),
+                                         (502, "tenant.menu_plan_alias", 601),
+                                         (503, "tenant.menu_allowed_alias", 602))]
+        refs = {row["menu_xmlid"]: Record(id=row["menu_id"], _name="ir.ui.menu", active=True,
+                                         groups_id=[], action=actions[row["action_id"]]) for row in facts}
+        refs.update({record.xmlid: record for record in actions.values()})
+        refs["legacy.action_plan_original"] = actions[601]
+        refs["smart_construction_core.action_sc_plan_report"] = Record(
+            id=602 if same_id_other_model else 603,
+            _name="ir.actions.server" if same_id_other_model else "ir.actions.act_window")
+        if returned_xmlid is not None:
+            actions[601].xmlid = returned_xmlid
+        if allowed_xmlid_missing:
+            actions[602].xmlid = ""
+
+        env = Env({"ir.actions.act_window": ActionModel(), "ir.actions.actions": ActionModel(),
+                   "res.groups": [], "sc.plan": SimpleNamespace(check_access_rights=lambda *a, **kw: True)})
+        if declared_bucket == "role_home_actions":
+            role["role_home_menu_xmlids"] = ["tenant.menu_plan_alias", "tenant.menu_allowed_alias"]
+        elif declared_bucket:
+            field = {"contextual_actions": "contextual_action_authorities",
+                     "admin_actions": "admin_action_authorities"}[declared_bucket]
+            role[field] = [
+                {"menu_xmlid": "tenant.menu_plan_alias", "action_xmlid": "legacy.action_plan_original"},
+                {"menu_xmlid": "tenant.menu_allowed_alias", "action_xmlid": "tenant.action_allowed"},
+            ]
+        service = scope["MenuService"].__new__(scope["MenuService"])
+        service.env = env
+        self.native_service, self.native_role = service, role
+        service._menu_fact_cache = {kind: SimpleNamespace(tree=facts, flat=facts) for kind in ("visible", "authorized")}
+        service._group_xmlid_cache = {}
+        native = service._authorization_native_nav(role, [])
+        nav = service._filter_primary_native_nodes(native, role)
+        self.assertIn((502, 601), list(service._walk_nav_action_refs(nav)))
+        if released_policy:
+            # Released policy can carry inactive native menus with explicit
+            # action identities. Force the separate policy admission path.
+            service._menu_fact_cache["visible"] = SimpleNamespace(tree=[], flat=[])
+            for node in nav:
+                node["action_xmlid"] = ("legacy.action_plan_original" if node["action_id"] == 601
+                                        else "tenant.action_allowed")
+                refs[node["menu_xmlid"]].active = False
+        authority = service.build_route_authority(role, nav=nav)
+        scene = runpy.run_path(str(ROOT.parent / "smart_construction_scene/services/business_scene_enablement.py"))
+        surface = {row["menu_xmlid"]: {"location": "scenario", "scenario_key": "published.plan",
+                    "scenario_active": True, "menu_id": row["menu_id"]} for row in facts}
+        self.authority = scene["filter_business_authority"](authority, surface_index=surface,
+            enabled={"published.plan": True}, entries=[], company_id=8,
+            menu_xmlids_by_id={row["menu_id"]: row["menu_xmlid"] for row in facts})
+        # Both targets are published, so release filtering cannot mask a role grant.
+        self.published = {601, 602}
+        return self.authority
+
+    def test_native_role_allows_unblocked_action_through_enabled_scene(self):
+        authority = self.native_role_authority()
+        allowed = next(row for row in authority["primary_actions"] if row["action_id"] == 602)
+        self.assertEqual(allowed["route_kind"], "DISCOVERED_PRIMARY_NAV")
+        result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+        self.assertTrue(result.ok)
+        self.assertTrue(result.data["allowed"])
+
+    def test_native_role_blocks_action_alias_through_enabled_scene(self):
+        for batch_fails in (False, True):
+            with self.subTest(batch_fails=batch_fails):
+                authority = self.native_role_authority(batch_fails=batch_fails)
+                result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+                self.assertFalse(result.ok)
+                self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+                for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+                    self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
+
+    def test_released_policy_fallback_preserves_role_action_blocklist(self):
+        authority = self.native_role_authority(released_policy=True)
+        allowed = next(row for row in authority["primary_actions"] if row["action_id"] == 602)
+        self.assertEqual(allowed["route_kind"], "PRIMARY_NAV")
+        result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+        self.assertTrue(result.ok)
+        self.assertTrue(result.data["allowed"])
+        result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+        self.assertFalse(result.ok)
+        self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
+
+    def test_role_action_identity_survives_alias_and_metadata_failure(self):
+        for released_policy in (False, True):
+            for batch_fails, singleton_fails, xmlid in (
+                (False, False, "legacy.action_plan_original"),
+                (True, False, "legacy.action_plan_original"),
+                (True, True, "legacy.action_plan_original"),
+                (False, False, ""),
+            ):
+                with self.subTest(policy=released_policy, batch=batch_fails,
+                                  singleton=singleton_fails, xmlid=xmlid):
+                    authority = self.native_role_authority(
+                        released_policy=released_policy, batch_fails=batch_fails,
+                        singleton_fails=singleton_fails, returned_xmlid=xmlid,
+                        allowed_xmlid_missing=True)
+                    denied, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+                    self.assertFalse(denied.ok)
+                    self.assertEqual(denied.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+                    for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+                        self.assertNotIn(601, [row["action_id"] for row in authority[bucket]])
+                    self.assertTrue(any(row.get("reason_code") == "ROLE_ACTION_BLOCKED"
+                                        and row["action_id"] == 601 for row in authority["denied_actions"]))
+                    allowed, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+                    self.assertTrue(allowed.ok)
+                    self.assertTrue(allowed.data["allowed"])
+                    self.assertEqual(next(row for row in authority["primary_actions"]
+                                          if row["action_id"] == 602)["action_model"], "ir.actions.act_window")
+
+    def test_unresolved_role_action_policy_is_explicitly_denied(self):
+        for released_policy in (False, True):
+            for failure in ("missing", "error", "wrong_model"):
+                with self.subTest(policy=released_policy, failure=failure):
+                    authority = self.native_role_authority(
+                        released_policy=released_policy, returned_xmlid="legacy.action_plan_original",
+                        policy_failure=failure)
+                    for action_id, menu_id in ((601, 502), (602, 503)):
+                        result, _ = self.handler(action_id, params={"action_id": action_id, "menu_id": menu_id})
+                        self.assertFalse(result.ok)
+                        self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+                    denied = next(row for row in authority["denied_actions"] if row["action_id"] == 602)
+                    self.assertEqual(denied["reason_code"], "ROLE_ACTION_POLICY_UNRESOLVED")
+                    self.assertIn("smart_construction_core.action_sc_plan_report", denied["unresolved_action_xmlids"])
+
+    def test_role_action_identity_is_model_scoped(self):
+        for released_policy in (False, True):
+            with self.subTest(policy=released_policy):
+                self.native_role_authority(released_policy=released_policy,
+                                           same_id_other_model=True, allowed_xmlid_missing=True)
+                result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+                self.assertTrue(result.ok)
+                self.assertTrue(result.data["allowed"])
+
+    def test_declared_role_action_buckets_share_identity_admission(self):
+        for bucket in ("role_home_actions", "contextual_actions", "admin_actions"):
+            with self.subTest(bucket=bucket):
+                authority = self.native_role_authority(
+                    declared_bucket=bucket, returned_xmlid="legacy.action_plan_original")
+                self.assertIn(602, [row["action_id"] for row in authority[bucket]])
+                for executable in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+                    self.assertNotIn(601, [row["action_id"] for row in authority[executable]])
+                result, _ = self.handler(601, params={"action_id": 601, "menu_id": 502})
+                self.assertFalse(result.ok)
+                self.assertEqual(result.error["reason_code"], "ROUTE_ACTION_NOT_AUTHORIZED")
+                result, _ = self.handler(602, params={"action_id": 602, "menu_id": 503})
+                self.assertTrue(result.ok)
+                self.assertTrue(result.data["allowed"])
+
+    def test_role_action_identity_closes_all_executable_buckets(self):
+        self.native_role_authority(returned_xmlid="legacy.action_plan_original")
+        buckets = {name: [
+            {"action_id": 601, "action_model": "ir.actions.act_window", "action_xmlid": "legacy.action_plan_original"},
+            {"action_id": 602, "action_model": "ir.actions.act_window", "action_xmlid": ""},
+            {"action_id": 604},
+            {"action_id": 0, "entry_target": {"type": "scene", "scene_key": "published.plan"}},
+        ] for name in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions")}
+        buckets["denied_actions"] = []
+        self.native_service._apply_role_action_blocklist(buckets, self.native_role)
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            self.assertEqual([row["action_id"] for row in buckets[bucket]], [602, 0])
+        self.assertEqual([row["reason_code"] for row in buckets["denied_actions"]].count("ROLE_ACTION_BLOCKED"), 4)
+        self.assertEqual([row["reason_code"] for row in buckets["denied_actions"]].count("ROLE_ACTION_IDENTITY_UNRESOLVED"), 4)
+        self.assertTrue(all(row["allowed_operation"] == "none" for row in buckets["denied_actions"]))
+        # An absent policy adds no implicit identity requirement.
+        unrestricted = {name: [{"action_id": 602}] for name in buckets}
+        before = deepcopy(unrestricted)
+        self.native_service._apply_role_action_blocklist(unrestricted, {})
+        self.assertEqual(unrestricted, before)
 
     def test_runtime_validator_rejects_unpublished_declared_action(self):
         result, calls = self.handler(655)

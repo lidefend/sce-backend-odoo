@@ -162,9 +162,9 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.env['sc.product.scenario.entry'].create({'scenario_id': scenario.id, 'menu_id': menu.id})
         actor_env = self.env(user=principal.id)
         with patch.object(projection, '_menu_external_ids', return_value={}):
-            before = projection.load_runtime_surface(actor_env)
+            before = projection.load_maintained_runtime_surface(actor_env)
             before_scope = projection.runtime_menu_scope(actor_env, before)
-        after = projection.load_runtime_surface(actor_env)
+        after = projection.load_maintained_runtime_surface(actor_env)
         self.assertEqual(after, before)
         self.assertEqual(projection.runtime_menu_scope(actor_env, after), before_scope)
         archived = next(row for row in after['scenarios'] if row['key'] == scenario.code)

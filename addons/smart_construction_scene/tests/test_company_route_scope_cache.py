@@ -213,7 +213,8 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(startup.data["default_route"]["scene_key"], "enterprise.setup")
         self.assertEqual(startup.data["workspace_home_ref"]["scene_key"], "enterprise.setup")
         with patch.object(delivery, "_load_platform_release_gate", return_value={"fail_closed": True}):
-            self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
+            # Native setup remains accessible when only the composition release gate denies.
+            self.assertEqual(service.resolve().role_surface["landing_scene_key"], "enterprise.setup")
         with patch.object(MenuService, "_action_is_runtime_allowed", return_value=False):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
         real_hook = delivery.call_extension_hook_first
@@ -239,6 +240,14 @@ class TestCompanyRouteScopeCache(TransactionCase):
         company_a = self.env.company
         company_b = self.env["res.company"].create({"name": "Effective scope B"})
         actor.write({"company_ids": [(4, company_b.id)]})
+        # Runtime composition is publication-only. Establish the released
+        # prerequisite through the real snapshot service before company toggles.
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+        params = self.env["ir.config_parameter"].sudo()
+        params.set_param("smart_core.platform_release_db", self.env.cr.dbname)
+        params.set_param("smart_core.release_operator.catalog_source_db", self.env.cr.dbname)
+        EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard", version="company-scope-test", replace_active=True)
         surface = scenario_surface_projection.load_runtime_surface(self.env)
         scenarios = surface.get("scenarios") or []
         self.assertTrue(scenarios)

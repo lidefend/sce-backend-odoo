@@ -325,7 +325,16 @@ class DeliveryEngine:
             role_surface,
             nav=nav,
         )
-        native_authority = self.menu_service.build_route_authority(role_surface)
+        # Discovery must consume the native ACL/action-group and role-filtered
+        # tree. Omitting nav silently drops discovered primary actions, while
+        # passing the product tree would make publication a native allowlist.
+        execution_nav = self.menu_service._filter_primary_native_nodes(
+            self.menu_service._authorization_native_nav(role_surface, native_nav or []),
+            role_surface,
+        )
+        native_authority = self.menu_service.build_route_authority(
+            role_surface, nav=execution_nav,
+        )
         route_authority = self._merge_execution_targets(
             native_authority,
             product_authority,

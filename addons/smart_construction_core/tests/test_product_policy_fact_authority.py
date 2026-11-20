@@ -333,7 +333,7 @@ class TestProductPolicyFactAuthority(TransactionCase):
         import json
         from odoo.addons.smart_core.handlers.system_init import _release_gate_page_contract_from_snapshot
         draft = self._maintain()
-        original = self.policy.to_runtime_dict()
+        original = self.service._compose_policy_draft(self.policy.to_runtime_dict())
         frozen = {'policy_snapshot_schema': 'maintained_product_policy.v1', 'policy': original,
                   'policy_sha256': hashlib.sha256(json.dumps(original, ensure_ascii=False, sort_keys=True,
                                       default=str, separators=(',', ':')).encode()).hexdigest()}
@@ -375,7 +375,7 @@ class TestProductPolicyFactAuthority(TransactionCase):
     def test_frozen_publication_is_independent_of_later_draft_edits(self):
         draft = self._maintain()
         snapshot = SimpleNamespace(meta_json={'release_draft': deepcopy(draft)},
-            snapshot_json={'policy': self.policy.to_runtime_dict()},
+            snapshot_json={'policy': self.service._compose_policy_draft(self.policy.to_runtime_dict())},
             product_key=self.policy.product_key, source_policy_id=self.policy)
         self.policy.set_native_menu_publication(self.menu.id, 'configuration', 'hidden')
         self.assertTrue(self.service.assert_frozen_release_integrity(snapshot)['exact_match'])

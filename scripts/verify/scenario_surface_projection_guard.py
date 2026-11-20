@@ -346,7 +346,8 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
 
     def test_flatten_actionless_parent_preserves_native_parent(self):
         nav = [{"menu_id": 1, "xmlid": "core.root", "children": [
-            {"menu_id": 2, "xmlid": "core.group", "children": [
+            {"menu_id": 2, "xmlid": "core.group",
+             "canonical_navigation": {"menu_id": 2, "route": "/m/2"}, "children": [
                 {"menu_id": 3, "action_id": 30, "xmlid": "core.leaf"},
             ]},
         ]}]
@@ -354,6 +355,53 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         self.assertEqual(len(leaves), 1)
         self.assertEqual(leaves[0]["menu_xmlid"], "core.leaf")
         self.assertEqual(leaves[0]["parent_menu_xmlid"], "core.group")
+        self.assertEqual(leaves[0]["center_menu_id"], 2)
+
+    def test_routed_directory_is_not_its_own_canonical_child(self):
+        import ast
+        nav = [{"menu_id": 1, "xmlid": "core.root", "children": [
+            {"menu_id": 2, "xmlid": "core.workspace", "label": "Workbench",
+             "canonical_navigation": {"menu_id": 2, "route": "/m/2"}, "children": [
+                {"menu_id": 3, "action_id": 30, "xmlid": "core.leaf", "label": "Plan"},
+             ]},
+        ]}]
+        authority = {"primary_actions": [{"menu_id": 3, "action_id": 30,
+            "route": "/a/30?menu_id=3", "route_kind": "PRIMARY_NAV"}],
+            "menu_containers": [{"menu_id": 2, "route": "/m/2"}]}
+        leaves = PROJ.flatten_authorized_nav_leaves(nav, authority)
+        workspace = {"key": NAV_IDENTITY.WORKBENCH_GROUP_KEY, "name": "Workbench",
+                     "config_menu_id": 2, "sequence": 10}
+        for leaf in leaves:
+            self.assertEqual(PROJ.composition_center_for_leaf(
+                leaf, None, workspace_center=workspace)["config_menu_id"], 2)
+        # Use the actual node builders and canonical identity validator. Only
+        # ORM service initialization is omitted for these bounded native facts.
+        with patch.dict(sys.modules):
+            package = types.ModuleType("odoo.addons.smart_core.core")
+            package.__path__ = []
+            sys.modules[package.__name__] = package
+            for name in ("navigation_entry_target", "source_authority", "delivery_menu_defaults"):
+                _load_module("odoo.addons.smart_core.core." + name,
+                             ROOT / "addons/smart_core/core" / (name + ".py"))
+            path = ROOT / "addons/smart_core/delivery/menu_service.py"
+            cls = next(node for node in ast.parse(path.read_text()).body
+                       if isinstance(node, ast.ClassDef) and node.name == "MenuService")
+            tree = ast.Module(body=[ast.ImportFrom(module="__future__",
+                names=[ast.alias(name="annotations")], level=0), cls], type_ignores=[])
+            scope = {}
+            exec(compile(ast.fix_missing_locations(tree), str(path), "exec"), scope)
+            service = scope["MenuService"].__new__(scope["MenuService"])
+            sys.modules["odoo.addons.smart_core.delivery.menu_service"] = types.SimpleNamespace(
+                MenuService=lambda env: service)
+            centers = [{**workspace, "entries": leaves, "scenarios": []}]
+            result = PROJ._scenarioized_navigation(None, centers, authority)
+            center = result[0]["children"][0]
+            self.assertEqual(center["canonical_navigation"]["menu_id"], 2)
+            self.assertEqual([row["canonical_navigation"]["menu_id"] for row in center["children"]], [3])
+            self.assertEqual(center["children"][0]["canonical_navigation"]["route"], "/a/30?menu_id=3")
+            with self.assertRaisesRegex(ValueError, "identity is duplicated"):
+                PROJ._scenarioized_navigation(None,
+                    [{**workspace, "entries": leaves + leaves, "scenarios": []}], authority)
 
     def test_flatten_actionless_sibling_does_not_inherit_previous_identity(self):
         nav = [

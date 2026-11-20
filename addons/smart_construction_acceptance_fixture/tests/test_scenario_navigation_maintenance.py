@@ -3,6 +3,9 @@
 Run only in the governed acceptance fixture lane. Every edit rolls back with
 TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
+from .test_business_scene_lifecycle import publish_scenarios
+
+from copy import deepcopy
 import runpy
 import json
 from pathlib import Path
@@ -17,6 +20,22 @@ from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
 @tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle",
         "acceptance_scenario_navigation_maintenance")
 class TestScenarioNavigationMaintenance(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "smart_core.release_operator.catalog_source_db", cls.env.cr.dbname)
+        from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
+        catalog = ProductPolicyCatalogSyncService(cls.env).build_catalog_policy_payload(
+            product_key="construction.standard")
+        rows = [row for group in catalog["menu_groups"] for row in group["menus"]
+                if row.get("menu_xmlid") == "smart_construction_core.menu_sc_enterprise_initialization"]
+        if len(rows) != 1:
+            raise AssertionError("setup fixture requires one real catalog declaration")
+        # Only immutable declaration data is shared. Every test still produces
+        # its own maintained policy, snapshot and role-dependent runtime result.
+        cls.setup_declaration = deepcopy(rows[0])
+
     def setUp(self):
         super().setUp()
         self.Scenario = self.env["sc.product.scenario"].sudo().with_context(active_test=False)
@@ -33,14 +52,20 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         policy = self.env["sc.product.policy"].sudo()
         policy.search([("product_key", "in", ["construction.standard", "construction.preview"])]).unlink()
         policy.sync_construction_menu_product_policies()
-        # The test establishes the maintained policy for the current source.
-        # An earlier release snapshot is a historical immutable artifact and
-        # must not silently replace that candidate inside this rollback-only
-        # runtime contract test.
-        self.env["sc.edition.release.snapshot"].sudo().search([
-            ("product_key", "in", ["construction.standard", "construction.preview"]),
-            ("is_active", "=", True),
-        ]).write({"is_active": False})
+        # Discovery grants no publication. Declare the positive fixture before
+        # testing its consumption by both allowed and denied roles.
+        setup = deepcopy(self.setup_declaration)
+        setup_xmlid = setup["menu_xmlid"]
+        setup.update(enabled=True, release_state="released", access_level="public")
+        standard = policy.search([("product_key", "=", "construction.standard")], limit=1)
+        self.assertTrue(standard)
+        groups = deepcopy(standard.menu_groups)
+        for group in groups:
+            group["menus"] = [row for row in group.get("menus") or []
+                              if row.get("menu_xmlid") != setup_xmlid]
+        groups.append({"group_key": "acceptance_setup", "group_label": "Setup", "menus": [setup]})
+        standard.menu_groups = groups
+        publish_scenarios(self.env)
 
     def _upgrade_seed(self):
         convert_file(self.env, "smart_construction_core", "data/product_scenario_seed.xml", {},
@@ -52,6 +77,9 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         return row
 
     def _navigation(self):
+        # These maintenance cases explicitly publish the edited composition
+        # before observing it. Runtime never reads the mutable draft.
+        publish_scenarios(self.env)
         return self._system_init(self.actor)
 
     def _system_init(self, actor):
@@ -68,6 +96,40 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         leaves = flatten_authorized_nav_leaves(navigation["nav"], navigation["route_authority"])
         self.authorized_ids = {row["menu_id"] for row in leaves}
         self.account_leaves = [row for row in leaves if str(row.get("menu_xmlid", "")).startswith("account.")]
+        if "scenario_surface" not in navigation:
+            # The optional extension wrapper suppresses provider exceptions.
+            # Replay only to expose their original traceback for this principal;
+            # never replace the production result with the diagnostic result.
+            from odoo.addons.smart_construction_core.services.scenario_surface_projection import project_authorized_nav_with_env
+            try:
+                project_authorized_nav_with_env(
+                    actor_env, nav=navigation["nav"],
+                    route_authority=navigation["route_authority"],
+                )
+            except ValueError as exc:
+                # Identity-only diagnostics: no business record payloads.
+                frames = []
+                tb = exc.__traceback__
+                while tb:
+                    frames.append(tb.tb_frame)
+                    tb = tb.tb_next
+                walks = [frame for frame in frames if frame.f_code.co_name == "walk"]
+                if walks:
+                    values = walks[-1].f_locals
+                    menu_id = values.get("menu_id")
+                    key = values.get("key")
+                    projection = next((frame.f_locals for frame in frames
+                        if frame.f_code.co_name == "project_authorized_nav_with_env"), {})
+                    fields = ("menu_id", "action_id", "menu_xmlid", "parent_menu_xmlid", "center_menu_id", "policy_center_key", "route")
+                    identities = [{field: row.get(field) for field in fields}
+                        for row in projection.get("leaves", []) if row.get("menu_id") == menu_id]
+                    parents = [{field: row.get(field) for field in ("key", "menu_id")}
+                        for row in values.get("parents", [])]
+                    raise AssertionError(json.dumps({"projection_error": str(exc),
+                        "key": key, "menu_id": menu_id, "action_id": values.get("action_id"),
+                        "parents": parents, "matching_leaves": identities}, ensure_ascii=False)) from exc
+                raise
+        self.assertIn("scenario_surface", navigation)
         surface = navigation["scenario_surface"]
         self.assertTrue(surface["ok"])
         return navigation, surface["tree"]["centers"]

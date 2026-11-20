@@ -117,6 +117,55 @@ class MenuService:
             or group_key in blocked_group_keys
         )
 
+    def _apply_role_action_blocklist(self, buckets: dict, role_surface: dict) -> None:
+        """Close every executable bucket by native record identity, not XMLID choice.
+
+        get_external_id() is display metadata: one record may have several names
+        or none. Resolve policy references once per authority build; do not cache
+        authorization across principals or requests.
+        """
+        declared = sorted({str(item).strip() for item in
+                           role_surface.get("action_blocklist_xmlids") or []
+                           if str(item).strip()})
+        if not declared:
+            return
+        blocked = set()
+        unresolved = []
+        for xmlid in declared:
+            try:
+                action = self.env.ref(xmlid, raise_if_not_found=False)
+                action = action.exists() if action else None
+                model = str(getattr(action, "_name", "") or "")
+                record_id = int(action.id) if action else 0
+                if model not in MenuFactService.ACTION_MODELS or record_id <= 0:
+                    unresolved.append(xmlid)
+                else:
+                    blocked.add((model, record_id))
+            except Exception:
+                unresolved.append(xmlid)
+        for bucket in ("primary_actions", "role_home_actions", "contextual_actions", "admin_actions"):
+            admitted = []
+            for entry in buckets[bucket]:
+                action_id = self._positive_int(entry.get("action_id"))
+                if not action_id:
+                    admitted.append(entry)
+                    continue
+                model = str(entry.get("action_model") or "")
+                reason = (
+                    "ROLE_ACTION_POLICY_UNRESOLVED" if unresolved else
+                    "ROLE_ACTION_IDENTITY_UNRESOLVED" if model not in MenuFactService.ACTION_MODELS else
+                    "ROLE_ACTION_BLOCKED" if (model, action_id) in blocked else ""
+                )
+                if not reason:
+                    admitted.append(entry)
+                    continue
+                denial = {**entry, "route_kind": "DENIED", "allowed_operation": "none",
+                          "reason_code": reason, "source": "role_surface.action_blocklist_xmlids"}
+                if unresolved:
+                    denial["unresolved_action_xmlids"] = list(unresolved)
+                buckets["denied_actions"].append(denial)
+            buckets[bucket] = admitted
+
     @staticmethod
     def _node_menu_xmlid(node: dict) -> str:
         meta = node.get("meta") if isinstance(node.get("meta"), dict) else {}
@@ -501,6 +550,7 @@ class MenuService:
                         else self._record_xmlid(action))
         entry = {
             "action_xmlid": action_xmlid,
+            "action_model": str(action._name),
             "route_kind": route_kind,
             "menu_id": menu_id,
             "menu_xmlid": str(row.get("menu_xmlid") or "").strip(),
@@ -572,6 +622,7 @@ class MenuService:
         view_modes = [item.strip() for item in str(action.view_mode or "").split(",") if item.strip()]
         entry = {
             "action_xmlid": action_xmlid,
+            "action_model": str(action._name),
             "route_kind": route_kind,
             "menu_id": menu_id,
             "menu_xmlid": menu_xmlid if menu_id else "",
@@ -1539,7 +1590,10 @@ class MenuService:
                     source="delivery_engine.nav",
                     action_xmlids=action_xmlids,
                 )
-                if entry:
+                # Keep identifier/menu/model projection here. The final
+                # record-identity blocklist below owns action exclusion even
+                # when this display XMLID is an alias or unavailable.
+                if entry and self._role_surface_menu_allowed(entry, surface):
                     buckets["primary_actions"].append(entry)
                     existing_pairs.add(pair)
 
@@ -1565,7 +1619,7 @@ class MenuService:
             if not self._policy_target_is_runtime_allowed(spec):
                 continue
             entry = self._route_entry_from_action_spec(spec, route_kind="PRIMARY_NAV")
-            if entry:
+            if entry and self._role_surface_menu_allowed(entry, surface):
                 buckets["primary_actions"].append(entry)
                 authorized_pairs.add(pair)
 
@@ -1604,6 +1658,10 @@ class MenuService:
                 for field in ("menu_key", "business_category_options"):
                     if target.get(field):
                         entry[field] = target[field]
+
+        # Discovery and released-policy fallback (including all declared action
+        # buckets) share this final role decision before authority is published.
+        self._apply_role_action_blocklist(buckets, surface)
 
         if isinstance(nav, list):
             self._intersect_primary_authority_with_nav(buckets, nav)

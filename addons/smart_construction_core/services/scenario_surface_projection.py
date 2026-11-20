@@ -494,7 +494,10 @@ def flatten_authorized_nav_leaves(
                 center_key = center_key or group_key
                 center_label = center_label or group_label
             effective_group_label = group_label or parent_group_label
-            if menu_id > 0 and (action_id > 0 or route):
+            # A routed directory is still a parent, not an executable leaf.
+            # Reattaching it below its own center duplicates the native menu
+            # identity. Actionless scene leaves retain their declared routes.
+            if menu_id > 0 and (action_id > 0 or (route and not children)):
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
                     "menu_xmlid": menu_xmlid,
@@ -1291,18 +1294,34 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
     leaves = flatten_authorized_nav_leaves(nav, route_authority=route_authority)
     workspace_center = resolve_horizontal_work_center(env)
     native_primary_center_sequences = _native_primary_center_sequences(env)
+    # Execution-only contextual/admin rows are not navigation declarations.
+    # Group authorized navigation candidates by menu before supplementing leaves.
+    candidates_by_menu = {}
+    for bucket in ("primary_actions", "role_home_actions"):
+        for row in (route_authority.get(bucket) if isinstance(route_authority, dict) else []) or []:
+            if not isinstance(row, dict):
+                continue
+            menu_id, action_id = int(row.get("menu_id") or 0), int(row.get("action_id") or 0)
+            if menu_id > 0 and action_id > 0:
+                candidates_by_menu.setdefault(menu_id, {}).setdefault(action_id, row)
     direct_menu_ids = {
         int(leaf.get("menu_id") or 0)
         for leaf in leaves
         if int(leaf.get("menu_id") or 0) > 0
     }
+    direct_menu_ids.update(candidates_by_menu)
     native_menu_sequences = {}
+    native_menu_actions = {}
     if direct_menu_ids and env is not None:
         menus = env["ir.ui.menu"].sudo().browse(sorted(direct_menu_ids)).exists()
         native_menu_sequences = {
             int(menu.id): int(menu.sequence or 0)
             for menu in menus
             if int(menu.id or 0) > 0
+        }
+        native_menu_actions = {
+            int(menu.id): int(getattr(getattr(menu, "action", None), "id", 0) or 0)
+            for menu in menus
         }
     scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
     for leaf in leaves:
@@ -1321,59 +1340,40 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
         env,
         surface=published_surface,
     )
-    represented_pairs = {
-        (
-            int(leaf.get("menu_id") or 0),
-            int(leaf.get("action_id") or 0),
-        )
-        for leaf in leaves
-        if int(leaf.get("menu_id") or 0) > 0
-    }
-    for bucket in (
-        "primary_actions",
-        "role_home_actions",
-        "contextual_actions",
-        "admin_actions",
-    ):
-        for row in (
-            route_authority.get(bucket)
-            if isinstance(route_authority, dict)
-            else []
-        ) or []:
-            if not isinstance(row, dict):
+    represented_menu_ids = {int(leaf.get("menu_id") or 0) for leaf in leaves}
+    ambiguous_primary_menu_ids = []
+    for menu_id, candidates in sorted(candidates_by_menu.items()):
+        # The already-published navigation owns the menu's entry identity.
+        if menu_id in represented_menu_ids:
+            continue
+        bindings = scenario_by_menu.get(menu_id) or []
+        binding = _selected_scenario_binding(bindings, route_authority, menu_id)
+        if not binding or not binding.get("scenario_active"):
+            continue
+        if len(candidates) == 1:
+            action_id, row = next(iter(candidates.items()))
+        else:
+            # Native metadata only disambiguates existing authorized rows; it
+            # cannot introduce a new action or choose an arbitrary first row.
+            action_id = native_menu_actions.get(menu_id)
+            row = candidates.get(action_id)
+            if row is None:
+                ambiguous_primary_menu_ids.append(menu_id)
                 continue
-            pair = (
-                int(row.get("menu_id") or 0),
-                int(row.get("action_id") or 0),
-            )
-            if pair in represented_pairs or pair[0] <= 0 or pair[1] <= 0:
-                continue
-            bindings = scenario_by_menu.get(pair[0]) or []
-            if not bindings:
-                continue
-            binding = _selected_scenario_binding(
-                bindings,
-                route_authority,
-                pair[0],
-            )
-            if not binding or not binding.get("scenario_active"):
-                continue
-            menu_xmlid = _text(row.get("menu_xmlid") or row.get("menu_key"))
-            if not menu_xmlid:
-                menu_xmlid = f"menu:{pair[0]}"
-            leaf = {
-                **row,
-                "menu_id": pair[0],
-                "action_id": pair[1],
-                "menu_xmlid": menu_xmlid,
-                "label": _text(row.get("name") or row.get("label")) or menu_xmlid,
-                "route": _text(row.get("route")) or f"/a/{pair[1]}?menu_id={pair[0]}",
-                "sequence": _int_or(binding.get("sequence"), 1000),
-                "children": [],
-            }
-            _apply_scene_target_projection(leaf, scene_targets)
-            leaves.append(leaf)
-            represented_pairs.add(pair)
+        menu_xmlid = _text(row.get("menu_xmlid") or row.get("menu_key")) or f"menu:{menu_id}"
+        leaf = {
+            **row,
+            "menu_id": menu_id,
+            "action_id": action_id,
+            "menu_xmlid": menu_xmlid,
+            "label": _text(row.get("name") or row.get("label")) or menu_xmlid,
+            "route": _text(row.get("route")) or f"/a/{action_id}?menu_id={menu_id}",
+            "sequence": _int_or(binding.get("sequence"), 1000),
+            "children": [],
+        }
+        _apply_scene_target_projection(leaf, scene_targets)
+        leaves.append(leaf)
+        represented_menu_ids.add(menu_id)
     composition = (
         route_authority.get("scenario_composition")
         if isinstance(route_authority, dict)
@@ -1473,6 +1473,7 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             "scenario_count": sum(len(c["scenarios"]) for c in center_rows),
             "unconfigured_entry_count": sum(len(c["entries"]) for c in center_rows),
             "ambiguous_scene_targets": ambiguous_scene_targets,
+            "ambiguous_primary_menu_ids": ambiguous_primary_menu_ids,
             "shared_capability_count": len(shared_by_menu),
             "shared_capability_placements": shared_by_menu,
         },

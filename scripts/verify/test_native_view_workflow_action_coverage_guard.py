@@ -102,6 +102,43 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
                     self.assertTrue(methods.isdisjoint(rows))
                     self.assertIn("action_submit", rows)
 
+    def test_resubmission_profiles_require_actual_review_facts_for_review_actions(self):
+        sources = {
+            "subcontract_management.py": ("sc.subcontract.plan", "sc.subcontract.request"),
+            "safety_management.py": ("sc.safety.plan", "sc.safety.disclosure"),
+            "material_acceptance.py": ("sc.material.purchase.request",),
+            "equipment_management.py": ("sc.equipment.plan", "sc.equipment.request"),
+            "labor_management.py": ("sc.labor.plan", "sc.labor.request"),
+            "material_rental.py": ("sc.material.rental.plan",),
+        }
+        for filename, models in sources.items():
+            tree = ast.parse((DEFAULT_SERVICE.parents[1] / "core" / filename).read_text())
+            for model in models:
+                owner = next(node for node in tree.body if isinstance(node, ast.ClassDef)
+                             and any(isinstance(row, ast.Assign) and any(getattr(t, "id", "") == "_name" for t in row.targets)
+                                     and isinstance(row.value, ast.Constant) and row.value.value == model for row in node.body))
+                submit = next(node for node in owner.body if isinstance(node, ast.FunctionDef) and node.name == "action_submit")
+                guards = [ast.literal_eval(node.args[0]) for node in ast.walk(submit)
+                          if isinstance(node, ast.Call) and getattr(node.func, "attr", "") == "_sc_require_state"]
+                guards += [ast.literal_eval(node.comparators[0]) for node in ast.walk(submit)
+                           if isinstance(node, ast.Compare) and getattr(node.left, "attr", "") == "state"
+                           and isinstance(node.ops[0], ast.NotIn)]
+                self.assertIn("submitted", guards[0], model)
+                for phase, status, reviewer, expected in (
+                    ("none", "no", False, {"action_submit", "action_cancel"}),
+                    ("none", "no", True, {"action_submit", "action_cancel"}),
+                    ("pending", "pending", False, {"action_cancel"}),
+                    ("pending", "pending", True, {"validate_tier", "reject_tier", "action_cancel"}),
+                    ("waiting", "waiting", False, {"action_cancel"}),
+                    ("approved", "validated", False, {"action_cancel"}),
+                ):
+                    with self.subTest(model=model, phase=phase, reviewer=reviewer):
+                        actions = self._general_contract_actions("submitted", model=model,
+                            approval_phase=phase, can_review=reviewer,
+                            record_fields={"validation_status": status})
+                        self.assertEqual({row["method"] for row in actions}, expected)
+                        self.assertTrue(all(row["enabled"] for row in actions))
+
     def test_purchase_request_actions_follow_review_facts_and_business_sources(self):
         model = 'sc.material.purchase.request'
         for method in ('action_cancel', 'action_reset_draft'):
@@ -235,11 +272,17 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         service._gate = lambda *args, **kw: ns['_gate'](service, *args, **kw)
         for state, ledger_state, reason in [('approved', None, 'RENTAL_PAYMENT_OBLIGATIONS_ACTIVE'), ('cancel', 'posted', 'RENTAL_PAYMENT_FACTS_ACTIVE'), ('cancel', 'reversed', ''), ('draft', None, '')]:
             record.payment_request_ids = Rows([SimpleNamespace(state=state, ledger_line_ids=Rows([SimpleNamespace(state=ledger_state)]) if ledger_state else Rows())])
+            blocker = record._payment_cancellation_blocker()
+            if reason:
+                self.assertEqual(blocker['reason_code'], reason)
+            else:
+                self.assertIsNone(blocker)
             gates = ns['_evidence_gate'](service, record)
+            self.assertEqual(bool([gate for gate in gates if gate['blocking'] and 'cancel' in gate['actionKeys']]), bool(reason))
             rows = self._general_contract_actions('confirmed', model=record._name, evidence_gate=gates)
             cancel = next(row for row in rows if row['method'] == 'action_cancel')
             self.assertEqual(cancel['enabled'], not bool(reason))
-            self.assertEqual(cancel['reason_code'], reason)
+            self.assertEqual(cancel['reason_code'], reason or 'OK')
             self.assertEqual(bool(cancel['blocked_message']), bool(reason))
             self.assertTrue(next(row for row in rows if row['method'] == 'action_paid')['enabled'])
 
@@ -305,7 +348,12 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         self.assertEqual(meanings["reject_tier"], "reject")
         self.assertTrue(all("enabled" not in row and "target" not in row for row in declarations))
         available = self._general_contract_actions("draft", model="project.project", record_fields={"sc_approval_state": "draft", "validation_status": "no"})
-        self.assertNotIn("action_sc_start", [row["method"] for row in available])
+        self.assertNotIn("action_sc_start", [row["method"] for row in available if row["enabled"]])
+        start = next(row for row in available if row["method"] == "action_sc_start")
+        self.assertFalse(start["enabled"])
+        self.assertEqual(start["reason_code"], "PROJECT_NOT_APPROVED_FOR_START")
+        self.assertTrue(start["blocked_message"])
+        self.assertEqual(start["action_semantics"]["purpose"], "start_execution")
         self.assertNotIn("validate_tier", [row["method"] for row in available])
         self.assertEqual(namespace["_declared_actions"](service, {"method_by_action": {"undeclared": "action_guess"}}), [])
 
@@ -401,7 +449,7 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         tree = ast.parse(DEFAULT_SERVICE.read_text(encoding="utf-8"))
         methods = [
             next(n for n in ast.walk(tree) if isinstance(n, ast.FunctionDef) and n.name == name)
-            for name in ("_available_actions", "_action_input_contract")
+            for name in ("_available_actions", "_action_input_contract", "_gate", "_handles_without_approval")
         ]
         for method in methods:
             method.decorator_list = []
@@ -415,10 +463,16 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
         record = SimpleNamespace(_name=model, id=23, can_review=can_review, filtered_domain=matches)
         # The projection reads one fact about the business to decide whether a
         # submission step still exists: the active approval rule.
+        class PolicyEnv(dict):
+            company = SimpleNamespace(id=8)
         service = SimpleNamespace(
             ACTIONS=namespace["ACTIONS"],
-            _handles_without_approval=lambda record, approval_phase: not approval_required,
+            env=PolicyEnv({"sc.approval.policy": SimpleNamespace(
+                is_approval_required=lambda model, company: approval_required,
+            )}),
         )
+        service._gate = lambda *args, **kwargs: namespace["_gate"](service, *args, **kwargs)
+        service._handles_without_approval = lambda record, phase: namespace["_handles_without_approval"](service, record, phase)
         service._action_input_contract = lambda current_profile, key: namespace["_action_input_contract"](service, current_profile, key)
         return namespace["_available_actions"](service, record, load_profiles()[record._name], state, "", approval_phase, evidence_gate or [])
 
@@ -752,7 +806,15 @@ class NativeViewActionCoverageGuardTest(unittest.TestCase):
             actions = self._general_contract_actions('draft', model='project.project',
                 approval_phase='pending' if pending else 'none', can_review=reviewer,
                 record_fields={'sc_approval_state': 'approved' if approved else 'draft', 'validation_status': 'pending' if pending else 'no'})
-            self.assertEqual({a['method'] for a in actions}, expected)
+            self.assertEqual({a['method'] for a in actions if a['enabled']}, expected)
+            disabled = {row['key']: row for row in actions if not row['enabled']}
+            expected_disabled = ({'activate'} if not approved else set()) | ({'submit'} if approved or pending else set())
+            self.assertEqual(set(disabled), expected_disabled)
+            for key, row in disabled.items():
+                denial = load_profiles()['project.project']['action_domain_denials'][key]
+                self.assertEqual(row['reason_code'], denial['reasonCode'])
+                self.assertEqual(row['blocked_message'], denial['message'])
+                self.assertEqual(row['action_semantics']['executor'], 'contract.action')
         for state, expected in (
             ('in_progress', {'action_sc_pause', 'action_sc_mark_done', 'action_sc_begin_closing', 'action_sc_close'}),
             ('paused', {'action_sc_resume', 'action_sc_close'}),

@@ -1,5 +1,12 @@
 version: 1
 entries:
+- group: admin_close_01
+  kind: odoo_tag
+  status: on-demand
+  owner: platform-team
+  dispose: class-selected
+  gate: 'make:verify.admin_close_01.runtime.orm :: admin_close_01'
+  reason: Governed platform-to-enterprise ORM regression selected by the affected backend plan.
 - group: be_close_01_workflow_contract
   kind: odoo_tag
   status: on-demand

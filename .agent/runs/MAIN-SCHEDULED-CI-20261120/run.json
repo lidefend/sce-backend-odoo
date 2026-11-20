@@ -1,0 +1,514 @@
+{
+  "schema_version": 1,
+  "id": "MAIN-SCHEDULED-CI-20261120",
+  "branch": "fix/main-scheduled-ci-20261120",
+  "baseline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+  "status": "active",
+  "goal": ".agent/goals/MAIN-SCHEDULED-CI-20261120.yaml",
+  "record": "docs/ops/iterations/main_scheduled_ci_20261120.md",
+  "scope": [
+    "scripts/verify/test_coverage_registry.yaml",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-SCHEDULED-CI-20261120.yaml",
+    ".agent/runs/MAIN-SCHEDULED-CI-20261120/run.json",
+    "docs/ops/iterations/main_scheduled_ci_20261120.md",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "addons/smart_core/delivery/menu_service.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/scenario_center_projection_guard.py",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Governed local.test disposable database and registered local synthetic acceptance profile only. Exact-candidate module upgrade required by missing schema; no customer production changes."
+  },
+  "checks": {
+    "coverage": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "make/guards.mk",
+        "addons"
+      ],
+      "kind": "offline"
+    },
+    "publication_unit": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/core",
+        "addons/smart_core/handlers",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py"
+      ],
+      "kind": "offline"
+    },
+    "platform_baseline": {
+      "target": "verify.smart_core.close_02.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_core",
+      "command": "make local.test.test MODULE=smart_core"
+    },
+    "industry_baseline": {
+      "target": "verify.smart_construction_core.close_03.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_construction_core",
+      "command": "make local.test.test MODULE=smart_construction_core"
+    },
+    "scene_baseline": {
+      "target": "verify.admin_close_01.scene.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_construction_scene",
+      "command": "make local.test.test MODULE=smart_construction_scene"
+    },
+    "browser_guard": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "frontend/apps/web/src/pages/ContractFormPage.vue"
+      ]
+    },
+    "workflow_actions": {
+      "target": "verify.native_view.workflow_action_coverage",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core",
+        "scripts/verify/native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+        "scripts/verify/workflow_contract_profile_loader.py"
+      ]
+    },
+    "workflow_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ]
+    },
+    "scenario_projection": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/fact_layer_authority_guard.py",
+        "scripts/ops/test_scene_internal_action_authority.py"
+      ]
+    },
+    "statusbar_guard": {
+      "target": "verify.unified_page_contract.v2.web_architecture",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "frontend/apps/web/src/pages/contractForm/workflowContract.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormLayout.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "make/ci.mk",
+        "docs/audit/workflow_state_unification_plan.md"
+      ]
+    },
+    "readiness_type_import": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/composables/useEnterpriseReadiness.ts",
+        "frontend/apps/web/src",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Publish same Draft with exact-head preflight and independent review; dispatch new full candidate and collect all required gates. P0 code/tests verified at b3d; evidence-only follow-up changes no runtime inputs. Owner independent re-review remains required before merge.",
+  "results": {
+    "core_focused": {
+      "status": "passed",
+      "tests": 23,
+      "log": ".runtime/ci-recovery/core-focused.log"
+    },
+    "industry_baseline": {
+      "status": "passed",
+      "tests": 566,
+      "receipt": ".runtime/test-baseline/1795144350779613509/receipt.json",
+      "selection": "sc_smoke,sc_gate",
+      "source_identity": "d2fb27530f5c1bf56719660af64199c6b343d8ff plus recorded dirty source fingerprint",
+      "affected_families": {
+        "TestProductPolicyFactAuthority": 23,
+        "TestScenarioDirectInitialization": 13
+      }
+    },
+    "publication_unit": {
+      "status": "passed",
+      "tests": 41,
+      "log": ".runtime/ci-recovery/publication-unit-2.log"
+    },
+    "coverage": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/coverage.log"
+    },
+    "fixture_orm": {
+      "status": "failed",
+      "classification": "environment_defect",
+      "reason": "Existing governed acceptance database lacks business_scene_composition column. Requires exact candidate module upgrade.",
+      "log": ".runtime/ci-recovery/fixture-orm.log"
+    },
+    "scene_baseline": {
+      "status": "passed",
+      "tests": 10,
+      "receipt": ".runtime/test-baseline/1795144797040958981/receipt.json"
+    },
+    "platform_ci_baseline": {
+      "status": "passed",
+      "tests": 17,
+      "receipt": ".runtime/test-baseline/1795145219355080578/receipt.json",
+      "selection": "sc_smoke/smart_core,sc_gate/smart_core"
+    },
+    "platform_exhaustive_diagnostic": {
+      "status": "failed",
+      "tests": 460,
+      "failures": 29,
+      "errors": 75,
+      "receipt": ".runtime/test-baseline/1795144669825946926/receipt.json",
+      "reason": "Observed failures include missing industry models and namespace, maintenance requester identity, signed capability, ACTION_VIEW_SCOPE_MISMATCH, and business-config/form contract assertions. Causes beyond demonstrated missing prerequisites remain unclassified; not a passed baseline."
+    },
+    "static_consumers": {
+      "status": "passed",
+      "tests": 501,
+      "log": ".runtime/ci-recovery/static-consumers.log"
+    },
+    "affected_orm": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/affected-orm.log"
+    },
+    "platform_bundle_diagnostic": {
+      "status": "failed",
+      "tests": 638,
+      "failures": 56,
+      "errors": 88,
+      "receipt": ".runtime/test-baseline/1795146387016971210/receipt.json",
+      "selection": "/smart_core",
+      "template": "smart_construction_bundle",
+      "reason": "Broad diagnostic includes authentication, maintenance identity, contract-test prerequisites and installed-industry interaction failures. Not a passed module baseline; classification/merge readiness remain open."
+    },
+    "iteration": {
+      "status": "passed",
+      "head": "998ffcc6b8d9fd7f57718a57f749f80cd129264c",
+      "log": ".runtime/ci-recovery/iteration-2.log"
+    },
+    "independent_review": {
+      "status": "draft_only",
+      "head": "998ffcc6b8d9fd7f57718a57f749f80cd129264c",
+      "report": ".runtime/ci-recovery/independent-review-998ffcc.json",
+      "findings": "No confirmed runtime/assertion defect. Correct coverage inputs; full module baseline and acceptance/remote evidence prevent merge-readiness claim."
+    },
+    "fixture_orm_ce1da71": {
+      "status": "failed",
+      "log": ".runtime/ci-recovery/fixture-orm-ce1da71.log",
+      "reason": "Historical preview snapshot enters the two-edition catalog; positive setup-entry consumer test has no explicitly published setup entry. Test prerequisites corrected; rerun pending."
+    },
+    "acceptance_schema_upgrade": {
+      "status": "passed",
+      "source_sha": "0572684a5b732f6cce3e4748161212547c066894",
+      "log": ".runtime/ci-recovery/acceptance-upgrade-2.log"
+    },
+    "acceptance_registry_restart": {
+      "status": "passed",
+      "source_sha": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "log": ".runtime/ci-recovery/acceptance-up-ce1da71.log"
+    },
+    "role_alias_regression": {
+      "status": "passed",
+      "tests": 24,
+      "before_log": ".runtime/ci-recovery/s2-before.log",
+      "after_log": ".runtime/ci-recovery/s2-after.log",
+      "reason": "Real finance role + native admission + enabled scene + route consumer; forbidden alias rejected with batch and singleton XMLID resolution. Before fix both consumer checks incorrectly allowed."
+    },
+    "s2_focused": {
+      "status": "passed",
+      "tests": 266,
+      "log": ".runtime/ci-recovery/s2-focused.log"
+    },
+    "fixture_orm_07310b": {
+      "status": "interrupted",
+      "log": ".runtime/ci-recovery/fixture-orm-isolation.log",
+      "reason": "Stopped own test to share immutable real catalog declaration once per class; policy, snapshot and runtime remain per-test. Not a passing run."
+    },
+    "role_alias_fallback": {
+      "status": "passed",
+      "tests": 25,
+      "log": ".runtime/ci-recovery/s2-fallback.log",
+      "reason": "Adds explicit action_xmlid released-policy fallback with inactive menu; both allowed and blocked consumer cases."
+    },
+    "browser_readiness": {
+      "status": "passed",
+      "scope": "56 unit tests, static guard and controlled real Chromium DOM loading/ready/wrong-record selection; full application measurement pending",
+      "log": ".runtime/ci-recovery/browser-readiness-unit.log",
+      "dom_log": ".runtime/ci-recovery/browser-readiness-dom.log"
+    },
+    "remote_ce1_candidate": {
+      "status": "failed",
+      "head": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "reason": "Four backend shards passed. Frontend now reaches payment detail but retained-detail contract count fails. Coverage waits on same frontend managed ORM producer and correctly fails when producer fails. No coverage exemption warranted."
+    },
+    "fixture_orm_c7": {
+      "status": "failed",
+      "head": "c7fd87f189d0c6c18b18a5756a0880e9e95f2432",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-s2.log",
+      "reason": "Only business_full newly created principal lacks scenario_surface. Replay same-principal projection in failing test to expose swallowed provider exception, without altering result or privileges."
+    },
+    "iteration_412": {
+      "status": "passed",
+      "head": "412ff2f6d736fcd8bbea18981c80626bdff1c34e",
+      "log": ".runtime/ci-recovery/pr-push-s2.log",
+      "publication": "Push stopped because main advanced via PR949 and generated report merge conflicts. Governed append preserves candidate history; regenerate evidence before publication."
+    },
+    "workflow_actions": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/workflow-final.log",
+      "tests": 71,
+      "reason": "Actual required professional check exposed 3 failures and 2 errors. Restore ten resubmission profiles to business-method state authority; real helper dependencies and precise disabled/success contract assertions. New parameterized regression covers all ten models."
+    },
+    "workflow_owning_47": {
+      "status": "failed",
+      "head": "47a0e77de35e389027e5c707c1565848573485f4",
+      "tests": 609,
+      "failures": 1,
+      "errors": 0,
+      "receipt": ".runtime/test-baseline/1795149564096852074/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "reason": "Only shared approval template/profile consistency failed; template corrected with original ORM assertion unchanged. Rerun required."
+    },
+    "fixture_diagnostic_ee": {
+      "status": "failed",
+      "head": "ee215ae410a01270e006b36e125a1812797e78f5",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-diagnostic.log",
+      "reason": "Actual projection traceback: canonical navigation node identity is duplicated. Real-method controlled repro confirms routed actionless parent is incorrectly flattened and reattached as its own center child."
+    },
+    "scenario_directory_unit": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/scenario-workflow-final-unit.log",
+      "tests": 166,
+      "before_log": ".runtime/ci-recovery/scenario-directory-unit-before.log",
+      "canonical_before_log": ".runtime/ci-recovery/scenario-directory-before.log"
+    },
+    "owning_orm_896": {
+      "status": "passed",
+      "head": "89680de3f70f8f900e7b9ffc3fa805d0d135451f",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795150211270439515/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract"
+    },
+    "fixture_orm_896": {
+      "status": "failed",
+      "head": "89680de3f70f8f900e7b9ffc3fa805d0d135451f",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-896.log",
+      "reason": "Controlled routed-directory counterexample fixed but actual business_full still has duplicate canonical identity. Capture exact key/menu/parent IDs before further production changes."
+    },
+    "statusbar_guard": {
+      "status": "passed",
+      "scope": "Architecture/stable projection guards and existing canonical presenter consumer tests; current-source positive and five negative guard mutations",
+      "log": ".runtime/ci-recovery/statusbar-guard-consumer.log",
+      "mutation_log": ".runtime/ci-recovery/statusbar-guard-mutations.log"
+    },
+    "fixture_identity_147": {
+      "status": "failed",
+      "head": "147c8eb3dba8d162c8b66d94574fc32567af2bc8",
+      "tests": 49,
+      "failures": 1,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-identity.log",
+      "reason": "Same-principal diagnostic identified menu698 published action946 supplemented by contextual actions870/785/876, violating canonical menu identity."
+    },
+    "supplement_unit": {
+      "status": "passed",
+      "tests": 212,
+      "log": ".runtime/ci-recovery/scenario-supplement-unit.log",
+      "before_log": ".runtime/ci-recovery/scenario-supplement-before-final.log",
+      "scope": "Real projection/builders/canonical validator; existing nav identity, four buckets, native disambiguation, ambiguous rejection, role-home positive; publication/workflow guards retained."
+    },
+    "professional_backend_0ba": {
+      "status": "passed",
+      "head": "0ba4a7c3a71aafca0bb45d0cecd397244d4c9aa7",
+      "target": "verify.unified_page_contract.v2.professional_backend",
+      "log": ".runtime/ci-recovery/professional-contract-suite-fixed.log"
+    },
+    "owning_orm_7ee": {
+      "status": "passed",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795151533435929834/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "source_unchanged": true
+    },
+    "fixture_orm_7ee": {
+      "status": "passed",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-7ee.log",
+      "artifact_digest": "9e949a36cfdaf5cd1a2e1e5da3b387c22910e334306d1e3d8202f7b169b7fc52"
+    },
+    "independent_review_7ee": {
+      "status": "no_new_blocker_for_draft",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "scope": "Read-only diff/identity review; no remote review or merge approval"
+    },
+    "remote_frontend_70f": {
+      "status": "failed",
+      "head": "70f9cdaf7d0331c9015c3f8d4571bc3b0c560c05",
+      "run": 44681625331,
+      "log": ".runtime/ci-recovery/remote-frontend-70f.log",
+      "reason": "New base PR949 test imported requireReadiness as runtime value only used in Parameters<typeof>. Full ESLint rejects unused value; browser and managed ORM not reached. Correct to type-only import, preserve assertions."
+    },
+    "readiness_type_import": {
+      "status": "passed",
+      "targets": [
+        "verify.frontend.workspace_scenario_lifecycle.unit",
+        "verify.frontend.lint",
+        "verify.frontend.typecheck.strict"
+      ],
+      "log": ".runtime/ci-recovery/readiness-type-import.log",
+      "reason": "Actual lifecycle assertions retained, full lint zero errors, strict typecheck exits zero."
+    },
+    "remote_backend_70f": {
+      "status": "shards_passed_coverage_failed",
+      "head": "70f9cdaf7d0331c9015c3f8d4571bc3b0c560c05",
+      "run": 44681625378,
+      "affected_collection": {
+        "TestCompanyRouteScopeCache": 6,
+        "TestProductPolicyFactAuthority": 23,
+        "TestScenarioDirectInitialization": 13
+      },
+      "coverage_log": ".runtime/ci-recovery/remote-coverage-70f.log",
+      "reason": "All four shards pass; coverage correctly rejects failed frontend managed ORM producer; professional quality still running."
+    },
+    "remote_af7_full_candidate": {
+      "status": "passed",
+      "head": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
+      "base": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+      "runs": {
+        "public": 44683498507,
+        "professional_backend_coverage": 44683498505,
+        "frontend_managed_orm": 44683498565,
+        "merge_policy": 44683498562,
+        "release_candidate": 44683498570
+      },
+      "limitation": "Original long CI chain recovered, but subsequent independent multi-XMLID S2 means no merge approval; new identity correction needs new exact-head evidence.",
+      "managed_fixture_tests": 49,
+      "logs": [
+        ".runtime/ci-recovery/remote-frontend-af7.log",
+        ".runtime/ci-recovery/remote-quality-af7.log"
+      ]
+    },
+    "action_identity_review_followup": {
+      "status": "local_passed_remote_pending",
+      "logs": [
+        ".runtime/ci-recovery/action-identity-before.log",
+        ".runtime/ci-recovery/action-identity-final-unit.log",
+        ".runtime/ci-recovery/action-identity-related.log"
+      ],
+      "before_failures": 15,
+      "before_errors": 0,
+      "publication_tests": 49,
+      "reason": "Resolve role exclusions to real action model/id and close all executable buckets; unknown policy or candidate identity explicitly denied, lawful missing XMLID remains allowed. S3 top scope/gates corrected.",
+      "related_tests": 462
+    },
+    "platform_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 17,
+      "receipt": ".runtime/test-baseline/1795155964396493225/receipt.json",
+      "tags": "sc_smoke/smart_core,sc_gate/smart_core",
+      "source_unchanged": true
+    },
+    "owning_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795156005919425232/receipt.json",
+      "tags": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "source_unchanged": true
+    },
+    "fixture_orm_b3d": {
+      "status": "passed",
+      "head": "b3d577711a9b3f2c0a8b434dd4453880a257a35f",
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-b3d.log"
+    }
+  },
+  "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
+  "original_baseline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff"
+}
