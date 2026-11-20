@@ -165,7 +165,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Seal corrected navigation supplementation; rerun 49 acceptance and selected owning ORM on clean candidate, then exact-head review/push/full candidate checks. Keep Draft.",
+  "next_exact_step": "Publish same Draft PR through exact-head preflight, dispatch full candidate lane, collect original failure-chain and coverage reconciliation evidence. No merge until owner independent re-review.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -386,6 +386,28 @@
       "head": "0ba4a7c3a71aafca0bb45d0cecd397244d4c9aa7",
       "target": "verify.unified_page_contract.v2.professional_backend",
       "log": ".runtime/ci-recovery/professional-contract-suite-fixed.log"
+    },
+    "owning_orm_7ee": {
+      "status": "passed",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "tests": 609,
+      "receipt": ".runtime/test-baseline/1795151533435929834/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "source_unchanged": true
+    },
+    "fixture_orm_7ee": {
+      "status": "passed",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "tests": 49,
+      "failures": 0,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-7ee.log",
+      "artifact_digest": "9e949a36cfdaf5cd1a2e1e5da3b387c22910e334306d1e3d8202f7b169b7fc52"
+    },
+    "independent_review_7ee": {
+      "status": "no_new_blocker_for_draft",
+      "head": "7ee8bdadda4b4c8cf6869e77c98484044bf8abad",
+      "scope": "Read-only diff/identity review; no remote review or merge approval"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",
