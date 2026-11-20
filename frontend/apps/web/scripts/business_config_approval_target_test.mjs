@@ -14,6 +14,7 @@ const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKi
 
 function setup(overrides = {}) {
   const calls = [], parent = vue.ref('parent'), targets = vue.ref([{ value: 'child', label: '子单据' }]), error = vue.ref('');
+  const messages = [];
   const requestIdentity = () => ({ companyId: 1, actorRoleCode: 'config_admin', targetRoleKey: '', model: parent.value, actionId: 11, viewId: 22 });
   const editorIntentOwner = context.createContextRequestOwner(requestIdentity);
   const payload = model => ({ model, amount_condition: { supported: false, field: '', label: '', reason_code: 'amount_field_not_declared', message: '该单据不支持金额条件。' }, policy: { target_model: model, target_model_label: '子单据', approval_required: false, mode: 'none', manager_scope_key: '', steps: [] }, scope_options: [{ value: 'executive', label: '管理层' }], runtime_approval_required: false });
@@ -23,12 +24,12 @@ function setup(overrides = {}) {
   vm.runInNewContext(code, { exports, require: name => name === 'vue' ? { ...vue, onScopeDispose: () => {} } : (name === '../../app/contextEpoch' ? context : api) });
   const editor = exports.useBusinessConfigApprovalEditor({
     currentModel: vue.computed(() => parent.value), targetOptions: vue.computed(() => targets.value),
-    selectedPageLabel: vue.ref('父业务'), error, setMessage() {}, clearMessage() {},
+    selectedPageLabel: vue.ref('父业务'), error, setMessage(text) { messages.push(text); }, clearMessage() {},
     async loadSurface() {}, async focusActiveEditorPanel() {}, onOpenPanel() {},
     requestIdentity,
     editorIntentOwner,
   });
-  return { editor, calls, parent, targets, error, payload, context, editorIntentOwner };
+  return { editor, calls, parent, targets, error, payload, context, editorIntentOwner, messages };
 }
 
 test('child target and label come from declared configuration contract', async () => {
@@ -126,6 +127,34 @@ test('stable save intent still executes the normal approval writes', async () =>
     ['saveApprovalPolicyConfig', 'saveApprovalPolicySteps'],
   );
 });
+for (const viewType of ['list-search', 'analysis']) {
+  test(`opening ${viewType} during the first approval write still completes the original save`, async () => {
+    let releaseConfig;
+    const s = setup({
+      saveApprovalPolicyConfig: (params) => {
+        s.calls.push({ name: 'saveApprovalPolicyConfig', params });
+        return new Promise((resolve) => {
+          releaseConfig = () => resolve(s.payload(params.model));
+        });
+      },
+    });
+    await s.editor.loadApprovalConfig();
+    s.editor.enableApprovalWithDefaultStep();
+    const pending = s.editor.saveApprovalConfig();
+    for (let index = 0; index < 6 && !releaseConfig; index += 1) await Promise.resolve();
+    assert.ok(releaseConfig);
+    s.editorIntentOwner.begin('editor-open', { viewType });
+    s.editor.approvalPanelOpen.value = false;
+    releaseConfig();
+    assert.equal(await pending, true);
+    assert.deepEqual(
+      s.calls.filter(c => c.name.startsWith('saveApprovalPolicy')).map(c => c.name),
+      ['saveApprovalPolicyConfig', 'saveApprovalPolicySteps'],
+    );
+    assert.equal(s.editor.approvalPanelOpen.value, false);
+    assert.equal(s.messages.length, 0);
+  });
+}
 
 test('unsupported and missing amount capabilities hide inputs without deleting stored values', async () => {
   const s = setup();

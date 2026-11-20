@@ -84,10 +84,15 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
     return requestOwner.currentIdentityKey({ viewType: 'approval', targetModel: model });
   }
 
-  function hasCurrentApprovalRead(model = approvalTargetModel.value) {
+  function hasCurrentApprovalReadContext(model = approvalTargetModel.value) {
     return approvalContextRevision.value === currentContextEpoch()
-      && Boolean(loadedApprovalIdentity && loadedEditorIntent)
+      && Boolean(loadedApprovalIdentity)
       && loadedApprovalIdentity === approvalReadIdentityKey(model)
+      && model === approvalTargetModel.value;
+  }
+
+  function hasCurrentApprovalRead(model = approvalTargetModel.value) {
+    return hasCurrentApprovalReadContext(model)
       && loadedEditorIntent !== null
       && options.editorIntentOwner.isCurrent(loadedEditorIntent);
   }
@@ -307,7 +312,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
       && intent.parentModel === options.currentModel.value
       && intent.targetModel === approvalTargetModel.value
       && intent.readIdentity === loadedApprovalIdentity
-      && hasCurrentApprovalRead(intent.targetModel);
+      && hasCurrentApprovalReadContext(intent.targetModel);
   }
 
   async function saveApprovalConfig(intent?: ApprovalSaveIntent) {
@@ -345,7 +350,7 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
         manager_scope_key: approvalForm.value.manager_scope_key || '',
       });
       if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value
-        || !hasCurrentApprovalRead(model)) return false;
+        || !hasCurrentApprovalReadContext(model)) return false;
       if (stepDraftChanged) {
         result = await saveApprovalPolicySteps({
           model,
@@ -353,16 +358,20 @@ export function useBusinessConfigApprovalEditor(options: UseBusinessConfigApprov
         });
       }
       if (!requestOwner.isCurrent(request) || parentModel !== options.currentModel.value
-        || !hasCurrentApprovalRead(model)) return false;
+        || !hasCurrentApprovalReadContext(model)) return false;
       applyApprovalAudit(result);
       loadedApprovalIdentity = request.identityKey;
       await options.loadSurface();
-      if (!requestOwner.isCurrent(request) || !hasCurrentApprovalRead(model)) return false;
-      options.setMessage('审批设置已保存', result.runtime_approval_required ? '当前业务提交后会进入审批。' : '当前业务提交后无需审批。');
+      if (!requestOwner.isCurrent(request) || !hasCurrentApprovalReadContext(model)) return false;
+      if (hasCurrentApprovalRead(model)) {
+        options.setMessage('审批设置已保存', result.runtime_approval_required ? '当前业务提交后会进入审批。' : '当前业务提交后无需审批。');
+      }
       return true;
     } catch (err) {
-      if (!requestOwner.isCurrent(request)) return false;
-      options.error.value = err instanceof Error ? err.message : '审批设置保存失败';
+      if (!requestOwner.isCurrent(request) || !hasCurrentApprovalReadContext(model)) return false;
+      if (hasCurrentApprovalRead(model)) {
+        options.error.value = err instanceof Error ? err.message : '审批设置保存失败';
+      }
       return false;
     } finally {
       releaseLoading();

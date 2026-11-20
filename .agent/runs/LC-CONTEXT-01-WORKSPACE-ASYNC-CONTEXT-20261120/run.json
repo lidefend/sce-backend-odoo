@@ -227,7 +227,7 @@
     "scope": "Contract-only frontend request ownership, safe continuation and affected validation lanes",
     "passed": [
       "verify.business_config.unit: passed; aggregate low-code guards plus business_config_context_race 12 cases and existing draft/presentation regressions",
-      "verify.business_config.approval_targets.unit: passed; backend 26+8 tests and approval frontend 15 cases",
+      "verify.business_config.approval_targets.unit: passed; backend 26+8 tests and approval frontend 17 cases",
       "verify.frontend.pr.unit: passed through the locked frontend toolchain and includes both business-config behavior targets",
       "verify.frontend.dev.incremental.unit: 187 tests passed",
       "verify.frontend.lint.src: passed with repository-existing warnings only",
@@ -245,6 +245,7 @@
       "approval reads and multi-step saves stop after the initiating company, role, page or target model changes",
       "approved read tickets survive neither epoch changes nor a newer editor-open intent; confirmation captures the original save intent before the dialog",
       "list/search, analysis and approval share one workbench editor-open sequence, so the last opened panel keeps ownership even when it already contains unsaved changes",
+      "switching to list/search or analysis after an approval save has started does not interrupt the original config and steps writes; stale presentation is suppressed",
       "shared busy refs are owned by the newest activity so stale finally blocks cannot clear newer work",
       "component unmount and company/role transitions invalidate request ownership and clear obsolete loading state",
       "workbench copy now describes staging, draft preview and unified publication accurately"
