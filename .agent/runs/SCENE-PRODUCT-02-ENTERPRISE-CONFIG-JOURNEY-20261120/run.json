@@ -101,6 +101,25 @@
     "business_writes": 0,
     "browser_errors": 0
   },
+  "validation_results": {
+    "implemented_scope": "passed",
+    "passed": [
+      "verify.frontend.workspace_scenario_lifecycle.unit: 515 total cases passed; enterprise scenario catalog diagnostics added 6 cases",
+      "verify.frontend.delivery_hardening.guard: 18 tests passed; real StatusPanel contract-gap rendering and no recovery action verified",
+      "verify.frontend.dev.incremental.unit: 189 tests passed",
+      "verify.local.dev.enterprise_configuration.consumer: PASS with user 24, company 1; entry contract gap visible, unchanged route, zero business writes",
+      "make ci.local.iteration: exit 0; 13 required targets executed with no missing registration or unmapped path",
+      "ci.delivery.freeze.prepare: passed; generated evidence current with 1735 inventory entries",
+      "frontend lint: zero errors, repository-existing warnings only",
+      "frontend strict typecheck: passed"
+    ],
+    "not_run": [
+      "C02-01 business save and readback: blocked until native entry binding is restored by upstream PR #950",
+      "C02-02 through C02-05: blocked by the same native entry binding",
+      "C02-06B target-user route reachability: no scenario was eligible to enable",
+      "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
+    ]
+  },
   "validation_exclusions": {
     "targets": [
       "verify.daily.permission_truth.capability.orm",
@@ -110,6 +129,15 @@
     "reason": "Owner-selected focused real configuration journeys; full ORM/module baselines, full browser matrix, production deployment and unrelated centers are excluded."
   },
   "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
     "agent_ledger": {
       "target": "verify.agent.ledger.unit",
       "inputs": [
@@ -120,6 +148,16 @@
         ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
         "scripts/verify/agent_ledger_consistency_guard.py",
         "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_execution_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/guards.mk",
+        "AGENTS.md"
       ],
       "kind": "offline"
     },
@@ -142,6 +180,86 @@
         "scripts/verify/frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_component_driver": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/canonical_navigation_model_test.ts",
+        "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+        "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/app/sceneEntryContract.ts",
+        "addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/src/",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
       ],
       "kind": "offline"
     },
