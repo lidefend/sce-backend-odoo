@@ -80,6 +80,7 @@
     "scripts/verify/test_local_dev_product_release_prepare.py",
     "scripts/verify/test_local_platform_control.py",
     "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     "scripts/verify/test_local_development_lifecycle.py"
   ],
   "environment": {
