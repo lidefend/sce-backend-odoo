@@ -28,7 +28,8 @@
     "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
     "addons/smart_construction_core/services/scenario_surface_projection.py",
     "scripts/verify/scenario_surface_projection_guard.py",
-    "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/scenario_center_projection_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -164,7 +165,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Collect exact remaining duplicate native identity from same-principal fixture failure; retain passed owning 609 evidence and Draft-only status.",
+  "next_exact_step": "Seal corrected navigation supplementation; rerun 49 acceptance and selected owning ORM on clean candidate, then exact-head review/push/full candidate checks. Keep Draft.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -363,6 +364,28 @@
       "scope": "Architecture/stable projection guards and existing canonical presenter consumer tests; current-source positive and five negative guard mutations",
       "log": ".runtime/ci-recovery/statusbar-guard-consumer.log",
       "mutation_log": ".runtime/ci-recovery/statusbar-guard-mutations.log"
+    },
+    "fixture_identity_147": {
+      "status": "failed",
+      "head": "147c8eb3dba8d162c8b66d94574fc32567af2bc8",
+      "tests": 49,
+      "failures": 1,
+      "errors": 0,
+      "log": ".runtime/ci-recovery/fixture-orm-identity.log",
+      "reason": "Same-principal diagnostic identified menu698 published action946 supplemented by contextual actions870/785/876, violating canonical menu identity."
+    },
+    "supplement_unit": {
+      "status": "passed",
+      "tests": 212,
+      "log": ".runtime/ci-recovery/scenario-supplement-unit.log",
+      "before_log": ".runtime/ci-recovery/scenario-supplement-before-final.log",
+      "scope": "Real projection/builders/canonical validator; existing nav identity, four buckets, native disambiguation, ambiguous rejection, role-home positive; publication/workflow guards retained."
+    },
+    "professional_backend_0ba": {
+      "status": "passed",
+      "head": "0ba4a7c3a71aafca0bb45d0cecd397244d4c9aa7",
+      "target": "verify.unified_page_contract.v2.professional_backend",
+      "log": ".runtime/ci-recovery/professional-contract-suite-fixed.log"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",

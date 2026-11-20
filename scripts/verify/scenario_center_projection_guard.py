@@ -8,6 +8,10 @@ grouping as the fallback for unconfigured entries.
 """
 from __future__ import annotations
 
+import ast
+import copy
+from contextlib import contextmanager
+from unittest.mock import patch
 import importlib.util
 import sys
 import types
@@ -217,7 +221,94 @@ def _leaf(
     }
 
 
+@contextmanager
+def _canonical_projection():
+    # Actual builders and validator; only ORM initialization is omitted.
+    with patch.dict(sys.modules):
+        package = types.ModuleType("odoo.addons.smart_core.core")
+        package.__path__ = []
+        sys.modules[package.__name__] = package
+        for name in ("navigation_entry_target", "source_authority", "delivery_menu_defaults"):
+            spec = importlib.util.spec_from_file_location(
+                "odoo.addons.smart_core.core." + name,
+                ROOT / "addons/smart_core/core" / (name + ".py"))
+            module = importlib.util.module_from_spec(spec)
+            sys.modules[spec.name] = module
+            spec.loader.exec_module(module)
+        path = ROOT / "addons/smart_core/delivery/menu_service.py"
+        cls = next(node for node in ast.parse(path.read_text()).body
+                   if isinstance(node, ast.ClassDef) and node.name == "MenuService")
+        tree = ast.Module(body=[ast.ImportFrom(module="__future__",
+            names=[ast.alias(name="annotations")], level=0), cls], type_ignores=[])
+        scope = {}
+        exec(compile(ast.fix_missing_locations(tree), str(path), "exec"), scope)
+        service = scope["MenuService"].__new__(scope["MenuService"])
+        sys.modules["odoo.addons.smart_core.delivery.menu_service"] = types.SimpleNamespace(
+            MenuService=lambda env: service)
+        yield
+
+
+def _canonical_leaves(nodes):
+    return [node for node in nodes if not node.get("children")] + [
+        leaf for node in nodes for leaf in _canonical_leaves(node.get("children") or [])]
+
+
 class ScenarioCenterProjectionGuard(unittest.TestCase):
+    def test_existing_navigation_identity_survives_other_executable_actions(self):
+        env = _Env()
+        published = _leaf(101, 946, "Published", env.menus[101].xmlid)
+        published["route"] = "/s/published.payment"
+        others = [_leaf(101, action, "Context", env.menus[101].xmlid)
+                  for action in (870, 785, 876)]
+        for bucket in ("contextual_actions", "admin_actions", "primary_actions", "role_home_actions"):
+            for rows in (others, list(reversed(others))):
+                with self.subTest(bucket=bucket, order=[row["action_id"] for row in rows]):
+                    authority = {"primary_actions": [dict(published)]}
+                    authority.setdefault(bucket, []).extend(rows)
+                    before = copy.deepcopy(authority)
+                    with _canonical_projection():
+                        result = PROJ.project_authorized_nav_with_env(env, [published], authority)
+                    leaves = _canonical_leaves(result["nav"])
+                    self.assertEqual(len(leaves), 1)
+                    self.assertEqual(leaves[0]["canonical_navigation"]["menu_id"], 101)
+                    self.assertEqual(leaves[0]["canonical_navigation"]["route"], "/s/published.payment")
+                    self.assertEqual(result["tree"]["centers"][0]["scenarios"][0]["entries"][0]["action_id"], 946)
+                    self.assertEqual(authority, before)
+
+    def test_supplement_requires_navigation_authority_and_unique_menu_identity(self):
+        env = _Env()
+        rows = [_leaf(101, action, "Entry", env.menus[101].xmlid) for action in (870, 946)]
+        for bucket in ("contextual_actions", "admin_actions"):
+            with self.subTest(bucket=bucket), _canonical_projection():
+                result = PROJ.project_authorized_nav_with_env(env, [], {bucket: rows[:1]})
+                self.assertEqual(result["nav"], [])
+        for reverse in (False, True):
+            authority = {"primary_actions": list(reversed(rows)) if reverse else rows}
+            env.menus[101].action = types.SimpleNamespace(id=946)
+            with self.subTest(reverse=reverse), _canonical_projection():
+                result = PROJ.project_authorized_nav_with_env(env, [], authority)
+                leaves = _canonical_leaves(result["nav"])
+                self.assertEqual(len(leaves), 1)
+                self.assertEqual(leaves[0]["canonical_navigation"]["route"], "/a/946?menu_id=101")
+            env.menus[101].action = types.SimpleNamespace(id=999)
+            with _canonical_projection():
+                result = PROJ.project_authorized_nav_with_env(env, [], authority)
+                self.assertEqual(result["nav"], [])
+                self.assertEqual(result["diagnostics"]["ambiguous_primary_menu_ids"], [101])
+        env.menus[101].action = types.SimpleNamespace(id=946)
+        for primary, home in ((rows[:1], rows[1:]), (rows[1:], rows[:1])):
+            with _canonical_projection():
+                result = PROJ.project_authorized_nav_with_env(env, [], {
+                    "primary_actions": primary, "role_home_actions": home})
+                leaves = _canonical_leaves(result["nav"])
+                self.assertEqual(len(leaves), 1)
+                self.assertEqual(leaves[0]["canonical_navigation"]["route"], "/a/946?menu_id=101")
+        # A single authorized role-home candidate remains discoverable even if
+        # the published action differs from the native metadata reference.
+        with _canonical_projection():
+            result = PROJ.project_authorized_nav_with_env(env, [], {"role_home_actions": rows[:1]})
+            self.assertEqual(_canonical_leaves(result["nav"])[0]["canonical_navigation"]["route"], "/a/870?menu_id=101")
+
     def test_center_comes_from_scenario_composition_and_policy_fallback(self):
         env = _Env()
         nav = [

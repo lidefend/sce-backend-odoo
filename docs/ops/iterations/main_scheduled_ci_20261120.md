@@ -84,3 +84,11 @@ The corrected owning-module selection passed all 609 tests at 89680de3f70f8f900e
 ## Statusbar guard alignment
 
 Following the formerly failing workflow guard through the required professional contract suite exposed two stale architecture tokens: synthetic __workflow_phase and dictOrEmpty(workflow.statusbar). Current P1 produces the native state_field and its selection; current consumer validates field/current, readonly, source and current-state membership. Preserve those production/consumption checks and update only the P4 guard to require their actual declarations. Existing canonical presenter tests and architecture/stable-projection guards pass; five controlled mutations (synthetic field, removed native selection, removed readonly/source/membership validation) are rejected. No production statusbar behavior is changed.
+
+### Native menu identity during scenario supplementation
+
+The identity diagnostic at `147c8eb3dba8d162c8b66d94574fc32567af2bc8` completed 49 tests with one failure (the test converts the suppressed projection exception to a diagnostic assertion). Menu 698 already represented published action 946; the supplementation loop promoted contextual actions 870/785/876 on the same carrier into extra navigation leaves. This is distinct from the separately reproduced routed-directory defect.
+
+P1 scenario projection now preserves each existing navigation menu identity, supplements only primary/home declarations, and resolves multiple authorized candidates against native menu action metadata. An unresolved ambiguity is explicitly reported and adds no leaf. Contextual/admin execution authority remains unchanged; explicitly published admin navigation is retained. P0 strict duplicate and exact-authority checks are unchanged. Real production-method regression fails on the prior producer and passes after the fix. The existing owning 609 receipt remains scoped to its recorded input; the changed projection and actual 49-test fixture require new runtime evidence. No assertion or CI classification is relaxed.
+
+Read-only independent review found no new blocker; cross-primary/home candidate exchange is additionally covered. Full professional backend contract suite passed at `0ba4a7c3a71aafca0bb45d0cecd397244d4c9aa7`; full platform diagnostics remain failed as previously disclosed. Remote results still belong to the old ce1 candidate.
