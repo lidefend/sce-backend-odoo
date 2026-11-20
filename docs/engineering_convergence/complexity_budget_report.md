@@ -40,7 +40,7 @@ Generated from repository source files. This report is informational during the 
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2639 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
-| 2548 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 2552 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | YAML workflow | `scripts/verify/registry.yaml` |
@@ -295,7 +295,7 @@ Generated from repository source files. This report is informational during the 
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
 | 2639 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
-| 2548 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
+| 2552 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2454 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2352 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |

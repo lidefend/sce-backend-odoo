@@ -1245,7 +1245,11 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                 self.assertEqual(route_authority.published_pairs(normalized), {(0, 88)} if expected else set())
 
     def test_initialization_preserves_only_existing_authorized_internal_routes(self):
-        self.entries.append({"code": "test.setup", "enablement_scope": "enterprise_initialization"})
+        self.entries.append({
+            "code": "test.setup",
+            "enablement_scope": "enterprise_initialization",
+            "target": {"menu_xmlid": "test.project"},
+        })
         row = {"action_id": 88, "menu_id": 0, "scene_key": "test.setup",
                "source": "scene_internal_action_authority", "allowed": True}
         result = self.filtered({}, {"contextual_actions": [row]})

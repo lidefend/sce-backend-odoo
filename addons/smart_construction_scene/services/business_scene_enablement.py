@@ -195,6 +195,17 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
             menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
             location = surface_index.get(menu)
             legacy = entry_by_key.get(row.get("scene_key"))
+            # Initialization precedes business-scene enablement. Preserve only
+            # an already-authorized internal action without its own menu
+            # carrier; resolving the legacy scene's menu must not make it look
+            # like an unselected business page and short-circuit this lifecycle.
+            if (not menu and not row.get("menu_id")
+                    and legacy
+                    and legacy.get("enablement_scope") == "enterprise_initialization"
+                    and row.get("source") == "scene_internal_action_authority"
+                    and row.get("allowed") is True):
+                kept.append(row)
+                continue
             if not location and legacy and not menu and not row.get("menu_id"):
                 location = surface_index.get((legacy.get("target") or {}).get("menu_xmlid"))
             allowed = location_business_enabled(location, enabled)
@@ -203,14 +214,6 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
                              if xmlid in surface_index and (row.get("action_id"), xmlid) in published_menu_pairs]
                 if locations:
                     allowed = any(location_business_enabled(item, enabled) for item in locations)
-            # Initialization precedes business-scene enablement. This lifecycle
-            # declaration preserves already-authorized internal actions only;
-            # it neither adds routes nor overrides an explicit business menu.
-            if (not location and legacy and not menu and not row.get("menu_id")
-                    and legacy.get("enablement_scope") == "enterprise_initialization"
-                    and row.get("source") == "scene_internal_action_authority"
-                    and row.get("allowed") is True):
-                allowed = True
             if bucket == "menu_containers" and location and location["location"] == "container" and not row.get("action_id"):
                 allowed = True
             if allowed:
