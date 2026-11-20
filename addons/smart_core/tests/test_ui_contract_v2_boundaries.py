@@ -1107,6 +1107,62 @@ class TestUiContractV2Boundaries(unittest.TestCase):
                     self.assertNotIn('has_lines', contract['dataContract']['mainData'])
                 self.assertNotIn('has_lines_limit', contract['dataContract']['mainData'])
 
+    def test_final_field_context_is_resolved_without_exposing_python_source(self):
+        raw = "{'default_user_id': id, 'default_company_id': company_id}"
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "type": "group",
+                    "children": [{
+                        "type": "field",
+                        "name": "sc_profile_document_ids",
+                        "attributes": {"context": raw},
+                        "fieldInfo": {"type": "one2many", "context": raw},
+                    }],
+                    "widgetList": [{
+                        "fieldCode": "sc_profile_document_ids",
+                        "fieldDescriptor": {"name": "sc_profile_document_ids", "type": "one2many", "context": raw},
+                    }],
+                }],
+            },
+            "dataContract": {
+                "mainData": {"company_id": [1, "Synthetic company"]},
+                "dataMeta": {"nativeModifierFieldTypes": {"company_id": "many2one"}},
+            },
+        }
+
+        self.module.hydrate_final_field_contexts(contract, record_id=42)
+
+        expected = {"default_user_id": 42, "default_company_id": 1}
+        group = contract["layoutContract"]["containerTree"][0]
+        node = group["children"][0]
+        self.assertEqual(node["fieldInfo"]["context"], expected)
+        self.assertEqual(node["fieldInfo"]["contextRaw"], raw)
+        self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["context"], expected)
+        self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["contextRaw"], raw)
+        self.assertEqual(node["attributes"]["context"], raw)
+
+    def test_final_field_context_leaves_unresolved_declaration_fail_closed(self):
+        raw = "{'default_project_id': missing_project_id}"
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "type": "field",
+                    "name": "lines",
+                    "fieldInfo": {"type": "one2many", "context": raw},
+                    "widgetList": [{"fieldDescriptor": {"context": raw}}],
+                }],
+            },
+            "dataContract": {"mainData": {}, "dataMeta": {}},
+        }
+
+        self.module.hydrate_final_field_contexts(contract, record_id=None)
+
+        node = contract["layoutContract"]["containerTree"][0]
+        self.assertEqual(node["fieldInfo"]["context"], raw)
+        self.assertNotIn("contextRaw", node["fieldInfo"])
+        self.assertEqual(node["widgetList"][0]["fieldDescriptor"]["context"], raw)
+
     def test_child_parent_dependencies_hydrate_without_child_field_aliasing(self):
         for carrier in ("subview", "subviews"):
             for deny in (None, "read", "field"):

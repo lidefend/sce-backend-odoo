@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 220,
     "gated": 5,
-    "on_demand": 77,
-    "unwired": 138,
+    "on_demand": 79,
+    "unwired": 136,
     "odoo_tag_declarations": 450,
     "gated_declarations": 102,
     "uncovered_declarations": 348,
@@ -1959,14 +1959,16 @@
     },
     {
       "group": "product_job",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_product_job.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.product_job.orm :: product_job"
+      ],
       "disposition": "wire-pending"
     },
     {
@@ -2311,14 +2313,16 @@
     },
     {
       "group": "runtime_user_management",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_runtime_user_management.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.runtime_user_management.orm :: runtime_user_management"
+      ],
       "disposition": "wire-pending"
     },
     {

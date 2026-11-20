@@ -13,13 +13,13 @@ Generated from repository source files. This report is informational during the 
 | Lines | Category | File |
 | ---: | --- | --- |
 | 7090 | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 6649 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 6705 | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6268 | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5827 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 5026 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4796 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4802 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
@@ -27,12 +27,12 @@ Generated from repository source files. This report is informational during the 
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 3569 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3588 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3564 | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3299 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3316 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -268,13 +268,13 @@ Generated from repository source files. This report is informational during the 
 | Lines | Status | Category | File |
 | ---: | --- | --- | --- |
 | 7090 | split_plan_required | Python source | `scripts/verify/frontend_scene_component_bridge_guard.py` |
-| 6649 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
+| 6705 | split_plan_required | Python source | `addons/smart_core/tests/test_ui_contract_v2_boundaries.py` |
 | 6268 | split_plan_required | Python source | `addons/smart_core/core/unified_page_contract_v2_assembler.py` |
 | 5827 | split_plan_required | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py` |
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 5026 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4796 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4802 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
@@ -282,12 +282,12 @@ Generated from repository source files. This report is informational during the 
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
-| 3569 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3588 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3564 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3299 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3316 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |

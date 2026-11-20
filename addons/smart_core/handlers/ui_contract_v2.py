@@ -33,6 +33,7 @@ from ..core.unified_page_contract_v2_client import (
 from ..core.contract_runtime.semantic_resolver import component_registry as _component_registry
 from ..core.unified_page_contract_v2_modifier_dependencies import (
     collect_initial_record_snapshot_fields,
+    hydrate_final_field_contexts,
     hydrate_final_modifier_dependencies,
 )
 from ..core.scene_provider import load_scenes_from_db_or_fallback
@@ -98,7 +99,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v94"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v95"
 
 
 def _create_defaults_fingerprint(env, model_name, params, ui_params):
@@ -1435,6 +1436,11 @@ class UiContractV2Handler(BaseIntentHandler):
             record=record_fact_record,
         )
         modifier_dependencies_at = time.monotonic()
+        hydrate_final_field_contexts(
+            contract_v2,
+            record_id=params.get("record_id") or params.get("recordId") or ui_params.get("record_id") or ui_params.get("recordId"),
+            record=record_fact_record,
+        )
         hydrate_final_layout_modifier_status(contract_v2)
         _projection.apply_field_policies_to_v2_status(contract_v2, source_contract, tighten_only=True)
         hydrate_final_action_modifier_status(contract_v2)
