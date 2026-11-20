@@ -29,7 +29,9 @@ def _simple_approval_profiles(model_names):
         },
         "state_actions": {
             "draft": ["submit", "cancel"],
-            "submitted": ["approve", "cancel"],
+            # Members permit resubmission when no active review exists;
+            # their domains and approval_actions govern the review branch.
+            "submitted": ["submit", "cancel"],
             "cancel": ["reopen"],
         },
         "method_by_action": {

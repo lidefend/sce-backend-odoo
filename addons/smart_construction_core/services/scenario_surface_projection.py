@@ -494,7 +494,10 @@ def flatten_authorized_nav_leaves(
                 center_key = center_key or group_key
                 center_label = center_label or group_label
             effective_group_label = group_label or parent_group_label
-            if menu_id > 0 and (action_id > 0 or route):
+            # A routed directory is still a parent, not an executable leaf.
+            # Reattaching it below its own center duplicates the native menu
+            # identity. Actionless scene leaves retain their declared routes.
+            if menu_id > 0 and (action_id > 0 or (route and not children)):
                 leaf_parent = _text(node.get("parent_menu_xmlid") or meta.get("parent_menu_xmlid")) or parent_menu_xmlid
                 leaves.append({
                     "menu_xmlid": menu_xmlid,

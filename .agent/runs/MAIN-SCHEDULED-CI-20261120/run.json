@@ -25,7 +25,9 @@
     "addons/smart_core/delivery/menu_service.py",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
     "addons/smart_construction_core/models/support/workflow_contract_service.py",
-    "scripts/verify/test_native_view_workflow_action_coverage_guard.py"
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "scripts/verify/scenario_surface_projection_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -134,10 +136,21 @@
         "docker-compose.yml",
         "docker-compose.test-isolation.yml"
       ]
+    },
+    "scenario_projection": {
+      "target": "verify.nav01.native_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "scripts/verify/scenario_center_projection_guard.py",
+        "scripts/verify/fact_layer_authority_guard.py",
+        "scripts/ops/test_scene_internal_action_authority.py"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Finish principal-specific fixture diagnosis, then run affected workflow ORM and new exact-head full candidate.",
+  "next_exact_step": "Seal directory/template corrections; rerun 49 acceptance cases and 609 owning ORM selection, then exact-head Draft PR update and full candidate.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -288,6 +301,32 @@
       "log": ".runtime/ci-recovery/workflow-final.log",
       "tests": 71,
       "reason": "Actual required professional check exposed 3 failures and 2 errors. Restore ten resubmission profiles to business-method state authority; real helper dependencies and precise disabled/success contract assertions. New parameterized regression covers all ten models."
+    },
+    "workflow_owning_47": {
+      "status": "failed",
+      "head": "47a0e77de35e389027e5c707c1565848573485f4",
+      "tests": 609,
+      "failures": 1,
+      "errors": 0,
+      "receipt": ".runtime/test-baseline/1795149564096852074/receipt.json",
+      "selection": "sc_smoke,sc_gate,workflow_contract_backend,approval_contract_closure,be_close_01_workflow_contract",
+      "reason": "Only shared approval template/profile consistency failed; template corrected with original ORM assertion unchanged. Rerun required."
+    },
+    "fixture_diagnostic_ee": {
+      "status": "failed",
+      "head": "ee215ae410a01270e006b36e125a1812797e78f5",
+      "tests": 49,
+      "failures": 0,
+      "errors": 1,
+      "log": ".runtime/ci-recovery/fixture-orm-diagnostic.log",
+      "reason": "Actual projection traceback: canonical navigation node identity is duplicated. Real-method controlled repro confirms routed actionless parent is incorrectly flattened and reattached as its own center child."
+    },
+    "scenario_directory_unit": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/scenario-workflow-final-unit.log",
+      "tests": 166,
+      "before_log": ".runtime/ci-recovery/scenario-directory-unit-before.log",
+      "canonical_before_log": ".runtime/ci-recovery/scenario-directory-before.log"
     }
   },
   "owner_scope": "Owner reaffirmed contract production and consumption as validation core and intentional contract_only strategy. Preserve strategy; do not expand this recovery into all unrelated platform diagnostics.",

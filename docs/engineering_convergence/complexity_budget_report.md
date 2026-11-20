@@ -58,8 +58,8 @@ Generated from repository source files. This report is informational during the 
 | 1974 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1966 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1963 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1937 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1936 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1935 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1906 | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | Python source | `addons/smart_core/handlers/menu_configuration.py` |
@@ -104,7 +104,7 @@ Generated from repository source files. This report is informational during the 
 | 1650 | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
 | 1538 | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
 | 1491 | Python source | `scripts/verify/local_dev_runtime_contract_request_probe.py` |
-| 1479 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
+| 1482 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1469 | Python source | `addons/smart_construction_core/models/support/contract_center.py` |
 | 1440 | JavaScript source | `addons/smart_construction_core/static/src/js/sc_sidebar.js` |
 | 1440 | Python source | `addons/smart_core/utils/contract_governance.py` |
@@ -312,8 +312,8 @@ Generated from repository source files. This report is informational during the 
 | 1974 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
 | 1966 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 1963 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
+| 1937 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1936 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
-| 1935 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
 | 1906 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
 | 1901 | split_plan_required | Python source | `addons/smart_core/handlers/menu_configuration.py` |
