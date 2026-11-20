@@ -227,6 +227,42 @@
       "reason": "Executed by the remote unit/contract shards (test.unit / test.contract / standard_frontend) or is a helper only those shards load. Not a contract-architecture invariant."
     },
     {
+      "script": "scripts/verify/backend_contract_boundary_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
+      "script": "scripts/verify/business_config_user_language_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
+      "script": "scripts/verify/frontend_product_language_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
+      "script": "scripts/verify/low_code_publish_boundary_guard.mjs",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
+      "script": "scripts/verify/low_code_workbench_product_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
+      "script": "scripts/verify/lowcode_config_boundary_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "frontend_lane_toolchain",
+      "reason": "Executed by verify.business_config.unit inside the locked frontend dependency stage. The local exact-head quick lane remains toolchain-free; frontend_release_gate owns enforcement."
+    },
+    {
       "script": "scripts/verify/frontend_action_view_page_actions_guard.py",
       "lane_owner": "remote",
       "reason_code": "frontend_lane_toolchain",

@@ -150,6 +150,61 @@
         "acceptance.frontend.fixture",
         "acceptance.frontend.fixture_orm"
       ]
+    },
+    {
+      "id": "LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120",
+      "branch": "feature/lc-context-01-workspace-async-context-20261120",
+      "base_sha": "d10d2b42d747c89be39abb89dac25bd6051812eb",
+      "reason": "Owner-approved contract-only validation for low-code workbench request ownership, stale-response rejection and safe asynchronous continuation.",
+      "allowed_paths": [
+        ".agent/active-runs.json",
+        ".agent/goals/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120.yaml",
+        ".agent/goals/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120.yaml",
+        ".agent/runs/LC-CONTEXT-01-WORKSPACE-ASYNC-CONTEXT-20261120/run.json",
+        ".agent/runs/SCENE-CLOSE-03-ADMIN-COMPOSITION-UX-20261120/run.json",
+        "config/ci/contract_only_scopes.json",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
+        "docs/engineering_convergence/test_inventory.csv",
+        "docs/engineering_convergence/test_inventory_summary.md",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "docs/ops/iterations/lc_context_01_workspace_async_context_20261120.md",
+        "docs/ops/iterations/scene_close_03_admin_composition_ux_20261120.md",
+        "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+        "frontend/apps/web/scripts/business_config_context_race_test.mjs",
+        "frontend/apps/web/src/app/contextEpoch.ts",
+        "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/low_code_publish_boundary_guard.mjs",
+        "scripts/verify/low_code_workbench_product_guard.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "targets": [
+        "verify.agent.resume.unit",
+        "verify.agent.ledger.unit",
+        "verify.frontend.dev.incremental.unit",
+        "verify.ci.workflow.contract",
+        "verify.verification.lane_coverage"
+      ],
+      "excluded_targets": [
+        "verify.business_config.full_acceptance",
+        "verify.business_config.coverage",
+        "verify.business_config.snapshot",
+        "verify.business_config.browser_acceptance",
+        "verify.business_config.approval_runtime"
+      ]
     }
   ]
 }

@@ -1887,6 +1887,29 @@ RULES = (
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
     )),
+    # Low-code workbench reads are behaviorally owned by the frontend consumer
+    # suite. The approval editor additionally has its own target because it
+    # preserves immediate-effect policy semantics and a multi-step write path.
+    Rule((
+        "frontend/apps/web/src/app/contextEpoch.ts",
+        "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
+        "frontend/apps/web/scripts/business_config_context_race_test.mjs",
+        "scripts/verify/low_code_publish_boundary_guard.mjs",
+        "scripts/verify/low_code_workbench_product_guard.py",
+    ), (
+        "verify.business_config.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+        "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+    ), (
+        "verify.business_config.approval_targets.unit",
+    )),
     # Request-scoped route authority and contract projection identity are both
     # backend consumers of the assembled page contract. Keep each path on its
     # existing non-zero L2 owner so the inner loop cannot silently skip a cache

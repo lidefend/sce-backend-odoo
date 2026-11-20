@@ -290,7 +290,7 @@
       "literal": "ui.contract.v2",
       "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
       "lines": [
-        76
+        84
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -487,7 +487,7 @@
       "literal": "/access-denied",
       "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
       "lines": [
-        121
+        127
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -501,7 +501,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
       "lines": [
-        120
+        126
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1369,8 +1369,8 @@
       "literal": "ready",
       "path": "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
       "lines": [
-        364,
-        369
+        380,
+        385
       ],
       "occurrences": 2,
       "classification": "excluded-render-interaction",

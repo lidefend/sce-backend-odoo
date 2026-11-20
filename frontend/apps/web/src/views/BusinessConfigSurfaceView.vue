@@ -141,6 +141,20 @@ const {
   currentModelIsRuntimeConfig,
 } = useBusinessConfigSurfaceScopeParams({ route, menuTree: session.menuTree });
 
+function businessConfigRequestIdentity() {
+  return {
+    sessionDb: String(session.sessionDb || ''),
+    userId: Number(session.user?.id || 0),
+    companyId: Number(session.recordContext?.company_id || session.recordContext?.selected?.company_id || 0),
+    routeCompanyId: Number(route.query.company_id || 0),
+    actorRoleCode: String(session.roleSurface?.role_code || ''),
+    targetRoleKey: String(scopeRole.value || ''),
+    model: String(currentModel.value || ''),
+    actionId: Number(scopeAction.value || 0),
+    viewId: Number(scopeView.value || 0),
+  };
+}
+
 const sections = computed(() => surface.value?.sections || []);
 const visibleSections = computed(() => sections.value.filter((section) => {
   if (advancedPanelOpen.value) return true;
@@ -238,6 +252,7 @@ const {
   clearMessage, setMessage, loadSurface, scanCoverage, scanSystemRootCoverage, scanCurrentModel,
   rescanCoverageAfterBootstrap, applyScopeAndLoad, focusScanRow, hydrateSelectedCoverageRowFromScan, openRuntimeRoute,
 } = useBusinessConfigScopeLifecycle({ scopeRoleKey, scopeAction, currentModel, scopeView, message, surfaceLoadSeq, loading, error, surfaceError, withSurfaceLoadTimeout, loadBusinessConfigSurface, SURFACE_LOAD_TIMEOUT_MS, scopeRole, session, router, route, surface, scanLoading, coverageScan, scanBusinessConfigCoverage, rootMenuXmlid, selectedPageLabel, scopeModel, scopeActionId, scopeViewId, selectedRuntimeRoute, focusSelectedConfigPanelOnMobile, resetEditorPanels, runtimeReturnQuery,
+  requestIdentity: businessConfigRequestIdentity,
   scopeBusy: () => changeSetBusy.value || changeSetLoading.value || changeSetPublishing.value || changeSetPreviewing.value || listSearchSaving.value || listSearchBusy.value || approvalLoading.value,
   hasUnsavedEdits: () => hasListSearchDraftChanges.value || hasAnalysisDraftChanges.value || hasApprovalDraftChanges.value,
   confirmScopeChange: () => openImpactDialog({ summary: '切换业务页面会丢弃未保存的编辑，已保存草稿保留。', immediate: false, rollbackText: '选择取消可留在当前页面保存配置草稿。' }),
@@ -293,6 +308,7 @@ const {
   clearMessage,
   loadSurface,
   focusActiveEditorPanel,
+  requestIdentity: businessConfigRequestIdentity,
   onOpenPanel: () => {
     listSearchPanelOpen.value = false;
     analysisPanelOpen.value = false;
@@ -519,6 +535,7 @@ const {
   loadSurface,
   rescanCoverageAfterBootstrap,
   rollbackConfirm,
+  requestIdentity: businessConfigRequestIdentity,
 });
 const {
   workbenchCompanyLabel,
@@ -548,6 +565,10 @@ const {
   analysisPanelOpen,
   approvalPanelOpen,
   versionsPanelOpen,
+  listSearchBusy,
+  listSearchSaving,
+  approvalLoading,
+  versionsLoading,
   resetListSearchDraft,
   resetAnalysisDraft,
   resetApprovalDraft,
@@ -556,8 +577,9 @@ const {
   scanSystemRootCoverage,
   setMessage,
   openImpactDialog,
+  requestIdentity: businessConfigRequestIdentity,
 });
-const { loadListSearchConfig, loadAnalysisConfig, saveListSearchConfig, saveAnalysisConfig, previewUnifiedDraft, publishUnifiedDraft, rollbackUnifiedDraft, discardUnifiedDraft } = useBusinessConfigPublishLifecycle({ currentModel, listSearchBusy, error, clearMessage, auditBusinessListSearchConfig, scopeAction, scopeView, scopeRole, listSearchAudit, namesToText, normalizeNamesText, listColumnsText, searchFiltersText, searchGroupByText, listSearchBase, activeListSearchEditor, requestedListSearchTab, analysisPanelOpen, approvalPanelOpen, listSearchPanelOpen, focusActiveEditorPanel, setMessage, auditBusinessAnalysisConfig, analysisAudit, pivotMeasuresText, pivotDimensionsText, graphMeasuresText, graphDimensionsText, graphType, analysisBase, activeAnalysisEditor, requestedAnalysisTab, listSearchSaving, hasListSearchDraftChanges, parseNames, stageUnifiedDraftItem, contractTargetKey, listContractPayload, searchContractPayload, hasAnalysisDraftChanges, analysisContractPayload, previewDraft, openImpactDialog, changeSet, publishDraft, loadSurface, rollbackPublished, discardDraft });
+const { loadListSearchConfig, loadAnalysisConfig, saveListSearchConfig, saveAnalysisConfig, previewUnifiedDraft, publishUnifiedDraft, rollbackUnifiedDraft, discardUnifiedDraft } = useBusinessConfigPublishLifecycle({ currentModel, listSearchBusy, error, clearMessage, auditBusinessListSearchConfig, scopeAction, scopeView, scopeRole, listSearchAudit, namesToText, normalizeNamesText, listColumnsText, searchFiltersText, searchGroupByText, listSearchBase, activeListSearchEditor, requestedListSearchTab, analysisPanelOpen, approvalPanelOpen, listSearchPanelOpen, focusActiveEditorPanel, setMessage, auditBusinessAnalysisConfig, analysisAudit, pivotMeasuresText, pivotDimensionsText, graphMeasuresText, graphDimensionsText, graphType, analysisBase, activeAnalysisEditor, requestedAnalysisTab, listSearchSaving, hasListSearchDraftChanges, parseNames, stageUnifiedDraftItem, contractTargetKey, listContractPayload, searchContractPayload, hasAnalysisDraftChanges, analysisContractPayload, previewDraft, openImpactDialog, changeSet, publishDraft, loadSurface, rollbackPublished, discardDraft, requestIdentity: businessConfigRequestIdentity });
 const {
   sectionImpactText,
   sectionStatusLabel,

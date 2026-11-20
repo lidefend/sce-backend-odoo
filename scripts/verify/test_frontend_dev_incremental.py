@@ -1535,6 +1535,36 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
+    def test_low_code_workbench_context_paths_select_behavior_owners(self) -> None:
+        workbench_paths = (
+            "frontend/apps/web/src/app/contextEpoch.ts",
+            "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue",
+            "frontend/apps/web/src/views/businessConfigSurface/BusinessConfigEditorPanels.vue",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigProductExperience.ts",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigScopeLifecycle.ts",
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigVersions.ts",
+            "frontend/apps/web/scripts/business_config_context_race_test.mjs",
+            "scripts/verify/low_code_publish_boundary_guard.mjs",
+        )
+        for path in workbench_paths:
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.business_config.unit", targets)
+                self.assertFalse(any(".orm" in target for target in targets))
+
+        approval_targets = set(select_targets([
+            "frontend/apps/web/src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts",
+            "frontend/apps/web/scripts/business_config_approval_target_test.mjs",
+        ]))
+        self.assertEqual(
+            approval_targets,
+            {
+                "verify.business_config.approval_targets.unit",
+                *BASE_FRONTEND_TARGETS,
+            },
+        )
+
     def test_controlled_feedback_chain_routes_to_unit_and_orm_owners(self) -> None:
         for path in (
             "addons/smart_core/core/native_advisory.py",

@@ -1,8 +1,11 @@
 #!/usr/bin/env node
 import fs from 'node:fs';
 import path from 'node:path';
+import { createRequire } from 'node:module';
 import ts from '../../frontend/apps/web/node_modules/typescript/lib/typescript.js';
 
+const webRequire = createRequire(new URL('../../frontend/apps/web/package.json', import.meta.url));
+const vue = webRequire('vue');
 const root = path.resolve(path.dirname(new URL(import.meta.url).pathname), '../..');
 const webRoot = path.join(root, 'frontend/apps/web/src');
 const scanRoots = [
@@ -86,12 +89,26 @@ function analyzeSource(source, fileName) {
 }
 
 function loadPublishLifecycle() {
+  const contextSource = fs.readFileSync(path.join(webRoot, 'app/contextEpoch.ts'), 'utf8');
+  const contextOutput = ts.transpileModule(contextSource, {
+    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
+  }).outputText;
+  const contextModule = { exports: {} };
+  Function('module', 'exports', contextOutput)(contextModule, contextModule.exports);
   const source = fs.readFileSync(path.join(webRoot, 'views/businessConfigSurface/useBusinessConfigPublishLifecycle.ts'), 'utf8');
   const output = ts.transpileModule(source, {
     compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 },
   }).outputText;
   const loaded = { exports: {} };
-  Function('module', 'exports', output)(loaded, loaded.exports);
+  Function('module', 'exports', 'require', output)(
+    loaded,
+    loaded.exports,
+    (name) => {
+      if (name === 'vue') return vue;
+      if (name === '../../app/contextEpoch') return contextModule.exports;
+      throw new Error(`unexpected publish lifecycle dependency: ${name}`);
+    },
+  );
   return loaded.exports.useBusinessConfigPublishLifecycle;
 }
 
@@ -124,6 +141,14 @@ async function explicitEmptyRoundtripBehavior() {
   };
   const deps = {
     ...refs, namesToText, normalizeNamesText, clearMessage() {}, setMessage(text, detail) { messages.push([text, detail]); },
+    requestIdentity: () => ({
+      companyId: 1,
+      actorRoleCode: 'business_config_admin',
+      targetRoleKey: refs.scopeRole.value,
+      model: refs.currentModel.value,
+      actionId: refs.scopeAction.value,
+      viewId: refs.scopeView.value,
+    }),
     async focusActiveEditorPanel() {}, async auditBusinessListSearchConfig() { return explicitListSearch; },
     async auditBusinessAnalysisConfig() { return explicitAnalysis; },
     stageUnifiedDraftItem() { writeCalls += 1; }, publishDraft() { writeCalls += 1; }, rollbackPublished() { writeCalls += 1; },

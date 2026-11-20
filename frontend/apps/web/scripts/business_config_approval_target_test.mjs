@@ -5,6 +5,10 @@ import vm from 'node:vm';
 import { createRequire } from 'node:module';
 const require = createRequire(new URL('../package.json', import.meta.url));
 const ts = require('typescript'), vue = require('vue');
+const contextSource = fs.readFileSync(new URL('../src/app/contextEpoch.ts', import.meta.url), 'utf8');
+const contextCode = ts.transpileModule(contextSource, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
+const context = {};
+vm.runInNewContext(contextCode, { exports: context, AbortController });
 const source = fs.readFileSync(new URL('../src/views/businessConfigSurface/useBusinessConfigApprovalEditor.ts', import.meta.url), 'utf8');
 const code = ts.transpileModule(source, { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } }).outputText;
 
@@ -14,13 +18,14 @@ function setup(overrides = {}) {
   const api = Object.fromEntries(['loadApprovalPolicyConfig', 'saveApprovalPolicyConfig', 'saveApprovalPolicySteps'].map(name => [name, async params => { calls.push({ name, params }); return payload(params.model); }]));
   Object.assign(api, overrides);
   const exports = {};
-  vm.runInNewContext(code, { exports, require: name => name === 'vue' ? vue : api });
+  vm.runInNewContext(code, { exports, require: name => name === 'vue' ? { ...vue, onScopeDispose: () => {} } : (name === '../../app/contextEpoch' ? context : api) });
   const editor = exports.useBusinessConfigApprovalEditor({
     currentModel: vue.computed(() => parent.value), targetOptions: vue.computed(() => targets.value),
     selectedPageLabel: vue.ref('父业务'), error, setMessage() {}, clearMessage() {},
     async loadSurface() {}, async focusActiveEditorPanel() {}, onOpenPanel() {},
+    requestIdentity: () => ({ companyId: 1, actorRoleCode: 'config_admin', targetRoleKey: '', model: parent.value, actionId: 11, viewId: 22 }),
   });
-  return { editor, calls, parent, targets, error, payload };
+  return { editor, calls, parent, targets, error, payload, context };
 }
 
 test('child target and label come from declared configuration contract', async () => {
@@ -62,7 +67,18 @@ test('parent switch during save prevents a subsequent step write', async () => {
   const pending = s.editor.saveApprovalConfig(); s.parent.value = 'other'; release(s.payload('child'));
   assert.equal(await pending, false);
   assert.equal(s.calls.filter(c => c.name === 'saveApprovalPolicySteps').length, 0);
-  assert.match(s.error.value, /配置页面已变化/);
+  assert.equal(s.error.value, '');
+});
+test('context epoch switch during the first approval write stops the second write', async () => {
+  let release;
+  const s = setup({ saveApprovalPolicyConfig: () => new Promise(resolve => { release = resolve; }) });
+  await s.editor.loadApprovalConfig(); s.editor.enableApprovalWithDefaultStep();
+  const pending = s.editor.saveApprovalConfig();
+  s.context.beginContextTransition();
+  release(s.payload('child'));
+  assert.equal(await pending, false);
+  assert.equal(s.calls.filter(c => c.name === 'saveApprovalPolicySteps').length, 0);
+  assert.equal(s.editor.approvalLoading.value, false);
 });
 
 test('unsupported and missing amount capabilities hide inputs without deleting stored values', async () => {
