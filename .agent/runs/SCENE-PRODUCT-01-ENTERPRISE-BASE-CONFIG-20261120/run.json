@@ -202,11 +202,25 @@
   },
   "validation_results": {
     "status": "passed",
+    "layers": {
+      "affected_mechanisms": {
+        "status": "passed",
+        "scope": "Affected readiness producer, native declaration, frontend consumer, navigation and incremental validation mechanisms"
+      },
+      "scenario_declaration_and_consumption": {
+        "status": "candidate_passed_pending_independent_review",
+        "scope": "The five native maintenance entries and enterprise scene selection have declaration, permission, save/readback wiring and controlled consumer evidence; this is not an actual runtime save"
+      },
+      "user_availability": {
+        "status": "not_run",
+        "scope": "Real configuration-administrator save, authoritative database readback, return to enterprise setup and refreshed diagnosis were not executed in a selected managed runtime"
+      }
+    },
     "passed": [
-      "test_enterprise_readiness_contract.py: 5 tests passed for explicit rule grouping, distinct missing user/employee facts, project responsibility applicability, scope, summary and saved scene selection",
+      "test_enterprise_readiness_contract.py: 5 tests passed for explicit rule grouping, distinct missing user/employee facts, the no-project/existing-project-without-responsibility/configured project-responsibility reason branches, scope, summary and saved scene selection",
       "test_enterprise_setup_native_contracts.py: 5 tests passed for the five native maintenance entries, fields, editability, relationships, ACL and record-rule boundaries",
-      "verify.navigation.publication_consumers.unit: 274 prerequisite and target tests passed",
-      "verify.frontend.workspace_scenario_lifecycle.unit: readiness lifecycle cases=20 with all 12 rules plus 14 mounted SFC cases; full target 501 prerequisite/lifecycle/persistence cases passed",
+      "verify.navigation.publication_consumers.unit: 276 prerequisite and target tests passed",
+      "verify.frontend.workspace_scenario_lifecycle.unit: readiness lifecycle cases=20 with all 12 rules plus 14 mounted SFC cases waiting on observable ready states; full target 509 prerequisite/lifecycle/persistence cases passed",
       "verify.frontend.scene_entry_contract.unit: passed; scene entry 61, runtime fetch 73, diagnostic 85 and hydration 94 cases",
       "verify.frontend.navigation_shell.unit: passed",
       "verify.frontend.component_driver_takeover.unit: 18 tests passed; component-driver inventory current",
@@ -215,14 +229,15 @@
       "verify.frontend.dev.incremental.unit: 188 tests passed",
       "verify.scenario.center_projection.guard: 9 tests passed",
       "verify.scene.fact_data.boundary.unit: 1 test passed",
-      "make ci.local.iteration: exit 0; 11 required targets resolved, 9 executed and 2 reused after the final input reconciliation, with no missing registration, unmapped path or excluded ORM target",
+      "make ci.local.iteration: exit 0; 11 required targets resolved, 10 executed and 1 reused after the final input reconciliation, with no missing registration, unmapped path or excluded ORM target",
       "ci.delivery.freeze.prepare: passed; generated evidence is current"
     ],
     "not_run": [
       "ORM and module baselines are excluded by owner continuation",
-      "Browser matrix, deployment and target-environment user acceptance are excluded"
+      "Browser matrix, deployment and target-environment user acceptance are excluded",
+      "Actual configuration-administrator saves, authoritative database readback, re-entry and refreshed diagnosis remain not_run until a selected managed runtime carries the candidate"
     ]
   },
   "blockers": [],
-  "next_exact_step": "Run the final clean-equivalent incremental and freeze preparation, commit the candidate, publish one PR, then verify the four required checks on the exact head."
+  "next_exact_step": "Run the final clean-equivalent incremental and freeze preparation, commit the candidate, push the same PR, then verify contract-only execution and all four required checks on the exact head."
 }

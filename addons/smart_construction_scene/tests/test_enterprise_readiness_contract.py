@@ -379,6 +379,29 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
             after["enterprise.project_responsibility"]["status"],
             "NOT_CONFIGURED",
         )
+        self.assertIn(
+            "现有项目的成员责任",
+            after["enterprise.project_responsibility"]["failure_reason"],
+        )
+        self.assertNotIn(
+            "创建项目",
+            after["enterprise.project_responsibility"]["failure_reason"],
+        )
+
+        env.counts["sc.project.member.assignment"] = 1
+        configured = {
+            rule["rule_key"]: rule
+            for rule in diagnosis.evaluate_enterprise_readiness(env, company_id=7)["rules"]
+        }
+        self.assertTrue(configured["enterprise.project_responsibility"]["applicability"])
+        self.assertEqual(
+            configured["enterprise.project_responsibility"]["status"],
+            "CONFIGURED",
+        )
+        self.assertEqual(
+            configured["enterprise.project_responsibility"]["failure_reason"],
+            "",
+        )
 
     def test_inapplicable_project_and_scenario_rules_are_not_reported_as_attention(self):
         env = ControlledEnv(

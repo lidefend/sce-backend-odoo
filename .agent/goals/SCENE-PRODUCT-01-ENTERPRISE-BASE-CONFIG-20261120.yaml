@@ -57,7 +57,16 @@ goal:
     facts, scenario selections and business models remain unchanged.
 
   completion:
-    batch: pending
+    affected_mechanisms: passed
+    scenario_declaration_and_consumption: candidate_passed_pending_independent_review
+    batch: verification_pending
+    independent_review: not_run
     mainline_integration: not_run
     deployment: not_run
     user_acceptance: not_run
+    user_acceptance_boundary: >-
+      The candidate proves declared actions, permission boundaries, controlled
+      component consumption and the selected scene activation chain. A real
+      configuration administrator must still save each native configuration
+      target, reread the authoritative record, return to enterprise setup, and
+      confirm the refreshed diagnosis in a selected managed runtime.

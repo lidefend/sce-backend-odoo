@@ -280,7 +280,9 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
             },
             failure_reason=(
                 ""
-                if project_responsibility_count
+                if not project_enabled or project_responsibility_count
+                else "项目成员责任未配置；请维护现有项目的成员责任"
+                if project_count > 0
                 else "尚未建立项目；创建项目后再配置项目成员责任"
                 if project_enabled
                 else ""

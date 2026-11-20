@@ -248,11 +248,6 @@ const wrapper = defineComponent({
 const app = renderer.createApp(wrapper);
 app.mount(rootNode);
 const tick = async () => { for (let index = 0; index < 8; index += 1) await nextTick(); };
-for (let index = 0; index < 20 && !pending.length; index += 1) await tick();
-assert.equal(pending.length, 1);
-assert.equal(pending[0].body.intent, 'enterprise.readiness.diagnosis.get');
-pending[0].resolve(response(true));
-await tick();
 
 const all = (node, rows = []) => {
   rows.push(node);
@@ -262,6 +257,22 @@ const all = (node, rows = []) => {
 const textOf = (node) => node.text + node.children.map(textOf).join('');
 const buttons = () => all(rootNode).filter((node) => node.type === 'test-button');
 const buttonByText = (label) => buttons().find((node) => textOf(node).includes(label));
+const waitFor = async (predicate, label) => {
+  for (let index = 0; index < 100; index += 1) {
+    if (predicate()) return;
+    await tick();
+    await new Promise((resolve) => setTimeout(resolve, 0));
+  }
+  assert.fail(
+    `timed out waiting for ${label}; pending_requests=${pending.length}; `
+    + `rendered_text=${JSON.stringify(textOf(rootNode))}`,
+  );
+};
+
+await waitFor(() => pending.length === 1, 'the initial readiness request');
+assert.equal(pending[0].body.intent, 'enterprise.readiness.diagnosis.get');
+pending[0].resolve(response(true));
+await waitFor(() => textOf(rootNode).includes('当前企业：示例企业'), 'the installed readiness response');
 const pageText = textOf(rootNode);
 assert.match(pageText, /当前企业：示例企业/);
 assert.match(pageText, /1 项需处理/);
@@ -281,10 +292,10 @@ assert.deepEqual(emitted, [{
 
 const refresh = buttonByText('刷新');
 refresh.props.onClick();
-for (let index = 0; index < 20 && pending.length < 2; index += 1) await tick();
+await waitFor(() => pending.length === 2, 'the refreshed readiness request');
 assert.equal(pending.length, 2);
 pending[1].resolve(response(false));
-await tick();
+await waitFor(() => textOf(rootNode).includes('0 项需处理'), 'the refreshed readiness response');
 const refreshedText = textOf(rootNode);
 assert.match(refreshedText, /0 项需处理/);
 assert.doesNotMatch(refreshedText, /组织事实缺失/);
