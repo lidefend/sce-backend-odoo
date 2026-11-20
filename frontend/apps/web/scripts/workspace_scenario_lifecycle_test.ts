@@ -968,19 +968,158 @@ session.recordContext = {
 } as NonNullable<typeof session.recordContext>;
 console.log('[business_scenario_mutation_receipt_isolation_test] PASS cases=4');
 
+// Enterprise setup entries preserve the originating company/page and return path.
+const { withEnterpriseSetupReturnTarget } = await import('../src/app/enterpriseSetupNavigation.ts');
+const setupSourceQuery = { scene_key: 'enterprise.setup', ctx: 'company-1' };
+const setupReturnQuery = withEnterpriseSetupReturnTarget(setupSourceQuery, {
+  sourceSceneKey: 'enterprise.setup',
+  sourcePath: '/s/enterprise.setup?company_id=1&scene_key=enterprise.setup',
+  sourceLabel: '企业初始化',
+});
+assert.deepEqual(setupReturnQuery, {
+  scene_key: 'enterprise.setup',
+  ctx: 'company-1',
+  return_url: '/s/enterprise.setup?company_id=1&scene_key=enterprise.setup',
+  return_label: '返回企业初始化',
+});
+assert.deepEqual(setupSourceQuery, { scene_key: 'enterprise.setup', ctx: 'company-1' });
+assert.equal(
+  'return_url' in withEnterpriseSetupReturnTarget({}, {
+    sourceSceneKey: 'workspace.home',
+    sourcePath: '/s/workspace.home',
+    sourceLabel: '工作台',
+  }),
+  false,
+);
+for (const entryKey of [
+  'smart_construction_core.action_sc_enterprise_company',
+  'smart_construction_core.action_sc_organization_department',
+  'smart_construction_core.action_sc_product_job_management_v1',
+  'smart_construction_core.action_sc_runtime_user_management',
+  'smart_construction_core.action_sc_product_data_permission_v1',
+]) {
+  const query = withEnterpriseSetupReturnTarget({ entry_key: entryKey }, {
+    sourceSceneKey: 'enterprise.setup',
+    sourcePath: `/s/enterprise.setup?entry_key=${entryKey}`,
+    sourceLabel: '企业初始化',
+  });
+  assert.equal(query.return_url, `/s/enterprise.setup?entry_key=${entryKey}`);
+  assert.equal(query.return_label, '返回企业初始化');
+}
+
+const {
+  groupEnterpriseReadinessRules,
+} = await import('../src/app/enterpriseReadinessPresentation.ts');
+const enterpriseRules = [
+  ['enterprise.identity', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.organization', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.positions', 'enterprise_foundation', '企业与组织', 10],
+  ['enterprise.users', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.employees', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.user_employee_link', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.user_org_position', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.roles', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.project_responsibility', 'people_access', '人员、账号与权限', 20],
+  ['enterprise.scenario_enablement', 'scenario_enablement', '业务场景与启用验证', 30],
+  ['enterprise.scenario_dependencies', 'scenario_enablement', '业务场景与启用验证', 30],
+  ['enterprise.role_delivery', 'scenario_enablement', '业务场景与启用验证', 30],
+].map(([rule_key, section_key, section_label, section_sequence]) => ({
+  rule_key: String(rule_key),
+  label: String(rule_key),
+  section_key: String(section_key),
+  section_label: String(section_label),
+  section_sequence: Number(section_sequence),
+  applicability: true,
+  status: 'CONFIGURED',
+  status_label: '已配置',
+  failure_reason: '',
+  suggested_responsible_party: '企业管理员',
+  remediation: null,
+})) as Parameters<typeof groupEnterpriseReadinessRules>[0];
+const enterpriseRuleGroups = groupEnterpriseReadinessRules(enterpriseRules);
+assert.deepEqual(
+  enterpriseRuleGroups.map(group => [group.key, group.label, group.rules.length]),
+  [
+    ['enterprise_foundation', '企业与组织', 3],
+    ['people_access', '人员、账号与权限', 6],
+    ['scenario_enablement', '业务场景与启用验证', 3],
+  ],
+);
+assert.deepEqual(
+  enterpriseRuleGroups.map(group => group.rules.map(rule => rule.rule_key)),
+  [
+    ['enterprise.identity', 'enterprise.organization', 'enterprise.positions'],
+    [
+      'enterprise.users',
+      'enterprise.employees',
+      'enterprise.user_employee_link',
+      'enterprise.user_org_position',
+      'enterprise.roles',
+      'enterprise.project_responsibility',
+    ],
+    [
+      'enterprise.scenario_enablement',
+      'enterprise.scenario_dependencies',
+      'enterprise.role_delivery',
+    ],
+  ],
+);
+assert.equal(
+  'return_url' in withEnterpriseSetupReturnTarget({}, {
+    sourceSceneKey: 'enterprise.setup',
+    sourcePath: '//unsafe',
+    sourceLabel: '企业初始化',
+  }),
+  false,
+);
+
 // Readiness consumes native remediation and never displays another company's late response.
-const { useEnterpriseReadiness } = await import('../src/composables/useEnterpriseReadiness.ts');
+const {
+  requireReadiness,
+  useEnterpriseReadiness,
+} = await import('../src/composables/useEnterpriseReadiness.ts');
 session.initStatus = 'ready';
 const diagnosisScope = effectScope();
 const diagnosis = diagnosisScope.run(() => useEnterpriseReadiness())!;
 await flush();
-const diagnosisResponse = (company: number, label = 'Native label') => ({
-  contract_version: 'enterprise_readiness.v2', company_id: company, rules: [{
-    rule_key: 'test', label, applicability: true, status: 'CONFIGURED', status_label: '已配置',
-    failure_reason: '', suggested_responsible_party: '',
-    remediation: { kind: 'handling_entry', key: 'native.action', label: 'Native entry' },
-  }],
-});
+const diagnosisResponse = (company: number, label = 'Native label') => {
+  const response = {
+    contract_version: 'enterprise_readiness.v2',
+    company_id: company,
+    company_name: `Company ${company}`,
+    maintenance_scope: {
+      kind: 'enterprise_configuration',
+      company_id: company,
+      company_name: `Company ${company}`,
+      enterprise_managed: ['企业信息', '人员与账号'],
+      platform_managed: ['企业创建', '产品版本发布'],
+      business_validation_required: ['角色工作空间交付'],
+    },
+    summary: {
+      rule_count: 1,
+      applicable_count: 1,
+      verified_count: 0,
+      configured_count: 1,
+      needs_attention_count: 0,
+      pending_business_validation_count: 0,
+      not_applicable_count: 0,
+    },
+    rules: [{
+      rule_key: 'test',
+      label,
+      section_key: 'enterprise_foundation',
+      section_label: '企业与组织',
+      section_sequence: 10,
+      applicability: true,
+      status: 'CONFIGURED',
+      status_label: '已配置',
+      failure_reason: '',
+      suggested_responsible_party: '企业管理员',
+      remediation: { kind: 'handling_entry', key: 'native.action', label: 'Native entry' },
+    }],
+  };
+  return response as Parameters<typeof requireReadiness>[0];
+};
 const oldDiagnosis = pending.at(-1)!;
 assert.equal(oldDiagnosis.intent, 'enterprise.readiness.diagnosis.get');
 assert.equal(oldDiagnosis.params.company_id, 2);
@@ -992,6 +1131,9 @@ currentDiagnosis.settle(diagnosisResponse(1));
 await flush();
 assert.equal(diagnosis.state.value, 'ready');
 assert.equal(diagnosis.rules.value[0].remediation?.key, 'native.action');
+assert.equal(diagnosis.companyName.value, 'Company 1');
+assert.equal(diagnosis.maintenanceScope.value?.platform_managed[0], '企业创建');
+assert.equal(diagnosis.summary.value?.configured_count, 1);
 oldDiagnosis.settle(diagnosisResponse(2, 'Stale'));
 await flush();
 assert.equal(diagnosis.rules.value[0].label, 'Native label');
@@ -1003,6 +1145,13 @@ assert.deepEqual(diagnosis.rules.value, []);
 const wrongCompany = await nextRequest(diagnosis.load);
 wrongCompany.request.settle(diagnosisResponse(2));
 await wrongCompany.result;
+assert.equal(diagnosis.state.value, 'error');
+const inconsistentSummary = await nextRequest(diagnosis.load);
+inconsistentSummary.request.settle({
+  ...diagnosisResponse(1),
+  summary: { ...diagnosisResponse(1).summary, rule_count: 2 },
+});
+await inconsistentSummary.result;
 assert.equal(diagnosis.state.value, 'error');
 const beforeActivation = await nextRequest(diagnosis.load);
 session.initStatus = 'loading';
@@ -1021,4 +1170,4 @@ diagnosisScope.stop();
 afterUnmount.request.settle(diagnosisResponse(1));
 await afterUnmount.result;
 assert.deepEqual(diagnosis.rules.value, []);
-console.log('[enterprise_readiness_lifecycle_test] PASS cases=6 consumer=actual transport=controlled');
+console.log('[enterprise_readiness_lifecycle_test] PASS cases=20 consumer=actual transport=controlled');

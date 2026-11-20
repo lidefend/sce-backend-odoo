@@ -180,8 +180,11 @@ verify.frontend.workspace_scenario_lifecycle.unit: guard.prod.forbid verify.navi
 	@mkdir -p .runtime/nav01
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts --bundle --platform=node --format=esm --define:import.meta.env={} --alias:vue=$(ROOT_DIR)/frontend/apps/web/node_modules/vue/dist/vue.runtime.esm-bundler.js --outfile=.runtime/nav01/workspace-scenario-lifecycle-test.mjs >/dev/null
 	@node .runtime/nav01/workspace-scenario-lifecycle-test.mjs
+	@node frontend/apps/web/scripts/enterprise_readiness_component_test.mjs
 
 verify.navigation.publication_consumers.unit: guard.prod.forbid verify.nav01.native_authority.unit
+	@python3 addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py
+	@python3 addons/smart_construction_core/tests/test_enterprise_setup_native_contracts.py
 	@python3 addons/smart_construction_scene/tests/test_tenant_scene_activation.py
 	@python3 addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py
 	@python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py

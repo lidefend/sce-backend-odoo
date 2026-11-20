@@ -207,6 +207,7 @@ import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
 import { readWorkspaceContext } from '../app/workspaceContext';
 import { buildCanonicalSceneRouteTarget, normalizeLegacyWorkbenchPath, resolveSceneDefaultOrder } from '../app/routeQuery';
+import { withEnterpriseSetupReturnTarget } from '../app/enterpriseSetupNavigation';
 import { ownsSceneRoute, resolveSceneContractEntryIntent, resolveSceneRuntimeDiagnostic } from '../app/sceneEntryContract';
 import {
   resolveSceneActionTarget,
@@ -531,8 +532,16 @@ function openHandlingEntry(item: HandlingEntryItem) {
   };
   const routeTarget = String(target.route || '').trim();
   const workspaceContextQuery = resolveWorkspaceContextQuery() as Record<string, unknown>;
+  const navigationQuery = (extra: Record<string, unknown> = {}) => withEnterpriseSetupReturnTarget(
+    { ...workspaceContextQuery, ...extra },
+    {
+      sourceSceneKey: currentSceneKey.value,
+      sourcePath: route.fullPath,
+      sourceLabel: scenePageHeading.value,
+    },
+  );
   if (routeTarget) {
-    void router.push({ path: routeTarget, query: asRouteQuery(workspaceContextQuery) });
+    void router.push({ path: routeTarget, query: asRouteQuery(navigationQuery()) });
     return;
   }
   const sceneKey = String(target.scene_key || '').trim();
@@ -540,7 +549,7 @@ function openHandlingEntry(item: HandlingEntryItem) {
     const targetScene = getSceneByKey(sceneKey);
     void router.push(buildCanonicalSceneRouteTarget(sceneKey, {
       scene: targetScene,
-      query: asRouteQuery(workspaceContextQuery),
+      query: asRouteQuery(navigationQuery()),
       menuId: targetScene?.target?.menu_id,
       actionId: targetScene?.target?.action_id,
     }));
@@ -561,12 +570,11 @@ function openHandlingEntry(item: HandlingEntryItem) {
   if (!resolvedAction) return;
   void router.push({
     path: `/a/${resolvedAction.actionId}`,
-    query: asRouteQuery({
-      ...workspaceContextQuery,
+    query: asRouteQuery(navigationQuery({
       menu_id: Number(resolvedAction.menuId || 0) || undefined,
       action_id: resolvedAction.actionId,
       business_category_code: item.business_category_code || undefined,
-    }),
+    })),
   });
 }
 

@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5296`
+- Scanned files: `5300`
 - Files requiring split plan: `84`
 - Files above warning threshold: `160`
 
@@ -28,11 +28,11 @@ Generated from repository source files. This report is informational during the 
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3509 | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 3494 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3505 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3441 | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3231 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3242 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3226 | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -79,8 +79,8 @@ Generated from repository source files. This report is informational during the 
 | 1668 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1657 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
+| 1620 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1612 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1583 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
@@ -282,11 +282,11 @@ Generated from repository source files. This report is informational during the 
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3509 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |
-| 3494 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3505 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3441 | split_plan_required | Python source | `addons/smart_core/tests/test_form_field_configuration_params.py` |
 | 3392 | split_plan_required | Python source | `addons/smart_construction_core/models/core/material_acceptance.py` |
 | 3326 | split_plan_required | XML data/view | `addons/smart_construction_core/security/sc_record_rules.xml` |
-| 3231 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3242 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3226 | split_plan_required | Python source | `scripts/ops/test_daily_runtime_database_duty.py` |
 | 3131 | split_plan_required | Python source | `addons/smart_core/tests/test_menu_configuration_audit.py` |
 | 2928 | split_plan_required | Python source | `addons/smart_core/core/workspace_home_contract_builder.py` |
@@ -334,8 +334,8 @@ Generated from repository source files. This report is informational during the 
 | 1657 | split_plan_required | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
+| 1620 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
-| 1612 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1602 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
 | 1583 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
