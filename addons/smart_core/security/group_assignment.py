@@ -13,8 +13,9 @@ def apply_commands(initial, commands):
         if not isinstance(command, (tuple, list)) or not command:
             raise GroupAuthorityGap('GROUP_AUTHORITY_UNSUPPORTED_COMMAND')
         op = command[0]
-        if type(op) is not int:
+        if isinstance(op, bool) or not isinstance(op, int):
             raise GroupAuthorityGap('GROUP_AUTHORITY_UNSUPPORTED_COMMAND')
+        op = int(op)
         if op == 6 and len(command) == 3 and isinstance(command[2], (list, tuple)):
             if any(type(value) is not int or value <= 0 for value in command[2]):
                 raise GroupAuthorityGap('GROUP_AUTHORITY_INVALID_GROUP_ID')

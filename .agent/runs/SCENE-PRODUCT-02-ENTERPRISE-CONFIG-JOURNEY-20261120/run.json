@@ -35,6 +35,8 @@
     "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
     "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
     "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    "addons/smart_construction_core/tests/test_product_job.py",
+    "addons/smart_construction_core/tests/test_runtime_user_management.py",
     "addons/smart_construction_scene/handlers/scenario_activation.py",
     "addons/smart_construction_scene/services/scenario_activation_catalog.py",
     "addons/smart_construction_scene/services/business_scene_enablement.py",
@@ -47,10 +49,13 @@
     "addons/smart_core/delivery/edition_release_snapshot_service.py",
     "addons/smart_core/delivery/effective_delivery_service.py",
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
     "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/security/group_assignment.py",
     "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
     "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
     "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
     "config/product_menu_contract_v1.json",
     "config/product_menu_release_manifest_v2.json",
     "config/ops/local-platform-empty-addons/.gitkeep",
@@ -146,6 +151,7 @@
     },
     "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
     "candidate_health": "passed: backend source revision and 5176 frontend both 93e261258381c4d9d70b583472363fe4adf7ee17",
+    "current_product_source": "91bc9a0b4538a76d6b7c476dbe4517ae57b24632 plus the field-context and native-command fixes in this result index",
     "system_init_after_schema_upgrade": "passed"
   },
   "release_prerequisite": {
@@ -219,16 +225,73 @@
       "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
     },
     "C02-02_to_C02-05": {
-      "status": "covered_by_shared_mechanism_and_entry_specific_contracts",
-      "reason": "The shared entry/form/save/readback/return mechanism is proven by C02-01. Organization received a create/readback/cleanup spot check; job, personnel and permission unique semantics are covered by their declarations, constraints and existing model test families."
+      "status": "passed",
+      "organization": {
+        "status": "passed",
+        "evidence": "Reused the existing company-scoped department 12 and the prior invalid-name/create/readback/cleanup spot check."
+      },
+      "position": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
+        "record_id": 15,
+        "name": "C02-JOB-1795190532552",
+        "code": "C02-1795190532552",
+        "company_id": 1,
+        "department_id": 12,
+        "create_response": "api.data create returned hr.job id 15",
+        "duplicate_code": "unique(sc_job_code, company_id) locked by product_job ORM regression"
+      },
+      "personnel_account": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+        "user_id": 58,
+        "login": "c02_user_1795190532552",
+        "employee_id": 15,
+        "company_id": 1,
+        "department_id": 12,
+        "job_id": 15,
+        "employee_user_id": 58,
+        "employee_active": true,
+        "second_edit": "phone changed and saved on the same res.users(58); write response ids=[58]",
+        "ordinary_internal_user": true,
+        "business_config_admin": false,
+        "system_admin": false
+      },
+      "business_permissions": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_product_data_permission_v1",
+        "same_user_id": 58,
+        "company_ids": [1],
+        "granted_role_id": 151,
+        "granted_role_xmlid": "smart_construction_core.group_sc_role_project_manager",
+        "target_role_code": "pm",
+        "grant_write_ids": [58],
+        "revoke_write_ids": [58],
+        "role_present_after_revoke": false,
+        "target_role_after_revoke": "restricted"
+      },
+      "reports": [
+        ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-personnel-delivery.json",
+        ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-delivery-browser-report.json"
+      ]
     },
     "C02-06A": {
       "status": "passed",
       "observed": "On candidate 93e261258, the enterprise page returned 132 published pages and 46 actionable scenarios. User 24/company 1 enabled work.my_queue, refreshed the catalog, disabled it, and read back enabled=false with access_granted=false."
     },
     "C02-06B": {
-      "status": "not_run",
-      "reason": "Scenario selection now works. Target-user access still requires an applicable project/role journey and remains a separate check."
+      "status": "passed",
+      "scene_key": "project.initiation",
+      "target_user_id": 58,
+      "target_role_code": "pm",
+      "target_menu_xmlid": "smart_construction_core.menu_sc_project_project",
+      "disabled": "Target user navigation did not contain the project menu.",
+      "enabled": "Admin save returned enabled=true/write_committed=true; the same user's fresh system.init contained the project menu and role pm.",
+      "positive_access": "Target user opened project.project(26), company 1, through the visible project ledger.",
+      "negative_access": "Target user received /access-denied?reason=PERMISSION_DENIED for project.project(28), company 2.",
+      "disabled_again": "Target user navigation no longer contained the project menu; stale direct entry ended in a visible operation-not-completed message.",
+      "role_scope_changed_by_scenario": false,
+      "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-scenario-delivery.json"
     }
   },
   "five_entry_semantic_review": {
@@ -245,25 +308,25 @@
     "position": {
       "contract": "sc_job_code, name, department_id, company_id and active are declared; headcount is read-only",
       "authority": "unique(sc_job_code, company_id) in product_job.py; company-scoped record rule and native action group",
-      "execution": "shared form/save mechanism reused; no duplicate browser replay",
-      "status": "covered_by_declaration_and_existing_model_contract"
+      "execution": "Created hr.job(15) through the visible entry with code, company 1 and department 12; duplicate-code ORM regression passed.",
+      "status": "passed"
     },
     "personnel_account": {
       "contract": "res.users form exposes login, password, employee_id, department, job and active while excluding role and project-assignment fields",
       "authority": "existing runtime user management models enforce allowed-company scope and one employee profile per user",
-      "execution": "shared form/save mechanism reused; user-employee identity covered by existing model test family",
-      "status": "covered_by_declaration_and_existing_model_contract"
+      "execution": "Created res.users(58), linked hr.employee(15), set company/department/job, edited the same user, and read back the complete relation chain.",
+      "status": "passed"
     },
     "business_permissions": {
       "contract": "identity fields are read-only; assignable roles and company/company_ids are editable; project assignment is project-scoped",
       "authority": "business config admin action groups, assignable-role domain, and runtime company-maintainable domain",
-      "execution": "shared form/save mechanism reused; role/company boundaries covered by existing model test family",
-      "status": "covered_by_declaration_and_existing_model_contract"
+      "execution": "Granted role 151 to the same user, read role pm with company_ids=[1], then revoked it and read role restricted. Neither grant inherited admin authority.",
+      "status": "passed"
     },
     "enterprise_scenarios": {
       "shared_mechanism": "real browser catalog read, enable, refresh, disable and authoritative readback",
       "status": "passed",
-      "evidence": "C02-06A"
+      "evidence": "C02-06A and C02-06B"
     }
   },
   "authorization_reconciliation": {
@@ -374,6 +437,19 @@
       "verify.unified_page_contract.v2.runtime: PASS, 149 tests; unified page-contract runtime score 6",
       "verify.unified_page_contract.v2.web_architecture: PASS, debt-lock findings 0",
       "verify.semantic.registry.lint: PASS; field_partner_autocomplete is declared as a generic visual fallback without claiming native takeover",
+      "field-context regression: PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py -> 180 tests passed; resolved context is a dictionary, contextRaw preserves the native expression, unresolved declarations remain fail-closed",
+      "runtime user security ORM: make local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management -> 27 tests passed; receipt=.runtime/test-baseline/1795191104553979589/receipt.json",
+      "job product ORM: make local.test.test MODULE=smart_construction_core TEST_TAGS=product_job -> 2 tests passed; duplicate code is rejected within the same company; receipt=.runtime/test-baseline/1795192495483746842/receipt.json",
+      "verify.unified_page_contract.v2.assembler: PASS after cache version bump to v95 and input digest re-pin",
+      "verify.unified_page_contract.v2.runtime: PASS; suites reported 5, 23 and 149 tests with runtime score 6",
+      "C02 personnel delivery on current product source: PASS; visible personnel entry created res.users(58), linked hr.employee(15), company 1, department 12, job 15; second edit returned ids=[58]; authoritative readback matched",
+      "C02 permission delivery on res.users(58): PASS; grant role 151 and revoke it on the same user; target login changed from pm to restricted, company scope stayed [1], and no admin or system-admin authority was inherited",
+      "C02 target data access: PASS; target user read project.project(26) in company 1 through the visible project ledger and received /access-denied?reason=PERMISSION_DENIED for project.project(28) in company 2",
+      "C02-06B on current product source: PASS; project.initiation disabled -> target menu absent; enabled -> target system.init role=pm and menu_sc_project_project present; disabled again -> target menu absent; scenario selection did not change role or company scope",
+      "C02 return and diagnosis: PASS; fresh enterprise.readiness.diagnosis.get returned company 1 and 12 rules after role revocation and scenario restore",
+      "C02 cleanup: PASS; user, employee, job and company-2 negative project all returned search_count=0",
+      "make ci.local.iteration: PASS; 53 required targets actually executed, unmapped=0, blocked=0, not_run=0; receipt=.runtime/frontend-dev-validation/executions/20261120T163932Z-3460879-796108417/receipt.json",
+      "make ci.delivery.freeze.prepare: PASS; generated test inventory has 1738 entries, coverage registry is current, contract structure and all tracked generated reports are current",
       "[historical before the current fixes] make ci.local.iteration: PASS; 44 affected targets executed; receipt=.runtime/frontend-dev-validation/executions/20261120T123643Z-2201996-755971495/receipt.json",
       "[historical before scenario-seed implementation] make ci.local.iteration: exit 0; 13 required targets executed",
       "ci.delivery.freeze.prepare: passed; generated evidence current with 1738 inventory entries",
@@ -381,9 +457,8 @@
       "frontend strict typecheck: passed"
     ],
     "not_run": [
-      "C02-02 through C02-05 shared browser rendering is covered by C02-01; position, personnel identity and permission boundaries were reviewed through declarations and existing model tests instead of duplicate browser replay",
-      "C02-06B target-user route reachability: target-user access remains separate and requires an applicable project/role journey",
-      "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
+      "Full owning-module ORM baselines, module upgrade replay, fixture reset, full browser matrix and deployment remain excluded by the owner-selected acceptance scope",
+      "A stale direct URL after scenario disable reaches the existing visible operation-not-completed state; navigation withdrawal is the primary gate result and no new fallback route is inferred"
     ],
     "cancelled": [
       "The redundant product_job module ORM rebuild was cancelled after preparation began because the unique constraint is already declared in source and the shared save mechanism is covered; no pass is claimed for that cancelled run"
@@ -688,6 +763,20 @@
       "finding": "The Odoo partner_autocomplete extension rewrites res.company name and vat to field_partner_autocomplete at effective-view generation time. The contract registry omitted that native widget, so the whole enterprise information form stopped with PROFESSIONAL_COMPONENT_UNREGISTERED.",
       "resolution": "Declare field_partner_autocomplete in the semantic registry as an explicit generic visual fallback while preserving the native widget identity and field editability.",
       "status": "resolved"
+    },
+    {
+      "owner": "P0 smart_core unified page contract",
+      "classification": "product_defect",
+      "finding": "The personnel form published sc_profile_document_ids context as a raw Python expression string. The one2many consumer requires a resolved dictionary and stopped the create form with native_modifier.context_operand.",
+      "resolution": "Resolve native field context expressions against final record facts, publish the executable dictionary in context, preserve contextRaw, normalize many2one ids, and apply the result consistently to field nodes and owning widget descriptors. Unresolved expressions still fail closed.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P0 smart_core native command parser consumed by P1 runtime user management",
+      "classification": "product_defect",
+      "finding": "The generic create-default merge injects Odoo Command.SET for company_ids. The native command parser accepted only exact int instances and rejected the Command IntEnum, blocking normal user creation.",
+      "resolution": "Accept non-boolean integer command enums and normalize the operation to int; added a runtime user management regression using Command.set.",
+      "status": "resolved"
     }
   ],
   "blockers": [],
@@ -710,8 +799,9 @@
   },
   "acceptance_strategy": {
     "shared_ui_mechanism": "Proven once through C02-01 real save/readback/restore/return/diagnosis.",
-    "five_entries": "Keep static contract audit; do not repeat the same browser interaction for every entry.",
-    "targeted_checks": "Validate only entry-specific semantics and constraints that the shared mechanism cannot prove."
+    "five_entries": "All five entries have declaration evidence; enterprise information, position, personnel and permissions additionally have the required unique real journey evidence.",
+    "targeted_checks": "Native field contexts, Command enum inputs, person-employee identity, role/company scope and target-user scenario delivery now have focused regressions.",
+    "user_acceptance": "Passed in sc-local-dev for the verified role and company; exact final candidate must still complete the affected delivery gates."
   },
-  "next_exact_step": "Run targeted semantic checks for organization hierarchy, job code/organization constraints, user-employee-department-job identity, and role/company scope; fix only demonstrated gaps."
+  "next_exact_step": "Run make ci.local.iteration for the current P0/P1/test/tool impact set, resolve any generated-evidence drift, then freeze and review the exact candidate."
 }

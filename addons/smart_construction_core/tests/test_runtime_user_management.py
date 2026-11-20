@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, ValidationError
+from odoo.fields import Command
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
 
@@ -107,6 +108,25 @@ class TestRuntimeUserManagement(BusinessTransactionCase):
         vals = Users._sc_runtime_user_safe_vals({"login": "boundary_user", "name": "Boundary User"})
 
         self.assertEqual(vals["password"], "runtime-only-secret")
+
+    def test_runtime_user_safe_vals_accepts_orm_command_enum(self):
+        admin = self._create_business_config_admin("runtime_command_enum_admin")
+        Users = self.env["res.users"].with_user(admin).with_context(
+            sc_runtime_user_management=True,
+            sc_default_initial_password="runtime-only-secret",
+        )
+
+        vals = Users._sc_runtime_user_safe_vals(
+            {
+                "login": "runtime_command_enum_user",
+                "name": "Runtime Command Enum User",
+                "company_id": self.env.company.id,
+                "company_ids": [Command.set([self.env.company.id])],
+            }
+        )
+
+        self.assertEqual(vals["company_id"], self.env.company.id)
+        self.assertEqual(vals["company_ids"], [Command.set([self.env.company.id])])
 
     def test_runtime_user_company_must_be_in_multi_company_scope(self):
         Users = self.env["res.users"].with_context(

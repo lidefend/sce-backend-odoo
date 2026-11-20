@@ -1563,6 +1563,25 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
+    def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/security/group_assignment.py"]),
+            [
+                "verify.runtime_user_management.orm",
+                "verify.system.permission_role.assignment.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/tests/test_runtime_user_management.py",
+            ]),
+            ["verify.runtime_user_management.orm"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/tests/test_product_job.py"]),
+            ["verify.product_job.orm"],
+        )
+
     def test_low_code_workbench_context_paths_select_behavior_owners(self) -> None:
         workbench_paths = (
             "frontend/apps/web/src/app/contextEpoch.ts",

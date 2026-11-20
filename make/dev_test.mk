@@ -3088,6 +3088,14 @@ verify.product_system_parameter_catalog: guard.prod.forbid
 verify.product_system_parameter_change: guard.prod.forbid
 	@MODULE=smart_construction_core TEST_TAGS=product_system_parameter_change $(MAKE) --no-print-directory local.dev.test
 
+.PHONY: verify.runtime_user_management.orm
+verify.runtime_user_management.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management
+
+.PHONY: verify.product_job.orm
+verify.product_job.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=product_job
+
 .PHONY: verify.product.home_objects.contract
 verify.product.home_objects.contract: guard.prod.forbid
 	@MODULE=smart_construction_core TEST_TAGS=home_objects_contract $(MAKE) --no-print-directory local.dev.test

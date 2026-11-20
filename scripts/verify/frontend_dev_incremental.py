@@ -1944,6 +1944,23 @@ RULES = (
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
     )),
+    Rule((
+        "addons/smart_core/security/group_assignment.py",
+        "scripts/verify/test_group_assignment.py",
+    ), (
+        "verify.system.permission_role.assignment.unit",
+        "verify.runtime_user_management.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    ), (
+        "verify.runtime_user_management.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_product_job.py",
+    ), (
+        "verify.product_job.orm",
+    )),
     # Low-code workbench reads are behaviorally owned by the frontend consumer
     # suite. The approval editor additionally has its own target because it
     # preserves immediate-effect policy semantics and a multi-step write path.

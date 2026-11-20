@@ -384,3 +384,138 @@ release_gate=applied
 其余入口继续保留静态声明审查。只有共享机制无法证明的独有语义才补定向检查：
 部门层级和公司范围、岗位编码与部门关系、用户-员工-部门-岗位身份、角色与允许公司范围。
 这避免把同一次表单保存机制复制成五个脆弱、环境相关的浏览器脚本。
+
+## 普通用户交付与场景启停收口
+
+真实办理继续在 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`、管理员 user 24、
+company 1 上执行。当前产品源码为 `91bc9a0b4538a76d6b7c476dbe4517ae57b24632`
+及其未提交修复集。办理继续使用可见产品入口；Odoo 只用于独立权威回读和清理。
+
+### 本次定位并修复的问题
+
+1. **P0 人员表单字段上下文未解析。**
+
+   人员表单的原生字段 `sc_profile_document_ids` 声明：
+
+   ```xml
+   context="{'default_user_id': id, 'default_company_id': company_id}"
+   ```
+
+   契约此前把 Python 表达式原样作为字符串交给明细消费者。该消费者要求已解析对象，
+   因此人员新建页在 `native_modifier.context_operand` 处 fail-closed。
+
+   最终契约现在发布：
+
+   ```json
+   "context": {"default_user_id": false, "default_company_id": 1},
+   "contextRaw": "{'default_user_id': id, 'default_company_id': company_id}"
+   ```
+
+   解析以最终记录事实为输入；many2one 快照归一为记录 ID；字段节点和所属
+   `widget.fieldDescriptor` 使用同一结果；无法解析的表达式保持原样并继续失败关闭。
+
+2. **P0 原生命令枚举被错误拒绝。**
+
+   通用创建默认值会把 `company_ids` 补成 Odoo `Command.SET`。命令解析器只接受
+   `type(x) is int`，因此把合法枚举误判为非法关系命令，人员创建返回
+   `VALIDATION_ERROR`。现在接受非布尔的整数型命令枚举，并保持非法关系命令拒绝。
+
+3. **契约缓存输入必须失效。**
+
+   字段上下文投影进入最终装配链后，缓存版本提升为
+   `ui-contract-v2-demand-driven-snapshot-v95`，四源输入摘要重新固定为
+   `1543bb8c2d35492f370d22059c276ae639c501e21f461f8ceda4fb1220638628`。
+
+### 人员交付结果
+
+产品入口实际完成了以下对象链：
+
+```text
+hr.job(15): C02-JOB-1795190532552 / company 1 / department 12
+→ res.users(58): ordinary internal user / company 1 / company_ids [1]
+→ hr.employee(15): user_id 58 / company 1 / department 12 / job 15 / active
+→ permission: role 151
+  smart_construction_core.group_sc_role_project_manager
+```
+
+同一用户随后再次编辑，电话保存响应为 `ids=[58]`；Odoo 权威回读确认仍为同一用户、
+同一员工和同一关系链。目标用户真实登录后：
+
+- `system.init.user.id=58`；
+- 当前公司和允许公司分别为 1、`[1]`；
+- 角色为 `pm`；
+- 没有继承业务配置管理员或系统管理员权限；
+- 通过可见“项目台账”入口读取了 company 1 的 `project.project(26)`；
+- 对实际存在的 company 2 `project.project(28)` 得到
+  `/access-denied?reason=PERMISSION_DENIED`。
+
+随后从同一权限入口撤销角色。权威回读和重新登录均确认：
+
+```text
+role_present_after_revoke=false
+role_code=restricted
+company_id=1
+allowed_company_ids=[1]
+```
+
+### 场景交付结果
+
+固定同一用户，只改变 `project.initiation` 的企业选择：
+
+| 状态 | 权威选择回读 | 目标用户新 `system.init` |
+| --- | --- | --- |
+| 未选择 | `enabled=false` | 无 `menu_sc_project_project` |
+| 已选择 | `enabled=true`、`write_committed=true` | 角色仍为 `pm`，出现“项目台账” |
+| 撤销 | `enabled=false`、`write_committed=true` | 无 `menu_sc_project_project` |
+
+场景选择保存与用户访问保持分离：`scenario.activation.set` 的
+`readback.access_granted=false`，入口出现来自同一用户原有的角色与公司范围，而不是
+场景启停过程改变了权限。
+
+撤销后旧直接地址进入现有页面错误态“操作未完成”，没有导航到猜测目标；本批以新导航
+撤回目标场景入口作为主验收结果，不把共享底层页面的模型权限误判为场景闸门。
+
+### 返回诊断与恢复
+
+办理后从企业初始化重新请求诊断：company 1、12 条规则，人员与权限分组保持
+`people_access`；角色和员工规则均显示 `CONFIGURED`。企业级计数不用于替代 User 58
+的关系明细，用户、员工、部门、岗位和角色由独立权威回读证明。
+
+临时状态已恢复并回读：
+
+```text
+scenario project.initiation: false
+temporary user remaining: 0
+temporary employee remaining: 0
+temporary job remaining: 0
+negative project remaining: 0
+```
+
+两份回执：
+
+```text
+.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-personnel-delivery.json
+.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-scenario-delivery.json
+```
+
+原始浏览器执行：
+
+```text
+.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-delivery-browser-report.json
+```
+
+### 定向验证
+
+- `test_ui_contract_v2_boundaries.py`：180 项通过；
+- `local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management`：
+  27 项通过；
+- `local.test.test MODULE=smart_construction_core TEST_TAGS=product_job`：2 项通过，
+  覆盖同公司岗位编码唯一约束；
+- `verify.unified_page_contract.v2.assembler`：通过，Sources=4；
+- `verify.unified_page_contract.v2.runtime`：通过，5 + 23 + 149 项，score=6；
+- `make ci.local.iteration`：通过，53 个必需目标实际执行，未映射、阻断和未执行均为 0；
+- `make ci.delivery.freeze.prepare`：通过，1738 条测试清单和内容绑定生成证据均为 current；
+- 后端重启、健康检查和 `/t/demo` 入口身份检查通过。
+
+本批仍需以最终精确 HEAD 执行 `make ci.local.iteration`、生成证据一致性检查和后续集成
+门禁；正式部署及全量 ORM/浏览器矩阵不在本批范围。
