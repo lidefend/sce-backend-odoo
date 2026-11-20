@@ -12,6 +12,7 @@
     ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
     ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
     ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
+    "config/ci/contract_only_scopes.json",
     "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
     "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
     "frontend/apps/web/src/components/StatusPanel.vue",
@@ -260,6 +261,21 @@
         "scripts/audit/verification_lane_baseline.json",
         "scripts/audit/verification_lane_dispositions.json",
         "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py"
       ],
       "kind": "offline"
     },
