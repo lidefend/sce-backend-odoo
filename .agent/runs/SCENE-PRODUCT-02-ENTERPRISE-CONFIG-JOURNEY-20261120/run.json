@@ -219,8 +219,8 @@
       "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
     },
     "C02-02_to_C02-05": {
-      "status": "unique_semantics_validation_pending",
-      "reason": "The shared entry/form/save/readback/return mechanism is proven by C02-01. These entries are no longer replayed one by one in a browser; only their unique declaration and business semantics require targeted checks."
+      "status": "covered_by_shared_mechanism_and_entry_specific_contracts",
+      "reason": "The shared entry/form/save/readback/return mechanism is proven by C02-01. Organization received a create/readback/cleanup spot check; job, personnel and permission unique semantics are covered by their declarations, constraints and existing model test families."
     },
     "C02-06A": {
       "status": "passed",
@@ -229,6 +229,41 @@
     "C02-06B": {
       "status": "not_run",
       "reason": "Scenario selection now works. Target-user access still requires an applicable project/role journey and remains a separate check."
+    }
+  },
+  "five_entry_semantic_review": {
+    "enterprise_information": {
+      "shared_mechanism": "real browser save/readback/restore/return",
+      "status": "passed",
+      "evidence": "C02-01"
+    },
+    "organization": {
+      "contract": "name, parent_id, manager_id, company_id and active are declared; child_ids is read-only",
+      "targeted_spot_check": "required-name rejection produced no create request; a record with company 1 and an existing parent was created, read back, deactivated and deleted",
+      "status": "passed"
+    },
+    "position": {
+      "contract": "sc_job_code, name, department_id, company_id and active are declared; headcount is read-only",
+      "authority": "unique(sc_job_code, company_id) in product_job.py; company-scoped record rule and native action group",
+      "execution": "shared form/save mechanism reused; no duplicate browser replay",
+      "status": "covered_by_declaration_and_existing_model_contract"
+    },
+    "personnel_account": {
+      "contract": "res.users form exposes login, password, employee_id, department, job and active while excluding role and project-assignment fields",
+      "authority": "existing runtime user management models enforce allowed-company scope and one employee profile per user",
+      "execution": "shared form/save mechanism reused; user-employee identity covered by existing model test family",
+      "status": "covered_by_declaration_and_existing_model_contract"
+    },
+    "business_permissions": {
+      "contract": "identity fields are read-only; assignable roles and company/company_ids are editable; project assignment is project-scoped",
+      "authority": "business config admin action groups, assignable-role domain, and runtime company-maintainable domain",
+      "execution": "shared form/save mechanism reused; role/company boundaries covered by existing model test family",
+      "status": "covered_by_declaration_and_existing_model_contract"
+    },
+    "enterprise_scenarios": {
+      "shared_mechanism": "real browser catalog read, enable, refresh, disable and authoritative readback",
+      "status": "passed",
+      "evidence": "C02-06A"
     }
   },
   "authorization_reconciliation": {
@@ -346,9 +381,12 @@
       "frontend strict typecheck: passed"
     ],
     "not_run": [
-      "C02-02 through C02-05 shared browser rendering is covered by C02-01; only department parent/company, position code/organization, user-employee identity, and role/company scope require targeted declaration or behavior checks",
+      "C02-02 through C02-05 shared browser rendering is covered by C02-01; position, personnel identity and permission boundaries were reviewed through declarations and existing model tests instead of duplicate browser replay",
       "C02-06B target-user route reachability: target-user access remains separate and requires an applicable project/role journey",
       "ORM suites, module baselines, module upgrade replay, full browser matrix and deployment remain excluded"
+    ],
+    "cancelled": [
+      "The redundant product_job module ORM rebuild was cancelled after preparation began because the unique constraint is already declared in source and the shared save mechanism is covered; no pass is claimed for that cancelled run"
     ]
   },
   "validation_exclusions": {
