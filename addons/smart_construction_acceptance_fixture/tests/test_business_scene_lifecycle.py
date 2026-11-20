@@ -1,5 +1,3 @@
-from .publication import publish_scenarios
-
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -7,6 +5,19 @@ from odoo.addons.smart_core.delivery.runtime_route_authority import (
     menu_publication_decision, published_route_authority,
 )
 
+
+from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+
+
+def publish_scenarios(env):
+    params = env["ir.config_parameter"].sudo()
+    params.set_param("smart_core.platform_release_db", env.cr.dbname)
+    params.set_param("smart_core.release_operator.catalog_source_db", env.cr.dbname)
+    return EditionReleaseSnapshotService(env).freeze_release_surface(
+        product_key="construction.standard",
+        version="acceptance-maintained-scenarios",
+        replace_active=True,
+    )
 
 @tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle")
 class TestBusinessSceneLifecycle(TransactionCase):
@@ -21,7 +32,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.states = self.env['sc.scene.company.enablement'].sudo()
         # These cases verify company revocation against a released policy.
         # Build that prerequisite inside TransactionCase, independently of
-        # maintained policy rows or a full product release snapshot.
+        # maintained policy rows or an existing product release snapshot.
         policy = self.env['sc.product.policy'].sudo()
         policy.search([('product_key', 'in', [
             'construction.standard', 'construction.preview',

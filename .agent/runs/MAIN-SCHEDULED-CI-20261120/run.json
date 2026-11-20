@@ -19,14 +19,13 @@
     "docs/ops/iterations/main_scheduled_ci_20261120.md",
     "addons/smart_core/delivery/delivery_engine.py",
     "addons/smart_core/tests/test_entry_publication_authority.py",
-    "addons/smart_construction_acceptance_fixture/tests/publication.py",
     "docs/audit/test_coverage_registry/test_coverage_registry.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md"
   ],
   "environment": {
-    "kind": "offline",
-    "authority": "Existing governed local.test and acceptance Make entries only; no persistent business database writes"
+    "kind": "runtime",
+    "authority": "Governed local.test disposable database and registered local synthetic acceptance profile only. Exact-candidate module upgrade required by missing schema; no customer production changes."
   },
   "checks": {
     "coverage": {
@@ -98,7 +97,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run smart_core and scene module baselines; upgrade governed acceptance schema then run fixture ORM and published navigation checks.",
+  "next_exact_step": "Complete acceptance schema upgrade and registry restart, validate fixture ORM, then run mapped ci.local.iteration and exact-head review/publication.",
   "results": {
     "core_focused": {
       "status": "passed",
@@ -112,8 +111,8 @@
     },
     "publication_unit": {
       "status": "passed",
-      "tests": 4,
-      "log": ".runtime/ci-recovery/publication-unit.log"
+      "tests": 41,
+      "log": ".runtime/ci-recovery/publication-unit-2.log"
     },
     "coverage": {
       "status": "passed",
@@ -124,6 +123,34 @@
       "classification": "environment_defect",
       "reason": "Existing governed acceptance database lacks business_scene_composition column. Requires exact candidate module upgrade.",
       "log": ".runtime/ci-recovery/fixture-orm.log"
+    },
+    "scene_baseline": {
+      "status": "passed",
+      "tests": 10,
+      "receipt": ".runtime/test-baseline/1795144797040958981/receipt.json"
+    },
+    "platform_ci_baseline": {
+      "status": "passed",
+      "tests": 17,
+      "receipt": ".runtime/test-baseline/1795145219355080578/receipt.json",
+      "selection": "sc_smoke/smart_core,sc_gate/smart_core"
+    },
+    "platform_exhaustive_diagnostic": {
+      "status": "failed",
+      "tests": 460,
+      "failures": 29,
+      "errors": 75,
+      "receipt": ".runtime/test-baseline/1795144669825946926/receipt.json",
+      "reason": "Standalone smart_core carrier lacks industry models and HTTP namespace. This diagnostic is not a passed baseline; actual CI tags separately verified."
+    },
+    "static_consumers": {
+      "status": "passed",
+      "tests": 501,
+      "log": ".runtime/ci-recovery/static-consumers.log"
+    },
+    "affected_orm": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/affected-orm.log"
     }
   }
 }

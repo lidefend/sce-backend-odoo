@@ -3,7 +3,7 @@
 Run only in the governed acceptance fixture lane. Every edit rolls back with
 TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
-from .publication import publish_scenarios
+from .test_business_scene_lifecycle import publish_scenarios
 
 import runpy
 import json
