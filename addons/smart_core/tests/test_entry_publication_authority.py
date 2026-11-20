@@ -127,7 +127,7 @@ class EntryPublicationTest(unittest.TestCase):
             encoding="utf-8"
         )
         self.assertIn(
-            "native_authority = self.menu_service.build_route_authority(role_surface)",
+            "role_surface, nav=execution_nav,",
             source,
         )
         self.assertIn(
@@ -141,6 +141,35 @@ class EntryPublicationTest(unittest.TestCase):
             "            )",
             source,
         )
+
+    def test_native_discovery_receives_acl_and_role_filtered_navigation(self):
+        path = ROOT / "delivery" / "delivery_engine.py"
+        cls = next(node for node in ast.parse(path.read_text()).body
+                   if isinstance(node, ast.ClassDef) and node.name == "DeliveryEngine")
+        build = next(node for node in cls.body
+                     if isinstance(node, ast.FunctionDef) and node.name == "build")
+        statements = [node for node in build.body if isinstance(node, ast.Assign)
+                      and any(isinstance(target, ast.Name) and target.id in
+                              {"execution_nav", "native_authority"} for target in node.targets)]
+        self.assertEqual(len(statements), 2)
+        visible = [{"menu_id": 10}, {"menu_id": 20}]
+        role = {"exposure_policy_declared": True}
+        class Menus:
+            def _authorization_native_nav(inner, surface, supplied):
+                self.assertIs(surface, role)
+                self.assertEqual(supplied, [])
+                return visible
+            def _filter_primary_native_nodes(inner, rows, surface):
+                self.assertIs(rows, visible)
+                self.assertIs(surface, role)
+                return [rows[0]]
+            def build_route_authority(inner, surface, *, nav):
+                self.assertIs(surface, role)
+                return {"primary_actions": list(nav)}
+        scope = {"self": SimpleNamespace(menu_service=Menus()),
+                 "role_surface": role, "native_nav": None}
+        exec(compile(ast.Module(body=statements, type_ignores=[]), str(path), "exec"), scope)
+        self.assertEqual(scope["native_authority"]["primary_actions"], [{"menu_id": 10}])
 
     def test_native_authority_merge_keeps_actions_outside_product_nav(self):
         path = ROOT / "delivery" / "delivery_engine.py"

@@ -3,6 +3,8 @@
 Run only in the governed acceptance fixture lane. Every edit rolls back with
 TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
+from .publication import publish_scenarios
+
 import runpy
 import json
 from pathlib import Path
@@ -33,14 +35,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         policy = self.env["sc.product.policy"].sudo()
         policy.search([("product_key", "in", ["construction.standard", "construction.preview"])]).unlink()
         policy.sync_construction_menu_product_policies()
-        # The test establishes the maintained policy for the current source.
-        # An earlier release snapshot is a historical immutable artifact and
-        # must not silently replace that candidate inside this rollback-only
-        # runtime contract test.
-        self.env["sc.edition.release.snapshot"].sudo().search([
-            ("product_key", "in", ["construction.standard", "construction.preview"]),
-            ("is_active", "=", True),
-        ]).write({"is_active": False})
+        publish_scenarios(self.env)
 
     def _upgrade_seed(self):
         convert_file(self.env, "smart_construction_core", "data/product_scenario_seed.xml", {},
@@ -52,6 +47,9 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         return row
 
     def _navigation(self):
+        # These maintenance cases explicitly publish the edited composition
+        # before observing it. Runtime never reads the mutable draft.
+        publish_scenarios(self.env)
         return self._system_init(self.actor)
 
     def _system_init(self, actor):

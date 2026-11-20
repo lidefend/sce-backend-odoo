@@ -1,0 +1,4 @@
+schema_version: 1
+id: MAIN-SCHEDULED-CI-20261120
+status: active
+objective: Restore mainline and scheduled CI without weakening assertions or runtime publication gates.

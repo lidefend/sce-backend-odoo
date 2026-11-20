@@ -1,3 +1,5 @@
+from .publication import publish_scenarios
+
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
 
@@ -25,6 +27,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             'construction.standard', 'construction.preview',
         ])]).unlink()
         policy.sync_construction_menu_product_policies()
+        publish_scenarios(self.env)
 
     def _state(self, company):
         row = self.states.search([('company_id', '=', company.id),
@@ -149,6 +152,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             'code': 'test.maintained.payment', 'name': 'Maintained payment',
         })
         entry.scenario_id = replacement
+        publish_scenarios(self.env)
         with patch.object(scenario_surface_projection, 'load_surface', side_effect=AssertionError('runtime read seed')):
             write_tenant_enablement(self.env, self.company_a.id, 'business.v1:test.maintained.payment', True)
             self.assertTrue(self._allowed(self.company_a))
@@ -156,19 +160,23 @@ class TestBusinessSceneLifecycle(TransactionCase):
             write_tenant_enablement(self.env, self.company_b.id, 'business.v1:test.maintained.payment', True)
             self.assertTrue(self._allowed(self.company_b))
             replacement.name = 'Renamed payment'
+            publish_scenarios(self.env)
             rows = _catalog(self.env, self.company_a.id)['business_scenarios']
             row = next(row for row in rows if row['scene_key'] == replacement.code)
             self.assertEqual(row['name'], 'Renamed payment')
             self.assertTrue(row['tenant_enabled'])
             replacement.active = False
+            publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertFalse(row['product_released'])
             replacement.active = True
+            publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertTrue(row['tenant_enabled'])
             entry.unlink()
+            publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertFalse(row['product_released'])
@@ -205,6 +213,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         )
         self.assertTrue(self._allowed(self.company_a))
         rebound.unlink()
+        publish_scenarios(self.env)
         self.assertFalse(self._allowed(self.company_a))
         self.menu.sc_scenario_exempt = True
         self.assertTrue(self._allowed(self.company_a))
@@ -243,6 +252,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             entry = Entry.create({'scenario_id': custom.id, 'menu_id': menu.id})
             self.assertFalse(menu.sc_scenario_exempt)
             entry.unlink()
+            publish_scenarios(self.env)
             params.set_param(marker, False)
             Scenario.initialize_direct_entry_exemptions()
             self.assertFalse(menu.sc_scenario_exempt)
@@ -265,6 +275,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         scenario = entry.scenario_id
         for active in (True, False):
             scenario.active = active
+            publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == scenario.code)
             diagnosis = diagnose_scenario_dependencies(self.env,

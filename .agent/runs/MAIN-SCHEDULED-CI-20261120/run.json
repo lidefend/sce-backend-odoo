@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "id": "MAIN-SCHEDULED-CI-20261120",
+  "branch": "fix/main-scheduled-ci-20261120",
+  "baseline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+  "status": "active",
+  "goal": ".agent/goals/MAIN-SCHEDULED-CI-20261120.yaml",
+  "record": "docs/ops/iterations/main_scheduled_ci_20261120.md",
+  "scope": [
+    "scripts/verify/test_coverage_registry.yaml",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-SCHEDULED-CI-20261120.yaml",
+    ".agent/runs/MAIN-SCHEDULED-CI-20261120/run.json",
+    "docs/ops/iterations/main_scheduled_ci_20261120.md",
+    "addons/smart_core/delivery/delivery_engine.py",
+    "addons/smart_core/tests/test_entry_publication_authority.py",
+    "addons/smart_construction_acceptance_fixture/tests/publication.py",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "Existing governed local.test and acceptance Make entries only; no persistent business database writes"
+  },
+  "checks": {
+    "coverage": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_report.py",
+        "addons"
+      ],
+      "kind": "offline"
+    },
+    "publication_unit": {
+      "target": "verify.product.entry_publication.unit",
+      "inputs": [
+        "addons/smart_core/delivery",
+        "addons/smart_core/tests/test_entry_publication_authority.py",
+        "addons/smart_core/core",
+        "addons/smart_core/handlers"
+      ],
+      "kind": "offline"
+    },
+    "platform_baseline": {
+      "target": "verify.smart_core.close_02.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_core",
+      "command": "make local.test.test MODULE=smart_core"
+    },
+    "industry_baseline": {
+      "target": "verify.smart_construction_core.close_03.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_construction_core",
+      "command": "make local.test.test MODULE=smart_construction_core"
+    },
+    "scene_baseline": {
+      "target": "verify.admin_close_01.scene.module_baseline",
+      "inputs": [
+        "addons",
+        "demo_addons",
+        "addons_external",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "module": "smart_construction_scene",
+      "command": "make local.test.test MODULE=smart_construction_scene"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run smart_core and scene module baselines; upgrade governed acceptance schema then run fixture ORM and published navigation checks.",
+  "results": {
+    "core_focused": {
+      "status": "passed",
+      "tests": 23,
+      "log": ".runtime/ci-recovery/core-focused.log"
+    },
+    "industry_baseline": {
+      "status": "passed",
+      "tests": 566,
+      "receipt": ".runtime/test-baseline/1795144350779613509/receipt.json"
+    },
+    "publication_unit": {
+      "status": "passed",
+      "tests": 4,
+      "log": ".runtime/ci-recovery/publication-unit.log"
+    },
+    "coverage": {
+      "status": "passed",
+      "log": ".runtime/ci-recovery/coverage.log"
+    },
+    "fixture_orm": {
+      "status": "failed",
+      "classification": "environment_defect",
+      "reason": "Existing governed acceptance database lacks business_scene_composition column. Requires exact candidate module upgrade.",
+      "log": ".runtime/ci-recovery/fixture-orm.log"
+    }
+  }
+}
