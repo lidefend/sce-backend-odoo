@@ -58,7 +58,7 @@
   "journey_results": {
     "C02-01": {
       "status": "blocked_before_write",
-      "observed": "The enterprise information button produced no request or route change. Direct /a/960 returned NAVIGATION_AUTHORITY_DENIED.",
+      "observed": "On the C02 standalone candidate a36f24f42 the enterprise information button produced no request or route change. On combined acceptance candidate fab341537 with PR #950 af7bf0002 it routed to action_id=961 and reason=CAPABILITY_MISSING instead of action_id=960 for company 1.",
       "write_attempted": false,
       "frontend_feedback": "passed at a36f24f42: visible ContractGapError page, unchanged enterprise.setup URL, no business write request"
     },
@@ -89,7 +89,10 @@
     },
     "final_contract": "scene_ready_contract.scene_internal_actions contains no enterprise.setup entries",
     "final_catalog": "five action_xmlid entries remain visible",
-    "frontend_target_resolution": "no authorized action/menu target; visible ContractGapError is now shown instead of a silent return",
+    "effective_scene_keys": [
+      "workspace.home"
+    ],
+    "frontend_target_resolution": "C02 standalone candidate shows a visible ContractGapError; combined PR #950 candidate resolves the scene fallback instead and lands on action 961 with CAPABILITY_MISSING",
     "owner": "P0 smart_core native execution route discovery / upstream PR #950"
   },
   "runtime_evidence": {
@@ -101,6 +104,22 @@
     "scenario_catalog": "92 rows, zero actionable scenarios, PRODUCT_RELEASE_UNVERIFIED=92",
     "business_writes": 0,
     "browser_errors": 0
+  },
+  "combined_pr950_runtime_evidence": {
+    "status": "blocked",
+    "combined_candidate": "fab3415370b513e1fbb453d317e8b316171785f5",
+    "c02_candidate": "7c4c5e32fb028fc8dcdf6bd844b26ddaec4ab9ab",
+    "pr950_candidate": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/combined-950/entry-and-catalog.json",
+    "report_sha256": "4723d8e7fa8fa97e08b41da04fbc1b98673855f97cd395a56c50c44c89326c68",
+    "raw_internal_actions": 5,
+    "native_action_and_model_access": "all five allowed",
+    "effective_scene_keys": [
+      "workspace.home"
+    ],
+    "final_scene_internal_actions": {},
+    "click_result": "action_id=961 reason=CAPABILITY_MISSING",
+    "business_writes": 0
   },
   "validation_results": {
     "implemented_scope": "passed",
@@ -309,10 +328,10 @@
     {
       "owner": "P0 smart_core native execution route discovery",
       "dependency": "PR #950",
-      "observed_head": "ce1da712e174f002890fdbef8ad7f9320d631060",
+      "observed_head": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
       "classification": "known_upstream_dependency_not_duplicated",
-      "evidence": "The handling_entry_catalog exposes action_xmlid for all five entries, but route resolution yields no action/menu and direct action /a/960 is denied with NAVIGATION_AUTHORITY_DENIED. PR #950 changes DeliveryEngine to pass the native ACL/action-group/role-filtered navigation to build_route_authority."
+      "evidence": "The handling_entry_catalog exposes five action_xmlid entries and raw internal action resolution plus native ACL/action-group checks all succeed. In the combined candidate, effective delivery scene_keys contains only workspace.home, final scene_internal_actions is empty, and clicking enterprise info routes to action_id=961 with CAPABILITY_MISSING."
     }
   ],
-  "next_exact_step": "After PR #950 is integrated, sync this branch to the new main and rerun C02-01 from the visible enterprise information entry; continue C02-02 through C02-05 and C02-06B using the same local.dev identity."
+  "next_exact_step": "The upstream #950 owner must include enterprise.setup in effective delivery scene_keys and expose the five authorized internal actions in final system.init. After that candidate is integrated, sync this branch and rerun C02-01 from the visible enterprise information entry."
 }

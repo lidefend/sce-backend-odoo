@@ -115,6 +115,34 @@ artifacts/local-dev/snapshots/20261120T043906Z
 
 结论：稳定 XMLID 和原始内部动作解析成立，原生授权未阻断；阻断发生在最终 effective delivery 输出/消费边界。该 P0 生产链仍归 #950，当前候选只在消费端显式报告缺口。
 
+### 加载 #950 候选后的复验
+
+为区分“已修复”和“候选包含修复”，本轮另外建立本地组合验收分支：
+
+```text
+C02 父候选：7c4c5e32fb028fc8dcdf6bd844b26ddaec4ab9ab
+#950 候选：af7bf00026cb78cee4cb84edd9c6b3c281d7d429
+组合候选：fab3415370b513e1fbb453d317e8b316171785f5
+```
+
+该组合版本仅用于运行验收，不属于 C02 最终 PR。后端与 5176 前端均重新构建到 `fab341537…` 并通过候选健康。
+
+结果：
+
+- 原始内部动作仍能解析出 5 项；
+- action group、模型 read/write 权限均通过；
+- effective delivery 的 `scene_keys` 只包含 `workspace.home`；
+- 最终 `scene_internal_actions={}`；
+- 点击“企业信息”后落到 `/workbench?...action_id=961&reason=CAPABILITY_MISSING`，不是当前公司的 `res.company` 维护页；
+- 没有业务写入。
+
+因此当前 #950 候选尚未覆盖企业初始化的内部动作保留链，不能据此开始 C02-01 保存。证据：
+
+```text
+.runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/combined-950/entry-and-catalog.json
+sha256=4723d8e7fa8fa97e08b41da04fbc1b98673855f97cd395a56c50c44c89326c68
+```
+
 C02-06A 结果：
 
 - 目录契约：`scenario_activation_catalog.v1`。
