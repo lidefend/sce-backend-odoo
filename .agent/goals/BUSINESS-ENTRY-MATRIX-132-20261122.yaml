@@ -64,8 +64,8 @@ goal:
     Revert the CSV, role-surface declaration, structural guard, Make wiring and
     run metadata together. Runtime data remains unchanged.
   completion:
-    batch: verification_pending
+    batch: passed
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_applicable
-    user_acceptance: new_40_entries_passed_full_132_pending_product_defect_triage
+    user_acceptance: all_132_declared_units_checked_on_existing_acceptance_database

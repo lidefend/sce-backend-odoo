@@ -155,17 +155,31 @@ The focused fixes add no alternate registry or second navigation engine. They
 only make the existing V2 consumer, scene registry, navigation projection and
 matrix planner honor declarations already emitted by the backend.
 
-## Targeted reruns
+## Targeted reruns and closure
 
 The 20 previously blocked units were re-opened explicitly, without rerunning
-the 100 units that had remained checked. Eighteen passed immediately. After the
-frontend fixes and an in-place static rebuild, the current ledger is:
+the units that had remained checked. Targeted reruns were limited to the exact
+unresolved sets after each owning-layer change:
 
-- 130 checked;
-- 1 project-kanban detail failure waiting for the exact-head backend row target;
-- 1 business-config workbench failure waiting for the exact-head backend
-  admin-surface projection.
+- 20 blocked entries -> 18 passed, 2 remained;
+- 3 enterprise scenes -> 3 passed after scene-ready merge;
+- 12 page/contract failures -> 12 passed after V2/scene/capability repair;
+- 3 historical survivors -> 2 passed, leaving project kanban;
+- project kanban -> passed when the declared contextual scene target was
+  verified as a scene, including `project_id=130`;
+- business config workbench -> passed after the admin surface was preserved
+  through scene-shell and final-route compilation.
 
-No database was recreated, no module was reinstalled, and no base/container
-topology was rebuilt. The two remaining entries are rerun only after the
-existing acceptance backend is reloaded from the exact committed HEAD.
+Final runtime identity:
+
+- backend source revision
+  `c7131f0dc961874b2b37a10dd84e8f9442055d7a`;
+- database `sc_frontend_acceptance`;
+- acting principal `fixture_role_config_admin`;
+- company `2`;
+- **132 / 132 units checked; 0 unreachable; 0 pending; 0 product problems.**
+
+The remaining console 403 is the declared negative-authority probe, not a
+business-entry failure. No database was recreated, no module was reinstalled,
+and no base/container topology was rebuilt; only the backend source container
+and static frontend were replaced on the existing acceptance carrier.
