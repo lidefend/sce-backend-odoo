@@ -74,6 +74,48 @@ COMPOSITION = sys.modules[
 
 
 class TestReleasePreflightTargetValidation(unittest.TestCase):
+    def test_legacy_snapshot_fingerprint_without_scene_composition_is_preserved(self):
+        policy = {
+            "product_key": "construction.standard",
+            "state": "stable",
+            "access_level": "public",
+            "allowed_role_codes": ["owner"],
+        }
+        pages = [{
+            "page_key": "smart_construction_core.menu_sc_home",
+            "release_state": "released",
+            "enabled": True,
+            "access_level": "public",
+            "route": "/s/workspace.home",
+            "menu_id": 10,
+            "action_id": 0,
+            "menu_xmlid": "smart_construction_core.menu_sc_home",
+            "res_model": "",
+            "scene_key": "workspace.home",
+        }]
+
+        legacy = TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+            policy=policy,
+            pages=pages,
+        )
+        current = TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+            policy={**policy, "business_scene_composition": {}},
+            pages=pages,
+        )
+
+        self.assertEqual(
+            legacy,
+            "ed6c294c3066cd4214415bac35213c287e642898b916674cf283b4c5986b74af",
+        )
+        self.assertNotEqual(legacy, current)
+        self.assertNotEqual(
+            legacy,
+            TARGET.EditionReleaseSnapshotService._draft_fingerprint(
+                policy=policy,
+                pages=[{**pages[0], "route": "/s/changed"}],
+            ),
+        )
+
     def test_business_scene_composition_changes_draft_identity(self):
         service = TARGET.EditionReleaseSnapshotService(env={})
         policy = {

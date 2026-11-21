@@ -1,0 +1,51 @@
+schema_version: 1
+
+goal:
+  id: RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122
+  title: release_snapshot_legacy_fingerprint_compatibility
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    smart_core edition release snapshot fingerprint validation for snapshots
+    frozen before business_scene_composition entered the maintained policy.
+  module:
+    - addons/smart_core
+    - .agent
+  standard_vs_user_specific: generic_platform_release_compatibility
+  objective: >-
+    Preserve validation of immutable release snapshots created before the
+    business_scene_composition field existed, while continuing to reject any
+    page or policy mutation and applying the current fingerprint to policies
+    that carry the field.
+  product_result: >-
+    Existing released snapshots remain readable after upgrading to current
+    main, so system.init no longer fails with
+    PUBLISHED_PRODUCT_PAGES_FINGERPRINT_MISMATCH. No snapshot or business data
+    is migrated, rewritten, or silently re-frozen.
+  why_here: >-
+    The compatibility rule belongs to the smart_core release snapshot integrity
+    mechanism that computes and verifies the frozen identity.
+  why_not_elsewhere:
+    - Do not refresh or mutate already released snapshot rows.
+    - Do not rebuild the acceptance fixture or restore an older artifact.
+    - Do not weaken page, policy, schema, or digest validation.
+    - Do not infer product-specific exceptions in construction modules or frontend.
+  blast_radius:
+    behavior:
+      - release snapshot fingerprint validation
+      - system.init startup against existing released snapshots
+      - release freeze integrity verification
+    exclusions:
+      - no database migration or fixture reset
+      - no release snapshot mutation
+      - no business product behavior change
+      - no frontend change
+  rollback: >-
+    Revert the smart_core compatibility change and its focused test together.
+    Existing snapshots are untouched, so rollback requires no data recovery.
+  completion:
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: blocked_until_fixed_artifact_is_served
