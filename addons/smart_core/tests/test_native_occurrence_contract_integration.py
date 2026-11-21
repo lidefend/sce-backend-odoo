@@ -224,6 +224,7 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
 
     def test_form_embedded_widget_contract_preserves_identity_options_and_support(self):
         contract = self._contract("form")
+        self.assertEqual(contract["pageInfo"]["model"], "res.partner")
         widgets = [
             node
             for node in self._walk(contract["layoutContract"]["containerTree"])
@@ -240,7 +241,10 @@ class TestNativeOccurrenceContractIntegration(TransactionCase):
         self.assertEqual(widgets[0]["componentConfig"]["nativeWidget"], "web_ribbon")
         self.assertEqual(widgets[0]["componentConfig"]["options"], {"bg_color": "text-bg-success"})
         self.assertIs(widgets[1]["componentConfig"]["options"], False)
-        self.assertEqual(widgets[2]["componentConfig"]["reasonCode"], "NATIVE_VIEW_WIDGET_UNSUPPORTED")
+        self.assertEqual(
+            widgets[2]["componentConfig"]["reasonCode"],
+            "NATIVE_VIEW_WIDGET_PAYLOAD_UNAVAILABLE",
+        )
         self.assertTrue(all("fieldCode" not in node for node in widgets))
         self.assertTrue(all("fieldDescriptor" not in node for node in widgets))
 

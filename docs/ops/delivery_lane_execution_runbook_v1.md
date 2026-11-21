@@ -18,14 +18,16 @@
 3. `make ci.delivery.freeze.prepare`（生成证据，审查后提交）。
 4. 若 journal 保存/角色探针输入有变化，按受管入口重放（`verify.local.dev.journal.save` /
    `verify.local.dev.journal.role`）。
-5. `make ci.local.quick`——在 clean 冻结 HEAD 上直接跑。
-6. 独立复核 + 外部归档 `make workspace.evidence.archive`。
-7. `make pr.push` → `make pr.create`。
-8. 等四项必需检查全绿且源/目标身份一致：
+5. 独立复核 + 外部归档 `make workspace.evidence.archive`。
+6. `make pr.push` → `make pr.create`。
+7. 等四项必需检查全绿且源/目标身份一致：
    `public_guard`、`merge_policy_gate`、`professional_quality_gate`、`frontend_release_gate`。
-9. `make pr.merge.preflight PR=<n> EXPECTED_HEAD=<full-sha>`。若报合并证据套件阻断，先按第 2 节重录。
-10. `make pr.merge PR=<n> EXPECTED_HEAD=<full-sha>`（squash）。
-11. `make main.sync` 回读 main，核对合并树与候选树一致。
+8. `make pr.merge.preflight PR=<n> EXPECTED_HEAD=<full-sha>`。若报合并证据套件阻断，先按第 2 节重录。
+9. `make pr.merge PR=<n> EXPECTED_HEAD=<full-sha>`（squash）。
+10. `make main.sync` 回读 main，核对合并树与候选树一致。
+
+`make ci.local.quick` 不属于普通候选或主线同步的前置。只有显式全量审计、基线重建或发布冻结
+明确要求时才执行。
 
 机制化已拦截的坑：
 

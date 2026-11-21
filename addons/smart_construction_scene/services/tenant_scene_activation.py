@@ -58,6 +58,14 @@ def write_tenant_enablement(env, company_id, scene_key, enabled: bool) -> None:
     env["ir.config_parameter"].sudo().set_param(
         enablement_param_key(company_id, scene_key), "1" if enabled else "0"
     )
+    # Odoo caches ``get_param`` at registry level. The write may clear the cache
+    # before the row is flushed, so another request can repopulate the old value.
+    # Clear once more after the write has completed; the handler's immediate
+    # authoritative readback must observe the value committed by this request.
+    registry = getattr(env, "registry", None)
+    clear_cache = getattr(registry, "clear_cache", None)
+    if callable(clear_cache):
+        clear_cache()
 
 
 def resolve_scene_menu(scene_key: str, entries: list[dict[str, Any]] | None = None) -> str:

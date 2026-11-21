@@ -1419,7 +1419,11 @@ def _validate_action_view_scope(
                 source_view_type = matched.group(1)
                 source_view_type = "tree" if source_view_type == "list" else source_view_type
         if source_view_type and active_view_type != source_view_type:
-            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+            raise ValueError(
+                "ACTION_VIEW_SCOPE_MISMATCH:"
+                f"active={active_view_type}:source={source_view_type}:"
+                f"channel={source_channel}"
+            )
         identity = _dict(rule.get("nativeIdentity") or rule.get("native_identity"))
         identity_view_type = _text(
             identity.get("viewType") or identity.get("view_type")
@@ -1428,10 +1432,19 @@ def _validate_action_view_scope(
             "tree" if identity_view_type in {"list", "tree"} else identity_view_type
         )
         if identity_view_type and identity_view_type != active_view_type:
-            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+            raise ValueError(
+                "ACTION_VIEW_SCOPE_MISMATCH:"
+                f"active={active_view_type}:identity={identity_view_type}:"
+                f"channel={source_channel}"
+            )
         identity_model = _text(identity.get("model"))
-        if identity_model and identity_model != _text(page.get("model")):
-            raise ValueError("ACTION_VIEW_SCOPE_MISMATCH")
+        active_model = _text(page.get("model"))
+        if identity_model and identity_model != active_model:
+            raise ValueError(
+                "ACTION_VIEW_SCOPE_MISMATCH:"
+                f"active_model={active_model}:identity_model={identity_model}:"
+                f"channel={source_channel}"
+            )
 
 
 def requested_view_type_matches(contract: dict[str, Any], requested_view_type: str) -> bool:
@@ -1654,7 +1667,7 @@ def _assemble_ui_contract(
 ) -> dict[str, Any]:
     ui = _dict(source)
     head = _dict(source.get("head") or ui.get("head"))
-    model = _text(source.get("model") or ui.get("model"))
+    model = _text(source.get("model") or ui.get("model") or head.get("model"))
     # `head.view_type` carries the requested view list ("tree,form") because a
     # model holds several views, and `pageInfo` is an enumerated single page.
     # Resolve the active view first so the joined string never reaches the

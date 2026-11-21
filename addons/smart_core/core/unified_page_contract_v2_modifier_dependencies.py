@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+import ast
 from typing import Any
 from enum import IntEnum
 from copy import deepcopy
@@ -539,3 +540,154 @@ def hydrate_final_modifier_dependencies(
         # manufacture permission truth to make an action visible.
         if logger is not None:
             logger.debug("ui.contract.v2 final modifier dependency hydration skipped", exc_info=True)
+
+
+def hydrate_final_field_contexts(
+    contract_v2: dict[str, Any],
+    *,
+    record_id: Any = None,
+    record: Any = None,
+) -> None:
+    """Resolve native field context expressions into executable dictionaries.
+
+    Odoo view archives carry field contexts as Python expression strings. The
+    browser must not evaluate that source language. The contract therefore
+    keeps the declaration in ``contextRaw`` and publishes only a resolved
+    dictionary in ``context`` once the current record facts are available.
+    Unresolved expressions remain untouched so the consumer still fails closed.
+    """
+
+    if not isinstance(contract_v2, dict):
+        return
+    data = contract_v2.get("dataContract")
+    data = data if isinstance(data, dict) else {}
+    main_data = data.get("mainData")
+    meta = data.get("dataMeta")
+    meta = meta if isinstance(meta, dict) else {}
+    field_types = meta.get("nativeModifierFieldTypes")
+    field_types = field_types if isinstance(field_types, dict) else {}
+    scope = dict(main_data) if isinstance(main_data, dict) else {}
+    for key, value in list(scope.items()):
+        if (
+            field_types.get(key) == "many2one"
+            and isinstance(value, (list, tuple))
+            and len(value) == 2
+            and isinstance(value[0], int)
+            and not isinstance(value[0], bool)
+        ):
+            scope[key] = value[0]
+    source_context = meta.get("sourceContext") if isinstance(meta, dict) else None
+    route_context = source_context.get("context") if isinstance(source_context, dict) else None
+    if isinstance(route_context, dict):
+        scope.setdefault("context", dict(route_context))
+        for key, value in route_context.items():
+            scope.setdefault(key, value)
+    positive_record_id, _error = parse_positive_int(record_id, allow_empty=True)
+    actual_id = getattr(record, "id", None) if record is not None else None
+    if not isinstance(actual_id, int) or isinstance(actual_id, bool) or actual_id <= 0:
+        actual_id = int(positive_record_id or 0)
+    scope.setdefault("id", actual_id or False)
+    scope.setdefault("active_id", actual_id or False)
+    scope.setdefault("active_ids", [actual_id] if actual_id else [])
+    if record is not None:
+        try:
+            scope.setdefault("uid", record.env.uid)
+        except Exception:
+            pass
+
+    def literal_eval_with_scope(raw: str) -> Any:
+        """Evaluate literal containers with named record facts, without Python calls."""
+
+        tree = ast.parse(raw, mode="eval")
+        for node in ast.walk(tree):
+            if isinstance(node, ast.Name):
+                if node.id not in scope:
+                    raise NameError(node.id)
+        class ResolveNames(ast.NodeTransformer):
+            def visit_Name(self, node: ast.Name) -> ast.AST:
+                return ast.copy_location(ast.Constant(scope[node.id]), node)
+        return ast.literal_eval(ast.fix_missing_locations(ResolveNames().visit(tree)))
+
+    def resolve(raw: Any) -> dict[str, Any] | None:
+        if not isinstance(raw, str) or not raw.strip():
+            return None
+        try:
+            try:
+                from odoo.tools.safe_eval import safe_eval
+            except (ImportError, ModuleNotFoundError):
+                parsed = literal_eval_with_scope(raw)
+            else:
+                parsed = safe_eval(raw, scope)
+        except Exception:
+            return None
+        return deepcopy(parsed) if isinstance(parsed, dict) else None
+
+    resolved_fields: dict[str, tuple[str, dict[str, Any]]] = {}
+
+    def visit(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit(item)
+            return
+        if not isinstance(value, dict):
+            return
+        field_info = value.get("fieldInfo")
+        field_info = field_info if isinstance(field_info, dict) else {}
+        attributes = value.get("attributes")
+        attributes = attributes if isinstance(attributes, dict) else {}
+        raw = field_info.get("context")
+        if not isinstance(raw, str) or not raw.strip():
+            raw = value.get("context")
+        if not isinstance(raw, str) or not raw.strip():
+            raw = attributes.get("context")
+        parsed = resolve(raw)
+        if parsed is not None:
+            field_name = str(value.get("name") or field_info.get("name") or "").strip()
+            if field_name:
+                resolved_fields[field_name] = (raw, parsed)
+            field_info["contextRaw"] = raw
+            field_info["context"] = deepcopy(parsed)
+            if "context" in value:
+                value["contextRaw"] = raw
+                value["context"] = deepcopy(parsed)
+            for widget in value.get("widgetList") or []:
+                if not isinstance(widget, dict):
+                    continue
+                descriptor = widget.get("fieldDescriptor")
+                if not isinstance(descriptor, dict):
+                    continue
+                descriptor["contextRaw"] = raw
+                descriptor["context"] = deepcopy(parsed)
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            visit(value.get(key))
+
+    def visit_widgets(value: Any) -> None:
+        if isinstance(value, list):
+            for item in value:
+                visit_widgets(item)
+            return
+        if not isinstance(value, dict):
+            return
+        for widget in value.get("widgetList") or []:
+            if not isinstance(widget, dict):
+                continue
+            descriptor = widget.get("fieldDescriptor")
+            if not isinstance(descriptor, dict):
+                continue
+            field_name = str(widget.get("fieldCode") or descriptor.get("name") or "").strip()
+            resolved = resolved_fields.get(field_name)
+            if resolved:
+                raw, parsed = resolved
+            else:
+                raw = descriptor.get("context")
+                parsed = resolve(raw)
+            if parsed is not None:
+                descriptor["contextRaw"] = raw
+                descriptor["context"] = deepcopy(parsed)
+        for key in ("children", "pages", "tabs", "nodes", "items"):
+            visit_widgets(value.get(key))
+
+    layout = contract_v2.get("layoutContract")
+    tree = layout.get("containerTree") if isinstance(layout, dict) else None
+    visit(tree)
+    visit_widgets(tree)

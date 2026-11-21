@@ -29,7 +29,7 @@ class TestCompanyProjectRefundWorkspace(BusinessTransactionCase):
         # Product publication and company scenario choice are independent prerequisites.
         self.env["sc.scene.company.enablement"].create({
             "company_id": self.env.company.id,
-            "scene_key": "business.v1:payment.capital",
+            "scene_key": "business.v1:finance.intercompany",
         }).set_enabled(True)
         self.finance_user = self._user(
             "refund_workspace_finance_user",

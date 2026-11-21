@@ -2,16 +2,6 @@
   "schema_version": "verification-lane-dispositions/v1",
   "note": "僵尸面登记名册（wire-or-retire 的第三条路径：登记理由）。targets/scripts 中每一条都是全仓库零精确引用、且经定性无门禁消费的表面。登记不等于豁免：raw 计数仍受棘轮 max_targets_zero_reference / max_scripts_unreferenced_anywhere 约束，只减不增；而 unregistered 计数必须为 0，任何新增零引用表面在登记前都会让 --check 失败。后续批次对 candidate 类逐条执行接线或真实退役，登记条目随之删除。",
   "targets": {
-    "verify.frontend.close_03.project_intake.browser": {
-      "disposition": "browser_acceptance_probe",
-      "owner": "construction-product-team",
-      "reason": "CLOSE-03 governed browser journey for save, restore prompt, relation hydration, validation retry, real create/readback/cleanup, and payment/detail isolation. It requires the existing acceptance carrier and is intentionally not part of offline lanes."
-    },
-    "verify.smart_construction_core.close_03.module_baseline": {
-      "disposition": "product_tooling",
-      "owner": "construction-product-team",
-      "reason": "CLOSE-03 owning-module baseline entry. It is retained as the explicit full-module fallback when the deterministic affected-family map is incomplete; normal iteration selects the narrower registered affected ORM families."
-    },
     "acceptance.baseline.upgrade": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -1557,6 +1547,12 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/workflows/runtime-fixture.yaml。登记待接线或退役，B3 按族处理。"
     },
+    "verify.backend.close_02.search_contract.samples": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 BE handoff probe: tenant-namespace, read-only contract and api.data sampling against the registered acceptance carrier. It is intentionally on demand because it requires the seeded two-entry acceptance fixture and exact current source artifact.",
+      "review_by": "2027-02-28"
+    },
     "verify.backend.contract.closure.guard": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -2042,6 +2038,17 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-BUSINESS-ENTRY-ACCEPTANCE-GAP-CLOSURE/run.json。登记待接线或退役，B3 按族处理。"
+    },
+    "verify.frontend.close_02.field_query.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 two-entry browser journey on the registered acceptance carrier. It is intentionally on demand because it mutates no product data but requires the seeded acceptance fixture, browser runtime and exact current candidate identities.",
+      "review_by": "2027-02-28"
+    },
+    "verify.frontend.close_03.project_intake.browser": {
+      "disposition": "browser_acceptance_probe",
+      "owner": "construction-product-team",
+      "reason": "CLOSE-03 governed browser journey for save, restore prompt, relation hydration, validation retry, real create/readback/cleanup, and payment/detail isolation. It requires the existing acceptance carrier and is intentionally not part of offline lanes."
     },
     "verify.frontend.contract_consumer_intrusion.guard": {
       "disposition": "candidate",
@@ -3277,6 +3284,17 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；仅生成清单提及（无人类所有者）：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
+    "verify.smart_construction_core.close_03.module_baseline": {
+      "disposition": "product_tooling",
+      "owner": "construction-product-team",
+      "reason": "CLOSE-03 owning-module baseline entry. It is retained as the explicit full-module fallback when the deterministic affected-family map is incomplete; normal iteration selects the narrower registered affected ORM families."
+    },
+    "verify.smart_core.close_02.module_baseline": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "CLOSE-02 owning-module ORM baseline wrapper over the registered disposable local.test profile. It is invoked for the batch baseline rather than recursively from every CI gate.",
+      "review_by": "2027-02-28"
+    },
     "verify.smart_core.tenant_payload_operator.policy": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
@@ -3401,24 +3419,6 @@
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/workflow_state_unification_plan.md。登记待接线或退役，B3 按族处理。"
-    },
-    "verify.backend.close_02.search_contract.samples": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "CLOSE-02 BE handoff probe: tenant-namespace, read-only contract and api.data sampling against the registered acceptance carrier. It is intentionally on demand because it requires the seeded two-entry acceptance fixture and exact current source artifact.",
-      "review_by": "2027-02-28"
-    },
-    "verify.smart_core.close_02.module_baseline": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "CLOSE-02 owning-module ORM baseline wrapper over the registered disposable local.test profile. It is invoked for the batch baseline rather than recursively from every CI gate.",
-      "review_by": "2027-02-28"
-    },
-    "verify.frontend.close_02.field_query.browser": {
-      "disposition": "browser_acceptance_probe",
-      "owner": "platform-team",
-      "reason": "CLOSE-02 two-entry browser journey on the registered acceptance carrier. It is intentionally on demand because it mutates no product data but requires the seeded acceptance fixture, browser runtime and exact current candidate identities.",
-      "review_by": "2027-02-28"
     }
   },
   "scripts": {

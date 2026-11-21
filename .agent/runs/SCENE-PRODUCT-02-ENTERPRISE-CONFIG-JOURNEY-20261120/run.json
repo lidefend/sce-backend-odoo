@@ -1,0 +1,807 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120",
+  "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
+  "baseline_sha": "46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
+  "status": "verification_pending",
+  "goal": ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+  "record": "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
+    ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+    ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
+    ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
+    "config/ci/contract_only_scopes.json",
+    "contracts/registry/semantic.yaml",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/ops/local_development_environment_v1.md",
+    "docs/ops/delivery_lane_execution_runbook_v1.md",
+    "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
+    "docs/ops/iterations/scene_product_02_enterprise_config_journey_20261120.md",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_core/data/product_primary_center_baseline_v1.json",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+    "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
+    "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+    "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    "addons/smart_construction_core/tests/test_product_job.py",
+    "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/services/enterprise_readiness_diagnosis.py",
+    "addons/smart_construction_scene/services/tenant_scene_activation.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/tests/test_enterprise_readiness_contract.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/security/group_assignment.py",
+    "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/tests/test_native_occurrence_contract_integration.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "config/product_menu_contract_v1.json",
+    "config/product_menu_release_manifest_v2.json",
+    "config/ops/local-platform-empty-addons/.gitkeep",
+    "config/ops/local_platform_control.v1.json",
+    "config/product_primary_center_baseline_v1.json",
+    "config/product_scenario_organization_v1.json",
+    "docs/product/product_scenario_organization_v1.md",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/scripts/standard_bootstrap_inventory.mjs",
+    "make/dev.mk",
+    "make/dev_test.mk",
+    "make/guards.mk",
+    "make/codex.mk",
+    "scripts/audit/build_scenario_product_organization.py",
+    "scripts/audit/test_build_scenario_product_organization.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/dev/local_dev_product_release_prepare.py",
+    "scripts/dev/local_platform_control.py",
+    "scripts/dev/local_platform_release_apply.py",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py",
+    "scripts/verify/error_state_component_test.cjs",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+    "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "scripts/verify/product_menu_contract_v1_guard.py",
+    "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    "scripts/verify/product_primary_center_baseline_guard.py",
+    "scripts/verify/product_primary_center_candidate_guard.py",
+    "scripts/verify/scenario_seed_runtime_readback.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_dev_product_release_prepare.py",
+    "scripts/verify/test_local_platform_control.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/test_native_view_workflow_action_coverage_guard.py",
+    "scripts/verify/test_product_center_policy.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
+    "scripts/verify/test_local_development_lifecycle.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "Governed local.dev profile sc-local-dev / sc_dev_demo / ^sc_dev_demo$ / http://127.0.0.1:18081 with candidate frontend http://127.0.0.1:5176",
+    "backend_source_revision": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "frontend_build_revision": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "database": "sc_dev_demo",
+    "dbfilter": "^sc_dev_demo$",
+    "entry": "/t/demo",
+    "recovery_snapshot": "artifacts/local-dev/snapshots/20261120T105139Z",
+    "rebuild": "PASS: local.dev.rebuild_demo reset sc_dev_demo and loaded demo_full from current source",
+    "clean_install": "PASS: local.clean.rebuild installed smart_construction_core on sc_clean",
+    "platform_control": "PASS: sc-local-platform / sc_platform_control / smart_core only"
+  },
+  "local_platform_control": {
+    "status": "passed",
+    "project": "sc-local-platform",
+    "database": "sc_platform_control",
+    "database_owner": "sc_platform_control_app",
+    "database_role": "sc_platform_control_app",
+    "maintenance_role": "sc_platform_control_maintenance",
+    "dbfilter": "^sc_platform_control$",
+    "module": "smart_core",
+    "module_state": "installed",
+    "database_volume": "sc_local_platform_db_data",
+    "redis_volume": "sc_local_platform_redis_data",
+    "odoo_volume": "sc_local_platform_odoo_data",
+    "admin_login": "admin",
+    "namespace": "ns_000000000001",
+    "dev_platform_admin_db_binding": "sc_platform_control",
+    "env_file": "/home/lidefend/workspace/sce-backend-odoo/.env.local.platform",
+    "env_mode": "0600",
+    "dev_env_backup": "/home/lidefend/workspace/sce-backend-odoo/.env.dev.before-platform-control-20261120"
+  },
+  "runtime_identity": {
+    "configuration_admin": {
+      "user_id": 24,
+      "login": "sc_demo_business_config",
+      "name": "徐磊",
+      "company_id": 1,
+      "company_name": "四川智汇某某建设集团有限公司",
+      "allowed_company_ids": [
+        2,
+        1
+      ]
+    },
+    "environment_preflight": "passed: local.dev health, entry identity, authority and write lease",
+    "candidate_health": "passed: backend source revision and 5176 frontend both 93e261258381c4d9d70b583472363fe4adf7ee17",
+    "product_code_source": "4c844f25b2fb081541ba94f0c6a49fd20c63bbc6",
+    "system_init_after_schema_upgrade": "passed"
+  },
+  "release_prerequisite": {
+    "status": "passed",
+    "catalog_source_db": "sc_dev_demo",
+    "platform_release_db": "sc_platform_control",
+    "snapshot_id": 1,
+    "snapshot_version": "local-dev-9fc60101e751",
+    "snapshot_state": "released",
+    "snapshot_active": true,
+    "active_snapshot_count": 1,
+    "page_count": 132,
+    "scenario_count": 46,
+    "platform_snapshot_id": 2,
+    "source_policy_sha256": "412d744ff47b70ea4bd1277cc73f2a54efccd4787e661197548abc87be6b076f",
+    "release_artifact_sha256": "af4e6904a8f462448fc6867cb943726a7cd2214948f59fc7d9baa71ae41ec6f0",
+    "local_platform_project": "sc-local-platform",
+    "local_platform_database_role": "sc_platform_control_app",
+    "local_platform_maintenance_role": "sc_platform_control_maintenance",
+    "candidate_frontend_platform_admin_db": "sc_platform_control",
+    "root_cause": "The earlier local acceptance preparation used sc_dev_demo as both catalog source and platform release database.",
+    "resolution": "Created a separate sc-local-platform lifecycle, exported the approved policy from sc_dev_demo, and froze the release snapshot inside sc_platform_control after digest validation."
+  },
+  "scenario_organization": {
+    "status": "approved_and_runtime_verified",
+    "design": "config/product_scenario_organization_v1.json",
+    "review": "docs/product/product_scenario_organization_v1.md",
+    "generator": "scripts/audit/build_scenario_product_organization.py",
+    "runtime_seed": "addons/smart_construction_core/data/scenario_product_surface.json",
+    "validation": "make verify.product.scenario.organization.unit",
+    "released_page_count": 132,
+    "organized_page_count": 132,
+    "unique_page_count": 132,
+    "unassigned_page_count": 0,
+    "duplicate_page_count": 0,
+    "unknown_page_count": 0,
+    "scenario_group_count": 46,
+    "center_count": 11,
+    "workbench_route_count": 7,
+    "cross_center_connection_count": 18,
+    "organization_gap_count": 5,
+    "validation_test_count": 13,
+    "runtime_seed_changed_by_this_step": true,
+    "runtime_scenario_count": 46,
+    "runtime_binding_count": 132,
+    "runtime_unique_menu_count": 132,
+    "legacy_scenario_keys": 0,
+    "runtime_readback": "PASS on sc_dev_demo and sc_clean",
+    "note": "The product owner approved the organization. The runtime scenario seed was regenerated and verified from both the demo rebuild and a clean installation; release composition remains separate."
+  },
+  "journey_results": {
+    "C02-01": {
+      "status": "passed",
+      "candidate": "93e261258381c4d9d70b583472363fe4adf7ee17",
+      "test_tool_head": "405f4b1726d97381f9074df947b9efcfd124d8da",
+      "entry_xmlid": "smart_construction_core.action_sc_enterprise_company",
+      "company_context_id": 1,
+      "company_record_id": 1,
+      "observations": "Visible entry resolved from action_xmlid to company 1 list and form. Company name, phone, email, currency, and address were readable; street2 was editable.",
+      "submitted": "C02-01-1795188509063",
+      "authoritative_readback": "street2 matched the submitted marker on res.company(1)",
+      "restore": "street2 restored to the original empty value and independently read back as empty",
+      "return": "form -> company list -> enterprise initialization; the new readiness response retained company_id=1 and enterprise.identity=VERIFIED",
+      "diagnosis_summary": {
+        "rule_count": 12,
+        "verified_count": 1,
+        "configured_count": 7,
+        "needs_attention_count": 1,
+        "not_applicable_count": 3
+      },
+      "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
+    },
+    "C02-02_to_C02-05": {
+      "status": "passed",
+      "organization": {
+        "status": "passed",
+        "evidence": "Reused the existing company-scoped department 12 and the prior invalid-name/create/readback/cleanup spot check."
+      },
+      "position": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_product_job_management_v1",
+        "record_id": 15,
+        "name": "C02-JOB-1795190532552",
+        "code": "C02-1795190532552",
+        "company_id": 1,
+        "department_id": 12,
+        "create_response": "api.data create returned hr.job id 15",
+        "duplicate_code": "unique(sc_job_code, company_id) locked by product_job ORM regression"
+      },
+      "personnel_account": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_runtime_user_management",
+        "user_id": 58,
+        "login": "c02_user_1795190532552",
+        "employee_id": 15,
+        "company_id": 1,
+        "department_id": 12,
+        "job_id": 15,
+        "employee_user_id": 58,
+        "employee_active": true,
+        "second_edit": "phone changed and saved on the same res.users(58); write response ids=[58]",
+        "ordinary_internal_user": true,
+        "business_config_admin": false,
+        "system_admin": false
+      },
+      "business_permissions": {
+        "status": "passed",
+        "entry_xmlid": "smart_construction_core.action_sc_product_data_permission_v1",
+        "same_user_id": 58,
+        "company_ids": [1],
+        "granted_role_id": 151,
+        "granted_role_xmlid": "smart_construction_core.group_sc_role_project_manager",
+        "target_role_code": "pm",
+        "grant_write_ids": [58],
+        "revoke_write_ids": [58],
+        "role_present_after_revoke": false,
+        "target_role_after_revoke": "restricted"
+      },
+      "reports": [
+        ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-personnel-delivery.json",
+        ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-delivery-browser-report.json"
+      ]
+    },
+    "C02-06A": {
+      "status": "passed",
+      "observed": "On candidate 93e261258, the enterprise page returned 132 published pages and 46 actionable scenarios. User 24/company 1 enabled work.my_queue, refreshed the catalog, disabled it, and read back enabled=false with access_granted=false."
+    },
+    "C02-06B": {
+      "status": "passed",
+      "scene_key": "project.initiation",
+      "target_user_id": 58,
+      "target_role_code": "pm",
+      "target_menu_xmlid": "smart_construction_core.menu_sc_project_project",
+      "disabled": "Target user navigation did not contain the project menu.",
+      "enabled": "Admin save returned enabled=true/write_committed=true; the same user's fresh system.init contained the project menu and role pm.",
+      "positive_access": "Target user opened project.project(26), company 1, through the visible project ledger.",
+      "negative_access": "Target user received /access-denied?reason=PERMISSION_DENIED for project.project(28), company 2.",
+      "disabled_again": "Target user navigation no longer contained the project menu; stale direct entry ended in a visible operation-not-completed message.",
+      "role_scope_changed_by_scenario": false,
+      "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/c02-scenario-delivery.json"
+    }
+  },
+  "five_entry_semantic_review": {
+    "enterprise_information": {
+      "shared_mechanism": "real browser save/readback/restore/return",
+      "status": "passed",
+      "evidence": "C02-01"
+    },
+    "organization": {
+      "contract": "name, parent_id, manager_id, company_id and active are declared; child_ids is read-only",
+      "targeted_spot_check": "required-name rejection produced no create request; a record with company 1 and an existing parent was created, read back, deactivated and deleted",
+      "status": "passed"
+    },
+    "position": {
+      "contract": "sc_job_code, name, department_id, company_id and active are declared; headcount is read-only",
+      "authority": "unique(sc_job_code, company_id) in product_job.py; company-scoped record rule and native action group",
+      "execution": "Created hr.job(15) through the visible entry with code, company 1 and department 12; duplicate-code ORM regression passed.",
+      "status": "passed"
+    },
+    "personnel_account": {
+      "contract": "res.users form exposes login, password, employee_id, department, job and active while excluding role and project-assignment fields",
+      "authority": "existing runtime user management models enforce allowed-company scope and one employee profile per user",
+      "execution": "Created res.users(58), linked hr.employee(15), set company/department/job, edited the same user, and read back the complete relation chain.",
+      "status": "passed"
+    },
+    "business_permissions": {
+      "contract": "identity fields are read-only; assignable roles and company/company_ids are editable; project assignment is project-scoped",
+      "authority": "business config admin action groups, assignable-role domain, and runtime company-maintainable domain",
+      "execution": "Granted role 151 to the same user, read role pm with company_ids=[1], then revoked it and read role restricted. Neither grant inherited admin authority.",
+      "status": "passed"
+    },
+    "enterprise_scenarios": {
+      "shared_mechanism": "real browser catalog read, enable, refresh, disable and authoritative readback",
+      "status": "passed",
+      "evidence": "C02-06A and C02-06B"
+    }
+  },
+  "authorization_reconciliation": {
+    "source_scene_admitted": true,
+    "entry_catalog_items": 5,
+    "raw_internal_action_count": 5,
+    "native_checks": "all five actions have allowed action groups, model read/write access and a valid current database action identity",
+    "raw_internal_actions": {
+      "enterprise_info": "action_id=960 model=res.company",
+      "organization": "action_id=804 model=hr.department",
+      "position": "action_id=954 model=hr.job",
+      "personnel": "action_id=807 model=res.users",
+      "permissions": "action_id=957 model=res.users"
+    },
+    "final_contract": "scene_ready_contract.scene_internal_actions contains all five authorized enterprise.setup actions",
+    "final_catalog": "five action_xmlid entries remain visible",
+    "effective_scene_keys": [
+      "workspace.home"
+    ],
+    "frontend_target_resolution": "C02-01 resolves action_sc_enterprise_company to the company 1 list and then company 1 form; action_xmlid is preserved on the handling-entry button",
+    "owner": "resolved across main #950 plus SCENE-PRODUCT-02 initialization/contract consumers"
+  },
+  "runtime_evidence": {
+    "status": "passed",
+    "candidate_sha": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
+    "report_sha256": "e4decc3543ed10d76da4ddc48aa6c80af2fbfa96572b2828522bcf17141ad121",
+    "entry_feedback": "resolved_target",
+    "scenario_catalog": "132 published pages, 46 actionable scenarios",
+    "business_writes": 4,
+    "browser_errors": 0
+  },
+  "combined_pr950_runtime_evidence": {
+    "status": "historical_superseded_by_main_sync_and_current_fix",
+    "combined_candidate": "fab3415370b513e1fbb453d317e8b316171785f5",
+    "c02_candidate": "7c4c5e32fb028fc8dcdf6bd844b26ddaec4ab9ab",
+    "pr950_candidate": "af7bf00026cb78cee4cb84edd9c6b3c281d7d429",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/combined-950/entry-and-catalog.json",
+    "report_sha256": "4723d8e7fa8fa97e08b41da04fbc1b98673855f97cd395a56c50c44c89326c68",
+    "raw_internal_actions": 5,
+    "native_action_and_model_access": "all five allowed",
+    "effective_scene_keys": [
+      "workspace.home"
+    ],
+    "final_scene_internal_actions": {},
+    "click_result": "action_id=961 reason=CAPABILITY_MISSING",
+    "business_writes": 0
+  },
+  "scenario_runtime_evidence": {
+    "status": "passed",
+    "candidate": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "backend_revision": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "frontend_build_revision": "93e261258381c4d9d70b583472363fe4adf7ee17",
+    "identity": {
+      "login": "sc_demo_business_config",
+      "user_id": 24,
+      "company_id": 1
+    },
+    "catalog_rows": 132,
+    "business_scenarios": 46,
+    "actionable_scenarios": 46,
+    "selected_scene": "work.my_queue",
+    "enable_readback": {
+      "enabled": true,
+      "company_id": 1,
+      "write_committed": true,
+      "access_granted": false
+    },
+    "disable_readback": {
+      "enabled": false,
+      "company_id": 1,
+      "write_committed": true,
+      "access_granted": false
+    },
+    "final_parameter_value": "0",
+    "report": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json",
+    "report_sha256": "e4decc3543ed10d76da4ddc48aa6c80af2fbfa96572b2828522bcf17141ad121"
+  },
+  "validation_results": {
+    "implemented_scope": "passed",
+    "passed": [
+      "verify.frontend.workspace_scenario_lifecycle.unit: 515 total cases passed; enterprise scenario catalog diagnostics added 6 cases",
+      "verify.frontend.delivery_hardening.guard: 18 tests passed; real StatusPanel contract-gap rendering and no recovery action verified",
+      "verify.local.dev.enterprise_configuration.consumer: PASS on candidate 93e261258; user 24/company 1 completed scenario enable/restore, enterprise company edit/save/readback/restore, return and fresh 12-rule diagnosis",
+      "local.dev.product_release.prepare: PASS; source/platform DB sc_dev_demo, unique active construction.standard snapshot 4, release gate applied with 132 pages",
+      "verify.admin_close_01.backend.unit: 167 tests passed across the selected backend contract families",
+      "verify.local.development_lifecycle.unit: 58 tests passed including release prerequisite guard coverage",
+      "verify.frontend.dev.incremental.unit: 189 tests passed after local.dev probe changes",
+      "candidate frontend build: PASS on 93e261258381c4d9d70b583472363fe4adf7ee17; backend/frontend/5176 identity matched",
+      "[historical before 46-scenario seed] verify.local.dev.enterprise_configuration.consumer scenario-only: PASS on the earlier 92-row catalog; enable/readback/refresh/disable/readback mechanics remain valid evidence, final seed-specific journey requires rerun",
+      "verify.product.scenario.organization.unit: 13 tests passed; approved design and generated runtime seed cover 132/132 pages",
+      "verify.nav01.native_authority.unit: 25 projection tests passed with approved scenario order and 132-page coverage",
+      "demo rebuild from current source: PASS on sc_dev_demo",
+      "scenario seed runtime readback: PASS on sc_dev_demo; 46 scenarios, 132 bindings, 132 unique menus, zero legacy keys",
+      "clean installation: PASS on sc_clean with smart_construction_core",
+      "scenario seed runtime readback: PASS on sc_clean; 46 scenarios, 132 bindings, 132 unique menus, zero legacy keys",
+      "local.platform ACTION=install: PASS; independent sc_platform_control created with smart_core only",
+      "local.platform ACTION=health: PASS; independent roles, owner, exact dbfilter and module state",
+      "local.dev.product_release.prepare: PASS; published 46 scenarios / 132 pages from sc_dev_demo into sc_platform_control snapshot 1",
+      "local.dev.product_release.prepare on 9fc60101e: PASS; tenant runtime snapshot 1 and independent platform snapshot 2 share source_policy_sha256=412d744f..., page_count=132 and scenario_count=46",
+      "C02-06A on 93e261258: PASS; 132 published pages, 46 actionable scenarios, 11 navigation centers; user 24/company 1 enabled and restored work.my_queue with authoritative readback and no access grant",
+      "C02-01 on 93e261258: PASS; action_xmlid resolved to company 1; street2 write/readback/restore matched; return to enterprise initialization produced a fresh 12-rule diagnosis with enterprise.identity=VERIFIED",
+      "C02-02 targeted spot check: required-name rejection produced no create request; a department was created with company 1 and an existing parent, read back by Odoo, deactivated and deleted; residue readback was empty",
+      "verify.navigation.publication_consumers.unit: PASS; five native entry declarations, organization/job/user/permission field and access boundaries, scene registry and diagnostics contracts all passed",
+      "verify.native_occurrence.contract.orm: PASS, 8 tests; pageInfo.model now consumes head.model and strict action model comparison is restored",
+      "verify.product_center.policy.unit: PASS, 15 tests; locked skeleton now asserts the workbench plus ten centers including supply_chain",
+      "verify.unified_page_contract.v2.assembler: PASS; cache version bumped to v94 and all contract inputs re-pinned",
+      "verify.unified_page_contract.v2.runtime: PASS, 149 tests; unified page-contract runtime score 6",
+      "verify.unified_page_contract.v2.web_architecture: PASS, debt-lock findings 0",
+      "verify.semantic.registry.lint: PASS; field_partner_autocomplete is declared as a generic visual fallback without claiming native takeover",
+      "field-context regression: PYTHONDONTWRITEBYTECODE=1 python3 addons/smart_core/tests/test_ui_contract_v2_boundaries.py -> 180 tests passed; resolved context is a dictionary, contextRaw preserves the native expression, unresolved declarations remain fail-closed",
+      "runtime user security ORM: make local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management -> 27 tests passed; receipt=.runtime/test-baseline/1795191104553979589/receipt.json",
+      "job product ORM: make local.test.test MODULE=smart_construction_core TEST_TAGS=product_job -> 2 tests passed; duplicate code is rejected within the same company; receipt=.runtime/test-baseline/1795192495483746842/receipt.json",
+      "verify.unified_page_contract.v2.assembler: PASS after cache version bump to v95 and input digest re-pin",
+      "verify.unified_page_contract.v2.runtime: PASS; suites reported 5, 23 and 149 tests with runtime score 6",
+      "C02 personnel delivery on current product source: PASS; visible personnel entry created res.users(58), linked hr.employee(15), company 1, department 12, job 15; second edit returned ids=[58]; authoritative readback matched",
+      "C02 permission delivery on res.users(58): PASS; grant role 151 and revoke it on the same user; target login changed from pm to restricted, company scope stayed [1], and no admin or system-admin authority was inherited",
+      "C02 target data access: PASS; target user read project.project(26) in company 1 through the visible project ledger and received /access-denied?reason=PERMISSION_DENIED for project.project(28) in company 2",
+      "C02-06B on current product source: PASS; project.initiation disabled -> target menu absent; enabled -> target system.init role=pm and menu_sc_project_project present; disabled again -> target menu absent; scenario selection did not change role or company scope",
+      "C02 return and diagnosis: PASS; fresh enterprise.readiness.diagnosis.get returned company 1 and 12 rules after role revocation and scenario restore",
+      "C02 cleanup: PASS; user, employee, job and company-2 negative project all returned search_count=0",
+      "make ci.local.iteration: PASS; 53 required targets actually executed, unmapped=0, blocked=0, not_run=0; receipt=.runtime/frontend-dev-validation/executions/20261120T163932Z-3460879-796108417/receipt.json",
+      "make ci.delivery.freeze.prepare: PASS; generated test inventory has 1738 entries, coverage registry is current, contract structure and all tracked generated reports are current",
+      "[historical before the current fixes] make ci.local.iteration: PASS; 44 affected targets executed; receipt=.runtime/frontend-dev-validation/executions/20261120T123643Z-2201996-755971495/receipt.json",
+      "[historical before scenario-seed implementation] make ci.local.iteration: exit 0; 13 required targets executed",
+      "ci.delivery.freeze.prepare: passed; generated evidence current with 1738 inventory entries",
+      "frontend lint: zero errors, repository-existing warnings only",
+      "frontend strict typecheck: passed"
+    ],
+    "not_run": [
+      "Full owning-module ORM baselines, module upgrade replay, fixture reset, full browser matrix and deployment remain excluded by the owner-selected acceptance scope",
+      "A stale direct URL after scenario disable reaches the existing visible operation-not-completed state; navigation withdrawal is the primary gate result and no new fallback route is inferred"
+    ],
+    "cancelled": [
+      "The redundant product_job module ORM rebuild was cancelled after preparation began because the unique constraint is already declared in source and the shared save mechanism is covered; no pass is claimed for that cancelled run"
+    ]
+  },
+  "validation_exclusions": {
+    "targets": [
+      "verify.admin_close_01.runtime.orm",
+      "verify.daily.permission_truth.capability.orm",
+      "verify.product_center.policy.orm",
+      "verify.business_config.full_acceptance",
+      "verify.business_config.browser_acceptance"
+    ],
+    "reason": "Owner-selected focused real configuration journeys; full ORM/module baselines, full browser matrix, production deployment and unrelated centers are excluded."
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
+        ".agent/goals/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120.yaml",
+        ".agent/runs/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120/run.json",
+        ".agent/runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/run.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "baseline_iteration_execution_policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "make/guards.mk",
+        "AGENTS.md"
+      ],
+      "kind": "offline"
+    },
+    "enterprise_configuration_frontend": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "inputs": [
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scene_activation_backend": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_scene/services/scenario_activation_catalog.py",
+        "addons/smart_construction_scene/services/tenant_scene_activation.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "published_release_preflight": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "product_center_policy": {
+      "target": "verify.product_center.policy.unit",
+      "inputs": [
+        "addons/smart_core/delivery/product_center_policy.py",
+        "addons/smart_core/delivery/product_policy_normalization.py",
+        "addons/smart_construction_core/services/product_center_policy.py",
+        "addons/smart_construction_core/services/product_menu_source.py",
+        "config/product_primary_center_baseline_v1.json",
+        "config/product_menu_contract_v1.json",
+        "scripts/verify/test_product_center_policy.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_surface_projection": {
+      "target": "verify.nav01.native_authority.unit",
+      "inputs": [
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "scripts/verify/scenario_surface_projection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "scenario_product_organization": {
+      "target": "verify.product.scenario.organization.unit",
+      "inputs": [
+        "config/product_primary_center_baseline_v1.json",
+        "addons/smart_construction_core/data/product_menu_source.json",
+        "config/product_scenario_organization_v1.json",
+        "docs/product/product_scenario_organization_v1.md",
+        "scripts/audit/build_scenario_product_organization.py",
+        "scripts/audit/test_build_scenario_product_organization.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "error_state_feedback": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "scripts/verify/error_state_component_test.cjs",
+        "scripts/verify/frontend_delivery_hardening_guard.py",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_component_driver": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "inputs": [
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "local_dev_lifecycle": {
+      "target": "verify.local.development_lifecycle.unit",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/dev/local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/apps/web/package.json",
+        "frontend/packages/ui/src/",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_navigation_shell": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/canonical_navigation_model_test.ts",
+        "frontend/apps/web/scripts/scenario_surface_parser_test.ts",
+        "frontend/apps/web/scripts/navigation_menu_keyboard_test.ts",
+        "addons/smart_construction_core/tests/test_business_category_entry_policy.py",
+        "scripts/verify/test_frontend_navigation_shell_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_scene_entry_contract": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/scene_shell_contract_test.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "frontend/apps/web/src/app/sceneEntryContract.ts",
+        "addons/smart_core/tests/test_scene_ready_contract_builder_semantic_consumption.py",
+        "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src/",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json",
+        "frontend/packages/ui/src/",
+        "frontend/packages/ui/tsconfig.json",
+        "frontend/pnpm-lock.yaml",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    },
+    "workspace_branch_sync_policy": {
+      "target": "verify.workspace.branch.sync-main",
+      "inputs": [
+        "scripts/ops/safe_branch_sync_main.py",
+        "scripts/ops/test_safe_branch_sync_main.py",
+        "make/codex.mk",
+        "docs/ops/delivery_lane_execution_runbook_v1.md"
+      ],
+      "kind": "offline"
+    },
+    "ci_contract_scope": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/public_guard.yml",
+        "config/ci/contract_only_scopes.json",
+        "make/ci.mk",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/contract_only_scope.py",
+        "scripts/ci/test_contract_only_scope.py"
+      ],
+      "kind": "offline"
+    },
+    "enterprise_configuration_consumer_unit": {
+      "target": "verify.local.dev.enterprise_configuration.consumer.unit",
+      "inputs": [
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "enterprise_configuration_consumer_runtime": {
+      "target": "verify.local.dev.enterprise_configuration.consumer",
+      "inputs": [
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/SCENE-PRODUCT-02-ENTERPRISE-CONFIG-JOURNEY-20261120/enterprise-configuration-consumer/report.json"
+      }
+    }
+  },
+  "resolved_findings": [
+    {
+      "owner": "P4 governed local.dev acceptance precondition",
+      "classification": "environment_defect",
+      "finding": "The catalog source parameter was empty, so release preflight inspected sc_demo and produced 137 source-menu failures; no active release snapshot existed.",
+      "resolution": "Added an explicit local.dev product-release preparation entry, bound source/platform identities to sc_dev_demo, and created/verified active snapshot 4 through EditionReleaseSnapshotService.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P1 smart_construction_scene tenant enablement",
+      "classification": "product_defect",
+      "finding": "After an enable request, the immediate disable readback could observe a stale registry-cached true value and return INTERNAL_ERROR instead of committing the disable.",
+      "resolution": "Clear the registry cache after the parameter row write completes and added a focused stale-cache regression.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P4 local.dev product release projection",
+      "classification": "acceptance_environment_defect",
+      "finding": "After moving the authoritative release to sc_platform_control, sc_dev_demo had no active runtime release snapshot. The enterprise scenario catalog therefore returned ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND and no rows.",
+      "resolution": "The governed prepare entry now creates a tenant runtime snapshot in sc_dev_demo from the same approved policy artifact and exact revision, while the independent platform control snapshot remains the authoritative product release.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P1 enterprise initialization plus P0 effective delivery",
+      "classification": "product_defect",
+      "finding": "The native enterprise.setup override removed enablement_scope=enterprise_initialization, and effective delivery only generated internal actions for scenes already present in business navigation. The five setup actions therefore never reached scene_ready_contract.",
+      "resolution": "Preserve the initialization lifecycle on the native scene projection and admit that explicit lifecycle scope into internal-action resolution without promoting unscoped business scenes.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P0 semantic contract consumer",
+      "classification": "product_defect",
+      "finding": "The Odoo partner_autocomplete extension rewrites res.company name and vat to field_partner_autocomplete at effective-view generation time. The contract registry omitted that native widget, so the whole enterprise information form stopped with PROFESSIONAL_COMPONENT_UNREGISTERED.",
+      "resolution": "Declare field_partner_autocomplete in the semantic registry as an explicit generic visual fallback while preserving the native widget identity and field editability.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P0 smart_core unified page contract",
+      "classification": "product_defect",
+      "finding": "The personnel form published sc_profile_document_ids context as a raw Python expression string. The one2many consumer requires a resolved dictionary and stopped the create form with native_modifier.context_operand.",
+      "resolution": "Resolve native field context expressions against final record facts, publish the executable dictionary in context, preserve contextRaw, normalize many2one ids, and apply the result consistently to field nodes and owning widget descriptors. Unresolved expressions still fail closed.",
+      "status": "resolved"
+    },
+    {
+      "owner": "P0 smart_core native command parser consumed by P1 runtime user management",
+      "classification": "product_defect",
+      "finding": "The generic create-default merge injects Odoo Command.SET for company_ids. The native command parser accepted only exact int instances and rejected the Command IntEnum, blocking normal user creation.",
+      "resolution": "Accept non-boolean integer command enums and normalize the operation to int; added a runtime user management regression using Command.set.",
+      "status": "resolved"
+    }
+  ],
+  "blockers": [],
+  "mainline_sync": {
+    "status": "passed",
+    "source_branch": "feature/scene-product-02-enterprise-config-journey-20261120",
+    "old_head": "e9bd40712b51b3221cf545d1d63a583c9fe0b83a",
+    "replayed_head_before_generated_refresh": "a6037f3626f5e8ea648e024313cb17f8ccca28fc",
+    "target_main": "46f323cdaac1cb9b5a1fb4b64fcb21fd95183d37",
+    "mode": "workspace.branch.sync-main.extended",
+    "result": "PASS; exact main is an ancestor and the recovery bundle was written before replay."
+  },
+  "full_local_quick_policy": {
+    "status": "corrected",
+    "ordinary_iteration_requires_quick": false,
+    "mainline_sync_requires_quick": false,
+    "remote_daily_full_regression": true,
+    "quick_use": "explicit full audit, baseline rebuild or release freeze only",
+    "root_cause": "The extended-sync helper self-imposed exact-head Quick evidence, contradicting AGENTS.md incremental delivery rules and duplicating the remote daily full lane."
+  },
+  "acceptance_strategy": {
+    "shared_ui_mechanism": "Proven once through C02-01 real save/readback/restore/return/diagnosis.",
+    "five_entries": "All five entries have declaration evidence; enterprise information, position, personnel and permissions additionally have the required unique real journey evidence.",
+    "targeted_checks": "Native field contexts, Command enum inputs, person-employee identity, role/company scope and target-user scenario delivery now have focused regressions.",
+    "user_acceptance": "Passed in sc-local-dev for the verified role and company; exact final candidate must still complete the affected delivery gates."
+  },
+  "next_exact_step": "Publish the clean exact candidate for independent review and exact-head required CI; do not claim deployment or broader user acceptance."
+}

@@ -12,6 +12,12 @@ from __future__ import annotations
 
 from odoo import api, fields, models
 from odoo.exceptions import ValidationError
+from odoo.addons.smart_construction_core.services.scenario_product_declarations import (
+    DIRECT_CONFIGURATION_MENU_XMLIDS,
+    DIRECT_NAVIGATION_MENU_XMLIDS,
+    DIRECT_PLATFORM_MENU_XMLIDS,
+    DIRECT_WORKSPACE_MENU_XMLIDS,
+)
 
 
 SCENARIO_INTENTS = [
@@ -22,35 +28,22 @@ SCENARIO_INTENTS = [
     ("master_data", "基础信息维护"),
 ]
 SCENARIO_INTENT_CODES = tuple(item[0] for item in SCENARIO_INTENTS)
-# Explicit P1 configuration surfaces from menu_product_configuration_wave1.xml.
-# These are initialization declarations, never a runtime or upgrade fallback.
-DIRECT_CONFIGURATION_MENU_XMLIDS = (
-    "smart_construction_core.menu_sc_business_config_workbench",  # Form configuration
-    "smart_construction_core.menu_sc_approval_policy",  # Approval configuration
-    "smart_construction_core.menu_ui_form_field_policy_business_config",  # Field maintenance
-    "smart_construction_core.menu_ui_menu_config_policy_business_config",  # Menu configuration
-)
-DIRECT_WORKSPACE_MENU_XMLIDS = (
-    "smart_construction_core.menu_sc_my_work",
-    "smart_construction_core.menu_sc_operating_metrics_project",
-    "smart_construction_core.menu_sc_project_kanban",
-    "smart_construction_core.menu_sc_workbench_my_todo_fact",
-    "smart_construction_core.menu_sc_product_message_notification_v1",
-)
-DIRECT_PLATFORM_MENU_XMLIDS = (
-    "smart_construction_core.menu_sc_enterprise_initialization",
-    "smart_construction_core.menu_sc_business_config_workbench",
-    "smart_construction_core.menu_sc_approval_policy",
-    "smart_construction_core.menu_ui_form_field_policy_business_config",
-    "smart_construction_core.menu_ui_menu_config_policy_business_config",
-    "smart_construction_core.menu_sc_product_data_permission_v1",
-    "smart_construction_core.menu_sc_product_scenario_business_config",
-    "smart_construction_core.menu_sc_product_system_parameter_v1",
-    "smart_construction_core.menu_sc_product_numbering_rule_v1",
-    "smart_construction_core.menu_sc_runtime_user_management",
+DIRECT_NAVIGATION_MENU_XMLID_SET = frozenset(DIRECT_NAVIGATION_MENU_XMLIDS)
+NAVIGATION_ENTRY_SCOPE_MARKER = (
+    "smart_construction_core.navigation_entry_scope.v3"
 )
 SCENARIO_SEED_KEY = "smart_construction_core.scenario_seed.v1"
 EXTERNAL_CENTER_SEED_KEY = "smart_construction_core.external_center_seed.v1"
+
+
+def _is_direct_navigation_menu(menu) -> bool:
+    if not menu:
+        return False
+    try:
+        xmlid = menu.get_external_id().get(menu.id, "")
+    except Exception:
+        xmlid = ""
+    return str(xmlid or "").strip() in DIRECT_NAVIGATION_MENU_XMLID_SET
 
 
 class ScProductScenario(models.Model):
@@ -114,13 +107,11 @@ class ScProductScenario(models.Model):
         module = self.env["ir.module.module"].sudo().search([
             ("name", "=", "smart_construction_core"),
         ], limit=1)
-        if module.state == "to install":
+        if module.state in ("to install", "installing"):
             for xmlid in DIRECT_CONFIGURATION_MENU_XMLIDS:
                 menu = self.env.ref(xmlid)
                 if menu._name != "ir.ui.menu" or not menu.action:
                     raise ValidationError("Direct configuration declaration requires an action menu: %s" % xmlid)
-                if self.env["sc.product.scenario.entry"].sudo().search_count([("menu_id", "=", menu.id)]):
-                    raise ValidationError("Direct configuration declaration conflicts with a scenario binding: %s" % xmlid)
                 menu.sudo().write({"sc_scenario_exempt": True})
         params.set_param(marker, "1")
 
@@ -133,36 +124,19 @@ class ScProductScenario(models.Model):
         can later revoke an exemption without the next upgrade restoring it.
         """
         params = self.env["ir.config_parameter"].sudo()
-        runtime_user_marker = (
-            "smart_construction_core.navigation_entry_scope.runtime_user.v2"
-        )
-        if not params.get_param(runtime_user_marker):
-            runtime_user_xmlid = (
-                "smart_construction_core.menu_sc_runtime_user_management"
-            )
-            menu = self.env.ref(runtime_user_xmlid, raise_if_not_found=False)
-            if menu and str(getattr(menu, "_name", "")) == "ir.ui.menu":
-                if not menu.sc_scenario_exempt:
-                    menu.sudo().write({"sc_scenario_exempt": True})
-            params.set_param(runtime_user_marker, "1")
-        marker = "smart_construction_core.navigation_entry_scope.v1"
+        marker = NAVIGATION_ENTRY_SCOPE_MARKER
         if params.get_param(marker):
             return
-        Entry = self.env["sc.product.scenario.entry"].sudo()
-        for xmlid in dict.fromkeys(
-            DIRECT_WORKSPACE_MENU_XMLIDS + DIRECT_PLATFORM_MENU_XMLIDS
-        ):
+        for xmlid in DIRECT_NAVIGATION_MENU_XMLIDS:
             menu = self.env.ref(xmlid, raise_if_not_found=False)
             if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
                 raise ValidationError(
                     "Direct navigation declaration requires an available menu: %s" % xmlid
                 )
-            if not menu.action:
+            if not menu.action and xmlid not in DIRECT_WORKSPACE_MENU_XMLIDS:
                 raise ValidationError(
-                    "Direct navigation declaration requires an action menu: %s" % xmlid
+                    "Direct platform declaration requires an action menu: %s" % xmlid
                 )
-            if Entry.search_count([("menu_id", "=", menu.id)]):
-                continue
             if not menu.sc_scenario_exempt:
                 menu.sudo().write({"sc_scenario_exempt": True})
         params.set_param(marker, "1")
@@ -171,8 +145,8 @@ class ScProductScenario(models.Model):
     def import_scenario_product_surface(self):
         """Initialize once, atomically; later upgrades preserve even deletions.
 
-        A versioned migration marks legacy installations initialized before
-        this method is called. Future seed changes require explicit migrations.
+        This is a fresh-install seed initializer. It runs once and never
+        overwrites or deletes maintained records.
         """
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
             load_surface,
@@ -185,7 +159,6 @@ class ScProductScenario(models.Model):
         Scenario = self.sudo().with_context(active_test=False)
         Entry = self.env["sc.product.scenario.entry"].sudo()
         existing_codes = {rec.code: rec for rec in Scenario.search([])}
-        prebound_menu_ids = set(Entry.search([]).mapped("menu_id").ids)
         created_scenarios = 0
         skipped_scenarios = 0
         created_entries = 0
@@ -196,31 +169,49 @@ class ScProductScenario(models.Model):
                 continue
             record = existing_codes.get(code)
             if not record:
-                record = Scenario.create({"code": code, "name": name})
+                record = Scenario.create({
+                    "code": code,
+                    "name": name,
+                    "description": str(scenario.get("description") or "").strip(),
+                    "sequence": int(scenario.get("sequence") or 10),
+                })
                 existing_codes[code] = record
                 created_scenarios += 1
             else:
                 skipped_scenarios += 1
-            for intent, menu_xmlids in (scenario.get("intents") or {}).items():
-                intent_code = intent if intent in SCENARIO_INTENT_CODES else "view"
-                for menu_xmlid in menu_xmlids or []:
-                    menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
-                    if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
-                        continue
-                    if menu.id in prebound_menu_ids:
-                        continue
-                    exists = Entry.search([
-                        ("scenario_id", "=", record.id),
-                        ("menu_id", "=", menu.id),
-                    ], limit=1)
-                    if not exists:
-                        Entry.create({
-                            "scenario_id": record.id,
-                            "menu_id": menu.id,
-                            "intent": intent_code,
-                            "sequence": 10,
-                        })
-                        created_entries += 1
+            bindings = scenario.get("bindings")
+            if isinstance(bindings, list) and bindings:
+                binding_rows = [
+                    (
+                        binding.get("menu_key"),
+                        binding.get("intent"),
+                        binding.get("sequence"),
+                    )
+                    for binding in bindings
+                    if isinstance(binding, dict)
+                ]
+            else:
+                binding_rows = [
+                    (menu_xmlid, intent, 10)
+                    for intent, menu_xmlids in (scenario.get("intents") or {}).items()
+                    for menu_xmlid in menu_xmlids or []
+                ]
+            for menu_xmlid, intent, sequence in binding_rows:
+                menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
+                if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
+                    continue
+                exists = Entry.search([
+                    ("scenario_id", "=", record.id),
+                    ("menu_id", "=", menu.id),
+                ], limit=1)
+                if not exists:
+                    Entry.create({
+                        "scenario_id": record.id,
+                        "menu_id": menu.id,
+                        "intent": intent if intent in SCENARIO_INTENT_CODES else "view",
+                        "sequence": int(sequence or 10),
+                    })
+                    created_entries += 1
         Param.set_param(SCENARIO_SEED_KEY, "1")
         return {
             "created_scenarios": created_scenarios,
@@ -260,14 +251,26 @@ class IrUiMenu(models.Model):
     )
     sc_scenario_exempt = fields.Boolean(
         string="Exempt from Company Scenario Enablement", default=False,
-        help="Explicitly bypass only scenario enablement. Publication, ACL and company scope still apply. A scenario binding takes precedence.",
+        help=(
+            "Explicitly bypass only scenario enablement. Publication, ACL and "
+            "company scope still apply. Direct platform declarations may also "
+            "remain organized by a business scenario."
+        ),
     )
 
     def write(self, vals):
-        if vals.get("sc_scenario_exempt") and self.env["sc.product.scenario.entry"].sudo().search_count([
-            ("menu_id", "in", self.ids),
-        ]):
-            raise ValidationError("Remove the scenario binding before explicitly exempting an entry.")
+        if vals.get("sc_scenario_exempt"):
+            bound = self.env["sc.product.scenario.entry"].sudo().search([
+                ("menu_id", "in", self.ids),
+            ])
+            non_direct = bound.mapped("menu_id").filtered(
+                lambda menu: not _is_direct_navigation_menu(menu)
+            )
+            if non_direct:
+                raise ValidationError(
+                    "Only declared platform direct entries may remain exempt "
+                    "while bound to a business scenario."
+                )
         result = super().write(vals)
         if {"sc_scenario_exempt", "sc_product_center_id", "parent_id"}.intersection(vals):
             self.env.registry.clear_cache()
@@ -318,14 +321,20 @@ class ScProductScenarioEntry(models.Model):
     @api.model_create_multi
     def create(self, vals_list):
         records = super().create(vals_list)
-        records.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+        ordinary = records.mapped("menu_id").filtered(
+            lambda menu: not _is_direct_navigation_menu(menu)
+        )
+        ordinary.sudo().write({"sc_scenario_exempt": False})
         self.env.registry.clear_cache()
         return records
 
     def write(self, vals):
         result = super().write(vals)
         if "menu_id" in vals or "scenario_id" in vals:
-            self.mapped("menu_id").sudo().write({"sc_scenario_exempt": False})
+            ordinary = self.mapped("menu_id").filtered(
+                lambda menu: not _is_direct_navigation_menu(menu)
+            )
+            ordinary.sudo().write({"sc_scenario_exempt": False})
         self.env.registry.clear_cache()
         return result
 

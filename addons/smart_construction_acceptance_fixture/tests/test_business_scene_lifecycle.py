@@ -1,4 +1,7 @@
-from odoo.exceptions import AccessError
+import os
+from unittest.mock import patch
+
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.delivery.runtime_route_authority import (
@@ -7,6 +10,11 @@ from odoo.addons.smart_core.delivery.runtime_route_authority import (
 
 
 from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+
+from ..tools.frontend_productization_fixture import (
+    FIXTURE_SCOPE_ENV,
+    ensure_fixture,
+)
 
 
 def publish_scenarios(env):
@@ -33,9 +41,39 @@ def publish_scenarios(env):
     return result
 
 
+def ensure_acceptance_fixture_for_local_test(env):
+    if env.ref(
+        "smart_construction_acceptance_fixture.fe_user_finance",
+        raise_if_not_found=False,
+    ):
+        return
+    if env.cr.dbname != "sc_test":
+        raise RuntimeError("local fixture seeding is restricted to sc_test")
+    snapshot = env["sc.edition.release.snapshot"].sudo().search([
+        ("product_key", "=", "construction.standard"),
+        ("state", "=", "released"),
+        ("is_active", "=", True),
+        ("active", "=", True),
+    ], limit=1)
+    if not snapshot:
+        publish_scenarios(env)
+    with patch.dict(os.environ, {
+        FIXTURE_SCOPE_ENV: "local_test",
+        "SC_ENVIRONMENT": "dev",
+        "SC_ALLOW_DEMO_DATA": "1",
+        "SC_ACCEPTANCE_FIXTURE_PASSWORD": "local-test-fixture-password",
+    }):
+        ensure_fixture(env)
+
+
 @tagged("post_install", "-at_install", "acceptance_business_scene_lifecycle")
 class TestBusinessSceneLifecycle(TransactionCase):
     """Native company/permission behavior; TransactionCase rolls back all toggles."""
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        ensure_acceptance_fixture_for_local_test(cls.env)
 
     def setUp(self):
         super().setUp()
@@ -56,7 +94,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
 
     def _state(self, company):
         row = self.states.search([('company_id', '=', company.id),
-                                  ('scene_key', '=', 'business.v1:payment.capital')])
+                                  ('scene_key', '=', 'business.v1:finance.payment_approval')])
         self.assertEqual(len(row), 1, 'run the governed fixture before lifecycle acceptance')
         return row
 
@@ -88,7 +126,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
             limit=1,
         )
         self.assertTrue(entry, "project Kanban must have an acceptance scenario binding")
-        self.assertEqual(entry.scenario_id.code, "project.management")
+        self.assertEqual(entry.scenario_id.code, "reporting.project_portfolio")
 
         for login in (
             "fixture_role_config_admin",
@@ -154,7 +192,7 @@ class TestBusinessSceneLifecycle(TransactionCase):
         self.assertFalse(self._allowed(self.company_a))
         self.states.create({
             'company_id': self.company_a.id,
-            'scene_key': 'business.v1:payment.capital',
+            'scene_key': 'business.v1:finance.payment_approval',
             'enabled': True,
         })
         self.assertTrue(self._allowed(self.company_a))
@@ -165,6 +203,15 @@ class TestBusinessSceneLifecycle(TransactionCase):
         with self.assertRaises(AccessError), self.cr.savepoint():
             a.with_env(actor).set_enabled(not a.enabled)
         self.assertFalse(actor['sc.scene.company.enablement'].search([('id', '=', b.id)]))
+
+    def test_fixture_scenario_choices_match_current_product_identity(self):
+        from odoo.addons.smart_construction_acceptance_fixture.tools.frontend_productization_fixture import (
+            FIXTURE_BUSINESS_SCENARIOS,
+        )
+        current = set(self.env["sc.product.scenario"].sudo().with_context(
+            active_test=False
+        ).search([]).mapped("code"))
+        self.assertEqual(set(FIXTURE_BUSINESS_SCENARIOS), current)
 
     def test_maintained_membership_drives_scenario_catalog_without_seed_file(self):
         from unittest.mock import patch
@@ -191,24 +238,25 @@ class TestBusinessSceneLifecycle(TransactionCase):
             self.assertEqual(row['name'], 'Renamed payment')
             self.assertTrue(row['tenant_enabled'])
             replacement.active = False
-            publish_scenarios(self.env)
-            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
-                       if row['scene_key'] == replacement.code)
-            self.assertFalse(row['product_released'])
+            with self.assertRaisesRegex(
+                ValueError,
+                "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+            ):
+                publish_scenarios(self.env)
             replacement.active = True
             publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertTrue(row['tenant_enabled'])
             entry.unlink()
-            publish_scenarios(self.env)
-            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
-                       if row['scene_key'] == replacement.code)
-            self.assertFalse(row['product_released'])
-            self.menu.sc_scenario_exempt = True
-            self.assertTrue(self._allowed(self.company_a))
-            self.menu.sc_scenario_exempt = False
-            self.assertFalse(self._allowed(self.company_a))
+            with self.assertRaisesRegex(
+                ValueError,
+                "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+            ):
+                publish_scenarios(self.env)
+        self.menu.sc_scenario_exempt = True
 
     def test_binding_clears_old_exemption_and_identity_cannot_be_renamed(self):
         from odoo.exceptions import ValidationError
@@ -238,10 +286,13 @@ class TestBusinessSceneLifecycle(TransactionCase):
         )
         self.assertTrue(self._allowed(self.company_a))
         rebound.unlink()
-        publish_scenarios(self.env)
-        self.assertFalse(self._allowed(self.company_a))
-        self.menu.sc_scenario_exempt = True
-        self.assertTrue(self._allowed(self.company_a))
+        with self.assertRaisesRegex(
+            ValueError,
+            "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+        ):
+            publish_scenarios(self.env)
+            self.menu.sc_scenario_exempt = True
 
     def test_exemption_migration_does_not_revive_deleted_business_binding(self):
         scenario = self.env['sc.product.scenario'].sudo()
@@ -300,7 +351,17 @@ class TestBusinessSceneLifecycle(TransactionCase):
         scenario = entry.scenario_id
         for active in (True, False):
             scenario.active = active
-            publish_scenarios(self.env)
+            if active:
+                publish_scenarios(self.env)
+            else:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                    "\\[BUSINESS_SCENE_PAGE_UNASSIGNED\\]",
+                ):
+                    publish_scenarios(self.env)
+                scenario.active = True
+                publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == scenario.code)
             diagnosis = diagnose_scenario_dependencies(self.env,

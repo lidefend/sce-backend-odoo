@@ -8,8 +8,10 @@
   "runtime_migration_status": "ALIGNED",
   "rules": {
     "maximum_business_depth": 3,
-    "project_center_is_only_center_with_level_three": true,
-    "all_non_project_centers_maximum_depth": 2,
+    "level_three_centers": [
+      "project",
+      "supply_chain"
+    ],
     "handling_is_page_action_not_menu_level": true,
     "runtime_menu_claim": "TARGET_CONTRACT_ONLY",
     "seed_customer_input": "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY"
@@ -100,16 +102,6 @@
           "children": [
             {
               "name": "客户档案",
-              "delivery": "RELEASED_FOUNDATION",
-              "release_state": "released"
-            },
-            {
-              "name": "供应商档案",
-              "delivery": "RELEASED_FOUNDATION",
-              "release_state": "released"
-            },
-            {
-              "name": "客商黑名单",
               "delivery": "RELEASED_FOUNDATION",
               "release_state": "released"
             }
@@ -205,26 +197,6 @@
             },
             {
               "name": "劳务扣款明细",
-              "delivery": "RELEASED_FOUNDATION",
-              "release_state": "released"
-            }
-          ]
-        },
-        {
-          "name": "材料成本",
-          "children": [
-            {
-              "name": "材料入库",
-              "delivery": "RELEASED_FOUNDATION",
-              "release_state": "released"
-            },
-            {
-              "name": "材料出库",
-              "delivery": "RELEASED_FOUNDATION",
-              "release_state": "released"
-            },
-            {
-              "name": "材料退货",
               "delivery": "RELEASED_FOUNDATION",
               "release_state": "released"
             }
@@ -364,6 +336,131 @@
               "release_state": "released"
             }
           ]
+        }
+      ]
+    },
+    {
+      "key": "contract",
+      "center_key": "construction.center.contract",
+      "group_key": "construction.center.contract",
+      "name": "合同中心",
+      "sequence": 30,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center",
+      "level_two": [
+        {
+          "name": "收入合同",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "支出合同",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "合同变更",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "日常合同",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "日常合同结算",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "收入结算",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "支出结算",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "结算单",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        }
+      ]
+    },
+    {
+      "key": "cost",
+      "center_key": "construction.center.cost",
+      "group_key": "construction.center.cost",
+      "name": "成本中心",
+      "sequence": 40,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center",
+      "level_two": [
+        {
+          "name": "项目预算",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "成本计划编制",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "成本归集",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        },
+        {
+          "name": "项目盈亏分析",
+          "delivery": "RELEASED_FOUNDATION",
+          "release_state": "released"
+        }
+      ]
+    },
+    {
+      "key": "supply_chain",
+      "center_key": "construction.center.supply_chain",
+      "group_key": "construction.center.supply_chain",
+      "name": "供应链与资源中心",
+      "sequence": 50,
+      "native_menu_xmlid": "smart_construction_core.menu_sc_supply_chain_center",
+      "level_two": [
+        {
+          "name": "采购与供应商",
+          "children": [
+            {
+              "name": "供应商档案",
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
+            },
+            {
+              "name": "客商黑名单",
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
+            }
+          ]
+        },
+        {
+          "name": "材料收发",
+          "children": [
+            {
+              "name": "材料入库",
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
+            },
+            {
+              "name": "材料出库",
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
+            },
+            {
+              "name": "材料退货",
+              "delivery": "RELEASED_FOUNDATION",
+              "release_state": "released"
+            }
+          ]
         },
         {
           "name": "材料管理",
@@ -488,91 +585,11 @@
       ]
     },
     {
-      "key": "contract",
-      "center_key": "construction.center.contract",
-      "group_key": "construction.center.contract",
-      "name": "合同中心",
-      "sequence": 30,
-      "native_menu_xmlid": "smart_construction_core.menu_sc_contract_center",
-      "level_two": [
-        {
-          "name": "收入合同",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "支出合同",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "合同变更",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "日常合同",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "日常合同结算",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "收入结算",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "支出结算",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "结算单",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        }
-      ]
-    },
-    {
-      "key": "cost",
-      "center_key": "construction.center.cost",
-      "group_key": "construction.center.cost",
-      "name": "成本中心",
-      "sequence": 40,
-      "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center",
-      "level_two": [
-        {
-          "name": "项目预算",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "成本计划编制",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "成本归集",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        },
-        {
-          "name": "项目盈亏分析",
-          "delivery": "RELEASED_FOUNDATION",
-          "release_state": "released"
-        }
-      ]
-    },
-    {
       "key": "finance",
       "center_key": "construction.center.finance",
       "group_key": "construction.center.finance",
       "name": "财务中心",
-      "sequence": 50,
+      "sequence": 60,
       "native_menu_xmlid": "smart_construction_core.menu_sc_finance_center",
       "level_two": [
         {
@@ -652,7 +669,7 @@
       "center_key": "construction.center.tax",
       "group_key": "construction.center.tax",
       "name": "税务中心",
-      "sequence": 60,
+      "sequence": 70,
       "native_menu_xmlid": "smart_construction_core.menu_sc_tax_center",
       "level_two": [
         {
@@ -707,7 +724,7 @@
       "center_key": "construction.center.accounting",
       "group_key": "construction.center.accounting",
       "name": "会计账务中心",
-      "sequence": 70,
+      "sequence": 80,
       "native_menu_xmlid": "smart_construction_core.menu_sc_accounting_center",
       "level_two": [
         {
@@ -747,7 +764,7 @@
       "center_key": "construction.center.reporting",
       "group_key": "construction.center.reporting",
       "name": "报表中心",
-      "sequence": 80,
+      "sequence": 90,
       "native_menu_xmlid": "smart_construction_core.menu_sc_data_center",
       "level_two": [
         {
@@ -782,7 +799,7 @@
       "center_key": "construction.center.administration",
       "group_key": "construction.center.administration",
       "name": "行政中心",
-      "sequence": 90,
+      "sequence": 100,
       "native_menu_xmlid": "smart_construction_core.menu_sc_hr_admin_center",
       "level_two": [
         {
@@ -832,7 +849,7 @@
       "center_key": "construction.center.product_configuration",
       "group_key": "construction.center.product_configuration",
       "name": "产品配置",
-      "sequence": 100,
+      "sequence": 110,
       "native_menu_xmlid": "smart_construction_core.menu_sc_business_config_center",
       "level_two": [
         {

@@ -48,6 +48,7 @@ WATCH_ROOTS = (
     "frontend/packages/ui/tsconfig.json",
     "frontend/packages/design-tokens",
     "scripts/verify/frontend_",
+    "scripts/verify/local_dev_enterprise_configuration_consumer",
     "scripts/ops/incremental_execution.py",
 )
 CHECKPOINT_AUTHORITY_PATHS = (
@@ -815,6 +816,12 @@ RULES = (
         "docker-compose.test-isolation.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/dev/local_dev_product_release_prepare.py",
+        "scripts/dev/local_platform_control.py",
+        "scripts/dev/local_platform_release_apply.py",
+        "config/ops/local_platform_control.v1.json",
+        "scripts/verify/test_local_dev_product_release_prepare.py",
+        "scripts/verify/test_local_platform_control.py",
     ), (
         "verify.local.development_lifecycle.unit",
     )),
@@ -823,6 +830,12 @@ RULES = (
         "scripts/verify/local_dev_payment_settlement_component_journey.sh",
     ), (
         "verify.local.dev.payment_settlement_journey.unit",
+    )),
+    Rule((
+        "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+        "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+    ), (
+        "verify.local.dev.enterprise_configuration.consumer.unit",
     )),
     Rule((
         "/views/LoginView.vue",
@@ -960,6 +973,50 @@ RULES = (
         "scripts/verify/test_product_menu_contract_v1_guard.py",
     ), (
         "verify.product.menu.contract_v1.guard",
+    )),
+    Rule((
+        "addons/smart_construction_core/views/menu_product_contract_completion_v1.xml",
+        "addons/smart_construction_core/views/menu_product_navigation_v2.xml",
+        "addons/smart_construction_core/views/menu_product_primary_center_candidate_v1.xml",
+        "addons/smart_construction_core/views/menu_product_project_wave1.xml",
+    ), (
+        "verify.product.menu.runtime_closeout.guard",
+    )),
+    Rule((
+        "config/ops/local-platform-empty-addons/.gitkeep",
+    ), (
+        "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
+        "config/product_menu_release_manifest_v2.json",
+        "scripts/verify/product_menu_release_manifest_v2_guard.py",
+    ), (
+        "verify.product.menu.contract_v1.guard",
+        "verify.product.primary_center.baseline.guard",
+    )),
+    Rule((
+        "scripts/verify/product_primary_center_baseline_guard.py",
+    ), (
+        "verify.product.primary_center.baseline.guard",
+    )),
+    Rule((
+        "scripts/verify/product_primary_center_candidate_guard.py",
+    ), (
+        "verify.product.primary_center.candidate.guard",
+    )),
+    Rule((
+        "scripts/verify/scenario_seed_runtime_readback.py",
+    ), (
+        "verify.nav01.native_authority.unit",
+    )),
+    Rule((
+        "config/product_scenario_organization_v1.json",
+        "addons/smart_construction_core/migrations/17.0.0.186/post-migrate.py",
+        "addons/smart_construction_core/migrations/17.0.0.187/post-migrate.py",
+        "scripts/audit/build_scenario_product_organization.py",
+        "scripts/audit/test_build_scenario_product_organization.py",
+    ), (
+        "verify.product.scenario.organization.unit",
     )),
     Rule((
         "frontend/apps/web/src/pages/ContractFormRoute.vue",
@@ -1351,6 +1408,8 @@ RULES = (
     Rule((
         "scripts/verify/frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/error_state_component_test.cjs",
+        "frontend/apps/web/src/components/StatusPanel.vue",
         "frontend/apps/web/src/pages/ContractFormRoute.vue",
         "frontend/apps/web/src/pages/contractFormRouteLoader.ts",
         "frontend/apps/web/src/App.vue",
@@ -1379,7 +1438,9 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "addons/smart_construction_acceptance_fixture/tests/__init__.py",
         "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
         "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
         "scripts/verify/test_daily_acceptance_fixture_lane.py",
         "scripts/ops/dev_acceptance_release_probe.py",
@@ -1531,6 +1592,7 @@ RULES = (
         "addons/smart_construction_core/models/support/product_scenario.py",
         "addons/smart_construction_core/data/product_scenario_seed.xml",
         "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
         "addons/smart_construction_core/migrations/17.0.0.180/pre-migrate.py",
         "addons/smart_construction_core/migrations/17.0.0.181/pre-migrate.py",
         "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
@@ -1548,6 +1610,7 @@ RULES = (
     )),
     Rule((
         "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
         "addons/smart_core/core/navigation_identity.py",
         "scripts/verify/scenario_center_projection_guard.py",
         "scripts/verify/scenario_surface_projection_guard.py",
@@ -1555,6 +1618,12 @@ RULES = (
     ), (
         "verify.navigation.publication_consumers.unit",
         "verify.scenario.center_projection.guard",
+    )),
+    Rule((
+        "scripts/verify/frontend_state_presentation_guard.py",
+        "scripts/verify/test_frontend_state_presentation_guard.py",
+    ), (
+        "verify.frontend.state_dashboard.unit",
     )),
     Rule((
         "addons/smart_core/core/navigation_identity.py",
@@ -1886,6 +1955,23 @@ RULES = (
         "verify.form_structure_authority_unification.unit",
         "verify.unified_page_contract.v2.assembler",
         "verify.contract.entry_equivalence.guard",
+    )),
+    Rule((
+        "addons/smart_core/security/group_assignment.py",
+        "scripts/verify/test_group_assignment.py",
+    ), (
+        "verify.system.permission_role.assignment.unit",
+        "verify.runtime_user_management.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_runtime_user_management.py",
+    ), (
+        "verify.runtime_user_management.orm",
+    )),
+    Rule((
+        "addons/smart_construction_core/tests/test_product_job.py",
+    ), (
+        "verify.product_job.orm",
     )),
     # Low-code workbench reads are behaviorally owned by the frontend consumer
     # suite. The approval editor additionally has its own target because it

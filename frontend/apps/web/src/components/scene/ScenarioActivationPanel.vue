@@ -2,11 +2,12 @@
   <section id="enterprise-scenario-activation" class="scenario-activation-panel" data-semantic-component="ScenarioActivationPanel" :data-state="state">
     <header class="scenario-activation-panel__header">
       <div>
-        <h3>企业业务场景管理</h3>
+        <h3>{{ catalogPresentation?.title }}</h3>
         <p v-if="actor && targetScope" class="scenario-activation-panel__scope">
           操作者：{{ actor.name || actor.login }} · 目标公司：{{ targetScope.company_name || targetScope.company_id }}
           <span v-if="actor.platform_admin">· 平台管理员</span>
         </p>
+        <p v-if="catalogPresentation" class="scenario-activation-panel__scope">{{ catalogPresentation.summary }}</p>
       </div>
       <ScButton size="small" variant="ghost" type="button" :disabled="busy" @click="refresh">刷新</ScButton>
     </header>
@@ -17,7 +18,7 @@
     />
     <ScInlineState v-if="state === 'loading'" state="loading" label="正在读取场景目录…" />
     <ScInlineState v-else-if="state === 'error'" state="error" :label="errorMessage" />
-    <ScInlineState v-else-if="!rows.length" state="empty" label="暂无场景目录。" />
+    <ScInlineState v-else-if="!rows.length" state="empty" :label="catalogEmptyLabel" />
     <ul v-else class="scenario-activation-panel__list">
       <li v-for="row in rows" :key="row.scene_key" class="scenario-activation-panel__row">
         <div class="scenario-activation-panel__row-main">
@@ -26,7 +27,7 @@
           <span class="scenario-activation-panel__enabled">{{ row.status_label }}</span>
         </div>
         <p class="scenario-activation-panel__qualification">
-          产品资格：{{ qualificationLabel(row.product_qualification.status) }}
+          产品资格：{{ row.product_qualification.label }}
           · 生效版本：{{ qualificationVersion(row) }}
         </p>
         <p v-if="row.enablement_blockers.length" class="scenario-activation-panel__blockers">
@@ -50,12 +51,13 @@
 </template>
 
 <script setup lang="ts">
+import { computed } from 'vue';
 import ScButton from '../design-system/ScButton.vue';
 import ScInlineState from '../design-system/ScInlineState.vue';
 import { useScenarioActivation, type BusinessScenario } from '../../composables/useScenarioActivation';
 
 const {
-  rows,
+  rows, catalogPresentation, catalogStatus,
   actor,
   targetScope,
   readback,
@@ -66,12 +68,12 @@ const {
   execute,
 } = useScenarioActivation();
 
-function qualificationLabel(status: string) {
-  if (status === 'qualified') return '成立';
-  if (status === 'not_qualified') return '不成立';
-  if (status === 'not_verified') return '未验证';
-  return status || '未知';
-}
+const catalogEmptyLabel = computed(() => {
+  if (!rows.value.length) {
+    return catalogPresentation.value?.empty_label || '';
+  }
+  return catalogStatus.value === 'ready' ? '' : `目录状态：${catalogStatus.value}。`;
+});
 
 function qualificationVersion(row: BusinessScenario) {
   const evidence = row.product_qualification.evidence;

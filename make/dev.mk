@@ -62,6 +62,9 @@ LOCAL_CONTRACT_SNAPSHOT_ODOO_PORT ?= 8080
 export LOCAL_CONTRACT_SNAPSHOT_PASSWORD
 
 LOCAL_CLEAN_MODULES ?= sc_norm_engine
+LOCAL_PLATFORM_ENV_FILE ?= $(dir $(LOCAL_DEV_ENV_FILE)).env.local.platform
+LOCAL_PLATFORM_RELEASE_ARTIFACT ?= artifacts/local-platform-release/construction-standard.json
+LOCAL_PLATFORM_ACTION ?= health
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
 # Reuse only the identity-keyed clean template, then clone a fresh sc_test from
 # it for every attempt. Set 0 explicitly for a one-off template-free diagnostic.
@@ -78,7 +81,7 @@ verify.local.dev.layout_authority.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_local_development_lifecycle.LayoutAuthorityReadonlyProbeTest
 
 verify.local.development_lifecycle.unit: guard.prod.forbid
-	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner
+	@python3 -m unittest scripts.verify.test_local_development_lifecycle scripts.verify.test_local_test_runner scripts.verify.test_local_dev_product_release_prepare scripts.verify.test_local_platform_control
 
 .PHONY: verify.local.dev.payment_settlement_journey.unit
 verify.local.dev.payment_settlement_journey.unit: guard.prod.forbid
@@ -268,6 +271,33 @@ local.dev.snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_dev_snapshot.sh persistent
 
+.PHONY: local.dev.product_release.prepare local.dev.product_release.prepare.run local.dev.product_release.prepare.shell
+local.dev.product_release.prepare: guard.prod.forbid
+	@test -n "$(PRODUCT_RELEASE_SOURCE_REVISION)" || (echo "PRODUCT_RELEASE_SOURCE_REVISION is required" >&2; exit 2)
+	@test "$${CONFIRM_LOCAL_DEV_PRODUCT_RELEASE:-}" = "I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE" || { echo "CONFIRM_LOCAL_DEV_PRODUCT_RELEASE=I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE is required" >&2; exit 2; }
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "product_release:$(PRODUCT_RELEASE_SOURCE_REVISION)" -- \
+	  $(MAKE) --no-print-directory local.dev.product_release.prepare.run PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)"
+
+local.dev.product_release.prepare.run: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  ROOT_DIR="$(ROOT_DIR)" DB_NAME=sc_dev_demo SC_ENVIRONMENT=dev \
+	  PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)" \
+	  local.dev.product_release.prepare.shell
+
+local.dev.product_release.prepare.shell: guard.prod.forbid local.dev.ready local.dev.write_lease.require
+	@python3 -m py_compile scripts/dev/local_dev_product_release_prepare.py scripts/dev/local_platform_release_apply.py
+	@install -d -m 1777 "$(dir $(LOCAL_PLATFORM_RELEASE_ARTIFACT))"
+	@$(RUN_ENV) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
+	  DB_NAME=sc_dev_demo SC_ENVIRONMENT=dev \
+	  PRODUCT_RELEASE_SOURCE_REVISION="$(PRODUCT_RELEASE_SOURCE_REVISION)" \
+	  PRODUCT_RELEASE_ARTIFACT="/mnt/artifacts/local-platform-release/construction-standard.json" \
+	  bash scripts/ops/odoo_shell_exec.sh < scripts/dev/local_dev_product_release_prepare.py
+	@PRODUCT_RELEASE_ARTIFACT="/mnt/artifacts/local-platform-release/construction-standard.json" \
+	  PLATFORM_SHELL_SCRIPT="/mnt/scripts/dev/local_platform_release_apply.py" \
+	  $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(LOCAL_PLATFORM_ENV_FILE)" \
+	  local.platform LOCAL_PLATFORM_ACTION=shell
+
 local.dev.contract_snapshot: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" \
 	  CONTRACT_START_CASE="$(CONTRACT_START_CASE)" CONTRACT_CASE_ONLY="$(CONTRACT_CASE_ONLY)" \
@@ -447,7 +477,13 @@ local.dev.verify_realistic: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/dev/local_dev_realistic_authority_verify.sh
 
-local.dev.verify_demo: guard.prod.forbid local.dev.ready
+.PHONY: local.dev.scenario_seed.readback
+local.dev.scenario_seed.readback: guard.prod.forbid local.dev.ready
+	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory \
+	  ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo \
+	  odoo.shell.exec < scripts/verify/scenario_seed_runtime_readback.py
+
+local.dev.verify_demo: guard.prod.forbid local.dev.ready local.dev.scenario_seed.readback
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" verify.demo
 
 local.sample.require_env: guard.prod.forbid
@@ -853,6 +889,13 @@ local.clean.health: guard.prod.forbid local.clean.require_env
 	  LOCAL_CLEAN_HEALTH_MODULES="$(LOCAL_CLEAN_HEALTH_MODULES)" \
 	  bash scripts/dev/local_environment_health.sh clean
 
+.PHONY: local.platform
+local.platform: guard.prod.forbid
+	@test -n "$(LOCAL_PLATFORM_ACTION)" || { echo "LOCAL_PLATFORM_ACTION is required" >&2; exit 2; }
+	@python3 -m py_compile scripts/dev/local_platform_control.py
+	@python3 scripts/dev/local_platform_control.py "$(LOCAL_PLATFORM_ACTION)" \
+	  --source-env "$(LOCAL_DEV_ENV_FILE)" --target-env "$(LOCAL_PLATFORM_ENV_FILE)"
+
 .PHONY: local.clean.finance_fixture.ensure
 local.clean.finance_fixture.ensure: guard.prod.forbid local.clean.require_env
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
@@ -895,7 +938,7 @@ local.env.readiness: guard.prod.forbid
 	  --dev-env "$(LOCAL_DEV_ENV_FILE)" --sample-env "$(LOCAL_SAMPLE_ENV_FILE)" \
 	  --clean-env "$(LOCAL_CLEAN_ENV_FILE)"
 
-local.env.status: guard.prod.forbid
+local.env.status: guard.prod.forbid local.platform
 	@status=0; \
 	if [ -f "$(LOCAL_DEV_ENV_FILE)" ]; then \
 	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
@@ -1743,6 +1786,30 @@ verify.local.dev.readiness.browser: guard.prod.forbid local.dev.ready
 verify.local.dev.readiness.readback: guard.prod.forbid local.dev.ready
 	@$(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
 	  bash scripts/verify/local_dev_readiness_browser.sh --readback
+
+.PHONY: verify.local.dev.enterprise_configuration.consumer.unit verify.local.dev.enterprise_configuration.consumer verify.local.dev.enterprise_configuration.consumer.run
+verify.local.dev.enterprise_configuration.consumer.unit: guard.prod.forbid
+	@bash -n scripts/verify/local_dev_enterprise_configuration_consumer.sh
+	@node --check scripts/verify/local_dev_enterprise_configuration_consumer.mjs
+
+verify.local.dev.enterprise_configuration.consumer: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit
+	@ROOT_DIR="$(ROOT_DIR)" bash scripts/dev/local_dev_write_lease.sh "enterprise_configuration_consumer" -- \
+	  $(MAKE) --no-print-directory verify.local.dev.enterprise_configuration.consumer.run C02_SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"
+
+verify.local.dev.enterprise_configuration.consumer.run: guard.prod.forbid local.dev.ready verify.local.dev.enterprise_configuration.consumer.unit local.dev.write_lease.require
+	@RUNTIME_CANDIDATE_SHA="$${C02_RUNTIME_CANDIDATE_SHA:-$$(git -C $(ROOT_DIR) rev-parse HEAD)}"; \
+	  CANDIDATE_GIT_HEAD="$$RUNTIME_CANDIDATE_SHA" \
+	  CONFIRM_LOCAL_DEV_CANDIDATE_FRONTEND=SERVE_FROZEN_LOCAL_DEV_CANDIDATE \
+	  $(MAKE) --no-print-directory local.dev.candidate.frontend.health
+	@RUNTIME_CANDIDATE_SHA="$${C02_RUNTIME_CANDIDATE_SHA:-$$(git -C $(ROOT_DIR) rev-parse HEAD)}"; \
+	  $(LOCAL_ENV_ISOLATE) ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" ROOT_DIR="$(ROOT_DIR)" \
+	  SC_ENVIRONMENT=dev CANDIDATE_GIT_HEAD="$$RUNTIME_CANDIDATE_SHA" \
+	  TEST_TOOL_GIT_HEAD="$$(git -C $(ROOT_DIR) rev-parse HEAD)" \
+	  CONFIG_ADMIN_LOGIN="$${SC_CONFIG_ADMIN_LOGIN:?SC_CONFIG_ADMIN_LOGIN is required}" \
+	  CONFIG_ADMIN_USER_ID="$${SC_CONFIG_ADMIN_USER_ID:?SC_CONFIG_ADMIN_USER_ID is required}" \
+	  CONFIG_COMPANY_ID="$${SC_CONFIG_COMPANY_ID:?SC_CONFIG_COMPANY_ID is required}" \
+	  SCENARIO_ONLY="$(C02_SCENARIO_ONLY)" \
+	  bash scripts/verify/local_dev_enterprise_configuration_consumer.sh
 
 .PHONY: verify.local.dev.capability.browser verify.local.dev.capability.readback
 verify.local.dev.capability.browser: guard.prod.forbid local.dev.ready

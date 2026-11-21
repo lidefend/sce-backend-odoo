@@ -65,6 +65,7 @@
       :hint="errorCopy.hint"
       :suggested-action="error?.suggestedAction"
       :on-retry="resolveScene"
+      :contract-defect="contractDefect"
       variant="error"
       :style="pageSectionStyle('status_error')"
     />
@@ -131,6 +132,7 @@
               appearance="surface-tile"
               :disabled="!isHandlingEntryActionable(item)"
               :title="item.business_category_code"
+              :data-action-xmlid="item.action_xmlid"
               @click="openHandlingEntry(item)"
             >
               <span>{{ item.label }}</span>
@@ -202,6 +204,7 @@ import { resolveErrorCopy, useStatus } from '../composables/useStatus';
 import { trackSceneOpen } from '../api/usage';
 import { intentRequest } from '../api/intents';
 import { ApiError } from '../api/client';
+import { contractGapError, type ContractDefectRef } from '../app/contract/contractGap';
 import { currentContextSignal, currentContextEpoch } from '../app/contextEpoch';
 import { awaitSceneHydration } from '../app/sceneHydration';
 import { executePageContractAction } from '../app/pageContractActionRuntime';
@@ -245,6 +248,7 @@ const scene = ref<Scene | null>(null);
 const status = ref<'loading' | 'error' | 'forbidden' | 'idle'>('loading');
 const isLoading = computed(() => status.value === 'loading');
 const { error, clearError, setError } = useStatus();
+const contractDefect = ref<ContractDefectRef | null>(null);
 const errorCopy = ref(resolveErrorCopy(null, pageText('error_fallback', '场景加载失败')));
 const forbiddenCopy = ref({
   title: pageText('forbidden_title', '能力未开通'),
@@ -524,6 +528,27 @@ function isHandlingEntryActionable(item: HandlingEntryItem) {
   );
 }
 
+function reportHandlingEntryContractGap(item: Pick<HandlingEntryItem, 'key' | 'label'>) {
+  const entryKey = String(item.key || '').trim();
+  const entryLabel = String(item.label || entryKey).trim();
+  const gap = contractGapError({
+    kind: 'contract_defect',
+    missing: `scene_ready_contract.scene_internal_actions.${currentSceneKey.value}:${entryKey}`,
+    requiredDeclarationLayer: 'P0:smart_core:system_init_scene_runtime_surface_builder',
+  }, `办理入口“${entryLabel}”未能解析为当前用户获准的执行目标`);
+  setError(gap, gap.message, ErrorCodes.CONTRACT_CONTEXT_MISSING);
+  contractDefect.value = gap.defect;
+  errorCopy.value = {
+    title: pageText('error_handling_entry_unavailable_title', '办理入口暂不可用'),
+    message: pageText(
+      'error_handling_entry_unavailable_message',
+      '已读取到入口声明，但当前上下文无法解析为获准的执行目标。系统已停止跳转，请联系管理员检查场景执行契约。',
+    ),
+    hint: `${entryLabel}：${entryKey}`,
+  };
+  status.value = 'error';
+}
+
 function openHandlingEntry(item: HandlingEntryItem) {
   if (!isHandlingEntryActionable(item)) return;
   const target: Record<string, unknown> = {
@@ -567,7 +592,10 @@ function openHandlingEntry(item: HandlingEntryItem) {
     routeQuery: route.query as Record<string, unknown>,
     internalAction: internal || null,
   });
-  if (!resolvedAction) return;
+  if (!resolvedAction) {
+    reportHandlingEntryContractGap(item);
+    return;
+  }
   void router.push({
     path: `/a/${resolvedAction.actionId}`,
     query: asRouteQuery(navigationQuery({
@@ -590,6 +618,7 @@ function openHandlingEntryByKey(entryKey: string) {
     .flatMap((group) => group.items)
     .find((row) => String(row.key || '').trim() === key);
   if (item) openHandlingEntry(item);
+  else reportHandlingEntryContractGap({ key, label: key });
 }
 
 async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
@@ -940,6 +969,7 @@ async function resolveScene() {
   try {
     status.value = 'loading';
     clearError();
+    contractDefect.value = null;
     scene.value = null;
     embeddedActionId.value = 0;
     embeddedRecordActionId.value = 0;

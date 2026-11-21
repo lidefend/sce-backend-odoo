@@ -1,15 +1,16 @@
 # Local Development Environment v1
 
-本地研发固定为三个完全独立的生命周期单元。该约定只服务研发与回归，不改变正式
+本地研发固定为四个完全独立的生命周期单元。该约定只服务研发与回归，不改变正式
 租户架构，也不允许将任一本地数据库直接提升为生产数据库。
 
 | 用途 | Compose project | Database | HTTP | 数据策略 |
 | --- | --- | --- | --- | --- |
 | 新功能持续迭代 | `sc-local-dev` | `sc_dev_demo` | `http://127.0.0.1:18081` | 常驻，demo 随当前功能升级 |
+| 平台控制面 | `sc-local-platform` | `sc_platform_control` | `http://127.0.0.1:18089` | 独立角色和卷，仅安装 `smart_core`，无行业或业务数据 |
 | 历史业务样本兼容 | `sc-local-sample` | `sc_dev_sample` | `http://127.0.0.1:18084` | 按需从日常环境恢复，不承诺新功能配置齐全 |
 | 干净安装回归 | `sc-local-clean` | `sc_clean` | `http://127.0.0.1:18083` | 无 demo/fixture，可显式销毁重建 |
 
-三套环境使用独立 PostgreSQL、Redis、Odoo filestore/session 卷和精确 dbfilter。
+四套环境使用独立 PostgreSQL、Redis、Odoo filestore/session 卷和精确 dbfilter。
 `sc_dev_sample` 的销毁操作受现有 guard 保护；`sc_clean` 的重建还要求确认短语。
 
 `sc_dev_demo` 是新功能开发的唯一常驻本地产品库。代码改变功能事实时，配套 demo 必须同步
@@ -56,9 +57,16 @@ make local.dev.reset_payment_request_fixture
 make local.dev.sync_demo
 make local.dev.verify_demo
 make local.dev.contract_snapshot
+CONFIRM_LOCAL_DEV_PRODUCT_RELEASE=I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE \
+  PRODUCT_RELEASE_SOURCE_REVISION=<full-sha> make local.dev.product_release.prepare
 CONFIRM_LOCAL_DEV_DEMO_REBUILD=REBUILD_CURRENT_FEATURE_DEMO make local.dev.rebuild_demo
 make local.dev.down
 make local.dev.snapshot
+make local.platform ACTION=prepare
+make local.platform ACTION=install
+make local.platform ACTION=health
+make local.platform ACTION=down
+CONFIRM_LOCAL_PLATFORM_REBUILD=REBUILD_LOCAL_PLATFORM_CONTROL make local.platform ACTION=rebuild
 make local.sample.prepare
 make local.sample.up
 make local.sample.logs
@@ -141,6 +149,17 @@ Compose 或底层脚本。`down`/`logs` 不隐式创建凭据或资源；`up`/`h
 `local.dev.contract_snapshot` 使用同一固定 `sc-local-dev / sc_dev_demo / ^sc_dev_demo$`
 身份调用既有 `contract.export_all`，用于功能迭代后的契约快照刷新。禁止通过通用
 `codex.snapshot` 手工覆盖 Compose project、数据库或凭据来替代该入口。
+
+`local.dev.product_release.prepare` 使用两段式跨库发布，不再让 demo 兼任平台库：
+
+1. `sc_dev_demo` 生成并校验 `construction.standard` 场景组合，写出绑定源码 SHA、来源库、
+   平台库、策略摘要、46 场景和 132 页面事实的发布包；
+2. `sc_platform_control` 校验发布包摘要后调用既有 `EditionReleaseSnapshotService`
+   冻结并激活唯一快照。
+
+该入口要求完整源码 SHA 和显式确认，使用写租约，并在提交前回读唯一活动快照及发布门禁。
+`catalog_source_db=sc_dev_demo` 与 `platform_release_db=sc_platform_control` 必须不同；
+相同即拒绝。该入口只准备企业场景启停所需的已发布产品事实，不代表部署、发布验收或用户权限授予。
 
 `local.dev.frontend.watch` 是受管的 Vite HMR 入口。它固定复用 `.env.dev` 的
 `sc_dev_demo` 与 `ODOO_PORT` 身份，在 `127.0.0.1:5174` 上启动开发服务器，并统一

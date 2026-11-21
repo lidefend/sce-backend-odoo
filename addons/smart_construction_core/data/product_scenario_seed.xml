@@ -1,11 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <odoo>
-  <!-- Methods persist versioned initialization markers in the same transaction.
-       Upgrade calls are no-ops, including after operator deletions. -->
+  <!-- Product publication is scenarioized, while system shell and platform
+       initialization entries retain their separately declared direct lifecycle. -->
   <data noupdate="0">
     <function model="sc.product.scenario" name="import_scenario_product_surface"/>
-    <function model="sc.product.scenario" name="initialize_external_navigation_centers"/>
     <function model="sc.product.scenario" name="initialize_direct_entry_exemptions"/>
     <function model="sc.product.scenario" name="initialize_navigation_entry_exemptions"/>
+    <function model="sc.product.scenario" name="initialize_external_navigation_centers"/>
   </data>
 </odoo>

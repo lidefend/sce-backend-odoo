@@ -297,6 +297,15 @@ class EditionReleaseSnapshotService:
                         "action_xmlid": _text(menu.get("action_xmlid")),
                         "res_model": _text(menu.get("res_model")),
                         "scene_key": scene_key,
+                        "entry_target_policy": _text(
+                            menu.get("entry_target_policy")
+                        ),
+                        "target_scene_key": _text(
+                            menu.get("target_scene_key")
+                        ),
+                        "provider_authority": _text(
+                            menu.get("provider_authority")
+                        ),
                         "center_key": _text(
                             menu.get("center_key")
                             or group.get("center_key")
@@ -348,23 +357,108 @@ class EditionReleaseSnapshotService:
     def _business_scene_composition_check(
         self,
         policy: dict[str, Any],
+        published_pages: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
         composition = _dict(policy.get("business_scene_composition"))
         scenarios = _list(composition.get("scenarios"))
+        centers = _list(composition.get("centers"))
+        published_menu_keys = {
+            _text(row.get("menu_xmlid") or row.get("page_key"))
+            for row in published_pages or []
+            if isinstance(row, dict)
+            and _text(row.get("menu_xmlid") or row.get("page_key"))
+        }
+        published_by_menu = {
+            _text(row.get("menu_xmlid") or row.get("page_key")): row
+            for row in published_pages or []
+            if isinstance(row, dict)
+            and _text(row.get("menu_xmlid") or row.get("page_key"))
+        }
+        direct_pages = _list(composition.get("direct_platform_pages"))
+        direct_by_menu: dict[str, dict[str, Any]] = {}
+        direct_page_keys: set[str] = set()
+        issues: list[dict[str, Any]] = []
+        for index, direct in enumerate(direct_pages):
+            if not isinstance(direct, dict):
+                issues.append({
+                    "code": "DIRECT_PLATFORM_PAGE_INVALID",
+                    "message": f"direct page index {index} is not an object",
+                })
+                continue
+            menu_xmlid = _text(direct.get("menu_xmlid"))
+            if not menu_xmlid:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_MENU_MISSING",
+                    "message": f"direct page index {index}",
+                })
+                continue
+            if menu_xmlid in direct_page_keys:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_PAGE_DUPLICATE",
+                    "message": menu_xmlid,
+                })
+                continue
+            if not _text(direct.get("center_key")):
+                issues.append({
+                    "code": "DIRECT_PLATFORM_CENTER_UNASSIGNED",
+                    "message": menu_xmlid,
+                })
+                continue
+            if _text(direct.get("kind")) not in {
+                "workbench_direct",
+                "configuration",
+                "platform_initialization",
+            }:
+                issues.append({
+                    "code": "DIRECT_PLATFORM_KIND_INVALID",
+                    "message": menu_xmlid,
+                })
+                continue
+            direct_page_keys.add(menu_xmlid)
+            direct_by_menu[menu_xmlid] = direct
         if not scenarios:
+            unassigned = sorted(published_menu_keys - direct_page_keys)
+            issues.extend(
+                {
+                    "code": "BUSINESS_SCENE_PAGE_UNASSIGNED",
+                    "message": menu_xmlid,
+                }
+                for menu_xmlid in unassigned
+            )
+            ready_direct = len(published_menu_keys & direct_page_keys)
             return {
                 "key": "business_scene_composition",
                 "label": "业务场景组合",
-                "status": "not_configured",
-                "message": "未声明业务场景组合",
-                "blocking": False,
+                "status": (
+                    "fail"
+                    if issues
+                    else "pass"
+                    if published_menu_keys
+                    else "not_configured"
+                ),
+                "message": (
+                    f"业务组合问题 {len(issues)} 个"
+                    if issues
+                    else f"平台直接入口 {ready_direct} 个"
+                    if published_menu_keys
+                    else "未声明业务场景组合"
+                ),
+                "blocking": bool(issues),
                 "ready_binding_count": 0,
-                "issues": [],
+                "direct_platform_page_count": ready_direct,
+                "published_page_count": len(published_menu_keys),
+                "scenario_bound_page_count": 0,
+                "unassigned_page_count": len(unassigned),
+                "issues": issues[:20],
             }
-        issues: list[dict[str, Any]] = []
         seen_scenarios: set[str] = set()
         ready_bindings = 0
-        validate_native = self._model_registered("ir.ui.menu")
+        scenario_bound_menu_keys: set[str] = set()
+        current_db = _text(getattr(getattr(self.env, "cr", None), "dbname", ""))
+        composition_source_db = _text(composition.get("source_db"))
+        validate_native = self._model_registered("ir.ui.menu") and (
+            not composition_source_db or composition_source_db == current_db
+        )
         for index, scenario in enumerate(scenarios):
             if not isinstance(scenario, dict):
                 issues.append({
@@ -407,6 +501,22 @@ class EditionReleaseSnapshotService:
                         "message": f"{scenario_key}[{binding_index}]",
                     })
                     continue
+                if not _text(binding.get("center_key")):
+                    issues.append({
+                        "code": "BUSINESS_SCENE_CENTER_UNASSIGNED",
+                        "message": f"{scenario_key}:{menu_xmlid}",
+                    })
+                    continue
+                if (
+                    composition_source_db
+                    and composition_source_db != current_db
+                    and menu_xmlid.startswith("menu:")
+                ):
+                    issues.append({
+                        "code": "BUSINESS_SCENE_MENU_UNRESOLVED",
+                        "message": menu_xmlid,
+                    })
+                    continue
                 if validate_native:
                     try:
                         menu = self._resolve_business_scene_menu(
@@ -425,12 +535,24 @@ class EditionReleaseSnapshotService:
                         })
                         continue
                     action = getattr(menu, "action", None)
+                    published = published_by_menu.get(menu_xmlid) or {}
                     if not action:
-                        issues.append({
-                            "code": "BUSINESS_SCENE_ACTION_MISSING",
-                            "message": menu_xmlid,
-                        })
-                        continue
+                        if published and not (
+                            _text(published.get("scene_key"))
+                            and (
+                                _text(published.get("route")).startswith("/s/")
+                                or not _to_int(published.get("action_id"))
+                            )
+                            and _text(
+                                published.get("entry_target_policy")
+                            ) in {"", "scene_entry"}
+                        ):
+                            issues.append({
+                                "code": "BUSINESS_SCENE_ACTION_MISSING",
+                                "message": menu_xmlid,
+                            })
+                            continue
+                        action = None
                     res_model = _text(getattr(action, "res_model", ""))
                     if res_model and not self._model_registered(res_model):
                         issues.append({
@@ -440,6 +562,85 @@ class EditionReleaseSnapshotService:
                         continue
                 if active:
                     ready_bindings += 1
+                    scenario_bound_menu_keys.add(menu_xmlid)
+        composed_scenarios: set[str] = set()
+        for center_index, center in enumerate(centers):
+            if not isinstance(center, dict):
+                issues.append({
+                    "code": "BUSINESS_SCENE_CENTER_INVALID",
+                    "message": f"center index {center_index} is not an object",
+                })
+                continue
+            center_key = _text(center.get("key"))
+            if not center_key:
+                issues.append({
+                    "code": "BUSINESS_SCENE_CENTER_KEY_MISSING",
+                    "message": f"center index {center_index}",
+                })
+                continue
+            for scenario_key in _list(center.get("scenarios")):
+                scenario_key = _text(scenario_key)
+                if scenario_key not in seen_scenarios:
+                    issues.append({
+                        "code": "BUSINESS_SCENE_CENTER_REFERENCE_INVALID",
+                        "message": f"{center_key}:{scenario_key}",
+                    })
+                    continue
+                composed_scenarios.add(scenario_key)
+        for scenario_key in sorted(seen_scenarios - composed_scenarios):
+            issues.append({
+                "code": "BUSINESS_SCENE_CENTER_REFERENCE_MISSING",
+                "message": scenario_key,
+            })
+        if validate_native:
+            for menu_xmlid, direct in direct_by_menu.items():
+                published = published_by_menu.get(menu_xmlid)
+                if not published:
+                    continue
+                try:
+                    menu = self._resolve_business_scene_menu(
+                        menu_key=menu_xmlid,
+                        binding=direct,
+                        composition_source_db=_text(composition.get("source_db")),
+                    )
+                except Exception:
+                    menu = None
+                if not menu or getattr(menu, "_name", "") != "ir.ui.menu":
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_MENU_UNRESOLVED",
+                        "message": menu_xmlid,
+                    })
+                    continue
+                action = getattr(menu, "action", None)
+                if not action and not (
+                    _text(published.get("scene_key"))
+                    and (
+                        _text(published.get("route")).startswith("/s/")
+                        or not _to_int(published.get("action_id"))
+                    )
+                    and _text(
+                        published.get("entry_target_policy")
+                    ) in {"", "scene_entry"}
+                ):
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_ACTION_MISSING",
+                        "message": menu_xmlid,
+                    })
+                    continue
+                res_model = _text(getattr(action, "res_model", ""))
+                if res_model and not self._model_registered(res_model):
+                    issues.append({
+                        "code": "DIRECT_PLATFORM_MODEL_MISSING",
+                        "message": res_model,
+                    })
+        unassigned_menu_keys = sorted(
+            published_menu_keys - scenario_bound_menu_keys - direct_page_keys
+        )
+        for menu_xmlid in unassigned_menu_keys:
+            issues.append({
+                "code": "BUSINESS_SCENE_PAGE_UNASSIGNED",
+                "message": menu_xmlid,
+            })
         return {
             "key": "business_scene_composition",
             "label": "业务场景组合",
@@ -451,6 +652,15 @@ class EditionReleaseSnapshotService:
             ),
             "blocking": bool(issues),
             "ready_binding_count": ready_bindings,
+            "direct_platform_page_count": len(
+                published_menu_keys & direct_page_keys
+            ),
+            "published_page_count": len(published_menu_keys),
+            "center_count": len(centers),
+            "scenario_bound_page_count": len(
+                published_menu_keys & scenario_bound_menu_keys
+            ),
+            "unassigned_page_count": len(unassigned_menu_keys),
             "issues": issues[:20],
         }
 
@@ -508,7 +718,8 @@ class EditionReleaseSnapshotService:
         preview_pages = [row for row in effective_pages if _text(row.get("release_state")) == "preview"]
         hidden_pages = [row for row in pages if not bool(row.get("enabled")) or _text(row.get("release_state")) in {"hidden", "retired"}]
         composition_check = self._business_scene_composition_check(
-            _dict(policy)
+            _dict(policy),
+            published_pages=effective_pages,
         )
         has_release_surface = bool(effective_pages) or (
             composition_check.get("status") == "pass"
@@ -629,6 +840,9 @@ class EditionReleaseSnapshotService:
         }
 
     def _source_db_name(self) -> str:
+        context_source = _text(
+            self.env.context.get("sc_release_catalog_source_db")
+        )
         try:
             configured = self.env["ir.config_parameter"].sudo().get_param(
                 "smart_core.release_operator.catalog_source_db",
@@ -636,7 +850,7 @@ class EditionReleaseSnapshotService:
             )
         except Exception:
             configured = ""
-        return _text(configured) or "sc_demo"
+        return _text(configured) or context_source or "sc_demo"
 
     def _source_target_check(self, pages: list[dict[str, Any]]) -> dict[str, Any]:
         action_pages = [
@@ -827,7 +1041,21 @@ class EditionReleaseSnapshotService:
                 or frozen_draft.get("policy_sha256") != current.get("policy_sha256")):
             raise ValueError("CANDIDATE_DRAFT_OUTDATED")
         if int(frozen_draft.get("blocking_issue_count") or 0) > 0:
-            raise ValueError("CANDIDATE_PREFLIGHT_BLOCKED")
+            blocking = [
+                "%s[%s]" % (
+                    _text(row.get("key")),
+                    ",".join(
+                        _text(issue.get("code"))
+                        for issue in _list(row.get("issues"))
+                        if isinstance(issue, dict) and _text(issue.get("code"))
+                    ),
+                )
+                for row in _list(frozen_draft.get("preflight_checks"))
+                if isinstance(row, dict) and row.get("blocking")
+            ]
+            raise ValueError(
+                "CANDIDATE_PREFLIGHT_BLOCKED:" + ",".join(blocking)
+            )
 
     def _lineage_meta(self, rec) -> dict[str, Any]:
         runtime = rec.snapshot_json if isinstance(rec.snapshot_json, dict) else {}
@@ -900,7 +1128,21 @@ class EditionReleaseSnapshotService:
             policy_override=policy_override,
         )
         if int(draft_contract.get("blocking_issue_count") or 0) > 0:
-            raise ValueError("RELEASE_PREFLIGHT_BLOCKED")
+            blocking = [
+                "%s[%s]" % (
+                    _text(row.get("key")),
+                    ",".join(
+                        _text(issue.get("code"))
+                        for issue in _list(row.get("issues"))
+                        if isinstance(issue, dict) and _text(issue.get("code"))
+                    ),
+                )
+                for row in _list(draft_contract.get("preflight_checks"))
+                if isinstance(row, dict) and row.get("blocking")
+            ]
+            raise ValueError(
+                "RELEASE_PREFLIGHT_BLOCKED:" + ",".join(blocking)
+            )
         payload["release_draft"] = {
             "fingerprint": _text(draft_contract.get("fingerprint")),
             "policy_sha256": _text(draft_contract.get("policy_sha256")),
@@ -1004,7 +1246,10 @@ class EditionReleaseSnapshotService:
         if self._draft_fingerprint(policy=policy, pages=pages) != _text(draft.get("fingerprint")):
             raise ValueError("RELEASE_SNAPSHOT_FINGERPRINT_MISMATCH")
         effective = [row for row in pages if row.get("enabled") and row.get("release_state") in {"released", "preview"}]
-        composition_check = self._business_scene_composition_check(policy)
+        composition_check = self._business_scene_composition_check(
+            policy,
+            published_pages=effective,
+        )
         if composition_check.get("blocking"):
             raise ValueError("RELEASE_SNAPSHOT_BUSINESS_SCENE_COMPOSITION_INVALID")
         if not effective and composition_check.get("status") != "pass":

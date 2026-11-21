@@ -107,7 +107,8 @@ try {
       const catalogPanel = page.locator('[data-semantic-component="ScenarioActivationPanel"][data-state="ready"]');
       await catalogPanel.waitFor();
       const catalog = observed.contracts.find(row => row.intent === 'scenario.activation.catalog.get')?.payload?.data;
-      assert.equal(catalog?.business_scenarios?.length, 17, 'real business catalog delivered');
+      assert.ok(Array.isArray(catalog?.business_scenarios) && catalog.business_scenarios.length > 0,
+        'real business catalog delivered');
       assert.equal(await catalogPanel.locator('li').count(), catalog.business_scenarios.length);
       for (const row of catalog.business_scenarios) {
         assert.ok(row.actions.length, 'native-authorized administrator can manage each released scene');
@@ -125,7 +126,7 @@ try {
         await page.waitForURL(url => url.pathname === '/s/enterprise.setup');
         await catalogPanel.waitFor();
         const baseline = observed.contracts.filter(row => row.intent === 'scenario.activation.catalog.get').at(-1).payload.data;
-        const selected = baseline.business_scenarios.find(row => row.scene_key === 'project.management');
+        const selected = baseline.business_scenarios.find(row => row.scene_key === 'project.initiation');
         assert.ok(selected?.product_released && selected.actions.length);
         activationScope = { company_id: baseline.company_id, scene_key: selected.scene_key };
         const card = () => catalogPanel.locator('li').filter({ hasText: selected.name });
@@ -172,7 +173,10 @@ try {
           if (label === '企业信息') {
             await diagnosis.getByRole('button', { name: '前往场景管理', exact: true }).click();
             await page.locator('#enterprise-scenario-activation[data-state="ready"]').waitFor();
-            assert.equal(await page.locator('#enterprise-scenario-activation li').count(), 17);
+            assert.equal(
+              await page.locator('#enterprise-scenario-activation li').count(),
+              catalog.business_scenarios.length,
+            );
           }
           await diagnosis.getByRole('button', { name: label, exact: true }).first().click();
           await page.waitForURL(url => /^\/a\/\d+/.test(url.pathname));

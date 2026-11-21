@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Validate the final source candidate for the locked ten primary centers."""
+"""Validate the final source candidate for the locked product centers."""
 from __future__ import annotations
 
 import json
@@ -16,6 +16,7 @@ XMLIDS = {
     "project": "menu_sc_project_center",
     "contract": "menu_sc_contract_center",
     "cost": "menu_sc_cost_center",
+    "supply_chain": "menu_sc_supply_chain_center",
     "finance": "menu_sc_finance_center",
     "tax": "menu_sc_tax_center",
     "accounting": "menu_sc_accounting_center",
@@ -67,4 +68,4 @@ if __name__ == "__main__":
     if failures:
         print("\n".join(f"[FAIL] {item}" for item in failures))
         sys.exit(1)
-    print("[PASS] source overlay locks ten runtime centers and keeps accounting as a governed directory")
+    print("[PASS] source overlay locks the workbench plus ten business centers and keeps accounting as a governed directory")

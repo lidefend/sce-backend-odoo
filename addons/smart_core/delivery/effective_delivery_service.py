@@ -68,6 +68,13 @@ class EffectiveDeliveryService:
         if not isinstance(sources, list):
             return []
         scene_keys = self._scene_keys(nav, authority)
+        scene_keys.update(
+            str(source.get("code") or source.get("key") or "").strip()
+            for source in sources
+            if isinstance(source, dict)
+            and source.get("enablement_scope") == "enterprise_initialization"
+        )
+        scene_keys.discard("")
         from ..core.native_handling_entry_catalog import project_native_handling_catalog
         from ..core.scene_internal_action_authority import build_scene_internal_actions
         qualified = []

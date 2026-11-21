@@ -400,7 +400,7 @@ class TestProductPolicyFactAuthority(TransactionCase):
             'smart_construction_core.menu_sc_project_project'
         )
         contract_menu = self.env.ref(
-            'smart_construction_core.menu_sc_construction_contract'
+            'smart_construction_core.menu_sc_p1_daily_contract'
         )
 
         def menu_row(menu, release_state='released'):

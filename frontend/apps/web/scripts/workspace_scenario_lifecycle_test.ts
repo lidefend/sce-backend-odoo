@@ -597,6 +597,29 @@ session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullab
 const managementScope = effectScope();
 const management = managementScope.run(() => useScenarioActivation())!;
 const catalogResponse = (company = 1, actions = true) => ({
+  contract_version: 'scenario_activation_catalog.v2',
+  published_page_count: 132,
+  published_snapshot: {
+    snapshot_id: 9,
+    version: 'v9',
+    fingerprint: 'fingerprint-v9',
+    applied: true,
+  },
+  catalog_status: 'ready',
+  catalog_blockers: [],
+  catalog_presentation: {
+    title: '企业业务场景管理',
+    summary: '已发布产品页面 132 项 · 产品中心 11 个 · 页面均已纳入办理场景',
+    empty_label: '当前没有可启停业务场景。',
+  },
+  catalog_cardinality: {
+    published_page_count: 132,
+    scenario_bound_page_count: 132,
+    unscenarioized_published_page_count: 0,
+    center_count: 11,
+    business_scenario_count: 1,
+    actionable_business_scenario_count: actions ? 1 : 0,
+  },
   company_id: company,
   actor: {
     user_id: 9,
@@ -624,6 +647,7 @@ const catalogResponse = (company = 1, actions = true) => ({
     status_label: '未启用', release_label: '已发布',
     product_qualification: {
       status: 'qualified',
+      label: '成立',
       reason_code: 'PRODUCT_QUALIFIED',
       evidence: { version: 'v9', snapshot_id: 9, source: 'sc.edition.release.snapshot' },
     },
@@ -642,6 +666,8 @@ assert.equal(management.rows.value[0].enablement_scope, 'business.v1');
 assert.equal(management.actor.value?.login, 'config.admin');
 assert.equal(management.targetScope.value?.company_id, 1);
 assert.equal(management.rows.value[0].product_qualification.status, 'qualified');
+assert.equal(management.catalogCardinality.value?.published_page_count, 132);
+assert.equal(management.catalogCardinality.value?.business_scenario_count, 1);
 
 // The client never constructs an action absent from the server contract.
 const beforeInvented = pending.length;
@@ -819,6 +845,55 @@ managementScope.stop();
 session.loadAppInit = originalBootstrap;
 console.log('[business_scenario_management_test] PASS cases=13 consumer=actual transport=controlled');
 
+const previousDiagnosticsCompanyId = session.recordContext?.company_id;
+session.initStatus = 'ready';
+session.initError = '';
+session.recordContext = {
+  ...session.recordContext,
+  company_id: 1,
+} as NonNullable<typeof session.recordContext>;
+const diagnosticsScope = effectScope();
+const diagnostics = diagnosticsScope.run(() => useScenarioActivation())!;
+await flush();
+pending.at(-1)!.settle({
+  ...catalogResponse(),
+  published_page_count: 0,
+  published_snapshot: {
+    snapshot_id: 0,
+    version: '',
+    fingerprint: '',
+    applied: false,
+  },
+  catalog_status: 'blocked',
+  catalog_blockers: ['ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND'],
+  catalog_presentation: {
+    title: '企业业务场景管理',
+    summary: '当前没有已发布的正式产品页面',
+    empty_label: '当前没有已发布的正式产品页面，ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND。',
+  },
+  catalog_cardinality: {
+    published_page_count: 0,
+    scenario_bound_page_count: 0,
+    unscenarioized_published_page_count: 0,
+    center_count: 0,
+    business_scenario_count: 0,
+    actionable_business_scenario_count: 0,
+  },
+  business_scenarios: [],
+});
+await flush();
+assert.equal(diagnostics.state.value, 'ready', diagnostics.errorMessage.value);
+assert.deepEqual(diagnostics.rows.value, []);
+assert.equal(diagnostics.catalogCardinality.value?.published_page_count, 0);
+assert.equal(diagnostics.catalogStatus.value, 'blocked');
+assert.deepEqual(diagnostics.catalogBlockers.value, ['ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND']);
+diagnosticsScope.stop();
+session.recordContext = {
+  ...session.recordContext,
+  company_id: previousDiagnosticsCompanyId,
+} as NonNullable<typeof session.recordContext>;
+console.log('[business_scenario_catalog_diagnostics_test] PASS cases=6 consumer=actual transport=controlled');
+
 // An unavailable scene still preserves the enterprise's saved enablement and
 // exposes only the server-declared disable action. The action target false is
 // not a disabled button; it is the state written by the real consumer.
@@ -832,6 +907,29 @@ const unavailableScope = effectScope();
 const unavailable = unavailableScope.run(() => useScenarioActivation())!;
 await flush();
 const unavailableCatalog = (disabled: boolean) => ({
+  contract_version: 'scenario_activation_catalog.v2',
+  published_page_count: 1,
+  published_snapshot: {
+    snapshot_id: 9,
+    version: 'v9',
+    fingerprint: 'fingerprint-v9',
+    applied: true,
+  },
+  catalog_status: 'blocked',
+  catalog_blockers: ['PRODUCT_NOT_RELEASED'],
+  catalog_presentation: {
+    title: '企业业务场景管理',
+    summary: '已发布产品页面 1 项 · 产品中心 1 个 · 页面均已纳入办理场景',
+    empty_label: '当前没有可启停业务场景。',
+  },
+  catalog_cardinality: {
+    published_page_count: 1,
+    scenario_bound_page_count: 1,
+    unscenarioized_published_page_count: 0,
+    center_count: 1,
+    business_scenario_count: 1,
+    actionable_business_scenario_count: disabled ? 0 : 1,
+  },
   company_id: 1,
   actor: {
     user_id: 9,
@@ -864,6 +962,7 @@ const unavailableCatalog = (disabled: boolean) => ({
     release_label: '未发布',
     product_qualification: {
       status: 'not_qualified',
+      label: '不成立',
       reason_code: 'PRODUCT_NOT_RELEASED',
       evidence: { version: 'v9', snapshot_id: 9, applied: true },
     },

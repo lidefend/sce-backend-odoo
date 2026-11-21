@@ -924,6 +924,28 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("clean || status=1", status_block)
         self.assertIn("exit $$status", status_block)
 
+    def test_product_release_prepare_is_exact_leased_and_confirmed(self):
+        make_text = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        wrapper = make_text.split(
+            "local.dev.product_release.prepare:", 1
+        )[1].split("\n\n", 1)[0]
+        runner = make_text.split(
+            "local.dev.product_release.prepare.run:", 1
+        )[1].split("\n\n", 1)[0]
+        shell = make_text.split(
+            "local.dev.product_release.prepare.shell:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("PRODUCT_RELEASE_SOURCE_REVISION", wrapper)
+        self.assertIn("I_ACKNOWLEDGE_LOCAL_DEV_PRODUCT_RELEASE", wrapper)
+        self.assertIn('local_dev_write_lease.sh "product_release:', wrapper)
+        self.assertIn("local.dev.write_lease.require", runner)
+        self.assertIn("DB_NAME=sc_dev_demo", runner)
+        self.assertIn("SC_ENVIRONMENT=dev", runner)
+        self.assertIn(
+            "scripts/dev/local_dev_product_release_prepare.py",
+            shell,
+        )
+
     def test_technical_sample_discard_is_exact_and_fail_closed(self):
         source = (ROOT / "scripts/dev/local_sample_discard.sh").read_text(
             encoding="utf-8"

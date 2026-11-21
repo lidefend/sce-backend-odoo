@@ -10,8 +10,10 @@
     "runtime_migration_status": "ALIGNED",
     "rules": {
       "maximum_business_depth": 3,
-      "project_center_is_only_center_with_level_three": true,
-      "all_non_project_centers_maximum_depth": 2,
+      "level_three_centers": [
+        "project",
+        "supply_chain"
+      ],
       "handling_is_page_action_not_menu_level": true,
       "runtime_menu_claim": "TARGET_CONTRACT_ONLY",
       "seed_customer_input": "VALIDATES_PRIORITY_AND_CONFIGURABILITY_ONLY"
@@ -32,6 +34,10 @@
       {
         "key": "cost",
         "native_menu_xmlid": "smart_construction_core.menu_sc_cost_center"
+      },
+      {
+        "key": "supply_chain",
+        "native_menu_xmlid": "smart_construction_core.menu_sc_supply_chain_center"
       },
       {
         "key": "finance",

@@ -1,79 +1,23 @@
 {
-  "schema": "construction.scenario_product_surface.v1",
-  "product_layer": "P1",
-  "module": "smart_construction_core",
+  "schema": "construction.scenario_product_surface.v2",
   "status": "APPROVED_AS_PROJECTION_INPUT",
-  "authority_note": "Scenario navigation grouping over the 132 released standard menus after the 2026-11-19 preview promotion. This is NOT a scene registry and NOT scene content; scene content/version authority remains sc.scene / smart_construction_scene.scene_registry.",
+  "approved_at": "2026-11-20",
+  "module": "smart_construction_core",
+  "product_layer": "P1",
+  "coverage_scope": "released",
   "source_design": [
-    "docs/architecture/backend-owned-page-composition/887-bnva-04-final-candidate-scenario-catalog.md",
-    "docs/architecture/backend-owned-page-composition/888-bnva-04-scene-intent-capability-matrix.md",
+    "config/product_scenario_organization_v1.json",
+    "config/product_primary_center_baseline_v1.json",
     "addons/smart_construction_core/data/product_menu_source.json"
   ],
-  "coverage_scope": "released",
   "taxonomy": {
-    "L0": "business_domain",
+    "L0": "product_center",
     "L1": "product_scenario",
     "L2": "user_intent",
     "L3": "capability_menu_action",
-    "candidate_scenario_count": 12,
-    "actual_scenario_count": 17,
-    "note": "12 is the 05A-05C candidate classification set; 17 is the final L1 scenario count after the quality/safety, subcontract/labor and tax/accounting splits plus equipment and administration office professional scenarios."
+    "note": "Centers and center membership come from the published product policy. The 46 scenarios are the approved business-result organization over the 132 released pages. Counts are derived from those declarations."
   },
-  "domains": [
-    {
-      "key": "governance",
-      "name": "企业治理",
-      "scenarios": [
-        "governance.organization",
-        "administration.office"
-      ]
-    },
-    {
-      "key": "project",
-      "name": "项目经营",
-      "scenarios": [
-        "project.management",
-        "contract.performance",
-        "cost.budget"
-      ]
-    },
-    {
-      "key": "supply_chain",
-      "name": "供应链管理",
-      "scenarios": [
-        "procurement.supplier",
-        "material.management",
-        "subcontract.management",
-        "labor.management"
-      ]
-    },
-    {
-      "key": "finance",
-      "name": "资金财务",
-      "scenarios": [
-        "payment.capital",
-        "receipt.payment.ledger",
-        "tax.management",
-        "accounting.management"
-      ]
-    },
-    {
-      "key": "professional",
-      "name": "专业管理",
-      "scenarios": [
-        "quality.management",
-        "safety.management",
-        "equipment.management"
-      ]
-    },
-    {
-      "key": "analytics",
-      "name": "经营分析",
-      "scenarios": [
-        "analytics.decision"
-      ]
-    }
-  ],
+  "authority_note": "Business-loop composition over the released standard menus. The released menu set is resolved from product_menu_source, never fixed here. This is NOT a scene registry and NOT scene content; scene content/version authority remains sc.scene / smart_construction_scene.scene_registry.",
   "intent_labels": {
     "handle": "办理",
     "view": "查看",
@@ -81,296 +25,1872 @@
     "report": "报表",
     "master_data": "基础信息维护"
   },
-  "horizontal_work_center": {
-    "note": "Cross-scenario horizontal work center; derived from the native workspace-center menu tree.",
-    "root_menu_xmlid": "smart_construction_core.menu_sc_workspace_center"
-  },
-  "platform_support": {
-    "name": "产品配置",
-    "note": "Platform configuration/diagnostics; derived from the native business-config-center menu tree.",
-    "root_menu_xmlid": "smart_construction_core.menu_sc_business_config_center"
-  },
-  "scenarios": [
+  "direct_platform_pages": [
     {
-      "key": "governance.organization",
-      "name": "企业组织与治理",
-      "type": "COMPOSITE",
-      "intents": {
-        "master_data": [
-          "smart_construction_core.menu_sc_organization_department",
-          "smart_construction_core.menu_sc_product_job_management_v1"
-        ]
-      }
+      "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+      "kind": "workbench_direct"
     },
     {
-      "key": "project.management",
-      "name": "项目经营管理",
+      "menu_xmlid": "smart_construction_core.menu_sc_my_work",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_operating_metrics_project",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_project_kanban",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_message_notification_v1",
+      "kind": "workbench_direct"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_approval_policy",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_form_field_policy_business_config",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+      "kind": "configuration"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_enterprise_initialization",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_data_permission_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_scenario_business_config",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_system_parameter_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+      "kind": "platform_initialization"
+    },
+    {
+      "menu_xmlid": "smart_construction_core.menu_sc_runtime_user_management",
+      "kind": "platform_initialization"
+    }
+  ],
+  "scenarios": [
+    {
+      "key": "work.my_queue",
+      "name": "处理我的工作与消息",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 1,
       "intents": {
+        "view": [
+          "smart_construction_core.menu_sc_workspace_home",
+          "smart_construction_core.menu_sc_my_work",
+          "smart_construction_core.menu_sc_workbench_my_todo_fact",
+          "smart_construction_core.menu_sc_product_message_notification_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_workspace_home",
+          "intent": "view",
+          "sequence": 1,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_my_work",
+          "intent": "view",
+          "sequence": 2,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_workbench_my_todo_fact",
+          "intent": "view",
+          "sequence": 3,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_message_notification_v1",
+          "intent": "view",
+          "sequence": 4,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        }
+      ]
+    },
+    {
+      "key": "project.initiation",
+      "name": "项目立项与启用",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 2,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_customer_partner"
+        ],
         "handle": [
           "smart_construction_core.menu_sc_project_initiation",
-          "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+          "smart_construction_core.menu_sc_project_quick_create",
+          "smart_construction_core.menu_sc_product_project_lifecycle_v1"
+        ],
+        "view": [
+          "smart_construction_core.menu_sc_project_project"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_customer_partner",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_initiation",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_quick_create",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_project_lifecycle_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_project",
+          "intent": "view",
+          "sequence": 5,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "project.tender",
+      "name": "投标准备、开标与中标确认",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 3,
+      "intents": {
+        "handle": [
           "smart_construction_core.menu_sc_product_tender_information_v1",
           "smart_construction_core.menu_sc_project_tender",
           "smart_construction_core.menu_sc_product_tender_document_v1",
+          "smart_construction_core.menu_sc_tender_registration_fee",
           "smart_construction_core.menu_sc_tender_guarantee",
-          "smart_construction_core.menu_sc_tender_won",
-          "smart_construction_core.menu_sc_construction_diary",
-          "smart_construction_core.menu_sc_construction_progress",
-          "smart_construction_core.menu_sc_product_site_variation_v1",
-          "smart_construction_core.menu_sc_project_quick_create",
-          "smart_construction_core.menu_sc_plan",
-          "smart_construction_core.menu_sc_plan_report"
-        ],
-        "view": [
-          "smart_construction_core.menu_sc_project_project",
-          "smart_construction_core.menu_sc_project_documents"
-        ],
-        "master_data": [
-          "smart_construction_core.menu_sc_customer_partner"
+          "smart_construction_core.menu_sc_tender_opening",
+          "smart_construction_core.menu_sc_tender_won"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_tender_information_v1",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_tender",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_tender_document_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_tender_registration_fee",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_tender_guarantee",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_tender_opening",
+          "intent": "handle",
+          "sequence": 6,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_tender_won",
+          "intent": "handle",
+          "sequence": 7,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
     },
     {
-      "key": "contract.performance",
-      "name": "合同履约管理",
+      "key": "project.planning",
+      "name": "计划编制与汇报",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 4,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_plan",
+          "smart_construction_core.menu_sc_plan_report"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_plan_report",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "project.delivery_record",
+      "name": "施工过程记录与工程签证",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 5,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_construction_diary",
+          "smart_construction_core.menu_sc_construction_progress",
+          "smart_construction_core.menu_sc_project_documents",
+          "smart_construction_core.menu_sc_product_site_variation_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_construction_diary",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_construction_progress",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_documents",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_site_variation_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "project.quality",
+      "name": "质量检查、整改与复验",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 6,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_quality_standard_v2",
+          "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+          "smart_construction_core.menu_sc_quality_issue",
+          "smart_construction_core.menu_sc_quality_site_photo_v2",
+          "smart_construction_core.menu_sc_quality_rectification",
+          "smart_construction_core.menu_sc_quality_recheck"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_quality_standard_v2",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_quality_acceptance_v1",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_quality_issue",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_quality_site_photo_v2",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_quality_rectification",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_quality_recheck",
+          "intent": "handle",
+          "sequence": 6,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "project.safety",
+      "name": "安全方案、交底、巡检与整改",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 7,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_safety_risk_library_v2",
+          "smart_construction_core.menu_sc_safety_hazard_source_v2",
+          "smart_construction_core.menu_sc_safety_plan_v2",
+          "smart_construction_core.menu_sc_safety_disclosure_v2",
+          "smart_construction_core.menu_sc_safety_patrol_v2",
+          "smart_construction_core.menu_sc_safety_issue",
+          "smart_construction_core.menu_sc_safety_rectification",
+          "smart_construction_core.menu_sc_safety_recheck"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_risk_library_v2",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_hazard_source_v2",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_plan_v2",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_disclosure_v2",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_patrol_v2",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_issue",
+          "intent": "handle",
+          "sequence": 6,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_rectification",
+          "intent": "handle",
+          "sequence": 7,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_safety_recheck",
+          "intent": "handle",
+          "sequence": 8,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "contract.registration",
+      "name": "合同登记",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 8,
       "intents": {
         "handle": [
           "smart_construction_core.menu_sc_p1_income_contract",
           "smart_construction_core.menu_sc_p1_expense_contract",
-          "smart_construction_core.menu_sc_p1_contract_change",
-          "smart_construction_core.menu_sc_p1_daily_contract",
-          "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
-          "smart_construction_core.menu_sc_p1_income_settlement",
-          "smart_construction_core.menu_sc_p1_expense_settlement",
-          "smart_construction_core.menu_sc_tender_registration_fee",
-          "smart_construction_core.menu_sc_tender_opening",
-          "smart_construction_core.menu_sc_settlement_order"
+          "smart_construction_core.menu_sc_p1_daily_contract"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_income_contract",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_expense_contract",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_daily_contract",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        }
+      ]
     },
     {
-      "key": "cost.budget",
-      "name": "成本与预算管理",
+      "key": "contract.change",
+      "name": "合同变更",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 9,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_p1_contract_change"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_contract_change",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        }
+      ]
+    },
+    {
+      "key": "contract.settlement",
+      "name": "合同结算",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 10,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_p1_income_settlement",
+          "smart_construction_core.menu_sc_p1_expense_settlement",
+          "smart_construction_core.menu_sc_product_general_contract_settlement_v1"
+        ],
+        "view": [
+          "smart_construction_core.menu_sc_settlement_order"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_income_settlement",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_expense_settlement",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_general_contract_settlement_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_settlement_order",
+          "intent": "view",
+          "sequence": 4,
+          "center_key": "construction.center.contract",
+          "center_name": "合同中心",
+          "center_sequence": 30
+        }
+      ]
+    },
+    {
+      "key": "cost.budgeting",
+      "name": "目标成本与成本计划",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 11,
       "intents": {
         "handle": [
           "smart_construction_core.menu_sc_p1_project_budget",
-          "smart_construction_core.menu_sc_p1_cost_plan",
-          "smart_construction_core.menu_sc_p1_cost_ledger"
+          "smart_construction_core.menu_sc_p1_cost_plan"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_project_budget",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.cost",
+          "center_name": "成本中心",
+          "center_sequence": 40
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_cost_plan",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.cost",
+          "center_name": "成本中心",
+          "center_sequence": 40
+        }
+      ]
     },
     {
-      "key": "procurement.supplier",
-      "name": "采购与供应商管理",
+      "key": "cost.collection",
+      "name": "实际成本归集",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 12,
+      "intents": {
+        "view": [
+          "smart_construction_core.menu_sc_p1_cost_ledger"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_cost_ledger",
+          "intent": "view",
+          "sequence": 1,
+          "center_key": "construction.center.cost",
+          "center_name": "成本中心",
+          "center_sequence": 40
+        }
+      ]
+    },
+    {
+      "key": "cost.analysis",
+      "name": "项目盈亏分析",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 13,
+      "intents": {
+        "view": [
+          "smart_construction_core.menu_sc_p1_profit_analysis"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_p1_profit_analysis",
+          "intent": "view",
+          "sequence": 1,
+          "center_key": "construction.center.cost",
+          "center_name": "成本中心",
+          "center_sequence": 40
+        }
+      ]
+    },
+    {
+      "key": "supply.supplier_management",
+      "name": "供应商准入与停用",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 14,
       "intents": {
         "master_data": [
           "smart_construction_core.menu_sc_supplier_partner",
           "smart_construction_core.menu_sc_product_partner_blacklist_v1"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_supplier_partner",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_partner_blacklist_v1",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
     },
     {
-      "key": "material.management",
-      "name": "项目材料管理",
+      "key": "supply.procurement",
+      "name": "材料需求、采购申请与询比价",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 15,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_project_material_plan",
+          "smart_construction_core.menu_sc_material_purchase_request",
+          "smart_construction_core.menu_sc_material_rfq",
+          "smart_construction_core.menu_sc_material_acceptance"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_project_material_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_purchase_request",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_rfq",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_acceptance",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
+    },
+    {
+      "key": "supply.inventory",
+      "name": "材料入库、出库与库存移动",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 16,
       "intents": {
         "handle": [
           "smart_construction_core.menu_sc_material_inbound",
           "smart_construction_core.menu_sc_material_outbound",
-          "smart_construction_core.menu_sc_product_material_return_v1",
-          "smart_construction_core.menu_project_material_plan",
-          "smart_construction_core.menu_sc_material_purchase_request",
-          "smart_construction_core.menu_sc_material_acceptance",
-          "smart_construction_core.menu_sc_material_rfq",
           "smart_construction_core.menu_sc_material_transfer",
-          "smart_construction_core.menu_sc_material_loss",
-          "smart_construction_core.menu_sc_material_settlement",
+          "smart_construction_core.menu_sc_product_material_return_v1",
+          "smart_construction_core.menu_sc_material_loss"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_inbound",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_outbound",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_transfer",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_material_return_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_loss",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
+    },
+    {
+      "key": "material.settlement",
+      "name": "材料结算",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 17,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_material_settlement"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_settlement",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
+    },
+    {
+      "key": "resource.labor",
+      "name": "劳务资源使用与结算",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 18,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_labor_plan",
+          "smart_construction_core.menu_sc_labor_request",
+          "smart_construction_core.menu_sc_product_labor_realname_v1",
+          "smart_construction_core.menu_sc_product_labor_cost_v1",
+          "smart_construction_core.menu_sc_product_labor_deduction_v1",
+          "smart_construction_core.menu_sc_labor_settlement"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_labor_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_labor_request",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_labor_realname_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_labor_cost_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_labor_deduction_v1",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_labor_settlement",
+          "intent": "handle",
+          "sequence": 6,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
+    },
+    {
+      "key": "resource.equipment",
+      "name": "机械设备使用与结算",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 19,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_equipment_plan",
+          "smart_construction_core.menu_sc_equipment_request",
+          "smart_construction_core.menu_sc_product_equipment_shift_v1",
+          "smart_construction_core.menu_sc_equipment_settlement"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_equipment_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_equipment_request",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_equipment_shift_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_equipment_settlement",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
+    },
+    {
+      "key": "resource.rental",
+      "name": "周转材料租赁与结算",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 20,
+      "intents": {
+        "handle": [
           "smart_construction_core.menu_sc_material_rental_plan",
           "smart_construction_core.menu_sc_material_rental_order",
           "smart_construction_core.menu_sc_material_rental_settlement"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_rental_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_rental_order",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_material_rental_settlement",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
     },
     {
-      "key": "subcontract.management",
-      "name": "分包管理",
+      "key": "resource.subcontract",
+      "name": "专业分包履约与结算",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 21,
       "intents": {
         "handle": [
-          "smart_construction_core.menu_sc_product_subcontract_cost_v1",
-          "smart_construction_core.menu_sc_product_subcontract_variation_v1",
           "smart_construction_core.menu_sc_subcontract_plan",
           "smart_construction_core.menu_sc_subcontract_request",
+          "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+          "smart_construction_core.menu_sc_product_subcontract_variation_v1",
           "smart_construction_core.menu_sc_subcontract_settlement"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_subcontract_plan",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_subcontract_request",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_subcontract_cost_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_subcontract_variation_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_subcontract_settlement",
+          "intent": "handle",
+          "sequence": 5,
+          "center_key": "construction.center.supply_chain",
+          "center_name": "供应链与资源中心",
+          "center_sequence": 50
+        }
+      ]
     },
     {
-      "key": "labor.management",
-      "name": "劳务管理",
+      "key": "finance.receipt",
+      "name": "收款确认与登记",
       "type": "COMPOSITE",
-      "intents": {
-        "handle": [
-          "smart_construction_core.menu_sc_product_labor_realname_v1",
-          "smart_construction_core.menu_sc_product_labor_cost_v1",
-          "smart_construction_core.menu_sc_product_labor_deduction_v1",
-          "smart_construction_core.menu_sc_labor_plan",
-          "smart_construction_core.menu_sc_labor_request",
-          "smart_construction_core.menu_sc_labor_settlement"
-        ]
-      }
-    },
-    {
-      "key": "quality.management",
-      "name": "工程质量管理",
-      "type": "COMPOSITE",
-      "intents": {
-        "handle": [
-          "smart_construction_core.menu_sc_product_quality_acceptance_v1",
-          "smart_construction_core.menu_sc_quality_issue",
-          "smart_construction_core.menu_sc_quality_rectification",
-          "smart_construction_core.menu_sc_quality_recheck",
-          "smart_construction_core.menu_sc_quality_standard_v2",
-          "smart_construction_core.menu_sc_quality_site_photo_v2"
-        ]
-      }
-    },
-    {
-      "key": "safety.management",
-      "name": "安全管理",
-      "type": "COMPOSITE",
-      "intents": {
-        "handle": [
-          "smart_construction_core.menu_sc_safety_issue",
-          "smart_construction_core.menu_sc_safety_plan_v2",
-          "smart_construction_core.menu_sc_safety_disclosure_v2",
-          "smart_construction_core.menu_sc_safety_risk_library_v2",
-          "smart_construction_core.menu_sc_safety_hazard_source_v2",
-          "smart_construction_core.menu_sc_safety_patrol_v2",
-          "smart_construction_core.menu_sc_safety_rectification",
-          "smart_construction_core.menu_sc_safety_recheck"
-        ]
-      }
-    },
-    {
-      "key": "payment.capital",
-      "name": "付款与资金办理",
-      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 22,
       "intents": {
         "handle": [
           "smart_construction_core.menu_sc_receipt_income",
-          "smart_construction_core.menu_sc_user_payment_apply",
-          "smart_construction_core.menu_sc_payment_execution",
-          "smart_construction_core.menu_sc_reimbursement_request",
-          "smart_construction_core.menu_sc_product_current_account_v1",
           "smart_construction_core.menu_sc_user_income",
-          "smart_construction_core.menu_sc_company_finance_expense",
-          "smart_construction_core.menu_sc_deduction_bill",
-          "smart_construction_core.menu_sc_product_company_project_refund_v1",
-          "smart_construction_core.menu_sc_advance_fund",
-          "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
           "smart_construction_core.menu_sc_engineering_progress_income"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_receipt_income",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_user_income",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_engineering_progress_income",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
     },
     {
-      "key": "receipt.payment.ledger",
-      "name": "收付款业务台账",
-      "type": "DIRECT_FACT",
+      "key": "finance.payment_approval",
+      "name": "付款申请与审批",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 23,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_user_payment_apply"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_user_payment_apply",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
+    },
+    {
+      "key": "finance.payment_execution",
+      "name": "实付登记",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 24,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_payment_execution",
+          "smart_construction_core.menu_sc_company_finance_expense"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_payment_execution",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_company_finance_expense",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
+    },
+    {
+      "key": "finance.expense_advance",
+      "name": "费用报销与备用金",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 25,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_reimbursement_request",
+          "smart_construction_core.menu_sc_advance_fund"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_reimbursement_request",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_advance_fund",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
+    },
+    {
+      "key": "finance.deduction",
+      "name": "公司项目扣款",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 26,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_deduction_bill"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_deduction_bill",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
+    },
+    {
+      "key": "finance.intercompany",
+      "name": "公司项目往来与借还款",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 27,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_current_account_v1",
+          "smart_construction_core.menu_sc_product_company_project_refund_v1",
+          "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_current_account_v1",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_company_project_refund_v1",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "finance.cash_ledger",
+      "name": "资金计划与收支台账",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 28,
       "intents": {
         "view": [
           "smart_construction_core.menu_sc_funding_plan_summary",
           "smart_construction_core.menu_payment_ledger",
           "smart_construction_core.menu_sc_treasury_ledger"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_funding_plan_summary",
+          "intent": "view",
+          "sequence": 1,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_payment_ledger",
+          "intent": "view",
+          "sequence": 2,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_treasury_ledger",
+          "intent": "view",
+          "sequence": 3,
+          "center_key": "construction.center.finance",
+          "center_name": "财务中心",
+          "center_sequence": 60
+        }
+      ]
     },
     {
-      "key": "tax.management",
-      "name": "税务管理",
+      "key": "tax.external_certificate",
+      "name": "外经证办理",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 29,
       "intents": {
         "handle": [
-          "smart_construction_core.menu_sc_tax_certificate_registration_user",
-          "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+          "smart_construction_core.menu_sc_tax_certificate_registration_user"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_tax_certificate_registration_user",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
+    },
+    {
+      "key": "tax.prepayment",
+      "name": "税款预缴",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 30,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_invoice_prepaid_tax_user"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_invoice_prepaid_tax_user",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
+    },
+    {
+      "key": "tax.output_invoice",
+      "name": "销项开票与红冲",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 31,
+      "intents": {
+        "handle": [
           "smart_construction_core.menu_sc_invoice_application_user",
           "smart_construction_core.menu_sc_invoice_registration_user",
-          "smart_construction_core.menu_sc_output_invoice_change_registration",
-          "smart_construction_core.menu_sc_invoice_input",
-          "smart_construction_core.menu_sc_tax_deduction_registration_user",
-          "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
-          "smart_construction_core.menu_sc_product_tax_filing_v1"
+          "smart_construction_core.menu_sc_output_invoice_change_registration"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_invoice_application_user",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_invoice_registration_user",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_output_invoice_change_registration",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
     },
     {
-      "key": "accounting.management",
-      "name": "会计核算",
+      "key": "tax.input_invoice",
+      "name": "进项发票登记",
       "type": "COMPOSITE",
+      "active": true,
+      "sequence": 32,
       "intents": {
         "handle": [
-          "account.menu_action_move_journal_line_form"
-        ],
-        "view": [
-          "account.menu_action_account_moves_all"
-        ],
+          "smart_construction_core.menu_sc_invoice_input"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_invoice_input",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
+    },
+    {
+      "key": "tax.deduction",
+      "name": "税额抵扣",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 33,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_tax_deduction_registration_user",
+          "smart_construction_core.menu_sc_product_project_tax_deduction_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_tax_deduction_registration_user",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_project_tax_deduction_v1",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
+    },
+    {
+      "key": "tax.filing",
+      "name": "税务申报",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 34,
+      "intents": {
+        "handle": [
+          "smart_construction_core.menu_sc_product_tax_filing_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_tax_filing_v1",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.tax",
+          "center_name": "税务中心",
+          "center_sequence": 70
+        }
+      ]
+    },
+    {
+      "key": "accounting.foundation",
+      "name": "会计基础配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 35,
+      "intents": {
         "master_data": [
           "account.menu_action_account_form",
           "smart_construction_core.menu_sc_account_journal_foundation",
           "smart_construction_core.menu_sc_analytic_account_foundation",
           "smart_construction_core.menu_sc_analytic_distribution_foundation"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "account.menu_action_account_form",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_account_journal_foundation",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_analytic_account_foundation",
+          "intent": "master_data",
+          "sequence": 3,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_analytic_distribution_foundation",
+          "intent": "master_data",
+          "sequence": 4,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        }
+      ]
     },
     {
-      "key": "analytics.decision",
-      "name": "经营分析与决策",
-      "type": "DERIVED",
+      "key": "accounting.entry_posting",
+      "name": "凭证编制与记账",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 36,
+      "intents": {
+        "handle": [
+          "account.menu_action_move_journal_line_form"
+        ],
+        "view": [
+          "account.menu_action_account_moves_all"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "account.menu_action_move_journal_line_form",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        },
+        {
+          "menu_key": "account.menu_action_account_moves_all",
+          "intent": "view",
+          "sequence": 2,
+          "center_key": "construction.center.accounting",
+          "center_name": "会计账务中心",
+          "center_sequence": 80
+        }
+      ]
+    },
+    {
+      "key": "reporting.project_portfolio",
+      "name": "项目经营态势查看",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 37,
+      "intents": {
+        "view": [
+          "smart_construction_core.menu_sc_operating_metrics_project",
+          "smart_construction_core.menu_sc_project_kanban"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_operating_metrics_project",
+          "intent": "view",
+          "sequence": 1,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_kanban",
+          "intent": "view",
+          "sequence": 2,
+          "center_key": "workspace.home.workbench",
+          "center_name": "工作台",
+          "center_sequence": 10
+        }
+      ]
+    },
+    {
+      "key": "reporting.operating_review",
+      "name": "跨业务经营分析",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 38,
       "intents": {
         "report": [
-          "smart_construction_core.menu_sc_p1_profit_analysis",
           "smart_construction_core.menu_sc_project_operation_statistics_report",
           "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
           "smart_construction_core.menu_sc_fund_daily_summary",
           "smart_construction_core.menu_sc_product_tax_report_v1",
           "smart_construction_core.menu_sc_product_labor_subcontract_report_v1"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_project_operation_statistics_report",
+          "intent": "report",
+          "sequence": 1,
+          "center_key": "construction.center.reporting",
+          "center_name": "报表中心",
+          "center_sequence": 90
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_comprehensive_cost_statistics_report",
+          "intent": "report",
+          "sequence": 2,
+          "center_key": "construction.center.reporting",
+          "center_name": "报表中心",
+          "center_sequence": 90
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_fund_daily_summary",
+          "intent": "report",
+          "sequence": 3,
+          "center_key": "construction.center.reporting",
+          "center_name": "报表中心",
+          "center_sequence": 90
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_tax_report_v1",
+          "intent": "report",
+          "sequence": 4,
+          "center_key": "construction.center.reporting",
+          "center_name": "报表中心",
+          "center_sequence": 90
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_labor_subcontract_report_v1",
+          "intent": "report",
+          "sequence": 5,
+          "center_key": "construction.center.reporting",
+          "center_name": "报表中心",
+          "center_sequence": 90
+        }
+      ]
     },
     {
-      "key": "equipment.management",
-      "name": "设备管理",
-      "type": "PROFESSIONAL",
+      "key": "admin.organization",
+      "name": "组织、岗位与人员",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 39,
       "intents": {
-        "handle": [
-          "smart_construction_core.menu_sc_product_equipment_shift_v1",
-          "smart_construction_core.menu_sc_equipment_plan",
-          "smart_construction_core.menu_sc_equipment_request",
-          "smart_construction_core.menu_sc_equipment_settlement"
+        "master_data": [
+          "smart_construction_core.menu_sc_organization_department",
+          "smart_construction_core.menu_sc_product_job_management_v1",
+          "smart_construction_core.menu_sc_runtime_user_management"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_organization_department",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_job_management_v1",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_runtime_user_management",
+          "intent": "master_data",
+          "sequence": 3,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        }
+      ]
     },
     {
-      "key": "administration.office",
-      "name": "行政办公",
-      "type": "PROFESSIONAL",
+      "key": "admin.payroll",
+      "name": "薪酬社保办理",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 40,
       "intents": {
         "handle": [
           "smart_construction_core.menu_sc_product_social_fund_v1",
           "smart_construction_core.menu_sc_payroll_management",
           "smart_construction_core.menu_sc_product_project_payroll_v1",
           "smart_construction_core.menu_sc_product_project_salary_payment_v1"
-        ],
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_social_fund_v1",
+          "intent": "handle",
+          "sequence": 1,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_payroll_management",
+          "intent": "handle",
+          "sequence": 2,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_project_payroll_v1",
+          "intent": "handle",
+          "sequence": 3,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_project_salary_payment_v1",
+          "intent": "handle",
+          "sequence": 4,
+          "center_key": "construction.center.project",
+          "center_name": "项目中心",
+          "center_sequence": 20
+        }
+      ]
+    },
+    {
+      "key": "admin.documents",
+      "name": "证照与制度文件",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 41,
+      "intents": {
         "master_data": [
           "smart_construction_core.menu_sc_certificate_registration",
-          "smart_construction_core.menu_sc_product_office_asset_v1",
           "smart_construction_core.menu_sc_product_policy_document_v1"
         ]
-      }
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_certificate_registration",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_policy_document_v1",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        }
+      ]
+    },
+    {
+      "key": "admin.assets",
+      "name": "行政资产管理",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 42,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_product_office_asset_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_office_asset_v1",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.administration",
+          "center_name": "行政中心",
+          "center_sequence": 100
+        }
+      ]
+    },
+    {
+      "key": "config.enterprise_access",
+      "name": "企业人员权限配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 43,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_product_data_permission_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_data_permission_v1",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
+    },
+    {
+      "key": "config.approval",
+      "name": "审批策略配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 44,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_approval_policy"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_approval_policy",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
+    },
+    {
+      "key": "config.presentation",
+      "name": "表单、字段与菜单配置",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 45,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_business_config_workbench",
+          "smart_construction_core.menu_ui_form_field_policy_business_config",
+          "smart_construction_core.menu_ui_menu_config_policy_business_config"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_business_config_workbench",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_ui_form_field_policy_business_config",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_ui_menu_config_policy_business_config",
+          "intent": "master_data",
+          "sequence": 3,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
+    },
+    {
+      "key": "config.system_governance",
+      "name": "系统参数与编码规则",
+      "type": "COMPOSITE",
+      "active": true,
+      "sequence": 46,
+      "intents": {
+        "master_data": [
+          "smart_construction_core.menu_sc_product_system_parameter_v1",
+          "smart_construction_core.menu_sc_product_numbering_rule_v1"
+        ]
+      },
+      "bindings": [
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_system_parameter_v1",
+          "intent": "master_data",
+          "sequence": 1,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        },
+        {
+          "menu_key": "smart_construction_core.menu_sc_product_numbering_rule_v1",
+          "intent": "master_data",
+          "sequence": 2,
+          "center_key": "construction.center.product_configuration",
+          "center_name": "产品配置",
+          "center_sequence": 110
+        }
+      ]
     }
-  ]
+  ],
+  "validation": {
+    "scenario_count": 46,
+    "binding_count": 132,
+    "unique_menu_count": 132,
+    "direct_platform_count": 16
+  }
 }

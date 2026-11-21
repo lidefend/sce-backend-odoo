@@ -675,6 +675,34 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.scene_shell_contract.unit"],
         )
 
+    def test_enterprise_configuration_consumer_tool_selects_its_unit_guard(self) -> None:
+        for path in (
+            "scripts/verify/local_dev_enterprise_configuration_consumer.mjs",
+            "scripts/verify/local_dev_enterprise_configuration_consumer.sh",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.local.dev.enterprise_configuration.consumer.unit"],
+                )
+        makefile = (ROOT / "make/dev.mk").read_text(encoding="utf-8")
+        wrapper = makefile.split(
+            "verify.local.dev.enterprise_configuration.consumer:", 1
+        )[1].split("\n\n", 1)[0]
+        runner = makefile.split(
+            "verify.local.dev.enterprise_configuration.consumer.run:", 1
+        )[1].split("\n\n", 1)[0]
+        self.assertIn("local_dev_write_lease.sh", wrapper)
+        self.assertIn("local.dev.write_lease.require", runner)
+        self.assertIn("C02_RUNTIME_CANDIDATE_SHA", runner)
+        self.assertIn("TEST_TOOL_GIT_HEAD", runner)
+        self.assertIn('SCENARIO_ONLY="$(C02_SCENARIO_ONLY)"', runner)
+        script = (
+            ROOT / "scripts/verify/local_dev_enterprise_configuration_consumer.mjs"
+        ).read_text(encoding="utf-8")
+        self.assertIn("process.env.C02_SCENARIO_ONLY", script)
+        self.assertIn("scenario_only", script)
+
     def test_menu_metadata_batch_selects_its_executable_suite(self) -> None:
         self.assertEqual(select_targets(['scripts/verify/test_menu_metadata_batch.py']),
                          ['verify.product.menu.metadata_batch.unit'])
@@ -1535,6 +1563,25 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 self.assertIn("verify.contract.entry_equivalence.guard", targets)
                 self.assertIn("verify.form_structure_authority_unification.unit", targets)
 
+    def test_native_role_and_personnel_changes_select_their_orm_owners(self) -> None:
+        self.assertEqual(
+            select_targets(["addons/smart_core/security/group_assignment.py"]),
+            [
+                "verify.runtime_user_management.orm",
+                "verify.system.permission_role.assignment.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/tests/test_runtime_user_management.py",
+            ]),
+            ["verify.runtime_user_management.orm"],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/tests/test_product_job.py"]),
+            ["verify.product_job.orm"],
+        )
+
     def test_low_code_workbench_context_paths_select_behavior_owners(self) -> None:
         workbench_paths = (
             "frontend/apps/web/src/app/contextEpoch.ts",
@@ -1702,6 +1749,38 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             "scripts/verify/test_product_menu_contract_v1_guard.py": [
                 "verify.product.menu.contract_v1.guard",
+            ],
+            "addons/smart_construction_core/views/menu_product_navigation_v2.xml": [
+                "verify.product.menu.runtime_closeout.guard",
+            ],
+            "config/ops/local-platform-empty-addons/.gitkeep": [
+                "verify.local.development_lifecycle.unit",
+            ],
+            "config/product_menu_release_manifest_v2.json": [
+                "verify.product.menu.contract_v1.guard",
+                "verify.product.primary_center.baseline.guard",
+            ],
+            "scripts/verify/product_menu_release_manifest_v2_guard.py": [
+                "verify.product.menu.contract_v1.guard",
+                "verify.product.primary_center.baseline.guard",
+            ],
+            "scripts/verify/product_primary_center_baseline_guard.py": [
+                "verify.product.primary_center.baseline.guard",
+            ],
+            "scripts/verify/product_primary_center_candidate_guard.py": [
+                "verify.product.primary_center.candidate.guard",
+            ],
+            "scripts/verify/scenario_seed_runtime_readback.py": [
+                "verify.nav01.native_authority.unit",
+            ],
+            "config/product_scenario_organization_v1.json": [
+                "verify.product.scenario.organization.unit",
+            ],
+            "scripts/audit/build_scenario_product_organization.py": [
+                "verify.product.scenario.organization.unit",
+            ],
+            "scripts/audit/test_build_scenario_product_organization.py": [
+                "verify.product.scenario.organization.unit",
             ],
             "scripts/ops/test_promote_product_ten_center_policy.py": [
                 "verify.product.menu.contract_v1.guard",
@@ -2306,6 +2385,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/dev/local_test_runner.py",
             "scripts/verify/test_local_test_runner.py",
             "scripts/verify/test_local_development_lifecycle.py",
+            "scripts/dev/local_platform_control.py",
+            "scripts/dev/local_platform_release_apply.py",
+            "scripts/verify/test_local_platform_control.py",
+            "config/ops/local_platform_control.v1.json",
         ):
             with self.subTest(path=path):
                 self.assertEqual(

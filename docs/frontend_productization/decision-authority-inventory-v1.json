@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        604
+        633
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1568,7 +1568,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        997
+        1027
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1598,7 +1598,7 @@
       "literal": "forbidden",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        72
+        73
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1612,17 +1612,17 @@
       "literal": "idle",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        81,
-        87,
-        92,
-        97,
-        103,
-        143,
-        167,
-        172,
-        173,
+        82,
+        88,
+        93,
+        98,
+        104,
+        145,
+        169,
+        174,
         175,
-        179
+        177,
+        181
       ],
       "occurrences": 11,
       "classification": "excluded-render-interaction",

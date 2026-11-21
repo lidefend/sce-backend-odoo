@@ -106,6 +106,8 @@ def enabled_scenario_locations(location, enabled):
 def location_business_enabled(location, enabled):
     if not location or location["location"] == "missing":
         return False
+    if location.get("direct_platform_exempt"):
+        return True
     scenario_locations = _scenario_locations(location)
     if scenario_locations:
         return bool(enabled_scenario_locations(location, enabled))
@@ -138,7 +140,15 @@ def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu
         menu_id = int(location.get("menu_id") or 0)
         if menu_id <= 0:
             continue
-        selected = dict(enabled_locations[0]) if enabled_locations else {}
+        selected = (
+            dict(enabled_locations[0])
+            if enabled_locations
+            else dict(candidates[0])
+            if location.get("direct_platform_exempt")
+            else {}
+        )
+        if selected and not enabled_locations:
+            selected["direct_exempt"] = True
         selected["menu_key"] = menu_key
         selected["available_scenario_keys"] = [
             str(candidate.get("scenario_key") or "") for candidate in candidates
@@ -195,6 +205,17 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
             menu = row.get("menu_xmlid") or menu_xmlids_by_id.get(row.get("menu_id"))
             location = surface_index.get(menu)
             legacy = entry_by_key.get(row.get("scene_key"))
+            # Initialization precedes business-scene enablement. Preserve only
+            # an already-authorized internal action without its own menu
+            # carrier; resolving the legacy scene's menu must not make it look
+            # like an unselected business page and short-circuit this lifecycle.
+            if (not menu and not row.get("menu_id")
+                    and legacy
+                    and legacy.get("enablement_scope") == "enterprise_initialization"
+                    and row.get("source") == "scene_internal_action_authority"
+                    and row.get("allowed") is True):
+                kept.append(row)
+                continue
             if not location and legacy and not menu and not row.get("menu_id"):
                 location = surface_index.get((legacy.get("target") or {}).get("menu_xmlid"))
             allowed = location_business_enabled(location, enabled)
@@ -203,14 +224,6 @@ def filter_business_authority(authority, *, surface_index, enabled, entries, men
                              if xmlid in surface_index and (row.get("action_id"), xmlid) in published_menu_pairs]
                 if locations:
                     allowed = any(location_business_enabled(item, enabled) for item in locations)
-            # Initialization precedes business-scene enablement. This lifecycle
-            # declaration preserves already-authorized internal actions only;
-            # it neither adds routes nor overrides an explicit business menu.
-            if (not location and legacy and not menu and not row.get("menu_id")
-                    and legacy.get("enablement_scope") == "enterprise_initialization"
-                    and row.get("source") == "scene_internal_action_authority"
-                    and row.get("allowed") is True):
-                allowed = True
             if bucket == "menu_containers" and location and location["location"] == "container" and not row.get("action_id"):
                 allowed = True
             if allowed:

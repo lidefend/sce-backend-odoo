@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 from pathlib import Path
+import re
 
 ROOT = Path(__file__).resolve().parents[2]
 FILES = {
@@ -9,6 +10,18 @@ FILES = {
     "contract_form": ROOT / "frontend/apps/web/src/pages/ContractFormPage.vue",
     "theme": ROOT / "frontend/packages/ui/src/kits/tdesign/theme.css",
 }
+
+
+def _status_state_opening_tags(status: str) -> dict[str, list[str]]:
+    """Return the opening tags for the two mutually exclusive status surfaces."""
+    branches = {"contract_gap": [], "product_state": []}
+    for match in re.finditer(r"<[a-z][^>]*>", status, flags=re.IGNORECASE | re.DOTALL):
+        opening_tag = match.group(0)
+        if 'v-if="stateResolution.gap"' in opening_tag:
+            branches["contract_gap"].append(opening_tag)
+        elif re.search(r"\bv-else(?:\s|>)", opening_tag):
+            branches["product_state"].append(opening_tag)
+    return branches
 
 
 def validate(sources: dict[str, str] | None = None) -> list[str]:
@@ -34,7 +47,25 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
     for legacy in ("<button v-if=", "<button\n"):
         if legacy in status:
             failures.append(f"status retains private action DOM: {legacy}")
-    for marker in ('data-semantic-state-surface="page"', ':data-state="busy ?', 'aria-live=', 'aria-busy=', "prefers-reduced-motion"):
+    state_opening_tags = _status_state_opening_tags(status)
+    for branch, label in (
+        ("contract_gap", "contract-gap"),
+        ("product_state", "product-state"),
+    ):
+        tags = state_opening_tags[branch]
+        if len(tags) != 1:
+            failures.append(
+                f"status {label} state surface requires exactly one root container: found {len(tags)}"
+            )
+        elif 'data-semantic-state-surface="page"' not in tags[0]:
+            failures.append(
+                f"status {label} state surface missing semantic-state-surface declaration"
+            )
+    if status.count('data-semantic-state-surface="page"') != 2:
+        failures.append(
+            "status semantic-state-surface declaration must cover exactly two state containers"
+        )
+    for marker in (':data-state="busy ?', 'aria-live=', 'aria-busy=', "prefers-reduced-motion"):
         if marker not in status:
             failures.append(f"status accessibility state missing: {marker}")
     tabs = values["tabs"]

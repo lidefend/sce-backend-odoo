@@ -216,10 +216,10 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
     def test_contract_declares_sections_summary_scope_and_pending_validation(self):
         env = ControlledEnv(
             surface_scenes=[
-                {"key": "project.management", "active": True},
+                {"key": "project.initiation", "active": True},
                 {"key": "finance.payments", "active": True},
             ],
-            enabled_scene_keys={"project.management"},
+            enabled_scene_keys={"project.initiation"},
             project_count=1,
         )
         diagnosis = _load_diagnosis(env)
@@ -315,8 +315,8 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
 
     def test_user_role_and_employee_relations_are_counted_distinctly(self):
         env = ControlledEnv(
-            surface_scenes=[{"key": "project.management", "active": True}],
-            enabled_scene_keys={"project.management"},
+            surface_scenes=[{"key": "project.initiation", "active": True}],
+            enabled_scene_keys={"project.initiation"},
             user_count=3,
             role_user_count=0,
             employee_count=3,
@@ -354,8 +354,8 @@ class TestEnterpriseReadinessContract(unittest.TestCase):
 
     def test_project_responsibility_waits_for_an_existing_project(self):
         env = ControlledEnv(
-            surface_scenes=[{"key": "project.management", "active": True}],
-            enabled_scene_keys={"project.management"},
+            surface_scenes=[{"key": "project.initiation", "active": True}],
+            enabled_scene_keys={"project.initiation"},
         )
         diagnosis = _load_diagnosis(env)
         before = {

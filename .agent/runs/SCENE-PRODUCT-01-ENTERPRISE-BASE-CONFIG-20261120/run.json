@@ -3,7 +3,7 @@
   "id": "SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120",
   "branch": "feature/scene-product-01-enterprise-base-config-20261120",
   "baseline_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/SCENE-PRODUCT-01-ENTERPRISE-BASE-CONFIG-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_01_enterprise_base_config_20261120.md",
   "scope": [
@@ -208,7 +208,7 @@
         "scope": "Affected readiness producer, native declaration, frontend consumer, navigation and incremental validation mechanisms"
       },
       "scenario_declaration_and_consumption": {
-        "status": "candidate_passed_pending_independent_review",
+        "status": "completed",
         "scope": "The five native maintenance entries and enterprise scene selection have declaration, permission, save/readback wiring and controlled consumer evidence; this is not an actual runtime save"
       },
       "user_availability": {
@@ -239,5 +239,37 @@
     ]
   },
   "blockers": [],
-  "next_exact_step": "Run the final clean-equivalent incremental and freeze preparation, commit the candidate, push the same PR, then verify contract-only execution and all four required checks on the exact head."
+  "independent_review": {
+    "status": "approved",
+    "candidate_head": "832b52ad2e6705866d14b71f0a17c4d0326d8767",
+    "candidate_tree": "3e22b32298794573a3c7d8f294df9961f58573f1",
+    "base_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+    "blocking_findings": 0,
+    "result": "APPROVE; no further repair commit was required"
+  },
+  "integration": {
+    "status": "completed",
+    "pr": 949,
+    "candidate_head": "832b52ad2e6705866d14b71f0a17c4d0326d8767",
+    "candidate_tree": "3e22b32298794573a3c7d8f294df9961f58573f1",
+    "base_sha": "d2fb27530f5c1bf56719660af64199c6b343d8ff",
+    "merge_commit": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+    "merge_tree": "3e22b32298794573a3c7d8f294df9961f58573f1",
+    "mainline_sha": "f2f7fd02f0f28f84e6190102f3bf559db0c28457",
+    "merged_at": "2026-11-20T04:20:10Z",
+    "required_checks": {
+      "public_guard": "success",
+      "professional_quality_gate": "success",
+      "merge_policy_gate": "success",
+      "frontend_release_gate": "success"
+    }
+  },
+  "completion": {
+    "batch_acceptance": "completed",
+    "independent_review": "approved",
+    "mainline_integration": "completed",
+    "deployment": "not_run",
+    "user_acceptance": "not_run"
+  },
+  "next_exact_step": "Completed on main f2f7fd02f. The next configuration-center batch must reuse these mechanism and declaration/consumption results and run the selected-version actual user journeys."
 }

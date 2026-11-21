@@ -1,0 +1,24 @@
+{
+  "schema": "ops.local_platform_control.v1",
+  "environment_id": "local-platform-control",
+  "project": "sc-local-platform",
+  "database": "sc_platform_control",
+  "database_role": "sc_platform_control_app",
+  "maintenance_role": "sc_platform_control_maintenance",
+  "dbfilter": "^sc_platform_control$",
+  "module": "smart_core",
+  "volumes": {
+    "database": "sc_local_platform_db_data",
+    "redis": "sc_local_platform_redis_data",
+    "odoo": "sc_local_platform_odoo_data"
+  },
+  "ports": {
+    "odoo": 18089,
+    "nginx": 18092
+  },
+  "stack": {
+    "compose_file": "config/ops/daily_runtime_duty_stack.yml",
+    "env_file": ".env.local.platform",
+    "empty_addons": "config/ops/local-platform-empty-addons"
+  }
+}

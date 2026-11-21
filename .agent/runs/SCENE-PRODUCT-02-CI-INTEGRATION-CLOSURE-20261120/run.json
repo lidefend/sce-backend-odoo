@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "id": "SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120",
+  "branch": "feature/scene-product-02-enterprise-config-journey-20261120",
+  "baseline_sha": "77bad6caf94e3ab01d18b8d45d4614bd2730b6ad",
+  "status": "active",
+  "goal": ".agent/goals/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120.yaml",
+  "record": "docs/ops/iterations/scene_product_02_ci_integration_closure_20261120.md",
+  "scope": [
+    "AGENTS.md",
+    ".agent/active-runs.json",
+    ".agent/goals/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120.yaml",
+    ".agent/runs/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120/run.json",
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "addons/smart_construction_core/data/product_scenario_seed.xml",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/migrations/17.0.0.186/post-migrate.py",
+    "addons/smart_construction_core/migrations/17.0.0.187/post-migrate.py",
+    "addons/smart_construction_core/models/support/product_scenario.py",
+    "addons/smart_construction_core/services/scenario_product_declarations.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/tests/test_product_policy_fact_authority.py",
+    "addons/smart_construction_core/tests/test_locked_menu_policy_initialization.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_acceptance_fixture/tests/__init__.py",
+    "addons/smart_construction_bundle/tests/test_company_project_refund_workspace.py",
+    "addons/smart_construction_bundle/tests/test_current_account_workspace.py",
+    "addons/smart_construction_bundle/tests/test_team_loan_deduction_workspace.py",
+    "addons/smart_construction_bundle/tests/test_workspace_role_routes.py",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "scripts/verify/frontend_state_presentation_guard.py",
+    "scripts/verify/test_frontend_state_presentation_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/audit/build_scenario_product_organization.py",
+    "scripts/audit/test_build_scenario_product_organization.py",
+    "docs/engineering_convergence",
+    "docs/ops/iterations/scene_product_02_ci_integration_closure_20261120.md",
+    "config/ci/contract_only_scopes.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository Make targets; runtime verification only through governed local.dev/local.test entries when required"
+  },
+  "checks": {
+    "frontend_state_surface": {
+      "target": "verify.frontend.state_dashboard.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "scripts/verify/frontend_state_presentation_guard.py",
+        "scripts/verify/test_frontend_state_presentation_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "backend_contract_families": {
+      "target": "verify.admin_close_01.backend.unit",
+      "inputs": [
+        "addons/smart_core",
+        "addons/smart_construction_core",
+        "addons/smart_construction_scene"
+      ],
+      "kind": "offline"
+    },
+    "release_preflight": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "decision": {
+    "scenario_identity_baseline": "fresh_install_only",
+    "legacy_scenario_data": "discard",
+    "legacy_compatibility_migration": "excluded_by_owner",
+    "migration_paths_in_scope_meaning": "deleted_only_not_executed",
+    "owner_confirmed_at": "2026-11-21"
+  },
+  "authorization": {
+    "owner_confirmed_at": "2026-11-21",
+    "scope": "fresh_install_orm_verification",
+    "profile": "sc-local-test",
+    "database": "sc_test",
+    "disposable": true
+  },
+  "next_exact_step": "Commit the managed fixture-tag coverage fix, push the new exact HEAD, and verify that verify_coverage observes all changed fixture identities.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

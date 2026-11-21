@@ -54,6 +54,14 @@ RULE_SECTIONS = {
     "enterprise.scenario_dependencies": "scenario",
     "enterprise.role_delivery": "scenario",
 }
+PROJECT_SCENARIO_KEYS = frozenset({
+    "project.initiation",
+    "project.tender",
+    "project.planning",
+    "project.delivery_record",
+    "project.quality",
+    "project.safety",
+})
 
 
 def _section(rule_key: str) -> dict[str, Any]:
@@ -160,7 +168,10 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     ]
     enabled_scene_keys = [key for key in business_keys if read_tenant_enablement(env, company_id, key)]
     enabled_scene_count = len(enabled_scene_keys)
-    project_enabled = business_key("project.management") in enabled_scene_keys
+    project_enabled = any(
+        business_key(key) in enabled_scene_keys
+        for key in PROJECT_SCENARIO_KEYS
+    )
 
     def _count_status(count: int, reason: str) -> str:
         if count <= 0:
@@ -287,7 +298,7 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
                 if project_enabled
                 else ""
             ),
-            affected_scenarios=["project_management"],
+            affected_scenarios=sorted(PROJECT_SCENARIO_KEYS),
             remediation_entry="project.member.permission",
             responsible_party="项目负责人",
         ),

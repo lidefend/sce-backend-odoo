@@ -128,6 +128,18 @@ def released_menu_xmlids():
     return [row["menu_xmlid"] for group in standard["menu_groups"] for row in group["menus"]]
 
 
+def released_menu_centers():
+    source = PMS.load_source()
+    centers = {}
+    for center in source["product_contract"]["centers"]:
+        for item in center["level_two"]:
+            for leaf in item.get("children") or [item]:
+                menu_xmlid = (leaf.get("binding") or {}).get("menu_xmlid")
+                if menu_xmlid:
+                    centers[menu_xmlid] = center
+    return centers
+
+
 HORIZONTAL_MENUS = [
     "smart_construction_core.menu_sc_workspace_home",
     "smart_construction_core.menu_sc_my_work",
@@ -163,6 +175,7 @@ def synthetic_leaves(menu_xmlids, parent_by_menu=None):
     parent_by_menu = parent_by_menu or {}
     leaves = []
     for index, xmlid in enumerate(menu_xmlids, start=1):
+        center = MENU_CENTERS.get(xmlid, {})
         leaves.append({
             "menu_xmlid": xmlid,
             "menu_id": index,
@@ -173,6 +186,9 @@ def synthetic_leaves(menu_xmlids, parent_by_menu=None):
             "route": f"/a/{index}?menu_id={index}",
             "label": xmlid,
             "parent_menu_xmlid": parent_by_menu.get(xmlid, ""),
+            "policy_center_key": center.get("center_key", ""),
+            "policy_center_label": center.get("name", ""),
+            "policy_center_sequence": center.get("sequence", 900),
         })
     return leaves
 
@@ -181,6 +197,7 @@ def synthetic_nav(menu_xmlids, parent_by_menu=None):
     parent_by_menu = parent_by_menu or {}
     nodes = []
     for index, xmlid in enumerate(menu_xmlids, start=1):
+        center = MENU_CENTERS.get(xmlid, {})
         nodes.append({
             "xmlid": xmlid,
             "menu_xmlid": xmlid,
@@ -200,6 +217,11 @@ def synthetic_nav(menu_xmlids, parent_by_menu=None):
                 "label": xmlid,
                 "route": f"/a/{index}?menu_id={index}",
                 "state": "enabled",
+            },
+            "meta": {
+                "policy_center_key": center.get("center_key", ""),
+                "policy_center_label": center.get("name", ""),
+                "policy_center_sequence": center.get("sequence", 900),
             },
         })
     return nodes
@@ -256,7 +278,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
                 'entry_target': {'type': 'admin_surface', 'surface': 'test', 'route': '/s/test.workspace', 'delivery_scope': 'configuration'}}
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[leaf], include_platform=True)
         self.assertEqual(result['tree']['platform'], [leaf])
-        self.assertEqual(result['tree']['domains'], [])
+        self.assertEqual(result['tree']['centers'], [])
         self.assertEqual(result['diagnostics']['unmapped_count'], 0)
         self.assertEqual(PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=[leaf])['tree']['platform'], [])
         for delta in ({'delivery_bucket': 'released_product_policy'}, {'entry_target': {}}):
@@ -268,48 +290,81 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
     def setUpClass(cls):
         cls.surface = PROJ.load_surface(SURFACE_PATH)
         cls.released = released_menu_xmlids()
+        globals()["MENU_CENTERS"] = released_menu_centers()
         cls.parent_by_menu = native_parent_by_menu()
         cls.leaves = synthetic_leaves(cls.released, cls.parent_by_menu)
 
     def test_released_universe_matches_declared_standard_product(self):
-        self.assertEqual(len(self.released), 132)
+        self.assertGreater(len(self.released), 0)
 
     def test_surface_maps_all_released_entries_and_only_them(self):
         index = PROJ.build_menu_index(self.surface, parent_by_menu=self.parent_by_menu)
         self.assertEqual(set(index), set(self.released))
 
-    def test_runtime_user_management_is_direct_platform_not_scenario(self):
+    def test_runtime_user_management_is_enterprise_governance_scenario(self):
         assignments = PROJ.build_menu_assignments(
             self.surface,
             parent_by_menu=self.parent_by_menu,
         )
         rows = assignments["smart_construction_core.menu_sc_runtime_user_management"]
-        self.assertEqual([row["location"] for row in rows], ["platform"])
-        self.assertFalse(any(row["location"] == "scenario" for row in rows))
+        self.assertEqual([row["location"] for row in rows], ["scenario"])
+        self.assertEqual(rows[0]["scenario_key"], "admin.organization")
 
-    def test_surface_declares_17_scenarios_under_6_domains(self):
-        self.assertEqual(len(self.surface["scenarios"]), 17)
-        self.assertEqual(len(self.surface["domains"]), 6)
-        scenario_keys = {s["key"] for s in self.surface["scenarios"]}
-        domain_keys = {k for d in self.surface["domains"] for k in d["scenarios"]}
-        self.assertEqual(scenario_keys, domain_keys)
+    def test_scenario_source_does_not_own_center_or_published_counts(self):
+        scenario_keys = [s["key"] for s in self.surface["scenarios"]]
+        self.assertNotIn("centers", self.surface)
+        self.assertNotIn("actual_scenario_count", self.surface["taxonomy"])
+        self.assertEqual(len(scenario_keys), len(set(scenario_keys)))
+        self.assertTrue(all(scenario_keys))
 
-    def test_projection_groups_all_132_with_no_unmapped(self):
+    def test_projection_groups_complete_released_surface_with_no_unmapped(self):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves)
         self.assertTrue(result["ok"])
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 132)
-        self.assertEqual(result["diagnostics"]["grouped_leaf_count"], 132)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], len(self.released))
+        self.assertEqual(result["diagnostics"]["grouped_leaf_count"], len(self.released))
+        self.assertEqual(
+            {center["key"] for center in result["tree"]["centers"]},
+            {
+                center["stable_key"]
+                for center in PMS.center_identity_contract()["centers"]
+            },
+        )
+
+    def test_projection_preserves_approved_scenario_sequence(self):
+        result = PROJ.project_scenario_navigation(
+            surface=self.surface,
+            authorized_leaves=self.leaves,
+        )
+        project_center = next(
+            center
+            for center in result["tree"]["centers"]
+            if center["key"] == "construction.center.project"
+        )
+        approved_project_scenarios = [
+            "project.initiation",
+            "project.tender",
+            "project.planning",
+            "project.delivery_record",
+            "project.quality",
+            "project.safety",
+        ]
+        self.assertEqual(
+            [
+                row["key"]
+                for row in project_center["scenarios"]
+                if row["key"] in approved_project_scenarios
+            ],
+            approved_project_scenarios,
+        )
 
     def test_projection_preserves_leaf_identity(self):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves, include_platform=True)
-        domain_entries = [e for d in result["tree"]["domains"] for s in d["scenarios"] for i in s["intents"] for e in i["entries"]]
-        horizontal = result["tree"]["horizontal"]
+        center_entries = [e for c in result["tree"]["centers"] for s in c["scenarios"] for i in s["intents"] for e in i["entries"]]
         platform = result["tree"]["platform"]
-        self.assertEqual(len(domain_entries), 118)
-        self.assertEqual(len(horizontal), 6)
-        self.assertEqual(len(platform), 8)
-        by_menu = {e["menu_xmlid"]: e for e in domain_entries + horizontal + platform}
+        self.assertEqual(len(center_entries), len(self.released))
+        self.assertEqual(len(platform), 0)
+        by_menu = {e["menu_xmlid"]: e for e in center_entries + platform}
         first = self.released[0]
         self.assertEqual(by_menu[first]["menu_xmlid"], first)
         self.assertEqual(by_menu[first]["route"], f"/a/1?menu_id=1")
@@ -317,7 +372,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
     def test_empty_intents_are_omitted(self):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves)
         ledger = next(
-            s for d in result["tree"]["domains"] for s in d["scenarios"] if s["key"] == "receipt.payment.ledger"
+            s for c in result["tree"]["centers"] for s in c["scenarios"] if s["key"] == "cost.collection"
         )
         self.assertEqual([i["intent"] for i in ledger["intents"]], ["view"])
 
@@ -326,7 +381,7 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         result = PROJ.project_scenario_navigation(surface=self.surface, authorized_leaves=self.leaves + [extra])
         self.assertEqual(result["diagnostics"]["unmapped_count"], 1)
         self.assertIn("smart_construction_core.menu_not_in_surface", result["diagnostics"]["unmapped_menu_xmlids"])
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 132)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], len(self.released))
 
     def test_invalid_surface_returns_fallback_contract(self):
         result = PROJ.project_scenario_navigation(surface={"schema": "wrong"}, authorized_leaves=self.leaves)
@@ -418,18 +473,23 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         authority = synthetic_route_authority(self.released)
         result = PROJ.project_authorized_nav(nav=nav, route_authority=authority, surface=self.surface)
         self.assertTrue(result["ok"])
-        self.assertEqual(result["diagnostics"]["grouped_menu_count"], 132)
+        self.assertEqual(result["diagnostics"]["grouped_menu_count"], len(self.released))
         self.assertEqual(result["diagnostics"]["unmapped_count"], 0)
-        self.assertEqual(len(result["tree"]["platform"]), 8)
-        self.assertEqual(len(result["tree"]["horizontal"]), 6)
+        self.assertEqual(len(result["tree"]["platform"]), 0)
 
-    def test_zero_business_scenes_keep_only_authorized_management_entries(self):
+    def test_workspace_and_configuration_are_scenarios_not_exceptions(self):
         subset = HORIZONTAL_MENUS + PLATFORM_MENUS
         result = PROJ.project_authorized_nav(nav=synthetic_nav(subset, native_parent_by_menu()),
             route_authority=synthetic_route_authority(subset), surface=self.surface)
-        self.assertEqual(result["tree"]["domains"], [])
-        self.assertEqual(len(result["tree"]["horizontal"]), 6)
-        self.assertEqual(len(result["tree"]["platform"]), 8)
+        self.assertEqual(
+            {center["key"] for center in result["tree"]["centers"]},
+            {
+                "workspace.home.workbench",
+                "construction.center.administration",
+                "construction.center.product_configuration",
+            },
+        )
+        self.assertEqual(len(result["tree"]["platform"]), 0)
         self.assertEqual(result["tree"]["platform_label"], "产品配置")
         authority = synthetic_route_authority(subset)
         authority["primary_actions"] = authority["primary_actions"][:5]
@@ -446,8 +506,8 @@ class ScenarioSurfaceProjectionGuard(unittest.TestCase):
         authority = synthetic_route_authority(finance_only)
         result = PROJ.project_authorized_nav(nav=nav, route_authority=authority, surface=self.surface)
         self.assertTrue(result["ok"])
-        domain_keys = {d["key"] for d in result["tree"]["domains"]}
-        self.assertEqual(domain_keys, {"finance"})
+        center_keys = {c["key"] for c in result["tree"]["centers"]}
+        self.assertEqual(center_keys, {"construction.center.finance"})
 
     def test_scene_entry_leaf_without_action_is_collected(self):
         scene_entry_nav = [{

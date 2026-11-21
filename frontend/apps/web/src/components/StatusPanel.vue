@@ -1,6 +1,19 @@
 <template>
-  <section v-if="stateResolution.gap" role="alert" :data-contract-gap="stateResolution.gap">ContractGapError: {{ stateResolution.gap }}</section>
-  <section v-else
+  <section
+    v-if="stateResolution.gap"
+    class="panel sc-state-panel error state-unknown"
+    role="alert"
+    data-semantic-state-surface="page"
+    :data-contract-gap="stateResolution.gap"
+    :data-contract-gap-kind="contractDefect?.kind || 'contract_defect'"
+    :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
+  >
+    <h2>页面执行契约暂不可用</h2>
+    <p>系统已读取到页面声明，但当前上下文无法解析为可执行目标。系统已停止继续操作。</p>
+    <p class="trace">ContractGapError: {{ stateResolution.gap }}</p>
+  </section>
+  <section
+    v-else
     class="panel sc-state-panel"
     :class="[variant, `state-${productState?.kind}`]"
     data-semantic-state-surface="page"
@@ -109,6 +122,7 @@ const errorModel = computed(() => String(props.errorDetails?.model || '').trim()
 const errorOp = computed(() => String(props.errorDetails?.op || '').trim().toLowerCase());
 const stateResolution = computed(() => {
   if (props.variant !== 'error') return { state: null, gap: false };
+  if (props.contractDefect) return { state: null, gap: props.contractDefect.missing };
   try {
     const state = resolveProductErrorState({ status: props.errorCode, reasonCode: props.reasonCode }, session.errorStateContract);
     if (state.action.kind === 'retry' && !props.onRetry) throw contractGapError({ kind: 'contract_defect', missing: 'error_states.action.retry.executor', requiredDeclarationLayer: 'P0:frontend:StatusPanel consumer' }, 'ContractGapError: error_states.action.retry.executor');

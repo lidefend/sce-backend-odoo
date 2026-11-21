@@ -153,9 +153,15 @@ class _AuditTrailService:
 
 def _composition(name, *, sequence=10, intent="view"):
     return {
-        "schema": "construction.scenario_product_surface.v1",
+        "schema": "construction.scenario_product_surface.v2",
         "source_db": "sc_test",
         "runtime_scope": "maintained_draft",
+        "centers": [{
+            "key": "construction.center.project",
+            "name": "项目中心",
+            "sequence": 20,
+            "scenarios": ["project"],
+        }],
         "scenarios": [
             {
                 "key": "project",
@@ -170,6 +176,7 @@ def _composition(name, *, sequence=10, intent="view"):
                         "menu_key": "project.menu_ledger",
                         "intent": intent,
                         "sequence": 0,
+                        "center_key": "construction.center.project",
                         "source_db": "sc_test",
                     }
                 ],
@@ -743,7 +750,8 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             product_key="construction.standard",
             control_scope={
                 "business_scene_composition": {
-                    "schema": "construction.scenario_product_surface.v1",
+                    "schema": "construction.scenario_product_surface.v2",
+                    "centers": [],
                     "scenarios": [],
                 }
             },
