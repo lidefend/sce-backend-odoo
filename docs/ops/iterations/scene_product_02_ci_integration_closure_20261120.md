@@ -96,6 +96,14 @@ that identity before any runtime write. The affected ORM tests then passed:
 `ci.delivery.freeze.prepare` also passed and refreshed generated evidence; the
 module dependency map now reports `17.0.0.185`.
 
+The first exact-head remote run passed all four backend shards and Managed ORM.
+Its only failure was `verify_coverage`, which reported the newly added
+`TestFixtureScenarioIdentity` method as pending. The method already passed in
+the local targeted fixture suite, but the managed acceptance selector did not
+include its class tag. The test now carries the existing
+`acceptance_business_scene_lifecycle` managed tag; no new selector family or
+broader test matrix is introduced.
+
 Clean candidate freeze and exact-head remote gates remain pending.
 
 ## Exclusions

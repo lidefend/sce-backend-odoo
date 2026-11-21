@@ -100,7 +100,7 @@
     "database": "sc_test",
     "disposable": true
   },
-  "next_exact_step": "Commit the reviewed fresh-install candidate, verify the exact clean HEAD/tree, then push once and wait for required remote checks.",
+  "next_exact_step": "Commit the managed fixture-tag coverage fix, push the new exact HEAD, and verify that verify_coverage observes all changed fixture identities.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

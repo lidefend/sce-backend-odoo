@@ -8,7 +8,13 @@ from ..tools import frontend_productization_fixture as fixture
 from .test_business_scene_lifecycle import publish_scenarios
 
 
-@tagged("post_install", "-at_install", "sc_gate", "fixture_scenario_identity")
+@tagged(
+    "post_install",
+    "-at_install",
+    "sc_gate",
+    "acceptance_business_scene_lifecycle",
+    "fixture_scenario_identity",
+)
 class TestFixtureScenarioIdentity(TransactionCase):
     def test_current_scenario_choices_enable_on_a_fixture_owned_company(self):
         current_codes = set(self.env["sc.product.scenario"].sudo().with_context(
