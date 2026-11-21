@@ -133,21 +133,33 @@ Focused results at `cae4c5ac` plus the five-file R3 hotfix:
 | extension native-alignment ORM | 4 | PASS |
 | extension Hook-authority ORM | 4 | PASS |
 
-`make ci.local.iteration` passed with 37 required targets and no skipped required
-target. Original aggregate receipt:
-`.runtime/frontend-dev-validation/executions/20261121T163659Z-2361219-347013842/receipt.json`.
+The first exact-head remote run exposed a P4 validator defect in
+`scripts/ci/orm_result_guard.sh`: the Odoo log can start the same test identity
+multiple times while its final summary counts unique tests. The old guard summed
+raw start lines and rejected a clean `smart_core` run (`238` summary tests versus
+`310` start lines). The guard now deduplicates module/class/method identities and
+fails when the summary exceeds unique starts; failures, missing identities, zero
+collection and wrong selected-database starts remain fail-closed. Its self-test
+now covers duplicate and additional starts and passes 33 cases. Replaying the
+failed remote `smart_core` log through the corrected guard returns:
+
+`ORM_RESULT_GUARD=PASS tests=238 expected=self identity=odoo.addons.smart_core.tests.`
+
+After that tool correction, `make ci.local.iteration` passed with 41 required
+targets and no skipped required target. Original aggregate receipt:
+`.runtime/frontend-dev-validation/executions/20261121T172459Z-2611843-775842303/receipt.json`.
 The aggregate includes the current owning-module baselines:
 
 | Module | Tests | Result | Original receipt |
 | --- | ---: | --- | --- |
-| smart_core | 473 | PASS | `.runtime/test-baseline/1795278261830428995` |
-| smart_construction_core | 1711 | PASS | `.runtime/test-baseline/1795279432284491528` |
-| smart_construction_scene | 18 | PASS | `.runtime/test-baseline/1795280112083521106` |
-| smart_construction_bundle | 31 | PASS | `.runtime/test-baseline/1795279355926093745` |
-| smart_construction_portal | 4 | PASS | `.runtime/test-baseline/1795280100525315575` |
-| smart_license_core | 6 | PASS | `.runtime/test-baseline/1795280213602119186` |
-| smart_owner_core | 5 | PASS | `.runtime/test-baseline/1795280228040281657` |
-| smart_owner_bundle | 4 | PASS | `.runtime/test-baseline/1795280220937302859` |
+| smart_core | 473 | PASS | `.runtime/test-baseline/1795283365386266244` |
+| smart_construction_core | 1711 | PASS | `.runtime/test-baseline/1795282603187453047` |
+| smart_construction_scene | 18 | PASS | `.runtime/test-baseline/1795283294140227408` |
+| smart_construction_bundle | 31 | PASS | `.runtime/test-baseline/1795282526286212393` |
+| smart_construction_portal | 4 | PASS | `.runtime/test-baseline/1795283281982353685` |
+| smart_license_core | 6 | PASS | `.runtime/test-baseline/1795283449190898842` |
+| smart_owner_core | 5 | PASS | `.runtime/test-baseline/1795283466152317478` |
+| smart_owner_bundle | 4 | PASS | `.runtime/test-baseline/1795283458477173427` |
 
 After registering those original receipts, `make agent.run.resume` reports
 `reusable=30`, no stale checks, `outside_scope=[]` and `blockers=[]`.
