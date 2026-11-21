@@ -106,7 +106,7 @@ Implementation provides:
 - `make local.test.prepare`: registered `sc-local-test / sc_test` identity
   validated without runtime writes.
 
-Clean-candidate aggregate proof at `8ccc0f9d1e6a721b33348163fcd700c222f53088`:
+Clean-candidate aggregate proof:
 
 - required targets: 7;
 - complete result rows: 7;
@@ -114,7 +114,7 @@ Clean-candidate aggregate proof at `8ccc0f9d1e6a721b33348163fcd700c222f53088`:
 - reused targets: 3, each with source receipt, original log and log hash;
 - aggregate checkpoint: closed;
 - latest verified incremental checkpoint: the receipt HEAD;
-- immediate second planner invocation: `NOT_RUN`, zero target executions, 6.04s.
+- immediate second planner invocation: `NOT_RUN`, zero target executions, 8.58s.
 
 Original targeted logs:
 
