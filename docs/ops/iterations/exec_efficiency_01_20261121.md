@@ -70,7 +70,7 @@ Implementation provides:
 
 ### Passed offline
 
-- `verify.local.development_lifecycle.unit`: 67 tests.
+- `verify.local.development_lifecycle.unit`: 68 tests.
 - `verify.frontend.dev.incremental.unit`: 192 tests.
 - `verify.agent.resume.unit`: 67 tests.
 - `ci.local.iteration`: all static prerequisites passed; affected planner executed
@@ -155,5 +155,14 @@ The exact-head Quick also exposed an unused duplicate test tag,
 `fixture_scenario_identity`. The test is already selected by the managed
 `acceptance_business_scene_lifecycle` tag, so the duplicate tag was retired
 instead of registering a second coverage consumer.
+
+The independent review identified one P2 observability gap: reuse-disabled runs
+did not print the environment decision. The plan is now emitted through one
+shared function for reuse, rebuild and reuse-disabled paths, with a focused unit
+test that captures the machine-readable output.
+
+The full local Quick was intentionally stopped as an unnecessary repeat under
+the current incremental policy. It is recorded as interrupted/not passing and is
+not used as evidence; exact-head remote checks remain authoritative.
 
 Remote integration is not run yet.

@@ -387,4 +387,32 @@ class LocalTestRunnerTest(unittest.TestCase):
             "reuse",
         )
 
+    def test_environment_plan_is_emitted_for_reuse_disabled(self):
+        import io
+        from contextlib import redirect_stdout
+        stream = io.StringIO()
+        with redirect_stdout(stream):
+            runner.emit_environment_plan(
+                template_module="smart_construction_core",
+                requested_module="smart_construction_core",
+                template_database="sc_test_template__smart_construction_core",
+                template_key="a" * 64,
+                decision="rebuild:template_reuse_disabled",
+            )
+        line = stream.getvalue().strip()
+        self.assertTrue(line.startswith("[local.test] environment_plan="))
+        payload = json.loads(line.split("=", 1)[1])
+        self.assertEqual(
+            payload["decision"],
+            "rebuild:template_reuse_disabled",
+        )
+        self.assertEqual(
+            payload["template_database"],
+            "sc_test_template__smart_construction_core",
+        )
+        self.assertEqual(
+            payload["environment"],
+            "sc-local-test/sc_test",
+        )
+
 if __name__=='__main__': unittest.main()

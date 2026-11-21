@@ -284,6 +284,32 @@ def template_reuse_decision(
     return "reuse"
 
 
+def environment_plan(
+    *,
+    template_module,
+    requested_module,
+    template_database,
+    template_key,
+    decision,
+):
+    return {
+        "decision": decision,
+        "environment": "sc-local-test/sc_test",
+        "requested_module": requested_module,
+        "template_database": template_database,
+        "template_key": template_key,
+        "template_module": template_module,
+    }
+
+
+def emit_environment_plan(**kwargs):
+    print(
+        "[local.test] environment_plan="
+        + json.dumps(environment_plan(**kwargs), sort_keys=True),
+        flush=True,
+    )
+
+
 def cleanup_carrier(name, env):
     found = command(['docker', 'ps', '-aq', '--filter', 'name=^/' + name + '$'], env).stdout.strip()
     if not found:
@@ -410,7 +436,10 @@ def main(argv=None):
             }, sort_keys=True).encode()).hexdigest()
             template_reused = False
             template_decision = "rebuild:template_reuse_disabled"
-            command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+            template_ready = False
+            template_exists = False
+            database_comment = ""
+            requested_module_installed = False
             if args.reuse_database:
                 template_exists = database_exists(
                     dc,
@@ -435,18 +464,15 @@ def main(argv=None):
                     requested_module_installed=requested_module_installed,
                 )
                 template_ready = template_decision == "reuse"
-                print(
-                    "[local.test] environment_plan="
-                    + json.dumps({
-                        "decision": template_decision,
-                        "environment": "sc-local-test/sc_test",
-                        "requested_module": module,
-                        "template_database": template_database,
-                        "template_key": template_key,
-                        "template_module": template_module,
-                    }, sort_keys=True),
-                    flush=True,
-                )
+            emit_environment_plan(
+                template_module=template_module,
+                requested_module=module,
+                template_database=template_database,
+                template_key=template_key,
+                decision=template_decision,
+            )
+            command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
+            if args.reuse_database:
                 if not template_ready:
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', template_database], env)
                     prepare_carrier = 'sc-local-test-prepare-' + output.name

@@ -97,7 +97,7 @@
     "disposable": true
   },
   "blockers": [],
-  "next_exact_step": "Refresh generated evidence, commit the clean candidate, run one exact-head Quick, and publish for independent review.",
+  "next_exact_step": "Refresh generated evidence, commit and push the clean candidate, then wait for required exact-head remote checks.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
