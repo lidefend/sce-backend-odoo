@@ -12,6 +12,11 @@
     "scripts/verify/business_entry_matrix_universe_guard.py",
     "scripts/verify/test_business_entry_matrix_universe_guard.py",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/ops/acceptance_business_scene_enablement_reconcile.py",
+    "scripts/verify/test_acceptance_business_scene_enablement_reconcile.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "make/runtime_ops.mk",
     "make/frontend.mk",
     "docs/ops/iterations/business_entry_matrix_132_20261122.md",
     ".agent/active-runs.json",
@@ -36,6 +41,16 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "business_scenes_reconcile": {
+      "target": "verify.acceptance.business_scenes.reconcile.unit",
+      "inputs": [
+        "scripts/ops/acceptance_business_scene_enablement_reconcile.py",
+        "scripts/verify/test_acceptance_business_scene_enablement_reconcile.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -45,9 +60,11 @@
     "evidence_scope": "72 Python tests plus matrix route, reuse identity, observation binding and namespace cases passed.",
     "local_iteration": "ci.local.iteration passed with 8 affected targets.",
     "runtime_status": "Read-only evidence scope reports 132 units; the 40 newly added action rows remain never_recorded and no pending row was relabeled passed.",
-    "fixture_drift": "Acceptance fixture source declares the current 46 scenario keys, but sc_frontend_acceptance still contains the legacy 17 coarse enablement keys; re-freeze does not replay fixture enablement."
+    "fixture_drift": "Acceptance fixture source declares 46 scenario keys, but sc_frontend_acceptance contains the legacy 17 keys and none of the current published scenario keys.",
+    "coverage_proof": "The legacy 17 scenarios cover 79 pages; the 22 published current scenarios cover 53 pages including all 40 added entries; their union covers all 132 pages. The other 24 fixture scenario keys are not present in the published composition and must not be enabled.",
+    "reconcile_dry_run": "Dry-run passed with 44 planned inserts, no legacy disables, and 39 enabled scenarios expected per fixture company. No database write was performed."
   },
-  "next_exact_step": "Commit and publish this 132-unit declaration candidate, then request exact authorization to replay the current 46-scenario acceptance fixture enablement on sc_frontend_acceptance.",
+  "next_exact_step": "Commit and publish the narrow reconciliation tool, then obtain revised owner authorization to insert only the 22 published current scenario enablements while preserving the 17 legacy enablements.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

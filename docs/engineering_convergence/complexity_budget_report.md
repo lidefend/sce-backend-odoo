@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5331`
+- Scanned files: `5333`
 - Files requiring split plan: `86`
 - Files above warning threshold: `160`
 
@@ -25,7 +25,7 @@ Generated from repository source files. This report is informational during the 
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3720 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3726 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
@@ -69,7 +69,7 @@ Generated from repository source files. This report is informational during the 
 | 1864 | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1825 | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 1818 | Python source | `scripts/audit/verification_lane_coverage.py` |
+| 1819 | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1783 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1759 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
@@ -94,7 +94,7 @@ Generated from repository source files. This report is informational during the 
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1519 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
-| 1094 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
+| 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 823 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
@@ -281,7 +281,7 @@ Generated from repository source files. This report is informational during the 
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3720 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3726 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
@@ -325,7 +325,7 @@ Generated from repository source files. This report is informational during the 
 | 1864 | split_plan_required | Python source | `addons/smart_core/core/page_contracts_builder.py` |
 | 1864 | split_plan_required | JavaScript source | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` |
 | 1825 | split_plan_required | Python source | `addons/smart_core/delivery/release_operator_read_model_service.py` |
-| 1818 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
+| 1819 | split_plan_required | Python source | `scripts/audit/verification_lane_coverage.py` |
 | 1783 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
 | 1759 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |

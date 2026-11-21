@@ -1720,6 +1720,12 @@ RULES = (
         "verify.frontend.business_entry.evidence_scope.unit",
     )),
     Rule((
+        "scripts/ops/acceptance_business_scene_enablement_reconcile.py",
+        "scripts/verify/test_acceptance_business_scene_enablement_reconcile.py",
+    ), (
+        "verify.acceptance.business_scenes.reconcile.unit",
+    )),
+    Rule((
         "config/frontend/probe_toolchain_registry.json",
         "scripts/verify/local_dev_project_profile_write_browser.mjs",
         "scripts/verify/local_dev_project_profile_write_browser.sh",

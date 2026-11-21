@@ -933,6 +933,19 @@ PYPROJECTDOM
     preflight
     bash "$ROOT_DIR/scripts/test/frontend_productization_fixture.sh"
     ;;
+  business-scenes-reconcile)
+    preflight
+    [[ "$PROFILE" == "local" && "$DB_NAME" == "sc_frontend_acceptance" ]] || {
+      echo "DENY: business scene reconciliation is limited to the local sc_frontend_acceptance profile" >&2
+      exit 2
+    }
+    export SC_ENVIRONMENT=acceptance
+    export SC_ALLOW_DEMO_DATA=1
+    ODOO_SHELL_RUN_ISOLATED=1 APPLY="${APPLY:-0}" \
+      SC_ACCEPTANCE_BUSINESS_SCENES_CONFIRM="${SC_ACCEPTANCE_BUSINESS_SCENES_CONFIRM:-}" \
+      DB_NAME="$DB_NAME" bash "$ROOT_DIR/scripts/ops/odoo_shell_exec.sh" \
+      < "$ROOT_DIR/scripts/ops/acceptance_business_scene_enablement_reconcile.py"
+    ;;
   fixture-guard)
     # Read-only contract verification of the fixture this profile just built.
     # The guard is CI-bound through `verify.frontend.fixture`; this operation is

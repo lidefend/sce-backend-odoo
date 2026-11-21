@@ -65,3 +65,38 @@ fixture data is reconciled on the exact acceptance database.
 That reconciliation is a separate governed fixture write and requires explicit
 owner confirmation of the target database, expected inserts, backup, readback
 and rollback.
+
+## Narrow reconciliation entry
+
+`make acceptance.frontend.business_scenes.reconcile` defaults to a read-only
+plan. The read-only coverage proof shows that the existing 17 legacy scenarios
+cover 79 pages, while 22 published current scenarios cover the remaining 53,
+including all 40 newly added pages. The two sets are therefore complementary.
+
+The tool only targets local profile database `sc_frontend_acceptance` and:
+
+- preserves all 17 legacy `business.v1:<coarse-key>` enablements for the two
+  fixture companies;
+- creates or enables only the 22 current scenarios present in the published
+  composition, excluding the legacy keys;
+- refuses any other enabled key outside that authorized scope;
+- requires `APPLY=1` and
+  `SC_ACCEPTANCE_BUSINESS_SCENES_CONFIRM=RECONCILE_ACCEPTANCE_BUSINESS_SCENES_132`
+  before writing.
+
+### Corrected dry-run
+
+The first proposed migration would have disabled the legacy keys and enabled
+all 46 fixture scenario choices. Read-only release evaluation proved it unsafe:
+only 22 of the 46 are present in the active published composition. Disabling
+the legacy keys would remove the 79 pages they currently carry.
+
+The accepted dry-run plan is:
+
+- preserve all 17 legacy scene enablements;
+- insert 22 published current scenario enablements per company;
+- 44 planned inserts total;
+- 39 enabled scenarios expected per company;
+- 17 legacy + 22 current scenario page union = 132.
+
+No database write has been performed for this corrected plan.

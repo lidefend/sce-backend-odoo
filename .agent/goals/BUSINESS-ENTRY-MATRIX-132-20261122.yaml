@@ -24,6 +24,9 @@ goal:
     existing 91 observations when their inputs are unchanged, marks newly
     declared entries pending until executed, and fails closed if the scenario
     organization, matrix rows, scene carrier, or 132-page product policy drift.
+    A narrow acceptance-only reconciliation tool preserves the 17 legacy scene
+    enablements and adds the 22 published current scenarios whose union covers
+    all 132 pages.
   why_here: >-
     The missing rows are acceptance declarations and verification-tool inputs.
     Product menus, actions, models, ACLs, and runtime business semantics are
@@ -51,4 +54,4 @@ goal:
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_applicable
-    user_acceptance: pending_acceptance_fixture_scenario_replay_and_new_40_entries
+    user_acceptance: pending_revised_fixture_scope_confirmation_and_new_40_entries

@@ -26,7 +26,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P1 | 3843 | Construction backend owner | `addons/smart_construction_core/models/core/payment_request.py` | Extract service methods for cross-model workflow, amount, and policy logic. |
 | P1 | 3753 | DevOps owner | `scripts/ops/daily_runtime_database_duty.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3743 | Frontend owner | `frontend/apps/web/src/views/ActionView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
-| P1 | 3720 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P1 | 3726 | DevOps owner | `scripts/verify/frontend_dev_incremental.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P1 | 3719 | Construction backend owner | `addons/smart_construction_core/tests/test_p0_state_closure.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P1 | 3641 | Platform owner | `addons/smart_core/handlers/form_field_configuration.py` | Extract parsing, validation, assembly, and response mapping into owned services. |
 | P1 | 3610 | Frontend owner | `frontend/apps/web/src/app/contracts/v2/schema.ts` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -75,7 +75,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1897 | Frontend owner | `frontend/apps/web/src/views/ReleaseOperatorView.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1870 | DevOps owner | `scripts/verify/industry_module_product_boundary_guard.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1864 | DevOps owner | `scripts/verify/local_dev_payment_request_floorplan_submit.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1818 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
+| P2 | 1819 | DevOps owner | `scripts/audit/verification_lane_coverage.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1783 | Frontend owner | `frontend/apps/web/src/components/template/FormSection.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1766 | DevOps owner | `scripts/verify/frontend_list_surface_structure_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1759 | DevOps owner | `scripts/verify/test_coverage_registry.yaml` | Define owner-specific decomposition plan before adding unrelated behavior. |
@@ -95,7 +95,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1538 | DevOps owner | `scripts/ops/agent_dispatch_inbox.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1519 | Construction backend owner | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1501 | DevOps owner | `scripts/verify/frontend_delivery_hardening_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1094 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
+| P2 | 1107 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 823 | DevOps owner | `.github/workflows/backend_test_suite.yml` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 599 | DevOps owner | `scripts/audit/smoke_role_matrix.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
 | P2 | 551 | DevOps owner | `scripts/ops/audit_project_actions.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |
