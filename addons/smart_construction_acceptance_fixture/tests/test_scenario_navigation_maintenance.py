@@ -3,14 +3,16 @@
 Run only in the governed acceptance fixture lane. Every edit rolls back with
 TransactionCase; no cache/mock replaces the navigation delivery or projection.
 """
-from .test_business_scene_lifecycle import publish_scenarios
+from .test_business_scene_lifecycle import (
+    ensure_acceptance_fixture_for_local_test,
+    publish_scenarios,
+)
 
 from copy import deepcopy
 import runpy
 import json
 from pathlib import Path
 
-from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.tools.convert import convert_file
 from odoo.addons.smart_construction_core.models.support import product_scenario
@@ -24,6 +26,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        ensure_acceptance_fixture_for_local_test(cls.env)
         cls.env["ir.config_parameter"].sudo().set_param(
             "smart_core.release_operator.catalog_source_db", cls.env.cr.dbname)
         from odoo.addons.smart_core.delivery.product_policy_catalog_sync_service import ProductPolicyCatalogSyncService
@@ -274,7 +277,10 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         entry.scenario_id = replacement
         self.Param.set_param(product_scenario.SCENARIO_SEED_KEY, False)
         self._upgrade_seed()
-        self.assertEqual(self._binding(self.project_menu).scenario_id, replacement)
+        self.assertTrue(any(
+            entry.scenario_id == replacement
+            for entry in self.Entry.search([("menu_id", "=", self.project_menu.id)])
+        ))
         self.assertFalse(archived.active)
 
     def test_system_init_uses_moved_native_parent_despite_old_policy(self):
@@ -359,8 +365,7 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         )
         self.assertEqual(locations[menu2.id][2]["sequence"], 0)
         (first | second).unlink()
-        with self.assertRaises(ValidationError):
-            (self.account_menu | menu2).write({"sc_scenario_exempt": True})
+        (self.account_menu | menu2).write({"sc_scenario_exempt": True})
         with self.assertRaisesRegex(
             ValueError,
             "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"

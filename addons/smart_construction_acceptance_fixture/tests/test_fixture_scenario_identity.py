@@ -1,9 +1,11 @@
 # -*- coding: utf-8 -*-
 from unittest.mock import patch
 
+from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
 
 from ..tools import frontend_productization_fixture as fixture
+from .test_business_scene_lifecycle import publish_scenarios
 
 
 @tagged("post_install", "-at_install", "sc_gate", "fixture_scenario_identity")
@@ -34,12 +36,8 @@ class TestFixtureScenarioIdentity(TransactionCase):
         })
         with (
             patch.object(fixture, "_guard_acceptance_scope", return_value=None),
-            patch(
-                "odoo.addons.smart_construction_scene.services."
-                "tenant_scene_activation.resolve_product_released",
-                return_value=True,
-            ),
         ):
+            publish_scenarios(self.env)
             count = fixture._ensure_business_scenarios(self.env, (company,))
         self.assertEqual(count, 46)
         enablements = self.env["sc.scene.company.enablement"].sudo().search([
@@ -54,3 +52,9 @@ class TestFixtureScenarioIdentity(TransactionCase):
                 for code in fixture.FIXTURE_BUSINESS_SCENARIOS
             },
         )
+        preview = self.env["sc.scene.company.enablement"].sudo().create({
+            "company_id": company.id,
+            "scene_key": "finance.payment_ledger",
+        })
+        with self.assertRaises(UserError):
+            preview.set_enabled(True)

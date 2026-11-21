@@ -425,3 +425,82 @@ class TestScenarioDirectInitialization(TransactionCase):
         self.assertFalse(legacy.exists())
         self.assertEqual(Scenario.search_count([]), 46)
         self.assertEqual(Entry.search_count([]), 132)
+
+    def test_post_187_blocks_unexpected_legacy_bindings_before_delete(self):
+        Scenario = self.env["sc.product.scenario"].sudo().with_context(
+            active_test=False
+        )
+        Entry = self.env["sc.product.scenario.entry"].sudo()
+        legacy = Scenario.create({
+            "code": "project.management",
+            "name": "Retired process scenario",
+        })
+        standard_menu = self.env.ref(
+            "smart_construction_core.menu_sc_project_project"
+        )
+        custom_menu = self.env["ir.ui.menu"].sudo().create({
+            "name": "Unexpected legacy custom binding",
+            "action": "ir.actions.act_window,%s" % standard_menu.action.id,
+        })
+        Entry.create({
+            "scenario_id": legacy.id,
+            "menu_id": standard_menu.id,
+            "intent": "view",
+        })
+        custom_entry = Entry.create({
+            "scenario_id": legacy.id,
+            "menu_id": custom_menu.id,
+            "intent": "view",
+        })
+        with self.assertRaisesRegex(
+            RuntimeError,
+            "LEGACY_SCENARIO_CUSTOM_BINDING_DETECTED",
+        ):
+            self._post_migration("17.0.0.187")(
+                self.cr,
+                "17.0.0.186",
+            )
+        self.assertTrue(legacy.exists())
+        self.assertTrue(custom_entry.exists())
+        self.assertEqual(len(legacy.entry_ids), 2)
+
+    def test_post_187_preserves_custom_scenarios_and_bindings(self):
+        Scenario = self.env["sc.product.scenario"].sudo().with_context(
+            active_test=False
+        )
+        Entry = self.env["sc.product.scenario.entry"].sudo()
+        custom = Scenario.create({
+            "code": "test.customer.retained",
+            "name": "Customer retained scenario",
+        })
+        custom_menu = self.env["ir.ui.menu"].sudo().create({
+            "name": "Customer retained binding",
+            "action": "ir.actions.act_window,%s" % self.env.ref(
+                "smart_construction_core.menu_sc_project_project"
+            ).action.id,
+        })
+        custom_entry = Entry.create({
+            "scenario_id": custom.id,
+            "menu_id": custom_menu.id,
+            "intent": "view",
+        })
+        legacy = Scenario.create({
+            "code": "project.management",
+            "name": "Retired process scenario",
+        })
+        Entry.create({
+            "scenario_id": legacy.id,
+            "menu_id": self.env.ref(
+                "smart_construction_core.menu_sc_project_project"
+            ).id,
+            "intent": "view",
+        })
+        result = self._post_migration("17.0.0.187")(
+            self.cr,
+            "17.0.0.186",
+        )
+        self.assertEqual(result["unique_standard_menu_count"], 132)
+        self.assertTrue(custom.exists())
+        self.assertTrue(custom_entry.exists())
+        self.assertFalse(legacy.exists())
+        self.assertEqual(Scenario.search_count([]), 47)

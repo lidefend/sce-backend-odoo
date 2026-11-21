@@ -162,7 +162,6 @@ class ScProductScenario(models.Model):
         Scenario = self.sudo().with_context(active_test=False)
         Entry = self.env["sc.product.scenario.entry"].sudo()
         existing_codes = {rec.code: rec for rec in Scenario.search([])}
-        prebound_menu_ids = set(Entry.search([]).mapped("menu_id").ids)
         created_scenarios = 0
         skipped_scenarios = 0
         created_entries = 0
@@ -203,8 +202,6 @@ class ScProductScenario(models.Model):
             for menu_xmlid, intent, sequence in binding_rows:
                 menu = self.env.ref(menu_xmlid, raise_if_not_found=False)
                 if not menu or str(getattr(menu, "_name", "")) != "ir.ui.menu":
-                    continue
-                if menu.id in prebound_menu_ids:
                     continue
                 exists = Entry.search([
                     ("scenario_id", "=", record.id),

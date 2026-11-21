@@ -27,6 +27,7 @@ DAILY_DEV_DB = "sc_demo"
 # is denied before the builder reads or writes anything.
 FIXTURE_SCOPES = {
     "acceptance": {"database": FRONTEND_ACCEPTANCE_DB, "environment": "acceptance"},
+    "local_test": {"database": "sc_test", "environment": "dev"},
     "daily_dev": {"database": DAILY_DEV_DB, "environment": "dev"},
     "candidate": {"database": CANDIDATE_ACCEPTANCE_DB, "environment": "acceptance"},
 }

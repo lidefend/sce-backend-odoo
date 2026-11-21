@@ -95,3 +95,20 @@ The binding now uses `reporting.project_portfolio`; zero-binding scenario
 definitions are omitted from the release composition, while published business
 pages without a scenario/direct declaration remain blocking. The tests now
 assert that blocking outcome instead of manufacturing an executable route.
+
+Migration safety was tightened before another candidate:
+
+- the complete 17-scenario legacy standard binding allow-list is frozen in
+  `17.0.0.187`;
+- any extra binding under a legacy standard scenario blocks the migration before
+  deletion and identifies the retained scenario/entries;
+- custom scenarios and custom entries outside the exact 17 codes are preserved;
+- scenario-surface import is idempotent per scenario/menu rather than globally
+  excluding a menu already used by another scenario;
+- the migration verifies all 46 current scenario codes and 132 unique standard
+  menu bindings after the transition.
+
+The exact local acceptance fixture suite now runs on isolated `sc_test` with a
+real release snapshot. It passed 28/28, including real 46-scenario enablement
+and a Preview scene rejection. The migration safety class passed 20/20, and the
+final pre-push `ci.local.iteration` passed all affected targets.
