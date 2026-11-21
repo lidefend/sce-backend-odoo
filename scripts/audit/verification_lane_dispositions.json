@@ -2678,6 +2678,18 @@
       "reason": "unit coverage for the shared local.dev write lease",
       "review_by": "2026-12-31"
     },
+    "verify.local.test.template.bundle.orm": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "EXEC-EFFICIENCY-01 explicit disposable bundle-template runtime proof for requested-module coverage and second-run reuse.",
+      "review_by": "2026-12-31"
+    },
+    "verify.local.test.template.fixture.orm": {
+      "disposition": "local_diagnostic",
+      "owner": "platform-team",
+      "reason": "EXEC-EFFICIENCY-01 explicit disposable acceptance-fixture template proof that fixture and bundle template slots coexist and reuse independently.",
+      "review_by": "2026-12-31"
+    },
     "verify.menu.navigation_snapshot": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",

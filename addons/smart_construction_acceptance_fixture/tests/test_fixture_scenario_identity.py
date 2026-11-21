@@ -13,7 +13,6 @@ from .test_business_scene_lifecycle import publish_scenarios
     "-at_install",
     "sc_gate",
     "acceptance_business_scene_lifecycle",
-    "fixture_scenario_identity",
 )
 class TestFixtureScenarioIdentity(TransactionCase):
     def test_current_scenario_choices_enable_on_a_fixture_owned_company(self):

@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "id": "EXEC-EFFICIENCY-01-20261121",
+  "branch": "feature/exec-efficiency-01-20261121",
+  "baseline_sha": "8aeb93791d2c4d88f2bef8415a5caf7a228941f4",
+  "status": "verification_pending",
+  "goal": ".agent/goals/EXEC-EFFICIENCY-01-20261121.yaml",
+  "record": "docs/ops/iterations/exec_efficiency_01_20261121.md",
+  "scope": [
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+    "scripts/dev/local_test_runner.py",
+    "scripts/ops/agent_run_context.py",
+    "scripts/ops/incremental_execution.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_agent_run_context.py",
+    "scripts/verify/test_local_test_runner.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/dev.mk",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/ops/audit/product_delivery_productization_readiness.md",
+    "docs/ops/local_development_environment_v1.md",
+    "docs/ops/iterations/exec_efficiency_01_20261121.md",
+    ".agent/active-runs.json",
+    ".agent/decisions/codex-local-lane-mechanics.yaml",
+    ".agent/goals/EXEC-EFFICIENCY-01-20261121.yaml",
+    ".agent/runs/EXEC-EFFICIENCY-01-20261121/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository unit and static targets; runtime template validation requires separately confirmed sc-local-test/sc_test execution"
+  },
+  "checks": {
+    "local_test_runner": {
+      "target": "verify.local.development_lifecycle.unit",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/ops/incremental_execution.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json"
+      ],
+      "kind": "offline"
+    },
+    "bundle_template_runtime": {
+      "target": "verify.local.test.template.bundle.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/bundle_template_readback.json"
+      }
+    },
+    "fixture_template_runtime": {
+      "target": "verify.local.test.template.fixture.orm",
+      "inputs": [
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/fixture_template_readback.json"
+      }
+    }
+  },
+  "authorization": {
+    "owner_confirmed_at": "2026-11-21",
+    "scope": "sc-local-test/sc_test template runtime smoke",
+    "profile": "sc-local-test",
+    "database": "sc_test",
+    "template_databases": [
+      "sc_test_template__smart_construction_bundle",
+      "sc_test_template__smart_construction_acceptance_fixture"
+    ],
+    "disposable": true
+  },
+  "blockers": [],
+  "next_exact_step": "Commit this record closeout, publish the clean exact HEAD, wait for its required checks, then obtain independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

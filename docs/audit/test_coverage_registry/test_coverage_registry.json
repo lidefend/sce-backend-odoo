@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 221,
+    "odoo_tags": 220,
     "gated": 5,
     "on_demand": 79,
-    "unwired": 137,
-    "odoo_tag_declarations": 453,
+    "unwired": 136,
+    "odoo_tag_declarations": 452,
     "gated_declarations": 103,
-    "uncovered_declarations": 350,
+    "uncovered_declarations": 349,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -1354,17 +1354,6 @@
       "disposition": "class-selected"
     },
     {
-      "group": "fixture_scenario_identity",
-      "status": "unwired",
-      "kind": "odoo_tag",
-      "declarations": 1,
-      "files": [
-        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py"
-      ],
-      "owner": "construction-product",
-      "evidence": []
-    },
-    {
       "group": "form_structure_surface_capability_orm",
       "status": "on-demand",
       "kind": "odoo_tag",
@@ -2433,6 +2422,7 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.daily.permission_truth.capability.orm :: /TestScenarioDirectInitialization (class selection)",
+        "make:verify.local.test.template.bundle.orm :: /TestScenarioDirectInitialization (class selection)",
         "make:verify.smart_construction_core.migration_compatibility.orm :: /TestScenarioDirectInitialization (class selection)"
       ],
       "disposition": "class-selected"

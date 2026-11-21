@@ -450,6 +450,15 @@ class RunContextTest(unittest.TestCase):
         result = self.check()
         self.assertEqual(result['status'], 'reusable', result)
         self.assertEqual(result['test_count'], 2)
+        self.assertEqual(
+            result['source_receipt'],
+            '.runtime/agent-runs/TEST/unit.json',
+        )
+        self.assertEqual(result['source_log'], '.runtime/check.log')
+        self.assertEqual(
+            result['source_log_sha256'],
+            hashlib.sha256((self.root / '.runtime/check.log').read_bytes()).hexdigest(),
+        )
 
     def test_runtime_check_readback_change_invalidates(self):
         # A regenerated readback for a changed environment is a changed input, so

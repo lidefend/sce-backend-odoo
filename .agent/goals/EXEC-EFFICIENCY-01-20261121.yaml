@@ -1,0 +1,68 @@
+schema_version: 1
+
+goal:
+  id: EXEC-EFFICIENCY-01-20261121
+  title: exec_efficiency_01_template_and_evidence_reuse
+  status: active
+  formal_product_layer: P4
+  layer_target: >-
+    Governed local test template selection, fresh-install versus upgrade
+    fingerprints, template coverage validation, complete required-target
+    evidence rows, and checkpoint-safe reuse for incremental execution.
+  module:
+    - scripts/dev/local_test_runner.py
+    - scripts/ops/agent_run_context.py
+    - scripts/ops/incremental_execution.py
+    - scripts/verify/frontend_dev_incremental.py
+    - scripts/verify/test_local_test_runner.py
+    - scripts/verify/test_agent_run_context.py
+    - scripts/verify/test_frontend_dev_incremental.py
+    - make
+    - docs/ops
+    - .agent
+  standard_vs_user_specific: generic_engineering_execution_mechanism
+  objective: >-
+    Make environment reuse the default and mechanically enforced strategy for
+    local iteration. Reuse unchanged templates and evidence, separate
+    fresh-install and upgrade identity, fail before expensive work when a
+    template module does not cover the requested module, and preserve separate
+    templates instead of repeatedly evicting one another.
+  product_result: >-
+    A small affected iteration reuses the appropriate prepared test template,
+    clones only its isolated database, executes only affected targets, records
+    one complete evidence row for every required target, closes a checkpoint
+    without losing reused logs, and executes zero targets on an identical
+    rerun. No business product behavior changes and no persistent development
+    database is rebuilt.
+  why_here: >-
+    The duplicated cost is owned by P4 test execution tools. Their input
+    identity and selection rules, rather than product modules, decide whether
+    environment preparation runs.
+  why_not_elsewhere:
+    - Do not add business-module special cases.
+    - Do not weaken ORM, ACL, fixture, or release gates.
+    - Do not use Git branch or HEAD alone as environment invalidation.
+    - Do not rebuild a template merely because another template is needed.
+  blast_radius:
+    behavior:
+      - test template database identity and retention
+      - install-input fingerprinting
+      - requested-module coverage validation
+      - incremental target reuse selection
+      - complete aggregate result rows and checkpoint closure
+      - local execution receipts and logs
+    exclusions:
+      - no smart_core or smart_construction_core business changes
+      - no frontend product runtime changes
+      - no persistent local.dev/sample/clean/acceptance rebuild
+      - no production, deployment, or release operation
+      - no migration of existing test databases without explicit confirmation
+  rollback: >-
+    Revert the P4 tool and test changes together. Existing test databases remain
+    disposable; no product data or persistent environment recovery is required.
+  completion:
+    batch: in_progress
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

@@ -187,6 +187,39 @@ decision:
         commits; repeated documentation or bookkeeping commits do not buy new coverage
       unit_target: make verify.acceptance.evolution.binding
 
+    local_test_environment_reuse_defaults:
+      id: OPS-DECISION-009
+      statement: >-
+        Local ORM iteration reuses prepared templates by default. Environment
+        preparation is a controlled consequence of changed identity or missing
+        coverage, never a routine per-command step.
+      required:
+        - template_module_must_cover_requested_module_before_runtime
+        - template_database_is_keyed_by_template_module
+        - prepared_template_must_read_back_requested_module_installed
+        - fresh_install_fingerprint_excludes_upgrade_only_migrations
+        - upgrade_fingerprint_includes_migrations
+        - complete_passed_receipt_precedes_newer_interrupted_receipt
+        - every_required_target_has_one_complete_result_row
+        - reuse_index_is_keyed_by_the_complete_required_target_set
+        - mixed_executed_and_reused_receipt_can_close_an_iteration_checkpoint
+        - identical_rerun_after_a_complete_mixed_receipt_executes_zero_targets
+        - clean_current_and_committed_runtime_digests_must_match
+        - every_orm_run_prints_machine_readable_reuse_or_rebuild_decision
+      rebuild_causes:
+        - template_missing
+        - template_identity_changed
+        - requested_module_missing
+        - template_reuse_disabled
+      forbidden:
+        - rebuild_because_branch_or_head_changed_alone
+        - rebuild_because_a_test_failed_without_identity_change
+        - use_bundle_template_for_its_reverse_dependency_fixture_module
+        - let_two_template_modules_evict_one_shared_template_database
+      unit_targets:
+        - make verify.local.development_lifecycle.unit
+        - make verify.frontend.dev.incremental.unit
+
   recorded_instances:
     - candidate: e589676c23e4ef54d0dc1cfc9bce1749e5c7eb3a
       pr: 605

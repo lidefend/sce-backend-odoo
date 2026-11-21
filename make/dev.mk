@@ -66,8 +66,9 @@ LOCAL_PLATFORM_ENV_FILE ?= $(dir $(LOCAL_DEV_ENV_FILE)).env.local.platform
 LOCAL_PLATFORM_RELEASE_ARTIFACT ?= artifacts/local-platform-release/construction-standard.json
 LOCAL_PLATFORM_ACTION ?= health
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
-# Reuse only the identity-keyed clean template, then clone a fresh sc_test from
-# it for every attempt. Set 0 explicitly for a one-off template-free diagnostic.
+# Reuse the template selected for this test profile, then clone a fresh sc_test
+# from it. Templates are keyed by module so independent prepared profiles do
+# not evict one another. Set 0 explicitly for a template-free diagnostic.
 LOCAL_TEST_REUSE_DATABASE ?= 1
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \
@@ -864,12 +865,24 @@ local.clean.upgrade: guard.prod.forbid local.clean.prepare $(if $(filter 1,$(LOC
 	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
-.PHONY: local.test.prepare local.test.up local.test.down local.test.test
+.PHONY: local.test.prepare local.test.up local.test.down local.test.test verify.local.test.template.bundle.orm verify.local.test.template.fixture.orm
 local.test.prepare local.test.up local.test.down: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py $(patsubst local.test.%,%,$@) --env-file "$(LOCAL_TEST_ENV_FILE)"
 
 local.test.test: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
+
+verify.local.test.template.bundle.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization
+
+verify.local.test.template.fixture.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_acceptance_fixture \
+	  TEST_TAGS=/smart_construction_acceptance_fixture:TestFixtureScenarioIdentity
 
 .PHONY: local.clean.contract_projection_cache.probe
 local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env
