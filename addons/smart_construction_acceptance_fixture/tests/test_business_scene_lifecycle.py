@@ -1,4 +1,4 @@
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_core.delivery.runtime_route_authority import (
@@ -200,24 +200,26 @@ class TestBusinessSceneLifecycle(TransactionCase):
             self.assertEqual(row['name'], 'Renamed payment')
             self.assertTrue(row['tenant_enabled'])
             replacement.active = False
-            publish_scenarios(self.env)
-            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
-                       if row['scene_key'] == replacement.code)
-            self.assertFalse(row['product_released'])
+            with self.assertRaisesRegex(
+                ValueError,
+                "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+            ):
+                publish_scenarios(self.env)
             replacement.active = True
             publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == replacement.code)
             self.assertTrue(row['tenant_enabled'])
             entry.unlink()
-            publish_scenarios(self.env)
-            row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
-                       if row['scene_key'] == replacement.code)
-            self.assertFalse(row['product_released'])
-            self.menu.sc_scenario_exempt = True
-            self.assertTrue(self._allowed(self.company_a))
-            self.menu.sc_scenario_exempt = False
-            self.assertFalse(self._allowed(self.company_a))
+            with self.assertRaisesRegex(
+                ValueError,
+                "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+            ):
+                publish_scenarios(self.env)
+            with self.assertRaises(ValidationError):
+                self.menu.sc_scenario_exempt = True
 
     def test_binding_clears_old_exemption_and_identity_cannot_be_renamed(self):
         from odoo.exceptions import ValidationError
@@ -247,10 +249,14 @@ class TestBusinessSceneLifecycle(TransactionCase):
         )
         self.assertTrue(self._allowed(self.company_a))
         rebound.unlink()
-        publish_scenarios(self.env)
-        self.assertFalse(self._allowed(self.company_a))
-        self.menu.sc_scenario_exempt = True
-        self.assertTrue(self._allowed(self.company_a))
+        with self.assertRaisesRegex(
+            ValueError,
+            "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+        ):
+            publish_scenarios(self.env)
+        with self.assertRaises(ValidationError):
+            self.menu.sc_scenario_exempt = True
 
     def test_exemption_migration_does_not_revive_deleted_business_binding(self):
         scenario = self.env['sc.product.scenario'].sudo()
@@ -309,7 +315,17 @@ class TestBusinessSceneLifecycle(TransactionCase):
         scenario = entry.scenario_id
         for active in (True, False):
             scenario.active = active
-            publish_scenarios(self.env)
+            if active:
+                publish_scenarios(self.env)
+            else:
+                with self.assertRaisesRegex(
+                    ValueError,
+                    "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+                    "\\[BUSINESS_SCENE_PAGE_UNASSIGNED\\]",
+                ):
+                    publish_scenarios(self.env)
+                scenario.active = True
+                publish_scenarios(self.env)
             row = next(row for row in _catalog(self.env, self.company_a.id)['business_scenarios']
                        if row['scene_key'] == scenario.code)
             diagnosis = diagnose_scenario_dependencies(self.env,

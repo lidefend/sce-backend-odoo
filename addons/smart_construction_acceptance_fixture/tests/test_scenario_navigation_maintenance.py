@@ -10,6 +10,7 @@ import runpy
 import json
 from pathlib import Path
 
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 from odoo.tools.convert import convert_file
 from odoo.addons.smart_construction_core.models.support import product_scenario
@@ -309,16 +310,20 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         self.assertIn(self.account_menu.id, set(before))
         binding.unlink()
         self._upgrade_seed()
-        after = self._locations(self._navigation_surface())
-        self.assertNotIn(self.account_menu.id, after)
+        with self.assertRaisesRegex(
+            ValueError,
+            "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+            "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+        ):
+            self._navigation_surface()
         self.account_menu.sc_scenario_exempt = True
         self.env.registry.clear_cache()
-        after = self._locations(self._navigation_surface())
-        self.assertIn(self.account_menu.id, after)
-        center, scenario, entry = after[self.account_menu.id]
-        self.assertEqual(center["key"], self._stable_center_key(self.account_center))
-        self.assertFalse(scenario["key"])
-        self.assertFalse(entry["configured"])
+        with self.assertRaisesRegex(
+            ValueError,
+            "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+            "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+        ):
+            self._navigation_surface()
 
     def test_system_init_consumes_entry_and_direct_sequence(self):
         self.actor = self.env.ref("smart_construction_acceptance_fixture.fe_user_activity_accounting")
@@ -354,11 +359,14 @@ class TestScenarioNavigationMaintenance(TransactionCase):
         )
         self.assertEqual(locations[menu2.id][2]["sequence"], 0)
         (first | second).unlink()
-        (self.account_menu | menu2).write({"sc_scenario_exempt": True})
-        self.account_menu.sequence, menu2.sequence = 90, 0
-        entries = self._locations(self._navigation_surface())[self.account_menu.id][0]["entries"]
-        ids = [entry["menu_id"] for entry in entries]
-        self.assertLess(ids.index(menu2.id), ids.index(self.account_menu.id))
+        with self.assertRaises(ValidationError):
+            (self.account_menu | menu2).write({"sc_scenario_exempt": True})
+        with self.assertRaisesRegex(
+            ValueError,
+            "RELEASE_PREFLIGHT_BLOCKED:business_scene_composition"
+            "\\[BUSINESS_SCENE_PAGE_UNASSIGNED",
+        ):
+            self._navigation_surface()
 
     def test_one_menu_can_bind_to_multiple_scenarios_but_only_once_per_scenario(self):
         original = self._binding(self.project_menu)

@@ -697,6 +697,7 @@ def load_maintained_runtime_surface(env):
         rows.append({"key": scenario.code, "name": scenario.name,
                      "active": bool(scenario.active), "sequence": scenario.sequence,
                      "intents": intents, "bindings": bindings})
+    rows = [row for row in rows if row["bindings"]]
     direct_declarations = DIRECT_PLATFORM_DECLARATIONS
     if not direct_declarations:
         raise ValueError("scenario product surface requires direct_platform_pages")

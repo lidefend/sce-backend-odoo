@@ -86,3 +86,12 @@ enable and all 46 company selections read back.
 - fixture scenario identity ORM: 1 passed.
 - `ci.local.iteration`: 15/15 planned affected targets passed; the planner
   reported no unmapped paths.
+
+Remote managed ORM then exposed two additional stale test assumptions: the
+fixture's explicit project Kanban binding still used `project.management`, and
+maintenance tests tried to publish after deleting the only binding of a
+published page or after making a normal business page temporarily direct.
+The binding now uses `reporting.project_portfolio`; zero-binding scenario
+definitions are omitted from the release composition, while published business
+pages without a scenario/direct declaration remain blocking. The tests now
+assert that blocking outcome instead of manufacturing an executable route.
