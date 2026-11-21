@@ -25,9 +25,9 @@ def _load_module():
     source_authority.build_source_authority_contract = lambda **kwargs: dict(kwargs)
     sys.modules["odoo.addons.smart_core.core.source_authority"] = source_authority
 
-    extension_hooks = types.ModuleType("odoo.addons.smart_core.utils.extension_hooks")
-    extension_hooks.iter_extension_modules = lambda env: []
-    sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = extension_hooks
+    extension_loader = types.ModuleType("odoo.addons.smart_core.core.extension_loader")
+    extension_loader.iter_extension_modules = lambda env: []
+    sys.modules["odoo.addons.smart_core.core.extension_loader"] = extension_loader
 
     module_name = "odoo.addons.smart_core.core.system_init_extension_fact_merger"
     spec = importlib.util.spec_from_file_location(module_name, CORE_DIR / "system_init_extension_fact_merger.py")

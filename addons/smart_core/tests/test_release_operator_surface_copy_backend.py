@@ -79,6 +79,9 @@ COMPOSITION = sys.modules[
 EXTENSION_HOOKS = sys.modules[
     "odoo.addons.smart_core.utils.extension_hooks"
 ]
+EXTENSION_LOADER = importlib.import_module(
+    "odoo.addons.smart_core.core.extension_loader"
+)
 TARGET = _load_module(
     "odoo.addons.smart_core.delivery.release_operator_surface_service",
     "addons/smart_core/delivery/release_operator_surface_service.py",
@@ -336,6 +339,10 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
             EXTENSION_HOOKS.importlib,
             "import_module",
             return_value=root_module,
+        ), patch.object(
+            EXTENSION_HOOKS,
+            "_extension_modules",
+            return_value=("smart_construction_core",),
         ):
             for hook_name in sorted(required):
                 self.assertEqual(
@@ -1107,7 +1114,15 @@ class TestReleaseOperatorSurfaceCopyBackend(unittest.TestCase):
         service.read_model_service.audit_service = _AuditTrailService()
         service.read_model_service.approval_policy_service = _ApprovalPolicyService()
 
-        payload = service.build_surface(product_key="construction.standard", action_limit=5)
+        with patch.object(
+            EXTENSION_LOADER,
+            "iter_extension_modules",
+            return_value=["test_product_delivery_extension"],
+        ):
+            payload = service.build_surface(
+                product_key="construction.standard",
+                action_limit=5,
+            )
         console = payload.get("product_delivery_console") or {}
 
         self.assertEqual((console.get("profile") or {}).get("label"), "测试交付包")

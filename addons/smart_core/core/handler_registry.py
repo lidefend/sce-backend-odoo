@@ -6,7 +6,11 @@ from typing import Dict, Type
 from .base_handler import BaseIntentHandler
 
 _logger = logging.getLogger(__name__)
-HANDLER_REGISTRY: Dict[str, Type[BaseIntentHandler]] = {}
+BASE_HANDLER_REGISTRY: Dict[str, Type[BaseIntentHandler]] = {}
+# Compatibility alias for imports that only need the platform-owned handler
+# catalog. Runtime dispatch must use the Registry-scoped map from
+# extension_loader.handlers_for_env().
+HANDLER_REGISTRY = BASE_HANDLER_REGISTRY
 SOURCE_KIND = "intent_handler_registry_projection"
 SOURCE_AUTHORITIES = ("smart_core.handlers", "intent_handler_runtime_base")
 NO_BUSINESS_FACT_AUTHORITY = True
@@ -56,8 +60,8 @@ def register_all_handlers():
                 continue
 
             # 唯一性检查
-            if intent_type in HANDLER_REGISTRY:
-                prev = HANDLER_REGISTRY[intent_type]
+            if intent_type in BASE_HANDLER_REGISTRY:
+                prev = BASE_HANDLER_REGISTRY[intent_type]
                 # 重复扫描同一 handler 时静默处理，避免噪音日志
                 if prev is attr:
                     continue
@@ -67,7 +71,7 @@ def register_all_handlers():
                     prev.__module__,
                     module.__name__,
                 )
-            HANDLER_REGISTRY[intent_type] = attr
+            BASE_HANDLER_REGISTRY[intent_type] = attr
 
             # 别名支持（可选）
             aliases = []
@@ -83,12 +87,17 @@ def register_all_handlers():
                     _logger.error("Failed to read aliases() for %s: %s", intent_type, e)
 
             for al in aliases:
-                if al in HANDLER_REGISTRY:
-                    prev = HANDLER_REGISTRY[al]
+                if al in BASE_HANDLER_REGISTRY:
+                    prev = BASE_HANDLER_REGISTRY[al]
                     if prev is attr:
                         continue
                     _logger.warning("Alias '%s' conflicts; overwritten by %s", al, module.__name__)
-                HANDLER_REGISTRY[al] = attr
+                BASE_HANDLER_REGISTRY[al] = attr
+
+
+def base_handlers() -> Dict[str, Type[BaseIntentHandler]]:
+    """Return an isolated copy of the platform-owned base handler catalog."""
+    return dict(BASE_HANDLER_REGISTRY)
 
 # 在模块 import 时自动注册
 register_all_handlers()

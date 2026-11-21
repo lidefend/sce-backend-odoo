@@ -189,7 +189,15 @@ def _load_login_handler():
     _install_module("odoo.modules.registry", Registry=lambda db_name: None)
     _install_package_modules(root)
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
-    _install_module("odoo.addons.smart_core.core.handler_registry", HANDLER_REGISTRY={})
+    handler_registry = {}
+    _install_module(
+        "odoo.addons.smart_core.core.handler_registry",
+        HANDLER_REGISTRY=handler_registry,
+    )
+    _install_module(
+        "odoo.addons.smart_core.core.extension_loader",
+        handlers_for_env=lambda env: handler_registry,
+    )
     _install_module(
         "odoo.addons.smart_core.security.auth",
         authenticate_user=lambda login, password, db=None: {"id": 5, "db": db, "principal": _Principal()},

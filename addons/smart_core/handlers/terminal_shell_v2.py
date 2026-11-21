@@ -5,7 +5,7 @@ import time
 from typing import Any, Dict, Optional
 
 from ..core.base_handler import BaseIntentHandler
-from ..core.handler_registry import HANDLER_REGISTRY
+from ..core.extension_loader import handlers_for_env
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.request_params import parse_positive_int
 from ..core.unified_page_contract_v2_assembler import CONTRACT_VERSION
@@ -153,7 +153,7 @@ class TerminalShellV2Handler(BaseIntentHandler):
         return None, None
 
     def _call(self, intent: str, params: dict[str, Any], ctx: Optional[Dict[str, Any]]) -> dict[str, Any]:
-        handler_cls = HANDLER_REGISTRY.get(intent)
+        handler_cls = handlers_for_env(self.env).get(intent)
         if handler_cls is None:
             return {"ok": False, "error": {"code": 404, "message": f"Unknown intent: {intent}"}, "data": {}}
         handler = handler_cls(

@@ -513,12 +513,14 @@ def smart_core_identity_profile(env):
 
 def smart_core_nav_scene_maps(env):
     derived = _derive_nav_scene_maps_from_registry(env)
-    menu_scene_map = dict(derived.get("menu_scene_map") or {})
-    action_xmlid_scene_map = dict(derived.get("action_xmlid_scene_map") or {})
-    model_view_scene_map = dict(derived.get("model_view_scene_map") or {})
-    menu_scene_map.update(NAV_MENU_SCENE_MAP)
-    action_xmlid_scene_map.update(NAV_ACTION_SCENE_MAP)
-    model_view_scene_map.update(NAV_MODEL_VIEW_SCENE_MAP)
+    # Scene Registry is the dynamic authority. Static Scene maps are retained
+    # only as compatibility gaps for data not yet represented in the registry.
+    menu_scene_map = dict(NAV_MENU_SCENE_MAP)
+    action_xmlid_scene_map = dict(NAV_ACTION_SCENE_MAP)
+    model_view_scene_map = dict(NAV_MODEL_VIEW_SCENE_MAP)
+    menu_scene_map.update(derived.get("menu_scene_map") or {})
+    action_xmlid_scene_map.update(derived.get("action_xmlid_scene_map") or {})
+    model_view_scene_map.update(derived.get("model_view_scene_map") or {})
     return {
         "menu_scene_map": menu_scene_map,
         "action_xmlid_scene_map": action_xmlid_scene_map,

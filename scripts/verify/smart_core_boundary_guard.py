@@ -14,6 +14,7 @@ MANIFEST = SMART_CORE / "__manifest__.py"
 APP_CONFIG_DOC = SMART_CORE / "app_config_engine" / "docs" / "app_config_engine.md"
 APP_CONFIG_GUARD = ROOT / "scripts" / "verify" / "app_config_engine_boundary_guard.py"
 INDUSTRY_COMPAT = SMART_CORE / "utils" / "industry_compatibility.py"
+EXTENSION_HOOK_CONTRACTS = SMART_CORE / "core" / "extension_hook_contracts.py"
 
 REQUIRED_DIRS = {
     "controllers",
@@ -100,6 +101,32 @@ def _industry_refs(source: str) -> set[str]:
         refs.add(source[idx:end])
         start = end
     return refs
+
+
+def _extension_provider_lines(
+    path: Path,
+    source: str,
+    contract_path: Path = EXTENSION_HOOK_CONTRACTS,
+) -> set[int]:
+    """Allow P1 module identities only as declared Hook provider literals."""
+    if path.resolve() != contract_path.resolve():
+        return set()
+    tree = ast.parse(source)
+    lines: set[int] = set()
+    for node in ast.walk(tree):
+        if not (
+            isinstance(node, ast.Call)
+            and isinstance(node.func, ast.Name)
+            and node.func.id == "HookContract"
+        ):
+            continue
+        for keyword in node.keywords:
+            if keyword.arg != "providers":
+                continue
+            for value in ast.walk(keyword.value):
+                if isinstance(value, ast.Constant) and isinstance(value.value, str):
+                    lines.add(value.lineno)
+    return lines
 
 
 def _iter_production_python_files():
@@ -194,13 +221,24 @@ def main() -> int:
     for path in _iter_production_python_files():
         text = _read(path)
         rel = path.relative_to(ROOT).as_posix()
-        for token in FORBIDDEN_PRODUCTION_TOKENS:
-            if token in text:
-                token_violations.append(f"{rel}: {token}")
+        provider_lines = _extension_provider_lines(path, text)
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            for token in FORBIDDEN_PRODUCTION_TOKENS:
+                if token in line and lineno not in provider_lines:
+                    token_violations.append(f"{rel}: {token}")
         legacy_context_violations.extend(_legacy_context_entrypoint_violations(path, text))
         legacy_scope_violations.extend(_legacy_scope_helper_violations(path, text))
         legacy_menu_scope_violations.extend(_legacy_menu_scope_policy_violations(path, text))
         refs = sorted(_industry_refs(text))
+        if (
+            path.resolve() == EXTENSION_HOOK_CONTRACTS.resolve()
+            and refs
+            and all(
+                ref in {"smart_construction_core", "smart_construction_scene"}
+                for ref in refs
+            )
+        ):
+            refs = []
         if refs:
             refs_by_file[rel] = refs
     unexpected: list[str] = []

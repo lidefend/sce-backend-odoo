@@ -507,15 +507,18 @@ def authenticate_api_key(*, database, secret, requested_scopes=None, fingerprint
         raise
 
 
-def assert_principal_scope(principal, *, intent_name, params=None):
+def assert_principal_scope(principal, *, intent_name, params=None, env=None):
     auth_method = principal.get("auth_method") if isinstance(principal, dict) else getattr(principal, "auth_method", "")
     scopes_value = principal.get("scopes") if isinstance(principal, dict) else getattr(principal, "scopes", ())
     if not principal or auth_method != AUTH_METHOD_API_KEY:
         return True
     intent = str(intent_name or "").strip()
-    from ..core.handler_registry import HANDLER_REGISTRY
-
-    handler = HANDLER_REGISTRY.get(intent)
+    if env is not None:
+        from ..core.extension_loader import handlers_for_env
+        handler = handlers_for_env(env).get(intent)
+    else:
+        from ..core.handler_registry import base_handlers
+        handler = base_handlers().get(intent)
     resolver = getattr(handler, "machine_access_for", None)
     machine_access = str(resolver(params) if callable(resolver) else "deny").strip().lower()
     if machine_access not in {"read", "write"}:

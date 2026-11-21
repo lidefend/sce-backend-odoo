@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 220,
+    "odoo_tags": 223,
     "gated": 5,
-    "on_demand": 79,
+    "on_demand": 82,
     "unwired": 136,
-    "odoo_tag_declarations": 452,
-    "gated_declarations": 103,
-    "uncovered_declarations": 349,
+    "odoo_tag_declarations": 458,
+    "gated_declarations": 106,
+    "uncovered_declarations": 352,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -18,7 +18,7 @@
       "group": "sc_gate",
       "status": "gated",
       "kind": "odoo_tag",
-      "declarations": 72,
+      "declarations": 75,
       "files": [
         "addons/sc_norm_engine/tests/test_boq_norm_link.py",
         "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
@@ -80,6 +80,9 @@
         "addons/smart_construction_core/tests/test_tier_action_groups_union.py",
         "addons/smart_construction_core/tests/test_variation_change_chain.py",
         "addons/smart_construction_portal/tests/test_portal_contract_dashboard.py",
+        "addons/smart_construction_scene/tests/test_hook_authority_consumer.py",
+        "addons/smart_core/tests/test_extension_registry_lifecycle.py",
+        "addons/smart_core/tests/test_extension_runtime_context.py",
         "addons/smart_core/tests/test_res_users_audience_group_boundary.py",
         "addons/smart_license_core/tests/test_license_tier_gate.py",
         "addons/smart_owner_bundle/tests/test_bundle_registry_consistency.py",
@@ -1324,6 +1327,45 @@
       "owner": "platform-team",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "extension_hook_authority",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_scene/tests/test_hook_authority_consumer.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.extension.hook_authority.orm :: /TestHookAuthorityConsumer (class selection)"
+      ]
+    },
+    {
+      "group": "extension_lifecycle",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_extension_registry_lifecycle.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.extension.lifecycle.orm :: /TestExtensionRegistryLifecycle (class selection)"
+      ]
+    },
+    {
+      "group": "extension_runtime_context",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_core/tests/test_extension_runtime_context.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make:verify.extension.runtime_context.orm :: /TestExtensionRuntimeContext (class selection)"
+      ]
     },
     {
       "group": "feedback_evaluation_rt_http",

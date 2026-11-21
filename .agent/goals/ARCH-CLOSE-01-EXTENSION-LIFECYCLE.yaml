@@ -1,0 +1,74 @@
+schema_version: 1
+
+goal:
+  id: ARCH-CLOSE-01-EXTENSION-LIFECYCLE
+  title: extension_lifecycle_and_hook_authority
+  status: active
+  formal_product_layer: P0/P1/P4
+  layer_target: >-
+    Extension discovery and Handler runtime state in smart_core, Hook
+    invocation semantics, construction-core/scene provider ownership, and the
+    database-backed extension guard.
+  module:
+    - addons/smart_core
+    - addons/smart_construction_core
+    - addons/smart_construction_scene
+    - scripts/verify
+    - make
+    - docs
+    - .agent
+  standard_vs_user_specific: generic_platform_extension_mechanism
+  objective: >-
+    Make installed Odoo modules the execution authority, bind extension
+    Handler/Hook runtime state to the current Odoo Registry lifecycle, and
+    replace implicit first-provider ordering with explicit Hook contracts,
+    without introducing another extension framework or module lifecycle manager.
+  product_result: >-
+    Extension execution is the intersection of installed modules and enabled
+    extensions; one database cannot reuse another database's Handler state;
+    Registry rebuild reconstructs extension state; configured-but-uninstalled
+    modules fail explicitly; Hook providers follow declared single-owner,
+    ordered-merge or run-all semantics; and the construction scene navigation
+    provider is actually reachable through the real consumer chain.
+  why_here: >-
+    The defects are in the P0 extension adapter and its verification. The
+    industry/provider corrections remain in their existing construction modules;
+    no customer or business-data layer owns this mechanism.
+  why_not_elsewhere:
+    - Do not create a second module lifecycle manager.
+    - Do not move extension semantics into customer or frontend modules.
+    - Do not change Odoo ACL, business models or customer data.
+    - Do not add a new capability, page or Bundle registry.
+    - Do not rely on database name caches as a substitute for Registry lifecycle.
+  blast_radius:
+    behavior:
+      - extension module resolution
+      - intent Handler runtime registry
+      - system-init and Hook provider discovery
+      - four construction Core/Scene Hook collisions
+      - extension database guard and lifecycle tests
+    exclusions:
+      - customer modules and historical data
+      - business model behavior and ACL
+      - Contract V2 and frontend behavior
+      - product release and edition snapshots
+      - deployment and production databases
+  validation:
+    required:
+      - installed/enabled/uninstalled extension matrix
+      - two-registry Handler isolation
+      - Registry rebuild and extension-config invalidation
+      - Hook mode and duplicate-provider tests
+      - consumer-chain test for scene nav maps
+      - owning smart_core module baseline
+    not_yet_authorized:
+      - test database creation, module installation/upgrade or fixture reset
+  rollback: >-
+    Revert the bounded P0/P4 commits together. No persistent customer data,
+    product release, ACL or business record migration is involved.
+  completion:
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

@@ -80,6 +80,13 @@ orm_summaries() {
   grep -Eo '[0-9]+ failed, [0-9]+ error\(s\) of [0-9]+ tests' "${log}" || true
 }
 
+orm_database_summaries() {
+  local log="$1"
+  local database="$2"
+  grep -Eo "[0-9]+ failed, [0-9]+ error\\(s\\) of [0-9]+ tests when loading database '${database}'" "${log}" \
+    | sed "s/ when loading database '${database}'$//" || true
+}
+
 # Odoo logs one start line per collected test case:
 #   INFO db odoo.addons.<module>.tests.<file>: Starting <Class>.<method> ...
 # Only that shape proves a test case was collected and executed.
@@ -110,8 +117,16 @@ evaluate_orm_outcome() {
 
   validate_orm_expect_count "${orm_expect_count}" || return 2
 
-  summaries="$(orm_summaries "${log}")"
+  if [[ -n "${orm_expect_database}" ]]; then
+    summaries="$(orm_database_summaries "${log}" "${orm_expect_database}")"
+  else
+    summaries="$(orm_summaries "${log}")"
+  fi
   if [[ -z "${summaries}" ]]; then
+    if [[ -n "${orm_expect_database}" ]]; then
+      echo "[orm-guard][FATAL] selected database has no ORM loading summary: ${orm_expect_database}" >&2
+      return 5
+    fi
     echo "[orm-guard][FATAL] Odoo did not report any executed ORM test" >&2
     return 4
   fi
@@ -297,6 +312,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   sed 's/ INFO db / INFO expected_db /' "${selftest_dir}/pass.log" >"${selftest_dir}/database.log"
   expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/database.log"
   printf "0 failed, 0 error(s) of 7 tests when loading database 'expected_db'\n" >>"${selftest_dir}/database.log"
+  printf "0 failed, 0 error(s) of 0 tests when loading database 'nested_registry'\n" >>"${selftest_dir}/database.log"
   expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/database.log"
   orm_expect_database=""
   expect_timeout_code 0 3600

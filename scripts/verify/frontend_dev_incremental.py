@@ -89,6 +89,15 @@ NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.cross_model_action_navigation.unit": "esbuild",
     "verify.frontend.auth_surface.guard": "node",
 }
+IMPLICIT_OFFLINE_TARGET_SUFFIXES = (
+    ".assembler",
+    ".contract",
+    ".coverage",
+    ".guard",
+    ".lane_coverage",
+    ".policy",
+    ".unit",
+)
 
 
 @dataclass(frozen=True)
@@ -124,6 +133,63 @@ RULES = (
         "addons/smart_core/core/system_init_extension_fact_merger.py",
         "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
     ), ("verify.backend.navigation_delivery.unit",)),
+    Rule((
+        "addons/smart_construction_scene/__init__.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/tests/test_hook_authority_consumer.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "scripts/verify/extension_hook_contract_guard.py",
+        "scripts/verify/test_extension_hook_contract_guard.py",
+        "scripts/verify/test_extension_hook_resolver.py",
+    ), (
+        "verify.extension.hook_contracts.unit",
+        "verify.extension.hook_resolver.unit",
+        "verify.extension.hook_authority.orm",
+        "verify.extension.native_alignment.orm",
+    )),
+    Rule((
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/core/handler_registry.py",
+        "addons/smart_core/tests/test_extension_runtime_context.py",
+        "scripts/verify/test_extension_runtime_context.py",
+    ), (
+        "verify.extension.runtime_context.unit",
+        "verify.extension.runtime_context.orm",
+    )),
+    Rule((
+        "addons/smart_core/core/intent_router.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/terminal_shell_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_adapters.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/tests/test_intent_router_payload_envelope.py",
+        "addons/smart_core/tests/test_login_company_boundary.py",
+        "addons/smart_core/tests/test_login_identity_semantics.py",
+        "addons/smart_core/tests/test_terminal_shell_v2_boundaries.py",
+        "scripts/contract/snapshot_export.py",
+        "scripts/verify/smart_core_boundary_guard.py",
+        "scripts/verify/test_smart_core_boundary_guard.py",
+    ), (
+        "verify.extension.consumers.unit",
+    )),
+    Rule((
+        "scripts/ops/apply_extension_modules.sh",
+        "scripts/verify/extension_modules_guard.sh",
+        "scripts/verify/test_extension_modules_guard.py",
+    ), (
+        "verify.extension.modules_guard.unit",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_extension_registry_lifecycle.py",
+        "scripts/ci/orm_result_guard.sh",
+        "scripts/dev/local_test_runner.py",
+    ), (
+        "verify.extension.lifecycle.orm",
+        "verify.orm.guard.self_test",
+    )),
     Rule((
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/scripts/readonly_block_component_test.mjs",
@@ -2318,6 +2384,15 @@ def select_targets(paths: list[str]) -> list[str]:
     return targets
 
 
+def implicitly_registered_offline_targets(targets: set[str]) -> set[str]:
+    """Treat pure target families as registered without widening runtime reuse."""
+    return {
+        target
+        for target in targets
+        if target.endswith(IMPLICIT_OFFLINE_TARGET_SUFFIXES)
+    }
+
+
 def watched_files() -> list[Path]:
     files: set[Path] = set()
     for relative in WATCH_ROOTS:
@@ -2367,20 +2442,54 @@ def _paths_since(root: Path, revision: str) -> list[str]:
     return sorted(paths)
 
 
+def _is_ancestor(root: Path, ancestor: str, descendant: str) -> bool:
+    result = subprocess.run(
+        ["git", "-C", str(root), "merge-base", "--is-ancestor", ancestor, descendant],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+        check=False,
+    )
+    return result.returncode == 0
+
+
+def _receipt_identity_resumable(
+    receipt_identity: object,
+    current_identity: dict,
+    receipt_head: str,
+) -> bool:
+    """Require current verifier identity without treating cleanliness as validity."""
+    if not isinstance(receipt_identity, dict) or not _full_sha(receipt_head):
+        return False
+    receipt_runtime = receipt_identity.get("runtimeTreeSha256")
+    current_runtime = current_identity.get("runtimeTreeSha256")
+    if (
+        not _full_digest(receipt_runtime)
+        or (
+            receipt_head == current_identity.get("head")
+            and receipt_runtime != current_runtime
+        )
+        or receipt_identity.get("authoritySha256")
+        != current_identity.get("authoritySha256")
+    ):
+        return False
+    return True
+
+
 def resumable_receipt_results(
     root: Path,
     paths: list[str],
     targets: list[str],
 ) -> tuple[Path | None, str, dict[str, dict]]:
-    """Carry verified targets from a prior clean execution.
+    """Carry verified targets from a prior exact execution identity.
 
     A prior aggregate receipt can contain passed targets even when another
     target was interrupted, or can be a complete passed execution whose source
     later changed. Those target logs remain useful when the source head is still
-    an ancestor and the requested target was actually executed. Changes to other
-    paths or to the aggregate target set do not invalidate its log. The caller
-    removes targets
-    selected by commits or dirty paths since that head.
+    an ancestor, the verifier authority is unchanged, and the requested target
+    was actually executed. For an unchanged HEAD, the complete current runtime
+    tree must also match, so a dirty candidate can resume but changed runtime
+    bytes cannot reuse an older result. For an advanced HEAD, the caller removes
+    targets selected by commits or dirty paths since that head.
     """
     execution_root = root / ".runtime/frontend-dev-validation/executions"
     if not execution_root.is_dir():
@@ -2391,28 +2500,42 @@ def resumable_receipt_results(
         reverse=True,
     )
     expected_targets = sorted(set(targets))
+    current_identity = current_execution_identity(root)
+    current_head = str(current_identity.get("head", ""))
     best = None
     for receipt_path in receipts:
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
-            head = str(receipt.get("identity", {}).get("head", ""))
+            receipt_identity = receipt.get("identity")
+            if not isinstance(receipt_identity, dict):
+                continue
+            head = str(receipt_identity.get("head", ""))
             source_targets = receipt.get("requiredTargets")
             if (
                 receipt.get("status") not in ("interrupted", "passed", "failed")
-                or not receipt.get("identity", {}).get("worktreeClean")
-                or len(head) != 40
+                or not _full_sha(head)
+                or not _full_sha(current_head)
+                or not _receipt_identity_resumable(
+                    receipt_identity,
+                    current_identity,
+                    head,
+                )
                 or not isinstance(source_targets, list)
                 or any(not isinstance(target, str) for target in source_targets)
                 or len(set(source_targets)) != len(source_targets)
                 or not set(expected_targets).intersection(source_targets)
             ):
                 continue
-            subprocess.run(
-                ["git", "-C", str(root), "merge-base", "--is-ancestor", head, "HEAD"],
-                check=True,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
+            same_runtime_identity = (
+                receipt_identity.get("runtimeTreeSha256")
+                == current_identity.get("runtimeTreeSha256")
+                and receipt_identity.get("authoritySha256")
+                == current_identity.get("authoritySha256")
             )
+            if not same_runtime_identity and not _is_ancestor(
+                root, head, current_head
+            ):
+                continue
             results: dict[str, dict] = {}
             for row in receipt.get("targetResults", []):
                 target = row.get("target")
@@ -2446,7 +2569,7 @@ def resumable_receipt_results(
                 )
                 if best is None or candidate[0] < best[0]:
                     best = candidate
-        except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
+        except (OSError, ValueError, KeyError, TypeError):
             continue
     if best is not None:
         _, receipt_path, head, results = best
@@ -2730,14 +2853,19 @@ def iteration_plan(root: Path = ROOT) -> int:
         raise RunError("selected run is closed; register/select the next task")
     checks = check_states(root, run)
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
+    excluded = validation_exclusion_targets(run)
+    required = set(select_targets(paths)) - excluded
+    registered = declared_check_targets(run) | implicitly_registered_offline_targets(
+        required
+    )
     return print_plan(
         paths,
         source=relative,
         checks=checks,
-        registered_targets=declared_check_targets(run),
+        registered_targets=registered,
         iteration_baseline_sha=checkpoint,
         iteration_baseline_kind=checkpoint_kind,
-        excluded_targets=validation_exclusion_targets(run),
+        excluded_targets=excluded,
     )
 
 
@@ -3191,7 +3319,25 @@ def execute_targets(
         else (None, "", {})
     )
     if resume_receipt is not None:
-        invalidated = set(select_targets(_paths_since(root, resume_head)))
+        # A dirty candidate's receipt already contains its full dirty tree.
+        # `_paths_since` would otherwise invalidate every original dirty target.
+        try:
+            resume_identity = json.loads(
+                resume_receipt.read_text(encoding="utf-8")
+            ).get("identity", {})
+        except (OSError, ValueError, TypeError):
+            resume_identity = {}
+        same_runtime_identity = (
+            resume_identity.get("runtimeTreeSha256")
+            == identity.get("runtimeTreeSha256")
+            and resume_identity.get("authoritySha256")
+            == identity.get("authoritySha256")
+        )
+        invalidated = (
+            set()
+            if resume_head == identity.get("head") or same_runtime_identity
+            else set(select_targets(_paths_since(root, resume_head)))
+        )
         carried_results = {
             target: row
             for target, row in carried_results.items()
@@ -3314,6 +3460,9 @@ def execute_worktree(root: Path = ROOT) -> int:
     excluded = validation_exclusion_targets(run)
     required = set(select_targets(paths)) - excluded
     checks = check_states(root, run)
+    registered = declared_check_targets(run) | implicitly_registered_offline_targets(
+        required
+    )
     reusable = reusable_check_targets(checks) & required
     reusable_results = {
         target: row
@@ -3324,11 +3473,11 @@ def execute_worktree(root: Path = ROOT) -> int:
     return execute_targets(
         paths,
         root=root,
-        registered_targets=declared_check_targets(run),
+        registered_targets=registered,
         blocked_targets=blocked,
         reusable_targets=reusable,
         reusable_results=reusable_results,
-        non_reusable_targets=(required - declared_check_targets(run)) | {
+        non_reusable_targets=(required - registered) | {
             check["target"] for check_id, check in checks.items()
             if check["status"] == "stale"
             or (run["checks"].get(check_id, {}).get("kind", "runtime") != "offline"

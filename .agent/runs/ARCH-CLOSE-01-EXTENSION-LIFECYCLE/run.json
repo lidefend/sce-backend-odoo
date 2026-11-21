@@ -1,0 +1,257 @@
+{
+  "schema_version": 1,
+  "id": "ARCH-CLOSE-01-EXTENSION-LIFECYCLE",
+  "branch": "feature/arch-close-01-extension-lifecycle-20261121",
+  "baseline_sha": "09be7ab696bb9201efe1cdd66c22ff8e3c3d6d88",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ARCH-CLOSE-01-EXTENSION-LIFECYCLE.yaml",
+  "record": "docs/ops/iterations/arch_close_01_extension_lifecycle_20261121.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ARCH-CLOSE-01-EXTENSION-LIFECYCLE.yaml",
+    ".agent/runs/ARCH-CLOSE-01-EXTENSION-LIFECYCLE/run.json",
+    "docs/architecture/arch_close_01_extension_lifecycle_v1.md",
+    "docs/architecture/smart_core_boundary_v1.md",
+    "docs/ops/iterations/arch_close_01_extension_lifecycle_20261121.md",
+    "make/ci.mk",
+    "make/dev_test.mk",
+    "scripts/dev/local_test_runner.py",
+    "scripts/ci/orm_result_guard.sh",
+    "scripts/ops/apply_extension_modules.sh",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/extension_hook_contract_guard.py",
+    "scripts/verify/extension_modules_guard.sh",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/smart_core_boundary_guard.py",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/test_extension_hook_contract_guard.py",
+    "scripts/verify/test_extension_hook_resolver.py",
+    "scripts/verify/test_extension_modules_guard.py",
+    "scripts/verify/test_extension_runtime_context.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_smart_core_boundary_guard.py",
+    "addons/smart_core/core/extension_loader.py",
+    "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/core/handler_registry.py",
+    "addons/smart_core/core/intent_router.py",
+    "addons/smart_core/core/system_init_extension_fact_merger.py",
+    "addons/smart_core/delivery/platform_capability_explorer.py",
+    "addons/smart_core/delivery/release_operator_read_model_service.py",
+    "addons/smart_core/utils/extension_hooks.py",
+    "addons/smart_core/handlers/login.py",
+    "addons/smart_core/handlers/terminal_shell_v2.py",
+    "addons/smart_core/handlers/ui_contract_v2_adapters.py",
+    "addons/smart_core/security/intent_authorization.py",
+    "addons/smart_core/security/credential_service.py",
+    "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_backend_semantic_copy_supply.py",
+    "addons/smart_core/tests/test_extension_registry_lifecycle.py",
+    "addons/smart_core/tests/test_extension_runtime_context.py",
+    "addons/smart_core/tests/test_intent_router_payload_envelope.py",
+    "addons/smart_core/tests/test_login_company_boundary.py",
+    "addons/smart_core/tests/test_login_identity_semantics.py",
+    "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+    "addons/smart_core/tests/test_release_operator_surface_copy_backend.py",
+    "addons/smart_core/tests/test_terminal_shell_v2_boundaries.py",
+    "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+    "scripts/contract/snapshot_export.py",
+    "addons/smart_construction_scene/__init__.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/tests/__init__.py",
+    "addons/smart_construction_scene/tests/test_hook_authority_consumer.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source tests plus the registered disposable sc-local-test/sc_test profile and two temporary clones derived from its smart_construction_bundle template; no customer, persistent development or production database"
+  },
+  "checks": {
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/goals",
+        ".agent/runs",
+        ".agent/active-runs.json",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "extension_runtime_context": {
+      "target": "verify.extension.runtime_context.unit",
+      "inputs": [
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/core/handler_registry.py",
+        "scripts/verify/test_extension_runtime_context.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "hook_contracts": {
+      "target": "verify.extension.hook_contracts.unit",
+      "inputs": [
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "scripts/verify/extension_hook_contract_guard.py",
+        "scripts/verify/test_extension_hook_contract_guard.py",
+        "scripts/verify/lowcode_config_runtime_boundary_guard.py",
+        "scripts/verify/production_menu_release_gate_guard.py",
+        "scripts/verify/project_context_selector_product_boundary_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "hook_resolver": {
+      "target": "verify.extension.hook_resolver.unit",
+      "inputs": [
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "scripts/verify/test_extension_hook_resolver.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "extension_modules_guard": {
+      "target": "verify.extension.modules_guard.unit",
+      "inputs": [
+        "scripts/verify/extension_modules_guard.sh",
+        "scripts/verify/test_extension_modules_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "extension_consumers": {
+      "target": "verify.extension.consumers.unit",
+      "inputs": [
+        "addons/smart_core/core/intent_router.py",
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/core/handler_registry.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "addons/smart_core/handlers/login.py",
+        "addons/smart_core/handlers/terminal_shell_v2.py",
+        "addons/smart_core/handlers/ui_contract_v2_adapters.py",
+        "addons/smart_core/security/credential_service.py",
+        "addons/smart_core/security/intent_authorization.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/core/system_init_extension_fact_merger.py",
+        "addons/smart_core/delivery/platform_capability_explorer.py",
+        "addons/smart_core/delivery/release_operator_read_model_service.py",
+        "scripts/contract/snapshot_export.py",
+        "addons/smart_core/tests/test_intent_router_payload_envelope.py",
+        "addons/smart_core/tests/test_terminal_shell_v2_boundaries.py",
+        "addons/smart_core/tests/test_login_company_boundary.py",
+        "addons/smart_core/tests/test_login_identity_semantics.py",
+        "addons/smart_core/tests/test_base_handler_type_error.py",
+        "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
+        "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+        "scripts/verify/test_contract_snapshot_export_fail_closed.py",
+        "scripts/verify/test_contract_snapshot_user_resolution.py",
+        "scripts/verify/test_contract_snapshot_execute_authority.py",
+        "scripts/verify/test_contract_snapshot_field_selection.py",
+        "scripts/verify/smart_core_boundary_guard.py",
+        "scripts/verify/test_smart_core_boundary_guard.py",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "extension_runtime_context_orm": {
+      "target": "verify.extension.runtime_context.orm",
+      "inputs": [
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/core/handler_registry.py",
+        "addons/smart_core/tests/test_extension_runtime_context.py",
+        "make/ci.mk",
+        "scripts/dev/local_test_runner.py",
+        "scripts/ci/orm_result_guard.sh"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ARCH-CLOSE-01-EXTENSION-LIFECYCLE/extension_runtime_context_orm_readback.json"
+      }
+    },
+    "extension_native_alignment_orm": {
+      "target": "verify.extension.native_alignment.orm",
+      "inputs": [
+        "addons/smart_core/utils/extension_hooks.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
+        "make/ci.mk",
+        "scripts/dev/local_test_runner.py",
+        "scripts/ci/orm_result_guard.sh"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ARCH-CLOSE-01-EXTENSION-LIFECYCLE/extension_native_alignment_orm_readback.json"
+      }
+    },
+    "extension_hook_authority_orm": {
+      "target": "verify.extension.hook_authority.orm",
+      "inputs": [
+        "addons/smart_construction_scene/__init__.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/tests/test_hook_authority_consumer.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/utils/extension_hooks.py",
+        "make/ci.mk",
+        "scripts/dev/local_test_runner.py",
+        "scripts/ci/orm_result_guard.sh"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ARCH-CLOSE-01-EXTENSION-LIFECYCLE/extension_hook_authority_orm_readback.json"
+      }
+    },
+    "extension_lifecycle_orm": {
+      "target": "verify.extension.lifecycle.orm",
+      "inputs": [
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/tests/test_extension_registry_lifecycle.py",
+        "scripts/dev/local_test_runner.py",
+        "scripts/ci/orm_result_guard.sh",
+        "make/ci.mk",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/ARCH-CLOSE-01-EXTENSION-LIFECYCLE/extension_lifecycle_orm_readback.json"
+      }
+    },
+    "frontend_dev_incremental_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "orm_guard_self_test": {
+      "target": "verify.orm.guard.self_test",
+      "inputs": [
+        "scripts/ci/orm_result_guard.sh",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "The full smart_core module baseline remains pre-existing red: 65 failed and 88 errors of 642 tests on the reusable bundle template. Every changed-family ORM target passes.",
+    "The full smart_construction_scene baseline has one unrelated pre-existing error of 16 tests in TestAdminClose01PlatformToEnterprise (missing scenario_catalog['rows']); all four new Hook authority tests pass.",
+    "Pre-existing out-of-scope smart_core boundary literals remain in platform_capability_explorer.py and release_operator_read_model_service.py at baseline 09be7ab6; they are not introduced by this candidate."
+  ],
+  "next_exact_step": "Run final static checks and ci.delivery.freeze.prepare, review the generated diff, then commit and publish the exact candidate for independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

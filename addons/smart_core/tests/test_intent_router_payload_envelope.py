@@ -80,6 +80,7 @@ def _load_router(fake_request, handler_cls):
     registry_mod.HANDLER_REGISTRY = {"demo.intent": handler_cls}
     extension_loader_mod = types.ModuleType("odoo.addons.smart_core.core.extension_loader")
     extension_loader_mod.load_extensions = lambda env, registry: None
+    extension_loader_mod.handlers_for_env = lambda env: registry_mod.HANDLER_REGISTRY
 
     sys.modules.update(
         {
