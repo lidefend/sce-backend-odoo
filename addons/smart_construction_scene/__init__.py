@@ -19,7 +19,6 @@ else:
         smart_core_get_scene_version,
         smart_core_has_db_scenes,
         smart_core_load_scene_configs,
-        smart_core_identity_profile,
         smart_core_nav_scene_maps,
         smart_core_navigation_authority_filter,
         smart_core_delivery_scene_declarations,

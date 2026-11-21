@@ -414,7 +414,7 @@ def _source_revision(identity: dict[str, Any]) -> str:
 
 
 def _extension_modules(env) -> list[str]:
-    from odoo.addons.smart_core.utils.extension_hooks import iter_extension_modules
+    from odoo.addons.smart_core.core.extension_loader import iter_extension_modules
 
     return iter_extension_modules(env)
 

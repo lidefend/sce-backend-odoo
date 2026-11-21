@@ -4,22 +4,22 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1738`
+- Total assets: `1744`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `245`
+- Long-running assets: `246`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1268`
+- PR dedupe candidates: `1273`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
-| governance | 640 |
-| contract | 428 |
-| unit | 348 |
-| odoo_integration | 159 |
+| governance | 642 |
+| contract | 430 |
+| unit | 349 |
+| odoo_integration | 160 |
 | e2e | 57 |
 | security | 54 |
 | frontend_acceptance | 48 |
@@ -30,8 +30,8 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1487 |
-| integration_candidate | 187 |
+| pr_candidate | 1492 |
+| integration_candidate | 188 |
 | release_candidate | 55 |
 | manual_review | 4 |
 | release_required | 2 |
@@ -43,9 +43,9 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1268 |
+| deduplicate_before_required | 1273 |
 | covered_by_aggregate | 220 |
-| keep_integration_or_release_only | 186 |
+| keep_integration_or_release_only | 187 |
 | keep_release_only | 55 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
@@ -142,8 +142,8 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1489 |
-| 10-30m | 188 |
+| <5m | 1494 |
+| 10-30m | 189 |
 | 30-60m | 57 |
 | unknown | 3 |
 | 10-15m | 1 |
@@ -152,10 +152,10 @@ Generated from `test_inventory.csv`.
 
 | Owner | Count |
 | --- | ---: |
-| architecture owner | 640 |
-| platform owner | 428 |
-| test owner | 349 |
-| backend owner | 159 |
+| architecture owner | 642 |
+| platform owner | 430 |
+| test owner | 350 |
+| backend owner | 160 |
 | qa owner | 57 |
 | security owner | 54 |
 | frontend owner | 49 |
@@ -165,7 +165,7 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1487 |
+| scripts/verify | 1493 |
 | scripts/ops | 121 |
 | frontend/apps/web/scripts | 60 |
 | scripts/ci | 41 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-a49b9b15 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
 | T-ASSET-94353444 | unit | `scripts/ci/test_complexity_baseline_report.py` | test owner |
 | T-ASSET-d580a7bc | contract | `scripts/ci/test_contract_only_scope.py` | platform owner |
-| ... | ... | 1188 more | ... |
+| ... | ... | 1193 more | ... |
 
 ## Dedupe Hotspots
 
@@ -379,6 +379,7 @@ Generated from `test_inventory.csv`.
 | `scripts/verify/test_business_entry` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_data_space` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_demo_usage` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
+| `scripts/verify/test_extension_hook` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_form_structure` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_formal_entry` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |
 | `scripts/verify/test_frontend_form` | 2 | test owner | requires owner review | Requires owner review before mapping to an aggregate gate. |

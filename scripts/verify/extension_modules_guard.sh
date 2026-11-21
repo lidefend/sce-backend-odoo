@@ -21,6 +21,36 @@ psql_cmd() {
 raw_value="$(psql_cmd "SELECT COALESCE(value, '') FROM ir_config_parameter WHERE key='sc.core.extension_modules' LIMIT 1;")"
 normalized="${raw_value// /}"
 
+state_rows="$(psql_cmd "
+WITH raw AS (
+    SELECT COALESCE(value, '') AS value
+      FROM ir_config_parameter
+     WHERE key = 'sc.core.extension_modules'
+     LIMIT 1
+), listed AS (
+    SELECT DISTINCT trim(item) AS name
+      FROM raw,
+           regexp_split_to_table(raw.value, ',') AS item
+     WHERE trim(item) <> ''
+)
+SELECT listed.name || '|' || COALESCE(module.state, 'missing')
+  FROM listed
+  LEFT JOIN ir_module_module module ON module.name = listed.name
+ ORDER BY listed.name;
+")"
+uninstalled_modules=()
+while IFS='|' read -r module state; do
+  [[ -z "${module}" ]] && continue
+  if [[ "${state}" != "installed" ]]; then
+    uninstalled_modules+=("${module}:${state:-missing}")
+  fi
+done <<< "${state_rows}"
+
+if [[ ${#uninstalled_modules[@]} -gt 0 ]]; then
+  echo "[verify.extension_modules.guard] FAIL db=${DB_NAME} configured modules without installed authority: ${uninstalled_modules[*]}" >&2
+  exit 1
+fi
+
 required_modules=(
   "smart_construction_core"
   "smart_construction_portal"

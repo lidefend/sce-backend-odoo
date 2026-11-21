@@ -164,10 +164,7 @@ def safe_eval_action_value(value: Any, default: Any) -> Any:
 
 
 def allowed_models_from_hook(env: Any, hook_name: str) -> set[str]:
-    try:
-        payload = call_extension_hook_first(env, hook_name, env)
-    except Exception:
-        payload = None
+    payload = call_extension_hook_first(env, hook_name, env)
     if not isinstance(payload, (list, tuple, set)):
         return set()
     return {str(item).strip() for item in payload if str(item).strip()}

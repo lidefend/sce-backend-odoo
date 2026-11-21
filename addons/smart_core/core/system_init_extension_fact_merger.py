@@ -5,7 +5,6 @@ import importlib
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.utils.extension_hooks import iter_extension_modules
 
 SOURCE_KIND = "system_init_extension_fact_contribution_merger"
 SOURCE_AUTHORITIES = ("extension_hook:get_system_init_fact_contributions", "ext_facts")
@@ -29,6 +28,8 @@ def apply_extension_fact_contributions(
     user,
     context: dict[str, Any] | None = None,
 ) -> None:
+    from odoo.addons.smart_core.core.extension_loader import iter_extension_modules
+
     ext_facts = data.get("ext_facts")
     if not isinstance(ext_facts, dict):
         ext_facts = {}

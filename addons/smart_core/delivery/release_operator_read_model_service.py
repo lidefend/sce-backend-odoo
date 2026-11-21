@@ -6,10 +6,7 @@ from copy import deepcopy
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.utils.extension_hooks import (
-    call_extension_hook_first,
-    iter_extension_modules,
-)
+from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 from .release_approval_policy_service import ReleaseApprovalPolicyService
 from .release_audit_trail_service import ReleaseAuditTrailService
@@ -453,6 +450,8 @@ class ReleaseOperatorReadModelService:
         }
 
     def _load_product_ext_facts(self) -> dict[str, Any]:
+        from odoo.addons.smart_core.core.extension_loader import iter_extension_modules
+
         product: dict[str, Any] = {}
         for module_name in iter_extension_modules(self.env):
             try:

@@ -10,7 +10,8 @@ from odoo.modules.registry import Registry
 from ..core.base_handler import BaseIntentHandler
 from ..security.auth import authenticate_user, generate_token, get_token_exp_seconds, get_user_from_token
 from ..security.namespace_errors import NamespaceError, NamespaceRequired
-from ..core.handler_registry import HANDLER_REGISTRY  # 全局注册表
+from ..core.handler_registry import HANDLER_REGISTRY  # platform aliases
+from ..core.extension_loader import handlers_for_env
 
 _logger = logging.getLogger(__name__)
 
@@ -32,7 +33,8 @@ def _request_database_hint_headers() -> list[str]:
 
     try:
         headers = request.httprequest.headers
-    except Exception:
+    except Exception as exc:
+        _logger.warning("[login] intent catalog unavailable: %s", exc)
         return []
     names = []
     for name in DATABASE_HINT_HEADERS:
@@ -404,7 +406,7 @@ class LoginHandler(BaseIntentHandler):
         if contract_mode == "debug":
             data["debug"] = {
                 "groups": profile["groups"],
-                "intents": _list_available_intents(),
+                "intents": _list_available_intents(self.env),
             }
         return data, {
             "source_kind": self.SOURCE_KIND,
@@ -474,12 +476,13 @@ class LogoutHandler(BaseIntentHandler):
         }
 
 
-def _list_available_intents() -> list[Dict[str, str]]:
-    """从全局注册表导出意图清单；失败时返回空列表不阻断登录。"""
+def _list_available_intents(env=None) -> list[Dict[str, str]]:
+    """从当前 Registry 的扩展运行时导出意图清单。"""
     out = []
     try:
-        for name in sorted((HANDLER_REGISTRY or {}).keys()):
-            handler_cls = (HANDLER_REGISTRY or {})[name]
+        handlers = handlers_for_env(env) if env is not None else HANDLER_REGISTRY
+        for name in sorted((handlers or {}).keys()):
+            handler_cls = (handlers or {})[name]
             desc = getattr(handler_cls, "DESCRIPTION", None) or getattr(handler_cls, "__doc__", "") or ""
             out.append({"name": name, "description": desc})
     except Exception:
@@ -487,9 +490,13 @@ def _list_available_intents() -> list[Dict[str, str]]:
     return out
 
 
-# --- 注册“别名意图”：如果前端有的发 login，有的发 auth.login，都能命中 ---
-# 你的注册表是 dict，通常由装饰器填充。这里显式塞入别名，避免改前端。
+# Handler discovery may import this module while handler_registry itself is
+# still being initialized. Register the primary identities explicitly so they
+# do not depend on whether the package scanner resumes after these classes are
+# defined.
 try:
+    HANDLER_REGISTRY.setdefault(LoginHandler.INTENT_TYPE, LoginHandler)
+    HANDLER_REGISTRY.setdefault(LogoutHandler.INTENT_TYPE, LogoutHandler)
     HANDLER_REGISTRY.setdefault("auth.login", LoginHandler)
 except Exception:
     pass

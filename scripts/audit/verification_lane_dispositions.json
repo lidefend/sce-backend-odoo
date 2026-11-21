@@ -2735,11 +2735,6 @@
       "owner": "platform-team",
       "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
-    "verify.orm.guard.self_test": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/ops/iterations/settlement_policy_projection_test_alignment_20260924.md。登记待接线或退役，B3 按族处理。"
-    },
     "verify.output_invoice.source_gap_audit": {
       "disposition": "diagnostic_cli",
       "owner": "platform-team",
@@ -3300,6 +3295,11 @@
       "disposition": "product_tooling",
       "owner": "construction-product-team",
       "reason": "CLOSE-03 owning-module baseline entry. It is retained as the explicit full-module fallback when the deterministic affected-family map is incomplete; normal iteration selects the narrower registered affected ORM families."
+    },
+    "verify.smart_construction_scene.module_baseline": {
+      "disposition": "runtime_audit_probe",
+      "owner": "construction-product-team",
+      "reason": "ARCH-CLOSE-01 owning Scene baseline on the reusable construction bundle test template; explicit full-module probe, not a daily incremental target."
     },
     "verify.smart_core.close_02.module_baseline": {
       "disposition": "local_diagnostic",

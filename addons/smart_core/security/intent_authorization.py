@@ -116,10 +116,8 @@ def authorize_handler(env, handler_cls, *, require_declaration=False):
 
 
 def registered_handlers(env):
-    from ..core.handler_registry import HANDLER_REGISTRY
-    from ..core.extension_loader import load_extensions
-    load_extensions(env, HANDLER_REGISTRY)
-    return HANDLER_REGISTRY
+    from ..core.extension_loader import handlers_for_env
+    return handlers_for_env(env)
 
 
 def authorize_intent(env, intent_name, params):
