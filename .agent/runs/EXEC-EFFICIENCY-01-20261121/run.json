@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "id": "EXEC-EFFICIENCY-01-20261121",
+  "branch": "feature/exec-efficiency-01-20261121",
+  "baseline_sha": "8aeb93791d2c4d88f2bef8415a5caf7a228941f4",
+  "status": "verification_pending",
+  "goal": ".agent/goals/EXEC-EFFICIENCY-01-20261121.yaml",
+  "record": "docs/ops/iterations/exec_efficiency_01_20261121.md",
+  "scope": [
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_local_test_runner.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/dev.mk",
+    "docs/ops/local_development_environment_v1.md",
+    "docs/ops/iterations/exec_efficiency_01_20261121.md",
+    ".agent/active-runs.json",
+    ".agent/decisions/codex-local-lane-mechanics.yaml",
+    ".agent/goals/EXEC-EFFICIENCY-01-20261121.yaml",
+    ".agent/runs/EXEC-EFFICIENCY-01-20261121/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository unit and static targets; runtime template validation requires separately confirmed sc-local-test/sc_test execution"
+  },
+  "checks": {
+    "local_test_runner": {
+      "target": "verify.local.development_lifecycle.unit",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "scripts/verify/test_local_development_lifecycle.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_resume": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/active-runs.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [
+    "owner confirmation required for new sc-local-test/sc_test template slots and runtime smoke"
+  ],
+  "next_exact_step": "After owner confirmation, create the two disposable template slots, prove coverage and second-run reuse, record runtime receipts, then freeze the candidate.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

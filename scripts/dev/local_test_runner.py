@@ -6,6 +6,7 @@ recursive Make overrides, persistent application server, or retry-to-green.
 """
 from __future__ import annotations
 import argparse
+import ast
 import fcntl
 import hashlib
 import json
@@ -19,7 +20,7 @@ import time
 ROOT = Path(__file__).resolve().parents[2]
 ORDER_DRIVER = ROOT / 'scripts/test/odoo_ordered_tests.py'
 PROFILE = Path('/home/lidefend/workspace/sce-backend-odoo/.env.local.test')
-TEMPLATE_DATABASE = 'sc_test_template'
+TEMPLATE_DATABASE_PREFIX = 'sc_test_template__'
 TEMPLATE_MARKER = ROOT / '.runtime/test-baseline/sc-test-template.json'
 IDENTITY = dict(ENV='dev', COMPOSE_PROJECT_NAME='sc-local-test', DB_NAME='sc_test',
     DB_USER='sc_test_odoo', ODOO_DBFILTER='^sc_test$', DB_DATA='sc_local_test_db_data',
@@ -118,8 +119,8 @@ def source_fingerprint(env):
     return digest.hexdigest()
 
 
-def schema_fingerprint(env):
-    """Fingerprint every database/install input reachable from addon manifests."""
+def schema_fingerprint(env, *, include_migrations=False):
+    """Fingerprint install inputs, optionally including upgrade-only migrations."""
     paths = command(['git', 'ls-files', '-z', '--cached', '--others', '--exclude-standard'], env).stdout.split('\0')
     digest = hashlib.sha256()
     for name in sorted(set(paths) - {''}):
@@ -132,12 +133,15 @@ def schema_fingerprint(env):
             or name.endswith(('.pyc', '.md', '.pot', '.po', '.js', '.ts', '.vue', '.scss', '.css'))
         ):
             continue
+        migration_input = '/migrations/' in name
         install_python = (
             name.endswith(('__manifest__.py', '__init__.py', '/hooks.py'))
             or '/models/' in name
             or '/wizard/' in name
-            or '/migrations/' in name
+            or migration_input
         )
+        if migration_input and not include_migrations:
+            continue
         install_data = name.endswith(('.xml', '.csv', '.json', '.yaml', '.yml'))
         if not (name == 'config/requirements-test.txt' or install_python or install_data):
             continue
@@ -147,8 +151,70 @@ def schema_fingerprint(env):
     return digest.hexdigest()
 
 
-def database_exists(dc, env, name):
-    if name not in {'sc_test', TEMPLATE_DATABASE}:
+def upgrade_schema_fingerprint(env):
+    return schema_fingerprint(env, include_migrations=True)
+
+
+def template_database_name(template_module):
+    if not re.fullmatch('[a-z][a-z0-9_]*', str(template_module or '')):
+        raise ValueError('invalid template module')
+    name = TEMPLATE_DATABASE_PREFIX + template_module
+    if len(name) > 63:
+        raise ValueError('template database name exceeds PostgreSQL limit')
+    return name
+
+
+def template_marker(template_module):
+    template_database_name(template_module)
+    return TEMPLATE_MARKER.parent / ('sc-test-template__' + template_module + '.json')
+
+
+def module_dependency_closure(template_module):
+    """Return in-repository dependencies of a module using its manifest."""
+    closure = set()
+    pending = [template_module]
+    while pending:
+        module = pending.pop()
+        if module in closure:
+            continue
+        closure.add(module)
+        manifest = next(
+            (
+                ROOT / folder / module / '__manifest__.py'
+                for folder in ('addons', 'demo_addons')
+                if (ROOT / folder / module / '__manifest__.py').is_file()
+            ),
+            None,
+        )
+        if manifest is None:
+            continue
+        try:
+            payload = ast.literal_eval(manifest.read_text(encoding='utf-8'))
+        except (OSError, SyntaxError, ValueError) as exc:
+            raise ValueError('invalid module manifest: ' + module) from exc
+        if not isinstance(payload, dict):
+            raise ValueError('module manifest must be an object: ' + module)
+        depends = payload.get('depends', [])
+        if not isinstance(depends, (list, tuple)) or any(
+            not isinstance(dep, str) or not re.fullmatch('[a-z][a-z0-9_]*', dep)
+            for dep in depends
+        ):
+            raise ValueError('invalid module dependencies: ' + module)
+        pending.extend(depends)
+    return frozenset(closure)
+
+
+def require_template_coverage(template_module, requested_module):
+    if requested_module not in module_dependency_closure(template_module):
+        raise ValueError(
+            'template module does not include requested test module: '
+            f'{template_module} -> {requested_module}'
+        )
+
+
+def database_exists(dc, env, name, *, template_database):
+    allowed = name == 'sc_test' or name == template_database
+    if not allowed or not re.fullmatch(r'sc_test_template__[a-z][a-z0-9_]*', template_database):
         raise ValueError('unregistered database name')
     return bool(command(
         dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
@@ -157,29 +223,32 @@ def database_exists(dc, env, name):
     ).stdout.strip())
 
 
-def module_is_installed(dc, env, module):
+def module_is_installed(dc, env, module, template_database):
     return command(
-        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', TEMPLATE_DATABASE, '-Atc',
+        dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', template_database, '-Atc',
               "SELECT state FROM ir_module_module WHERE name='" + module + "'"],
         env,
     ).stdout.strip() == 'installed'
 
 
-def template_database_comment(dc, env):
+def template_database_comment(dc, env, template_database):
     return command(
         dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
               "SELECT COALESCE(shobj_description(oid, 'pg_database'), '') "
-              "FROM pg_database WHERE datname='" + TEMPLATE_DATABASE + "'"],
+              "FROM pg_database WHERE datname='" + template_database + "'"],
         env,
     ).stdout.strip()
 
 
-def set_template_database_comment(dc, env, key):
-    if not re.fullmatch('[a-f0-9]{64}', str(key or '')):
+def set_template_database_comment(dc, env, template_database, key):
+    if (
+        not re.fullmatch(r'sc_test_template__[a-z][a-z0-9_]*', template_database)
+        or not re.fullmatch('[a-f0-9]{64}', str(key or ''))
+    ):
         raise ValueError('invalid template identity')
     command(
         dc + ['exec', '-T', 'db', 'psql', '-U', 'sc_test_odoo', '-d', 'postgres', '-Atc',
-              "COMMENT ON DATABASE " + TEMPLATE_DATABASE + " IS '" + key + "'"],
+              "COMMENT ON DATABASE " + template_database + " IS '" + key + "'"],
         env,
     )
 
@@ -191,11 +260,28 @@ def template_is_ready(
     exists,
     requested_module_installed,
 ):
-    return (
-        database_comment == template_key
-        and bool(exists)
-        and bool(requested_module_installed)
-    )
+    return template_reuse_decision(
+        database_comment=database_comment,
+        template_key=template_key,
+        exists=exists,
+        requested_module_installed=requested_module_installed,
+    ) == "reuse"
+
+
+def template_reuse_decision(
+    *,
+    database_comment,
+    template_key,
+    exists,
+    requested_module_installed,
+):
+    if not exists:
+        return "rebuild:template_missing"
+    if database_comment != template_key:
+        return "rebuild:template_identity_changed"
+    if not requested_module_installed:
+        return "rebuild:requested_module_missing"
+    return "reuse"
 
 
 def cleanup_carrier(name, env):
@@ -260,6 +346,15 @@ def main(argv=None):
         if not ORDER_DRIVER.is_file() or ORDER_DRIVER.is_symlink():
             raise ValueError('ordered test driver missing or unsafe')
         module, tags = selection(args.module, args.tags) if args.action == 'test' else ('', '')
+        template_module = module
+        template_database = ''
+        if args.action == 'test':
+            template_module = str(
+                os.environ.get("LOCAL_TEST_TEMPLATE_MODULE") or module
+            ).strip()
+            selection(template_module, "/" + template_module)
+            require_template_coverage(template_module, module)
+            template_database = template_database_name(template_module)
         rehearsal_script = upgrade_rehearsal_script(args.upgrade_scenario, module)
         if rehearsal_script and args.action != 'test':
             raise ValueError('upgrade rehearsal is only a fresh test attempt')
@@ -306,10 +401,7 @@ def main(argv=None):
             source_before = source_fingerprint(env)
             head_before = command(['git','rev-parse','HEAD'],env).stdout.strip()
             schema_sha = schema_fingerprint(env)
-            template_module = str(
-                os.environ.get("LOCAL_TEST_TEMPLATE_MODULE") or module
-            ).strip()
-            selection(template_module, "/" + template_module)
+            upgrade_schema_sha = upgrade_schema_fingerprint(env)
             template_key = hashlib.sha256(json.dumps({
                 'schema': schema_sha,
                 'profile': profile_sha,
@@ -317,25 +409,46 @@ def main(argv=None):
                 'template_module': template_module,
             }, sort_keys=True).encode()).hexdigest()
             template_reused = False
+            template_decision = "rebuild:template_reuse_disabled"
             command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
             if args.reuse_database:
-                template_exists = database_exists(dc, env, TEMPLATE_DATABASE)
-                template_ready = template_is_ready(
-                    database_comment=(
-                        template_database_comment(dc, env)
-                        if template_exists
-                        else ""
-                    ),
+                template_exists = database_exists(
+                    dc,
+                    env,
+                    template_database,
+                    template_database=template_database,
+                )
+                database_comment = (
+                    template_database_comment(dc, env, template_database)
+                    if template_exists
+                    else ""
+                )
+                requested_module_installed = (
+                    module_is_installed(dc, env, module, template_database)
+                    if template_exists
+                    else False
+                )
+                template_decision = template_reuse_decision(
+                    database_comment=database_comment,
                     template_key=template_key,
                     exists=template_exists,
-                    requested_module_installed=(
-                        module_is_installed(dc, env, module)
-                        if template_exists
-                        else False
-                    ),
+                    requested_module_installed=requested_module_installed,
+                )
+                template_ready = template_decision == "reuse"
+                print(
+                    "[local.test] environment_plan="
+                    + json.dumps({
+                        "decision": template_decision,
+                        "environment": "sc-local-test/sc_test",
+                        "requested_module": module,
+                        "template_database": template_database,
+                        "template_key": template_key,
+                        "template_module": template_module,
+                    }, sort_keys=True),
+                    flush=True,
                 )
                 if not template_ready:
-                    command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', TEMPLATE_DATABASE], env)
+                    command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', template_database], env)
                     prepare_carrier = 'sc-local-test-prepare-' + output.name
                     prepare_script = '''set -euo pipefail
 python3 -m pip install -q -r /mnt/config/requirements-test.txt
@@ -363,18 +476,26 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                             raise ValueError('test database template preparation failed')
                     finally:
                         cleanup_carrier(prepare_carrier, env)
-                    command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', 'sc_test', TEMPLATE_DATABASE], env)
+                    command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', 'sc_test', template_database], env)
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
-                    set_template_database_comment(dc, env, template_key)
-                    TEMPLATE_MARKER.parent.mkdir(parents=True, exist_ok=True)
-                    TEMPLATE_MARKER.write_text(json.dumps({
+                    if not module_is_installed(dc, env, module, template_database):
+                        raise ValueError(
+                            'prepared template does not include requested test module: '
+                            f'{template_module} -> {module}'
+                        )
+                    set_template_database_comment(dc, env, template_database, template_key)
+                    marker = template_marker(template_module)
+                    marker.parent.mkdir(parents=True, exist_ok=True)
+                    marker.write_text(json.dumps({
                         'key': template_key,
                         'schema_fingerprint': schema_sha,
+                        'upgrade_schema_fingerprint': upgrade_schema_sha,
                         'profile_sha256': profile_sha,
                         'image_id': image_id,
                         'template_module': template_module,
+                        'template_database': template_database,
                     }, indent=2) + '\n')
-                command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', TEMPLATE_DATABASE, 'sc_test'], env)
+                command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', template_database, 'sc_test'], env)
                 template_reused = True
             carrier = 'sc-local-test-attempt-' + output.name
             # Transient data-dir prevents prior filestore/sessions/config leakage.
@@ -424,6 +545,9 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
                 dirty=command(['git','status','--porcelain'],env).stdout, profile=IDENTITY, purpose='test',
                 profile_sha256=profile_sha, profile_unchanged=profile_unchanged, image_id=image_id, image_unchanged=image_id == image_after, module=module, tags=tags, order=args.order, seed=20261026, execution_order=[f'{m}:{case}' for m,case in START.findall(text)], packages_sha256=(re.findall(r'^LOCAL_TEST_PACKAGES=([a-f0-9]{64})$',text,re.M) or ['missing'])[0], fresh_database=True, transient_application_state=True,
                 database_template_reused=template_reused, schema_fingerprint=schema_sha,
+                upgrade_schema_fingerprint=upgrade_schema_sha,
+                template_module=template_module, template_database=template_database,
+                template_decision=template_decision,
                 upgrade_rehearsal=rehearsal, cases=cases, count=len(cases), status='passed' if cases else 'failed', log=str(log.relative_to(ROOT)),
                 log_sha256=hashlib.sha256(log.read_bytes()).hexdigest(), process_status=process_status, guard_status=guard.returncode)
             (output / 'receipt.json').write_text(json.dumps(receipt,indent=2)+'\n')

@@ -82,7 +82,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 stdout="ok\n",
                 stderr="",
             )
-            with mock.patch.object(incremental.subprocess, "run", return_value=completed) as run:
+            with mock.patch.dict(
+                incremental.os.environ,
+                {"LOCAL_TEST_TEMPLATE_MODULE": ""},
+            ), mock.patch.object(
+                incremental.subprocess,
+                "run",
+                return_value=completed,
+            ) as run:
                 result = incremental._run_make_target(
                     "verify.node_component_validation.unit",
                     Path(directory),
@@ -93,6 +100,36 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             run.call_args.kwargs["env"]["LOCAL_TEST_TEMPLATE_MODULE"],
             "smart_construction_bundle",
+        )
+
+    def test_incremental_targets_allow_a_declared_superset_template(self):
+        with tempfile.TemporaryDirectory() as directory:
+            log_path = Path(directory) / "target.log"
+            completed = subprocess.CompletedProcess(
+                ["make", "verify.node_component_validation.unit"],
+                0,
+                stdout="ok\n",
+                stderr="",
+            )
+            with mock.patch.dict(
+                incremental.os.environ,
+                {
+                    "LOCAL_TEST_TEMPLATE_MODULE":
+                        "smart_construction_acceptance_fixture",
+                },
+            ), mock.patch.object(
+                incremental.subprocess,
+                "run",
+                return_value=completed,
+            ) as run:
+                incremental._run_make_target(
+                    "verify.node_component_validation.unit",
+                    Path(directory),
+                    log_path,
+                )
+        self.assertEqual(
+            run.call_args.kwargs["env"]["LOCAL_TEST_TEMPLATE_MODULE"],
+            "smart_construction_acceptance_fixture",
         )
 
     def test_performance_consumption_regressions_have_executable_owners(self):
@@ -3185,6 +3222,33 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
                 if row["target"] != "verify.workspace.branch.sync-main"
             )
         )
+
+    def test_complete_pass_is_preferred_over_newer_interrupted_receipt(self) -> None:
+        complete = self._execute("complete", interrupted=False)
+        self.assertEqual(complete["_code"], 0)
+
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.write_text("VERSION = 2\n", encoding="utf-8")
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "tool"],
+            check=True,
+        )
+        interrupted = self._execute("interrupted", interrupted=True)
+        self.assertEqual(interrupted["_code"], 130)
+
+        receipt, head, rows = incremental.resumable_receipt_results(
+            self.root,
+            self.paths,
+            ["verify.frontend.lint.src"],
+        )
+        self.assertEqual(
+            receipt,
+            self.root
+            / ".runtime/frontend-dev-validation/executions/complete/receipt.json",
+        )
+        self.assertEqual(head, complete["identity"]["head"])
+        self.assertEqual(set(rows), {"verify.frontend.lint.src"})
 
     def test_passed_receipt_reuses_unaffected_targets_after_source_change(self) -> None:
         first = self._execute("first", interrupted=False)

@@ -198,6 +198,134 @@ class LocalTestRunnerTest(unittest.TestCase):
                 wizard_view.write_text('value = 2')
                 self.assertNotEqual(before, runner.schema_fingerprint({}))
 
+    def test_fresh_and_upgrade_fingerprints_split_migration_inputs(self):
+        from types import SimpleNamespace
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            model = root / 'addons' / 'smart_core' / 'models' / 'model.py'
+            migration = (
+                root
+                / 'addons'
+                / 'smart_core'
+                / 'migrations'
+                / '17.0.0.1'
+                / 'post-migrate.py'
+            )
+            manifest = root / 'addons' / 'smart_core' / '__manifest__.py'
+            for path in (model, migration, manifest):
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text('value = 1')
+            names = '\0'.join(
+                str(path.relative_to(root))
+                for path in (model, migration, manifest)
+            ) + '\0'
+            with patch.object(runner, 'ROOT', root), \
+                    patch.object(runner, 'command', return_value=SimpleNamespace(stdout=names)):
+                fresh = runner.schema_fingerprint({})
+                upgrade = runner.upgrade_schema_fingerprint({})
+                migration.write_text('value = 2')
+                self.assertEqual(fresh, runner.schema_fingerprint({}))
+                self.assertNotEqual(upgrade, runner.upgrade_schema_fingerprint({}))
+                before_fresh = runner.schema_fingerprint({})
+                before_upgrade = runner.upgrade_schema_fingerprint({})
+                model.write_text('value = 2')
+                self.assertNotEqual(before_fresh, runner.schema_fingerprint({}))
+                self.assertNotEqual(before_upgrade, runner.upgrade_schema_fingerprint({}))
+
+    def test_template_module_must_cover_requested_module_before_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            manifests = {
+                'smart_core': {'depends': []},
+                'smart_construction_bundle': {'depends': ['smart_core']},
+                'smart_construction_acceptance_fixture': {
+                    'depends': ['smart_construction_bundle'],
+                },
+            }
+            for module, payload in manifests.items():
+                path = root / 'addons' / module / '__manifest__.py'
+                path.parent.mkdir(parents=True)
+                path.write_text(repr(payload))
+            with patch.object(runner, 'ROOT', root):
+                self.assertEqual(
+                    runner.module_dependency_closure(
+                        'smart_construction_acceptance_fixture'
+                    ),
+                    {
+                        'smart_core',
+                        'smart_construction_bundle',
+                        'smart_construction_acceptance_fixture',
+                    },
+                )
+                runner.require_template_coverage(
+                    'smart_construction_bundle',
+                    'smart_core',
+                )
+                with self.assertRaisesRegex(
+                    ValueError,
+                    'does not include requested test module',
+                ):
+                    runner.require_template_coverage(
+                        'smart_construction_bundle',
+                        'smart_construction_acceptance_fixture',
+                    )
+                runner.require_template_coverage(
+                    'smart_construction_acceptance_fixture',
+                    'smart_construction_bundle',
+                )
+
+    def test_incompatible_template_fails_before_profile_or_docker(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            driver = root / 'scripts/test/odoo_ordered_tests.py'
+            driver.parent.mkdir(parents=True)
+            driver.write_text('')
+            for module, payload in {
+                'smart_construction_bundle': {'depends': []},
+                'smart_construction_acceptance_fixture': {
+                    'depends': ['smart_construction_bundle'],
+                },
+            }.items():
+                path = root / 'addons' / module / '__manifest__.py'
+                path.parent.mkdir(parents=True)
+                path.write_text(repr(payload))
+            with patch.object(runner, 'ROOT', root), \
+                    patch.object(runner, 'ORDER_DRIVER', driver), \
+                    patch.dict(
+                        runner.os.environ,
+                        {'LOCAL_TEST_TEMPLATE_MODULE': 'smart_construction_bundle'},
+                    ), \
+                    patch.object(runner, 'profile') as profile, \
+                    patch.object(runner, 'command') as command:
+                self.assertEqual(
+                    runner.main([
+                        'test',
+                        '--module',
+                        'smart_construction_acceptance_fixture',
+                    ]),
+                    2,
+                )
+                profile.assert_not_called()
+                command.assert_not_called()
+
+    def test_template_database_slots_are_stable_and_module_specific(self):
+        bundle = runner.template_database_name('smart_construction_bundle')
+        fixture = runner.template_database_name(
+            'smart_construction_acceptance_fixture'
+        )
+        self.assertEqual(bundle, 'sc_test_template__smart_construction_bundle')
+        self.assertEqual(
+            fixture,
+            'sc_test_template__smart_construction_acceptance_fixture',
+        )
+        self.assertNotEqual(bundle, fixture)
+        self.assertEqual(
+            runner.template_marker('smart_construction_bundle').name,
+            'sc-test-template__smart_construction_bundle.json',
+        )
+        with self.assertRaises(ValueError):
+            runner.template_database_name('../foreign')
+
     def test_template_identity_is_read_from_database_not_worktree_marker(self):
         identity_a = 'a' * 64
         identity_b = 'b' * 64
@@ -219,5 +347,44 @@ class LocalTestRunnerTest(unittest.TestCase):
             exists=True,
             requested_module_installed=False,
         ))
+
+    def test_template_reuse_decision_names_the_exact_rebuild_cause(self):
+        identity = 'a' * 64
+        self.assertEqual(
+            runner.template_reuse_decision(
+                database_comment="",
+                template_key=identity,
+                exists=False,
+                requested_module_installed=False,
+            ),
+            "rebuild:template_missing",
+        )
+        self.assertEqual(
+            runner.template_reuse_decision(
+                database_comment="b" * 64,
+                template_key=identity,
+                exists=True,
+                requested_module_installed=True,
+            ),
+            "rebuild:template_identity_changed",
+        )
+        self.assertEqual(
+            runner.template_reuse_decision(
+                database_comment=identity,
+                template_key=identity,
+                exists=True,
+                requested_module_installed=False,
+            ),
+            "rebuild:requested_module_missing",
+        )
+        self.assertEqual(
+            runner.template_reuse_decision(
+                database_comment=identity,
+                template_key=identity,
+                exists=True,
+                requested_module_installed=True,
+            ),
+            "reuse",
+        )
 
 if __name__=='__main__': unittest.main()

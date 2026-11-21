@@ -2391,6 +2391,7 @@ def resumable_receipt_results(
         reverse=True,
     )
     expected_targets = sorted(set(targets))
+    best = None
     for receipt_path in receipts:
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
@@ -2433,9 +2434,23 @@ def resumable_receipt_results(
                 carried["reuseReason"] = "verified passed target from prior execution"
                 results[target] = carried
             if results:
-                return receipt_path, head, results
+                complete_pass = (
+                    receipt.get("status") == "passed"
+                    and not receipt.get("notRunTargets")
+                )
+                candidate = (
+                    0 if complete_pass else 1,
+                    receipt_path,
+                    head,
+                    results,
+                )
+                if best is None or candidate[0] < best[0]:
+                    best = candidate
         except (OSError, ValueError, KeyError, TypeError, subprocess.CalledProcessError):
             continue
+    if best is not None:
+        _, receipt_path, head, results = best
+        return receipt_path, head, results
     return None, "", {}
 
 
@@ -2904,14 +2919,12 @@ def _run_make_target(target: str, root: Path, log_path: Path) -> dict:
     command = ["make", "--no-print-directory", target]
     started = time.time()
     try:
-        # Incremental ORM targets share one schema-bound test template and clone
-        # a fresh database per target. Direct local.test.test keeps fresh-by-default
-        # behavior because only this planner supplies the opt-in variable.
-        env = dict(
-            os.environ,
-            LOCAL_TEST_REUSE_DATABASE="1",
-            LOCAL_TEST_TEMPLATE_MODULE="smart_construction_bundle",
-        )
+        # Incremental ORM targets share the profile-selected schema-bound test
+        # template and clone a fresh database per target. A caller may select a
+        # declared superset module; otherwise bundle is the narrow default.
+        env = dict(os.environ, LOCAL_TEST_REUSE_DATABASE="1")
+        if not str(env.get("LOCAL_TEST_TEMPLATE_MODULE") or "").strip():
+            env["LOCAL_TEST_TEMPLATE_MODULE"] = "smart_construction_bundle"
         result = subprocess.run(
             command,
             cwd=root,

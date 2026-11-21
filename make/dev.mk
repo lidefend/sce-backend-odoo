@@ -66,8 +66,9 @@ LOCAL_PLATFORM_ENV_FILE ?= $(dir $(LOCAL_DEV_ENV_FILE)).env.local.platform
 LOCAL_PLATFORM_RELEASE_ARTIFACT ?= artifacts/local-platform-release/construction-standard.json
 LOCAL_PLATFORM_ACTION ?= health
 LOCAL_TEST_ENV_FILE ?= /home/lidefend/workspace/sce-backend-odoo/.env.local.test
-# Reuse only the identity-keyed clean template, then clone a fresh sc_test from
-# it for every attempt. Set 0 explicitly for a one-off template-free diagnostic.
+# Reuse the template selected for this test profile, then clone a fresh sc_test
+# from it. Templates are keyed by module so independent prepared profiles do
+# not evict one another. Set 0 explicitly for a template-free diagnostic.
 LOCAL_TEST_REUSE_DATABASE ?= 1
 LOCAL_ENV_ISOLATE = env \
 	-u DB_NAME -u DB -u BD -u DB_USER -u DB_PASSWORD \

@@ -13,6 +13,28 @@
 四套环境使用独立 PostgreSQL、Redis、Odoo filestore/session 卷和精确 dbfilter。
 `sc_dev_sample` 的销毁操作受现有 guard 保护；`sc_clean` 的重建还要求确认短语。
 
+## ORM 测试模板生命周期
+
+`sc-local-test / sc_test` 是独立的一次性 ORM 测试域，不是第五套持久产品库。其资源分为：
+
+- `sc_test`：每个测试目标从模板克隆的一次性数据库；
+- `sc_test_template__<template_module>`：按模板模块保存的预安装模板；
+- `.runtime/test-baseline/sc-test-template__<template_module>.json`：本地诊断标记，
+  数据库注释仍是身份权威；
+- `sc-local-test-db-1` / `sc-local-test-redis-1`：共享测试服务；
+- 临时 `sc-local-test-attempt-*` / `sc-local-test-prepare-*` carrier：单次执行载体。
+
+默认约束：
+
+1. 模板模块必须包含实际请求的测试模块；manifest 依赖链不覆盖时，在 Docker 和数据库写入前
+   失败。
+2. `smart_construction_bundle` 覆盖 core/scene/bundle，但不覆盖反向依赖它的
+   `smart_construction_acceptance_fixture`。
+3. fixture 测试使用 `smart_construction_acceptance_fixture` 模板；两类模板同时保留，不再互相
+   驱逐。
+4. fresh-install 指纹排除只在升级阶段执行的 `/migrations/`；upgrade 指纹单独包含这些文件。
+5. 每个测试目标仍克隆新的 `sc_test`，测试间数据隔离不变。
+
 `sc_dev_demo` 是新功能开发的唯一常驻本地产品库。代码改变功能事实时，配套 demo 必须同步
 升级并由该库验证，不能依赖历史业务记录碰巧满足新前置条件。
 `sc_dev_demo` 的 demo 用户口令默认使用固定的开发口令（当前值 `scdevpass`，由
