@@ -33,6 +33,7 @@ import {
   validateObservationBinding,
   candidateStates,
   countReleasedNavigationTargets,
+  declaredRowSceneNavigation,
   deniedRoleCandidatesFor,
   declaredEntryGroups,
   ineligibleCandidates,
@@ -42,6 +43,7 @@ import {
   matrixSucceeded,
   negativePlanByCandidate,
   runtimeRoleSceneTarget,
+  sceneNavigationMatchesUrl,
   sceneBehaviour,
   selectEntries,
   universalCapabilities,
@@ -665,6 +667,16 @@ async function openFirstRecord(page, state, presentation) {
   const node = page.locator(spec.recordOpenSelector || spec.recordSelector).first();
   if (!(await node.count())) return null;
   const since = state.contracts.length;
+  const rowId = Number(
+    (await node.getAttribute('data-record-key'))
+    || (await node.getAttribute('data-record-id'))
+    || (await node.getAttribute('data-record'))
+    || 0,
+  );
+  const rowActionId = Number(
+    [...state.contracts].reverse().find((row) => Array.isArray(row.rowRules) && row.rowRules.length)?.action_id || 0,
+  );
+  const declaredScene = declaredRowSceneNavigation(state.contracts, rowActionId, rowId);
   const gesture = spec.recordOpenGesture || 'click';
   if (gesture === 'select_then_action') {
     // The worksheet selects a row on a single click and publishes a declared
@@ -680,7 +692,18 @@ async function openFirstRecord(page, state, presentation) {
     await node.click();
   }
   await sleep(1500);
-  return await waitForRecordContract(state, since);
+  if (declaredScene) {
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      if (sceneNavigationMatchesUrl(declaredScene, page.url())) {
+        const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
+        if (!(await sceneError.count())) return { sceneNavigation: declaredScene };
+      }
+      await sleep(300);
+    }
+  }
+  const contract = await waitForRecordContract(state, since);
+  return contract ? { contract } : null;
 }
 
 // The collection surface's create/edit affordance is not a page decision: the
@@ -1019,14 +1042,17 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
         reason: `declared collection state ${status || 'unknown'} rendered ${rendered} record surface(s)`,
       });
     } else {
-      const contract = await openFirstRecord(page, state, presentation);
-      if (!contract) {
+      const opened = await openFirstRecord(page, state, presentation);
+      if (!opened) {
         assertions.detail = 'failed';
         record.runtime_diagnostics = runtimeFailureDiagnostics(state, contractBaseline, responseBaseline);
         fail(`${entryKey}: record ui.contract.v2 envelope was not observed after opening the first row`);
+      } else if (opened.sceneNavigation) {
+        assertions.detail = 'passed';
+        record.detail_navigation = opened.sceneNavigation;
       } else {
         assertions.detail = 'passed';
-        applyRecordContract(record, contract, behaviour, sessionCompany, entryKey);
+        applyRecordContract(record, opened.contract, behaviour, sessionCompany, entryKey);
       }
     }
   } else {

@@ -7,6 +7,7 @@ import {
   findReleasedNavigationTargetBySceneKey,
 } from './released_navigation_target.mjs';
 import {
+  declaredRowSceneNavigation,
   deniedRoleCandidatesFor,
   entryFingerprint,
   loadDeclaredSceneEntries,
@@ -16,6 +17,7 @@ import {
   recordedEntryStatus,
   runtimeRoleSceneTarget,
   sceneBehaviour,
+  sceneNavigationMatchesUrl,
 } from './business_entry_matrix_model.mjs';
 
 let cases = 0;
@@ -107,6 +109,36 @@ check(
   }], 'entry.action_scene'),
   null,
   'an action-bearing scene cannot be accepted as the actionless carrier',
+);
+
+const contextualScene = declaredRowSceneNavigation([{
+  action_id: 676,
+  rowRules: [{
+    target: {
+      route: '/s/project.management',
+      scene_key: 'project.management',
+      entry_intent: 'project.dashboard.enter',
+      query: { project_id: '${id}' },
+    },
+  }],
+}], 676, 130);
+check(contextualScene?.scene_key, 'project.management', 'a declared contextual row scene is recognized');
+check(contextualScene?.query.project_id, '130', 'the row identity materializes into declared scene query');
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
+    'http://fixture.invalid/s/project.management?scene_key=project.management&project_id=130&entry_intent=project.dashboard.enter',
+  ),
+  true,
+  'the resulting scene route carries every declared query identity',
+);
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
+    'http://fixture.invalid/s/project.management?scene_key=project.management&entry_intent=project.dashboard.enter',
+  ),
+  false,
+  'a scene route without the selected project is not accepted',
 );
 
 const targets = { entry: {} };

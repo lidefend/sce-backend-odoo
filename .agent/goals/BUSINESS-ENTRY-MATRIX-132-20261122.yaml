@@ -17,6 +17,7 @@ goal:
     - make
     - frontend/apps/web
     - addons/smart_construction_core
+    - addons/smart_core
     - .agent
   standard_vs_user_specific: construction_standard_product_acceptance_declaration
   objective: >-
