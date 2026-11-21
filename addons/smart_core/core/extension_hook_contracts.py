@@ -142,6 +142,7 @@ RUN_ALL_HOOKS = {
     "get_system_init_fact_contributions": HookContract(
         mode="run_all",
         providers=("smart_construction_core", "smart_construction_bundle", "smart_license_core"),
+        final_providers=("smart_license_core",),
         allow_undeclared=True,
     ),
     # Domain contributions precede product overlays; licensing filters the final

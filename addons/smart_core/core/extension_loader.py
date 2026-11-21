@@ -310,15 +310,18 @@ def run_extension_hooks(env, hook_name: str, *args, **kwargs):
         if callable(hook):
             providers[module_name] = hook
     modules = sorted(providers)
+    final_providers = tuple(getattr(contract, "final_providers", ()))
+    if (
+        len(set(final_providers)) != len(final_providers)
+        or not set(final_providers).issubset(contract.providers)
+    ):
+        raise ExtensionRuntimeError(
+            "run_all hook final providers are invalid: %s (%s)"
+            % (hook_name, ",".join(final_providers))
+        )
     if contract.providers:
         unexpected = sorted(set(modules) - set(contract.providers))
         allow_undeclared = bool(getattr(contract, "allow_undeclared", False))
-        final_providers = tuple(getattr(contract, "final_providers", ()))
-        if not set(final_providers).issubset(contract.providers):
-            raise ExtensionRuntimeError(
-                "run_all hook final providers are not declared: %s (%s)"
-                % (hook_name, ",".join(final_providers))
-            )
         if unexpected and not allow_undeclared:
             raise ExtensionRuntimeError(
                 "run_all hook has undeclared providers: %s (%s)"

@@ -208,11 +208,15 @@ def collect_failures(root: Path = ROOT, contract_module=None) -> list[str]:
     run_all = contracts.RUN_ALL_HOOKS
     for hook_name, contract in (run_all.items() if isinstance(run_all, dict) else ()):
         expected = set(contract.providers)
-        final_providers = set(getattr(contract, "final_providers", ()))
-        if not final_providers.issubset(expected):
+        final_provider_order = tuple(getattr(contract, "final_providers", ()))
+        final_providers = set(final_provider_order)
+        if (
+            len(final_providers) != len(final_provider_order)
+            or not final_providers.issubset(expected)
+        ):
             failures.append(
-                "run_all hook %s final providers are not declared: %s"
-                % (hook_name, sorted(final_providers - expected))
+                "run_all hook %s final providers are invalid: %s"
+                % (hook_name, final_provider_order)
             )
         actual = set(providers.get(hook_name, set()))
         missing = expected - actual

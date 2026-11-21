@@ -115,8 +115,8 @@ membership in the built-in product composition.
   Providers execute after the ordinary known sequence in deterministic
   module-name order and cannot alter that sequence.
 - Hooks with a true finalizer declare it explicitly. Licensing remains the final
-  `smart_core_extend_system_init` Provider, so a customer extension cannot
-  reintroduce capabilities after the license filter.
+  Provider for both `system.init` extension hooks, so a customer extension cannot
+  overwrite license facts or reintroduce capabilities after the license filter.
 - `smart_core_register` remains strict: duplicate Intent replacement or removal
   still fails; no duplicate registration exception was introduced.
 - `smart_enterprise_base` stays out of the production Provider contract because it

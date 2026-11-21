@@ -96,7 +96,7 @@ class ExtensionHookContractGuardTests(unittest.TestCase):
 
             failures = collect_failures(root, contracts)
 
-        self.assertTrue(any("final providers are not declared" in row for row in failures))
+        self.assertTrue(any("final providers are invalid" in row for row in failures))
 
     def test_run_all_hook_has_an_explicit_contract(self):
         contracts = load_contract_module()
