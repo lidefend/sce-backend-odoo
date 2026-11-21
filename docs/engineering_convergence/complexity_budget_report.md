@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5329`
+- Scanned files: `5331`
 - Files requiring split plan: `86`
 - Files above warning threshold: `160`
 
@@ -25,8 +25,8 @@ Generated from repository source files. This report is informational during the 
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3720 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3719 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3564 | Python source | `addons/smart_core/delivery/menu_service.py` |
@@ -281,8 +281,8 @@ Generated from repository source files. This report is informational during the 
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3720 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3719 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3564 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |

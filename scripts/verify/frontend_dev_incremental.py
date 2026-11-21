@@ -1714,6 +1714,7 @@ RULES = (
         # entry's tests without running them let the suite that locks the reuse
         # decision fall through to the generic typecheck fallback.
         "scripts/verify/test_business_entry_matrix_incremental.py",
+        "scripts/verify/test_business_entry_matrix_",
         "scripts/verify/business_entry_matrix_scope_seed.py",
     ), (
         "verify.frontend.business_entry.evidence_scope.unit",

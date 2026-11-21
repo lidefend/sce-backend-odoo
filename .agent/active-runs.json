@@ -72,6 +72,7 @@
     "fix/demo-company-membership-persistence-20261023": ".agent/runs/DEMO-COMPANY-MEMBERSHIP-PERSISTENCE-20261023/run.json",
     "fix/demo-product-completion-20261026": ".agent/runs/PRODUCT-USER-GAP-CLOSEOUT-20261026/run.json",
     "fix/demo-runtime-closeout-20261017": ".agent/runs/DEMO-RUNTIME-CLOSEOUT-20261017/run.json",
+    "fix/business-entry-matrix-132-20261122": ".agent/runs/BUSINESS-ENTRY-MATRIX-132-20261122/run.json",
     "fix/release-snapshot-legacy-fingerprint-20261122": ".agent/runs/RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122/run.json",
     "fix/enterprise-activation-entry-20261104": ".agent/runs/ENTERPRISE-INITIALIZATION-NATIVE-CONFIG-20261103/run.json",
     "fix/fe-action-semantics-01-20261109": ".agent/runs/FE-ACTION-SEMANTICS-01/run.json",

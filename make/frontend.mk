@@ -1750,7 +1750,12 @@ SC_ENTRY_SCOPE_RECORD_EXISTING ?=
 SC_ENTRY_SCOPE_RECORD_EXISTING_REASON ?=
 SC_ENTRY_SCOPE_PLAN ?=
 
-.PHONY: verify.frontend.business_entry.negative_closures verify.frontend.business_entry.matrix.incremental verify.frontend.business_entry.matrix.evidence_scope.status verify.frontend.business_entry.evidence_scope.unit
+.PHONY: verify.frontend.business_entry.negative_closures verify.frontend.business_entry.matrix.incremental verify.frontend.business_entry.matrix.evidence_scope.status verify.frontend.business_entry.evidence_scope.unit verify.frontend.business_entry.matrix.universe
+
+verify.frontend.business_entry.matrix.universe: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/business_entry_matrix_universe_guard.py scripts/verify/test_business_entry_matrix_universe_guard.py
+	@python3 -m unittest scripts.verify.test_business_entry_matrix_universe_guard
+	@python3 scripts/verify/business_entry_matrix_universe_guard.py
 
 # Bounded read-only diagnostic: observe each declared denied-role candidate's
 # capability closure and released navigation count. Set SC_ENTRY_MATRIX_CLOSURES_FROM
@@ -1775,7 +1780,7 @@ verify.frontend.business_entry.matrix.evidence_scope.status: guard.prod.forbid
 	@SC_ACCEPTANCE_PROFILE="$(SC_ACCEPTANCE_PROFILE)" SC_ACCEPTANCE_FRONTEND_URL="$(ACCEPTANCE_BASE_URL)" SC_ACCEPTANCE_DATABASE="$(DB_NAME)" SC_ACCEPTANCE_TARGET_SHA="$(ACCEPTANCE_TARGET_SHA)" ACCEPTANCE_LOGIN="$(ACCEPTANCE_LOGIN)" ACCEPTANCE_PASSWORD="$(ACCEPTANCE_PASSWORD)" SC_ENTRY_MATRIX_CSV="$(SC_ENTRY_MATRIX_CSV)" SC_ENTRY_MATRIX_OVERLAY="$(SC_ENTRY_MATRIX_OVERLAY)" SC_ENTRY_MATRIX_CLOSURES="$(SC_ENTRY_MATRIX_CLOSURES)" SC_ENTRY_MATRIX_EXPOSURE_REGISTRY="$(SC_ENTRY_MATRIX_EXPOSURE_REGISTRY)" node scripts/verify/business_entry_matrix_scope.mjs --emit-units .runtime/evidence-scope/units.status.json
 	@python3 scripts/ops/evidence_scope.py status --units .runtime/evidence-scope/units.status.json --ledger "$(SC_ENTRY_SCOPE_LEDGER)"
 
-verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid
+verify.frontend.business_entry.evidence_scope.unit: guard.prod.forbid verify.frontend.business_entry.matrix.universe
 	@python3 -m py_compile scripts/ops/evidence_scope.py scripts/verify/business_entry_matrix_incremental.py scripts/verify/business_entry_matrix_scope_seed.py
 	@python3 -m unittest scripts.ops.test_evidence_scope scripts.verify.test_business_entry_matrix_incremental
 	@node scripts/verify/business_entry_matrix_runtime_route.test.mjs
