@@ -151,4 +151,9 @@ lane disposition registry. The reviewed baseline update:
 - changes the zero-reference ceiling from 672 to 673, exactly the net addition
   of one identity.
 
+The exact-head Quick also exposed an unused duplicate test tag,
+`fixture_scenario_identity`. The test is already selected by the managed
+`acceptance_business_scene_lifecycle` tag, so the duplicate tag was retired
+instead of registering a second coverage consumer.
+
 Remote integration is not run yet.

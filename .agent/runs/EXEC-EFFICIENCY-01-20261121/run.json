@@ -7,6 +7,7 @@
   "goal": ".agent/goals/EXEC-EFFICIENCY-01-20261121.yaml",
   "record": "docs/ops/iterations/exec_efficiency_01_20261121.md",
   "scope": [
+    "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
     "scripts/dev/local_test_runner.py",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
@@ -58,6 +59,7 @@
     "bundle_template_runtime": {
       "target": "verify.local.test.template.bundle.orm",
       "inputs": [
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
         "scripts/dev/local_test_runner.py",
         "scripts/verify/test_local_test_runner.py",
         "make/dev.mk"
@@ -70,6 +72,9 @@
     "fixture_template_runtime": {
       "target": "verify.local.test.template.fixture.orm",
       "inputs": [
+        "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
+        "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
         "scripts/dev/local_test_runner.py",
         "scripts/verify/test_local_test_runner.py",
         "make/dev.mk"
