@@ -30,16 +30,21 @@ class TestFixtureScenarioIdentity(TransactionCase):
             in fixture.ACCEPTANCE_SCENARIO_BINDINGS
         ))
 
-        company = self.env["res.company"].sudo().create({
-            "name": "Fixture scenario identity company",
-        })
-        self.env["ir.model.data"].sudo().create({
-            "module": fixture.MODULE,
-            "name": "fe_company_a",
-            "model": "res.company",
-            "res_id": company.id,
-            "noupdate": True,
-        })
+        company = self.env.ref(
+            fixture.MODULE + ".fe_company_a",
+            raise_if_not_found=False,
+        )
+        if not company:
+            company = self.env["res.company"].sudo().create({
+                "name": "Fixture scenario identity company",
+            })
+            self.env["ir.model.data"].sudo().create({
+                "module": fixture.MODULE,
+                "name": "fe_company_a",
+                "model": "res.company",
+                "res_id": company.id,
+                "noupdate": True,
+            })
         with (
             patch.object(fixture, "_guard_acceptance_scope", return_value=None),
         ):

@@ -104,6 +104,13 @@ include its class tag. The test now carries the existing
 `acceptance_business_scene_lifecycle` managed tag; no new selector family or
 broader test matrix is introduced.
 
+The next run selected and executed the method, but exposed an environment
+assumption in the test itself: the managed acceptance database already owns the
+fixed `fe_company_a` XMLID, while the fresh local fixture template did not. The
+test now reuses the registered fixture company when present and creates it only
+in an isolated database that lacks it. This preserves the production-like
+company fixture and avoids duplicate XMLID creation.
+
 Clean candidate freeze and exact-head remote gates remain pending.
 
 ## Exclusions
