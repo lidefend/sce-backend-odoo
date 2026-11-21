@@ -54,4 +54,4 @@ goal:
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_applicable
-    user_acceptance: pending_revised_fixture_scope_confirmation_and_new_40_entries
+    user_acceptance: new_40_entries_passed_full_132_pending_product_defect_triage

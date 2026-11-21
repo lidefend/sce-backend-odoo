@@ -100,3 +100,32 @@ The accepted dry-run plan is:
 - 17 legacy + 22 current scenario page union = 132.
 
 No database write has been performed for this corrected plan.
+
+## Applied acceptance reconciliation
+
+The corrected plan was executed on `sc_frontend_acceptance`:
+
+- 44 enablement rows inserted;
+- 17 legacy scenarios preserved per fixture company;
+- 22 published current scenarios enabled per fixture company;
+- 39 enabled scenarios per company after readback;
+- zero additional writes in the immediate readback.
+
+Acceptance backend cache restart moved config admin and activity accounting
+from 92 to 132 released navigation targets.
+
+The 132-unit matrix then reused 1 unit and executed 111 affected units. All 40
+newly declared F4 entries passed. Overall state was 100 `checked`, 18
+`unreachable`, and 12 page/contract problems. Full 132-page acceptance remains
+open until those existing pages are triaged and fixed.
+
+Evidence:
+
+- apply log SHA256
+  `2310d9601e0223994c81c179b6198b1e7a1a3e2e5b51dbabdd002a0f30626bcb`
+- post-write readback SHA256
+  `be27a08aeb584452f8425679c0b391fbbedaf5dd3bb66b2bdecbb416dbf8cd1e`
+- matrix log SHA256
+  `70c9c2e24303b2c6ab25681978aa0b424bd01f17b83f57b9451ea5ae2cae0e39`
+- matrix summary SHA256
+  `770029dab255cf478fd82fc57d84934c561a1c3f83122c30a6eb1ced0e5c7ac6`

@@ -62,9 +62,19 @@
     "runtime_status": "Read-only evidence scope reports 132 units; the 40 newly added action rows remain never_recorded and no pending row was relabeled passed.",
     "fixture_drift": "Acceptance fixture source declares 46 scenario keys, but sc_frontend_acceptance contains the legacy 17 keys and none of the current published scenario keys.",
     "coverage_proof": "The legacy 17 scenarios cover 79 pages; the 22 published current scenarios cover 53 pages including all 40 added entries; their union covers all 132 pages. The other 24 fixture scenario keys are not present in the published composition and must not be enabled.",
-    "reconcile_dry_run": "Dry-run passed with 44 planned inserts, no legacy disables, and 39 enabled scenarios expected per fixture company. No database write was performed."
+    "reconcile_dry_run": "Dry-run passed with 44 planned inserts, no legacy disables, and 39 enabled scenarios expected per fixture company.",
+    "reconcile_apply": "Applied on sc_frontend_acceptance for companies 2 and 3: 44 inserts, 17 legacy scenarios preserved per company, 39 enabled scenarios per company, and zero remaining writes in readback.",
+    "runtime_identity": "Config admin and activity accounting navigation targets increased from 92 to 132 after acceptance backend cache restart.",
+    "matrix_132": "The incremental matrix declared 132 units, reused 1, executed 111, and completed with 100 checked, 18 unreachable, and 12 page/contract problems.",
+    "new_40_acceptance": "All 40 F4 entries were present in the executed matrix and passed.",
+    "evidence_hashes": {
+      "apply_log_sha256": "2310d9601e0223994c81c179b6198b1e7a1a3e2e5b51dbabdd002a0f30626bcb",
+      "postwrite_readback_sha256": "be27a08aeb584452f8425679c0b391fbbedaf5dd3bb66b2bdecbb416dbf8cd1e",
+      "matrix_log_sha256": "70c9c2e24303b2c6ab25681978aa0b424bd01f17b83f57b9451ea5ae2cae0e39",
+      "matrix_summary_sha256": "770029dab255cf478fd82fc57d84934c561a1c3f83122c30a6eb1ced0e5c7ac6"
+    }
   },
-  "next_exact_step": "Commit and publish the narrow reconciliation tool, then obtain revised owner authorization to insert only the 22 published current scenario enablements while preserving the 17 legacy enablements.",
+  "next_exact_step": "Commit and publish the applied reconciliation evidence, then triage the 12 failing pages and 18 remaining unreachable units without rerunning the passing 40 new entries.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
