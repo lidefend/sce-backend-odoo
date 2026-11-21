@@ -14,6 +14,7 @@ from pathlib import Path
 import re
 import shutil
 import subprocess
+import sys
 import time
 
 CORE = 'smart_construction_core'
@@ -64,8 +65,14 @@ def identity(env: dict) -> dict:
         raise ValueError('invalid target module')
     if database not in (f'sc_suite_ci_{module}', f'sc_suite_ci_{module}_retry1') or len(database) > 63:
         raise ValueError('invalid isolated target database')
-    return dict(run=run, attempt=attempt, shard=shard, head=head, dependency=CORE,
+    return dict(run=run, attempt=attempt, shard=shard, head=head, dependency=('smart_core' if module == 'smart_core' else CORE),
                 demo=False, schema=1)
+
+
+def baseline_name(key: dict) -> str:
+    digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:24]
+    prefix = 'sc_test_template__ci_' if key['dependency'] == 'smart_core' else 'sc_suite_prep_'
+    return prefix + digest
 
 
 def prepare(env: dict) -> None:
@@ -75,15 +82,15 @@ def prepare(env: dict) -> None:
         print('DEPENDENCY_PREPARATION=clean reason=demo', flush=True)
         return
     key = identity(env)
-    if not eligible(module):
+    lifecycle = module == 'smart_core'
+    if not lifecycle and not eligible(module):
         print('DEPENDENCY_PREPARATION=clean reason=no_shared_dependency', flush=True)
         return
     import psycopg2
     from psycopg2 import sql
 
     started = time.monotonic()
-    digest = hashlib.sha256(json.dumps(key, sort_keys=True).encode()).hexdigest()[:24]
-    baseline = 'sc_suite_prep_' + digest
+    baseline = baseline_name(key)
     target = env['SC_TEST_TARGET_DB']
     directory = DATA / 'ci-dependency-preparation'
     directory.mkdir(exist_ok=True)
@@ -109,7 +116,7 @@ def prepare(env: dict) -> None:
                        '--data-dir=' + str(DATA),
                        '--addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,'
                        + env.get('ADDONS_EXTERNAL_MOUNT', '/mnt/addons_external/oca_server_ux'),
-                       '-i', CORE, '--without-demo=all', '--no-http', '--workers=0',
+                       '-i', key['dependency'], '--without-demo=all', '--no-http', '--workers=0',
                        '--max-cron-threads=0', '--stop-after-init', '--log-level=info']
             # Deliberately no --test-enable or --test-tags. Never seed from a test DB.
             outcome = subprocess.run(command, check=False)
@@ -123,16 +130,20 @@ def prepare(env: dict) -> None:
         with psycopg2.connect(host='db', port=5432, user=env['DB_USER'],
                               password=env['DB_PASSWORD'], dbname=baseline) as check:
             with check.cursor() as probe:
-                probe.execute('SELECT name, state FROM ir_module_module WHERE name IN (%s, %s)', (CORE, module))
+                probe.execute('SELECT name, state FROM ir_module_module WHERE name IN (%s, %s)', (key['dependency'], module))
                 states = dict(probe.fetchall())
-                if states.get(CORE) != 'installed' or states.get(module) != 'uninstalled':
+                expected_target = 'installed' if lifecycle else 'uninstalled'
+                if states.get(key['dependency']) != 'installed' or states.get(module) != expected_target:
                     raise ValueError('baseline must contain installed dependency and uninstalled target')
         check.close()
-        cursor.execute(sql.SQL('CREATE DATABASE {} WITH TEMPLATE {} OWNER {}').format(
-            sql.Identifier(target), sql.Identifier(baseline), sql.Identifier(env['DB_USER'])))
-        source = DATA / 'filestore' / baseline
-        if source.exists():
-            shutil.copytree(source, DATA / 'filestore' / target)
+        # smart_core itself must still install fresh with its at_install tests.
+        # Its auxiliary pristine template is consumed only by the lifecycle matrix.
+        if not lifecycle:
+            cursor.execute(sql.SQL('CREATE DATABASE {} WITH TEMPLATE {} OWNER {}').format(
+                sql.Identifier(target), sql.Identifier(baseline), sql.Identifier(env['DB_USER'])))
+            source = DATA / 'filestore' / baseline
+            if source.exists():
+                shutil.copytree(source, DATA / 'filestore' / target)
     connection.close()
     print('DEPENDENCY_PREPARATION=' + json.dumps(dict(key, baseline=baseline,
           target=target, installed=prepared, elapsed_seconds=round(time.monotonic()-started, 3)),
@@ -140,4 +151,13 @@ def prepare(env: dict) -> None:
 
 
 if __name__ == '__main__':
-    prepare(dict(os.environ))
+    env = dict(os.environ)
+    if sys.argv[1:] == ['--extension-template-name']:
+        key = identity(env)
+        if key['dependency'] != 'smart_core':
+            raise ValueError('lifecycle template requires smart_core target')
+        print(baseline_name(key))
+    elif sys.argv[1:]:
+        raise ValueError('unsupported preparation argument')
+    else:
+        prepare(env)

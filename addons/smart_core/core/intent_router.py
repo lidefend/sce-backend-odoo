@@ -8,8 +8,7 @@ from typing import Optional, Type, Dict, Any, Tuple
 import odoo
 from .base_handler import BaseIntentHandler
 from .intent_operation_policy import preview_write_error
-from .handler_registry import HANDLER_REGISTRY  # import 时已完成注册
-from .extension_loader import load_extensions
+from .extension_loader import handlers_for_env
 from .http_result_policy import result_is_success
 from .request_identity import request_uid
 
@@ -34,16 +33,17 @@ def _normalize_intent_key(s: str) -> str:
     s = (s or "").strip()
     return s
 
-def resolve_handler(intent: str) -> Optional[Type[BaseIntentHandler]]:
+def resolve_handler(intent: str, env=None) -> Optional[Type[BaseIntentHandler]]:
     key = _normalize_intent_key(intent)
     if not key:
         return None
+    handlers = handlers_for_env(env) if env is not None else {}
     # 直接命中
-    h = HANDLER_REGISTRY.get(key)
+    h = handlers.get(key)
     if h:
         return h
     # 宽容：小写再试一次（注册表若用小写 key）
-    h = HANDLER_REGISTRY.get(key.lower())
+    h = handlers.get(key.lower())
     if h:
         return h
     return None
@@ -73,6 +73,8 @@ def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any], intent: str = "
     base_ctx = dict(request.env.context or {})
     if add_ctx:
         base_ctx.update(add_ctx)
+    # Enablement is database configuration, never request-supplied authority.
+    base_ctx.pop("sc.core.extension_modules", None)
 
     if target_db == cur_db:
         env = api.Environment(
@@ -122,14 +124,21 @@ def _dispatch(intent: str, params: dict, context: dict, meta: Optional[Dict[str,
             observe(name, (now - phase_start) * 1000)
         phase_start = now
 
-    handler_cls = resolve_handler(intent)
-    mark("resolve")
-    if not handler_cls:
-        return {"ok": False, "error": {"code": 404, "message": f"Unknown intent: {intent}"}}
-
     # 1) 构造 env / su_env（必要时切库）
     env, su_env, extra_cr = _build_envs(params or {}, context or {}, intent=intent)
     mark("environment")
+    try:
+        handler_cls = resolve_handler(intent, env)
+    except Exception:
+        if extra_cr is not None:
+            extra_cr.rollback()
+            extra_cr.close()
+        raise
+    mark("resolve")
+    if not handler_cls:
+        if extra_cr is not None:
+            extra_cr.close()
+        return {"ok": False, "error": {"code": 404, "message": f"Unknown intent: {intent}"}}
     dispatch_succeeded = False
     dispatch_result = None
     try:
@@ -190,12 +199,6 @@ def route_intent_payload(payload: dict, ctx, observe=None) -> dict:
     payload: { "intent": "...", "params": {...}, "context": {...}, "meta": {...} }
     """
     started = time.perf_counter()
-    # Load extension modules once (if configured)
-    try:
-        load_extensions(request.env, HANDLER_REGISTRY)
-    except Exception:
-        _logger.exception("[intent_router] extension loader failed")
-
     intent = (payload or {}).get("intent") or ""
     params = (payload or {}).get("params") or {}
     context = (payload or {}).get("context") or {}

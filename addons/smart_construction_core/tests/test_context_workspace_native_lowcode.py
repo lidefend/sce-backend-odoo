@@ -12,11 +12,13 @@ from odoo.addons.smart_core.utils.contract_governance import (
     apply_native_authority_domain_overrides,
 )
 from odoo.addons.smart_construction_core.services import contract_governance_overrides  # noqa: F401
-from odoo.tests.common import TransactionCase, tagged
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 
 
 @tagged("post_install", "-at_install", "uc4_native_lowcode")
-class TestContextWorkspaceNativeLowcode(TransactionCase):
+class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
     """U-C4 G08: 上下文办理工作台整组原生结构迁移.
 
     Three live entries share one configuration shape on three distinct models:
@@ -240,6 +242,13 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
     # The only field the retired bodies declared read-only.
     READONLY_FACTS = ("processing_advisory",)
 
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.test_project = cls.env["project.project"].create({
+            "name": "Synthetic context workspace project", "company_id": cls.env.company.id,
+        })
+
     def setUp(self):
         super().setUp()
         # Re-apply the candidate view and data files inside the transaction so
@@ -270,11 +279,20 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "name": login,
             "login": login,
             "email": "%s@invalid.local" % login,
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
             "groups_id": [(6, 0, [
                 self.env.ref("base.group_user").id,
                 self.env.ref(group_xmlid or self.WORKSPACE_OPERATOR_GROUP[action_key]).id,
             ])],
         })
+        if action_key == "action_sc_product_team_loan_deduction_v1" and not group_xmlid:
+            # A project operator needs the declared initiator and ledger-read authorities.
+            user.groups_id = [(4, self.env.ref(xmlid).id) for xmlid in (
+                "smart_construction_core.group_sc_cap_business_initiator",
+                "smart_construction_core.group_sc_cap_finance_read",
+                "smart_construction_core.group_sc_entry_p03",
+            )]
         project = self.env["project.project"].create({
             "name": project_name,
             "company_id": self.env.company.id,
@@ -299,7 +317,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         ).handle({
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_id),
-            "view_type": "form", "render_profile": "create", **extra,
+            "view_type": "form", "render_profile": "create",
+            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES), **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error"))
@@ -583,7 +602,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
 
     def test_the_recorded_context_is_a_real_transient_row(self):
         """Recording the context creates a row, and it is a legal edit state."""
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         partner = self.env["res.partner"].search([], limit=1)
         for action_key, _view, model_name, _title, _ctx, _note in self.ENTRIES:
             workspace = self.env[model_name].create({
@@ -661,14 +680,24 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                     self.assertNotIn("form", modes[:1],
                                      (action_key, method, "the projection must not open a write form"))
             if action_key in self.ENTRY_DISPATCH_CLOSED:
-                self.assertEqual(resolved, len(self.ENTRY_DISPATCH[action_key]),
-                                 (action_key, "every carrier of a closed entry must dispatch"))
+                self.assertEqual(resolved, len(self.ENTRY_DISPATCH[action_key]), action_key)
                 closed += resolved
             else:
                 self.assertEqual(resolved, 0, (action_key,
                                  "this entry's role surface declares no dispatch route"))
             workspace.unlink()
         self.assertEqual(closed, 14, "all three entries carry fourteen dispatch carriers")
+
+    def test_project_capability_alone_cannot_dispatch_finance_facts(self):
+        _user, uenv, project = self.operator_env(
+            "action_sc_product_team_loan_deduction_v1", "Restricted project operator",
+            group_xmlid="smart_construction_core.group_sc_cap_project_user")
+        partner = self.env["res.partner"].create({"name": "Restricted workspace counterparty"})
+        workspace = uenv["sc.team.loan.deduction.workspace"].create({
+            "project_id": project.id, "partner_id": partner.id})
+        for method in self.ENTRY_DISPATCH["action_sc_product_team_loan_deduction_v1"]:
+            with self.assertRaisesRegex(UserError, "正式入口"):
+                getattr(workspace, method)()
 
     def test_the_entry_declares_its_own_primary_action_label(self):
         """A dispatch workspace must not promise a long-lived draft.
@@ -895,7 +924,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         from odoo.addons.smart_core.delivery.menu_service import MenuService
         from odoo.addons.smart_core.identity.identity_resolver import IdentityResolver
 
-        finance_primary = ROLE_SURFACE_OVERRIDES["finance"].get("primary_menu_xmlids") or []
+        finance_primary = {row["menu_xmlid"] for row in
+                           ROLE_SURFACE_OVERRIDES["finance"]["contextual_action_authorities"]}
         for menu in ("menu_sc_product_current_account_v1",
                      "menu_sc_product_company_project_refund_v1"):
             self.assertIn("smart_construction_core." + menu, finance_primary, menu)
@@ -907,6 +937,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "name": login,
             "login": login,
             "email": "%s@invalid.local" % login,
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
             "groups_id": [(6, 0, [
                 self.env.ref("base.group_user").id,
                 self.env.ref("smart_construction_core.group_sc_role_finance_user").id,
@@ -920,7 +952,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         surface = resolver.build_role_surface(
             resolver.user_group_xmlids(user), [], {"workspace.home"})
         self.assertEqual(surface.get("role_code"), "finance")
-        authority = MenuService(self.env(user=user)).build_route_authority(surface)
+        from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
+        authority = build_runtime_route_authority(self.env(user=user))
         routes = {}
         for bucket in ("primary_actions", "role_home_actions", "contextual_actions",
                        "admin_actions", "menu_containers"):
@@ -948,7 +981,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         project_surface = ROLE_SURFACE_OVERRIDES["project_member"]
         self.assertIn(
             "smart_construction_core.menu_sc_product_team_loan_deduction_v1",
-            project_surface["primary_menu_xmlids"],
+            {row["menu_xmlid"] for row in project_surface["contextual_action_authorities"]},
             "the 875 entry declares the project capability groups",
         )
         for menu in ("menu_sc_contractor_project_borrow",
@@ -962,6 +995,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 "name": login,
                 "login": login,
                 "email": "%s@invalid.local" % login,
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
                 "groups_id": [(6, 0, [self.env.ref("base.group_user").id] + [
                     self.env.ref(xmlid).id for xmlid in group_xmlids
                 ])],
@@ -973,7 +1008,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             resolver._role_surface_map = {**resolver._role_surface_map, **ROLE_SURFACE_OVERRIDES}
             surface = resolver.build_role_surface(
                 resolver.user_group_xmlids(user), [], {"workspace.home"})
-            authority = MenuService(self.env(user=user)).build_route_authority(surface)
+            from odoo.addons.smart_core.delivery.runtime_route_authority import build_runtime_route_authority
+            authority = build_runtime_route_authority(self.env(user=user))
             routes = {}
             for bucket in ("primary_actions", "role_home_actions", "contextual_actions",
                            "admin_actions", "menu_containers"):
@@ -987,6 +1023,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
             "smart_construction_core.group_sc_cap_project_user",
             "smart_construction_core.group_sc_cap_business_initiator",
             "smart_construction_core.group_sc_cap_finance_read",
+            "smart_construction_core.group_sc_entry_p03",
         ])
         self.assertEqual(surface.get("role_code"), "project_member")
         carrier_menu = self.ref("menu_sc_product_team_loan_deduction_v1").id
@@ -1030,7 +1067,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         standard ``_rec_name`` resolves to), and the client keeps reading
         ``display_name``/``name`` with no model special case.
         """
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         partner = self.env["res.partner"].search([], limit=1)
         for _action_key, _view, model_name, _title, _ctx, _note in self.ENTRIES:
             workspace = self.env[model_name].create({
@@ -1068,6 +1105,7 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
         # views, so both must survive the skip, and both are checked below to
         # add nothing but their own declaration.
         self.assertEqual(safe_names, [
+            "smart_construction_core.accounting_form_save_label",
             "smart_construction_core.context_workspace_form",
             "smart_construction_core.project_intake_form",
         ])
@@ -1101,6 +1139,12 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 "fields": {"name": {"type": "char", "required": True}},
             },
         ))
+        cases.append(("account.move", {
+            "head": {"model": "account.move", "view_type": "form", "render_profile": "create"},
+            "model": "account.move", "render_profile": "create",
+            "views": {"form": {"layout": [{"type": "sheet", "children": []}]}},
+            "fields": {"name": {"type": "char", "readonly": True}},
+        }))
         for case_key, data in cases:
             before = copy.deepcopy(data)
             failures = apply_native_authority_domain_overrides(data, "user")
@@ -1113,7 +1157,13 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 self.assertEqual(data.get(key), before.get(key), (case_key, key))
             # The declaration may not weaken a constraint the native form owns.
             self.assertEqual(data["fields"], before["fields"], case_key)
-            self.assertEqual(data["views"], before["views"], case_key)
+            if case_key == "projects.intake":
+                # Intake additionally declares autosave semantics, never a new layout.
+                self.assertEqual(set(data["views"]["form"]) - set(before["views"]["form"]), {"autosave"})
+                self.assertEqual(data["views"]["form"]["layout"], before["views"]["form"]["layout"])
+                self.assertEqual(data["views"]["form"]["autosave"]["schemaVersion"], "intake_autosave_policy.v1")
+            else:
+                self.assertEqual(data["views"], before["views"], case_key)
 
     def test_a_carrier_fails_closed_when_the_authority_offers_several_routes(self):
         """Several candidate routes must not be resolved by picking one.
@@ -1253,9 +1303,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
          "view_sc_current_account_workspace_form", "sc.current.account.workspace"),
     )
     CONTRACT_CLIENT_CAPABILITIES = (
-        "form.feedback.message.v1",
-        "form.feedback.draft.v1",
-        "form.navigation.anchor.v1",
+        *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY,
+        "view.form.v1", "view.tree.v1",
     )
 
     def config_admin_env(self, action_key=None):
@@ -1289,6 +1338,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 "name": login,
                 "login": login,
                 "email": "%s@invalid.local" % login,
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
                 "groups_id": [(6, 0, [self.env.ref(xmlid).id for xmlid in groups])],
             })
         return user, self.env(user=user, context={
@@ -1621,6 +1672,8 @@ class TestContextWorkspaceNativeLowcode(TransactionCase):
                 "name": login,
                 "login": login,
                 "email": "%s@invalid.local" % login,
+            "company_id": self.env.company.id,
+            "company_ids": [(6, 0, self.env.company.ids)],
                 "groups_id": [(6, 0, [
                     self.env.ref("base.group_user").id,
                     self.env.ref(self.CONFIG_ADMIN_GROUP).id,

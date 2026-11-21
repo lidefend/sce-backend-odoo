@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 
@@ -10,7 +10,11 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
+        cls.company = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company).env
         base_user = cls.env.ref("base.group_user")
         initiator = cls.env.ref(
             "smart_construction_core.group_sc_cap_business_initiator"
@@ -28,7 +32,7 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
                 "company_id": cls.company.id,
                 "company_ids": [(6, 0, [cls.company.id])],
                 "groups_id": [
-                    (6, 0, [base_user.id, initiator.id, material_read.id])
+                    (6, 0, [base_user.id, initiator.id, material_read.id, cls.env.ref("smart_construction_core.group_sc_cap_finance_user").id])
                 ],
             }
         )
@@ -85,7 +89,7 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
         cls.contract_b = contract("B", cls.partners[1])
 
         def settlement(label, contract_record, partner):
-            return cls.env["sc.settlement.order"].with_context(
+            record = cls.env["sc.settlement.order"].with_context(
                 cls.context
             ).create(
                 {
@@ -95,9 +99,13 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
                     "partner_id": partner.id,
                     "settlement_type": "out",
                     "title": f"UM-P2 S02 {label} settlement",
-                    "line_ids": [(0, 0, {"name": label, "amount": 100.0})],
+                    "line_ids": [(0, 0, {"name": label, "qty": 1.0, "price_unit": 100.0})],
                 }
             )
+
+            record.action_submit()
+            assert record.state == "approve", record.state
+            return record
 
         cls.settlement_a1 = settlement(
             "A1", cls.contract_a, cls.partners[0]
@@ -115,9 +123,11 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
                 "name": "UM-P2 S02 material settlement",
                 "project_id": cls.project.id,
                 "supplier_id": cls.partners[0].id,
-                "state": "confirmed",
+                "line_ids": [(0, 0, {"product_id": cls.env["product.product"].create({"name": "Synthetic settlement material"}).id, "qty": 1.0, "unit_price": 100.0})],
             }
         )
+        cls.material_settlement.action_submit()
+        cls.material_settlement.action_confirm()
         cls.caller_env = cls.env(
             user=cls.caller,
             context=cls.context,
@@ -130,6 +140,9 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
             "project_id": self.project.id,
             "partner_id": self.partners[0].id,
             "amount": 100.0,
+            "payment_account_name": "Synthetic payee",
+            "payment_bank_name": "Synthetic bank",
+            "payment_account_no": "TEST-UM-P2-PAYEE",
         }
         request_values.update(values)
         return self.env["payment.request"].with_context(self.context).create(
@@ -152,6 +165,9 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
         )
 
     def _execution(self, request, **values):
+        if request.state == "draft":
+            request.action_submit()
+        self.assertEqual(request.state, "approved")
         execution_values = {
             "payment_request_id": request.id,
             "planned_amount": request.amount,
@@ -208,12 +224,11 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
         with self.assertRaises(ValidationError):
             self._execution(request, contract_id=self.contract_b.id)
 
-    def test_contract_without_settlement_basis_is_rejected(self):
-        with self.assertRaises(ValidationError):
-            self._request(
-                "contract-without-basis",
-                contract_id=self.contract_a.id,
-            )
+    def test_explicit_contract_is_a_basis_without_inventing_a_settlement(self):
+        request = self._request("contract-basis", contract_id=self.contract_a.id)
+        self.assertFalse(request.settlement_id)
+        self.assertFalse(request.outflow_line_ids)
+        self.assertEqual(self._execution(request).contract_id, self.contract_a)
 
     def test_header_detail_conflict_is_rejected(self):
         request = self._request("header-detail-conflict")
@@ -227,7 +242,10 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
             settlement_id=self.settlement_a1.id,
         )
         same = self._execution(request, partner_id=self.partners[0].id)
-        different = self._execution(request, partner_id=self.partners[2].id)
+        with self.assertRaisesRegex(ValidationError, "已存在办理中的付款登记"), self.env.cr.savepoint():
+            self._execution(request, partner_id=self.partners[2].id)
+        other_request = self._request("different-payee", settlement_id=self.settlement_a1.id)
+        different = self._execution(other_request, partner_id=self.partners[2].id)
         self.assertEqual(same.payment_request_partner_relation, "same_partner")
         self.assertEqual(
             different.payment_request_partner_relation,
@@ -236,13 +254,14 @@ class TestUmP2PaymentRelationAggregationOrm(TransactionCase):
         self.assertEqual(request.partner_id, self.partners[0])
         self.assertEqual(request.contract_id, self.contract_a)
 
-    def test_write_revalidates_basis_but_allows_actual_payee_change(self):
+    def test_write_cannot_rebind_established_payment_anchors(self):
         request = self._request(
             "write",
             settlement_id=self.settlement_a1.id,
         )
         execution = self._execution(request)
-        execution.write({"partner_id": self.partners[2].id})
-        self.assertEqual(execution.partner_id, self.partners[2])
-        with self.assertRaises(ValidationError):
-            execution.write({"contract_id": self.contract_b.id})
+        before = execution.read(["partner_id", "contract_id", "payment_request_id"])
+        for values in ({"partner_id": self.partners[2].id}, {"contract_id": self.contract_b.id}):
+            with self.assertRaisesRegex(UserError, "不允许改绑"), self.env.cr.savepoint():
+                execution.write(values)
+        self.assertEqual(execution.read(["partner_id", "contract_id", "payment_request_id"]), before)

@@ -12,6 +12,9 @@ from unittest.mock import patch
 from odoo import SUPERUSER_ID, fields
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from odoo.addons.smart_core.security.platform_admin import platform_control_scope
+from odoo.addons.smart_core.security.namespace_resolver import resolve_instance
+from .entry_namespace_test_support import configure_test_entry_namespace
 
 
 @tagged("post_install", "-at_install", "platform_database_governance")
@@ -86,6 +89,20 @@ class TestPlatformDatabaseGovernance(TransactionCase):
             "groups_id": [(6, 0, [cls.env.ref("base.group_user").id])],
         })
         cls.db_name = "sc_db_gov_unit"
+
+    def setUp(self):
+        super().setUp()
+        configure_test_entry_namespace(
+            self.env,
+            alias="platform",
+            audience="platform-admin",
+            duty_key="platform_control",
+            platform_control=True,
+        )
+        self.platform_admin = self.platform_admin.with_env(self.env)
+        self.security_admin = self.security_admin.with_env(self.env)
+        self.bystander = self.bystander.with_env(self.env)
+        assert resolve_instance(self.env).audience == "platform-admin"
 
     # ------------------------------------------------------------------
     # registration + lifecycle
@@ -365,6 +382,8 @@ class TestPlatformDatabaseGovernance(TransactionCase):
     # the product entries: request / approve / reject / revoke / expire / query
     # ------------------------------------------------------------------
     def _migrate_request(self, requester=None, **overrides):
+        scope = platform_control_scope(self.platform_admin)
+        self.assertTrue(scope["is_platform_control_admin"], scope)
         facts = {
             "db_name": self.db_name,
             "capability": "migrate",

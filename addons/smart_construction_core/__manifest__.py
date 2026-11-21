@@ -368,4 +368,5 @@
     'installable': True,
     'application': True,
     'license': 'LGPL-3',
+    "uninstall_hook": "uninstall_hook",
 }

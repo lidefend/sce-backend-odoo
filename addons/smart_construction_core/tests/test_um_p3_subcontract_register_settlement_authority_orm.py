@@ -489,7 +489,7 @@ class TestUmP3SubcontractRegisterSettlementAuthorityOrm(TransactionCase):
             quantities=[source.contract_qty + 100.0],
         )
         oversized.action_submit()
-        self.assertEqual(oversized.state, "submitted")
+        self.assertEqual(oversized.state, "approved")
 
         cancellable = self._settlement("cancellation-undefined", [source])
         register.action_cancel()

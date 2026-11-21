@@ -245,7 +245,13 @@ class ContractService:
                     return None
                 p = (b.get("payload") or {})
                 # 语义主键：不含 label，确保真正相同的动作被折叠
-                ident = p.get("method") or p.get("ref") or p.get("url") or ""
+                for field in ("action_id", "server_action_id", "xml_id", "method", "ref", "url"):
+                    value = p.get(field) or b.get(field)
+                    if value:
+                        ident = (field, str(value))
+                        break
+                else:
+                    ident = ("key", str(b.get("key") or b.get("name") or ""))
                 return (b.get("kind"), b.get("level"), ident)
 
 

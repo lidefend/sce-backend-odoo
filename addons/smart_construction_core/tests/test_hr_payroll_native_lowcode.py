@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 from lxml import etree
 
 from odoo.tests.common import TransactionCase, tagged
@@ -181,9 +182,9 @@ class TestHrPayrollNativeLowcode(TransactionCase):
     def contract(self, action_key, view_id, **extra):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         action = self.ref(action_key)
-        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": action.res_model, "action_id": action.id,
-            "view_id": self.view_ref_id(view_id),
+            "view_id": 0,
             "view_type": "form", "render_profile": "create", **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -586,7 +587,7 @@ class TestHrPayrollNativeLowcode(TransactionCase):
         self.assertEqual(action.domain, "[('fact_type', 'in', ['salary_registration', 'subsidy', 'bonus'])]")
         for key in ("action_sc_payroll_management", "action_sc_product_project_payroll_v1", "action_sc_product_social_fund_v1"):
             entry = self.ref(key)
-            response = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            response = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
                 "op": "action_open", "action_id": entry.id, "view_type": "tree", "contract_surface": "user",
             })
             response = response.to_legacy_dict() if hasattr(response, "to_legacy_dict") else response

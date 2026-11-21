@@ -10,8 +10,12 @@ class TestUmP1CostLedgerVisibilityContractOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
         cls.company_b = cls.env["res.company"].create({"name": "UM-P1 S07 Company B"})
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company_a | cls.company_b:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company_a).env
         base_user = cls.env.ref("base.group_user")
         cost_manager = cls.env.ref(
             "smart_construction_core.group_sc_cap_cost_manager"
@@ -151,6 +155,7 @@ class TestUmP1CostLedgerVisibilityContractOrm(TransactionCase):
                 "project_id": project.id,
                 "period_id": period.id,
                 "period": period.period,
+                "date": period.period + "-01",
                 "cost_code_id": cls.cost_code.id,
                 "amount": 1.0,
                 "note": f"UM-P1 S07 {label}",
@@ -212,6 +217,7 @@ class TestUmP1CostLedgerVisibilityContractOrm(TransactionCase):
                 "project_id": self.owned_project.id,
                 "period_id": self.periods["owned"].id,
                 "period": "2026-07",
+                "date": "2026-07-01",
                 "cost_code_id": self.cost_code.id,
                 "amount": 2.0,
                 "note": "authorized create",
@@ -224,6 +230,7 @@ class TestUmP1CostLedgerVisibilityContractOrm(TransactionCase):
                     "project_id": self.unrelated_project.id,
                     "period_id": self.periods["unrelated"].id,
                     "period": "2026-07",
+                "date": "2026-07-01",
                     "cost_code_id": self.cost_code.id,
                     "amount": 2.0,
                 }
@@ -242,6 +249,7 @@ class TestUmP1CostLedgerVisibilityContractOrm(TransactionCase):
                 "project_id": self.owned_project.id,
                 "period_id": self.periods["owned"].id,
                 "period": "2026-07",
+                "date": "2026-07-01",
                 "cost_code_id": self.cost_code.id,
                 "amount": 3.0,
             }

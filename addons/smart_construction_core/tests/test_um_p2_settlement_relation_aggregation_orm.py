@@ -10,10 +10,16 @@ class TestUmP2SettlementRelationAggregationOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
         cls.company_b = cls.env["res.company"].create(
             {"name": "UM-P2 S05 company B"}
         )
+        # Reuse the governed industry fixture; bootstrap companies are not
+        # customer data spaces and must not stand in for the caller's authority.
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company_a | cls.company_b:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company_a).env
         base_user = cls.env.ref("base.group_user")
         settlement_manager = cls.env.ref(
             "smart_construction_core.group_sc_cap_settlement_manager"

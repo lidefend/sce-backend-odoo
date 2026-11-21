@@ -865,6 +865,32 @@ class UIBusinessConfigContract(models.Model):
         model_fields: dict[str, Any] = {}
         if record.model and record.model in self.env:
             model_fields = self.env[record.model]._fields
+        spec = ((payload.get("view_orchestration") or {}).get("views") or {}).get("form") or {}
+        # Permission annotations and native node patches inherit their structure
+        # from Odoo. They must not publish a second, complete form body merely
+        # to satisfy the completeness gate for independently authored forms.
+        if record.role_key and spec and not role_form_structure_violations(record):
+            assert_role_form_permissions_only(record)
+            if set(spec) == {"fields"} and spec["fields"]:
+                return {"verdict": "formal", "reason": "role_permission_overlay",
+                        "errors": [], "warnings": [], "not_verified": []}
+        if set(spec) == {"node_patches"} and spec["node_patches"]:
+            action, view = record.action_id, record.view_id
+            if not action or not view or action.res_model != record.model or view.model != record.model or view.type != "form":
+                raise ValidationError("CONFIG_TARGET_BINDING_REQUIRED")
+            from odoo.addons.smart_core.core.form_configuration_compiler import compile_form_configuration
+            # Resolve an action's False view through the existing Odoo projection,
+            # exactly as normal runtime does. Arbitrary view overrides stay denied.
+            projection = self.env["app.view.config"].with_context(
+                contract_projection_readonly=True, contract_view_id=False,
+                requested_view_id=False, contract_action_id=action.id,
+            )._generate_from_fields_view_get(record.model, "form")
+            if projection.source_view_id != view:
+                raise ValidationError("ACTION_VIEW_REQUEST_OVERRIDE_DENIED")
+            layout = (projection.arch_parsed or {}).get("layout") or []
+            compile_form_configuration(layout, [record], fields_meta=self.env[record.model].fields_get())
+            return {"verdict": "formal", "reason": "validated_native_node_overlay",
+                    "errors": [], "warnings": [], "not_verified": []}
         diagnostics = validate_business_structure(
             payload,
             model_fields=model_fields,

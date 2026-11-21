@@ -1,15 +1,11 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import importlib
 from copy import deepcopy
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.utils.extension_hooks import (
-    call_extension_hook_first,
-    iter_extension_modules,
-)
+from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_first
 
 from .release_approval_policy_service import ReleaseApprovalPolicyService
 from .release_audit_trail_service import ReleaseAuditTrailService
@@ -453,19 +449,12 @@ class ReleaseOperatorReadModelService:
         }
 
     def _load_product_ext_facts(self) -> dict[str, Any]:
+        from odoo.addons.smart_core.core.extension_loader import run_extension_hooks
+
         product: dict[str, Any] = {}
-        for module_name in iter_extension_modules(self.env):
-            try:
-                module = importlib.import_module(f"odoo.addons.{module_name}")
-            except Exception:
-                continue
-            hook = getattr(module, "get_system_init_fact_contributions", None)
-            if not callable(hook):
-                continue
-            try:
-                payload = hook(self.env, self.env.user, context={})
-            except Exception:
-                continue
+        for _module_name, payload in run_extension_hooks(
+            self.env, "get_system_init_fact_contributions", self.env, self.env.user, context={},
+        ):
             rows = payload if isinstance(payload, list) else [payload]
             for row in rows:
                 if not isinstance(row, dict) or _text(row.get("module")) != "product":
@@ -1827,7 +1816,8 @@ class ReleaseOperatorReadModelService:
                         "sc.edition.release.snapshot",
                         "sc.release.action",
                         "sc.product.policy",
-                        "smart_construction_core.sc.product.scenario",
+                        *([_text(_dict(business_scenario_maintenance.get("scope")).get("model"))]
+                          if _text(_dict(business_scenario_maintenance.get("scope")).get("model")) else []),
                     ],
                     "projection_only": True,
                 },

@@ -549,6 +549,24 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         self.assertEqual(unsupported["options_resolution"], "unsupported")
         self.assertEqual([first["source_position"], second["source_position"], unsupported["source_position"]], [1, 2, 3])
 
+    def test_ribbon_text_alias_matches_odoo_without_inventing_a_title(self):
+        for attributes, expected in (
+            ({"name": "web_ribbon", "text": "Legacy invoice"}, "Legacy invoice"),
+            ({"name": "web_ribbon", "text": "Legacy", "title": "Paid"}, "Paid"),
+            ({"name": "web_ribbon"}, ""),
+            ({"name": "other_widget", "text": "Not a ribbon"}, ""),
+        ):
+            with self.subTest(attributes=attributes):
+                root = _parse_test_xml('<form><widget ' + ' '.join(
+                    '%s="%s"' % item for item in attributes.items()) + '/></form>')
+                projected = self.tree_form_parser._node_to_layout_from_dom(list(root)[0], {}, list(root.iter()))
+                compatibility = self.tree_form_parser._convert_node_to_layout({
+                    "tag": "widget", "attributes": attributes, "children": [],
+                }, {})
+                self.assertEqual(projected["label"], expected)
+                self.assertEqual(compatibility["label"], expected)
+                self.assertEqual(projected["attributes"], attributes)
+
     def test_compatibility_widget_path_preserves_existing_identity_without_manufacturing_one(self):
         parser = self.tree_form_parser
         identified = parser._convert_node_to_layout({

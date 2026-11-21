@@ -1,11 +1,9 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
-import importlib
 from typing import Any
 
 from odoo.addons.smart_core.core.source_authority import build_source_authority_contract
-from odoo.addons.smart_core.utils.extension_hooks import iter_extension_modules
 
 SOURCE_KIND = "system_init_extension_fact_contribution_merger"
 SOURCE_AUTHORITIES = ("extension_hook:get_system_init_fact_contributions", "ext_facts")
@@ -29,24 +27,20 @@ def apply_extension_fact_contributions(
     user,
     context: dict[str, Any] | None = None,
 ) -> None:
+    from odoo.addons.smart_core.core.extension_loader import run_extension_hooks
+
     ext_facts = data.get("ext_facts")
     if not isinstance(ext_facts, dict):
         ext_facts = {}
 
-    for module_name in iter_extension_modules(env):
-        try:
-            module = importlib.import_module(f"odoo.addons.{module_name}")
-        except Exception:
-            continue
-
-        hook = getattr(module, "get_system_init_fact_contributions", None)
-        if not callable(hook):
-            continue
-
-        try:
-            payload = hook(env, user, context=context or {})
-        except Exception:
-            continue
+    contributions = run_extension_hooks(
+        env,
+        "get_system_init_fact_contributions",
+        env,
+        user,
+        context=context or {},
+    )
+    for module_name, payload in contributions:
 
         if isinstance(payload, dict):
             module_key = str(payload.get("module") or module_name or "").strip()

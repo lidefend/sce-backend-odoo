@@ -2578,6 +2578,56 @@ verify.backend.architecture.static: guard.prod.forbid
 verify.extension_modules.guard: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) DB_NAME=$(DB_NAME) bash scripts/verify/extension_modules_guard.sh
 
+.PHONY: verify.extension.hook_contracts.unit
+verify.extension.hook_contracts.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/extension_hook_contract_guard.py scripts/verify/test_extension_hook_contract_guard.py addons/smart_core/core/extension_hook_contracts.py
+	@python3 scripts/verify/extension_hook_contract_guard.py
+	@python3 -m unittest scripts.verify.test_extension_hook_contract_guard
+
+.PHONY: verify.extension.runtime_context.unit
+verify.extension.runtime_context.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/core/extension_loader.py addons/smart_core/core/handler_registry.py scripts/verify/test_extension_runtime_context.py
+	@python3 -m unittest scripts.verify.test_extension_runtime_context
+
+.PHONY: verify.extension.hook_resolver.unit
+verify.extension.hook_resolver.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/core/extension_hook_contracts.py addons/smart_core/utils/extension_hooks.py scripts/verify/test_extension_hook_resolver.py
+	@python3 -m unittest scripts.verify.test_extension_hook_resolver
+
+.PHONY: verify.extension.modules_guard.unit
+verify.extension.modules_guard.unit: guard.prod.forbid
+	@bash -n scripts/verify/extension_modules_guard.sh
+	@python3 -m unittest scripts.verify.test_extension_modules_guard
+
+.PHONY: verify.extension.consumers.unit
+verify.extension.consumers.unit: guard.prod.forbid
+	@python3 -m py_compile \
+	  addons/smart_core/core/intent_router.py \
+	  addons/smart_core/handlers/login.py \
+	  addons/smart_core/handlers/terminal_shell_v2.py \
+	  addons/smart_core/handlers/ui_contract_v2_adapters.py \
+	  addons/smart_core/security/credential_service.py \
+	  addons/smart_core/security/intent_authorization.py \
+	  addons/smart_core/security/intent_permission.py \
+	  addons/smart_core/core/system_init_extension_fact_merger.py \
+	  addons/smart_core/delivery/platform_capability_explorer.py \
+	  addons/smart_core/delivery/release_operator_read_model_service.py \
+	  scripts/contract/snapshot_export.py
+	@python3 scripts/verify/intent_router_purity_guard.py
+	@python3 scripts/verify/contract_production_chain_guard.py
+	@python3 addons/smart_core/tests/test_intent_router_payload_envelope.py
+	@python3 addons/smart_core/tests/test_terminal_shell_v2_boundaries.py
+	@python3 addons/smart_core/tests/test_login_company_boundary.py
+	@python3 addons/smart_core/tests/test_login_identity_semantics.py
+	@python3 addons/smart_core/tests/test_base_handler_type_error.py
+	@python3 addons/smart_core/tests/test_system_init_extension_fact_merger.py
+	@python3 addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py
+	@python3 -m unittest scripts.verify.test_contract_snapshot_export_fail_closed
+	@python3 -m unittest scripts.verify.test_contract_snapshot_user_resolution
+	@python3 -m unittest scripts.verify.test_contract_snapshot_execute_authority
+	@python3 -m unittest scripts.verify.test_contract_snapshot_field_selection
+	@python3 -m unittest scripts.verify.test_smart_core_boundary_guard
+
 verify.test_seed_dependency.guard: guard.prod.forbid
 	@bash scripts/verify/test_seed_dependency_guard.sh
 

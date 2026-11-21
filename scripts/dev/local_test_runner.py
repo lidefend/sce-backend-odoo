@@ -535,7 +535,7 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
                 script = script.replace(' -i "$SC_TEST_MODULE"', '')
             if rehearsal_script:
                 script = script.replace('exec python3 /tmp/odoo_ordered_tests.py', 'python3 /tmp/odoo_ordered_tests.py') + rehearsal_script
-            run = dc + ['run', '--name', carrier, '--rm', '--no-deps', '-T', '-v', str(ORDER_DRIVER) + ':/tmp/odoo_ordered_tests.py:ro', '-v', str(ROOT / 'config') + ':/mnt/config:ro', '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0', '-e', 'SC_TEST_ORDER=' + args.order, '-e', 'SC_TEST_ORDER_SEED=20261026', '-e', 'SC_TEST_MODULE=' + module, '-e', 'SC_TEST_TAGS=' + tags, '--entrypoint', 'bash', 'odoo', '-ec', script]
+            run = dc + ['run', '--name', carrier, '--rm', '--no-deps', '-T', '-v', str(ORDER_DRIVER) + ':/tmp/odoo_ordered_tests.py:ro', '-v', str(ROOT / 'config') + ':/mnt/config:ro', '-e', 'SC_ENVIRONMENT=test', '-e', 'SC_ALLOW_DEMO_DATA=0', '-e', 'SC_TEST_ORDER=' + args.order, '-e', 'SC_TEST_ORDER_SEED=20261026', '-e', 'SC_TEST_MODULE=' + module, '-e', 'SC_TEST_TAGS=' + tags, '-e', 'SC_EXTENSION_TEMPLATE_DB=' + template_database, '-e', 'SC_EXTENSION_LIFECYCLE_MATRIX=' + os.environ.get('SC_EXTENSION_LIFECYCLE_MATRIX', '0'), '--entrypoint', 'bash', 'odoo', '-ec', script]
             process_status = 1
             cleanup = 'not_run'
             try:

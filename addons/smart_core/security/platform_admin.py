@@ -113,9 +113,15 @@ def _current_identity_audience(env=None) -> str:
         from .namespace_resolver import resolve_entry, resolve_instance
         from odoo.http import request as http_request
 
-        httprequest = getattr(http_request, "httprequest", None)
+        # Outside an HTTP request the LocalProxy may be unbound. Internal ORM
+        # calls still have an authoritative instance environment.
+        try:
+            httprequest = getattr(http_request, "httprequest", None)
+            request_env = getattr(http_request, "env", None)
+        except RuntimeError:
+            httprequest = request_env = None
         headers = getattr(httprequest, "headers", None) or {}
-        target_env = env if env is not None else getattr(http_request, "env", None)
+        target_env = env if env is not None else request_env
         if headers:
             return resolve_entry(target_env, headers).audience
         return resolve_instance(target_env).audience
@@ -156,6 +162,8 @@ def platform_control_scope(
     resolved_env = env if env is not None else getattr(user, "env", None)
     group_ok = _user_has_any_group(user, platform_admin_group_xmlids(include_system=include_system))
     instance = platform_instance_scope(resolved_env)
+    if identity_audience is None:
+        identity_audience = _current_identity_audience(resolved_env)
     audience_ok = _identity_audience_allows(identity_audience)
     return {
         "user_id": getattr(user, "id", None) if user else None,

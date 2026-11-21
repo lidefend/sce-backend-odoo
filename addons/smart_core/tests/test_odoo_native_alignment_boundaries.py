@@ -221,7 +221,7 @@ from odoo.addons.smart_core.orchestration.settlement_slice_contract_orchestrator
 
 @tagged("post_install", "-at_install", "smart_core", "native_alignment")
 class TestOdooNativeAlignmentBoundaries(TransactionCase):
-    def test_extension_hook_compat_preserves_order_empty_result_and_keyword_capability(self):
+    def test_extension_hook_compat_preserves_empty_result_and_keyword_capability(self):
         env = object()
         user = object()
         authority = {"role_home_actions": []}
@@ -232,20 +232,13 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             calls.append("old")
             return []
 
-        def new_provider(_env, _user, *, published_authority=None):
-            calls.append("new")
-            return [{"authority": published_authority}]
-
         modules["odoo.addons.old_provider"] = types.SimpleNamespace(
-            capability_hook=old_provider,
-        )
-        modules["odoo.addons.new_provider"] = types.SimpleNamespace(
-            capability_hook=new_provider,
+            smart_core_list_capabilities_for_user=old_provider,
         )
         with patch.object(
             extension_hooks,
-            "iter_extension_modules",
-            return_value=["old_provider", "new_provider"],
+            "_extension_modules",
+            return_value=("old_provider",),
         ), patch.object(
             extension_hooks.importlib,
             "import_module",
@@ -253,7 +246,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         ):
             result = extension_hooks.call_extension_hook_first_compatible(
                 env,
-                "capability_hook",
+                "smart_core_list_capabilities_for_user",
                 env,
                 user,
                 optional_kwargs={"published_authority": authority},
@@ -263,15 +256,15 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
 
         calls.clear()
         modules["odoo.addons.old_provider"] = types.SimpleNamespace(
-            capability_hook=lambda _env, _user, *, published_authority=None: (
+            smart_core_list_capabilities_for_user=lambda _env, _user, *, published_authority=None: (
                 calls.append("old"),
                 [{"authority": published_authority}],
             )[1],
         )
         with patch.object(
             extension_hooks,
-            "iter_extension_modules",
-            return_value=["old_provider", "new_provider"],
+            "_extension_modules",
+            return_value=("old_provider",),
         ), patch.object(
             extension_hooks.importlib,
             "import_module",
@@ -279,7 +272,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         ):
             result = extension_hooks.call_extension_hook_first_compatible(
                 env,
-                "capability_hook",
+                "smart_core_list_capabilities_for_user",
                 env,
                 user,
                 optional_kwargs={"published_authority": authority},
@@ -287,7 +280,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertEqual(result, [{"authority": authority}])
         self.assertEqual(calls, ["old"])
 
-    def test_extension_hook_compat_does_not_retry_provider_internal_type_error(self):
+    def test_extension_hook_provider_internal_type_error_fails_explicitly(self):
         env = object()
         user = object()
         calls = []
@@ -296,36 +289,32 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             calls.append("old")
             raise TypeError("provider defect")
 
-        def fallback_provider(_env, _user):
-            calls.append("new")
-            return ["fallback"]
-
         modules = {
             "odoo.addons.old_provider": types.SimpleNamespace(
-                capability_hook=internal_type_error,
-            ),
-            "odoo.addons.new_provider": types.SimpleNamespace(
-                capability_hook=fallback_provider,
+                smart_core_list_capabilities_for_user=internal_type_error,
             ),
         }
         with patch.object(
             extension_hooks,
-            "iter_extension_modules",
-            return_value=["old_provider", "new_provider"],
+            "_extension_modules",
+            return_value=("old_provider",),
         ), patch.object(
             extension_hooks.importlib,
             "import_module",
             side_effect=lambda name: modules[name],
         ):
-            result = extension_hooks.call_extension_hook_first_compatible(
-                env,
-                "capability_hook",
-                env,
-                user,
-                optional_kwargs={"published_authority": {"scope": "same"}},
-            )
-        self.assertEqual(result, ["fallback"])
-        self.assertEqual(calls, ["old", "new"])
+            with self.assertRaisesRegex(
+                extension_hooks.ExtensionHookAuthorityError,
+                "provider defect",
+            ):
+                extension_hooks.call_extension_hook_first_compatible(
+                    env,
+                    "smart_core_list_capabilities_for_user",
+                    env,
+                    user,
+                    optional_kwargs={"published_authority": {"scope": "same"}},
+                )
+        self.assertEqual(calls, ["old"])
 
     def test_capability_timing_hook_compat_preserves_old_provider_result(self):
         env = object()
@@ -336,22 +325,15 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             calls.append("old")
             return [], {"old_stage": 3}
 
-        def new_timing(_env, _user, *, published_authority=None):
-            calls.append("new")
-            return [{"authority": published_authority}], {"new_stage": 4}
-
         modules = {
             "odoo.addons.old_provider": types.SimpleNamespace(
                 smart_core_list_capabilities_for_user_with_timings=old_timing,
             ),
-            "odoo.addons.new_provider": types.SimpleNamespace(
-                smart_core_list_capabilities_for_user_with_timings=new_timing,
-            ),
         }
         with patch.object(
             extension_hooks,
-            "iter_extension_modules",
-            return_value=["old_provider", "new_provider"],
+            "_extension_modules",
+            return_value=("old_provider",),
         ), patch.object(
             extension_hooks.importlib,
             "import_module",
@@ -1253,7 +1235,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         phone_field = identity_line.get("children")[2]
         self.assertEqual(name_field.get("label"), "项目名称")
         self.assertIs(name_field.get("nolabel"), True)
-        self.assertEqual(phone_field.get("label"), "Phone")
+        self.assertEqual(phone_field.get("label"), self.env["res.partner"].fields_get(["phone"])["phone"]["string"])
         self.assertIs(phone_field.get("nolabel"), False)
         self.assertEqual(
             [(row.get("type"), row.get("name"), row.get("text")) for row in identity_line.get("children") or []],
@@ -1790,6 +1772,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
                 "form.navigation.anchor.v1",
+                "form.display.ribbon.v1",
             ],
         })
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -2021,7 +2004,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         )
 
         with patch(
-            "odoo.addons.smart_core.handlers.system_init.call_extension_hook_first",
+            "odoo.addons.smart_core.core.platform_minimum_nav_contract.call_extension_hook_first",
             return_value=None,
         ):
             self.assertEqual(_resolve_industry_extension_modules(self.env), ["vertical_alpha", "vertical_beta"])

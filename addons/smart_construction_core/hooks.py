@@ -237,3 +237,9 @@ def _ensure_signup_defaults(env):
         ICP.set_param("sc.signup.ratelimit.gc_days", "7")
     if ICP.get_param("sc.password_recovery.self_service_enabled") in (None, False, ""):
         ICP.set_param("sc.password_recovery.self_service_enabled", "false")
+
+
+def uninstall_hook(env):
+    from odoo.addons.smart_core.core.extension_loader import unregister_extension_module
+
+    unregister_extension_module(env, "smart_construction_core")

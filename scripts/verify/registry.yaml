@@ -1702,24 +1702,6 @@ entries:
   date: unknown
   review_by: '2026-09-30'
   reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_contract_snapshot_export_fail_closed.py
-  status: orphan
-  owner: platform-team
-  date: unknown
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_contract_snapshot_field_selection.py
-  status: orphan
-  owner: platform-team
-  date: unknown
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
-- script: test_contract_snapshot_user_resolution.py
-  status: orphan
-  owner: platform-team
-  date: unknown
-  review_by: '2026-09-30'
-  reason: unreferenced by make/CI at R7 first-round onboarding
 - script: test_daily_dev_customer_addons_runtime_guard.py
   status: active
   owner: platform-team

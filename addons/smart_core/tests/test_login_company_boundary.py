@@ -122,7 +122,15 @@ def _load_handler():
     core_mod.__path__ = [str(root / "core")]
     security_mod.__path__ = [str(root / "security")]
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
-    _install_module("odoo.addons.smart_core.core.handler_registry", HANDLER_REGISTRY={})
+    handler_registry = {}
+    _install_module(
+        "odoo.addons.smart_core.core.handler_registry",
+        HANDLER_REGISTRY=handler_registry,
+    )
+    _install_module(
+        "odoo.addons.smart_core.core.extension_loader",
+        handlers_for_env=lambda env: handler_registry,
+    )
     _install_module(
         "odoo.addons.smart_core.security.auth",
         authenticate_user=lambda login, password, db=None: {"id": 5, "db": db or "test", "principal": _principal()},

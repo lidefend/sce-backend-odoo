@@ -108,3 +108,5 @@ from .core_extension import (  # noqa: F401
     smart_core_scene_entry_orchestrator_specs,
     smart_core_user_data_acceptance_nav_contract,
 )
+
+from .hooks import uninstall_hook

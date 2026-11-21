@@ -29,7 +29,10 @@ class TestExperienceRoleContract(TransactionCase):
 class TestExperienceRolePermissions(TransactionCase):
     def test_marker_and_login_rename_do_not_grant_business_permissions(self):
         group = self.env.ref('smart_construction_core.group_sc_role_experience')
-        self.assertEqual(set(group.implied_ids.ids), {self.env.ref('base.group_user').id})
+        self.assertEqual(set(group.implied_ids.ids), {self.env.ref('base.group_user').id} | {
+            self.env.ref('smart_construction_core.group_sc_entry_p%02d' % n).id
+            for n in range(1, 15)
+        })
         self.assertTrue(group.sc_assignable_user_permission)
         user = self.env['res.users'].with_context(no_reset_password=True).create({
             'name': 'Role test', 'login': 'arbitrary-role-name', 'email': 'role@invalid.local',
@@ -104,12 +107,16 @@ class TestExperienceCapabilityAuthority(TransactionCase):
         user.groups_id = [(4, group.id)]
         self.assertEqual(_resolve_role_codes_for_user(user), set())
 
-    def test_capability_rows_unchanged_when_identity_marker_is_added_or_removed(self):
+    def test_identity_marker_preserves_capabilities_with_same_discovery_authority(self):
         from ..services.capability_registry import list_capabilities_for_user
         user = self._actor(['smart_construction_core.group_sc_role_finance_user'])
         def facts():
             return {r['key']: (r['capability_state'], r['reason_code'])
                     for r in list_capabilities_for_user(user.with_user(user).env, user)}
+        # The shipped experience role implies entry discovery groups. Hold that
+        # authority constant to test identity changes independently of discovery.
+        user.groups_id = [(4, self.env.ref(
+            'smart_construction_core.group_sc_entry_p%02d' % n).id) for n in range(1, 15)]
         before = facts()
         self.assertTrue(before)
         marker = self.env.ref('smart_construction_core.group_sc_role_experience')

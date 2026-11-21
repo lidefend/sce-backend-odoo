@@ -1,42 +1,22 @@
 # -*- coding: utf-8 -*-
-import hashlib
 import json
 import threading
 import time
 
 from odoo.tests.common import HttpCase, tagged
+from .entry_namespace_test_support import configure_test_entry_namespace
 
 
 def setup_test_entry_namespace(env, entry_namespace="suite-entry"):
     # Batch C: /api traffic is only served through an entry namespace.
     # The suite binds its own database to a dedicated namespace so the
     # test exercises the real guard instead of bypassing it.
-    database = env.cr.dbname
-    namespace = env["sc.platform.namespace"].sudo().search(
-        [("database_name", "=", database)], limit=1
+    configure_test_entry_namespace(
+        env,
+        alias=entry_namespace,
+        audience="tenant",
+        duty_key="ci_suite",
     )
-    if not namespace:
-        namespace = env["sc.platform.namespace"].sudo().create({
-            "namespace_id": "ns_" + hashlib.sha256(
-                database.encode("utf-8")
-            ).hexdigest()[:12],
-            "display_name": "Smart core CI suite",
-            "lifecycle_state": "active",
-            "database_name": database,
-            "duty_key": "ci_suite",
-            "audience": "tenant",
-        })
-    alias = env["sc.platform.namespace.alias"].sudo().search([
-        ("alias", "=", entry_namespace),
-        ("alias_kind", "=", "path"),
-    ], limit=1)
-    if not alias:
-        env["sc.platform.namespace.alias"].sudo().create({
-            "alias": entry_namespace,
-            "alias_kind": "path",
-            "namespace_id": namespace.id,
-            "is_primary": True,
-        })
     return entry_namespace
 
 

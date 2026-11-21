@@ -8,5 +8,6 @@
     "depends": ["smart_core", "smart_owner_core"],
     "data": [],
     "application": False,
-    "installable": True
+    "installable": True,
+    "uninstall_hook": "uninstall_hook",
 }

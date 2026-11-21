@@ -29,8 +29,8 @@
 set -euo pipefail
 
 orm_timeout_max_seconds="${ORM_TIMEOUT_MAX_SECONDS:-7200}"
-# Empty means "not pinned": the count is then checked against the number of
-# tests actually observed to start.
+# Empty means "not pinned": the summary count may not exceed the number of
+# unique tests observed to start.
 orm_expect_count="${orm_expect_count:-}"
 # Space separated substrings that must appear on a module-qualified test start
 # line (test module identity). A token that only shows up somewhere else in the
@@ -80,6 +80,13 @@ orm_summaries() {
   grep -Eo '[0-9]+ failed, [0-9]+ error\(s\) of [0-9]+ tests' "${log}" || true
 }
 
+orm_database_summaries() {
+  local log="$1"
+  local database="$2"
+  grep -Eo "[0-9]+ failed, [0-9]+ error\\(s\\) of [0-9]+ tests when loading database '${database}'" "${log}" \
+    | sed "s/ when loading database '${database}'$//" || true
+}
+
 # Odoo logs one start line per collected test case:
 #   INFO db odoo.addons.<module>.tests.<file>: Starting <Class>.<method> ...
 # Only that shape proves a test case was collected and executed.
@@ -90,10 +97,17 @@ orm_test_starts() {
   grep -E -- "${orm_test_start_pattern}" "${log}" || true
 }
 
+orm_test_start_identities() {
+  local starts="$1"
+  printf '%s\n' "${starts}" \
+    | sed -E 's/^.*(odoo\.addons\.[[:alnum:]_.]+: Starting [[:alpha:]_][[:alnum:]_]*\.[[:alnum:]_]+).*$/\1/' \
+    | sort -u || true
+}
+
 evaluate_orm_outcome() {
   local status="$1"
   local log="$2"
-  local summaries last_summary last_total observed started expected
+  local summaries last_summary last_total observed started expected start_identities
 
   if [[ "${status}" -eq 124 || "${status}" -eq 137 ]]; then
     echo "[orm-guard][FATAL] ORM test exceeded ${orm_timeout_seconds:-unset}s" >&2
@@ -110,8 +124,16 @@ evaluate_orm_outcome() {
 
   validate_orm_expect_count "${orm_expect_count}" || return 2
 
-  summaries="$(orm_summaries "${log}")"
+  if [[ -n "${orm_expect_database}" ]]; then
+    summaries="$(orm_database_summaries "${log}" "${orm_expect_database}")"
+  else
+    summaries="$(orm_summaries "${log}")"
+  fi
   if [[ -z "${summaries}" ]]; then
+    if [[ -n "${orm_expect_database}" ]]; then
+      echo "[orm-guard][FATAL] selected database has no ORM loading summary: ${orm_expect_database}" >&2
+      return 5
+    fi
     echo "[orm-guard][FATAL] Odoo did not report any executed ORM test" >&2
     return 4
   fi
@@ -138,16 +160,17 @@ evaluate_orm_outcome() {
   # Collected count: pinned expectation when provided, otherwise the number of
   # tests the log itself shows starting.
   starts="$(orm_test_starts "${log}")"
-  started="$(printf '%s\n' "${starts}" | grep -c . || true)"
-  observed="${started}"
+  start_identities="$(orm_test_start_identities "${starts}")"
+  started="$(printf '%s\n' "${start_identities}" | grep -c . || true)"
+  observed="${last_total}"
   if [[ -n "${orm_expect_count}" ]]; then
     expected="${orm_expect_count}"
     if [[ "${last_total}" -ne "${expected}" ]]; then
       echo "[orm-guard][FATAL] collected ${last_total} tests, expected ${expected}" >&2
       return 6
     fi
-    if [[ "${started}" -ne "${expected}" ]]; then
-      echo "[orm-guard][FATAL] log shows ${started} test starts, expected ${expected}" >&2
+    if [[ "${started}" -lt "${expected}" ]]; then
+      echo "[orm-guard][FATAL] log shows only ${started} unique test starts, expected at least ${expected}" >&2
       return 6
     fi
   else
@@ -155,8 +178,8 @@ evaluate_orm_outcome() {
       echo "[orm-guard][FATAL] no test start line in the log; collection is unproven" >&2
       return 8
     fi
-    if [[ "${started}" -ne "${last_total}" ]]; then
-      echo "[orm-guard][FATAL] summary reports ${last_total} tests but ${started} started" >&2
+    if [[ "${started}" -lt "${last_total}" ]]; then
+      echo "[orm-guard][FATAL] summary reports ${last_total} tests but only ${started} unique tests started" >&2
       return 6
     fi
   fi
@@ -208,13 +231,19 @@ if [[ "${1:-}" == "--self-test" ]]; then
     local i
     : >"$1"
     printf '%s\n' "${lifecycle_decoy}" >>"$1"
-    for ((i = 0; i < $2; i++)); do printf '%s\n' "${starting_line}" >>"$1"; done
+    for ((i = 0; i < $2; i++)); do
+      printf '%s\n' "${starting_line/test_case/test_case_${i}}" >>"$1"
+    done
     printf '%s\n' "$3" >>"$1"
   }
 
   write_log "${selftest_dir}/pass.log" 7 '0 failed, 0 error(s) of 7 tests'
   write_log "${selftest_dir}/zero.log" 0 '0 failed, 0 error(s) of 0 tests'
   write_log "${selftest_dir}/short.log" 6 '0 failed, 0 error(s) of 6 tests'
+  cp "${selftest_dir}/pass.log" "${selftest_dir}/duplicates.log"
+  printf '%s\n' "${starting_line/test_case/test_case_0}" >>"${selftest_dir}/duplicates.log"
+  cp "${selftest_dir}/pass.log" "${selftest_dir}/overstart.log"
+  printf '%s\n' "${starting_line/test_case/test_case_extra}" >>"${selftest_dir}/overstart.log"
   printf 'misc output\n' >"${selftest_dir}/empty.log"
   write_log "${selftest_dir}/mixed.log" 7 '0 failed, 0 error(s) of 7 tests'
   printf '1 failed, 0 error(s) of 7 tests\n' >>"${selftest_dir}/mixed.log"
@@ -222,9 +251,11 @@ if [[ "${1:-}" == "--self-test" ]]; then
   write_log "${selftest_dir}/error.log" 7 '0 failed, 2 error(s) of 7 tests'
   write_log "${selftest_dir}/summary_only.log" 0 '0 failed, 0 error(s) of 7 tests'
   write_log "${selftest_dir}/mismatch.log" 6 '0 failed, 0 error(s) of 7 tests'
-  write_log "${selftest_dir}/foreign.log" 7 '0 failed, 0 error(s) of 7 tests'
-  printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" >"${selftest_dir}/foreign.log"
-  for ((i = 1; i < 7; i++)); do printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" >>"${selftest_dir}/foreign.log"; done
+  : >"${selftest_dir}/foreign.log"
+  for ((i = 0; i < 7; i++)); do
+    printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" \
+      | sed "s/test_case/test_case_${i}/" >>"${selftest_dir}/foreign.log"
+  done
   printf '0 failed, 0 error(s) of 7 tests\n' >>"${selftest_dir}/foreign.log"
   # Identity text that never reaches a test start line (module listing only)
   # must not satisfy the identity pin: the executed tests come from another
@@ -232,7 +263,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   write_log "${selftest_dir}/identity_offline.log" 0 '0 failed, 0 error(s) of 7 tests'
   for ((i = 0; i < 7; i++)); do
     printf '%s\n' "${starting_line/test_payment_settlement_component_profile/test_some_other_suite}" \
-      >>"${selftest_dir}/identity_offline.log"
+      | sed "s/test_case/test_case_${i}/" >>"${selftest_dir}/identity_offline.log"
   done
   printf '%s\n' \
     "2026-09-24 00:00:00,000 1 INFO db odoo.modules.loading: loading ${identity_token}/tests/x.xml" \
@@ -278,6 +309,8 @@ if [[ "${1:-}" == "--self-test" ]]; then
   expect_code 8 7 "${identity_token}" 0 "${selftest_dir}/failed.log"
   expect_code 8 7 "${identity_token}" 0 "${selftest_dir}/error.log"
   expect_code 5 7 "${identity_token}" 0 "${selftest_dir}/foreign.log"
+  expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/duplicates.log"
+  expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/overstart.log"
   expect_code 5 7 "${identity_token}" 0 "${selftest_dir}/identity_offline.log"
   expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/identity_offline.log"
   # unpinned: the count must still agree with the executions the log shows
@@ -297,6 +330,7 @@ if [[ "${1:-}" == "--self-test" ]]; then
   sed 's/ INFO db / INFO expected_db /' "${selftest_dir}/pass.log" >"${selftest_dir}/database.log"
   expect_code 5 "" "${identity_token}" 0 "${selftest_dir}/database.log"
   printf "0 failed, 0 error(s) of 7 tests when loading database 'expected_db'\n" >>"${selftest_dir}/database.log"
+  printf "0 failed, 0 error(s) of 0 tests when loading database 'nested_registry'\n" >>"${selftest_dir}/database.log"
   expect_code 0 "" "${identity_token}" 0 "${selftest_dir}/database.log"
   orm_expect_database=""
   expect_timeout_code 0 3600

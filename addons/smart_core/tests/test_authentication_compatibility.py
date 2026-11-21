@@ -7,6 +7,8 @@ from odoo import SUPERUSER_ID, api
 from odoo.modules.registry import Registry
 from odoo.tests.common import HttpCase, tagged
 
+from .entry_namespace_test_support import configure_test_entry_namespace
+
 
 @tagged("post_install", "-at_install", "sc_auth_compat")
 class TestAuthenticationCompatibility(HttpCase):
@@ -26,6 +28,10 @@ class TestAuthenticationCompatibility(HttpCase):
         registry = Registry(self.env.cr.dbname)
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
+            self.entry_headers = configure_test_entry_namespace(
+                env, alias="compat-entry", audience="tenant", duty_key="ci_suite",
+                platform_control=False,
+            )
             env["ir.config_parameter"].sudo().set_param(
                 "sc.jwt.secret",
                 "auth-compatibility-test-signing-secret-2026-08-14-64-bytes",
@@ -75,20 +81,19 @@ class TestAuthenticationCompatibility(HttpCase):
             return body
         return json.loads(body or "{}")
 
-    def _login(self, password, *, database=None):
-        database = self.env.cr.dbname if database is None else database
+    def _login(self, password):
         response = self.url_open(
-            f"/api/v1/intent?db={database}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "login",
                 "params": {
                     "login": self.login,
                     "password": password,
-                    "db": database,
                     "contract_mode": "default",
                 },
             }),
             headers={
+                **self.entry_headers,
                 "Content-Type": "application/json",
                 "X-Anonymous-Intent": "true",
             },
@@ -102,8 +107,8 @@ class TestAuthenticationCompatibility(HttpCase):
         session = (result.get("data") or {}).get("session") or {}
         self.assertTrue(session.get("token"), result)
 
-    def test_http_login_preserves_explicit_database_route(self):
-        result = self._login(self.password, database=self.env.cr.dbname)
+    def test_http_login_uses_entry_namespace_route(self):
+        result = self._login(self.password)
 
         self.assertTrue(result.get("ok"), result)
         session = (result.get("data") or {}).get("session") or {}

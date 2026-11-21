@@ -315,6 +315,7 @@ def check_intent_permission(ctx):
             principal,
             intent_name=intent_name,
             params=ctx_params,
+            env=ctx.env,
         )
     if not user:
         raise AccessError("Token 无效或缺少 user_id")

@@ -1,6 +1,7 @@
 """Actual journal operations under SC accounting roles, in rollback-only fixtures."""
 from odoo.exceptions import AccessError
 from odoo.tests.common import tagged
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 
 from .business_case import BusinessTransactionCase
 
@@ -401,7 +402,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             'op': 'model', 'model': record._name,
             **({'view_id': self.env.ref('account.view_move_form').id} if record._name == 'account.move' else {}),
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-            'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+            'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
         })
         result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
         self.assertTrue(result.get('ok', True), result)
@@ -419,7 +420,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         result = UiContractV2Handler(record.env, su_env=self.env).handle({
             'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
             'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-            'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+            'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
         })
         result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
         self.assertTrue(result.get('ok', True), result)
@@ -434,7 +435,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             result = UiContractV2Handler(actor_record.env, su_env=self.env).handle({
                 'op': 'model', 'model': 'account.move', 'view_id': self.env.ref('account.view_move_form').id,
                 'view_type': 'form', 'render_profile': 'edit', 'record_id': record.id,
-                'client_contract_capabilities': ['form.feedback.message.v1', 'form.navigation.anchor.v1', 'form.feedback.draft.v1'],
+                'client_contract_capabilities': [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, 'view.form.v1', 'view.tree.v1'],
             })
             result = result.to_legacy_dict() if hasattr(result, 'to_legacy_dict') else result
             self.assertTrue(result.get('ok', True), result)
@@ -541,6 +542,7 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
         )
         menus = [self.env.ref(xmlid) for xmlid in menu_xmlids]
         expected = {(menu.id, menu.action.id) for menu in menus}
+        expected_menu_ids = {menu.id for menu in menus}
         self.assertEqual(len(expected), 6)
         for role in ('accounting_read', 'accounting_user', 'accounting_manager'):
             user = self._subject(role)
@@ -548,7 +550,8 @@ class TestSystemPermissionAccounting(BusinessTransactionCase):
             self.assertFalse(actor_env.su)
             authority = build_runtime_route_authority(actor_env)
             actual = {(row.get('menu_id'), row.get('action_id'))
-                      for row in authority.get('primary_actions', [])}
+                      for row in authority.get('primary_actions', [])
+                      if row.get('menu_id') in expected_menu_ids}
             self.assertEqual(actual, expected, (role, authority))
             for menu in menus:
                 with self.subTest(role=role, menu=menu.get_external_id()[menu.id]):

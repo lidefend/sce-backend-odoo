@@ -1281,7 +1281,7 @@ class _TreeFormParserMixin:
                 'type': 'widget',
                 'name': el.get('name', ''),
                 'widget': el.get('name', ''),
-                'label': el.get('title', ''),
+                'label': el.get('title') or (el.get('text', '') if el.get('name') == 'web_ribbon' else ''),
                 'attributes': dict(el.attrib or {}),
                 'children': [],
                 **self._native_element_identity(el),
@@ -1855,7 +1855,7 @@ class _TreeFormParserMixin:
             node_name = attrs.get('name', '')
             layout_node['name'] = node_name
             layout_node['widget'] = node_name
-            layout_node['label'] = attrs.get('title', '')
+            layout_node['label'] = attrs.get('title') or (attrs.get('text', '') if node_name == 'web_ribbon' else '')
             for source_key in ('native_locator', 'occurrence_index', 'source_position'):
                 if source_key in node:
                     layout_node[source_key] = node.get(source_key)

@@ -278,7 +278,7 @@
         <field name="name">备用金</field>
         <field name="res_model">sc.expense.claim</field>
         <field name="view_mode">tree,form</field>
-        <field name="search_view_id" ref="smart_construction_core.view_sc_expense_claim_search" />
+        <field name="search_view_id" ref="smart_construction_core.view_sc_expense_claim_application_search" />
         <field name="domain">[('claim_type', '=', 'expense'), ('expense_type', '=', '备用金')]</field>
         <field name="context">{'default_claim_type': 'expense', 'default_expense_type': '备用金', 'search_default_active_rows': 1, 'search_default_group_project': 1}</field>
         <field name="groups_id" eval="[(4, ref('smart_construction_core.group_sc_cap_finance_read'))]" />

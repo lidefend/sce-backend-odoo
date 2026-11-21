@@ -35,8 +35,14 @@ required_modules=(
   "smart_owner_bundle"
   "smart_construction_bundle"
 )
+skipped_modules=()
 
 for mod in "${required_modules[@]}"; do
+  module_state="$(psql_query "SELECT COALESCE(state, '') FROM ir_module_module WHERE name='${mod}' LIMIT 1;")"
+  if [[ "${module_state}" != "installed" ]]; then
+    skipped_modules+=("${mod}:${module_state:-missing}")
+    continue
+  fi
   psql_exec "
   INSERT INTO ir_config_parameter (key, value, create_uid, create_date, write_uid, write_date)
   VALUES ('sc.core.extension_modules', '${mod}', 1, NOW(), 1, NOW())
@@ -64,8 +70,11 @@ done
 if [[ ${#missing_modules[@]} -gt 0 ]]; then
   echo "[policy.apply.extension_modules] FAIL db=${DB_NAME} trace_id=${TRACE_ID} old=${before_value} new=${after_value}" >&2
   echo "[policy.apply.extension_modules] missing=${missing_modules[*]}" >&2
+  if [[ ${#skipped_modules[@]} -gt 0 ]]; then
+    echo "[policy.apply.extension_modules] skipped=${skipped_modules[*]}" >&2
+  fi
   exit 1
 fi
 
 echo "[policy.apply.extension_modules] PASS db=${DB_NAME} trace_id=${TRACE_ID} old=${before_value} new=${after_value}"
-echo "[policy.apply.extension_modules] NEXT restart odoo to reload extension loader cache: make restart"
+echo "[policy.apply.extension_modules] NEXT let Odoo complete any module lifecycle operation; the current Registry rebuild refreshes extension state"

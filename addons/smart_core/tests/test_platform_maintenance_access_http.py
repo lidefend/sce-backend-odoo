@@ -28,6 +28,8 @@ from odoo import SUPERUSER_ID, api, fields
 from odoo.modules.registry import Registry
 from odoo.tests.common import HttpCase, tagged
 
+from .entry_namespace_test_support import configure_test_entry_namespace
+
 SECRET = "platform-maintenance-access-test-signing-secret-2026-10-16-64bytes"
 PASSWORD_PREFIX = "MaintenanceAccess"
 EVIDENCE = "owner ruling 2026-10-16 authorizes the maintenance window"
@@ -48,6 +50,10 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         registry = Registry(self.env.cr.dbname)
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
+            self.entry_headers = configure_test_entry_namespace(
+                env, alias="platform", audience="platform-admin", duty_key="platform_control",
+                platform_control=True,
+            )
             env["ir.config_parameter"].sudo().set_param("sc.jwt.secret", SECRET)
             self.database_name = "sc_db_maintenance_access_http_%s" % suffix
             env["sc.platform.database.registration"]._register_database(
@@ -124,17 +130,16 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
 
     def _login(self, login):
         response = self.url_open(
-            "/api/v1/intent?db=%s" % self.env.cr.dbname,
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "login",
                 "params": {
                     "login": login,
                     "password": self.password,
-                    "db": self.env.cr.dbname,
                     "contract_mode": "default",
                 },
             }),
-            headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "X-Anonymous-Intent": "true"},
         )
         payload = self._json_response(response)
         session = (payload.get("data") or {}).get("session") or {}
@@ -143,7 +148,7 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         return token
 
     def _call(self, path, token=None, payload=None, *, method="POST", trace_id=None):
-        headers = {"Content-Type": "application/json"}
+        headers = {**self.entry_headers, "Content-Type": "application/json"}
         if token:
             headers["Authorization"] = "Bearer %s" % token
         if trace_id:
@@ -155,7 +160,7 @@ class TestPlatformMaintenanceAccessHttp(HttpCase):
         )
 
     def _call_raw(self, path, token=None, payload=None, *, method="POST"):
-        headers = {"Content-Type": "application/json"}
+        headers = {**self.entry_headers, "Content-Type": "application/json"}
         if token:
             headers["Authorization"] = "Bearer %s" % token
         if method == "GET":

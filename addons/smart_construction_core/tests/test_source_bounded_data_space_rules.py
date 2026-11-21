@@ -44,7 +44,9 @@ class TestSourceBoundedDataSpaceRules(TransactionCase):
         if not DECLARATIONS.is_file():
             raise AssertionError('source_bounded declaration is missing: ' + str(DECLARATIONS))
         cls.declaration = json.loads(DECLARATIONS.read_text(encoding='utf-8'))
-        cls.bounded = list(cls.declaration.get('source_bounded') or [])
+        # Scene owns and tests its own rules; Core must install independently.
+        cls.bounded = [entry for entry in cls.declaration.get('source_bounded', [])
+                       if entry['file'].startswith('addons/smart_construction_core/')]
         if not cls.bounded:
             raise AssertionError('source_bounded declaration is empty')
 

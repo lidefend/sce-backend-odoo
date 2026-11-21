@@ -10,10 +10,11 @@ from lxml import etree
 from odoo.exceptions import AccessError, UserError, ValidationError
 from odoo.modules.registry import Registry
 from odoo.tests.common import TransactionCase, tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "p1_settlement_fact_immutability_v1")
-class TestSettlementFactImmutabilityV1(TransactionCase):
+class TestSettlementFactImmutabilityV1(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
@@ -203,7 +204,13 @@ class TestSettlementFactImmutabilityV1(TransactionCase):
             allowed, _line = self._settlement(suffix)
             allowed.with_user(user).action_submit()
             allowed.invalidate_recordset(["state"])
-            self.assertEqual(allowed.state, "submit")
+            # The owned synthetic company has no active settlement approval policy.
+            self.assertFalse(self.env["sc.approval.policy"].search_count([
+                ("company_id", "=", self.env.company.id),
+                ("target_model", "=", "sc.settlement.order"),
+                ("approval_required", "=", True),
+            ]))
+            self.assertEqual(allowed.state, "approve")
 
     def test_payment_line_uses_one_canonical_settlement_relation(self):
         settlement, settlement_line = self._settlement("canonical")

@@ -1,16 +1,21 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import AccessError, UserError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import AccessError, UserError, ValidationError
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from ..models.support import operating_metrics as opm
 
 
 @tagged("post_install", "-at_install", "p1_contract_payment_allocation")
-class TestContractPaymentAllocationFact(TransactionCase):
+class TestContractPaymentAllocationFact(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
+        cls.company = cls.env.company
+        cls.env.user.groups_id = [(4, cls.env.ref("smart_construction_core.group_sc_cap_finance_manager").id)]
+        cls.tax_group = cls.env["account.tax.group"].create({
+            "name": "Synthetic zero tax group", "company_id": cls.company.id,
+        })
         cls.currency = cls.company.currency_id
         cls.partner = cls.env["res.partner"].create({"name": "Allocation Test Vendor"})
         cls.project = cls.env["project.project"].create(
@@ -30,6 +35,8 @@ class TestContractPaymentAllocationFact(TransactionCase):
                     "name": "Allocation Test Tax",
                     "amount": 0.0,
                     "amount_type": "percent",
+                    "tax_group_id": cls.tax_group.id,
+                    "country_id": cls.env.ref("base.cn").id,
                     "type_tax_use": "purchase",
                     "company_id": cls.company.id,
                 }
@@ -69,7 +76,7 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 "line_ids": [(0, 0, {"name": name, "qty": 1.0, "price_unit": amount})],
             }
         )
-        settlement._write_lifecycle("approve")
+        settlement.action_submit()
         return settlement
 
     def _request(self, name, amount, contract=None, settlement=None, line_specs=()):
@@ -77,6 +84,9 @@ class TestContractPaymentAllocationFact(TransactionCase):
             {
                 "name": name,
                 "type": "pay",
+                "payment_account_name": "Synthetic payee",
+                "payment_bank_name": "Synthetic bank",
+                "payment_account_no": "SYNTHETIC-ALLOCATION-01",
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "currency_id": self.currency.id,
@@ -100,10 +110,8 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 }
             )
         request.invalidate_recordset()
-        self.env.cr.execute(
-            "UPDATE payment_request SET state='approved', validation_status='validated' WHERE id=%s",
-            (request.id,),
-        )
+        request.action_submit()
+        self.assertEqual(request.state, "approved")
         request.invalidate_recordset()
         return request
 
@@ -207,6 +215,11 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 (self.settlement_b, self.contract_b, 40.0),
             ),
         )
+        # Model compute keeps normal totals consistent. Corrupt only this synthetic
+        # historical row to exercise the ledger's independent defensive validation.
+        request.flush_recordset()
+        self.env.cr.execute("UPDATE payment_request SET amount=100 WHERE id=%s", (request.id,))
+        request.invalidate_recordset(["amount"])
         ledger = request.sudo()._ensure_payment_ledger(amount=50.0)
         self.assertEqual(ledger.contract_allocation_status, "review_required")
         self.assertEqual(ledger.contract_allocated_amount, 0.0)
@@ -221,21 +234,23 @@ class TestContractPaymentAllocationFact(TransactionCase):
         )
 
     def test_nonpositive_active_basis_is_never_silently_ignored(self):
-        request = self._request(
-            "Allocation Invalid Basis",
-            100.0,
-            line_specs=(
+        with self.assertRaises(ValidationError), self.env.cr.savepoint():
+            self._request("Rejected negative basis", 90.0, line_specs=(
                 (self.settlement_a, self.contract_a, 100.0),
                 (self.settlement_b, self.contract_b, -10.0),
-            ),
-        )
+            ))
+        request = self._request("Historical invalid basis", 110.0, line_specs=(
+            (self.settlement_a, self.contract_a, 100.0),
+            (self.settlement_b, self.contract_b, 10.0),
+        ))
+        line = request.outflow_line_ids.filtered(lambda row: row.contract_id == self.contract_b)
+        line.flush_recordset()
+        self.env.cr.execute("UPDATE payment_request_line SET current_pay_amount=-10 WHERE id=%s", (line.id,))
+        line.invalidate_recordset(["current_pay_amount"])
         ledger = request.sudo()._ensure_payment_ledger(amount=50.0)
         self.assertEqual(ledger.contract_allocation_status, "review_required")
         self.assertEqual(ledger.contract_allocated_amount, 0.0)
-        self.assertEqual(
-            set(ledger.contract_allocation_ids.mapped("reason_code")),
-            {"invalid_basis_amount"},
-        )
+        self.assertEqual(set(ledger.contract_allocation_ids.mapped("reason_code")), {"invalid_basis_amount"})
 
     def test_execution_header_contract_is_not_allocation_authority(self):
         request = self._request(
@@ -271,7 +286,6 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 "currency_id": self.currency.id,
                 "paid_amount": 25.0,
                 "planned_amount": 25.0,
-                "state": "paid",
             }
         )
         self.env.cr.execute(
@@ -328,6 +342,9 @@ class TestContractPaymentAllocationFact(TransactionCase):
             {
                 "name": "Allocation Reparent Target",
                 "type": "pay",
+                "payment_account_name": "Synthetic payee",
+                "payment_bank_name": "Synthetic bank",
+                "payment_account_no": "SYNTHETIC-ALLOCATION-01",
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "currency_id": self.currency.id,
@@ -383,12 +400,13 @@ class TestContractPaymentAllocationFact(TransactionCase):
         self.assertEqual(first, second)
         self.assertEqual(len(first.contract_allocation_ids), 1)
 
-    def test_backfill_repairs_stored_scope_columns_idempotently(self):
+    def test_index_initialization_does_not_repair_business_facts(self):
         request = self._request(
             "Allocation Backfill Scope", 15.0, contract=self.contract_a, settlement=self.settlement_a
         )
         allocation = request.sudo()._ensure_payment_ledger(amount=15.0).contract_allocation_ids
         ledger = allocation.ledger_id
+        self.env.flush_all()
         self.env.cr.execute(
             "DELETE FROM payment_ledger_allocation WHERE id=%s",
             (allocation.id,),
@@ -413,27 +431,26 @@ class TestContractPaymentAllocationFact(TransactionCase):
             ]
         )
         allocation = ledger.contract_allocation_ids
-        self.assertEqual(allocation.payment_request_id, request)
-        self.assertEqual(allocation.project_id, self.project)
-        self.assertEqual(allocation.company_id, self.company)
-        self.assertEqual(allocation.currency_id, self.currency)
-        self.assertEqual(ledger.contract_allocated_amount, 15.0)
-        self.assertEqual(ledger.contract_unallocated_amount, 0.0)
-        self.assertEqual(ledger.contract_allocation_status, "complete")
+        self.assertFalse(allocation, "Registry initialization must not backfill business facts")
+        self.env.cr.execute(
+            "SELECT contract_allocated_amount, contract_unallocated_amount, contract_allocation_status FROM payment_ledger WHERE id=%s",
+            (ledger.id,),
+        )
+        self.assertEqual(self.env.cr.fetchone(), (None, None, None))
         self.env.cr.execute(
             "SELECT ctid::text FROM payment_ledger WHERE id=%s",
             (ledger.id,),
         )
         ledger_tuple_location = self.env.cr.fetchone()[0]
         self.env["payment.ledger.allocation"].init()
-        self.assertEqual(len(ledger.contract_allocation_ids), 1)
+        self.assertFalse(ledger.contract_allocation_ids)
         self.env.cr.execute(
             "SELECT ctid::text FROM payment_ledger WHERE id=%s",
             (ledger.id,),
         )
         self.assertEqual(self.env.cr.fetchone()[0], ledger_tuple_location)
 
-    def test_backfill_never_uses_header_contract_when_active_lines_exist(self):
+    def test_index_initialization_never_invents_historical_allocations(self):
         request = self._request(
             "Allocation Backfill Lines Override Header",
             15.0,
@@ -449,10 +466,7 @@ class TestContractPaymentAllocationFact(TransactionCase):
         self.env["payment.ledger.allocation"].init()
         ledger.invalidate_recordset(["contract_allocation_ids"])
         allocation = ledger.contract_allocation_ids
-        self.assertEqual(len(allocation), 1)
-        self.assertEqual(allocation.allocation_state, "unresolved_global")
-        self.assertEqual(allocation.reason_code, "historical_backfill_unresolved")
-        self.assertFalse(allocation.contract_id)
+        self.assertFalse(allocation, "An index-only init cannot infer any historical allocation")
 
     def test_allocation_visibility_is_project_and_company_scoped(self):
         def create_user(login, groups, company=None):
@@ -568,11 +582,14 @@ class TestContractPaymentAllocationFact(TransactionCase):
                 "line_ids": [(0, 0, {"name": "Other", "qty": 1.0, "price_unit": 10.0})],
             }
         )
-        other_settlement._write_lifecycle("approve")
+        other_settlement.action_submit()
         other_request = self.env["payment.request"].with_company(other_company).create(
             {
                 "name": "Allocation Other Request",
                 "type": "pay",
+                "payment_account_name": "Synthetic payee",
+                "payment_bank_name": "Synthetic bank",
+                "payment_account_no": "SYNTHETIC-ALLOCATION-01",
                 "project_id": other_project.id,
                 "partner_id": self.partner.id,
                 "company_id": other_company.id,

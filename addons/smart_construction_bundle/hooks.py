@@ -19,3 +19,9 @@ def merge_construction_product_base_keys(env):
 
 def post_init_hook(env):
     merge_construction_product_base_keys(env)
+
+
+def uninstall_hook(env):
+    from odoo.addons.smart_core.core.extension_loader import unregister_extension_module
+
+    unregister_extension_module(env, "smart_construction_bundle")

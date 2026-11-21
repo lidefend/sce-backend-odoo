@@ -14,6 +14,13 @@ from odoo.addons.smart_construction_core.services import scenario_surface_projec
     "company_route_scope_cache",
 )
 class TestCompanyRouteScopeCache(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "sc.core.extension_modules", "smart_construction_core,smart_construction_scene"
+        )
+
     def test_scene_state_is_not_a_second_route_authority(self):
         policy = self.env["sc.product.policy"]
         authority = {
@@ -267,7 +274,7 @@ class TestCompanyRouteScopeCache(TransactionCase):
         self.assertEqual(admitted.role_surface["landing_scene_key"], "enterprise.setup")
         self.assertEqual(admitted.role_surface["landing_path"], "/s/enterprise.setup")
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
-        startup = SystemInitHandler(env).handle({"params": {"with_preload": True}})
+        startup = SystemInitHandler(env).handle({"params": {"with_preload": True, "product_key": "construction.standard"}})
         self.assertTrue(startup.ok)
         self.assertEqual(startup.data["role_surface"]["landing_scene_key"], "enterprise.setup")
         self.assertEqual(startup.data["default_route"]["scene_key"], "enterprise.setup")

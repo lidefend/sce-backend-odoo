@@ -343,8 +343,10 @@ def evaluate_enterprise_readiness(env, *, company_id: int) -> dict[str, Any]:
     # Bind remediation to the same authorized native entry projection as the
     # workspace. No role/action whitelist is maintained by this diagnosis.
     from odoo.addons.smart_core.core.native_handling_entry_catalog import project_native_handling_catalog
-    scene = env["sc.scene"].search([("code", "=", "enterprise.setup"), ("state", "=", "published")], limit=1)
-    catalog = project_native_handling_catalog(env, scene.to_public_dict(env.user)) if scene else None
+    from odoo.addons.smart_construction_scene.scene_registry import load_effective_scene_declarations
+    scene = next((row for row in load_effective_scene_declarations(env)
+                  if row.get("code") == "enterprise.setup"), None)
+    catalog = project_native_handling_catalog(env, scene) if scene else None
     decorate_remediation(rules, catalog)
     company_name = company.display_name if company else ""
     return {

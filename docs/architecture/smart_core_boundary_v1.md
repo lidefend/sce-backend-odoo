@@ -81,13 +81,19 @@ When platform runtime needs an industry-owned default, the authority must be exp
 
 `smart_core` may call these interfaces, but it may not persist the industry-specific value as its own default.
 
+`core/extension_hook_contracts.py` is the one declarative exception for provider
+module identities. Industry module names may appear there only inside an ordered
+merge contract's explicit `providers` declaration. They are lifecycle identities,
+not business defaults, and cannot introduce industry values into the platform.
+
 ## No Industry Defaults
 
 `smart_core` production code has zero industry defaults.
 
 Forbidden in `smart_core` production code:
 
-- direct `smart_construction_core` module references;
+- direct `smart_construction_core` module references outside the dedicated
+  extension Hook provider declaration;
 - centralized industry compatibility files;
 - hard-coded industry XMLIDs, role prefixes, menu lists, action XMLIDs, root menu IDs, or source database parameter names;
 - industry default product keys or brand/root labels such as `construction.standard` and `智慧施工管理平台`;

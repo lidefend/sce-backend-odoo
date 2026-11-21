@@ -19,7 +19,7 @@ from odoo.addons.smart_core.handlers.reason_codes import (
 )
 
 
-@tagged("sc_smoke", "payment_request_action_surface_backend")
+@tagged("post_install", "-at_install", "sc_smoke", "payment_request_action_surface_backend")
 class TestPaymentRequestActionSurfaceBackend(TransactionCase):
     def _create_payment_request_minimal(self):
         project = self.env["project.project"].create({"name": "Action Surface Project"})

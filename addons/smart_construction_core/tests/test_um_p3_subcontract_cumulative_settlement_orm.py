@@ -6,14 +6,12 @@ from odoo import SUPERUSER_ID, api
 from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import tagged
 
-from .test_um_p3_subcontract_register_settlement_authority_orm import (
-    TestUmP3SubcontractRegisterSettlementAuthorityOrm,
-)
+from . import test_um_p3_subcontract_register_settlement_authority_orm as base_cases
 
 
 @tagged("post_install", "-at_install", "um_p3_s06_subcontract_cumulative_orm")
 class TestUmP3SubcontractCumulativeSettlementOrm(
-    TestUmP3SubcontractRegisterSettlementAuthorityOrm
+    base_cases.TestUmP3SubcontractRegisterSettlementAuthorityOrm
 ):
     """Real-ORM proof for the approved registered-quantity hard limit."""
 
@@ -47,7 +45,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
         over.action_submit()
         with self.env.cr.savepoint(), self.assertRaises(ValidationError):
             over.action_confirm()
-        self.assertEqual(over.state, "submitted")
+        self.assertEqual(over.state, "approved")
 
     def test_same_settlement_and_multiple_settlements_cannot_overrun(self):
         register = self._new_register(
@@ -76,7 +74,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
             second.action_confirm()
         self.assertEqual(first.state, "confirmed")
 
-    def test_draft_submitted_and_cancel_are_excluded_until_confirmed(self):
+    def test_draft_approved_and_cancel_are_excluded_until_confirmed(self):
         register = self._new_register(
             "s06-state-register", self.contract_a, quantity=10.0
         )
@@ -85,7 +83,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
             "s06-pending", [source], quantities=[100.0]
         )
         pending.action_submit()
-        self.assertEqual(pending.state, "submitted")
+        self.assertEqual(pending.state, "approved")
         pending.action_cancel()
         self.assertEqual(pending.state, "cancel")
 
@@ -116,11 +114,11 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
             )
         )
         line = settlement.line_ids
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             line.write({"qty": 11.0})
         self.assertEqual(line.qty, 8.0)
 
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             line.write({"register_line_id": second_register.line_ids.id})
         self.assertEqual(line.register_line_id, first_register.line_ids)
 
@@ -138,7 +136,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
                 "s06-command", [source], quantities=[6.0]
             )
         )
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             settlement.write(
                 {
                     "line_ids": [
@@ -157,7 +155,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
                 }
             )
 
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             settlement.line_ids.with_context(import_file=True).write(
                 {"qty": 11.0}
             )
@@ -217,7 +215,7 @@ class TestUmP3SubcontractCumulativeSettlementOrm(
         amount_over_register.action_submit()
         with self.env.cr.savepoint(), self.assertRaises(ValidationError):
             amount_over_register.action_confirm()
-        self.assertEqual(amount_over_register.state, "submitted")
+        self.assertEqual(amount_over_register.state, "approved")
         self.assertNotIn(
             "remaining_amount",
             self.env["sc.subcontract.register.line"]._fields,

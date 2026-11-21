@@ -68,10 +68,10 @@ class TestApiDataSearchFieldsExtension(TransactionCase):
                 "sc_partner_display_name": "关联单位显示名称",
             },
             "res.partner": {
-                "sc_supplier_type_label": "供应商类型汇总",
+                "sc_supplier_type_label": "供应商类型汇总（已弃用）",
             },
             "res.users": {
-                "sc_supplier_type_label": "供应商类型汇总",
+                "sc_supplier_type_label": "供应商类型汇总（已弃用）",
             },
             "sc.material.settlement": {
                 "payment_request_ids": "关联付款申请",

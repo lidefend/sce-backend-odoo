@@ -18,6 +18,7 @@ from scripts.verify.frontend_dev_incremental import (
     FRONTEND_SOURCE_SUFFIXES,
     RULES,
     execute_targets,
+    implicitly_registered_offline_targets,
     iteration_scope,
     iteration_plan,
     print_plan,
@@ -37,6 +38,45 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_baseline_debt_routes_are_owning_module_checks(self):
+        cases = {
+            "addons/smart_core/core/view_orchestrator.py": "verify.smart_core.close_02.module_baseline",
+            "addons/smart_core/tests/test_tenant_extension_storage.py": "verify.smart_core.close_02.module_baseline",
+            "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py": "verify.smart_construction_core.module_baseline",
+            "addons/smart_construction_core/views/menu_business_taxonomy.xml": "verify.smart_construction_core.module_baseline",
+            "addons/smart_construction_scene/tests/test_source_bounded_scene_rules.py": "verify.smart_construction_scene.module_baseline",
+        }
+        for path, target in cases.items():
+            with self.subTest(path=path):
+                self.assertIn(target, select_targets([path]))
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_unknown_new_family.py"]), [])
+
+    def test_implicit_registration_is_limited_to_pure_target_families(self):
+        targets = {
+            "verify.alpha.unit",
+            "verify.beta.guard",
+            "verify.gamma.assembler",
+            "verify.delta.contract",
+            "verify.epsilon.coverage",
+            "verify.zeta.lane_coverage",
+            "verify.zeta.policy",
+            "verify.eta.orm",
+            "verify.theta.browser",
+            "verify.iota",
+        }
+        self.assertEqual(
+            implicitly_registered_offline_targets(targets),
+            {
+                "verify.alpha.unit",
+                "verify.beta.guard",
+                "verify.gamma.assembler",
+                "verify.delta.contract",
+                "verify.epsilon.coverage",
+                "verify.zeta.lane_coverage",
+                "verify.zeta.policy",
+            },
+        )
+
     def test_explicit_validation_exclusions_remove_only_declared_targets(self):
         excluded = "verify.product_center.policy.orm"
         self.assertEqual(
@@ -772,6 +812,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_moved_industry_orm_selects_both_owning_module_baselines(self):
+        self.assertEqual(select_targets([
+            "addons/smart_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+            "addons/smart_construction_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+        ]), ["verify.smart_construction_core.module_baseline", "verify.smart_core.close_02.module_baseline"])
+
     def test_scenario_center_migration_and_view_select_orm_and_center_guards(self) -> None:
         for path in (
             "addons/smart_construction_core/__manifest__.py",
@@ -781,10 +827,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    [
+                    sorted([
                         "verify.daily.permission_truth.capability.orm",
                         "verify.scenario.center_projection.guard",
-                    ],
+                    ] + (["verify.extension.lifecycle.orm", "verify.smart_construction_core.module_baseline"]
+                         if path.endswith("__manifest__.py") else [])),
                 )
 
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
@@ -1147,13 +1194,24 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/__init__.py",
             "addons/smart_construction_scene/services/capability_scene_targets.py",
             "addons/smart_core/core/capability_provider.py",
-            "addons/smart_core/utils/extension_hooks.py",
         ):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.daily.permission_truth.capability.orm"],
+                    ["verify.daily.permission_truth.capability.orm", "verify.extension.lifecycle.orm",
+                     "verify.smart_construction_core.module_baseline"]
+                    if path.endswith("__init__.py") else ["verify.daily.permission_truth.capability.orm"],
                 )
+        self.assertEqual(
+            select_targets(["addons/smart_core/utils/extension_hooks.py"]),
+            [
+                "verify.daily.permission_truth.capability.orm",
+                "verify.extension.hook_authority.orm",
+                "verify.extension.hook_contracts.unit",
+                "verify.extension.hook_resolver.unit",
+                "verify.extension.native_alignment.orm",
+            ],
+        )
         self.assertEqual(
             select_targets(["addons/smart_construction_core/core_extension.py"]),
             [
@@ -1271,7 +1329,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_authorization_boundary_paths_select_their_owning_checks(self) -> None:
         self.assertEqual(
             select_targets(["addons/smart_core/security/intent_authorization.py"]),
-            ["verify.intent_group.authorization.unit"],
+            [
+                "verify.extension.consumers.unit",
+                "verify.intent_group.authorization.unit",
+            ],
         )
         self.assertEqual(
             select_targets(["addons/smart_core/handlers/permission_check.py"]),
@@ -1315,6 +1376,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.capability.identity_boundary.orm",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         self.assertEqual(
@@ -2418,8 +2480,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
 
     def test_local_test_database_reuse_keeps_lifecycle_unit(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/dev/local_test_runner.py"]),
+            [
+                "verify.extension.lifecycle.orm",
+                "verify.local.development_lifecycle.unit",
+                "verify.orm.guard.self_test",
+            ],
+        )
         for path in (
-            "scripts/dev/local_test_runner.py",
             "scripts/verify/test_local_test_runner.py",
             "scripts/verify/test_local_development_lifecycle.py",
             "scripts/dev/local_platform_control.py",
@@ -3285,7 +3354,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
                 receipt_dir=self.root
                 / ".runtime/frontend-dev-validation/executions"
                 / directory,
-                worktree_identity=current_identity(self.root),
+                worktree_identity=incremental.current_execution_identity(self.root),
             )
         receipt = json.loads(
             (
@@ -3326,6 +3395,145 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
                 if row["target"] != "verify.workspace.branch.sync-main"
             )
         )
+
+    def test_dirty_non_runtime_path_does_not_block_same_head_resume(self) -> None:
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+        docs = self.root / "docs/notes.md"
+        docs.parent.mkdir(parents=True)
+        docs.write_text("uncommitted bookkeeping\n", encoding="utf-8")
+
+        receipt, head, rows = incremental.resumable_receipt_results(
+            self.root,
+            self.paths,
+            ["verify.frontend.lint.src"],
+        )
+
+        self.assertEqual(
+            receipt,
+            self.root
+            / ".runtime/frontend-dev-validation/executions/first/receipt.json",
+        )
+        self.assertEqual(head, first["identity"]["head"])
+        self.assertEqual(set(rows), {"verify.frontend.lint.src"})
+
+    def test_dirty_candidate_same_identity_resumes_passed_prefix(self) -> None:
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.write_text("<template><main /></template>\n", encoding="utf-8")
+        safe_sync = self.root / "scripts/ops/safe_branch_sync_main.py"
+        safe_sync.write_text("VERSION = 2\n", encoding="utf-8")
+        self.assertFalse(current_identity(self.root)["worktreeClean"])
+
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+        second = self._execute("second", interrupted=False)
+
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["executedTargetCount"], 1)
+        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(
+            second["sourceReceipt"],
+            ".runtime/frontend-dev-validation/executions/first/receipt.json",
+        )
+
+    def test_changed_runtime_tree_blocks_same_head_resume(self) -> None:
+        self._execute("first", interrupted=True)
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.write_text("<template><div /></template>\n", encoding="utf-8")
+
+        receipt, _, rows = incremental.resumable_receipt_results(
+            self.root,
+            self.paths,
+            ["verify.frontend.lint.src"],
+        )
+
+        self.assertIsNone(receipt)
+        self.assertEqual(rows, {})
+
+    def test_reverted_dirty_fix_cannot_survive_unrelated_commit(self) -> None:
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        original = source.read_text()
+        source.write_text("<template><main /></template>\n")
+        first = self._execute("first", interrupted=True)
+        self.assertFalse(first["identity"]["worktreeClean"])
+        source.write_text(original)
+        self.root.joinpath("note.md").write_text("unrelated documentation\n")
+        subprocess.run(["git", "-C", str(self.root), "add", "note.md"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "note"], check=True)
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertIn("verify.frontend.lint.src", second["_calls"])
+        self.assertIn("verify.frontend.typecheck.strict", second["_calls"])
+        self.assertEqual(second["reusedTargetCount"], 0)
+
+    def test_clean_commit_of_same_runtime_identity_resumes_passed_prefix(self) -> None:
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.write_text("<template><main /></template>\n", encoding="utf-8")
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+
+        subprocess.run(["git", "-C", str(self.root), "add", "."], check=True)
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "-qm", "candidate"],
+            check=True,
+        )
+        second = self._execute("second", interrupted=False)
+
+        self.assertEqual(second["_code"], 0)
+        self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
+        self.assertEqual(second["reusedTargetCount"], 2)
+
+    def test_changed_verifier_authority_blocks_resume(self) -> None:
+        self._execute("first", interrupted=True)
+        authority = self.root / "make/frontend.mk"
+        authority.parent.mkdir(parents=True)
+        authority.write_text("# changed resume authority\n", encoding="utf-8")
+
+        receipt, _, rows = incremental.resumable_receipt_results(
+            self.root,
+            self.paths,
+            ["verify.frontend.lint.src"],
+        )
+
+        self.assertIsNone(receipt)
+        self.assertEqual(rows, {})
+
+    def test_non_ancestor_receipt_head_blocks_resume(self) -> None:
+        self._execute("first", interrupted=True)
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        source.write_text("<template><div /></template>\n", encoding="utf-8")
+        with mock.patch.object(incremental, "_is_ancestor", return_value=False):
+            receipt, _, rows = incremental.resumable_receipt_results(
+                self.root,
+                self.paths,
+                ["verify.frontend.lint.src"],
+            )
+
+        self.assertIsNone(receipt)
+        self.assertEqual(rows, {})
+
+    def test_rewritten_commit_with_same_runtime_identity_resumes(self) -> None:
+        first = self._execute("first", interrupted=True)
+        self.assertEqual(first["_code"], 130)
+        environment = dict(
+            incremental.os.environ,
+            GIT_COMMITTER_DATE="2030-01-01T00:00:00+0000",
+        )
+        subprocess.run(
+            ["git", "-C", str(self.root), "commit", "--amend", "--no-edit", "--allow-empty"],
+            check=True,
+            env=environment,
+        )
+
+        receipt, _, rows = incremental.resumable_receipt_results(
+            self.root,
+            self.paths,
+            ["verify.frontend.lint.src"],
+        )
+
+        self.assertIsNotNone(receipt)
+        self.assertEqual(set(rows), {"verify.frontend.lint.src"})
 
     def test_complete_pass_is_preferred_over_newer_interrupted_receipt(self) -> None:
         complete = self._execute("complete", interrupted=False)
@@ -3714,6 +3922,38 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.assertEqual(
             execute.call_args.kwargs["reusable_results"]["verify.test"]["log"],
             ".runtime/check.log",
+        )
+
+    def test_worktree_execution_auto_registers_only_offline_affected_targets(self):
+        fixture = self.fixture
+        with (
+            mock.patch.object(
+                incremental,
+                "resolve_run",
+                return_value=(".agent/runs/TEST/run.json", fixture.run),
+            ),
+            mock.patch.object(
+                incremental,
+                "iteration_scope",
+                return_value=(fixture.run["baseline_sha"], "run_baseline", ["source/a.py"]),
+            ),
+            mock.patch.object(
+                incremental,
+                "select_targets",
+                return_value=["verify.alpha.unit", "verify.beta.orm"],
+            ),
+            mock.patch.object(incremental, "check_states", return_value={}),
+            mock.patch.object(incremental, "execute_targets", return_value=0) as execute,
+        ):
+            self.assertEqual(incremental.execute_worktree(fixture.root), 0)
+
+        self.assertEqual(
+            execute.call_args.kwargs["registered_targets"],
+            {"verify.alpha.unit", "verify.test"},
+        )
+        self.assertEqual(
+            execute.call_args.kwargs["non_reusable_targets"],
+            {"verify.beta.orm"},
         )
 
     def test_missing_runtime_receipt_cannot_borrow_aggregate_success(self):

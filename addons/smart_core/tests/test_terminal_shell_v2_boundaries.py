@@ -36,7 +36,15 @@ def _load_handler():
     core_mod.__path__ = [str(root / "core")]
 
     _install_module("odoo.addons.smart_core.core.base_handler", BaseIntentHandler=_BaseIntentHandler)
-    _install_module("odoo.addons.smart_core.core.handler_registry", HANDLER_REGISTRY={})
+    handler_registry = {}
+    _install_module(
+        "odoo.addons.smart_core.core.handler_registry",
+        HANDLER_REGISTRY=handler_registry,
+    )
+    _install_module(
+        "odoo.addons.smart_core.core.extension_loader",
+        handlers_for_env=lambda env: handler_registry,
+    )
     _install_module("odoo.addons.smart_core.core.unified_page_contract_v2_assembler", CONTRACT_VERSION="2.0")
     _install_module(
         "odoo.addons.smart_core.core.unified_page_contract_v2_client",

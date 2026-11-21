@@ -7,7 +7,6 @@ import os
 import json
 import sys
 import uuid
-import importlib
 from datetime import datetime
 from collections.abc import Iterable, Mapping
 from contextlib import contextmanager
@@ -767,38 +766,14 @@ def export_snapshot():
                 or args.action_xmlid
             ):
                 raise SystemExit("intent_authority forbids static record/action/menu parameters")
-            from odoo.addons.smart_core.core.handler_registry import HANDLER_REGISTRY
-            from odoo.addons.smart_core.core.extension_loader import load_extensions
+            from odoo.addons.smart_core.core.extension_loader import extension_runtime_context
             from odoo.addons.smart_core.core.intent_router import resolve_handler
 
-            load_extensions(env, HANDLER_REGISTRY)
-            handler_cls = resolve_handler(intent_name)
+            handler_cls = resolve_handler(intent_name, env)
             if not handler_cls:
-                raw_modules = env["ir.config_parameter"].sudo().get_param("sc.core.extension_modules") or ""
-                module_names = [m.strip() for m in raw_modules.split(",") if m.strip()]
-                if not module_names:
-                    preferred = "smart_construction_core"
-                    installed_modules = set(
-                        env["ir.module.module"].sudo().search([("state", "=", "installed")]).mapped("name")
-                    )
-                    if preferred in installed_modules:
-                        module_names = [preferred]
-                register_errors = []
-                for module_name in module_names:
-                    try:
-                        module = importlib.import_module(f"odoo.addons.{module_name}")
-                        register_hook = getattr(module, "smart_core_register", None)
-                        if callable(register_hook):
-                            register_hook(HANDLER_REGISTRY)
-                    except Exception as exc:
-                        register_errors.append(f"{module_name}: {exc}")
-                handler_cls = resolve_handler(intent_name)
-            if not handler_cls:
-                details = ""
-                if "module_names" in locals():
-                    details = f" modules={module_names}"
-                if "register_errors" in locals() and register_errors:
-                    details += f" register_errors={register_errors}"
+                details = " enabled_extensions=%s" % ",".join(
+                    extension_runtime_context(env).modules
+                )
                 if args.allow_error_response:
                     res = {
                         "ok": False,

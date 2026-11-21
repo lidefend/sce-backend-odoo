@@ -6,7 +6,7 @@ from odoo.tests.common import tagged
 @tagged("post_install", "-at_install")
 class TestTenderGuaranteeVisibleFields(TransactionCase):
     def test_document_number_falls_back_to_bid_number(self):
-        project = self.env["project.project"].create({"name": "Guarantee Project"})
+        project = self.env["project.project"].create({"name": "Guarantee Project", "company_id": self.env.company.id})
         bid = self.env["tender.bid"].create(
             {
                 "tender_name": "Guarantee Bid",

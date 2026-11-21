@@ -54,6 +54,8 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         super().setUp()
         self.model = self.env[MODEL].with_user(self.operator)
         self.field = self.model._fields[CONTENT]
+        self.original_binding = copy.deepcopy(self.field.sc_feedback_usage)
+        self.original_review = copy.deepcopy(type(self.model)._compute_processing_advisory._sc_feedback_evaluation_review)
         self.declaration_patch = patch.object(
             self.field, "sc_feedback_usage", copy.deepcopy(BINDING), create=True,
         )
@@ -74,11 +76,9 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
         try:
             self.declaration_patch.stop()
             self.review_patch.stop()
-            self.assertFalse(hasattr(self.field, "sc_feedback_usage"))
-            self.assertFalse(hasattr(
-                type(self.model)._compute_processing_advisory,
-                "_sc_feedback_evaluation_review",
-            ))
+            self.assertEqual(self.field.sc_feedback_usage, self.original_binding)
+            self.assertEqual(type(self.model)._compute_processing_advisory._sc_feedback_evaluation_review,
+                             self.original_review)
         finally:
             super().tearDown()
 
@@ -111,6 +111,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
             "/api/v1/intent",
             data=json.dumps({"intent": intent, "params": params or {}}),
             headers=headers,
+            timeout=60 if intent == "system.init" else 12,
         )
         return response.status_code, response.json()
 

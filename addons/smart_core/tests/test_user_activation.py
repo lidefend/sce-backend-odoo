@@ -226,6 +226,10 @@ class TestUserActivationHttpContract(HttpCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        from .entry_namespace_test_support import configure_test_entry_namespace
+        cls.entry_headers = configure_test_entry_namespace(
+            cls.env, alias="activation-entry", audience="tenant", duty_key="practice",
+        )
         internal = cls.env.ref("base.group_user")
         activation_admin = cls.env.ref("smart_core.group_smart_core_user_activation_admin")
         cls.admin = cls.env["res.users"].with_context(no_reset_password=True).create(
@@ -268,9 +272,9 @@ class TestUserActivationHttpContract(HttpCase):
 
     def _post(self, path: str, payload: dict):
         response = self.url_open(
-            f"{path}?db={self.env.cr.dbname}",
+            path,
             data=json.dumps(payload),
-            headers={"Content-Type": "application/json"},
+            headers={**self.entry_headers, "Content-Type": "application/json"},
         )
         if hasattr(response, "read"):
             body = response.read()

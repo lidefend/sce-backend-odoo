@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 from lxml import etree
 
 from odoo.exceptions import UserError
 from odoo.tests.common import TransactionCase, tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_core.core.form_structure_authority import (
     diagnose_structure_ownership,
@@ -12,7 +14,7 @@ from odoo.addons.smart_core.core.form_structure_authority import (
 
 
 @tagged("post_install", "-at_install", "uc4_native_lowcode")
-class TestUsagePerformanceNativeLowcode(TransactionCase):
+class TestUsagePerformanceNativeLowcode(BusinessTransactionCase):
     """U-C4 G09: 用量与履约登记整组原生结构迁移.
 
     Three P1 native forms carry this group and nothing else:
@@ -179,6 +181,13 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             ("subcontract_register_parties_amount", "分包单位与金额"),
         ),
     }
+
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.test_project = cls.env["project.project"].create({
+            "name": "Synthetic usage workflow project", "company_id": cls.env.company.id,
+        })
 
     def _contract(self, xmlid):
         return self.env["ui.business.config.contract"].sudo().browse(
@@ -622,9 +631,9 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         if model not in cache:
             action = self.env.ref("smart_construction_core." + self.ENTRY_RELEASE_ACTIONS[model][0])
             view = self.env.ref("smart_construction_core." + self.MODEL_VIEWS[model])
-            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
+            result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
                 "op": "model", "model": model, "action_id": action.id,
-                "view_id": view.id, "view_type": "form", "render_profile": "create",
+                "view_id": 0, "view_type": "form", "render_profile": "create",
             })
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
             self.assertTrue(result.get("ok"), result)
@@ -916,7 +925,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
 
     def test_the_labor_usage_guard_matches_the_declared_draft_window(self):
         """The read-only window is only real if the backend refuses the write."""
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
         usage = self.env["sc.labor.usage"].create({
             "project_id": project.id,
@@ -981,7 +990,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         decorative.  570 `sc.equipment.usage` refuses the same write through the
         shared cost-source token; this entry now shares that mechanism.
         """
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
         usage = self.env["sc.labor.usage"].create({
             "project_id": project.id,
@@ -1027,7 +1036,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         and is pinned here so a later reader does not mistake `copy()` for a
         second bypass.
         """
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
         model = self.env["sc.labor.usage"]
         self.assertFalse(model._fields["state"].copy)
@@ -1080,7 +1089,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         backend refuse exactly what the arch already renders read-only, so the
         window survives the state that used to stay writable behind it.
         """
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
         usage = self.env["sc.equipment.usage"].create({
             "project_id": project.id,
@@ -1142,7 +1151,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
             set(model._FACT_IMMUTABLE_FIELDS) & set(self.DRAFT_WINDOW_EXEMPT_FACTS), set(),
             "basis facts are not facts the register freezes",
         )
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
         subcontractor = self.env["res.partner"].create({"name": "G09 已关闭规则分包单位"})
         # 结算关系要求登记单落在正式分包合同上（`_sc_validate_register_pair`）。
@@ -1286,7 +1295,7 @@ class TestUsagePerformanceNativeLowcode(TransactionCase):
         precondition, and the declared action is then actually run.
         """
         service = self.env["sc.workflow.contract.service"]
-        project = self.env["project.project"].search([], limit=1)
+        project = self.test_project
         self.assertTrue(project, "the governed database must carry a project")
 
         labor = self.env["sc.labor.usage"].create({

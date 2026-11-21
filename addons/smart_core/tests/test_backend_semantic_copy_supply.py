@@ -223,7 +223,7 @@ class _NativeSourceEnv:
 
 
 class _PolicyServiceEnv:
-    registry = SimpleNamespace(models={})
+    registry = None
     cr = SimpleNamespace(dbname="sc_test")
 
     def __getitem__(self, key):

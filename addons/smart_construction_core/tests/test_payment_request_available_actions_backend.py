@@ -14,7 +14,7 @@ from odoo.addons.smart_core.handlers.reason_codes import (
 )
 
 
-@tagged("sc_smoke", "payment_request_available_actions_backend")
+@tagged("post_install", "-at_install", "sc_smoke", "payment_request_available_actions_backend")
 class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
     def _create_user(self, login, group_xmlids):
         groups = [self.env.ref(xmlid).id for xmlid in group_xmlids]

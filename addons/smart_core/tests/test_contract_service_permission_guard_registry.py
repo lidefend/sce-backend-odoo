@@ -99,6 +99,18 @@ class TestContractServicePermissionGuardRegistry(unittest.TestCase):
             }
         }
 
+    def test_button_merge_preserves_distinct_bound_action_identities(self):
+        module = _load_contract_service()
+        service = object.__new__(module.ContractService)
+        rows = [
+            {"kind": "action", "level": "toolbar", "payload": {"action_id": 11}},
+            {"kind": "action", "level": "toolbar", "payload": {"action_id": 12}},
+            {"kind": "action", "level": "toolbar", "payload": {"server_action_id": 11}},
+        ]
+        contract = {"data": {"buttons": rows + [dict(rows[0])], "views": {}}}
+        service._merge_view_buttons_to_top(contract)
+        self.assertEqual(contract["data"]["buttons"], rows)
+
     def test_strict_check_accepts_explicit_absence_of_native_statusbar(self):
         module = _load_contract_service()
         service = object.__new__(module.ContractService)

@@ -161,3 +161,26 @@ from . import test_scenario_direct_entry_initialization
 from . import test_product_policy_fact_authority
 
 from . import test_approval_step_upgrade
+
+from . import test_um_p1_contract_settlement_visibility_contract_orm
+from . import test_um_p1_cost_ledger_visibility_contract_orm
+from . import test_um_p1_interfund_financing_visibility_contract_orm
+from . import test_um_p1_invoice_deduction_visibility_contract_orm
+from . import test_um_p1_ownership_visibility_contract_orm
+from . import test_um_p1_payment_visibility_contract_orm
+from . import test_um_p2_interfund_relation_aggregation_orm
+from . import test_um_p2_invoice_relation_aggregation_orm
+from . import test_um_p2_payment_relation_aggregation_orm
+from . import test_um_p2_receipt_relation_aggregation_orm
+from . import test_um_p2_settlement_relation_aggregation_orm
+from . import test_um_p3_fund_plan_actual_event_allocation_orm
+from . import test_um_p3_material_settlement_purchase_authority_orm
+from . import test_um_p3_payment_ledger_request_permission_orm
+from . import test_um_p3_subcontract_cumulative_amount_orm
+from . import test_um_p3_subcontract_cumulative_settlement_orm
+from . import test_um_p3_subcontract_register_settlement_authority_orm
+from . import test_admin_vis_p3_project_record_rule_orm
+from . import test_chatter_timeline_authorization_orm
+from . import test_dictionary_scope_delivery
+from . import test_permission_contract_runtime_uid
+from . import test_form_structure_surface_capability_orm

@@ -25,9 +25,9 @@ def _load_module():
     source_authority.build_source_authority_contract = lambda **kwargs: dict(kwargs)
     sys.modules["odoo.addons.smart_core.core.source_authority"] = source_authority
 
-    extension_hooks = types.ModuleType("odoo.addons.smart_core.utils.extension_hooks")
-    extension_hooks.iter_extension_modules = lambda env: []
-    sys.modules["odoo.addons.smart_core.utils.extension_hooks"] = extension_hooks
+    extension_loader = types.ModuleType("odoo.addons.smart_core.core.extension_loader")
+    extension_loader.run_extension_hooks = lambda *args, **kwargs: []
+    sys.modules["odoo.addons.smart_core.core.extension_loader"] = extension_loader
 
     module_name = "odoo.addons.smart_core.core.system_init_extension_fact_merger"
     spec = importlib.util.spec_from_file_location(module_name, CORE_DIR / "system_init_extension_fact_merger.py")
@@ -70,6 +70,23 @@ class TestConstructionFactConsumption(unittest.TestCase):
 
 
 class TestSystemInitExtensionFactMerger(unittest.TestCase):
+    def test_fact_collection_uses_common_run_all_dispatch(self):
+        module = _load_module()
+        loader = sys.modules["odoo.addons.smart_core.core.extension_loader"]
+        loader.run_extension_hooks = Mock(return_value=[
+            ("alpha", {"module": "alpha", "facts": {"one": 1}}),
+            ("beta", [{"module": "beta", "facts": {"two": 2}}]),
+        ])
+        data, env, user = {}, object(), object()
+        module.apply_extension_fact_contributions(data, env, user, context={"test": True})
+        self.assertEqual(data["ext_facts"], {"alpha": {"one": 1}, "beta": {"two": 2}})
+        loader.run_extension_hooks.assert_called_once_with(
+            env, "get_system_init_fact_contributions", env, user, context={"test": True},
+        )
+        loader.run_extension_hooks.side_effect = RuntimeError("provider failed")
+        with self.assertRaisesRegex(RuntimeError, "provider failed"):
+            module.apply_extension_fact_contributions({}, env, user)
+
     def test_default_workspace_collection_export_keys_are_platform_generic(self):
         module = _load_module()
         data = {

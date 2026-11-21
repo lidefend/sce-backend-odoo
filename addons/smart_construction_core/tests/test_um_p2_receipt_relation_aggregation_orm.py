@@ -10,7 +10,13 @@ class TestUmP2ReceiptRelationAggregationOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
+        cls.company = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
+        # Reuse the governed industry fixture; bootstrap companies are not
+        # customer data spaces and must not stand in for the caller's authority.
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company).env
         base_user = cls.env.ref("base.group_user")
         initiator = cls.env.ref(
             "smart_construction_core.group_sc_cap_business_initiator"
@@ -24,7 +30,7 @@ class TestUmP2ReceiptRelationAggregationOrm(TransactionCase):
                 "email": "um_p2_s01@example.invalid",
                 "company_id": cls.company.id,
                 "company_ids": [(6, 0, [cls.company.id])],
-                "groups_id": [(6, 0, [base_user.id, initiator.id])],
+                "groups_id": [(6, 0, [base_user.id, initiator.id, cls.env.ref("smart_construction_core.group_sc_cap_project_read").id])],
             }
         )
         setup_context = {

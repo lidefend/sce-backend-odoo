@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
+from .business_case import BusinessTransactionCase
 
 
 @tagged("post_install", "-at_install", "r11f2_tax_certificate")
-class TestTaxCertificateRegistration(TransactionCase):
+class TestTaxCertificateRegistration(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env.company
         cls.company_b = cls.env["res.company"].create({"name": "R11F2 Company B"})
+        cls.register_business_company(cls.company_b)
 
         def create_user(login, groups, companies=None):
             companies = companies or cls.company_a
@@ -84,7 +86,7 @@ class TestTaxCertificateRegistration(TransactionCase):
         menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
         self.assertEqual(action.res_model, "sc.tax.certificate.registration")
         self.assertEqual(menu.action, action)
-        self.assertEqual(menu.parent_id, self.env.ref("smart_construction_core.menu_sc_invoice_tax_user_group"))
+        self.assertEqual(menu.parent_id, self.env.ref("smart_construction_core.menu_sc_tax_center"))
         self.assertNotIn("sc.legacy.payment.residual.fact", self.env.registry.models)
 
     def test_acl_is_role_explicit_and_not_public(self):
