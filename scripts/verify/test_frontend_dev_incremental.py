@@ -2728,6 +2728,10 @@ class IncrementalExecutionTest(unittest.TestCase):
                 registered_targets=registered,
                 blocked_targets=blocked,
                 reusable_targets=reusable,
+                reusable_results={
+                    target: self.reusable_result(target)
+                    for target in (reusable or set())
+                },
                 receipt_dir=receipt_dir,
                 worktree_identity=identity or {
                     "head": "a" * 40,
@@ -2736,6 +2740,21 @@ class IncrementalExecutionTest(unittest.TestCase):
                 },
             )
         return code, json.loads((receipt_dir / "receipt.json").read_text())
+
+    def reusable_result(self, target: str) -> dict:
+        log = self.root / ".runtime" / "reused" / f"{target}.log"
+        log.parent.mkdir(parents=True, exist_ok=True)
+        log.write_text(f"{target}:reused\n", encoding="utf-8")
+        return {
+            "target": target,
+            "status": "passed",
+            "returncode": 0,
+            "durationSeconds": 0.0,
+            "log": log.relative_to(self.root).as_posix(),
+            "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            "reusedFrom": ".runtime/agent-runs/TEST/unit.json",
+            "reuseReason": "test fixture",
+        }
 
     def test_execution_runs_each_required_target_and_records_logs(self) -> None:
         code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
@@ -2760,12 +2779,44 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(code, 0)
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertEqual(
+            receipt["targetOrder"],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertEqual(
+            receipt["executionTargetOrder"],
             [BASE_FRONTEND_TARGETS[1]],
         )
+        self.assertTrue(receipt["targetResults"][0]["reusedFrom"])
+        self.assertNotIn("reusedFrom", receipt["targetResults"][1])
         self.assertEqual(receipt["requiredTargets"], list(BASE_FRONTEND_TARGETS))
         self.assertEqual(receipt["reusedTargets"], [BASE_FRONTEND_TARGETS[0]])
         self.assertEqual(receipt["reusedTargetCount"], 1)
+        self.assertEqual(receipt["executedTargetCount"], 1)
         self.assertTrue(receipt["verificationPassed"])
+
+    def test_reusable_check_results_require_materialized_log_evidence(self) -> None:
+        checks = {
+            "complete": {
+                "target": "verify.example",
+                "status": "reusable",
+                "test_count": 2,
+                "source_receipt": ".runtime/agent-runs/TEST/example.json",
+                "source_log": ".runtime/example.log",
+                "source_log_sha256": "a" * 64,
+            },
+            "incomplete": {
+                "target": "verify.missing",
+                "status": "reusable",
+                "test_count": 1,
+            },
+        }
+        self.assertEqual(
+            set(incremental.reusable_check_results(checks)),
+            {"verify.example"},
+        )
 
     def test_all_reusable_check_targets_pass_without_running_make(self) -> None:
         with mock.patch(
@@ -2778,10 +2829,52 @@ class IncrementalExecutionTest(unittest.TestCase):
             )
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "passed")
-        self.assertEqual(receipt["targetResults"], [])
+        self.assertEqual(
+            [row["target"] for row in receipt["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertTrue(
+            all(row.get("reusedFrom") for row in receipt["targetResults"])
+        )
         self.assertEqual(receipt["reusedTargets"], list(BASE_FRONTEND_TARGETS))
         self.assertFalse(receipt["testsRun"])
+        self.assertEqual(receipt["executedTargetCount"], 0)
         self.assertTrue(receipt["verificationPassed"])
+
+    def test_mixed_execution_receipt_reuses_completely_on_identical_rerun(self) -> None:
+        identity = {
+            "head": "a" * 40,
+            "tree": "c" * 40,
+            "worktreeClean": True,
+            "runtimeTreeSha256": "d" * 64,
+            "authoritySha256": {"planner.py": "b" * 64},
+        }
+        first_code, first = self.execute(
+            registered=set(BASE_FRONTEND_TARGETS),
+            reusable={BASE_FRONTEND_TARGETS[0]},
+            identity=identity,
+        )
+        self.assertEqual(first_code, 0)
+        self.assertEqual(
+            [row["target"] for row in first["targetResults"]],
+            list(BASE_FRONTEND_TARGETS),
+        )
+        self.assertEqual(first["executedTargetCount"], 1)
+        self.assertEqual(first["reusedTargetCount"], 1)
+
+        with mock.patch(
+            "scripts.verify.frontend_dev_incremental._run_make_target",
+            side_effect=AssertionError("complete mixed receipt must be reusable"),
+        ):
+            second_code, second = self.execute(
+                registered=set(BASE_FRONTEND_TARGETS),
+                identity=identity,
+            )
+        self.assertEqual(second_code, 0)
+        self.assertTrue(second["reused"])
+        self.assertEqual(second["executedTargetCount"], 0)
+        self.assertEqual(second["reusedTargetCount"], len(BASE_FRONTEND_TARGETS))
+        self.assertEqual(second["targetResults"], [])
 
     def test_tsx_execution_uses_the_same_base_targets(self) -> None:
         path = "frontend/apps/web/src/NewSurface.tsx"
@@ -3413,6 +3506,10 @@ class RunScopedPlannerTest(unittest.TestCase):
             checkpoint,
             checkpoint_paths,
             baseline_sha=fixture.run['baseline_sha'],
+            mutate=lambda receipt: receipt['targetResults'][0].update({
+                'reusedFrom': '.runtime/agent-runs/TEST/source.json',
+                'reuseReason': 'verified source row',
+            }),
         )
         fixture.write(latest_path, 'latest')
         fixture.git('add', '.')
@@ -3588,12 +3685,25 @@ class RunScopedPlannerTest(unittest.TestCase):
             mock.patch.object(
                 incremental,
                 "check_states",
-                return_value={"unit": {"target": "verify.test", "status": "reusable"}},
+                return_value={
+                    "unit": {
+                        "target": "verify.test",
+                        "status": "reusable",
+                        "test_count": 2,
+                        "source_receipt": ".runtime/agent-runs/TEST/unit.json",
+                        "source_log": ".runtime/check.log",
+                        "source_log_sha256": "a" * 64,
+                    },
+                },
             ),
             mock.patch.object(incremental, "execute_targets", return_value=0) as execute,
         ):
             self.assertEqual(incremental.execute_worktree(fixture.root), 0)
         self.assertEqual(execute.call_args.kwargs["reusable_targets"], {"verify.test"})
+        self.assertEqual(
+            execute.call_args.kwargs["reusable_results"]["verify.test"]["log"],
+            ".runtime/check.log",
+        )
 
     def test_missing_runtime_receipt_cannot_borrow_aggregate_success(self):
         fixture = self.fixture

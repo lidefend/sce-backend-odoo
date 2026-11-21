@@ -838,7 +838,15 @@ def evaluate(root: Path, run: dict, check_id: str) -> dict:
             raise RunError('runtime evidence requires authoritative environment readback')
         if run['environment'].get('kind') != 'offline':
             raise RunError('runtime evidence requires authoritative environment readback')
-        return dict(result, status='reusable', reason='declared inputs and original log unchanged', test_count=receipt['test_count'])
+        return dict(
+            result,
+            status='reusable',
+            reason='declared inputs and original log unchanged',
+            test_count=receipt['test_count'],
+            source_receipt=path.resolve().relative_to(root.resolve()).as_posix(),
+            source_log=log.resolve().relative_to(root.resolve()).as_posix(),
+            source_log_sha256=receipt['log_sha256'],
+        )
     except (RunError, OSError, KeyError, TypeError) as exc:
         return dict(result, status='stale', reason=str(exc))
 

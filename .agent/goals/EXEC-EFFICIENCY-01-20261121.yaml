@@ -7,12 +7,14 @@ goal:
   formal_product_layer: P4
   layer_target: >-
     Governed local test template selection, fresh-install versus upgrade
-    fingerprints, template coverage validation, and complete-pass evidence
-    selection for incremental execution.
+    fingerprints, template coverage validation, complete required-target
+    evidence rows, and checkpoint-safe reuse for incremental execution.
   module:
     - scripts/dev/local_test_runner.py
+    - scripts/ops/agent_run_context.py
     - scripts/verify/frontend_dev_incremental.py
     - scripts/verify/test_local_test_runner.py
+    - scripts/verify/test_agent_run_context.py
     - scripts/verify/test_frontend_dev_incremental.py
     - make
     - docs/ops
@@ -26,9 +28,11 @@ goal:
     templates instead of repeatedly evicting one another.
   product_result: >-
     A small affected iteration reuses the appropriate prepared test template,
-    clones only its isolated database, executes only affected targets, and
-    records why every target was reused or rerun. No business product behavior
-    changes and no persistent development database is rebuilt.
+    clones only its isolated database, executes only affected targets, records
+    one complete evidence row for every required target, closes a checkpoint
+    without losing reused logs, and executes zero targets on an identical
+    rerun. No business product behavior changes and no persistent development
+    database is rebuilt.
   why_here: >-
     The duplicated cost is owned by P4 test execution tools. Their input
     identity and selection rules, rather than product modules, decide whether
@@ -44,6 +48,7 @@ goal:
       - install-input fingerprinting
       - requested-module coverage validation
       - incremental target reuse selection
+      - complete aggregate result rows and checkpoint closure
       - local execution receipts and logs
     exclusions:
       - no smart_core or smart_construction_core business changes

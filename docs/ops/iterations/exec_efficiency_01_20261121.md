@@ -7,13 +7,24 @@ small local iterations. This batch is P4 execution-tool work only.
 
 ## Phase 1 evidence
 
-The read-only diagnosis was performed on the merged acceptance worktree before
-creating this branch:
+The read-only diagnosis was independently recomputed from retained receipts and
+logs across six existing worktrees. The measurement window was the 12 hours
+preceding the first implementation commit, `2026-11-20T15:30Z` through
+`2026-11-21T03:30Z`:
 
-- 101 ORM receipts and 27 template preparations in the preceding 12 hours;
-- observed template preparations took 285-483 seconds;
-- one `ci.local.iteration` took 546.8 seconds, of which 326.4 seconds was a
-  template preparation;
+- 108 ORM attempts, 93 passes and 15 failures, covering 2,214 executed tests;
+- 27 attempts paid a complete template preparation;
+- preparation consumed 7,143.5 seconds of 11,470.3 seconds total ORM-attempt
+  wall time, or 62.3%;
+- prepared attempts had a median wall time of 290.3 seconds; attempts without a
+  preparation had a median of 15.4 seconds;
+- the 27 preparations used nine unique schema fingerprints and 17 unique
+  `schema + requested module` identities;
+- 11 preparations repeated the same schema and requested module, costing about
+  3,051 seconds;
+- 20 `ci.local.iteration` receipts required 400 target slots, executed 277
+  targets and reused 34; 66 successful targets were executed again under an
+  identical runtime tree, costing about 544.3 seconds;
 - `smart_construction_bundle` does not include the reverse dependency
   `smart_construction_acceptance_fixture`;
 - one wrong template choice spent a complete preparation and then ran zero
@@ -33,6 +44,11 @@ creating this branch:
 4. Incremental execution prefers the newest complete passed receipt with matching
    inputs instead of letting an interrupted attempt force unrelated targets to
    run again.
+5. Every required target has one complete result row, whether that target was
+   executed or reused, including its verified log identity.
+6. Reuse indexes use the complete required target set. A passed receipt mixing
+   executed and reused rows can close an iteration checkpoint, and an identical
+   rerun executes zero targets.
 
 ## Exclusions
 
@@ -66,12 +82,18 @@ Implementation provides:
 - every ORM test prints a machine-readable reuse/rebuild decision and exact
   rebuild cause before expensive preparation;
 - a caller may select a validated superset template for incremental execution;
-- complete passed receipts are preferred over newer interrupted receipts.
+- complete passed receipts are preferred over newer interrupted receipts;
+- reusable check rows retain their source receipt, log and log hash;
+- aggregate receipts contain exactly one result row per required target;
+- indexes and checkpoints bind the complete required target set rather than only
+  the subset executed in that attempt;
+- a test proves that a mixed executed/reused receipt is reused completely on an
+  identical second run.
 
 ### Passed offline
 
 - `verify.local.development_lifecycle.unit`: 68 tests.
-- `verify.frontend.dev.incremental.unit`: 192 tests.
+- `verify.frontend.dev.incremental.unit`: 194 tests.
 - `verify.agent.resume.unit`: 67 tests.
 - `ci.local.iteration`: all static prerequisites passed; affected planner executed
   `verify.agent.ledger.unit`, `verify.baseline.iteration.execution.policy` and

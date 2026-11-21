@@ -200,6 +200,10 @@ decision:
         - fresh_install_fingerprint_excludes_upgrade_only_migrations
         - upgrade_fingerprint_includes_migrations
         - complete_passed_receipt_precedes_newer_interrupted_receipt
+        - every_required_target_has_one_complete_result_row
+        - reuse_index_is_keyed_by_the_complete_required_target_set
+        - mixed_executed_and_reused_receipt_can_close_an_iteration_checkpoint
+        - identical_rerun_after_a_complete_mixed_receipt_executes_zero_targets
         - every_orm_run_prints_machine_readable_reuse_or_rebuild_decision
       rebuild_causes:
         - template_missing
