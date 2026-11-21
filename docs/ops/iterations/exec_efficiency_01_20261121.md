@@ -91,6 +91,8 @@ Implementation provides:
   the subset executed in that attempt;
 - a test proves that a mixed executed/reused receipt is reused completely on an
   identical second run.
+- the clean current-worktree and committed-tree runtime digests are byte-equivalent
+  under the same path ordering and mode encoding.
 
 ### Passed offline
 
@@ -103,6 +105,16 @@ Implementation provides:
 - `make fe.install.cached`: 639 packages reused, 0 downloaded, 4 seconds.
 - `make local.test.prepare`: registered `sc-local-test / sc_test` identity
   validated without runtime writes.
+
+Clean-candidate aggregate proof at `8ccc0f9d1e6a721b33348163fcd700c222f53088`:
+
+- required targets: 7;
+- complete result rows: 7;
+- executed targets: 4;
+- reused targets: 3, each with source receipt, original log and log hash;
+- aggregate checkpoint: closed;
+- latest verified incremental checkpoint: the receipt HEAD;
+- immediate second planner invocation: `NOT_RUN`, zero target executions, 6.04s.
 
 Original targeted logs:
 

@@ -104,7 +104,7 @@
     "disposable": true
   },
   "blockers": [],
-  "next_exact_step": "Refresh generated evidence, commit and push the clean candidate, then wait for required exact-head remote checks.",
+  "next_exact_step": "Commit this record closeout, publish the clean exact HEAD, wait for its required checks, then obtain independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
