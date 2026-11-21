@@ -42,6 +42,19 @@ creating this branch:
 - No production or deployment action.
 - No migration of existing test databases without explicit confirmation.
 
+## Bundle coverage finding
+
+The independent productization check reports one P1 engineering-report gap and
+confirms the current `smart_construction_bundle` manifest is not an empty shell.
+However, `bundle_registry.list_bundle_scenes()` still contains five legacy scene
+summaries while the current product organization declares 46 scenarios and 132
+unique pages.
+
+This is a separate product catalog debt. Bundle installation dependencies still
+cover the core/scene/portal modules used by local ORM targets, so the bundle can
+be used as an installation template for this P4 batch. The bundle registry must
+not be treated as the authoritative current product scenario catalog.
+
 ## Validation
 
 Implementation provides:
@@ -61,7 +74,8 @@ Implementation provides:
 - `verify.frontend.dev.incremental.unit`: 192 tests.
 - `verify.agent.resume.unit`: 67 tests.
 - `ci.local.iteration`: all static prerequisites passed; affected planner executed
-  `verify.agent.ledger.unit` and `verify.baseline.iteration.execution.policy`.
+  `verify.agent.ledger.unit`, `verify.baseline.iteration.execution.policy` and
+  `verify.verification.lane.coverage`.
 - `make fe.install.cached`: 639 packages reused, 0 downloaded, 4 seconds.
 - `make local.test.prepare`: registered `sc-local-test / sc_test` identity
   validated without runtime writes.
@@ -74,7 +88,7 @@ Original targeted logs:
 .runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/agent_resume.log
 ```
 
-### Runtime smoke pending explicit confirmation
+### Runtime template smoke
 
 The next check creates or refreshes only the disposable test resources:
 
@@ -86,6 +100,13 @@ templates:
   sc_test_template__smart_construction_acceptance_fixture
 ```
 
+Governed runtime entries:
+
+```text
+make verify.local.test.template.bundle.orm
+make verify.local.test.template.fixture.orm
+```
+
 Expected writes: drop/recreate disposable `sc_test`, prepare the two template
 databases as needed, run one focused ORM test per template, then remove transient
 carriers. The readback must prove both template modules include their requested
@@ -93,8 +114,41 @@ test module and that a second identical run reports
 `database_template_reused=true`. No persistent `sc_dev_demo`, sample, clean,
 platform, or acceptance database is touched.
 
-Recovery: these test databases are disposable and can be recreated through the
-registered `local.test.*` targets. Execution remains blocked until the owner
-confirms this exact target under the repository's fresh-install/template rule.
+Owner confirmed the exact disposable target. Runtime results:
 
-Remote integration is not run.
+| Template module | First run | Second run | Tests |
+| --- | --- | --- | --- |
+| `smart_construction_bundle` | 287s, `rebuild:template_missing` | 12s, `reuse` | 17 + 17 |
+| `smart_construction_acceptance_fixture` | 287s, `rebuild:template_missing` | 16s, `reuse` | 1 + 1 |
+
+Readback confirmed:
+
+- both template databases exist with distinct database comments;
+- each requested module is `installed` in its template;
+- bundle/core/scene coexist in both templates;
+- acceptance fixture and bundle template slots coexist;
+- the legacy `sc_test_template` was not deleted or migrated;
+- every transient test carrier was removed.
+
+The runtime targets are registered as `local_diagnostic` and the verification
+lane baseline was deliberately refreshed: one target moved out of the
+zero-reference set and the two new runtime diagnostics moved in.
+
+Authoritative readbacks:
+
+```text
+.runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/bundle_template_readback.json
+.runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/fixture_template_readback.json
+```
+
+The new runtime entries are registered as `local_diagnostic` in the verification
+lane disposition registry. The reviewed baseline update:
+
+- registers `verify.local.test.template.bundle.orm`;
+- registers `verify.local.test.template.fixture.orm`;
+- removes registration for `verify.local.dev.enterprise_configuration.consumer`,
+  which is no longer zero-reference;
+- changes the zero-reference ceiling from 672 to 673, exactly the net addition
+  of one identity.
+
+Remote integration is not run yet.

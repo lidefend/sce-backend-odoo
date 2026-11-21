@@ -8,10 +8,13 @@
   "record": "docs/ops/iterations/exec_efficiency_01_20261121.md",
   "scope": [
     "scripts/dev/local_test_runner.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_local_test_runner.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "make/dev.mk",
+    "docs/ops/audit/product_delivery_productization_readiness.md",
     "docs/ops/local_development_environment_v1.md",
     "docs/ops/iterations/exec_efficiency_01_20261121.md",
     ".agent/active-runs.json",
@@ -51,12 +54,45 @@
         ".agent/active-runs.json"
       ],
       "kind": "offline"
+    },
+    "bundle_template_runtime": {
+      "target": "verify.local.test.template.bundle.orm",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/bundle_template_readback.json"
+      }
+    },
+    "fixture_template_runtime": {
+      "target": "verify.local.test.template.fixture.orm",
+      "inputs": [
+        "scripts/dev/local_test_runner.py",
+        "scripts/verify/test_local_test_runner.py",
+        "make/dev.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/agent-runs/EXEC-EFFICIENCY-01-20261121/fixture_template_readback.json"
+      }
     }
   },
-  "blockers": [
-    "owner confirmation required for new sc-local-test/sc_test template slots and runtime smoke"
-  ],
-  "next_exact_step": "After owner confirmation, create the two disposable template slots, prove coverage and second-run reuse, record runtime receipts, then freeze the candidate.",
+  "authorization": {
+    "owner_confirmed_at": "2026-11-21",
+    "scope": "sc-local-test/sc_test template runtime smoke",
+    "profile": "sc-local-test",
+    "database": "sc_test",
+    "template_databases": [
+      "sc_test_template__smart_construction_bundle",
+      "sc_test_template__smart_construction_acceptance_fixture"
+    ],
+    "disposable": true
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh generated evidence, commit the clean candidate, run one exact-head Quick, and publish for independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

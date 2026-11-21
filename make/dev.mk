@@ -865,12 +865,24 @@ local.clean.upgrade: guard.prod.forbid local.clean.prepare $(if $(filter 1,$(LOC
 	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
-.PHONY: local.test.prepare local.test.up local.test.down local.test.test
+.PHONY: local.test.prepare local.test.up local.test.down local.test.test verify.local.test.template.bundle.orm verify.local.test.template.fixture.orm
 local.test.prepare local.test.up local.test.down: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py $(patsubst local.test.%,%,$@) --env-file "$(LOCAL_TEST_ENV_FILE)"
 
 local.test.test: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
+
+verify.local.test.template.bundle.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_core \
+	  TEST_TAGS=/smart_construction_core:TestScenarioDirectInitialization
+
+verify.local.test.template.fixture.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_acceptance_fixture \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_acceptance_fixture \
+	  TEST_TAGS=/smart_construction_acceptance_fixture:TestFixtureScenarioIdentity
 
 .PHONY: local.clean.contract_projection_cache.probe
 local.clean.contract_projection_cache.probe: guard.prod.forbid local.clean.require_env
