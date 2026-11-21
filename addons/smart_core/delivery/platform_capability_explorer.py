@@ -807,13 +807,11 @@ class PlatformCapabilityExplorerService:
             ),
             None,
         )
-        if selected is None and not requested:
+        if selected is None and not requested and products:
+            from .effective_delivery_inputs import _resolve_startup_delivery_identity
+            default_key = _resolve_startup_delivery_identity(self.env, {}).get("product_key")
             selected = next(
-                (
-                    policy
-                    for policy in products
-                    if _text(policy.product_key) == "construction.standard"
-                ),
+                (policy for policy in products if _text(policy.product_key) == default_key),
                 products[0] if products else None,
             )
         if selected is None and requested:

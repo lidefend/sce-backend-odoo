@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import tagged
 
-from .test_um_p3_subcontract_cumulative_settlement_orm import (
-    TestUmP3SubcontractCumulativeSettlementOrm,
-)
+from . import test_um_p3_subcontract_cumulative_settlement_orm as base_cases
 
 
 @tagged(
@@ -14,7 +12,7 @@ from .test_um_p3_subcontract_cumulative_settlement_orm import (
     "um_p3_core_034_subcontract_amount_orm",
 )
 class TestUmP3SubcontractCumulativeAmountOrm(
-    TestUmP3SubcontractCumulativeSettlementOrm
+    base_cases.TestUmP3SubcontractCumulativeSettlementOrm
 ):
     """Tax-included amount limits in authoritative contract currency."""
 
@@ -151,7 +149,7 @@ class TestUmP3SubcontractCumulativeAmountOrm(
         settlement = self._confirm(
             self._amount_settlement("effective-write", register, 90.0)
         )
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             settlement.line_ids.write({"unit_price": 101.0})
         self.assertEqual(settlement.amount_total, 90.0)
 
@@ -160,7 +158,7 @@ class TestUmP3SubcontractCumulativeAmountOrm(
             contract_line.write({"price_contract": 80.0 / 1.03})
         self.assertEqual(contract.amount_total, 100.0)
 
-        with self.env.cr.savepoint(), self.assertRaises(ValidationError):
+        with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "提交后的分包单据业务事实不可修改"):
             settlement.write(
                 {
                     "line_ids": [

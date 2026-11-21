@@ -282,8 +282,10 @@ def _enterprise_enablement(env, scene_bindings: dict[str, list[dict[str, Any]]])
     navigation + ACL/rule decision.
     """
     from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
-        read_tenant_enablement,
+        read_tenant_enablement, ENABLEMENT_STORAGE_SOURCE,
     )
+
+    from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
 
     company = _company_fact(env)
     company_id = company["company_id"]
@@ -297,7 +299,7 @@ def _enterprise_enablement(env, scene_bindings: dict[str, list[dict[str, Any]]])
                 continue
             if scene_key not in cache:
                 cache[scene_key] = (
-                    bool(read_tenant_enablement(env, company_id, scene_key))
+                    bool(read_tenant_enablement(env, company_id, business_key(scene_key)))
                     if company_id
                     else False
                 )
@@ -305,7 +307,7 @@ def _enterprise_enablement(env, scene_bindings: dict[str, list[dict[str, Any]]])
                 {
                     "scene_key": scene_key,
                     "enabled": cache[scene_key],
-                    "source": "sc.scene.company.enablement",
+                    "source": ENABLEMENT_STORAGE_SOURCE,
                 }
             )
         if not scenes:

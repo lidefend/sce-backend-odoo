@@ -446,6 +446,7 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             "menu_id": menu.id,
             "render_profile": "edit",
             "client_type": "web_pc",
+            "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
         }
         source, _meta = handler._dispatch_native_form_source(
             self.env,

@@ -4,6 +4,8 @@ from unittest.mock import patch
 from datetime import timedelta
 from dataclasses import fields as dataclass_fields
 
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
+
 from odoo import fields
 from odoo.exceptions import AccessError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
@@ -127,10 +129,13 @@ class TestBusinessConfigChangeSet(TransactionCase):
         owner_role = authoritative_form_role_key(self._env(self.admin))
         env, draft = self._open(role_key=owner_role)
         view = self.env.ref("base.view_partner_form")
-        action = self.env["ir.actions.act_window"].search([("res_model", "=", "res.partner")], limit=1)
-        self.assertTrue(action, "existing partner action is required")
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Synthetic native form configuration", "res_model": "res.partner",
+            "view_mode": "form", "view_id": view.id,
+        })
         request = {"op": "model", "model": "res.partner", "view_type": "form", "view_id": view.id,
-                   "action_id": action.id, "render_profile": "create"}
+                   "action_id": action.id, "render_profile": "create",
+                   "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY]}
         def load(**extra):
             result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({**request, **extra})
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -149,7 +154,8 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertTrue(group.get("occurrenceIndex"), group)
         expected = {"type": "group", "name": group.get("name"),
                     "occurrence_index": group["occurrenceIndex"]}
-        params = {"change_set_token": draft["token"], "role_key": owner_role}
+        params = {"change_set_token": draft["token"], "role_key": owner_role,
+                  "client_contract_capabilities": ["view.form.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY]}
         result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
             **params, "config_type": "form", "target_role_key": "", "target_key": "test.global.compiled.layout",
             "model": "res.partner", "view_type": "form", "action_id": action.id, "view_id": view.id,
@@ -173,6 +179,34 @@ class TestBusinessConfigChangeSet(TransactionCase):
         self.assertTrue(rolled["ok"], rolled)
         self.assertEqual(columns(load()), group["columns"])
 
+    def test_native_overlay_publication_rejects_unbound_and_stale_targets(self):
+        from odoo.addons.smart_core.core.form_configuration_compiler import FormConfigurationError
+        view = self.env.ref("base.view_partner_form")
+        action = self.env["ir.actions.act_window"].create({
+            "name": "Synthetic unbound configuration", "res_model": "res.partner", "view_mode": "form",
+            "view_id": self.env["ir.ui.view"].create({
+                "name": "Synthetic different form", "model": "res.partner", "type": "form",
+                "arch": '<form><field name="name"/></form>',
+            }).id,
+        })
+        contract = self.env["ui.business.config.contract"].create({
+            "name": "test.native.overlay.invalid", "model": "res.partner", "view_type": "form",
+            "company_id": self.env.company.id, "action_id": action.id, "view_id": view.id,
+            "contract_json": {"view_orchestration": {
+                "context": {"source": "smart_core.lowcode.business_config", "source_status": "tenant_runtime"},
+                "views": {"form": {"node_patches": [{
+                    "target": "missing-native-node", "expected": {"type": "group", "name": "missing", "occurrence_index": 1},
+                    "set": {"columns": 2},
+                }]}}}},
+        })
+        with self.assertRaisesRegex(ValidationError, "ACTION_VIEW_REQUEST_OVERRIDE_DENIED"):
+            contract._publication_gate_for(contract)
+        action.view_id = view
+        with self.assertRaisesRegex(FormConfigurationError, "CONFIG_TARGET_STALE"):
+            contract._publication_gate_for(contract)
+        self.assertEqual(contract.status, "draft")
+        self.assertFalse(self.env["ui.business.config.contract.version"].search_count([("contract_id", "=", contract.id)]))
+
     def _env(self, user):
         return self.env(user=user, context={**self.env.context, "allowed_company_ids": [self.env.company.id]})
 
@@ -183,7 +217,12 @@ class TestBusinessConfigChangeSet(TransactionCase):
         return env, result["data"]
 
     def _payload(self, field_name="name"):
-        return {"view_orchestration": {"views": {"form": {"fields": [{"name": field_name}]}}}}
+        return {"view_orchestration": {"views": {"form": {
+            "composition_mode": "entry_semantic_surface",
+            "identity_fields": [field_name],
+            "sections": [{"key": "identity", "title": "Identity", "fields": [field_name]}],
+            "fields": [{"name": field_name}],
+        }}}}
 
     def _stage(self, env, change_set, target):
         result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
@@ -619,7 +658,8 @@ class TestBusinessConfigChangeSet(TransactionCase):
         summary = PageAssembler(preview_env, preview_env["ir.model"].sudo().env)._current_view_orchestration_config_summary(
             model="res.partner", view_type="form", action_id=0, view_id=0,
         )
-        self.assertEqual(summary["items"][0]["status"], "preview")
+        summary_preview = next(row for row in summary["items"] if row["name"] == preview_projection.name)
+        self.assertEqual(summary_preview["status"], "preview")
         snapshot = BusinessConfigMutationAuditSnapshotHandler(env).handle()
         self.assertTrue(snapshot["ok"])
         self.assertIn("ui.business.config.contract", snapshot["data"]["formal_models"])

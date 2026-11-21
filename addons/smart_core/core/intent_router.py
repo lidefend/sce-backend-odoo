@@ -73,6 +73,8 @@ def _build_envs(params: Dict[str, Any], add_ctx: Dict[str, Any], intent: str = "
     base_ctx = dict(request.env.context or {})
     if add_ctx:
         base_ctx.update(add_ctx)
+    # Enablement is database configuration, never request-supplied authority.
+    base_ctx.pop("sc.core.extension_modules", None)
 
     if target_db == cur_db:
         env = api.Environment(

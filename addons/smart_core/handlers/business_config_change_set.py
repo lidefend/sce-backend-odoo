@@ -180,7 +180,9 @@ class _ChangeSetBase(BaseIntentHandler):
         if not item.action_id or not item.view_id:
             raise ValidationError("结构配置必须绑定正式action和view。")
         params = {"op": "model", "model": item.model, "action_id": item.action_id,
-                  "view_id": item.view_id, "view_type": "form", "render_profile": "create"}
+                  "view_type": "form", "render_profile": "create"}
+        if preview_token:
+            params["view_id"] = item.view_id
         if client_contract_capabilities is not None:
             params["client_contract_capabilities"] = client_contract_capabilities
         if preview_token:

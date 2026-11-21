@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 
 import json
+import os
+from unittest.mock import patch
 import tempfile
 from pathlib import Path
 
@@ -32,10 +34,17 @@ class TestTenantExtensionStorage(TransactionCase):
                 ]
             }
         )
+        cls.maintenance_secret = "e" * 64
+        maintenance = patch.dict(os.environ, {
+            "SC_TENANT_PAYLOAD_MAINTENANCE_CAPABILITY": cls.maintenance_secret,
+        })
+        maintenance.start()
+        cls.addClassCleanup(maintenance.stop)
         cls.company_a = cls.env["res.company"].create({"name": "Extension fixture A"})
         cls.company_b = cls.env["res.company"].create({"name": "Extension fixture B"})
         Registration = cls.env["sc.tenant.company.registration"].with_context(
-            sc_tenant_payload_import=True
+            sc_tenant_payload_import=True,
+            sc_tenant_payload_maintenance_capability=cls.maintenance_secret,
         )
         cls.registration_a = Registration.create(
             {
@@ -117,7 +126,8 @@ class TestTenantExtensionStorage(TransactionCase):
         bootstrap = self.env.ref("base.main_company")
         self.assertTrue(bootstrap.is_platform_bootstrap_company)
         Registration = self.env["sc.tenant.company.registration"].with_context(
-            sc_tenant_payload_import=True
+            sc_tenant_payload_import=True,
+            sc_tenant_payload_maintenance_capability=self.maintenance_secret,
         )
         with self.assertRaises(UserError):
             Registration.create(
@@ -190,7 +200,10 @@ class TestTenantExtensionStorage(TransactionCase):
         self.assertEqual(service.env.company, company)
         registration = service.env[
             "sc.tenant.company.registration"
-        ].with_context(sc_tenant_payload_import=True).create(
+        ].with_context(
+            sc_tenant_payload_import=True,
+            sc_tenant_payload_maintenance_capability=self.maintenance_secret,
+        ).create(
             {
                 "tenant_key": "payload-company-fixture",
                 "company_id": company.id,
@@ -697,7 +710,8 @@ class TestTenantExtensionStorage(TransactionCase):
     def test_company_extension_cleanup_requires_retire_and_explicit_purge(self):
         company = self.env["res.company"].create({"name": "Extension cleanup fixture"})
         self.env["sc.tenant.company.registration"].with_context(
-            sc_tenant_payload_import=True
+            sc_tenant_payload_import=True,
+            sc_tenant_payload_maintenance_capability=self.maintenance_secret,
         ).create(
             {
                 "tenant_key": "cleanup-fixture",

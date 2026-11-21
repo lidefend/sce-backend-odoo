@@ -51,6 +51,12 @@ if [[ "${SC_TEST_DEPENDENCY_PREPARATION:-0}" == "1" && -z "${TEST_TAGS_INPUT:-}"
     -e "COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}" -e "ADDONS_EXTERNAL_MOUNT=${ADDONS_EXTERNAL_MOUNT}")
   PREPARATION_ODOO_ARGS="--db-filter=^${DB_NAME}$ --data-dir=/var/lib/odoo"
   PREPARATION_COMMAND="python3 /tmp/sc-dependency-baseline.py || exit \$?"
+  if [[ "${MODULE}" == "smart_core" ]]; then
+    PREPARATION_COMMAND+="
+      SC_EXTENSION_TEMPLATE_DB=\$(python3 /tmp/sc-dependency-baseline.py --extension-template-name) || exit \$?
+      export SC_EXTENSION_TEMPLATE_DB
+      export SC_EXTENSION_LIFECYCLE_MATRIX=1"
+  fi
 fi
 
 RUN_RM="${RUN_RM:---rm}"

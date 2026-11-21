@@ -12,8 +12,12 @@ class TestUmP1PaymentVisibilityContractOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
         cls.company_b = cls.env["res.company"].create({"name": "UM-P1 S03 Company B"})
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company_a | cls.company_b:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company_a).env
         base_user = cls.env.ref("base.group_user")
         finance_read = cls.env.ref("smart_construction_core.group_sc_cap_finance_read")
         finance_manager = cls.env.ref("smart_construction_core.group_sc_cap_finance_manager")
@@ -84,14 +88,25 @@ class TestUmP1PaymentVisibilityContractOrm(TransactionCase):
             ("unauthorized", cls.unauthorized_project, 202.0),
             ("cross_company", cls.cross_company_project, 303.0),
         ):
+            contract = cls.env["construction.contract"].with_context(setup_context).create({
+                "subject": "Synthetic payment basis " + key, "type": "in",
+                "project_id": project.id, "company_id": project.company_id.id,
+                "partner_id": cls.partner.id,
+            })
             request = cls.env["payment.request"].with_context(setup_context).create(
                 {
                     "type": "pay",
                     "project_id": project.id,
                     "partner_id": cls.partner.id,
                     "amount": amount,
+                    "contract_id": contract.id,
+                    "payment_account_name": "Synthetic payee",
+                    "payment_bank_name": "Synthetic bank",
+                    "payment_account_no": "TEST-UM-P1-PAYEE",
                 }
             )
+            request.action_submit()
+            assert request.state == "approved", request.state
             execution = cls.env["sc.payment.execution"].with_context(setup_context).create(
                 {
                     "project_id": project.id,

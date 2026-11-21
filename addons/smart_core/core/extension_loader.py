@@ -58,6 +58,7 @@ class ExtensionRuntimeContext:
     config_modules: tuple[str, ...]
     modules: tuple[str, ...]
     handlers: Mapping[str, type]
+    lifecycle_transition: bool = False
 
 
 def source_authority_contract():
@@ -82,17 +83,7 @@ def _configured_extension_modules(env) -> tuple[str, ...]:
         raise ExtensionConfigurationError(
             "extension configuration could not be read: %s" % (exc,)
         ) from exc
-    modules = _parse_modules(raw)
-    try:
-        context_modules = _parse_modules(
-            str((env.context or {}).get("sc.core.extension_modules") or "")
-        )
-    except Exception:
-        context_modules = []
-    for module in context_modules:
-        if module not in modules:
-            modules.append(module)
-    return tuple(dict.fromkeys(modules))
+    return tuple(dict.fromkeys(_parse_modules(raw)))
 
 
 def _installed_module_states(env, modules: tuple[str, ...]) -> dict[str, str]:
@@ -126,6 +117,9 @@ def resolve_extension_modules(
         if configured is not None
         else _configured_extension_modules(env)
     )
+    # Only Odoo's Registry can authorize construction-time filtering. Request
+    # context and callers cannot opt out of the runtime authority check.
+    allow_transition = not _registry_is_ready(_context_host(env))
     states = _installed_module_states(env, configured)
     missing = tuple(module for module in configured if module not in states)
     uninstalled = tuple(
@@ -133,7 +127,7 @@ def resolve_extension_modules(
         for module in configured
         if module in states and states[module] != "installed"
     )
-    if missing or uninstalled:
+    if (missing or uninstalled) and not allow_transition:
         details = []
         if missing:
             details.append("missing=%s" % ",".join(missing))
@@ -149,14 +143,28 @@ def resolve_extension_modules(
             missing=missing,
             uninstalled=uninstalled,
         )
-    return configured
+    if allow_transition:
+        return tuple(
+            sorted(
+                module for module in configured
+                if states.get(module) == "installed"
+                and module in getattr(env.registry, "_init_modules", ())
+            )
+        )
+    return tuple(sorted(configured))
+
+
+def _registry_is_ready(host) -> bool:
+    """Odoo owns Registry construction; adapters run fully only after it is ready."""
+    return bool(getattr(host, "ready", True))
 
 
 def _build_handlers(env, modules: tuple[str, ...]) -> dict[str, type]:
     from .handler_registry import base_handlers
 
     handlers = base_handlers()
-    for module_name in modules:
+    owners = {intent: "smart_core" for intent in handlers}
+    for module_name in sorted(modules):
         try:
             module = importlib.import_module("odoo.addons.%s" % module_name)
         except Exception as exc:
@@ -166,12 +174,29 @@ def _build_handlers(env, modules: tuple[str, ...]) -> dict[str, type]:
         hook = getattr(module, "smart_core_register", None)
         if not callable(hook):
             continue
+        before = dict(handlers)
         try:
             hook(handlers)
         except Exception as exc:
             raise ExtensionRuntimeError(
                 "extension register hook failed: %s (%s)" % (module_name, exc)
             ) from exc
+        removed = sorted(set(before) - set(handlers))
+        if removed:
+            raise ExtensionRuntimeError(
+                "extension removed existing intents: %s (%s)"
+                % (module_name, ",".join(removed))
+            )
+        for intent, handler in handlers.items():
+            previous = before.get(intent)
+            owner = owners.get(intent, "")
+            if previous is not None and previous is not handler:
+                raise ExtensionRuntimeError(
+                    "duplicate intent registration: %s owned by %s and %s"
+                    % (intent, owner or "<unknown>", module_name)
+                )
+            if intent not in before:
+                owners[intent] = module_name
     return handlers
 
 
@@ -192,20 +217,30 @@ def extension_runtime_context(env) -> ExtensionRuntimeContext:
     """
     host = _context_host(env)
     config_modules = _configured_extension_modules(env)
+    lifecycle_transition = not _registry_is_ready(host)
     cached = getattr(host, _REGISTRY_CONTEXT_ATTR, None)
     if (
         isinstance(cached, ExtensionRuntimeContext)
         and cached.config_modules == config_modules
+        and not lifecycle_transition
+        and not cached.lifecycle_transition
     ):
         return cached
 
-    modules = resolve_extension_modules(env, config_modules)
+    modules = resolve_extension_modules(
+        env,
+        config_modules,
+    )
     context = ExtensionRuntimeContext(
         config_modules=config_modules,
         modules=modules,
         handlers=MappingProxyType(_build_handlers(env, modules)),
+        lifecycle_transition=lifecycle_transition,
     )
-    setattr(host, _REGISTRY_CONTEXT_ATTR, context)
+    # The module graph advances within one Registry build. Never freeze a
+    # partial set or carry it across Odoo's ready boundary.
+    if not lifecycle_transition:
+        setattr(host, _REGISTRY_CONTEXT_ATTR, context)
     return context
 
 
@@ -231,12 +266,12 @@ def handlers_for_env(env) -> Mapping[str, type]:
 def iter_extension_modules(env):
     if env is None or getattr(env, "registry", None) is None:
         return []
-    return list(extension_runtime_context(env).modules)
+    return sorted(extension_runtime_context(env).modules)
 
 
 def run_extension_hooks(env, hook_name: str, *args, **kwargs):
     if env is None:
-        return
+        return []
     from .extension_hook_contracts import contract_for
 
     try:
@@ -250,6 +285,7 @@ def run_extension_hooks(env, hook_name: str, *args, **kwargs):
             "non-run_all hook cannot use the all-provider entrypoint: %s"
             % hook_name
         )
+    providers = {}
     for module_name in iter_extension_modules(env):
         try:
             module = importlib.import_module("odoo.addons.%s" % module_name)
@@ -258,12 +294,29 @@ def run_extension_hooks(env, hook_name: str, *args, **kwargs):
                 "extension module import failed: %s (%s)" % (module_name, exc)
             ) from exc
         hook = getattr(module, hook_name, None)
-        if not callable(hook):
-            continue
+        if callable(hook):
+            providers[module_name] = hook
+    modules = sorted(providers)
+    if contract.providers:
+        unexpected = sorted(set(modules) - set(contract.providers))
+        if unexpected:
+            raise ExtensionRuntimeError(
+                "run_all hook has undeclared providers: %s (%s)"
+                % (hook_name, ",".join(unexpected))
+            )
+        modules = [
+            module_name
+            for module_name in contract.providers
+            if module_name in modules
+        ]
+    results = []
+    for module_name in modules:
+        hook = providers[module_name]
         try:
-            hook(*args, **kwargs)
+            results.append((module_name, hook(*args, **kwargs)))
         except Exception as exc:
             raise ExtensionRuntimeError(
                 "extension hook failed: %s.%s (%s)"
                 % (module_name, hook_name, exc)
             ) from exc
+    return results

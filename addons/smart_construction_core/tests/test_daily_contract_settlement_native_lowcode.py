@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 from lxml import etree
 
 from odoo.tests.common import TransactionCase, tagged
@@ -98,9 +99,9 @@ class TestDailyContractNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
-        ).handle({
+        ).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": self.MODEL, "action_id": action.id,
-            "view_id": self.env.ref("smart_construction_core.%s" % self.VIEW).id,
+            "view_id": 0,
             "view_type": "form", "render_profile": "edit",
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -133,7 +134,7 @@ class TestDailyContractNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         data, _versions = UiContractV2Handler._dispatch_native_form_source(
             self.env, self.env["ir.model"].sudo().env,
-            {"op": "model", "model": self.MODEL, "action_id": action.id, "view_id": self.VIEW_ID})
+            {"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
         layout = (data.get("nativeFormProjection") or {}).get("layout") or []
         seen, ordered = set(), []
 
@@ -362,9 +363,9 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
         view_id = self.VIEW_ID if view_id is None else view_id
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
-        ).handle({
+        ).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": self.MODEL, "action_id": action_id,
-            "view_id": view_id, "view_type": "form", "render_profile": "edit",
+            "view_id": 0, "view_type": "form", "render_profile": "edit",
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error"))
@@ -396,7 +397,7 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         data, _versions = UiContractV2Handler._dispatch_native_form_source(
             self.env, self.env["ir.model"].sudo().env,
-            {"op": "model", "model": self.MODEL, "action_id": action.id, "view_id": self.VIEW_ID})
+            {"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
         layout = (data.get("nativeFormProjection") or {}).get("layout") or []
         seen, ordered = set(), []
 

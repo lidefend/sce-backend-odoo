@@ -116,19 +116,24 @@ class TestUmP1OwnershipVisibilityContractOrm(TransactionCase):
         )
         for domains in (payment_domains, execution_domains, receipt_domains, settlement_domains):
             self.assertIn("project_id.user_id", domains)
-            self.assertIn("project_id.message_is_follower", domains)
+            self.assertIn("project_id.message_follower_ids.partner_id", domains)
             self.assertIn("company_id", domains)
-        for domains in (fund_domains, financing_domains):
+        # Company ceilings remain global; additional category-specific rules
+        # may legitimately bind an initiator to their project.
+        for domains in (
+            self.env.ref("smart_construction_core.rule_sc_fund_account_operation_company").domain_force,
+            self.env.ref("smart_construction_core.rule_sc_financing_loan_company").domain_force,
+        ):
             self.assertIn("company_id", domains)
             self.assertNotIn("project_id.user_id", domains)
-            self.assertNotIn("project_id.message_is_follower", domains)
+            self.assertNotIn("project_id.message_follower_ids.partner_id", domains)
         for domains in (invoice_domains, deduction_domains):
             self.assertIn("company_id", domains)
             self.assertNotIn("project_id.user_id", domains)
-            self.assertNotIn("project_id.message_is_follower", domains)
+            self.assertNotIn("project_id.message_follower_ids.partner_id", domains)
         self.assertIn("company_id", cost_ledger_domains)
         self.assertIn("project_id.user_id", cost_ledger_domains)
-        self.assertIn("project_id.message_is_follower", cost_ledger_domains)
+        self.assertIn("project_id.message_follower_ids.partner_id", cost_ledger_domains)
         self.assertNotIn("project_id.manager_id", cost_ledger_domains)
         self.assertNotIn("create_uid", cost_ledger_domains)
 
@@ -164,8 +169,14 @@ class TestUmP1ProjectReceiptVisibilityOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
         cls.company_b = cls.env["res.company"].create({"name": "UM-P1 S02 Company B"})
+        # Reuse the governed industry fixture; bootstrap companies are not
+        # customer data spaces and must not stand in for the caller's authority.
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company_a | cls.company_b:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company_a).env
         base_user = cls.env.ref("base.group_user")
         finance_read = cls.env.ref("smart_construction_core.group_sc_cap_finance_read")
         finance_manager = cls.env.ref("smart_construction_core.group_sc_cap_finance_manager")

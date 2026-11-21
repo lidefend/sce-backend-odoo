@@ -1,10 +1,8 @@
 # -*- coding: utf-8 -*-
-from odoo.exceptions import AccessError
+from odoo.exceptions import AccessError, UserError
 from odoo.tests.common import tagged
 
-from .test_um_p3_fund_plan_actual_event_allocation_orm import (
-    TestUmP3FundPlanActualEventAllocationOrm,
-)
+from . import test_um_p3_fund_plan_actual_event_allocation_orm as base_cases
 
 
 @tagged(
@@ -14,7 +12,7 @@ from .test_um_p3_fund_plan_actual_event_allocation_orm import (
     "um_p3_core_020_payment_ledger_permission_orm",
 )
 class TestUmP3PaymentLedgerRequestPermissionOrm(
-    TestUmP3FundPlanActualEventAllocationOrm
+    base_cases.TestUmP3FundPlanActualEventAllocationOrm
 ):
     """Finance-manager payment ledgers inherit request company authority."""
 
@@ -71,20 +69,6 @@ class TestUmP3PaymentLedgerRequestPermissionOrm(
                 [("id", "in", governed_ids)]
             ).ids
         )
-
-    def _approved_request_copy(self, request, label):
-        copied = request.with_env(self.env).copy({"name": label})
-        self.env.cr.execute(
-            """
-                UPDATE payment_request
-                   SET state = 'approved',
-                       validation_status = 'validated'
-                 WHERE id = %s
-            """,
-            [copied.id],
-        )
-        self.env.invalidate_all()
-        return self.env["payment.request"].browse(copied.id)
 
     def _create_ledger(self, env, request):
         return env["payment.ledger"].with_context(
@@ -186,39 +170,20 @@ class TestUmP3PaymentLedgerRequestPermissionOrm(
             self._visible_event_ids(self.manager_a),
         )
 
-    def test_create_write_and_unlink_follow_request_company(self):
-        request_a = self._approved_request_copy(
-            self.request_a1,
-            "UM-P3 CORE-020 request A",
-        )
-        request_b = self._approved_request_copy(
-            self.request_b,
-            "UM-P3 CORE-020 request B",
-        )
-        ledger_a = self._create_ledger(self.manager_a, request_a)
-        ledger_b = self._create_ledger(self.manager_b, request_b)
-        self.assertEqual(ledger_a.payment_request_id, request_a)
-        self.assertEqual(ledger_b.payment_request_id, request_b)
-
-        ledger_a.with_env(self.manager_a).write({"note": "company A"})
-        with self.env.cr.savepoint(), self.assertRaises(AccessError):
-            ledger_b.with_env(self.manager_a).write(
-                {"note": "cross-company"}
-            )
-        with self.env.cr.savepoint(), self.assertRaises(AccessError):
-            self._create_ledger(
-                self.manager_a,
-                self._approved_request_copy(
-                    self.request_b,
-                    "UM-P3 CORE-020 denied request B",
-                ),
-            )
-
-        ledger_a.with_env(self.manager_a).unlink()
-        self.assertFalse(ledger_a.exists())
-        with self.env.cr.savepoint(), self.assertRaises(AccessError):
-            ledger_b.with_env(self.manager_a).unlink()
-        self.assertTrue(ledger_b.exists())
+    def test_finance_manager_cannot_mutate_immutable_cash_facts(self):
+        # Company-scoped read authority never grants direct cash-fact writes.
+        for env in (self.manager_a, self.manager_b):
+            for ledger in (self.event_a1, self.event_b):
+                before = ledger.read(["amount", "state", "note"])
+                with self.subTest(company=env.company.id, ledger=ledger.id):
+                    with self.env.cr.savepoint(), self.assertRaises(AccessError):
+                        self._create_ledger(env, ledger.payment_request_id)
+                    with self.env.cr.savepoint(), self.assertRaises(AccessError):
+                        ledger.with_env(env).write({"note": "direct mutation"})
+                    with self.env.cr.savepoint(), self.assertRaisesRegex(UserError, "不允许删除"):
+                        ledger.with_env(env).unlink()
+                    ledger.invalidate_recordset()
+                    self.assertEqual(ledger.read(["amount", "state", "note"]), before)
 
     def test_payment_request_company_rule_remains_authoritative(self):
         self.assertTrue(

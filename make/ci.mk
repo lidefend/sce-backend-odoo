@@ -428,6 +428,11 @@ verify.smart_construction_scene.module_baseline: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
 	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_scene TEST_TAGS=/smart_construction_scene
 
+.PHONY: verify.smart_construction_core.module_baseline
+verify.smart_construction_core.module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_core \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=/smart_construction_core
+
 EXTENSION_NATIVE_ALIGNMENT_TAGS = /smart_core:TestOdooNativeAlignmentBoundaries.test_extension_hook_compat_preserves_empty_result_and_keyword_capability,/smart_core:TestOdooNativeAlignmentBoundaries.test_extension_hook_provider_internal_type_error_fails_explicitly,/smart_core:TestOdooNativeAlignmentBoundaries.test_capability_timing_hook_compat_preserves_old_provider_result,/smart_core:TestOdooNativeAlignmentBoundaries.test_capability_group_hook_remains_available_with_compatible_dispatch
 
 .PHONY: verify.extension.runtime_context.orm verify.extension.native_alignment.orm verify.extension.hook_authority.orm verify.extension.lifecycle.orm
@@ -448,7 +453,7 @@ verify.extension.hook_authority.orm: guard.prod.forbid
 
 verify.extension.lifecycle.orm: guard.prod.forbid
 	@SC_EXTENSION_LIFECYCLE_MATRIX=1 \
-	  LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	  LOCAL_TEST_TEMPLATE_MODULE=smart_core \
 	  $(MAKE) --no-print-directory local.test.test \
 	  MODULE=smart_core TEST_TAGS=/smart_core:TestExtensionRegistryLifecycle
 

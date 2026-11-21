@@ -992,5 +992,25 @@ class ProjectionContractTests(unittest.TestCase):
         )
 
 
+class DefaultProductPolicyTest(unittest.TestCase):
+    def test_default_uses_resolved_product_identity_and_explicit_selection_wins(self):
+        from unittest.mock import Mock, patch
+        def policy(key):
+            return SimpleNamespace(product_key=key, label=key, base_product_key=key.split(".")[0],
+                                   edition_key="standard", to_runtime_dict=lambda: {"menu_groups": []})
+        policies = [policy("construction.standard"), policy("owner.standard")]
+        model = Mock()
+        model.sudo.return_value.search.return_value = policies
+        service = MODULE.PlatformCapabilityExplorerService({"sc.product.policy": model})
+        resolver = Mock(return_value={"product_key": "owner.standard"})
+        inputs = SimpleNamespace(_resolve_startup_delivery_identity=resolver)
+        with patch.dict(sys.modules, {"smart_core.delivery.effective_delivery_inputs": inputs}):
+            self.assertEqual(service._product_policy_context()["product_key"], "owner.standard")
+            self.assertEqual(service._product_policy_context(requested_product_key="construction.standard")["product_key"], "construction.standard")
+            self.assertEqual(resolver.call_count, 1)
+            with self.assertRaises(MODULE.InvalidExplorerRequest):
+                service._product_policy_context(requested_product_key="missing.standard")
+
+
 if __name__ == "__main__":
     unittest.main()

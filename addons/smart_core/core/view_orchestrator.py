@@ -11,7 +11,7 @@ from copy import deepcopy
 from typing import Any
 
 from .view_orchestration_contract import source_authority_contract
-from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations, assert_role_form_permissions_only
+from .form_structure_authority import resolve_form_structure_governance, diagnose_structure_ownership, authenticated_form_role_key, structural_form_declarations, assert_role_form_permissions_only, role_form_structure_violations
 from .form_configuration_compiler import compile_form_configuration, is_configured_surface
 from .field_presentation_usage import assert_configuration_field_usage
 from .lowcode_presentable_fields import LOWCODE_NON_PRESENTABLE_FIELD_NAMES
@@ -117,7 +117,8 @@ class ViewOrchestrator:
                         applied_contracts.append({"id": int(config.id), "name": config.name, "version_no": int(config.version_no or 1),
                                                   "source_kind": str(getattr(config, "source_kind", "published"))})
                         continue
-                    if any(key in spec for key in ("layout", "sections", "fields", "field_slots", "columns")) and native_surface_selected:
+                    role_permissions = bool(getattr(config, "role_key", "")) and not role_form_structure_violations(config)
+                    if any(key in spec for key in ("layout", "sections", "fields", "field_slots", "columns")) and native_surface_selected and not role_permissions:
                         raise ValueError("CONFIG_TARGET_BINDING_REQUIRED: %s" % config.name)
                 declares_form_layout_overlay = (
                     normalized_view_type == "form"

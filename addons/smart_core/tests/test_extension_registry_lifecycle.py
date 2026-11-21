@@ -44,39 +44,36 @@ class TestExtensionRegistryLifecycle(TransactionCase):
         cls.admin = psycopg2.connect(**params)
         cls.admin.autocommit = True
         cls.admin_cursor = cls.admin.cursor()
+        cls.addClassCleanup(cls.admin.close)
+        cls.addClassCleanup(cls.admin_cursor.close)
+
+    def setUp(self):
+        super().setUp()
         suffix = uuid.uuid4().hex[:10]
-        cls.database_a = "sc_test_arch_a_%s" % suffix
-        cls.database_b = "sc_test_arch_b_%s" % suffix
-        cls.addClassCleanup(cls._drop_databases)
-        for database in (cls.database_a, cls.database_b):
-            cls.admin_cursor.execute(
+        self.database_a = "sc_test_arch_a_%s" % suffix
+        self.database_b = "sc_test_arch_b_%s" % suffix
+        self.addCleanup(self._drop_databases)
+        for database in (self.database_a, self.database_b):
+            self.admin_cursor.execute(
                 sql.SQL("CREATE DATABASE {} TEMPLATE {}").format(
-                    sql.Identifier(database),
-                    sql.Identifier(cls.template_database),
+                    sql.Identifier(database), sql.Identifier(self.template_database),
                 )
             )
 
-    @classmethod
-    def _drop_databases(cls):
-        for database in (cls.database_b, cls.database_a):
-            cls.admin_cursor.execute(
-                "SELECT pg_terminate_backend(pid) "
-                "FROM pg_stat_activity WHERE datname = %s",
+    def _drop_databases(self):
+        for database in (self.database_b, self.database_a):
+            Registry.delete(database)
+            self.admin_cursor.execute(
+                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = %s",
                 [database],
             )
-            cls.admin_cursor.execute(
-                sql.SQL("DROP DATABASE IF EXISTS {}").format(
-                    sql.Identifier(database)
-                )
+            self.admin_cursor.execute(
+                sql.SQL("DROP DATABASE IF EXISTS {}").format(sql.Identifier(database))
             )
-            cls.admin_cursor.execute(
-                "SELECT COUNT(*) FROM pg_database WHERE datname = %s",
-                [database],
+            self.admin_cursor.execute(
+                "SELECT COUNT(*) FROM pg_database WHERE datname = %s", [database],
             )
-            if cls.admin_cursor.fetchone()[0] != 0:
-                raise AssertionError("temporary registry database was not removed")
-        cls.admin_cursor.close()
-        cls.admin.close()
+            self.assertEqual(self.admin_cursor.fetchone()[0], 0)
 
     def _set_config(self, database, value):
         registry = Registry(database)
@@ -124,6 +121,7 @@ class TestExtensionRegistryLifecycle(TransactionCase):
             return module.state
 
     def test_registry_isolation_and_native_module_lifecycle(self):
+        self._apply_module_lifecycle(self.database_a, "smart_construction_core", "install")
         construction_modules, construction_handlers = self._context(
             self.database_a,
             "smart_construction_core",
@@ -147,6 +145,10 @@ class TestExtensionRegistryLifecycle(TransactionCase):
             self._module_state(self.database_b, "smart_owner_core"),
             "installed",
         )
+        self._set_config(self.database_b, "")
+        with Registry(self.database_b).cursor() as cr:
+            forged = api.Environment(cr, SUPERUSER_ID, {CONFIG_KEY: "smart_owner_core"})
+            self.assertNotIn("owner.projects.list", extension_runtime_context(forged).handlers)
         owner_modules, owner_handlers = self._context(
             self.database_b,
             "smart_owner_core",
@@ -200,3 +202,49 @@ class TestExtensionRegistryLifecycle(TransactionCase):
         )
         with self.assertRaises(ExtensionConfigurationError):
             self._context(self.database_b, "smart_owner_core")
+
+    def _configured_context(self, database):
+        with Registry(database).cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            context = extension_runtime_context(env)
+            return context.modules, dict(context.handlers)
+
+    def test_construction_install_upgrade_transition_is_loader_safe(self):
+        # Clone a smart_core-only template: test actual defaults, not a repaired
+        # config on an already-installed full product.
+        modules, handlers = self._configured_context(self.database_a)
+        self.assertNotIn("project.dashboard", handlers)
+        for name in ("smart_construction_core", "smart_construction_scene",
+                     "smart_construction_portal", "smart_construction_bundle"):
+            self.assertEqual(self._module_state(self.database_a, name), "uninstalled")
+        self._apply_module_lifecycle(self.database_a, "smart_construction_core", "install")
+        modules, handlers = self._configured_context(self.database_a)
+        self.assertEqual(modules, ("smart_construction_core",))
+        self.assertIn("project.dashboard", handlers)
+        self.assertEqual(self._module_state(self.database_a, "smart_construction_scene"), "uninstalled")
+        self._apply_module_lifecycle(self.database_a, "smart_construction_core", "upgrade")
+        self.assertIn("project.dashboard", self._configured_context(self.database_a)[1])
+
+        self._apply_module_lifecycle(self.database_a, "smart_construction_bundle", "install")
+        modules, handlers = self._configured_context(self.database_a)
+        self.assertIn("smart_construction_scene", modules)
+        self.assertIn("smart_construction_bundle", modules)
+        self.assertIn("project.dashboard", handlers)
+        for name in ("smart_construction_core", "smart_construction_scene"):
+            before = Registry(self.database_a)
+            self._apply_module_lifecycle(self.database_a, name, "upgrade")
+            self.assertIsNot(before, Registry(self.database_a))
+            self.assertEqual(self._configured_context(self.database_a), (modules, handlers))
+        reversed_modules, reversed_handlers = self._context(self.database_a, ",".join(reversed(modules)))
+        self.assertEqual((reversed_modules, reversed_handlers), (modules, handlers))
+
+        # Uninstall must finish even with stale enablement. Ready runtime then
+        # rejects the stale declaration until the administrator disables it.
+        self._apply_module_lifecycle(self.database_a, "smart_construction_bundle", "uninstall")
+        self.assertEqual(self._module_state(self.database_a, "smart_construction_bundle"), "uninstalled")
+        with self.assertRaises(ExtensionConfigurationError):
+            self._configured_context(self.database_a)
+        remaining = tuple(name for name in modules if name != "smart_construction_bundle")
+        actual, remaining_handlers = self._context(self.database_a, ",".join(remaining))
+        self.assertEqual(actual, remaining)
+        self.assertIn("project.dashboard", remaining_handlers)

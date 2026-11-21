@@ -14,6 +14,8 @@ from odoo.exceptions import AccessDenied, AccessError
 from odoo.modules.registry import Registry
 from odoo.tests.common import HttpCase, tagged
 
+from .entry_namespace_test_support import configure_test_entry_namespace
+
 from odoo.addons.smart_core.models.auth_credential_policy import SERVICE_CONTEXT_KEY
 from odoo.addons.smart_core.core.handler_registry import HANDLER_REGISTRY
 from odoo.addons.smart_core.security.auth import (
@@ -50,6 +52,10 @@ class TestAuthCredentialFramework(HttpCase):
         registry = Registry(self.env.cr.dbname)
         with registry.cursor() as cr:
             env = api.Environment(cr, SUPERUSER_ID, {})
+            self.entry_headers = configure_test_entry_namespace(
+                env, alias="credential-entry", audience="tenant", duty_key="ci_suite",
+                platform_control=False,
+            )
             env["ir.config_parameter"].sudo().set_param("sc.jwt.secret", self.jwt_secret)
             company_a = env["res.company"].sudo().create({"name": f"Auth Company A {suffix}"})
             company_b = env["res.company"].sudo().create({"name": f"Auth Company B {suffix}"})
@@ -162,13 +168,13 @@ class TestAuthCredentialFramework(HttpCase):
         return json.loads(body or "{}")
 
     def _http_intent(self, intent, params, *, token="", anonymous=False):
-        headers = {"Content-Type": "application/json"}
+        headers = {**self.entry_headers, "Content-Type": "application/json"}
         if token:
             headers["Authorization"] = f"Bearer {token}"
         if anonymous:
             headers["X-Anonymous-Intent"] = "true"
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({"intent": intent, "params": params}),
             headers=headers,
         )
@@ -178,7 +184,6 @@ class TestAuthCredentialFramework(HttpCase):
         result = self._http_intent(
             "login",
             {
-                "db": self.env.cr.dbname,
                 "credential": {
                     "type": "password",
                     "login": self.user_login,
@@ -527,19 +532,18 @@ class TestAuthCredentialFramework(HttpCase):
     def test_http_machine_exchange_returns_short_scoped_token_and_audit(self):
         policy, secret = self._issue()
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "auth.machine.token",
                 "params": {
-                    "db": self.env.cr.dbname,
-                    "credential": {
+                        "credential": {
                         "type": "api_key",
                         "secret": secret,
                         "requested_scope": ["intent.read"],
                     },
                 },
             }),
-            headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "X-Anonymous-Intent": "true"},
         )
         result = self._json_response(response)
 
@@ -547,7 +551,7 @@ class TestAuthCredentialFramework(HttpCase):
         data = result.get("data") or {}
         token = (data.get("session") or {}).get("token")
         self.assertTrue(token, result)
-        payload = jwt.decode(token, self.jwt_secret, algorithms=["HS256"])
+        payload = jwt.decode(token, self.jwt_secret, algorithms=["HS256"], audience="tenant")
         self.assertEqual(payload.get("auth_method"), "api_key")
         self.assertEqual(payload.get("principal_type"), "machine")
         self.assertLessEqual(int(payload["exp"]) - int(payload["iat"]), 15 * 60)
@@ -629,7 +633,6 @@ class TestAuthCredentialFramework(HttpCase):
         exchange = self._http_intent(
             "auth.machine.token",
             {
-                "db": self.env.cr.dbname,
                 "credential": {
                     "type": "api_key",
                     "secret": secret,
@@ -652,7 +655,6 @@ class TestAuthCredentialFramework(HttpCase):
         exchange = self._http_intent(
             "auth.machine.token",
             {
-                "db": self.env.cr.dbname,
                 "credential": {
                     "type": "api_key",
                     "secret": secret,
@@ -665,7 +667,7 @@ class TestAuthCredentialFramework(HttpCase):
         self.assertTrue(token, exchange)
 
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "api.data",
                 "params": {
@@ -677,17 +679,19 @@ class TestAuthCredentialFramework(HttpCase):
                     "limit": 1,
                 },
             }),
-            headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "Authorization": f"Bearer {token}"},
         )
         result = self._json_response(response)
 
         self.assertFalse(result.get("ok"), result)
-        self.assertIn(self.last_http_status, (401, 403))
+        self.assertEqual(self.last_http_status, 409)
+
+        self.assertEqual((result.get("error") or {}).get("code"), "NS_DATABASE_HINT_CONFLICT", result)
 
     def test_http_machine_exchange_rejects_cross_database_route(self):
         _policy, secret = self._issue()
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "auth.machine.token",
                 "params": {
@@ -695,29 +699,30 @@ class TestAuthCredentialFramework(HttpCase):
                     "credential": {"type": "api_key", "secret": secret},
                 },
             }),
-            headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "X-Anonymous-Intent": "true"},
         )
         result = self._json_response(response)
 
         self.assertFalse(result.get("ok"), result)
-        self.assertEqual(self.last_http_status, 401)
+        self.assertEqual(self.last_http_status, 409)
+
+        self.assertEqual((result.get("error") or {}).get("code"), "NS_DATABASE_HINT_CONFLICT", result)
 
     def test_api_key_never_falls_back_to_password_login(self):
         _policy, secret = self._issue()
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "login",
                 "params": {
-                    "db": self.env.cr.dbname,
-                    "credential": {
+                        "credential": {
                         "type": "password",
                         "login": self.user.login,
                         "secret": secret,
                     },
                 },
             }),
-            headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "X-Anonymous-Intent": "true"},
         )
         result = self._json_response(response)
 
@@ -727,19 +732,18 @@ class TestAuthCredentialFramework(HttpCase):
     def test_interactive_login_rejects_api_key_credential_type(self):
         _policy, secret = self._issue()
         response = self.url_open(
-            f"/api/v1/intent?db={self.env.cr.dbname}",
+            "/api/v1/intent",
             data=json.dumps({
                 "intent": "login",
                 "params": {
-                    "db": self.env.cr.dbname,
-                    "credential": {
+                        "credential": {
                         "type": "api_key",
                         "login": self.user.login,
                         "secret": secret,
                     },
                 },
             }),
-            headers={"Content-Type": "application/json", "X-Anonymous-Intent": "true"},
+            headers={**self.entry_headers, "Content-Type": "application/json", "X-Anonymous-Intent": "true"},
         )
         result = self._json_response(response)
 

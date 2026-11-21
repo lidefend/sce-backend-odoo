@@ -10,8 +10,14 @@ class TestUmP1ContractSettlementVisibilityContractOrm(TransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env["res.company"].create({"name": "Synthetic " + cls.__name__})
         cls.company_b = cls.env["res.company"].create({"name": "UM-P1 S06 Company B"})
+        # Reuse the governed industry fixture; bootstrap companies are not
+        # customer data spaces and must not stand in for the caller's authority.
+        from odoo.addons.smart_construction_core.tests.business_case import BusinessTransactionCase
+        for company in cls.company_a | cls.company_b:
+            BusinessTransactionCase.register_business_company(company)
+        cls.env = cls.env["res.company"].with_company(cls.company_a).env
         base_user = cls.env.ref("base.group_user")
         settlement_user = cls.env.ref(
             "smart_construction_core.group_sc_role_settlement_user"
@@ -257,11 +263,15 @@ class TestUmP1ContractSettlementVisibilityContractOrm(TransactionCase):
             },
         )
 
-    def test_business_config_administrator_keeps_explicit_all_contract(self):
+    def test_business_config_administrator_keeps_company_ceiling(self):
         visible = self.config_admin_env["sc.settlement.order"].search(
             [("id", "in", [record.id for record in self.records.values()])]
         )
-        self.assertEqual(set(visible.ids), {record.id for record in self.records.values()})
+        self.assertEqual(set(visible.ids), {
+            record.id for record in self.records.values() if record.company_id == self.company_a
+        })
+        with self.assertRaises(AccessError):
+            self.records["cross_company"].with_env(self.config_admin_env).read(["title"])
 
     def test_no_scope_search_does_not_fall_back_to_all_records(self):
         visible = self.ordinary_env["sc.settlement.order"].search([])

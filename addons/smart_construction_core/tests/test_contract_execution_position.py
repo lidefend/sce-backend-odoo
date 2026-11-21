@@ -1,18 +1,23 @@
 # -*- coding: utf-8 -*-
 import ast
 
-from odoo.exceptions import AccessError
-from odoo.tests.common import TransactionCase, tagged
+from odoo.exceptions import AccessError, UserError
+from odoo.tests.common import tagged
+from .business_case import BusinessTransactionCase
 
 from ..models.support import operating_metrics as opm
 
 
 @tagged("post_install", "-at_install", "p1_contract_execution_position")
-class TestContractExecutionPosition(TransactionCase):
+class TestContractExecutionPosition(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company = cls.env.ref("base.main_company")
+        cls.company = cls.env.company
+        cls.env.user.groups_id = [(4, cls.env.ref("smart_construction_core.group_sc_cap_finance_manager").id)]
+        cls.tax_group = cls.env["account.tax.group"].create({
+            "name": "Synthetic zero tax group", "company_id": cls.company.id,
+        })
         cls.currency = cls.company.currency_id
         cls.partner = cls.env["res.partner"].create({"name": "Position Counterparty"})
         cls.project = cls.env["project.project"].create(
@@ -27,6 +32,8 @@ class TestContractExecutionPosition(TransactionCase):
                     "name": "Position Zero Tax",
                     "amount": 0.0,
                     "amount_type": "percent",
+                    "tax_group_id": cls.tax_group.id,
+                    "country_id": cls.env.ref("base.cn").id,
                     "type_tax_use": "sale",
                     "company_id": cls.company.id,
                 }
@@ -57,6 +64,9 @@ class TestContractExecutionPosition(TransactionCase):
             {
                 "name": name,
                 "type": "pay",
+                "payment_account_name": "Synthetic payee",
+                "payment_bank_name": "Synthetic bank",
+                "payment_account_no": "SYNTHETIC-ALLOCATION-01",
                 "project_id": contract.project_id.id,
                 "partner_id": contract.partner_id.id,
                 "currency_id": contract.currency_id.id,
@@ -64,10 +74,8 @@ class TestContractExecutionPosition(TransactionCase):
                 "amount": amount,
             }
         )
-        self.env.cr.execute(
-            "UPDATE payment_request SET state='approved', validation_status='validated' WHERE id=%s",
-            (request.id,),
-        )
+        request.action_submit()
+        self.assertEqual(request.state, "approved")
         request.invalidate_recordset()
         return request
 
@@ -83,6 +91,8 @@ class TestContractExecutionPosition(TransactionCase):
                 "amount": amount,
             }
         )
+        request.action_submit()
+        self.assertEqual(request.state, "approved")
         receipt = self.env["sc.receipt.income"].create(
             {
                 "name": name + " receipt",
@@ -94,12 +104,10 @@ class TestContractExecutionPosition(TransactionCase):
                 "amount": amount,
             }
         )
-        request._claim_terminal_cash_source(receipt)
-        ledger = request._ensure_treasury_ledger(amount=amount)
-        receipt._write_finance_authority(
-            {"state": "received", "treasury_ledger_id": ledger.id}
-        )
-        return ledger
+        receipt.receiving_account_no = "SYNTHETIC-RECEIPT-01"
+        receipt.action_confirm()
+        receipt.action_received()
+        return receipt.treasury_ledger_id
 
     def test_income_position_uses_authoritative_states_and_signed_balances(self):
         contract = self._contract("Income Position", 100.0)
@@ -115,31 +123,35 @@ class TestContractExecutionPosition(TransactionCase):
                 "line_ids": [(0, 0, {"name": "line", "contract_id": contract.id, "qty": 1.0, "price_unit": contract_amount + 20.0})],
             }
         )
-        settlement._write_lifecycle("approve")
+        settlement.action_submit()
         self.assertEqual(settlement.line_ids.contract_id, contract)
-        self.env["sc.invoice.registration"].create(
+        invoice = self.env["sc.invoice.registration"].create(
             {
-                "name": "Position Invoice",
+                "name": "Position Invoice", "invoice_no": "SYNTHETIC-POSITION-01",
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "contract_id": contract.id,
                 "currency_id": self.currency.id,
                 "direction": "output",
-                "state": "registered",
-                "amount_total": contract_amount + 10.0,
+                "amount_total": contract_amount - 10.0,
             }
         )
+        with self.assertRaises(UserError), self.env.cr.savepoint():
+            overbilling = invoice.copy({"invoice_no": "SYNTHETIC-POSITION-OVER", "amount_total": contract_amount + 10.0})
+            overbilling.action_confirm()
+        invoice.action_confirm()
+        invoice.action_register()
         self._posted_receipt_evidence("Position Receipt Evidence", contract, contract_amount + 30.0)
         self.env.flush_all()
         position = self.env["sc.contract.execution.position"].search([("contract_id", "=", contract.id)])
         self.assertEqual(position.contract_amount, contract_amount)
         self.assertEqual(position.settled_amount, contract_amount + 20.0)
-        self.assertEqual(position.invoiced_amount, contract_amount + 10.0)
+        self.assertEqual(position.invoiced_amount, contract_amount - 10.0)
         self.assertEqual(position.cash_executed_amount, contract_amount + 30.0)
-        self.assertEqual((position.settlement_balance, position.invoice_balance, position.cash_balance), (-20.0, -10.0, -30.0))
+        self.assertEqual((position.settlement_balance, position.invoice_balance, position.cash_balance), (-20.0, 10.0, -30.0))
         self.assertTrue(position.ratio_defined)
         self.assertAlmostEqual(position.settlement_rate, (contract_amount + 20.0) / contract_amount * 100.0)
-        self.assertAlmostEqual(position.invoice_rate, (contract_amount + 10.0) / contract_amount * 100.0)
+        self.assertAlmostEqual(position.invoice_rate, (contract_amount - 10.0) / contract_amount * 100.0)
         self.assertAlmostEqual(position.cash_execution_rate, (contract_amount + 30.0) / contract_amount * 100.0)
         contract.invalidate_recordset()
         self.assertAlmostEqual(contract.settlement_rate, position.settlement_rate)
@@ -211,7 +223,7 @@ class TestContractExecutionPosition(TransactionCase):
                     ],
                 }
             )
-            settlement._write_lifecycle("approve")
+            settlement.action_submit()
 
         negative_contract = self._contract("Negative Ratio Position", 100.0)
         self.env["sc.settlement.adjustment"].create(
@@ -221,11 +233,10 @@ class TestContractExecutionPosition(TransactionCase):
                 "partner_id": self.partner.id,
                 "item_name": "negative ratio deduction",
                 "adjustment_type": "deduction",
-                "state": "confirmed",
                 "amount": negative_contract.amount_final / 4.0,
                 "currency_id": self.currency.id,
             }
-        )
+        ).action_confirm()
         self.env.flush_all()
         contract_ids = [contract.id for contract in contracts] + [negative_contract.id]
         positions = self.env["sc.contract.execution.position"].search(
@@ -256,7 +267,7 @@ class TestContractExecutionPosition(TransactionCase):
                 ],
             }
         )
-        settlement._write_lifecycle("approve")
+        settlement.action_submit()
         self.env.flush_all()
         positions = self.env["sc.contract.execution.position"].search(
             [("contract_id", "in", [contract_a.id, contract_b.id])]
@@ -327,11 +338,10 @@ class TestContractExecutionPosition(TransactionCase):
                     "partner_id": self.partner.id,
                     "item_name": f"{adjustment_type} position",
                     "adjustment_type": adjustment_type,
-                    "state": "confirmed",
                     "amount": amount,
                     "currency_id": self.currency.id,
                 }
-            )
+            ).action_confirm()
         self.env.flush_all()
         position = self.env["sc.contract.execution.position"].search([("contract_id", "=", contract.id)])
         self.assertEqual(position.settled_amount, 15.0)

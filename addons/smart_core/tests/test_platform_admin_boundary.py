@@ -3,6 +3,7 @@ import importlib.util
 import csv
 import types
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 import xml.etree.ElementTree as ET
 
@@ -55,6 +56,19 @@ class _FakeUser:
 
 
 class TestPlatformAdminBoundary(unittest.TestCase):
+    def test_internal_identity_resolution_uses_the_users_environment(self):
+        module = _load_module()
+        env = _FakeEnv("sc_platform_control")
+        user = _FakeUser([module.PLATFORM_ADMIN_GROUP], env=env)
+        with patch.object(module, "_current_identity_audience", return_value="platform-admin") as resolve:
+            self.assertTrue(module.platform_control_scope(user)["is_platform_control_admin"])
+            resolve.assert_called_once_with(env)
+        with patch.object(module, "_current_identity_audience", return_value="tenant"):
+            self.assertFalse(module.platform_control_scope(user)["is_platform_control_admin"])
+        with patch.object(module, "_current_identity_audience") as resolve:
+            self.assertFalse(module.platform_control_scope(user, identity_audience="tenant")["is_platform_control_admin"])
+            resolve.assert_not_called()
+
     def setUp(self):
         self.module = _load_module()
 

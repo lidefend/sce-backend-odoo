@@ -1235,7 +1235,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         phone_field = identity_line.get("children")[2]
         self.assertEqual(name_field.get("label"), "项目名称")
         self.assertIs(name_field.get("nolabel"), True)
-        self.assertEqual(phone_field.get("label"), "Phone")
+        self.assertEqual(phone_field.get("label"), self.env["res.partner"].fields_get(["phone"])["phone"]["string"])
         self.assertIs(phone_field.get("nolabel"), False)
         self.assertEqual(
             [(row.get("type"), row.get("name"), row.get("text")) for row in identity_line.get("children") or []],
@@ -1772,6 +1772,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
                 "form.navigation.anchor.v1",
+                "form.display.ribbon.v1",
             ],
         })
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -2003,7 +2004,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         )
 
         with patch(
-            "odoo.addons.smart_core.handlers.system_init.call_extension_hook_first",
+            "odoo.addons.smart_core.core.platform_minimum_nav_contract.call_extension_hook_first",
             return_value=None,
         ):
             self.assertEqual(_resolve_industry_extension_modules(self.env), ["vertical_alpha", "vertical_beta"])

@@ -20,6 +20,27 @@ SPEC.loader.exec_module(MODULE)
 
 
 class ReleaseCenterContributionTests(unittest.TestCase):
+    def test_enterprise_projection_reads_business_namespace_and_rejects_legacy_grant(self):
+        from unittest.mock import Mock, patch
+        path = MODULE_PATH.parents[2] / "smart_construction_scene/services/business_scene_enablement.py"
+        spec = importlib.util.spec_from_file_location("business_enablement_projection_test", path)
+        business = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(business)
+        reader = Mock(side_effect=lambda _env, company, key: company == 7 and key == business.business_key("project.initiation"))
+        activation = SimpleNamespace(read_tenant_enablement=reader, ENABLEMENT_STORAGE_SOURCE="ir.config_parameter")
+        env = SimpleNamespace(company=SimpleNamespace(id=7, name="Synthetic enterprise"))
+        bindings = {"10": [{"scenario_key": "project.initiation"}]}
+        with patch.dict(sys.modules, {
+            "odoo.addons.smart_construction_scene.services.tenant_scene_activation": activation,
+            "odoo.addons.smart_construction_scene.services.business_scene_enablement": business,
+        }):
+            result = MODULE._enterprise_enablement(env, bindings)
+            self.assertTrue(result["10"]["enabled"])
+            reader.assert_called_once_with(env, 7, "business.v1:project.initiation")
+            self.assertEqual(result["10"]["scenes"][0]["source"], "ir.config_parameter")
+            reader.side_effect = lambda _env, _company, key: key == "project.initiation"
+            self.assertFalse(MODULE._enterprise_enablement(env, bindings)["10"]["enabled"])
+
     def test_zero_integer_projection_preserves_declared_sequence(self):
         self.assertEqual(MODULE._int(0, 10), 0)
         self.assertEqual(MODULE._int("0", 10), 0)

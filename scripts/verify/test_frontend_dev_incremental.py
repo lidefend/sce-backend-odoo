@@ -38,6 +38,19 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_baseline_debt_routes_are_owning_module_checks(self):
+        cases = {
+            "addons/smart_core/core/view_orchestrator.py": "verify.smart_core.close_02.module_baseline",
+            "addons/smart_core/tests/test_tenant_extension_storage.py": "verify.smart_core.close_02.module_baseline",
+            "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py": "verify.smart_construction_core.module_baseline",
+            "addons/smart_construction_core/views/menu_business_taxonomy.xml": "verify.smart_construction_core.module_baseline",
+            "addons/smart_construction_scene/tests/test_source_bounded_scene_rules.py": "verify.smart_construction_scene.module_baseline",
+        }
+        for path, target in cases.items():
+            with self.subTest(path=path):
+                self.assertIn(target, select_targets([path]))
+        self.assertEqual(select_targets(["addons/smart_core/tests/test_unknown_new_family.py"]), [])
+
     def test_implicit_registration_is_limited_to_pure_target_families(self):
         targets = {
             "verify.alpha.unit",
@@ -3427,6 +3440,22 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
 
         self.assertIsNone(receipt)
         self.assertEqual(rows, {})
+
+    def test_reverted_dirty_fix_cannot_survive_unrelated_commit(self) -> None:
+        source = self.root / "frontend/apps/web/src/NewSurface.vue"
+        original = source.read_text()
+        source.write_text("<template><main /></template>\n")
+        first = self._execute("first", interrupted=True)
+        self.assertFalse(first["identity"]["worktreeClean"])
+        source.write_text(original)
+        self.root.joinpath("note.md").write_text("unrelated documentation\n")
+        subprocess.run(["git", "-C", str(self.root), "add", "note.md"], check=True)
+        subprocess.run(["git", "-C", str(self.root), "commit", "-qm", "note"], check=True)
+        second = self._execute("second", interrupted=False)
+        self.assertEqual(second["_code"], 0)
+        self.assertIn("verify.frontend.lint.src", second["_calls"])
+        self.assertIn("verify.frontend.typecheck.strict", second["_calls"])
+        self.assertEqual(second["reusedTargetCount"], 0)
 
     def test_clean_commit_of_same_runtime_identity_resumes_passed_prefix(self) -> None:
         source = self.root / "frontend/apps/web/src/NewSurface.vue"

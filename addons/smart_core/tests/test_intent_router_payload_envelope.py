@@ -121,6 +121,17 @@ def _load_database_boundary():
 
 
 class TestIntentRouterPayloadEnvelope(unittest.TestCase):
+    def test_request_cannot_forward_extension_enablement_authority(self):
+        request = _FakeRequest()
+        request.env.context = {"sc.core.extension_modules": "smart_owner_core"}
+        router = _load_router(request, object)
+        env, su_env, cursor = router._build_envs({}, {
+            "sc.core.extension_modules": "smart_construction_core", "lang": "en_US",
+        })
+        self.assertEqual(env.context, {"lang": "en_US"})
+        self.assertEqual(su_env.context, {"lang": "en_US"})
+        self.assertIsNone(cursor)
+
     def test_locked_database_normalization_keeps_router_registry_on_effective_db(self):
         class Handler:
             pass

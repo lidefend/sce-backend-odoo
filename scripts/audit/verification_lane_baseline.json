@@ -53,7 +53,7 @@
       "defect": "New hard-checked register: a make target whose recipe calls a path that is absent from the tree cannot run. 226 targets qualify (187 references to scripts/migration/*, which .gitignore line 116 keeps out of the clean product repository as customer migration collateral, plus relocated or never-added verify/root scripts). Each is registered with an owner, a reason and a review date; 0 may be unregistered."
     }
   ],
-  "max_targets_zero_reference": 673,
+  "max_targets_zero_reference": 671,
   "max_scripts_unreferenced_anywhere": 103,
   "max_targets_missing_asset_unregistered": 0,
   "max_stale_missing_asset_dispositions": 0,
@@ -723,8 +723,6 @@
       "verify.self_funding.handling.audit",
       "verify.semantic.behavior.guard.report",
       "verify.smart_construction_core.close_03.module_baseline",
-      "verify.smart_construction_scene.module_baseline",
-      "verify.smart_core.close_02.module_baseline",
       "verify.smart_core.tenant_payload_operator.policy",
       "verify.sprint.week1.audit.report",
       "verify.sprint.week2.final.report",

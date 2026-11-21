@@ -244,15 +244,15 @@
   },
   "contract_user": {
     "groups": ["smart_construction_core.group_sc_cap_contract_user"],
-    "menus_allow": ["smart_construction_core.menu_sc_contract_center"],
-    "menus_deny": ["smart_construction_core.menu_sc_finance_center"],
+    "menus_allow": ["smart_construction_core.menu_sc_contract_center", "smart_construction_core.menu_sc_finance_center"],
+    "menus_deny": [],
     "actions_allow": ["smart_construction_core.action_construction_contract"],
     "actions_deny": ["smart_construction_core.action_payment_request"]
   },
   "contract_manager": {
     "groups": ["smart_construction_core.group_sc_cap_contract_manager"],
-    "menus_allow": ["smart_construction_core.menu_sc_contract_center"],
-    "menus_deny": ["smart_construction_core.menu_sc_finance_center"],
+    "menus_allow": ["smart_construction_core.menu_sc_contract_center", "smart_construction_core.menu_sc_finance_center"],
+    "menus_deny": [],
     "actions_allow": ["smart_construction_core.action_construction_contract"],
     "actions_deny": ["smart_construction_core.action_payment_request"]
   },
@@ -265,8 +265,8 @@
   },
   "material_manager": {
     "groups": ["smart_construction_core.group_sc_cap_material_manager"],
-    "menus_allow": ["smart_construction_core.menu_sc_material_center"],
-    "menus_deny": ["smart_construction_core.menu_sc_finance_center"],
+    "menus_allow": [],
+    "menus_deny": ["smart_construction_core.menu_sc_material_center", "smart_construction_core.menu_sc_finance_center"],
     "actions_allow": ["smart_construction_core.action_project_material_plan"],
     "actions_deny": ["smart_construction_core.action_payment_request"]
   },
@@ -286,6 +286,13 @@
     "menus_deny": [],
     "actions_allow": ["smart_construction_core.action_sc_workflow_def"],
     "actions_deny": []
+  },
+  "material_manager_with_project_read": {
+    "groups": ["smart_construction_core.group_sc_cap_material_manager", "smart_construction_core.group_sc_cap_project_read"],
+    "menus_allow": ["smart_construction_core.menu_sc_material_center"],
+    "menus_deny": ["smart_construction_core.menu_sc_finance_center"],
+    "actions_allow": ["smart_construction_core.action_project_material_plan"],
+    "actions_deny": ["smart_construction_core.action_payment_request"]
   }
 }
 ```

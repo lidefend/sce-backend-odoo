@@ -47,8 +47,13 @@ class TestBusinessDataOwnershipGate(TransactionCase):
         self.assertGreaterEqual(len(models), 100)
         self.assertIn('payment.request', models)
         self.assertEqual(sorted(set(models)), sorted(models), 'no duplicates')
-        self.assertEqual(
-            sorted(set(models) - set(self.env.registry)), [], 'every declared model is installed')
+        # Scene is an optional downstream module. Core declares its ownership
+        # ceiling without making Scene a mandatory installation dependency.
+        optional = {"sc.scene.company.enablement"}
+        self.assertEqual(sorted(set(models) - optional - set(self.env.registry)), [])
+        self.assertIn("sc.scene.company.enablement", models)
+        scene = self.env["ir.module.module"].search([("name", "=", "smart_construction_scene")])
+        self.assertEqual("sc.scene.company.enablement" in self.env.registry, scene.state == "installed")
 
     def test_gate_reports_an_existing_row_whose_owner_was_never_onboarded(self):
         company = self._make_unregistered_owner()
@@ -67,18 +72,24 @@ class TestBusinessDataOwnershipGate(TransactionCase):
     def test_onboarding_the_owner_clears_the_reported_company(self):
         company = self._make_unregistered_owner()
         owners = provisioning.business_data_company_ids(self.env, [PROBE_MODEL])
-        for owner_id in provisioning.unregistered_business_companies(self.env, owners):
-            self.Registration.sudo()._register_non_customer_space(
-                tenant_key='ownership-gate-probe-%s' % owner_id,
-                purpose='demo',
-                company_id=owner_id,
-            )
-        self.assertEqual(provisioning.unregistered_business_companies(self.env, owners), [])
-        self.assertEqual(
-            provisioning.assert_business_data_ownership_registered(self.env, [PROBE_MODEL]),
-            owners,
+        before = set(provisioning.unregistered_business_companies(self.env, owners))
+        self.Registration.sudo()._register_non_customer_space(
+            tenant_key='ownership-gate-probe-%s' % company.id,
+            purpose='demo', company_id=company.id,
         )
+        self.assertEqual(
+            set(provisioning.unregistered_business_companies(self.env, owners)),
+            before - {company.id},
+        )
+        self.assertEqual(provisioning.unregistered_business_companies(self.env, company.ids), [])
+        # This test owns one synthetic company. Bootstrap/other owners remain
+        # rejected and must never be silently enrolled to make the probe green.
         self.assertIn(company.id, owners)
+        if before - {company.id}:
+            with self.assertRaisesRegex(ValueError, "DATA_SPACE_UNREGISTERED_BUSINESS_DATA_OWNER"):
+                provisioning.assert_business_data_ownership_registered(self.env, [PROBE_MODEL])
+        else:
+            self.assertEqual(provisioning.assert_business_data_ownership_registered(self.env, [PROBE_MODEL]), owners)
 
     def test_gate_is_silent_while_no_business_row_exists(self):
         self.assertEqual(provisioning.business_data_company_ids(self.env, ['not.a.model']), [])

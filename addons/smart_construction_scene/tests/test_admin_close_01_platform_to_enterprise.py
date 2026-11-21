@@ -32,6 +32,7 @@ from odoo.addons.smart_construction_scene.handlers.scenario_activation import (
     ScenarioActivationSetHandler,
     _catalog,
 )
+from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
 from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
     ENABLEMENT_STORAGE_SOURCE,
     enablement_param_key,
@@ -179,7 +180,7 @@ class TestAdminClose01PlatformToEnterprise(TransactionCase):
         ]
         self.assertTrue(scene_keys, bindings)
         write_tenant_enablement(
-            self.actor_env, self.actor_env.company.id, scene_keys[0], True
+            self.actor_env, self.actor_env.company.id, business_key(scene_keys[0]), True
         )
 
         explorer_service = PlatformCapabilityExplorerService(self.actor_env)
@@ -246,10 +247,11 @@ class TestAdminClose01PlatformToEnterprise(TransactionCase):
         )
         project_row = next(
             row
-            for row in scenario_catalog["rows"]
-            if row.get("menu_xmlid") == PROJECT_MENU_XMLID
+            for row in scenario_catalog["business_scenarios"]
+            if row.get("scene_key") == scene_keys[0]
         )
         self.assertTrue(project_row["product_released"])
+        self.assertTrue(project_row["tenant_enabled"])
         self.assertEqual(
             project_row["product_qualification"]["status"], "qualified"
         )

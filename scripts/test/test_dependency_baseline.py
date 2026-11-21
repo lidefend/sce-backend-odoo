@@ -110,6 +110,53 @@ class PreparationTests(unittest.TestCase):
                     baseline.prepare(dict(env, SC_TEST_TARGET_MODULE='new', SC_TEST_TARGET_DB='sc_suite_ci_new'))
 
 
+    def test_core_lifecycle_template_preserves_fresh_target_install(self):
+        env = dict(self.environment(), SC_TEST_TARGET_MODULE='smart_core',
+                   SC_TEST_TARGET_DB='sc_suite_ci_smart_core', DB_USER='odoo',
+                   DB_PASSWORD='unused-fixture')
+        key = baseline.identity(env)
+        self.assertEqual(key['dependency'], 'smart_core')
+        self.assertTrue(baseline.baseline_name(key).startswith('sc_test_template__ci_'))
+        with tempfile.TemporaryDirectory() as folder:
+            cursor = MagicMock()
+            cursor.fetchall.side_effect = [[], [('smart_core', 'installed')]]
+            connection = MagicMock()
+            connection.cursor.return_value.__enter__.return_value = cursor
+            connection.__enter__.return_value = connection
+            driver = types.ModuleType('psycopg2')
+            driver.connect = MagicMock(return_value=connection)
+            driver.sql = MagicMock()
+            with patch.dict('sys.modules', {'psycopg2': driver}), patch.object(
+                baseline, 'DATA', Path(folder)
+            ), patch.object(baseline.subprocess, 'run', return_value=types.SimpleNamespace(returncode=0)) as install:
+                baseline.prepare(env)
+            command = install.call_args.args[0]
+            self.assertEqual(command[command.index('-i') + 1], 'smart_core')
+            self.assertNotIn('--test-enable', command)
+            self.assertNotIn('--test-tags', command)
+            driver.sql.SQL.assert_not_called()  # no clone into the target under test
+            self.assertFalse((Path(folder) / 'filestore' / env['SC_TEST_TARGET_DB']).exists())
+            self.assertEqual(len(cursor.execute.call_args_list), 2)
+
+    def test_shell_enables_matrix_only_for_prepared_core(self):
+        script = Path(__file__).with_name('test.sh').read_text()
+        fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
+        env = dict(os.environ, ROOT_DIR='/fixture', DB_NAME='sc_suite_ci_smart_core',
+                   COMPOSE_PROJECT_NAME='sc-suite-12-0', ADDONS_EXTERNAL_MOUNT='/fixture')
+        for module, enabled, tags, expected in [
+            ('smart_core', '1', '', True), ('portal', '1', '', False),
+            ('smart_core', '0', '', False), ('smart_core', '1', 'sc_gate', False),
+        ]:
+            with self.subTest(module=module, enabled=enabled, tags=tags):
+                result = subprocess.run(['bash', '-eu', '-c', 'PREPARATION_ARGS=()\n' + fragment
+                                         + '\nprintf "%s" "$PREPARATION_COMMAND"'],
+                                        env=dict(env, MODULE=module, SC_TEST_DEPENDENCY_PREPARATION=enabled,
+                                                 TEST_TAGS_INPUT=tags), capture_output=True, text=True)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertEqual('export SC_EXTENSION_LIFECYCLE_MATRIX=1' in result.stdout, expected)
+                if expected:
+                    self.assertIn('$(python3 /tmp/sc-dependency-baseline.py --extension-template-name)', result.stdout)
+
     def test_real_shell_gate_disables_preparation_for_explicit_test_tags(self):
         script = (Path(__file__).with_name('test.sh')).read_text()
         fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]

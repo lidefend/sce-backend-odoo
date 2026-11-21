@@ -2,7 +2,7 @@ schema_version: 1
 
 goal:
   id: ARCH-CLOSE-01-EXTENSION-LIFECYCLE
-  title: extension_lifecycle_and_hook_authority
+  title: extension_lifecycle_hook_authority_and_baseline_debt
   status: active
   formal_product_layer: P0/P1/P4
   layer_target: >-
@@ -47,11 +47,13 @@ goal:
       - system-init and Hook provider discovery
       - four construction Core/Scene Hook collisions
       - extension database guard and lifecycle tests
+      - native view projection and low-code overlay publication
+      - existing HTTP namespace, company authority and workflow baseline tests
     exclusions:
       - customer modules and historical data
       - business model behavior and ACL
-      - Contract V2 and frontend behavior
-      - product release and edition snapshots
+      - frontend product behavior (backend native projection repairs are included)
+      - persistent product release and edition snapshots (rolled-back ORM fixtures are included)
       - deployment and production databases
   validation:
     required:
@@ -60,11 +62,15 @@ goal:
       - Registry rebuild and extension-config invalidation
       - Hook mode and duplicate-provider tests
       - consumer-chain test for scene nav maps
-      - owning smart_core module baseline
-    not_yet_authorized:
-      - test database creation, module installation/upgrade or fixture reset
+      - owning smart_core, smart_construction_core and smart_construction_scene module baselines
+    authorized_test_scope:
+      - Owner R2 instruction requires fresh install, upgrade and uninstall ORM verification.
+      - Registered disposable sc-local-test/sc_test and lifecycle clones only; no customer databases.
+    scope_delta:
+      - Owner explicitly includes baseline debt repair and existing baseline-debt worktree changes.
+      - Preserve assertions and fix owning mechanisms or obsolete test prerequisites; no test exclusions.
   rollback: >-
-    Revert the bounded P0/P4 commits together. No persistent customer data,
+    Revert the bounded P0/P1/P4 revisions together. No persistent customer data,
     product release, ACL or business record migration is involved.
   completion:
     batch: verification_pending

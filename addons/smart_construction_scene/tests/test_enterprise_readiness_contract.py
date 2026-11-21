@@ -124,11 +124,6 @@ class ControlledEnv:
             return self._counter(self.counts[model])
         if model == "project.project":
             return self._counter(self.counts[model])
-        if model == "sc.scene":
-            scene = types.SimpleNamespace(to_public_dict=lambda _user: {"code": "enterprise.setup"})
-            return types.SimpleNamespace(
-                search=lambda domain, limit=1: scene,
-            )
         raise AssertionError(f"unexpected model access: {model}")
 
     @staticmethod
@@ -166,6 +161,10 @@ def _load_diagnosis(env):
         in env.enabled_scene_keys
     )
     sys.modules[activation.__name__] = activation
+
+    registry = types.ModuleType("odoo.addons.smart_construction_scene.scene_registry")
+    registry.load_effective_scene_declarations = lambda _env: [{"code": "enterprise.setup"}]
+    sys.modules[registry.__name__] = registry
 
     native_catalog = types.ModuleType(
         "odoo.addons.smart_core.core.native_handling_entry_catalog"

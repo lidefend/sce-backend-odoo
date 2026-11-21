@@ -38,7 +38,10 @@ class TestApprovalPolicyToggleBackend(TransactionCase):
 
     def test_native_create_context_state_guard(self):
         """Real ORM defaults; transactional setup, ordinary PM creates only."""
-        company = self.env.company
+        from .business_case import BusinessTransactionCase
+        company = self.env["res.company"].create({"name": "Synthetic native state guard"})
+        BusinessTransactionCase.register_business_company(company)
+        self.env = self.env["res.company"].with_company(company).env
         actor = self.env["res.users"].with_context(no_reset_password=True).create({
             "name": "Native create guard PM", "login": "native.create.guard.pm",
             "company_id": company.id, "company_ids": [(6, 0, [company.id])],

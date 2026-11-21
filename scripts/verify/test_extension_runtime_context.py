@@ -24,6 +24,16 @@ def _install_extension_module(name: str, marker: str):
     sys.modules["odoo.addons.%s" % name] = module
 
 
+def _install_duplicate_extension_module(name: str, marker: str):
+    module = types.ModuleType("odoo.addons.%s" % name)
+
+    def register(registry):
+        registry["duplicate.handler"] = marker
+
+    module.smart_core_register = register
+    sys.modules["odoo.addons.%s" % name] = module
+
+
 def _load_loader():
     package = "arch_close_extension_runtime_test"
     core_package = "%s.core" % package
@@ -44,7 +54,10 @@ def _load_loader():
 
     def contract_for(hook_name):
         if hook_name == "extension_run_all":
-            return SimpleNamespace(mode="run_all")
+            return SimpleNamespace(
+                mode="run_all",
+                providers=("extension_beta", "extension_alpha"),
+            )
         if hook_name == "extension_single_owner":
             return SimpleNamespace(mode="single_owner")
         raise KeyError(hook_name)
@@ -95,11 +108,11 @@ class _Modules:
 
 
 class _Env:
-    def __init__(self, registry, configured, states):
+    def __init__(self, registry, configured, states, context=None):
         self.registry = registry
         self.configured = configured
         self.states = states
-        self.context = {}
+        self.context = dict(context or {})
 
     def __getitem__(self, model):
         if model == "ir.config_parameter":
@@ -188,6 +201,48 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
                     self.loader.handlers_for_env(env)
                 self.assertEqual(caught.exception.configured, ("extension_alpha",))
 
+    def test_registry_transition_filters_modules_without_raising(self):
+        registry = SimpleNamespace(ready=False, _init_modules={"extension_beta"})
+        env = _Env(
+            registry,
+            "extension_alpha,extension_beta",
+            {
+                "extension_alpha": "to upgrade",
+                "extension_beta": "installed",
+            },
+        )
+        context = self.loader.extension_runtime_context(env)
+        self.assertTrue(context.lifecycle_transition)
+        self.assertEqual(context.modules, ("extension_beta",))
+        self.assertIn("BETA_HANDLER", context.handlers)
+        self.assertNotIn("ALPHA_HANDLER", context.handlers)
+
+        env.states["extension_alpha"] = "installed"
+        not_loaded = self.loader.extension_runtime_context(env)
+        self.assertNotIn("ALPHA_HANDLER", not_loaded.handlers)
+        registry._init_modules.add("extension_alpha")
+        progressed = self.loader.extension_runtime_context(env)
+        self.assertIn("ALPHA_HANDLER", progressed.handlers)
+        self.assertIsNot(context, progressed)
+
+        registry.ready = True
+        env.states["extension_alpha"] = "to remove"
+        with self.assertRaises(self.loader.ExtensionConfigurationError):
+            self.loader.extension_runtime_context(env)
+
+    def test_request_context_cannot_enable_an_installed_extension(self):
+        env = _Env(
+            SimpleNamespace(),
+            "",
+            {
+                "extension_alpha": "installed",
+            },
+            context={"sc.core.extension_modules": "extension_alpha"},
+        )
+        context = self.loader.extension_runtime_context(env)
+        self.assertEqual(context.modules, ())
+        self.assertNotIn("ALPHA_HANDLER", context.handlers)
+
     def test_installed_but_not_enabled_is_not_loaded(self):
         env = _Env(
             SimpleNamespace(),
@@ -225,7 +280,7 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
             )
         env = _Env(
             SimpleNamespace(),
-            "extension_beta,extension_alpha",
+            "extension_alpha,extension_beta",
             {
                 "extension_alpha": "installed",
                 "extension_beta": "installed",
@@ -235,6 +290,46 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
         self.loader.run_extension_hooks(env, "extension_run_all")
 
         self.assertEqual(calls, ["extension_beta", "extension_alpha"])
+
+    def test_extension_intent_collision_fails_closed(self):
+        _install_duplicate_extension_module("extension_duplicate_a", object())
+        _install_duplicate_extension_module("extension_duplicate_b", object())
+        env = _Env(
+            SimpleNamespace(),
+            "extension_duplicate_a,extension_duplicate_b",
+            {
+                "extension_duplicate_a": "installed",
+                "extension_duplicate_b": "installed",
+            },
+        )
+        with self.assertRaisesRegex(
+            self.loader.ExtensionRuntimeError,
+            "duplicate intent registration",
+        ):
+            self.loader.handlers_for_env(env)
+
+    def test_run_all_shared_data_order_is_declared_not_configured(self):
+        for name in ("extension_alpha", "extension_beta"):
+            module = sys.modules["odoo.addons." + name]
+            module.extension_run_all = lambda data, name=name: data.update(winner=name)
+        results = []
+        for names in ("extension_alpha,extension_beta", "extension_beta,extension_alpha"):
+            env = _Env(SimpleNamespace(), names, {
+                "extension_alpha": "installed", "extension_beta": "installed",
+            })
+            data = {}
+            self.loader.run_extension_hooks(env, "extension_run_all", data)
+            results.append(data)
+        self.assertEqual(results, [{"winner": "extension_alpha"}] * 2)
+
+    def test_enabled_non_provider_does_not_violate_run_all_contract(self):
+        _install_extension_module("extension_unrelated", "UNRELATED")
+        env = _Env(SimpleNamespace(), "extension_alpha,extension_unrelated", {
+            "extension_alpha": "installed", "extension_unrelated": "installed",
+        })
+        sys.modules["odoo.addons.extension_alpha"].extension_run_all = lambda: "alpha"
+        self.assertEqual(self.loader.run_extension_hooks(env, "extension_run_all"),
+                         [("extension_alpha", "alpha")])
 
 
 if __name__ == "__main__":

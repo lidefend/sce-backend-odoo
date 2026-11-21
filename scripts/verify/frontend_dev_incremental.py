@@ -107,6 +107,89 @@ class Rule:
 
 
 RULES = (
+    # Baseline debt families retain explicit owning-module coverage. Unknown
+    # paths still fail closed; these entries do not authorize generic skips.
+    Rule((
+        "addons/smart_core/app_config_engine/services/contract_service.py",
+        "addons/smart_core/core/view_orchestrator.py",
+        "addons/smart_core/handlers/business_config_change_set.py",
+        "addons/smart_core/model/ui_business_config_contract.py",
+        "addons/smart_core/tests/entry_namespace_test_support.py",
+        "addons/smart_core/tests/test_auth_credential_framework.py",
+        "addons/smart_core/tests/test_authentication_compatibility.py",
+        "addons/smart_core/tests/test_business_config_change_set.py",
+        "addons/smart_core/tests/test_contract_service_permission_guard_registry.py",
+        "addons/smart_core/tests/test_platform_admin_boundary.py",
+        "addons/smart_core/tests/test_platform_database_governance_orm.py",
+        "addons/smart_core/tests/test_platform_maintenance_access_http.py",
+        "addons/smart_core/tests/test_tenant_extension_storage.py",
+        "addons/smart_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_interfund_financing_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_invoice_deduction_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_ownership_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p1_payment_visibility_contract_orm.py",
+        "addons/smart_core/tests/test_um_p2_interfund_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_invoice_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_payment_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_receipt_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p2_settlement_relation_aggregation_orm.py",
+        "addons/smart_core/tests/test_um_p3_fund_plan_actual_event_allocation_orm.py",
+        "addons/smart_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
+        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py",
+        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_settlement_orm.py",
+        "addons/smart_core/tests/test_um_p3_subcontract_register_settlement_authority_orm.py",
+        "addons/smart_core/tests/test_user_activation.py",
+    ), ("verify.smart_core.close_02.module_baseline",)),
+    Rule((
+        "addons/smart_construction_core/tests/perm_matrix.py",
+        "addons/smart_construction_core/tests/test_api_data_search_fields_extension.py",
+        "addons/smart_construction_core/tests/test_approval_policy_toggle_backend.py",
+        "addons/smart_construction_core/tests/test_business_data_ownership_gate.py",
+        "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_contract_execution_position.py",
+        "addons/smart_construction_core/tests/test_contract_payment_allocation_fact.py",
+        "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_experience_role_surface.py",
+        "addons/smart_construction_core/tests/test_feedback_evaluation_rt_http.py",
+        "addons/smart_construction_core/tests/test_feedback_evaluation_rt_restore.py",
+        "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_light_forms_configuration_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_policy_document_capability.py",
+        "addons/smart_construction_core/tests/test_project_authorization_foundation.py",
+        "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py",
+        "addons/smart_construction_core/tests/test_source_bounded_data_space_rules.py",
+        "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "addons/smart_construction_core/tests/test_system_permission_separation.py",
+        "addons/smart_construction_core/tests/test_tax_certificate_registration.py",
+        "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_tender_guarantee_visible_fields.py",
+        "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+        "addons/smart_construction_core/views/menu_business_taxonomy.xml",
+    ), ("verify.smart_construction_core.module_baseline",)),
+    Rule((
+        "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+        "addons/smart_construction_scene/tests/test_source_bounded_scene_rules.py",
+    ), ("verify.smart_construction_scene.module_baseline",)),
+    # Shared extension execution changes reach all owning module families.
+    # Focused tags supplement these baselines; they cannot replace them.
+    Rule((
+        "addons/smart_core/core/extension_loader.py",
+        "addons/smart_core/core/extension_hook_contracts.py",
+        "addons/smart_core/core/system_init_extension_fact_merger.py",
+        "addons/smart_construction_core/data/sc_extension_params.xml",
+    ), (
+        "verify.smart_core.close_02.module_baseline",
+        "verify.smart_construction_core.module_baseline",
+        "verify.smart_construction_scene.module_baseline",
+        "verify.extension.lifecycle.orm",
+    )),
     Rule((
         "scripts/ops/r10_performance_ab_profile.py",
         "scripts/ops/r10_performance_ab_lifecycle.py",
@@ -2465,7 +2548,8 @@ def _receipt_identity_resumable(
     if (
         not _full_digest(receipt_runtime)
         or (
-            receipt_head == current_identity.get("head")
+            (receipt_head == current_identity.get("head")
+             or receipt_identity.get("worktreeClean") is not True)
             and receipt_runtime != current_runtime
         )
         or receipt_identity.get("authoritySha256")

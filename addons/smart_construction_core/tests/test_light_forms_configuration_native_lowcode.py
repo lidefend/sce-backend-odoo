@@ -189,7 +189,7 @@ class TestLightFormsConfigurationNativeLowcode(TransactionCase):
             "purchase_date", "purchase_value", "currency_id", "note", "attachment_ids",
         ),
         "view_sc_approval_policy_form": (
-            "name", "target_model", "approval_required", "trigger", "mode",
+            "processing_advisory", "name", "target_model", "approval_required", "trigger", "mode",
             "manager_scope_key", "step_count", "runtime_state", "active",
             "company_id", "manager_group_id", "step_ids", "sequence",
             "approval_scope_key", "approve_group_id", "amount_min", "amount_max",

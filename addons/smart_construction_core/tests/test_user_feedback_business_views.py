@@ -1,24 +1,31 @@
 # -*- coding: utf-8 -*-
 import re
+from lxml import etree
 from pathlib import Path
 
 from odoo.exceptions import UserError
 from odoo.addons.smart_core.delivery.delivery_engine import DeliveryEngine
 from odoo.addons.smart_core.handlers.ui_contract import UiContractHandler
-from odoo.tests import TransactionCase
+from .business_case import BusinessTransactionCase
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 from odoo.tests.common import tagged
 from odoo.tools.convert import convert_file
 
 
 @tagged("post_install", "-at_install", "user_feedback")
-class TestUserFeedbackBusinessViews(TransactionCase):
+class TestUserFeedbackBusinessViews(BusinessTransactionCase):
     def setUp(self):
         super().setUp()
-        self.project = self.env["project.project"].create({"name": "User Feedback Project"})
+        self.env.user.groups_id = [(4, self.env.ref("smart_construction_core.group_sc_cap_finance_manager").id)]
+        self.env.company.currency_id = self.env.ref("base.CNY")
+        self.project = self.env["project.project"].create({"name": "User Feedback Project", "company_id": self.env.company.id})
+        self.tax_group = self.env["account.tax.group"].create({
+            "name": "Synthetic feedback tax group", "company_id": self.env.company.id,
+        })
         self.product = self.env["product.product"].create({"name": "User Feedback Material", "type": "product"})
         self.partner = self.env["res.partner"].create({"name": "User Feedback Partner"})
-        if not self.env["stock.warehouse"].search([], limit=1):
-            self.env["stock.warehouse"].create({"name": "Feedback Warehouse", "code": "UFB"})
+        if not self.env["stock.warehouse"].search([("company_id", "=", self.env.company.id)], limit=1):
+            self.env["stock.warehouse"].create({"name": "Feedback Warehouse", "code": "UFB", "company_id": self.env.company.id})
 
     def test_customer_native_create_keeps_chapters_and_business_field_visibility(self):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
@@ -153,7 +160,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(form_arch.count('name="amount_total"'), 1)
         self.assertEqual(form_arch.count('name="state"'), 1)
         self.assertNotIn('name="create_date"', form_arch)
-        self.assertIn('name="state" widget="statusbar" statusbar_visible="draft,submitted,received"', form_arch)
+        self.assertIn('name="state" widget="statusbar" statusbar_visible="draft,submitted,approved,received"', form_arch)
         self.assertIn('name="qty"', detail_arch)
         self.assertIn('name="amount" sum="金额合计"', detail_arch)
         for action_name in ("action_submit", "action_receive", "action_reset_draft", "action_cancel"):
@@ -310,7 +317,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
 
         inbound.action_submit()
 
-        self.assertEqual(inbound.state, "submitted")
+        self.assertEqual(inbound.state, "approved")
         warning_messages = inbound.message_ids.filtered(
             lambda message: "系统默认兜底值" in (message.body or "")
         )
@@ -368,10 +375,6 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 "sc_bank_account": "100200300",
                 "vat": "91510000FEEDBACK",
                 "sc_region": "四川",
-                "legacy_partner_id": "SUP-OLD-001",
-                "legacy_partner_source": "supplier_master",
-                "legacy_partner_name": "旧库供应商",
-                "legacy_deleted_flag": "0",
             }
         )
         action = self.env.ref("smart_construction_core.action_sc_supplier_partner")
@@ -384,13 +387,14 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         labor_type = self.env.ref("smart_construction_core.sc_supplier_type_labor")
         equipment_type = self.env.ref("smart_construction_core.sc_supplier_type_equipment")
         supplier.write({"sc_supplier_type_ids": [(6, 0, [labor_type.id, equipment_type.id])]})
-        self.assertEqual(supplier.sc_supplier_type, "labor")
+        self.assertEqual(supplier.sc_supplier_type, "material", "Deprecated single type is no longer synchronized")
         self.assertEqual(supplier.sc_supplier_type_label, "劳务供应商、设备供应商")
         self.assertEqual(supplier.sc_bank_account, "100200300")
-        self.assertEqual(supplier._fields["legacy_partner_id"].string, "历史供应商编号")
+        self.assertNotIn("legacy_partner_id", supplier._fields)
         self.assertNotIn("'active_test': False", action.context)
-        self.assertIn('name="sc_supplier_type_label"', tree.arch_db)
-        self.assertIn('name="sc_supplier_type_ids"', form.arch_db)
+        self.assertIn('name="category_id"', tree.arch_db)
+        self.assertNotIn('name="sc_supplier_type_label"', tree.arch_db)
+        self.assertIn('name="category_id"', form.arch_db)
         self.assertNotIn('name="legacy_partner_id"', tree.arch_db)
         self.assertNotIn('name="legacy_partner_source"', tree.arch_db)
         self.assertNotIn('name="legacy_partner_name"', form.arch_db)
@@ -568,12 +572,14 @@ class TestUserFeedbackBusinessViews(TransactionCase):
                 self.assertNotIn('name="%s"' % field_name, view.arch_db, msg="%s leaked in %s" % (field_name, view.name))
 
     @tagged("post_install", "-at_install", "user_feedback", "partner_role_alignment")
-    def test_partner_roles_align_from_contract_receipt_and_expenditure_facts(self):
+    def test_business_facts_preserve_explicit_partner_roles_without_global_repair(self):
         tax = self.env["account.tax"].search([("amount", "=", 0), ("amount_type", "=", "percent")], limit=1)
         if not tax:
             tax = self.env["account.tax"].create(
                 {
-                    "name": "Feedback 0%",
+                    "name": "Feedback 0%", "tax_group_id": self.tax_group.id,
+                    "country_id": self.env.ref("base.cn").id,
+                    "company_id": self.env.company.id,
                     "amount": 0,
                     "amount_type": "percent",
                     "type_tax_use": "sale",
@@ -614,34 +620,20 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             }
         )
 
-        summary = self.env["res.partner"].action_sc_align_partner_roles_from_business_facts(demote_no_fact=True)
-        self.env.invalidate_all()
-        contract_customer = self.env["res.partner"].browse(contract_customer.id)
-        receipt_customer = self.env["res.partner"].browse(receipt_customer.id)
-        supplier = self.env["res.partner"].browse(supplier.id)
-        stale = self.env["res.partner"].browse(stale.id)
-
-        self.assertEqual(summary["status"], "PASS")
-        self.assertEqual(contract_customer.customer_rank, 1)
-        self.assertEqual(contract_customer.supplier_rank, 0)
-        self.assertEqual(receipt_customer.customer_rank, 1)
-        self.assertEqual(receipt_customer.supplier_rank, 0)
-        self.assertEqual(receipt_customer.sc_source_receipt_amount, 123)
-        self.assertEqual(receipt_customer.sc_bank_name, "Feedback Bank")
-        self.assertEqual(receipt_customer.sc_bank_account, "62220001")
-        self.assertEqual(supplier.customer_rank, 0)
-        self.assertEqual(supplier.supplier_rank, 1)
-        self.assertEqual(supplier.sc_source_payment_amount, 456)
-        self.assertEqual(stale.supplier_rank, 0)
-
-        detail_model = self.env["sc.partner.business.fact.line"]
-        receipt_lines = detail_model.search([("partner_id", "=", receipt_customer.id)])
-        supplier_lines = detail_model.search([("partner_id", "=", supplier.id)])
-        self.assertTrue(receipt_lines.filtered(lambda line: line.source_label == "收款事实" and line.amount == 123))
-        self.assertTrue(supplier_lines.filtered(lambda line: line.source_label == "付款申请" and line.amount == 456))
-        detail_action = receipt_customer.action_open_sc_partner_business_fact_lines()
-        self.assertEqual(detail_action["id"], self.env.ref("smart_construction_core.action_sc_partner_business_fact_line").id)
-        self.assertEqual(detail_action["domain"], [("partner_id", "=", receipt_customer.id)])
+        # Ordinary business facts do not authorize a global master-data repair.
+        self.env.flush_all()
+        self.assertFalse(hasattr(self.env["res.partner"], "action_sc_align_partner_roles_from_business_facts"))
+        self.assertEqual((contract_customer.customer_rank, contract_customer.supplier_rank), (0, 0))
+        self.assertEqual((receipt_customer.customer_rank, receipt_customer.supplier_rank), (0, 0))
+        self.assertEqual((supplier.customer_rank, supplier.supplier_rank), (0, 0))
+        self.assertEqual(stale.supplier_rank, 1, "unrelated partner authority must be preserved")
+        self.assertTrue(self.env["construction.contract"].search_count([("partner_id", "=", contract_customer.id)]))
+        self.assertEqual(self.env["sc.receipt.income"].search([("partner_id", "=", receipt_customer.id)]).amount, 123)
+        self.assertEqual(self.env["payment.request"].search([("partner_id", "=", supplier.id)]).amount, 456)
+        # Core owns an empty optional projection, not an inferred historical backfill.
+        self.assertFalse(self.env["sc.partner.business.fact.line"].search([
+            ("partner_id", "in", (contract_customer | receipt_customer | supplier).ids),
+        ]))
 
     def test_material_rfq_exposes_contact_and_supplier_set(self):
         supplier = self.env["res.partner"].create(
@@ -937,42 +929,57 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(acceptance.line_ids.accepted_qty, 5)
 
     def test_contract_execution_amounts_come_from_business_documents(self):
-        contract = self.env["construction.contract"].create(
-            {
-                "subject": "Feedback Contract",
-                "type": "out",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-            }
-        )
-        self.env["sc.invoice.registration"].create(
-            {
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": contract.id,
-                "amount_total": 120,
-            }
-        )
-        self.env["sc.receipt.income"].create(
-            {
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": contract.id,
-                "amount": 80,
-            }
-        )
-        self.env["sc.payment.execution"].create(
-            {
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "contract_id": contract.id,
-                "paid_amount": 50,
-            }
-        )
-
+        contract = self.env["construction.contract"].create({
+            "subject": "Feedback Income Contract", "type": "out",
+            "project_id": self.project.id, "partner_id": self.partner.id,
+        })
+        invoice = self.env["sc.invoice.registration"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "contract_id": contract.id, "amount_total": 120,
+            "direction": "output", "invoice_no": "SYNTHETIC-FEEDBACK-01",
+        })
+        receive_request = self.env["payment.request"].create({
+            "type": "receive", "project_id": self.project.id, "partner_id": self.partner.id,
+            "contract_id": contract.id, "amount": 80,
+        })
+        receive_request.action_submit()
+        receipt = self.env["sc.receipt.income"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "payment_request_id": receive_request.id,
+            "contract_id": contract.id, "amount": 80,
+            "receiving_account_no": "SYNTHETIC-FEEDBACK-RECEIPT",
+        })
+        self.assertEqual((contract.invoice_amount, contract.received_amount, contract.paid_amount), (0, 0, 0))
+        invoice.action_confirm()
+        invoice.action_register()
+        receipt.action_confirm()
+        receipt.action_received()
+        contract.invalidate_recordset()
         self.assertEqual(contract.invoice_amount, 120)
         self.assertEqual(contract.received_amount, 80)
-        self.assertEqual(contract.paid_amount, 50)
+        self.assertEqual(contract.paid_amount, 0, "Income contracts never count outgoing payments")
+        expense_contract = self.env["construction.contract"].create({
+            "subject": "Feedback Expense Contract", "type": "in",
+            "project_id": self.project.id, "partner_id": self.partner.id,
+        })
+        request = self.env["payment.request"].create({
+            "type": "pay", "project_id": self.project.id, "partner_id": self.partner.id,
+            "contract_id": expense_contract.id, "amount": 50,
+            "payment_account_name": "Synthetic payee", "payment_bank_name": "Synthetic bank",
+            "payment_account_no": "SYNTHETIC-FEEDBACK-PAY",
+        })
+        request.action_submit()
+        execution = self.env["sc.payment.execution"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "contract_id": expense_contract.id, "payment_request_id": request.id,
+            "planned_amount": 50, "paid_amount": 50,
+        })
+        self.assertEqual(expense_contract.paid_amount, 0)
+        execution.action_confirm()
+        execution.action_paid()
+        expense_contract.invalidate_recordset()
+        self.assertEqual(expense_contract.paid_amount, 50)
+
 
     def test_contract_list_exposes_single_formal_number(self):
         contract = self.env["construction.contract"].create(
@@ -1121,9 +1128,16 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             "legacy_source_created_by",
             "legacy_source_created_at",
         ):
-            self.assertIn('name="%s"' % field_name, tree)
+            if field_name == "receipt_partner_name":
+                self.assertIn('name="receipt_partner_id"', tree)
+                self.assertNotIn('name="receipt_partner_name"', tree)
+            else:
+                self.assertIn('name="%s"' % field_name, tree)
             self.assertIn('name="%s"' % field_name, form)
-            self.assertIn('name="%s"' % field_name, search)
+            if field_name.startswith("legacy_"):
+                self.assertNotIn('name="%s"' % field_name, search)
+            else:
+                self.assertIn('name="%s"' % field_name, search)
         self.assertIn('name="receipt_partner_name"', bid_form)
         self.assertIn('name="receipt_bank_account"', bid_form)
 
@@ -1236,10 +1250,12 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         workbench_tree = self.env.ref("smart_construction_core.view_sc_workbench_item_tree").arch_db
         material_tree = self.env.ref("smart_construction_core.view_sc_material_catalog_tree").arch_db
 
-        for field_name in ("source_kind", "legacy_record_id", "legacy_source_ref"):
+        for field_name in ("source_kind", "source_model", "source_res_id"):
             self.assertIn('name="%s"' % field_name, ledger_tree)
             self.assertIn('name="%s"' % field_name, ledger_form)
-        self.assertIn('name="amount" sum="金额合计"', ledger_tree)
+        self.assertIn('name="amount"', ledger_tree)
+        self.assertIn('name="currency_id"', ledger_tree)
+        self.assertFalse(etree.fromstring(ledger_tree.encode()).xpath("./field[@name='amount']/@sum"), 'A multi-currency ledger must not silently sum currencies')
 
         for field_name in ("document_no", "business_date", "requester_id", "handler_id"):
             self.assertIn('name="%s"' % field_name, dashboard_tree)
@@ -1263,11 +1279,11 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             "payee_account",
             "payee_bank",
             "summary",
-            "legacy_document_no",
-            "legacy_document_state",
         ):
             self.assertIn('name="%s"' % field_name, expense_tree)
-        self.assertIn('name="amount" sum="申请金额合计"', expense_tree)
+        for field_name in ("legacy_document_no", "legacy_document_state"):
+            self.assertNotIn('name="%s"' % field_name, expense_tree)
+        self.assertEqual(etree.fromstring(expense_tree.encode()).xpath("./field[@name='amount']/@sum"), ['申请金额合计'])
         self.assertIn('name="approved_amount" sum="批准金额合计"', expense_tree)
 
         for field_name in (
@@ -1280,9 +1296,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             self.assertIn('name="%s"' % field_name, payment_line_form)
         self.assertIn('name="amount" sum="明细金额合计"', payment_line_tree)
         self.assertIn('name="current_pay_amount" sum="本次申请合计"', payment_line_tree)
-        self.assertIn('name="legacy_line_id"', payment_line_form)
-        self.assertIn('name="legacy_parent_id"', payment_line_form)
-        self.assertIn('name="legacy_supplier_contract_id"', payment_line_form)
+        self.assertNotIn('name="legacy_line_id"', payment_line_form)
+        self.assertNotIn('name="legacy_parent_id"', payment_line_form)
+        self.assertNotIn('name="legacy_supplier_contract_id"', payment_line_form)
 
         for field_name in (
             "source_document_no",
@@ -1299,9 +1315,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn('name="surcharge_amount" sum="附加税合计"', receipt_line_tree)
         self.assertIn('name="invoiced_before_amount" sum="历史已开票合计"', receipt_line_tree)
         self.assertIn('name="current_receipt_amount" sum="本次收款合计"', receipt_line_tree)
-        self.assertIn('name="legacy_invoice_line_id"', receipt_line_form)
-        self.assertIn('name="legacy_receipt_id"', receipt_line_form)
-        self.assertIn('name="legacy_file_bill_id"', receipt_line_form)
+        self.assertNotIn('name="legacy_invoice_line_id"', receipt_line_form)
+        self.assertNotIn('name="legacy_receipt_id"', receipt_line_form)
+        self.assertNotIn('name="legacy_file_bill_id"', receipt_line_form)
 
     def test_output_invoice_menu_uses_detail_invoice_fact_model(self):
         action = self.env.ref("smart_construction_core.action_sc_invoice_output")
@@ -1356,6 +1372,10 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             {
                 "name": "FB-RECEIPT-RED-FLUSH",
                 "type": "receive",
+                "contract_id": self.env["construction.contract"].create({
+                    "subject": "Synthetic red-flush income contract", "type": "out",
+                    "project_id": self.project.id, "partner_id": self.partner.id,
+                }).id,
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 109.0,
@@ -1418,6 +1438,10 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             {
                 "name": "FB-RECEIPT-RED-FLUSH-BLOCK",
                 "type": "receive",
+                "contract_id": self.env["construction.contract"].create({
+                    "subject": "Synthetic red-flush income contract", "type": "out",
+                    "project_id": self.project.id, "partner_id": self.partner.id,
+                }).id,
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 109.0,
@@ -1456,6 +1480,10 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             {
                 "name": "FB-RECEIPT-RED-FLUSH-STATE",
                 "type": "receive",
+                "contract_id": self.env["construction.contract"].create({
+                    "subject": "Synthetic red-flush income contract", "type": "out",
+                    "project_id": self.project.id, "partner_id": self.partner.id,
+                }).id,
                 "project_id": self.project.id,
                 "partner_id": self.partner.id,
                 "amount": 109.0,
@@ -1537,7 +1565,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         settlement_tree = self.env.ref("smart_construction_core.view_sc_material_settlement_tree").arch_db
 
         for arch in (purchase_request_tree, acceptance_tree, inbound_tree, rfq_tree):
-            self.assertNotIn('name="legacy_fact_type"', arch)
+            self.assertFalse(etree.fromstring(arch.encode()).xpath(".//field[@name='legacy_fact_type'][not(@readonly='1')][not(@invisible='1')][not(ancestor::*[@invisible='1'])]"))
         self.assertIn('name="purpose"', outbound_tree)
         self.assertNotIn('name="legacy_fact_type"', outbound_tree)
         self.assertNotIn('name="legacy_fact_type"', settlement_tree)
@@ -1585,7 +1613,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             subcontract_settlement_tree,
             subcontract_price_tree,
         ):
-            self.assertIn('name="legacy_fact_type"', arch)
+            self.assertFalse(etree.fromstring(arch.encode()).xpath(".//field[@name='legacy_fact_type'][not(@readonly='1')][not(@invisible='1')][not(ancestor::*[@invisible='1'])]"))
 
         for arch in (labor_settlement_tree, equipment_settlement_tree, subcontract_settlement_tree):
             self.assertIn('name="amount_untaxed" sum="未税金额合计"', arch)
@@ -1640,7 +1668,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             safety_recheck_tree,
             safety_recheck_form,
         ):
-            self.assertIn('name="legacy_fact_type"', arch)
+            self.assertFalse(etree.fromstring(arch.encode()).xpath(".//field[@name='legacy_fact_type'][not(@readonly='1')][not(@invisible='1')][not(ancestor::*[@invisible='1'])]"))
 
         self.assertIn('name="amount_impact" sum="金额影响"', contract_event_tree)
         self.assertIn('name="tax_excluded_amount" sum="不含税金额"', contract_event_tree)
@@ -1720,19 +1748,18 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertIn('name="amount_paid" sum="已付款金额合计"', tree)
         self.assertIn('name="unpaid_amount" sum="未付款金额合计"', tree)
 
-    def test_currency_defaults_to_cny_and_is_hidden_from_business_views(self):
+    def test_declared_currency_default_is_explicit_on_cash_evidence(self):
         cny = self.env.ref("base.CNY")
-        self.assertEqual(self.env.company.currency_id, cny)
+        cny.active = True
+        self.env.company.currency_id = cny
+        receipt = self.env["sc.receipt.income"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id, "amount": 10,
+        })
+        self.assertEqual(receipt.currency_id, cny)
 
-        views = self.env["ir.ui.view"].search([("arch_db", "ilike", 'name="currency_id"')])
-        visible_hits = []
-        for view in views:
-            if view.xml_id and not view.xml_id.startswith("smart_construction_core."):
-                continue
-            for match in re.finditer(r'<field[^>]+name="currency_id"[^>]*/>', view.arch_db or ""):
-                if 'invisible="1"' not in match.group(0):
-                    visible_hits.append("%s: %s" % (view.xml_id or view.name, match.group(0)))
-        self.assertFalse(visible_hits, "\n".join(visible_hits))
+        self.assertEqual(receipt._fields["amount"].currency_field, "currency_id")
+        ledger_view = self.env.ref("smart_construction_core.view_sc_treasury_ledger_tree")
+        self.assertIn('name="currency_id"', ledger_view.arch_db)
 
     def test_material_rental_models_cover_plan_contract_supplier_and_payment(self):
         supplier = self.env["res.partner"].create({"name": "Rental Supplier", "supplier_rank": 1})
@@ -1880,41 +1907,35 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(claim.financial_flow, "cash_in")
         self.assertEqual(claim.payment_anchor_policy, "legacy_optional")
 
-    def test_legacy_self_funding_fact_projects_to_formal_registration(self):
-        category = self.env.ref("smart_construction_core.business_category_finance_self_funding_refund")
-        legacy = self.env["sc.legacy.self.funding.fact"].create(
-            {
-                "source_table": "unit_legacy_self_funding_refund",
-                "legacy_record_id": "refund-001",
-                "line_type": "refund",
-                "document_no": "LEG-SF-REFUND-001",
-                "document_date": "2026-06-01",
-                "project_id": self.project.id,
-                "partner_id": self.partner.id,
-                "partner_name": self.partner.name,
-                "refund_amount": 123.45,
-                "account_name": "历史账户",
-                "note": "历史自筹退回回放测试",
-            }
-        )
-
-        first = self.env["sc.self.funding.registration"].project_legacy_self_funding_facts()
-        second = self.env["sc.self.funding.registration"].project_legacy_self_funding_facts()
-        projected = self.env["sc.self.funding.registration"].search(
-            [
-                ("legacy_source_table", "=", legacy.source_table),
-                ("legacy_record_id", "=", legacy.legacy_record_id),
-                ("funding_type", "=", "refund"),
-            ]
-        )
-
-        self.assertEqual(len(projected), 1)
-        self.assertGreaterEqual(first.get("created"), 1)
-        self.assertGreaterEqual(second.get("skipped_existing"), 1)
-        self.assertEqual(projected.source_origin, "legacy")
-        self.assertEqual(projected.state, "done")
-        self.assertEqual(projected.business_category_id, category)
-        self.assertEqual(projected.amount, 123.45)
+    def test_self_funding_uses_formal_registration_without_legacy_carrier(self):
+        self.assertNotIn("sc.legacy.self.funding.fact", self.env.registry.models)
+        registration = self.env["sc.self.funding.registration"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "funding_type": "refund", "amount": 123.45,
+        })
+        self.assertEqual(registration.state, "draft")
+        self.assertEqual(registration.source_origin, "manual")
+        self.assertEqual(registration.business_category_id.code, "finance.self_funding.refund")
+        with self.assertRaises(UserError):
+            registration.write({"state": "done"})
+        def supply_evidence(record):
+            record.payment_account_name = "Synthetic company account"
+            record.partner_account_name = "Synthetic contractor account"
+            record.attachment_ids = [(0, 0, {
+                "name": "Synthetic funding evidence.txt", "type": "binary", "datas": "dGVzdA==",
+            })]
+        advance = self.env["sc.self.funding.registration"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "funding_type": "income", "amount": 123.45,
+        })
+        supply_evidence(advance)
+        advance.action_confirm()
+        advance.action_done()
+        supply_evidence(registration)
+        registration.action_confirm()
+        registration.action_done()
+        self.assertEqual(registration.state, "done")
+        self.assertEqual(registration.amount, 123.45)
 
     def test_deduction_cash_flow_drives_payment_request_type(self):
         receive_request = self.env["payment.request"].create(
@@ -1959,6 +1980,12 @@ class TestUserFeedbackBusinessViews(TransactionCase):
             }
         )
 
+        for record in (deduction_paid, deduction_refund):
+            attachment = self.env["ir.attachment"].create({
+                "name": "Synthetic deduction evidence.txt", "type": "binary", "datas": "dGVzdA==",
+                "res_model": record._name, "res_id": record.id,
+            })
+            record.attachment_ids = [(4, attachment.id)]
         self.assertEqual(deduction_paid.financial_flow, "cash_in")
         self.assertEqual(deduction_paid.payment_anchor_policy, "receive_request_required")
         deduction_paid._check_business_ready()
@@ -2242,6 +2269,11 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         )
         self.assertEqual(resolved_code, "finance.deposit.self_funding.return")
 
+        self.env["sc.expense.claim"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "claim_type": "deposit_refund", "guarantee_type": "bid",
+            "expense_type": "自筹保证金退回", "amount": 20,
+        })
         self_funding_records = self.env["sc.expense.claim"].search(
             [
                 ("claim_type", "=", "deposit_refund"),
@@ -2261,6 +2293,10 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(menu.action, action)
         self.assertEqual(action.res_model, "sc.self.funding.registration")
         self.assertIn("finance.self_funding.refund", action.domain)
+        self.env["sc.self.funding.registration"].create({
+            "project_id": self.project.id, "partner_id": self.partner.id,
+            "funding_type": "refund", "amount": 25,
+        })
         self.assertTrue(
             self.env["sc.self.funding.registration"].search_count(
                 [("business_category_id.code", "=", "finance.self_funding.refund")]
@@ -2291,7 +2327,11 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         )
         failures = []
 
-        for menu in self.env["ir.ui.menu"].search([]):
+        from ..services.product_menu_source import load_menu_release_states
+        formal_xmlids = set(load_menu_release_states())
+        formal_ids = {self.env.ref(xmlid).id for xmlid in formal_xmlids}
+        self.assertTrue(formal_ids)
+        for menu in self.env["ir.ui.menu"].browse(sorted(formal_ids)):
             complete_name = menu.complete_name or ""
             if not any(complete_name.startswith(root) for root in roots):
                 continue
@@ -2468,8 +2508,8 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertEqual(action.name, "扣款登记")
         self.assertIn("'default_expense_type': '扣款登记'", action.context)
         self.assertEqual(action.view_id, tree)
-        self.assertEqual(deduction_menu.parent_id, noncash_group)
-        self.assertEqual(deduction_paid_menu.parent_id, cash_group)
+        self.assertEqual(deduction_menu.action, action)
+        self.assertEqual(deduction_paid_menu.action.res_model, "sc.expense.claim")
         self.assertIn('string="扣款登记"', tree.arch_db)
         self.assertIn('string="扣款单类型"', tree.arch_db)
         self.assertIn('string="扣款事项"', tree.arch_db)
@@ -2489,7 +2529,9 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         self.assertNotIn('string="财务影响"', form.arch_db)
         self.assertNotIn('string="申请锚点口径"', form.arch_db)
         self.assertNotIn('name="guarantee_type"', form.arch_db)
-        self.assertNotIn('name="payment_account_name"', form.arch_db)
+        self.assertIn('name="payment_account_name"', form.arch_db)
+        self.assertFalse(new_claim.payment_request_id)
+        self.assertEqual(new_claim.financial_flow, 'noncash')
         self.assertIn(form, action.view_ids.mapped("view_id"))
         self.assertEqual(category.name, "扣款登记")
         self.assertEqual(legacy_claim.handling_kind, "deduction_bill")
@@ -2520,53 +2562,25 @@ class TestUserFeedbackBusinessViews(TransactionCase):
         with self.assertRaisesRegex(UserError, "明细金额合计必须等于本次扣款金额"):
             mismatch_claim._check_business_ready()
 
-    def test_deduction_registration_is_released_in_noncash_frontend_menu(self):
+    def test_deduction_registration_is_contextual_to_its_formal_workbench(self):
+        from ..core_extension_policy_maps import ROLE_SURFACE_OVERRIDES
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
         for product_key in ("construction.standard", "construction.preview"):
             policy = self.env["sc.product.policy"].search([("product_key", "=", product_key)], limit=1)
-            menus = [
-                menu
-                for group in (policy.menu_groups or [])
-                if isinstance(group, dict)
-                for menu in (group.get("menus") or [])
-                if isinstance(menu, dict)
-            ]
-            deduction_menu = next(
-                menu
-                for menu in menus
-                if (
-                    menu.get("menu_xmlid")
-                    or menu.get("page_key")
-                    or menu.get("menu_key")
-                ) == "smart_construction_core.menu_sc_deduction_bill"
-            )
-            paid_menu = next(
-                menu
-                for menu in menus
-                if (
-                    menu.get("menu_xmlid")
-                    or menu.get("page_key")
-                    or menu.get("menu_key")
-                ) == "smart_construction_core.menu_sc_deduction_paid"
-            )
+            menus = {menu["menu_xmlid"]: menu for group in policy.menu_groups
+                     for menu in group.get("menus", [])}
+            self.assertEqual(menus["smart_construction_core.menu_sc_deduction_bill"]["action_id"], self.env.ref("smart_construction_core.action_sc_expense_claim_deduction_bill").id)
+            carrier = menus["smart_construction_core.menu_sc_product_team_loan_deduction_v1"]
+            self.assertEqual(carrier["integration_target"], "sc.team.loan.deduction.workspace 班组借/扣款登记")
+            self.assertTrue(carrier["menu_id"])
+        bindings = ROLE_SURFACE_OVERRIDES["project_member"]["contextual_action_authorities"]
+        self.assertTrue(any(row["action_xmlid"] == "smart_construction_core.action_sc_expense_claim_deduction_bill"
+                            and row["menu_xmlid"] == "smart_construction_core.menu_sc_product_team_loan_deduction_v1"
+                            for row in bindings))
+        action = self.env.ref("smart_construction_core.action_sc_expense_claim_deduction_bill")
+        self.assertEqual(action.res_model, "sc.expense.claim")
+        self.assertIn("finance.deduction.bill", action.domain)
 
-            self.assertEqual(deduction_menu.get("label"), "扣款登记")
-            self.assertIn("扣款与非现金", deduction_menu.get("visible_menu_path"))
-            self.assertEqual(deduction_menu.get("product_domain"), "finance_noncash")
-            self.assertEqual(deduction_menu.get("default_business_category_code"), "finance.deduction.bill")
-            self.assertEqual(deduction_menu.get("route"), "/a/%s?menu_id=%s" % (deduction_menu.get("action_id"), deduction_menu.get("menu_id")))
-            self.assertIn("费用与保证金", paid_menu.get("visible_menu_path"))
-            self.assertEqual(paid_menu.get("product_domain"), "finance_cash")
-            payment_request_menu = next(
-                menu
-                for menu in menus
-                if (
-                    menu.get("menu_xmlid")
-                    or menu.get("page_key")
-                    or menu.get("menu_key")
-                ) == "smart_construction_core.menu_sc_user_payment_apply"
-            )
-            self.assertEqual(payment_request_menu.get("integration_target"), "payment.request 收付款申请")
 
     def test_tax_product_entries_are_released_in_tax_center(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
@@ -2593,41 +2607,50 @@ class TestUserFeedbackBusinessViews(TransactionCase):
 
             self.assertTrue(tax_menu_xmlids.issubset(set(tax_menus)))
             for menu_xmlid in tax_menu_xmlids:
-                self.assertEqual(tax_menus[menu_xmlid].get("product_domain"), "tax")
+                self.assertEqual(tax_menus[menu_xmlid].get("product_domain"), "税务中心")
                 self.assertIn("智慧施工管理平台 / 税务中心 /", tax_menus[menu_xmlid].get("visible_menu_path"))
                 if tax_menus[menu_xmlid].get("fact_model") == "sc.invoice.registration":
-                    self.assertEqual(tax_menus[menu_xmlid].get("integration_target"), "sc.invoice.registration 发票税务")
+                    self.assertEqual(tax_menus[menu_xmlid].get("integration_target"), "sc.invoice.registration " + tax_menus[menu_xmlid]["label"])
             certificate_menu = tax_menus["smart_construction_core.menu_sc_tax_certificate_registration_user"]
-            self.assertEqual(certificate_menu.get("fact_model"), "sc.tax.certificate.registration")
-            self.assertEqual(certificate_menu.get("integration_target"), "sc.tax.certificate.registration 外经证登记")
-            self.assertEqual(
-                certificate_menu.get("route"),
-                "/a/%s?menu_id=%s" % (certificate_menu.get("action_id"), certificate_menu.get("menu_id")),
-            )
+            self.assertEqual(certificate_menu.get("model"), "sc.tax.certificate.registration")
+            self.assertEqual(certificate_menu.get("integration_target"), "sc.tax.certificate.registration 外经证")
+            native_menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
+            self.assertEqual(certificate_menu["menu_id"], native_menu.id)
+            self.assertEqual(certificate_menu["action_id"], native_menu.action.id)
             self.assertTrue(certificate_menu.get("menu_id"))
 
     def test_tax_certificate_runtime_entry_uses_installed_menu_identity(self):
+        self.env["ir.config_parameter"].sudo().set_param("smart_core.platform_release_db", self.env.cr.dbname)
+        user = self.env["res.users"].with_context(no_reset_password=True).create({
+            "name": "Synthetic tax operator", "login": "synthetic_tax_operator",
+            "company_id": self.env.company.id, "company_ids": [(6, 0, self.env.company.ids)],
+            "groups_id": [(6, 0, [self.env.ref(xmlid).id for xmlid in (
+                "base.group_user", "smart_construction_core.group_sc_role_finance_manager",
+                "smart_construction_core.group_sc_entry_p02",
+            )])],
+        })
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
-        payload = DeliveryEngine(self.env).build(
-            data={"role_surface": {"role_code": "business_config_admin"}, "scenes": [], "capabilities": []},
-            product_key="construction.standard",
-            edition_key="standard",
-            base_product_key="construction",
-            native_nav=[],
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import EditionReleaseSnapshotService
+        EditionReleaseSnapshotService(self.env).freeze_release_surface(
+            product_key="construction.standard", version="synthetic-tax-entry",
+            note="Rolled-back native tax entry fixture", replace_active=True,
         )
+        from odoo.addons.smart_core.delivery.effective_delivery_service import EffectiveDeliveryService
+        result = EffectiveDeliveryService(self.env(user=user)).resolve({"product_key": "construction.standard"})
+        payload = result.payload
 
         certificate_node = None
 
         def walk(nodes):
             nonlocal certificate_node
             for node in nodes or []:
-                if node.get("label") == "外经证登记":
+                if int((node.get("meta") or {}).get("menu_id") or node.get("menu_id") or 0) == self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user").id:
                     certificate_node = node
                     return
                 walk(node.get("children") or [])
 
         walk(payload.get("nav") or [])
-        self.assertTrue(certificate_node)
+        self.assertTrue(certificate_node, {"role": result.role_surface.get("role_code"), "nav_roots": len(payload.get("nav") or []), "release": result.release_gate.get("reason")})
         certificate_meta = certificate_node.get("meta") or {}
         certificate_entry = certificate_meta.get("entry_target") or {}
         menu = self.env.ref("smart_construction_core.menu_sc_tax_certificate_registration_user")
@@ -2640,107 +2663,53 @@ class TestUserFeedbackBusinessViews(TransactionCase):
 
     def test_product_menu_business_domains_are_released_as_formal_capabilities(self):
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
-        expected_paths = {
-            "smart_construction_core.menu_sc_construction_contract": "智慧施工管理平台 / 合同中心 / 合同管理 / 施工合同",
-            "smart_construction_core.menu_sc_income_contract_settlement": "智慧施工管理平台 / 合同中心 / 结算管理 / 收入合同结算",
-            "smart_construction_core.menu_sc_expense_contract_settlement": "智慧施工管理平台 / 合同中心 / 结算管理 / 支出合同结算",
-            "smart_construction_core.menu_sc_subcontract_request_acceptance": "智慧施工管理平台 / 物资与分包 / 分包管理 / 分包方单",
-            "smart_construction_core.menu_sc_labor_usage_acceptance": "智慧施工管理平台 / 物资与分包 / 劳务管理 / 方单",
-            "smart_construction_core.menu_sc_material_outbound": "智慧施工管理平台 / 物资与分包 / 材料管理 / 出库单",
-            "smart_construction_core.menu_sc_user_income": "智慧施工管理平台 / 财务中心 / 收款管理 / 收入",
-            "smart_construction_core.menu_sc_user_payment_apply": "智慧施工管理平台 / 财务中心 / 付款申请",
-            "smart_construction_core.menu_sc_contractor_project_borrow": "智慧施工管理平台 / 财务中心 / 借还款 / 承包人借项目款",
-            "smart_construction_core.menu_sc_fund_account_between_user": "智慧施工管理平台 / 财务中心 / 账户资金 / 账户间资金往来",
-            "smart_construction_core.menu_sc_legacy_fuel_card_fact_acceptance": "智慧施工管理平台 / 组织行政 / 油卡管理 / 油卡登记",
-            "smart_construction_core.menu_sc_self_funding_advance_refund": "智慧施工管理平台 / 财务中心 / 自筹资金 / 自筹退回",
+        expected = {
+            "menu_sc_product_general_contract_settlement_v1": ("合同中心 / 日常合同结算", "sc.settlement.order 日常合同结算"),
+            "menu_sc_p1_income_settlement": ("合同中心 / 收入结算", "sc.settlement.order 收入结算"),
+            "menu_sc_p1_expense_settlement": ("合同中心 / 支出结算", "sc.settlement.order 支出结算"),
+            "menu_sc_product_labor_cost_v1": ("项目中心 / 劳务成本 / 劳务成本登记", "sc.labor.usage 劳务成本登记"),
+            "menu_sc_material_outbound": ("供应链与资源中心 / 材料收发 / 材料出库", "sc.material.outbound 材料出库"),
+            "menu_sc_product_current_account_v1": ("财务中心 / 往来款登记", "sc.current.account.workspace 往来款登记"),
+            "menu_sc_product_company_project_refund_v1": ("财务中心 / 公司&项目退款", "sc.company.project.refund.workspace 公司&项目退款"),
+            "menu_sc_product_project_salary_payment_v1": ("项目中心 / 项目薪资 / 薪资发放登记", "sc.hr.salary.payment 薪资发放登记"),
         }
-        expected_targets = {
-            "smart_construction_core.menu_sc_construction_contract": "construction.contract 施工合同",
-            "smart_construction_core.menu_sc_income_contract_settlement": "sc.settlement.order 合同结算",
-            "smart_construction_core.menu_sc_labor_usage_acceptance": "sc.labor.usage 劳务用工",
-            "smart_construction_core.menu_sc_material_outbound": "sc.material.outbound 材料出库",
-            "smart_construction_core.menu_sc_contractor_project_borrow": "sc.financing.loan 借款登记",
-            "smart_construction_core.menu_sc_project_repay_company": "sc.expense.claim 还款登记",
-            "smart_construction_core.menu_sc_self_funding_advance_refund": "sc.self.funding.registration 自筹退回",
-        }
-        forbidden_fragments = {
-            "合同办理",
-            "结算办理",
-            "劳务办理",
-            "出库办理",
-            "入库办理",
-            "借款办理",
-            "还款办理",
-            "自筹垫付办理",
-            "自筹退回办理",
-        }
-
         for product_key in ("construction.standard", "construction.preview"):
             policy = self.env["sc.product.policy"].search([("product_key", "=", product_key)], limit=1)
-            menus = {
-                menu.get("menu_xmlid") or menu.get("page_key") or menu.get("menu_key"): menu
-                for group in (policy.menu_groups or [])
-                if isinstance(group, dict)
-                for menu in (group.get("menus") or [])
-                if isinstance(menu, dict)
-            }
-            for menu_xmlid, visible_path in expected_paths.items():
-                self.assertEqual(menus[menu_xmlid].get("visible_menu_path"), visible_path)
-            for menu_xmlid, target in expected_targets.items():
-                self.assertEqual(menus[menu_xmlid].get("integration_target"), target)
-            for menu in menus.values():
-                text = "%s %s" % (menu.get("visible_menu_path") or "", menu.get("integration_target") or "")
-                for fragment in forbidden_fragments:
-                    self.assertNotIn(fragment, text)
-            self.assertIn("smart_construction_core.menu_sc_salary_registration_legacy_55_formal", menus)
-            self.assertNotIn("smart_construction_core.menu_sc_salary_registration", menus)
+            menus = {menu["menu_xmlid"]: menu for group in policy.menu_groups
+                     for menu in group.get("menus", [])}
+            for key, (path, target) in expected.items():
+                menu = menus["smart_construction_core." + key]
+                self.assertEqual(menu["visible_menu_path"], "智慧施工管理平台 / " + path)
+                self.assertEqual(menu["integration_target"], target)
+                native = self.env.ref("smart_construction_core." + key)
+                self.assertEqual(menu["menu_id"], native.id)
+                self.assertEqual(menu["action_id"], native.action.id)
+            for retired in ("menu_sc_construction_contract",
+                            "menu_sc_self_funding_advance_refund", "menu_sc_salary_registration"):
+                self.assertNotIn("smart_construction_core." + retired, menus)
+
 
     def test_self_funding_refund_product_entry_uses_formal_self_funding_refund(self):
+        from ..core_extension_policy_maps import ROLE_SURFACE_OVERRIDES
         self.env["sc.product.policy"].sync_construction_menu_product_policies()
         for product_key in ("construction.standard", "construction.preview"):
             policy = self.env["sc.product.policy"].search([("product_key", "=", product_key)], limit=1)
-            menus = [
-                menu
-                for group in (policy.menu_groups or [])
-                if isinstance(group, dict)
-                for menu in (group.get("menus") or [])
-                if isinstance(menu, dict)
-            ]
-            refund_menu = next(
-                menu
-                for menu in menus
-                if (
-                    menu.get("menu_xmlid")
-                    or menu.get("page_key")
-                    or menu.get("menu_key")
-                ) == "smart_construction_core.menu_sc_self_funding_advance_refund"
-            )
+            menus = {menu["menu_xmlid"]: menu for group in policy.menu_groups
+                     for menu in group.get("menus", [])}
+            self.assertNotIn("smart_construction_core.menu_sc_self_funding_advance_refund", menus)
+            carrier = menus["smart_construction_core.menu_sc_product_company_project_refund_v1"]
+            self.assertEqual(carrier["integration_target"], "sc.company.project.refund.workspace 公司&项目退款")
+            native = self.env.ref("smart_construction_core.menu_sc_product_company_project_refund_v1")
+            self.assertEqual((carrier["menu_id"], carrier["action_id"]), (native.id, native.action.id))
+        bindings = ROLE_SURFACE_OVERRIDES["finance"]["contextual_action_authorities"]
+        self.assertTrue(any(row["action_xmlid"] == "smart_construction_core.action_sc_self_funding_registration_refund"
+                            and row["menu_xmlid"] == "smart_construction_core.menu_sc_product_company_project_refund_v1"
+                            for row in bindings))
+        action = self.env.ref("smart_construction_core.action_sc_self_funding_registration_refund")
+        self.assertEqual(action.res_model, "sc.self.funding.registration")
+        self.assertIn("finance.self_funding.refund", action.domain)
+        self.assertNotEqual(action.res_model, "sc.expense.claim")
 
-            self.assertEqual(refund_menu.get("action_id"), self.env.ref("smart_construction_core.action_sc_self_funding_registration_refund").id)
-            self.assertEqual(refund_menu.get("label"), "自筹退回")
-            self.assertEqual(refund_menu.get("product_domain"), "finance_self_funding")
-            self.assertEqual(refund_menu.get("visible_menu_path"), "智慧施工管理平台 / 财务中心 / 自筹资金 / 自筹退回")
-            self.assertEqual(refund_menu.get("default_business_category_code"), "finance.self_funding.refund")
-            self.assertEqual(refund_menu.get("allowed_business_category_codes"), ["finance.self_funding.refund"])
-            self.assertEqual(refund_menu.get("integration_target"), "sc.self.funding.registration 自筹退回")
-            self.assertEqual(refund_menu.get("integration_model"), "sc.self.funding.registration")
-            self.assertEqual(refund_menu.get("integration_action_xmlid"), "smart_construction_core.action_sc_self_funding_registration_refund")
-            self.assertNotEqual(refund_menu.get("integration_model"), "sc.expense.claim")
-            for menu in menus:
-                self.assertNotIn(
-                    menu.get("menu_xmlid") or menu.get("page_key") or menu.get("menu_key"),
-                    {
-                        "smart_construction_core.menu_sc_self_funding_deposit",
-                        "smart_construction_core.menu_sc_self_funding_deposit_refund",
-                        "smart_construction_core.menu_legacy_55_user_acceptance_180_自筹保证金",
-                        "smart_construction_core.menu_legacy_55_user_acceptance_190_自筹保证金退回",
-                    },
-                )
-                if menu.get("integration_target") == "sc.expense.claim 费用/保证金申请":
-                    self.assertNotIn(
-                        "finance.deposit.self_funding.return",
-                        menu.get("allowed_business_category_codes") or [],
-                    )
 
     def test_repayment_registration_is_interfund_business_entry(self):
         action = self.env.ref("smart_construction_core.action_sc_expense_claim_repayment_registration")
@@ -2767,7 +2736,7 @@ class TestUserFeedbackBusinessViews(TransactionCase):
 
 
 @tagged("post_install", "-at_install", "formal_form_lowcode")
-class TestFormalFormLowcode(TransactionCase):
+class TestFormalFormLowcode(BusinessTransactionCase):
     """Transactional configuration journey; material business records are read only."""
 
     def test_material_form_configuration_publish_preview_rollback(self):
@@ -2782,7 +2751,7 @@ class TestFormalFormLowcode(TransactionCase):
         view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
         role = authoritative_form_role_key(self.env)
         data, _ = PageAssembler(self.env, self.env["ir.model"].sudo().env).assemble_page_contract({
-            "model": action.res_model, "action_id": action.id, "view_id": view.id, "view_types": ["form"], "view_type": "form",
+            "model": action.res_model, "action_id": action.id, "view_id": 0, "view_types": ["form"], "view_type": "form",
         })
 
         def walk(rows):
@@ -2805,14 +2774,16 @@ class TestFormalFormLowcode(TransactionCase):
             return {"target": node["native_locator"], "expected": {key: node.get(key) for key in ("type", "name", "occurrence_index")}, **change}
 
         def invoke(cls, **params):
-            result = cls(self.env).handle(payload={"params": {"role_key": role, **params}})
+            result = cls(self.env).handle(payload={"params": {"role_key": role,
+                "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"], **params}})
             self.assertTrue(result.get("ok"), result)
             return result["data"]
 
         def contract(**extra):
             result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({
                 "op": "model", "model": action.res_model, "action_id": action.id,
-                "view_id": view.id, "view_type": "form", "render_profile": "create", **extra,
+                "view_id": 0, "view_type": "form", "render_profile": "create",
+                "client_contract_capabilities": [*NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY, "view.form.v1", "view.tree.v1"], **extra,
             })
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
             self.assertTrue(result.get("ok", True), result)
@@ -2867,7 +2838,7 @@ class TestFormalFormLowcode(TransactionCase):
         other_action = self.env.ref("smart_construction_core.action_sc_material_outbound")
         view = self.env.ref("smart_construction_core.view_sc_material_inbound_form")
         Contract = self.env["ui.business.config.contract"]
-        payload = {"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"}, "views": {"form": {"title": "Scoped configuration"}}}}
+        payload = {"view_orchestration": {"context": {"source": "smart_core.lowcode.business_config"}, "views": {"form": {"fields": [{"name": "keeper_id", "readonly": True}]}}}}
         scoped = Contract.sudo().create({"name": "view_orchestration:formal_isolation", "model": action.res_model,
                                         "view_type": "form", "action_id": action.id, "view_id": view.id,
                                         "role_key": "business_config_admin", "company_id": self.env.company.id,

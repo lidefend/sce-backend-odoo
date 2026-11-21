@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+from odoo.addons.smart_core.core.node_component_capabilities import NODE_CAPABILITIES, DRAFT_FEEDBACK_CAPABILITY
 from lxml import etree
 
 from odoo.tests.common import TransactionCase, tagged
@@ -222,9 +223,9 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % action_xmlid)
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
-        ).handle({
+        ).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": model, "action_id": action.id,
-            "view_id": self.env.ref("smart_construction_core.%s" % view_xmlid).id,
+            "view_id": 0,
             "view_type": "form", "render_profile": "edit",
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -258,7 +259,7 @@ class TestLedgerSummaryGuaranteeNativeLowcode(TransactionCase):
         view_id = self.env.ref("smart_construction_core.%s" % view_xmlid).id
         data, _versions = UiContractV2Handler._dispatch_native_form_source(
             self.env, self.env["ir.model"].sudo().env,
-            {"op": "model", "model": model, "action_id": action.id, "view_id": view_id})
+            {"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": model, "action_id": action.id, "view_id": 0})
         layout = (data.get("nativeFormProjection") or {}).get("layout") or []
         seen, ordered = set(), []
 

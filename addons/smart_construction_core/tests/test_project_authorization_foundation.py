@@ -7,6 +7,7 @@ from unittest.mock import patch
 
 from odoo.exceptions import AccessError
 from odoo.tests.common import TransactionCase, tagged
+from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.handlers.project_dashboard import (
     ProjectDashboardHandler,
@@ -37,19 +38,21 @@ from odoo.addons.smart_core.security.platform_admin import (
 
 
 @tagged("post_install", "-at_install", "admin_vis_patch_a")
-class TestProjectAuthorizationFoundation(TransactionCase):
+class TestProjectAuthorizationFoundation(BusinessTransactionCase):
     SAFE_TRACE_ID = "sc-patch-a-0123456789abcdef"
 
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
-        cls.company_a = cls.env.ref("base.main_company")
+        cls.company_a = cls.env.company
         cls.company_b = cls.env["res.company"].create(
             {"name": "ADMIN_VIS_PATCH_A synthetic company B"}
         )
         cls.company_c = cls.env["res.company"].create(
             {"name": "ADMIN_VIS_PATCH_A synthetic company C"}
         )
+        cls.register_business_company(cls.company_b)
+        cls.register_business_company(cls.company_c)
         base_user = cls.env.ref("base.group_user")
 
         def create_user(login, group_xmlids, companies=None):

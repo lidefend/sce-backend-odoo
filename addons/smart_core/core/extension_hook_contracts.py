@@ -128,12 +128,25 @@ ORDERED_MERGE_HOOKS = {
 }
 
 
-RUN_ALL_HOOKS = frozenset({
-    "get_intent_handler_contributions",
-    "get_system_init_fact_contributions",
-    "smart_core_extend_system_init",
-    "smart_core_register",
-})
+RUN_ALL_HOOKS = {
+    "get_intent_handler_contributions": HookContract(mode="run_all"),
+    "get_system_init_fact_contributions": HookContract(mode="run_all"),
+    # Domain contributions precede product overlays; licensing filters the final
+    # capability set. This order is independent of installation/config ordering.
+    "smart_core_extend_system_init": HookContract(
+        mode="run_all",
+        providers=(
+            "smart_enterprise_base",
+            "smart_construction_core",
+            "smart_construction_scene",
+            "smart_owner_core",
+            "smart_construction_bundle",
+            "smart_owner_bundle",
+            "smart_license_core",
+        ),
+    ),
+    "smart_core_register": HookContract(mode="run_all"),
+}
 
 
 def contract_for(hook_name: str) -> HookContract:
@@ -142,10 +155,11 @@ def contract_for(hook_name: str) -> HookContract:
     contract = ORDERED_MERGE_HOOKS.get(hook_name)
     if contract is not None:
         return contract
-    if hook_name in RUN_ALL_HOOKS:
-        return HookContract(mode="run_all")
+    run_all_contract = RUN_ALL_HOOKS.get(hook_name)
+    if run_all_contract is not None:
+        return run_all_contract
     raise KeyError(hook_name)
 
 
 def registered_hook_names() -> frozenset[str]:
-    return frozenset(SINGLE_OWNER_HOOKS) | frozenset(ORDERED_MERGE_HOOKS) | RUN_ALL_HOOKS
+    return frozenset(SINGLE_OWNER_HOOKS) | frozenset(ORDERED_MERGE_HOOKS) | frozenset(RUN_ALL_HOOKS)

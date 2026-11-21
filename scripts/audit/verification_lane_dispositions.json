@@ -3296,17 +3296,6 @@
       "owner": "construction-product-team",
       "reason": "CLOSE-03 owning-module baseline entry. It is retained as the explicit full-module fallback when the deterministic affected-family map is incomplete; normal iteration selects the narrower registered affected ORM families."
     },
-    "verify.smart_construction_scene.module_baseline": {
-      "disposition": "runtime_audit_probe",
-      "owner": "construction-product-team",
-      "reason": "ARCH-CLOSE-01 owning Scene baseline on the reusable construction bundle test template; explicit full-module probe, not a daily incremental target."
-    },
-    "verify.smart_core.close_02.module_baseline": {
-      "disposition": "local_diagnostic",
-      "owner": "platform-team",
-      "reason": "CLOSE-02 owning-module ORM baseline wrapper over the registered disposable local.test profile. It is invoked for the batch baseline rather than recursively from every CI gate.",
-      "review_by": "2027-02-28"
-    },
     "verify.smart_core.tenant_payload_operator.policy": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",

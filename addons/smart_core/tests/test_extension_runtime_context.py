@@ -40,6 +40,13 @@ class TestExtensionRuntimeContext(TransactionCase):
         self.assertIn("auth.login", context.handlers)
         self.assertIn("auth.logout", context.handlers)
 
+    def test_request_context_cannot_expand_enablement(self):
+        self.params.set_param(self.key, "")
+        context = extension_runtime_context(
+            self.env(context={"sc.core.extension_modules": "base"})
+        )
+        self.assertEqual(context.modules, ())
+
     def test_same_registry_rebuilds_when_configuration_changes(self):
         self.params.set_param(self.key, "")
         first = extension_runtime_context(self.env)
@@ -48,6 +55,15 @@ class TestExtensionRuntimeContext(TransactionCase):
         self.assertIsNot(first, second)
         self.assertEqual(second.config_modules, ("base",))
         self.assertIs(second, extension_runtime_context(self.env))
+
+    def test_module_order_does_not_change_handler_catalog(self):
+        installed = ("base", "smart_core")
+        self.params.set_param(self.key, ",".join(installed))
+        forward = extension_runtime_context(self.env)
+        self.params.set_param(self.key, ",".join(reversed(installed)))
+        reverse = extension_runtime_context(self.env)
+        self.assertEqual(forward.modules, reverse.modules)
+        self.assertEqual(dict(forward.handlers), dict(reverse.handlers))
 
     def test_runtime_handler_mapping_cannot_mutate_registry_context(self):
         self.params.set_param(self.key, "")
