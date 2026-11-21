@@ -86,7 +86,21 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the fixture identity test and planner path mappings, then complete the registered local iteration gates and form the final clean candidate.",
+  "decision": {
+    "scenario_identity_baseline": "fresh_install_only",
+    "legacy_scenario_data": "discard",
+    "legacy_compatibility_migration": "excluded_by_owner",
+    "migration_paths_in_scope_meaning": "deleted_only_not_executed",
+    "owner_confirmed_at": "2026-11-21"
+  },
+  "authorization": {
+    "owner_confirmed_at": "2026-11-21",
+    "scope": "fresh_install_orm_verification",
+    "profile": "sc-local-test",
+    "database": "sc_test",
+    "disposable": true
+  },
+  "next_exact_step": "Commit the reviewed fresh-install candidate, verify the exact clean HEAD/tree, then push once and wait for required remote checks.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

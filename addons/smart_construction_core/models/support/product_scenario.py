@@ -142,21 +142,18 @@ class ScProductScenario(models.Model):
         params.set_param(marker, "1")
 
     @api.model
-    def import_scenario_product_surface(self, force=False):
+    def import_scenario_product_surface(self):
         """Initialize once, atomically; later upgrades preserve even deletions.
 
-        A versioned migration marks legacy installations initialized before
-        this method is called. Future seed changes require explicit migrations.
-        ``force`` is reserved for those migrations and only adds missing
-        standard scenarios/entries; it never overwrites or deletes maintained
-        records.
+        This is a fresh-install seed initializer. It runs once and never
+        overwrites or deletes maintained records.
         """
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
             load_surface,
         )
 
         Param = self.env["ir.config_parameter"].sudo()
-        if Param.get_param(SCENARIO_SEED_KEY) and not force:
+        if Param.get_param(SCENARIO_SEED_KEY):
             return {"created_scenarios": 0, "skipped_scenarios": 0, "created_entries": 0}
         surface = load_surface()
         Scenario = self.sudo().with_context(active_test=False)

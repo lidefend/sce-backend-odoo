@@ -28,7 +28,8 @@ goal:
     platform initialization entries remain directly reachable under their
     existing native authorization, enterprise enablement consumes real
     published sc.scene identities, and both independent frontend state
-    surfaces are guarded by discriminating mutation tests.
+    surfaces are guarded by discriminating mutation tests. Fresh installation
+    is the only scenario identity baseline for this batch.
   why_here: >-
     The failures span P0 release and contract consumers, P1 product scenario and
     direct-entry semantics, and P4 acceptance fixture identity. Each fix stays
@@ -47,6 +48,8 @@ goal:
       - backend impact receipt scope
     exclusions:
       - no redesign of the ten centers or 132-page organization
+      - no migration or preservation of the retired 17 process scenarios
+      - no compatibility path for existing development scenario data
       - no broad Preview-to-GA promotion
       - no new business journey simulation
       - no production deployment

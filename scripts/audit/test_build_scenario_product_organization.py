@@ -118,6 +118,16 @@ class ScenarioProductOrganizationTest(unittest.TestCase):
         self.assertEqual(len(directory_xmlids), len(self.product_pages))
         self.assertEqual(set(directory_xmlids), set(self.product_pages))
 
+    def test_retired_scenario_migrations_are_removed_from_fresh_install(self):
+        module_root = builder.ROOT / "addons" / "smart_construction_core"
+        manifest = (module_root / "__manifest__.py").read_text(encoding="utf-8")
+        self.assertIn("'version': '17.0.0.185'", manifest)
+        for version in ("17.0.0.186", "17.0.0.187"):
+            with self.subTest(version=version):
+                self.assertFalse(
+                    (module_root / "migrations" / version / "post-migrate.py").exists()
+                )
+
     def test_approved_design_generates_the_complete_runtime_scenario_seed(self):
         self.assertEqual(self.payload["status"], "APPROVED_FOR_IMPLEMENTATION")
         surface = builder.build_runtime_surface(self.payload)

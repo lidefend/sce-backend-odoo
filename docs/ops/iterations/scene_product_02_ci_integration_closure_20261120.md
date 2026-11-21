@@ -11,6 +11,23 @@ Keep the approved workbench plus ten-center skeleton, 46 scenario groups and
 failures between product scenario organization, platform direct-entry
 initialization, enterprise scene publication/enablement and release composition.
 
+## Fresh-install baseline
+
+The owner confirmed on 2026-11-21 that the former 17 process scenarios and
+existing development data have no retained value.
+
+- Fresh installation is the only scenario identity baseline for this batch.
+- The former `17.0.0.186` and `17.0.0.187` compatibility migrations are removed.
+- No old scenario or scene data is preserved, migrated or protected.
+- No database, scenario, seed, release snapshot or fixture migration is part
+  of this candidate.
+- The module version remains `17.0.0.185`.
+- Existing unrelated migrations and their tests are not changed.
+
+The owner-confirmed migration rule in `AGENTS.md` remains authoritative for
+future work: any proposed migration still requires separately confirmed
+necessity, exact target and execution authority.
+
 ## Fixed boundaries
 
 - `sc.product.scenario` owns business organization.
@@ -23,99 +40,69 @@ initialization, enterprise scene publication/enablement and release composition.
 
 ## Work log
 
-- Registered the closure run.
-- Corrected the run baseline to the reviewed candidate
-  `77bad6caf94e3ab01d18b8d45d4614bd2730b6ad`; the previous main base made
-  the topic commits appear outside scope.
-- Reproduced the frontend state guard mutation defect. The guard now checks
-  both the contract-gap and product-state opening containers, and separate
-  mutations remove each declaration.
-- Audited the direct platform menu overlap. Scenario-bound system shell,
-  workbench and platform initialization entries retain their scenario
-  organization while an explicit `direct_platform_exempt` fact bypasses only
-  company scenario filtering. Native menu groups, ACL and company access remain
-  authoritative.
-- Added `direct_platform_pages` to the generated scenario surface. Release
-  validation now distinguishes business scenario references from explicitly
-  declared platform direct pages and checks action targets only for the current
-  release surface, so a partial product draft no longer validates unrelated
-  shared composition members.
-- Added `17.0.0.186` migration to append missing standard scenario bindings on
-  an existing database through the existing idempotent, add-only importer. It
-  does not delete maintained scenarios or overwrite administrator changes.
-- Runtime readback showed the database held 63 scenario definitions: the 17
-  retired process scenarios plus the current 46 business-result scenarios.
-  Because add-only import never deletes, the retired 79 menu bindings blocked
-  their replacement scenarios. `17.0.0.187` now retires only the exact 17
-  known standard process identities, keeps the same menus and native actions,
-  then adds the current 46 groups. Administrator-created scenario codes are
-  outside the retired set and are preserved.
-- Replaced the acceptance fixture's retired 17-scene list with the current 46
-  declared scenarios. Bundle tests now use `finance.intercompany`,
-  `contract.registration`, `cost.budgeting` and `contract.settlement` instead
-  of retired scene identities.
+- Registered the closure run and bound it to the reviewed candidate
+  `77bad6caf94e3ab01d18b8d45d4614bd2730b6ad`.
+- Corrected the frontend state guard so the contract-gap and product-state
+  containers are checked separately and each mutation removes its own
+  declaration.
+- Made direct platform/workbench entry declarations independent of business
+  scenario organization while preserving native ACL and company scope.
+- Distinguished scenario-bound pages, explicit direct platform pages and
+  unassigned pages in release composition validation.
+- Allowed zero-binding scenario definitions to be omitted from runtime
+  composition while keeping any published page without ownership blocking.
+- Aligned acceptance fixtures and bundle tests with the current 46 scenario
+  identities.
+- Removed the old-data compatibility migrations, their safety tests, stale
+  planner mappings and PR/record claims. The fresh-install seed initializer no
+  longer exposes a migration-only `force` path.
 
-## Verified so far
+## Validation status
 
-- `verify.frontend.state_dashboard.unit`: 86 passed.
-- `verify.daily.published_face.target.unit`: 13 passed.
-- `verify.admin_close_01.backend.unit`: 166 passed.
-- `verify.nav01.native_authority.unit`: 66 passed.
-- `verify.product.scenario.organization.unit`: 13 passed.
-- `TestScenarioDirectInitialization` on managed fresh `sc_test`: 16 passed.
-- `TestProductPolicyFactAuthority` on managed fresh `sc_test`: 23 passed.
+The latest edits remove migration code and alter the fresh-install seed
+initializer, so earlier migration-related receipts are deliberately not reused.
 
-## Final local verification
+Passed on the current working tree:
 
-The acceptance database was found to contain 132 published product pages but
-only 79 maintained bindings, followed by 63 scenario definitions. This proved
-the old 17 process scenarios and current 46 business-result scenarios were
-coexisting. The final migration retires only the exact known standard process
-identities and re-imports the current groups.
+- `verify.frontend.state_dashboard.unit`: 27 Python tests plus the frontend
+  state cases; guard PASS.
+- `verify.product.scenario.organization.unit`: 14 tests.
+- `verify.daily.published_face.target.unit`: 13 tests.
+- `verify.frontend.dev.incremental.unit`: 190 tests.
+- `verify.navigation.publication_consumers.unit`: non-zero suites PASS.
+- `verify.scenario.center_projection.guard`: 11 tests.
+- `verify.nav01.native_authority.unit`: non-zero suites PASS.
+- `verify.admin_close_01.backend.unit`: 166 tests.
+- `verify.daily_dev.acceptance_fixture.unit`: 40 tests.
+- `verify.frontend.lint.src`: zero errors, three unrelated warnings.
+- `verify.frontend.typecheck.strict`: PASS.
+- `verify.frontend.release.unit`: PASS.
+- `verify.workspace.branch.sync-main`: 51 tests PASS.
 
-Acceptance full-database reinstallation was not used as the local closure path.
-The exact fixture preparation function is exercised on a fresh isolated
-`sc_test` database with a fixture-owned company: all 46 current scenario keys
-enable and all 46 company selections read back.
+The owner authorized only the policy-owned disposable
+`sc-local-test / sc_test` fresh-install target. `local.test.prepare` confirmed
+that identity before any runtime write. The affected ORM tests then passed:
 
-- `TestScenarioDirectInitialization`: 18 passed, including the legacy
-  retirement transition and native-center fallback.
-- `TestProductPolicyFactAuthority`: 23 passed.
-- product-center policy ORM: 3 passed.
-- bundle workspace journeys: 11 passed.
-- fixture scenario identity ORM: 1 passed.
-- `ci.local.iteration`: 15/15 planned affected targets passed; the planner
-  reported no unmapped paths.
+- `TestScenarioDirectInitialization`: 17 tests.
+- product-center policy suite: 3 tests.
+- product-center policy additions: 8 tests.
+- capability identity boundary: 30 tests.
+- scene routing and activation: 80 tests.
+- acceptance fixture lifecycle, navigation and identity: 28 tests.
+- bundle workspace entry authority: 11 tests.
 
-Remote managed ORM then exposed two additional stale test assumptions: the
-fixture's explicit project Kanban binding still used `project.management`, and
-maintenance tests tried to publish after deleting the only binding of a
-published page or after making a normal business page temporarily direct.
-The binding now uses `reporting.project_portfolio`; zero-binding scenario
-definitions are omitted from the release composition, while published business
-pages without a scenario/direct declaration remain blocking. The tests now
-assert that blocking outcome instead of manufacturing an executable route.
+`ci.local.iteration` passed after every required target was actually executed:
+14/14 affected targets, unmatched paths 0, outside-scope paths 0.
+`ci.delivery.freeze.prepare` also passed and refreshed generated evidence; the
+module dependency map now reports `17.0.0.185`.
 
-Migration safety was tightened before another candidate:
+Clean candidate freeze and exact-head remote gates remain pending.
 
-- the complete 17-scenario legacy standard binding allow-list is frozen in
-  `17.0.0.187`;
-- any extra binding under a legacy standard scenario blocks the migration before
-  deletion and identifies the retained scenario/entries;
-- custom scenarios and custom entries outside the exact 17 codes are preserved;
-- scenario-surface import is idempotent per scenario/menu rather than globally
-  excluding a menu already used by another scenario;
-- the migration verifies all 46 current scenario codes and 132 unique standard
-  menu bindings after the transition.
+## Exclusions
 
-The exact local acceptance fixture suite now runs on isolated `sc_test` with a
-real release snapshot. It passed 28/28, including real 46-scenario enablement
-and a Preview scene rejection. The migration safety class passed 20/20, and the
-final pre-push `ci.local.iteration` passed all affected targets.
-
-Owner rule added 2026-11-21: no schema/data/scenario/seed/release/fixture
-migration may execute until the owner explicitly confirms both that a migration
-is required and the exact execution target. This includes disposable copies,
-test databases, dry-runs and fresh installation. Future migration verification
-must stop after read-only analysis and the written migration plan unless that
-confirmation is present.
+- No redesign of the ten centers, 46 groups or 132 handling surfaces.
+- No legacy-data compatibility path.
+- No Preview-to-GA batch promotion.
+- No ACL, company-scope or role grant expansion.
+- No full ORM suite, complete browser matrix, deployment or product-delivery
+  claim.
