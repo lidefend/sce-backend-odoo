@@ -112,8 +112,11 @@ membership in the built-in product composition.
 - Known Providers retain their declared execution order and are all still required
   by the static contract guard.
 - A contract may explicitly allow additional third-party Providers. Those
-  Providers append after the known sequence in deterministic module-name order and
-  cannot alter the order of the known product providers.
+  Providers execute after the ordinary known sequence in deterministic
+  module-name order and cannot alter that sequence.
+- Hooks with a true finalizer declare it explicitly. Licensing remains the final
+  `smart_core_extend_system_init` Provider, so a customer extension cannot
+  reintroduce capabilities after the license filter.
 - `smart_core_register` remains strict: duplicate Intent replacement or removal
   still fails; no duplicate registration exception was introduced.
 - `smart_enterprise_base` stays out of the production Provider contract because it
@@ -125,9 +128,9 @@ Focused results at `cae4c5ac` plus the five-file R3 hotfix:
 | Check | Tests | Result |
 | --- | ---: | --- |
 | extension runtime context | 15 | PASS |
-| Hook contracts and guard | 8 | PASS |
+| Hook contracts and guard | 9 | PASS |
 | Hook resolver | 8 | PASS |
-| extension consumers | 137 | PASS |
+| extension consumers | 136 | PASS |
 | extension lifecycle ORM | 2 | PASS |
 | extension runtime-context ORM | 6 | PASS |
 | extension native-alignment ORM | 4 | PASS |
@@ -145,21 +148,21 @@ failed remote `smart_core` log through the corrected guard returns:
 
 `ORM_RESULT_GUARD=PASS tests=238 expected=self identity=odoo.addons.smart_core.tests.`
 
-After that tool correction, `make ci.local.iteration` passed with 41 required
+After license-finality correction, `make ci.local.iteration` passed with 46 required
 targets and no skipped required target. Original aggregate receipt:
-`.runtime/frontend-dev-validation/executions/20261121T172459Z-2611843-775842303/receipt.json`.
+`.runtime/frontend-dev-validation/executions/20261121T183126Z-2957635-977250733/receipt.json`.
 The aggregate includes the current owning-module baselines:
 
 | Module | Tests | Result | Original receipt |
 | --- | ---: | --- | --- |
-| smart_core | 473 | PASS | `.runtime/test-baseline/1795283365386266244` |
-| smart_construction_core | 1711 | PASS | `.runtime/test-baseline/1795282603187453047` |
-| smart_construction_scene | 18 | PASS | `.runtime/test-baseline/1795283294140227408` |
-| smart_construction_bundle | 31 | PASS | `.runtime/test-baseline/1795282526286212393` |
-| smart_construction_portal | 4 | PASS | `.runtime/test-baseline/1795283281982353685` |
-| smart_license_core | 6 | PASS | `.runtime/test-baseline/1795283449190898842` |
-| smart_owner_core | 5 | PASS | `.runtime/test-baseline/1795283466152317478` |
-| smart_owner_bundle | 4 | PASS | `.runtime/test-baseline/1795283458477173427` |
+| smart_core | 473 | PASS | `.runtime/test-baseline/1795287370562517960` |
+| smart_construction_core | 1711 | PASS | `.runtime/test-baseline/1795286616351389132` |
+| smart_construction_scene | 18 | PASS | `.runtime/test-baseline/1795287299029476953` |
+| smart_construction_bundle | 31 | PASS | `.runtime/test-baseline/1795286539239206200` |
+| smart_construction_portal | 4 | PASS | `.runtime/test-baseline/1795287288602741240` |
+| smart_license_core | 6 | PASS | `.runtime/test-baseline/1795287455880904790` |
+| smart_owner_core | 5 | PASS | `.runtime/test-baseline/1795287470402788409` |
+| smart_owner_bundle | 4 | PASS | `.runtime/test-baseline/1795287463240489203` |
 
 After registering those original receipts, `make agent.run.resume` reports
 `reusable=30`, no stale checks, `outside_scope=[]` and `blockers=[]`.

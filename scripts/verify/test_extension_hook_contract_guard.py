@@ -72,6 +72,32 @@ class ExtensionHookContractGuardTests(unittest.TestCase):
 
             self.assertEqual(collect_failures(root, contracts), [])
 
+    def test_run_all_final_provider_must_be_declared(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._root(directory)
+            contract = type(
+                "Contract",
+                (),
+                {
+                    "providers": ("industry",),
+                    "final_providers": ("undeclared_final",),
+                    "allow_undeclared": True,
+                },
+            )()
+            contracts = type(
+                "Contracts",
+                (),
+                {
+                    "SINGLE_OWNER_HOOKS": set(),
+                    "ORDERED_MERGE_HOOKS": {},
+                    "RUN_ALL_HOOKS": {"get_facts": contract},
+                },
+            )()
+
+            failures = collect_failures(root, contracts)
+
+        self.assertTrue(any("final providers are not declared" in row for row in failures))
+
     def test_run_all_hook_has_an_explicit_contract(self):
         contracts = load_contract_module()
 

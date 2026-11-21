@@ -57,6 +57,7 @@ def _load_loader():
             return SimpleNamespace(
                 mode="run_all",
                 providers=("extension_beta", "extension_alpha"),
+                final_providers=("extension_alpha",),
                 allow_undeclared=True,
             )
         if hook_name == "extension_single_owner":
@@ -191,14 +192,20 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
                 ):
                     env = _Env(SimpleNamespace(), ",".join(order), dict.fromkeys(order, "installed"))
                     rows = self.loader.run_extension_hooks(env, hook_name)
+                    final = set(contract.final_providers)
+                    expected_order = tuple(
+                        name for name in contract.providers if name not in final
+                    ) + (unknown_provider,) + tuple(
+                        name for name in contract.providers if name in final
+                    )
                     self.assertEqual(
                         tuple(name for name, _ in rows),
-                        contract.providers + (unknown_provider,),
+                        expected_order,
                     )
                     merged = {}
                     for _, contribution in rows:
                         merged.update(contribution)
-                    self.assertEqual(merged["winner"], unknown_provider)
+                    self.assertEqual(merged["winner"], expected_order[-1])
 
     def test_registry_identity_isolated_and_installed_state_enforced(self):
         registry_a = SimpleNamespace()
@@ -355,7 +362,7 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
 
         self.loader.run_extension_hooks(env, "extension_run_all")
 
-        self.assertEqual(calls, ["extension_beta", "extension_alpha", "extension_gamma"])
+        self.assertEqual(calls, ["extension_beta", "extension_gamma", "extension_alpha"])
 
     def test_extension_intent_collision_fails_closed(self):
         _install_duplicate_extension_module("extension_duplicate_a", object())

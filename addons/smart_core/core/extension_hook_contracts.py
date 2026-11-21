@@ -9,6 +9,7 @@ from dataclasses import dataclass
 class HookContract:
     mode: str
     providers: tuple[str, ...] = ()
+    final_providers: tuple[str, ...] = ()
     merge: str = ""
     allow_undeclared: bool = False
 
@@ -155,6 +156,7 @@ RUN_ALL_HOOKS = {
             "smart_owner_bundle",
             "smart_license_core",
         ),
+        final_providers=("smart_license_core",),
         allow_undeclared=True,
     ),
     # Registration is order independent: _build_handlers rejects replacements
