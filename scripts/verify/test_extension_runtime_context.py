@@ -57,6 +57,7 @@ def _load_loader():
             return SimpleNamespace(
                 mode="run_all",
                 providers=("extension_beta", "extension_alpha"),
+                allow_undeclared=True,
             )
         if hook_name == "extension_single_owner":
             return SimpleNamespace(mode="single_owner")
@@ -138,6 +139,7 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
         sys.modules["odoo.addons"] = addons
         _install_extension_module("extension_alpha", "ALPHA_HANDLER")
         _install_extension_module("extension_beta", "BETA_HANDLER")
+        _install_extension_module("extension_gamma", "GAMMA_HANDLER")
         cls.loader = _load_loader()
 
     def test_native_uninstall_hooks_remove_only_their_own_exact_name(self):
@@ -174,19 +176,29 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
             self.assertTrue(contract.providers)
             self.assertNotIn("smart_enterprise_base", contract.providers)
             fake_modules = {}
+            unknown_provider = "third_party_extension"
             for name in contract.providers:
                 module = types.ModuleType("odoo.addons." + name)
                 setattr(module, hook_name, lambda name=name: {"winner": name})
                 fake_modules[module.__name__] = module
+            module = types.ModuleType("odoo.addons." + unknown_provider)
+            setattr(module, hook_name, lambda: {"winner": unknown_provider})
+            fake_modules[module.__name__] = module
             with patch.dict(sys.modules, fake_modules), patch.object(contract_stub, "contract_for", contracts.contract_for):
-                for order in (contract.providers, tuple(reversed(contract.providers))):
+                for order in (
+                    contract.providers + (unknown_provider,),
+                    (unknown_provider,) + tuple(reversed(contract.providers)),
+                ):
                     env = _Env(SimpleNamespace(), ",".join(order), dict.fromkeys(order, "installed"))
                     rows = self.loader.run_extension_hooks(env, hook_name)
-                    self.assertEqual(tuple(name for name, _ in rows), contract.providers)
+                    self.assertEqual(
+                        tuple(name for name, _ in rows),
+                        contract.providers + (unknown_provider,),
+                    )
                     merged = {}
                     for _, contribution in rows:
                         merged.update(contribution)
-                    self.assertEqual(merged["winner"], contract.providers[-1])
+                    self.assertEqual(merged["winner"], unknown_provider)
 
     def test_registry_identity_isolated_and_installed_state_enforced(self):
         registry_a = SimpleNamespace()
@@ -325,7 +337,7 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
 
     def test_run_all_entrypoint_executes_every_configured_provider(self):
         calls = []
-        for module_name in ("extension_alpha", "extension_beta"):
+        for module_name in ("extension_alpha", "extension_beta", "extension_gamma"):
             setattr(
                 sys.modules["odoo.addons.%s" % module_name],
                 "extension_run_all",
@@ -333,16 +345,17 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
             )
         env = _Env(
             SimpleNamespace(),
-            "extension_alpha,extension_beta",
+            "extension_alpha,extension_gamma,extension_beta",
             {
                 "extension_alpha": "installed",
                 "extension_beta": "installed",
+                "extension_gamma": "installed",
             },
         )
 
         self.loader.run_extension_hooks(env, "extension_run_all")
 
-        self.assertEqual(calls, ["extension_beta", "extension_alpha"])
+        self.assertEqual(calls, ["extension_beta", "extension_alpha", "extension_gamma"])
 
     def test_extension_intent_collision_fails_closed(self):
         _install_duplicate_extension_module("extension_duplicate_a", object())

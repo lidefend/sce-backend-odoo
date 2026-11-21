@@ -10,6 +10,7 @@ class HookContract:
     mode: str
     providers: tuple[str, ...] = ()
     merge: str = ""
+    allow_undeclared: bool = False
 
 
 SINGLE_OWNER_HOOKS = frozenset({
@@ -135,10 +136,12 @@ RUN_ALL_HOOKS = {
             "smart_construction_core", "smart_construction_scene", "smart_owner_core",
             "smart_construction_bundle", "smart_owner_bundle", "smart_license_core",
         ),
+        allow_undeclared=True,
     ),
     "get_system_init_fact_contributions": HookContract(
         mode="run_all",
         providers=("smart_construction_core", "smart_construction_bundle", "smart_license_core"),
+        allow_undeclared=True,
     ),
     # Domain contributions precede product overlays; licensing filters the final
     # capability set. This order is independent of installation/config ordering.
@@ -152,6 +155,7 @@ RUN_ALL_HOOKS = {
             "smart_owner_bundle",
             "smart_license_core",
         ),
+        allow_undeclared=True,
     ),
     # Registration is order independent: _build_handlers rejects replacements
     # and removals, and accepts repeated registration only of the same class.

@@ -208,10 +208,22 @@ def collect_failures(root: Path = ROOT, contract_module=None) -> list[str]:
     run_all = contracts.RUN_ALL_HOOKS
     for hook_name, contract in (run_all.items() if isinstance(run_all, dict) else ()):
         expected = set(contract.providers)
-        if expected and expected != set(providers.get(hook_name, set())):
+        actual = set(providers.get(hook_name, set()))
+        missing = expected - actual
+        unexpected = actual - expected
+        allow_undeclared = bool(getattr(contract, "allow_undeclared", False))
+        if expected and (missing or (unexpected and not allow_undeclared)):
             failures.append(
-                "run_all hook %s providers differ: expected=%s actual=%s"
-                % (hook_name, sorted(expected), sorted(providers.get(hook_name, set()))))
+                "run_all hook %s providers differ: expected=%s actual=%s "
+                "missing=%s unexpected=%s"
+                % (
+                    hook_name,
+                    sorted(expected),
+                    sorted(actual),
+                    sorted(missing),
+                    sorted(unexpected),
+                )
+            )
     return failures
 
 

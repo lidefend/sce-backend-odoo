@@ -41,6 +41,37 @@ class ExtensionHookContractGuardTests(unittest.TestCase):
             self.assertTrue(any("run_all" in row and "actual=[]" in row
                                 for row in collect_failures(root, contracts)))
 
+    def test_run_all_contract_allows_declared_third_party_providers(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._root(directory)
+            (root / "addons/industry/__init__.py").write_text(
+                "from .core import get_facts\n"
+            )
+            third_party = root / "addons/third_party"
+            third_party.mkdir()
+            (third_party / "__init__.py").write_text(
+                "from .core import get_facts\n"
+            )
+            contract = type(
+                "Contract",
+                (),
+                {
+                    "providers": ("industry",),
+                    "allow_undeclared": True,
+                },
+            )()
+            contracts = type(
+                "Contracts",
+                (),
+                {
+                    "SINGLE_OWNER_HOOKS": set(),
+                    "ORDERED_MERGE_HOOKS": {},
+                    "RUN_ALL_HOOKS": {"get_facts": contract},
+                },
+            )()
+
+            self.assertEqual(collect_failures(root, contracts), [])
+
     def test_run_all_hook_has_an_explicit_contract(self):
         contracts = load_contract_module()
 
