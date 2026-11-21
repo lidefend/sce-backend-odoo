@@ -6,7 +6,7 @@ from odoo.tests.common import TransactionCase, tagged
 from odoo.addons.smart_construction_core.services import capability_registry
 
 
-@tagged("sc_smoke", "capability_registry")
+@tagged("post_install", "-at_install", "sc_smoke", "capability_registry")
 class TestCapabilityRegistryService(TransactionCase):
     def _project_actor(self):
         return self.env['res.users'].with_context(no_reset_password=True).create({

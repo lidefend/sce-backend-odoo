@@ -86,6 +86,11 @@ class _Param:
         return default
 
 
+    def set_param(self, key, value):
+        assert key == "sc.core.extension_modules"
+        self.env.configured = value
+
+
 class _Modules:
     def __init__(self, env):
         self.env = env
@@ -134,6 +139,54 @@ class ExtensionRuntimeContextTests(unittest.TestCase):
         _install_extension_module("extension_alpha", "ALPHA_HANDLER")
         _install_extension_module("extension_beta", "BETA_HANDLER")
         cls.loader = _load_loader()
+
+    def test_native_uninstall_hooks_remove_only_their_own_exact_name(self):
+        names = ("smart_construction_core", "smart_construction_scene", "smart_construction_bundle",
+                 "smart_owner_core", "smart_owner_bundle", "smart_license_core", "smart_construction_portal")
+        for name in names:
+            with self.subTest(module=name):
+                path = ROOT / "addons" / name
+                manifest = ast.literal_eval((path / "__manifest__.py").read_text())
+                self.assertEqual(manifest["uninstall_hook"], "uninstall_hook")
+                init_tree = ast.parse((path / "__init__.py").read_text())
+                self.assertTrue(any(isinstance(n, ast.ImportFrom) and n.module == "hooks"
+                                    and any(a.name == "uninstall_hook" for a in n.names) for n in init_tree.body))
+                hook = next(n for n in ast.parse((path / "hooks.py").read_text()).body
+                            if isinstance(n, ast.FunctionDef) and n.name == "uninstall_hook")
+                namespace = {}
+                exec(compile(ast.Module(body=[hook], type_ignores=[]), str(path / "hooks.py"), "exec"), namespace)
+                env = _Env(SimpleNamespace(), f"other,{name}_extra, {name},other_two,{name}", {})
+                from unittest.mock import patch
+                with patch.dict(sys.modules, {"odoo.addons.smart_core.core.extension_loader": self.loader}):
+                    namespace["uninstall_hook"](env)
+                    self.assertEqual(env.configured, f"other,{name}_extra,other_two")
+                    namespace["uninstall_hook"](env)
+                    self.assertEqual(env.configured, f"other,{name}_extra,other_two")
+
+    def test_production_contribution_orders_are_explicit_and_config_order_independent(self):
+        from scripts.verify.extension_hook_contract_guard import load_contract_module
+        from unittest.mock import patch
+        contracts = load_contract_module()
+        contract_stub = sys.modules[self.loader.__package__ + ".extension_hook_contracts"]
+        for hook_name in ("get_system_init_fact_contributions", "get_intent_handler_contributions",
+                          "smart_core_extend_system_init"):
+            contract = contracts.contract_for(hook_name)
+            self.assertTrue(contract.providers)
+            self.assertNotIn("smart_enterprise_base", contract.providers)
+            fake_modules = {}
+            for name in contract.providers:
+                module = types.ModuleType("odoo.addons." + name)
+                setattr(module, hook_name, lambda name=name: {"winner": name})
+                fake_modules[module.__name__] = module
+            with patch.dict(sys.modules, fake_modules), patch.object(contract_stub, "contract_for", contracts.contract_for):
+                for order in (contract.providers, tuple(reversed(contract.providers))):
+                    env = _Env(SimpleNamespace(), ",".join(order), dict.fromkeys(order, "installed"))
+                    rows = self.loader.run_extension_hooks(env, hook_name)
+                    self.assertEqual(tuple(name for name, _ in rows), contract.providers)
+                    merged = {}
+                    for _, contribution in rows:
+                        merged.update(contribution)
+                    self.assertEqual(merged["winner"], contract.providers[-1])
 
     def test_registry_identity_isolated_and_installed_state_enforced(self):
         registry_a = SimpleNamespace()

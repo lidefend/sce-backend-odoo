@@ -6,3 +6,5 @@ from .core_extension import (  # noqa: F401
     get_system_init_fact_contributions,
     smart_core_extend_system_init,
 )
+
+from .hooks import uninstall_hook

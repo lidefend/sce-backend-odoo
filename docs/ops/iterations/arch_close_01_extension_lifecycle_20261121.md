@@ -93,3 +93,9 @@ R2 工作树源码；冻结后的提交身份以 PR HEAD 和本轮发布回读�
 远端正式前端门禁仍须满足。回滚以有界 P0/P1/P4 修订为单位，不涉及客户数据恢复。
 
 提交钩子按既有流程刷新测试覆盖清单、复杂度报告及拆分队列三份生成报告，已纳入 scope；生成器未产生额外产品源码变化。
+
+## Exact HEAD 16b5eb3 remote follow-up
+
+Remote public, release-candidate and frontend gates passed; professional backend suites failed. The two native lifecycle tests executed without the original Registry initialization failure. Fresh module installation exposed baseline test ownership and fixture assumptions hidden by local Bundle templates. Seventeen UM-P1/P2/P3 industry ORM families move unchanged to Construction; four runtime extension consumer classes now use Odoo post_install. Scene fixtures explicitly enable installed providers via database configuration. Platform and Scene full baselines now use their respective module templates.
+
+A separate P0 defect lost applied configuration provenance in native form structure projection when no industry override was present. The final native carrier now retains the actual resolved configuration rows; no preview validation is relaxed. Cache version v97 binds the correction. Standalone smart_core change-set preview/publish/rollback suite: 31 passed, original receipt `.runtime/test-baseline/1795271774822517808/receipt.json`. Full owning-module revalidation and a new exact-head remote run remain required.

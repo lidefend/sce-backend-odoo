@@ -76,6 +76,19 @@ def _parse_modules(raw: str):
     return [item.strip() for item in str(raw).split(",") if str(item).strip()]
 
 
+def unregister_extension_module(env, module_name: str) -> None:
+    """Remove only this module's registration in Odoo's uninstall transaction.
+
+    Called by native uninstall hooks; never commits or manages module states.
+    Manual references to other uninstalled modules remain invalid configuration.
+    """
+    params = env["ir.config_parameter"].sudo()
+    key = "sc.core.extension_modules"
+    modules = _parse_modules(params.get_param(key) or "")
+    if module_name in modules:
+        params.set_param(key, ",".join(name for name in modules if name != module_name))
+
+
 def _configured_extension_modules(env) -> tuple[str, ...]:
     try:
         raw = env["ir.config_parameter"].sudo().get_param("sc.core.extension_modules") or ""

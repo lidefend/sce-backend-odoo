@@ -4,6 +4,13 @@ from odoo.addons.smart_core.utils.extension_hooks import call_extension_hook_fir
 
 @tagged("post_install", "-at_install", "sc_gate", "extension_hook_authority")
 class TestHookAuthorityConsumer(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "sc.core.extension_modules", "smart_construction_core,smart_construction_scene"
+        )
+
     def test_scene_navigation_provider_reaches_real_consumer(self):
         payload = call_extension_hook_first(
             self.env,

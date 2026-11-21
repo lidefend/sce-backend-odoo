@@ -10,5 +10,6 @@
         "data/license_customer_visibility.xml",
     ],
     "application": False,
-    "installable": True
+    "installable": True,
+    "uninstall_hook": "uninstall_hook",
 }

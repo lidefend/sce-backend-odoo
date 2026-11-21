@@ -13,6 +13,11 @@ goal:
     - addons/smart_core
     - addons/smart_construction_core
     - addons/smart_construction_scene
+    - addons/smart_construction_bundle
+    - addons/smart_construction_portal
+    - addons/smart_license_core
+    - addons/smart_owner_core
+    - addons/smart_owner_bundle
     - scripts/verify
     - make
     - docs
@@ -58,6 +63,8 @@ goal:
   validation:
     required:
       - installed/enabled/uninstalled extension matrix
+      - native uninstall removes only its own enablement registration and preserves real login
+      - complete Bundle, Portal, License and Owner module baselines
       - two-registry Handler isolation
       - Registry rebuild and extension-config invalidation
       - Hook mode and duplicate-provider tests

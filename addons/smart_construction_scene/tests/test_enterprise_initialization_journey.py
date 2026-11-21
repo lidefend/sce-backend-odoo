@@ -9,6 +9,9 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
     @classmethod
     def setUpClass(cls):
         super().setUpClass()
+        cls.env["ir.config_parameter"].sudo().set_param(
+            "sc.core.extension_modules", "smart_construction_core,smart_construction_scene"
+        )
         cls.env.user.write({'company_ids': [(4, cls.env.company.id)]})
         cls.internal = cls.env.ref('base.group_user')
         cls.manager = cls.env['res.users'].with_context(no_reset_password=True).create({

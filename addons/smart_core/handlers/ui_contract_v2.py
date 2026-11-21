@@ -99,7 +99,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v96"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v97"
 
 
 def _create_defaults_fingerprint(env, model_name, params, ui_params):
@@ -4550,6 +4550,15 @@ class UiContractV2Handler(BaseIntentHandler):
         layout = form_view.get("layout")
         if not isinstance(fields, dict) or not isinstance(layout, list) or not layout:
             raise ValueError("native form projection final carrier is incomplete")
+        # Native slots describe structure; resolved orchestration supplies the
+        # configuration provenance. Preserve both on the final P0 carrier even
+        # when no industry provider contributes a form structure override.
+        structure = source.get("formStructureContract") or source.get("form_structure_contract")
+        orchestration = (form_view.get("governance") or {}).get("view_orchestration") or {}
+        applied = orchestration.get("business_config_contracts")
+        if isinstance(structure, dict) and isinstance(applied, list):
+            authority = structure.setdefault("sourceAuthority", {})
+            authority.setdefault("governance_source", {})["businessConfigContracts"] = deepcopy(applied)
         marker.update({
             "model": str(source.get("model") or marker.get("model") or "").strip(),
             "viewType": "form",

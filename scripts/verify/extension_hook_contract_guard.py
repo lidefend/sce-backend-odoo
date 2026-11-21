@@ -154,6 +154,9 @@ def exported_providers(root: Path) -> dict[str, set[str]]:
     providers: dict[str, set[str]] = defaultdict(set)
     for init_path in sorted((root / "addons").glob("*/__init__.py")):
         module_name = init_path.parent.name
+        manifest = init_path.parent / "__manifest__.py"
+        if manifest.exists() and not ast.literal_eval(manifest.read_text()).get("installable", True):
+            continue
         try:
             tree = ast.parse(init_path.read_text(encoding="utf-8"))
         except (OSError, SyntaxError):
@@ -202,6 +205,13 @@ def collect_failures(root: Path = ROOT, contract_module=None) -> list[str]:
                 "ordered_merge hook %s providers differ: expected=%s actual=%s"
                 % (hook_name, sorted(expected), sorted(found))
             )
+    run_all = contracts.RUN_ALL_HOOKS
+    for hook_name, contract in (run_all.items() if isinstance(run_all, dict) else ()):
+        expected = set(contract.providers)
+        if expected and expected != set(providers.get(hook_name, set())):
+            failures.append(
+                "run_all hook %s providers differ: expected=%s actual=%s"
+                % (hook_name, sorted(expected), sorted(providers.get(hook_name, set()))))
     return failures
 
 

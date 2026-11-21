@@ -9,7 +9,7 @@ from odoo.addons.smart_core.handlers.api_data_write import ApiDataWriteHandler
 from odoo.addons.smart_core.handlers.reason_codes import REASON_IDEMPOTENCY_CONFLICT
 
 
-@tagged("sc_smoke", "api_data_batch_backend")
+@tagged("post_install", "-at_install", "sc_smoke", "api_data_batch_backend")
 class TestApiDataWriteUnlinkIdempotencyBackend(TransactionCase):
     def _ensure_audit_model(self):
         if self.env.get("sc.audit.log") is None:

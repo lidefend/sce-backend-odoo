@@ -129,14 +129,22 @@ ORDERED_MERGE_HOOKS = {
 
 
 RUN_ALL_HOOKS = {
-    "get_intent_handler_contributions": HookContract(mode="run_all"),
-    "get_system_init_fact_contributions": HookContract(mode="run_all"),
+    "get_intent_handler_contributions": HookContract(
+        mode="run_all",
+        providers=(
+            "smart_construction_core", "smart_construction_scene", "smart_owner_core",
+            "smart_construction_bundle", "smart_owner_bundle", "smart_license_core",
+        ),
+    ),
+    "get_system_init_fact_contributions": HookContract(
+        mode="run_all",
+        providers=("smart_construction_core", "smart_construction_bundle", "smart_license_core"),
+    ),
     # Domain contributions precede product overlays; licensing filters the final
     # capability set. This order is independent of installation/config ordering.
     "smart_core_extend_system_init": HookContract(
         mode="run_all",
         providers=(
-            "smart_enterprise_base",
             "smart_construction_core",
             "smart_construction_scene",
             "smart_owner_core",
@@ -145,6 +153,8 @@ RUN_ALL_HOOKS = {
             "smart_license_core",
         ),
     ),
+    # Registration is order independent: _build_handlers rejects replacements
+    # and removals, and accepts repeated registration only of the same class.
     "smart_core_register": HookContract(mode="run_all"),
 }
 

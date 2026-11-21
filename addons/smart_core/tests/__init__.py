@@ -7,7 +7,6 @@ modules can be executed without a live Odoo runtime. Odoo transaction-style
 tests remain discoverable by explicit module import in Odoo test execution.
 """
 
-from . import test_permission_contract_runtime_uid
 from . import test_native_action_selection_alignment
 from . import test_action_dispatcher_server_mapping
 from . import test_native_action_view_set_integration
@@ -22,25 +21,6 @@ from . import test_usage_backend
 from . import test_business_config_change_set
 from . import test_lowcode_config_contract_write_authority
 from . import test_runtime_view_contract_fail_closed
-from . import test_admin_vis_p3_project_record_rule_orm
-from . import test_chatter_timeline_authorization_orm
-from . import test_um_p1_ownership_visibility_contract_orm
-from . import test_um_p1_payment_visibility_contract_orm
-from . import test_um_p1_invoice_deduction_visibility_contract_orm
-from . import test_um_p1_interfund_financing_visibility_contract_orm
-from . import test_um_p1_contract_settlement_visibility_contract_orm
-from . import test_um_p1_cost_ledger_visibility_contract_orm
-from . import test_um_p2_receipt_relation_aggregation_orm
-from . import test_um_p2_payment_relation_aggregation_orm
-from . import test_um_p2_interfund_relation_aggregation_orm
-from . import test_um_p2_invoice_relation_aggregation_orm
-from . import test_um_p2_settlement_relation_aggregation_orm
-from . import test_um_p3_fund_plan_actual_event_allocation_orm
-from . import test_um_p3_material_settlement_purchase_authority_orm
-from . import test_um_p3_subcontract_register_settlement_authority_orm
-from . import test_um_p3_subcontract_cumulative_settlement_orm
-from . import test_um_p3_payment_ledger_request_permission_orm
-from . import test_um_p3_subcontract_cumulative_amount_orm
 from . import test_tenant_extension_storage
 from . import test_narrow_tenant_payload_importer
 from . import test_localized_display
@@ -51,7 +31,6 @@ from . import test_auth_credential_framework
 from . import test_intent_smoke
 from . import test_scene_runtime_contract_chain
 from . import test_scene_nav_contract_builder
-from . import test_form_structure_surface_capability_orm
 from . import test_canonical_navigation_projection
 from . import test_user_view_preference_runtime_orm
 from . import test_res_users_audience_group_boundary
@@ -60,7 +39,6 @@ from . import test_smart_core_model_init_table_recovery
 from . import test_data_space_boundary
 from . import test_data_space_identity_enrollment
 from . import test_data_space_uncached_membership
-from . import test_dictionary_scope_delivery
 from . import test_platform_database_governance_orm
 from . import test_principal_group_signature_request_scope_orm
 from . import test_tenant_payload_operator_lifecycle

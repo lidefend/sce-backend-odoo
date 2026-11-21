@@ -29,6 +29,18 @@ class _Contracts:
 
 
 class ExtensionHookContractGuardTests(unittest.TestCase):
+    def test_noninstallable_fixture_is_not_a_production_provider(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = self._root(directory)
+            module = root / "addons/industry"
+            (module / "__manifest__.py").write_text("{'installable': False}")
+            (module / "__init__.py").write_text("from .core import get_facts\n")
+            contract = type("Contract", (), {"providers": ("industry",)})()
+            contracts = type("Contracts", (), {"SINGLE_OWNER_HOOKS": set(),
+                             "ORDERED_MERGE_HOOKS": {}, "RUN_ALL_HOOKS": {"get_facts": contract}})()
+            self.assertTrue(any("run_all" in row and "actual=[]" in row
+                                for row in collect_failures(root, contracts)))
+
     def test_run_all_hook_has_an_explicit_contract(self):
         contracts = load_contract_module()
 

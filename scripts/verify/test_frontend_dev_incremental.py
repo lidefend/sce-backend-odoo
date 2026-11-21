@@ -812,6 +812,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ],
                 )
 
+    def test_moved_industry_orm_selects_both_owning_module_baselines(self):
+        self.assertEqual(select_targets([
+            "addons/smart_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+            "addons/smart_construction_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+        ]), ["verify.smart_construction_core.module_baseline", "verify.smart_core.close_02.module_baseline"])
+
     def test_scenario_center_migration_and_view_select_orm_and_center_guards(self) -> None:
         for path in (
             "addons/smart_construction_core/__manifest__.py",
@@ -821,10 +827,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    [
+                    sorted([
                         "verify.daily.permission_truth.capability.orm",
                         "verify.scenario.center_projection.guard",
-                    ],
+                    ] + (["verify.extension.lifecycle.orm", "verify.smart_construction_core.module_baseline"]
+                         if path.endswith("__manifest__.py") else [])),
                 )
 
     def test_backend_collection_inputs_select_only_offline_workflow_checks(self) -> None:
@@ -1191,7 +1198,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    ["verify.daily.permission_truth.capability.orm"],
+                    ["verify.daily.permission_truth.capability.orm", "verify.extension.lifecycle.orm",
+                     "verify.smart_construction_core.module_baseline"]
+                    if path.endswith("__init__.py") else ["verify.daily.permission_truth.capability.orm"],
                 )
         self.assertEqual(
             select_targets(["addons/smart_core/utils/extension_hooks.py"]),
@@ -1367,6 +1376,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.capability.identity_boundary.orm",
                 "verify.daily.permission_truth.capability.orm",
+                "verify.smart_construction_core.module_baseline",
             ],
         )
         self.assertEqual(

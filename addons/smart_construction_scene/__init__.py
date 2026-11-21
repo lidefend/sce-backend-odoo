@@ -29,3 +29,5 @@ else:
         smart_core_critical_scene_target_overrides,
         smart_core_critical_scene_target_route_overrides,
     )
+
+from .hooks import uninstall_hook

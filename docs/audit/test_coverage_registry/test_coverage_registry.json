@@ -199,25 +199,25 @@
       "kind": "odoo_tag",
       "declarations": 18,
       "files": [
-        "addons/smart_core/tests/test_admin_vis_p3_project_record_rule_orm.py",
-        "addons/smart_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p1_interfund_financing_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p1_invoice_deduction_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p1_ownership_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p1_payment_visibility_contract_orm.py",
-        "addons/smart_core/tests/test_um_p2_interfund_relation_aggregation_orm.py",
-        "addons/smart_core/tests/test_um_p2_invoice_relation_aggregation_orm.py",
-        "addons/smart_core/tests/test_um_p2_payment_relation_aggregation_orm.py",
-        "addons/smart_core/tests/test_um_p2_receipt_relation_aggregation_orm.py",
-        "addons/smart_core/tests/test_um_p2_settlement_relation_aggregation_orm.py",
-        "addons/smart_core/tests/test_um_p3_fund_plan_actual_event_allocation_orm.py",
-        "addons/smart_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
-        "addons/smart_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
-        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py",
-        "addons/smart_core/tests/test_um_p3_subcontract_register_settlement_authority_orm.py"
+        "addons/smart_construction_core/tests/test_admin_vis_p3_project_record_rule_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_interfund_financing_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_invoice_deduction_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_ownership_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p1_payment_visibility_contract_orm.py",
+        "addons/smart_construction_core/tests/test_um_p2_interfund_relation_aggregation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p2_invoice_relation_aggregation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p2_payment_relation_aggregation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p2_receipt_relation_aggregation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p2_settlement_relation_aggregation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p3_fund_plan_actual_event_allocation_orm.py",
+        "addons/smart_construction_core/tests/test_um_p3_material_settlement_purchase_authority_orm.py",
+        "addons/smart_construction_core/tests/test_um_p3_payment_ledger_request_permission_orm.py",
+        "addons/smart_construction_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py",
+        "addons/smart_construction_core/tests/test_um_p3_subcontract_register_settlement_authority_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [
         "scripts/test/admin_vis_p3_project_record_rule_orm.sh :: admin_vis_p3_project_record_rule_orm"
       ],
@@ -869,9 +869,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_chatter_timeline_authorization_orm.py"
+        "addons/smart_construction_core/tests/test_chatter_timeline_authorization_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [
         "make:test.chatter-timeline.authorization.orm :: chatter_timeline_authorization_orm bash scripts/test/admin_vis_p3_project_record"
       ],
@@ -1261,9 +1261,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_dictionary_scope_delivery.py"
+        "addons/smart_construction_core/tests/test_dictionary_scope_delivery.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.dictionary_scope_delivery.orm :: dictionary_scope_delivery"
       ],
@@ -1428,9 +1428,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_form_structure_surface_capability_orm.py"
+        "addons/smart_construction_core/tests/test_form_structure_surface_capability_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [
         "make:verify.local.dev.form_structure_surface_capability.orm :: /TestFormStructureSurfaceCapabilityOrm (class selection)"
       ],
@@ -1968,9 +1968,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_permission_contract_runtime_uid.py"
+        "addons/smart_construction_core/tests/test_permission_contract_runtime_uid.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
     },
@@ -2936,9 +2936,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_um_p3_payment_ledger_request_permission_orm.py"
+        "addons/smart_construction_core/tests/test_um_p3_payment_ledger_request_permission_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
     },
@@ -2948,9 +2948,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py"
+        "addons/smart_construction_core/tests/test_um_p3_subcontract_cumulative_amount_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
     },
@@ -2960,9 +2960,9 @@
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
-        "addons/smart_core/tests/test_um_p3_subcontract_cumulative_settlement_orm.py"
+        "addons/smart_construction_core/tests/test_um_p3_subcontract_cumulative_settlement_orm.py"
       ],
-      "owner": "platform-team",
+      "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
     },

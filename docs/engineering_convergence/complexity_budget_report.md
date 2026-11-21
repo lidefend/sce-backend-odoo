@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5324`
+- Scanned files: `5329`
 - Files requiring split plan: `86`
 - Files above warning threshold: `159`
 
@@ -19,14 +19,14 @@ Generated from repository source files. This report is informational during the 
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 5026 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4802 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4811 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4003 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4013 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3652 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3719 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3564 | Python source | `addons/smart_core/delivery/menu_service.py` |
@@ -274,14 +274,14 @@ Generated from repository source files. This report is informational during the 
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 5026 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
-| 4802 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
+| 4811 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4003 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4013 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
-| 3652 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3719 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3610 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3564 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |

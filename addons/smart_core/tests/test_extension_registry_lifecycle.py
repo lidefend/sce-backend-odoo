@@ -3,6 +3,8 @@ from __future__ import annotations
 import os
 import unittest
 import uuid
+from types import SimpleNamespace
+from unittest.mock import patch
 
 import psycopg2
 from psycopg2 import sql
@@ -110,6 +112,41 @@ class TestExtensionRegistryLifecycle(TransactionCase):
                 pass
         Registry.new(database, update_module=True)
 
+    def _assert_login_works(self, database):
+        from odoo import http
+        from odoo.addons.smart_core.core.intent_router import resolve_handler
+        from odoo.addons.smart_core.handlers import login as login_module
+        from odoo.addons.smart_core.security import auth
+        from .entry_namespace_test_support import configure_test_entry_namespace
+
+        with Registry(database).cursor() as cr:
+            env = api.Environment(cr, SUPERUSER_ID, {})
+            headers = configure_test_entry_namespace(
+                env, alias="lifecycle-entry", audience="tenant", duty_key="ci_suite",
+            )
+            secret = uuid.uuid4().hex
+            user = env.ref("base.user_admin")
+            user.with_context(no_reset_password=True).write({"password": secret})
+            env["ir.config_parameter"].sudo().set_param("sc.jwt.secret", uuid.uuid4().hex)
+            cr.commit()  # Native password authentication opens its own cursor.
+            request = SimpleNamespace(
+                env=env, session=SimpleNamespace(db=database),
+                httprequest=SimpleNamespace(headers=headers, environ={}, remote_addr="127.0.0.1"),
+            )
+            handler = resolve_handler("login", env)
+            self.assertIs(handler, login_module.LoginHandler)
+            # Supply transport context only; authentication, namespace lookup,
+            # handler resolution and token creation all use their real paths.
+            with patch.object(http, "request", request), patch.object(auth, "request", request), \
+                    patch.object(login_module, "request", request):
+                result = handler(env, payload={"params": {"login": user.login, "password": secret}}).handle()
+            self.assertIsInstance(result, tuple, result)
+            data, metadata = result
+            self.assertEqual(data["user"]["id"], user.id)
+            self.assertTrue(data["session"]["token"])
+            self.assertEqual(data["session"]["db"], database)
+            self.assertEqual(metadata["source_kind"], login_module.LoginHandler.SOURCE_KIND)
+
     def _module_state(self, database, module_name):
         registry = Registry(database)
         with registry.cursor() as cr:
@@ -191,6 +228,11 @@ class TestExtensionRegistryLifecycle(TransactionCase):
         self.assertEqual(upgraded_modules, ("smart_owner_core",))
         self.assertIn("owner.projects.list", upgraded_handlers)
 
+        self._apply_module_lifecycle(self.database_b, "smart_owner_bundle", "install")
+        self._set_config(self.database_b, "smart_owner_core,smart_owner_bundle")
+        self._apply_module_lifecycle(self.database_b, "smart_owner_bundle", "uninstall")
+        self.assertEqual(self._configured_context(self.database_b)[0], ("smart_owner_core",))
+        self.assertIn("owner.projects.list", self._configured_context(self.database_b)[1])
         self._apply_module_lifecycle(
             self.database_b,
             "smart_owner_core",
@@ -200,6 +242,11 @@ class TestExtensionRegistryLifecycle(TransactionCase):
             self._module_state(self.database_b, "smart_owner_core"),
             "uninstalled",
         )
+        natural_modules, natural_handlers = self._configured_context(self.database_b)
+        self.assertEqual(natural_modules, ())
+        self.assertNotIn("owner.projects.list", natural_handlers)
+        self._assert_login_works(self.database_b)
+        # Deliberately corrupted configuration is distinct from native removal.
         with self.assertRaises(ExtensionConfigurationError):
             self._context(self.database_b, "smart_owner_core")
 
@@ -238,13 +285,14 @@ class TestExtensionRegistryLifecycle(TransactionCase):
         reversed_modules, reversed_handlers = self._context(self.database_a, ",".join(reversed(modules)))
         self.assertEqual((reversed_modules, reversed_handlers), (modules, handlers))
 
-        # Uninstall must finish even with stale enablement. Ready runtime then
-        # rejects the stale declaration until the administrator disables it.
+        # Native uninstall removes only the departing module's registration.
         self._apply_module_lifecycle(self.database_a, "smart_construction_bundle", "uninstall")
         self.assertEqual(self._module_state(self.database_a, "smart_construction_bundle"), "uninstalled")
-        with self.assertRaises(ExtensionConfigurationError):
-            self._configured_context(self.database_a)
-        remaining = tuple(name for name in modules if name != "smart_construction_bundle")
-        actual, remaining_handlers = self._context(self.database_a, ",".join(remaining))
-        self.assertEqual(actual, remaining)
+        remaining_modules, remaining_handlers = self._configured_context(self.database_a)
+        self.assertEqual(set(remaining_modules), set(modules) - {"smart_construction_bundle"})
+        for name in remaining_modules:
+            self.assertEqual(self._module_state(self.database_a, name), "installed")
         self.assertIn("project.dashboard", remaining_handlers)
+        self._assert_login_works(self.database_a)
+        with self.assertRaises(ExtensionConfigurationError):
+            self._context(self.database_a, ",".join(modules))

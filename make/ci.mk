@@ -420,12 +420,12 @@ verify.smart_core.search_contract.close_02.unit: guard.prod.forbid
 
 .PHONY: verify.smart_core.close_02.module_baseline
 verify.smart_core.close_02.module_baseline: guard.prod.forbid
-	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_core \
 	  $(MAKE) --no-print-directory local.test.test MODULE=smart_core TEST_TAGS=/smart_core
 
 .PHONY: verify.smart_construction_scene.module_baseline
 verify.smart_construction_scene.module_baseline: guard.prod.forbid
-	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_scene \
 	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_scene TEST_TAGS=/smart_construction_scene
 
 .PHONY: verify.smart_construction_core.module_baseline
@@ -1687,3 +1687,28 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 .PHONY: verify.test.dependency_baseline.unit
 verify.test.dependency_baseline.unit: guard.prod.forbid
 	@python3 -m unittest scripts.test.test_dependency_baseline
+
+.PHONY: verify.smart_construction_bundle.extension_module_baseline
+verify.smart_construction_bundle.extension_module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_bundle TEST_TAGS=/smart_construction_bundle
+
+.PHONY: verify.smart_construction_portal.extension_module_baseline
+verify.smart_construction_portal.extension_module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_portal \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_portal TEST_TAGS=/smart_construction_portal
+
+.PHONY: verify.smart_license_core.extension_module_baseline
+verify.smart_license_core.extension_module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_license_core \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_license_core TEST_TAGS=/smart_license_core
+
+.PHONY: verify.smart_owner_core.extension_module_baseline
+verify.smart_owner_core.extension_module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_owner_core \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_owner_core TEST_TAGS=/smart_owner_core
+
+.PHONY: verify.smart_owner_bundle.extension_module_baseline
+verify.smart_owner_bundle.extension_module_baseline: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_owner_bundle \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_owner_bundle TEST_TAGS=/smart_owner_bundle
