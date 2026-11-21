@@ -7,6 +7,7 @@
   "goal": ".agent/goals/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120.yaml",
   "record": "docs/ops/iterations/scene_product_02_ci_integration_closure_20261120.md",
   "scope": [
+    "AGENTS.md",
     ".agent/active-runs.json",
     ".agent/goals/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120.yaml",
     ".agent/runs/SCENE-PRODUCT-02-CI-INTEGRATION-CLOSURE-20261120/run.json",

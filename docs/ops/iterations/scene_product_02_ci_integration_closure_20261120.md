@@ -112,3 +112,10 @@ The exact local acceptance fixture suite now runs on isolated `sc_test` with a
 real release snapshot. It passed 28/28, including real 46-scenario enablement
 and a Preview scene rejection. The migration safety class passed 20/20, and the
 final pre-push `ci.local.iteration` passed all affected targets.
+
+Owner rule added 2026-11-21: no schema/data/scenario/seed/release/fixture
+migration may execute until the owner explicitly confirms both that a migration
+is required and the exact execution target. This includes disposable copies,
+test databases, dry-runs and fresh installation. Future migration verification
+must stop after read-only analysis and the written migration plan unless that
+confirmation is present.
