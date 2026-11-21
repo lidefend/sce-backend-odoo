@@ -92,6 +92,24 @@ console.log('contract v2 runtime policy: PASS cases=6 fields=23');
 // A preview has no published contract row. Its explicit provenance must survive
 // decoding without granting the same zero-ID exception to published sources.
 const { decodeContractV2Snapshot } = await import('../src/app/contracts/v2/schema');
+const { CONTRACT_V2_CLIENT_CAPABILITIES } = await import('../src/app/contracts/v2/clientCapabilities');
+assert.deepEqual(
+  CONTRACT_V2_CLIENT_CAPABILITIES.filter((item) => item.startsWith('view.')),
+  [
+    'view.tree.v1',
+    'view.kanban.v1',
+    'view.form.v1',
+    'view.pivot.v1',
+    'view.graph.v1',
+    'view.calendar.v1',
+    'view.gantt.v1',
+    'view.activity.v1',
+    'view.dashboard.v1',
+  ],
+  'the client declares every registered action-surface renderer it can execute or fall back',
+);
+console.log('[contract_v2_runtime_policy_test] native action view capabilities cases=1 passed');
+
 const previewSnapshot = {
   pageInfo: { pageId: 'preview.form', sceneKey: 'preview.form', pageName: 'Preview', model: 'x.preview',
     viewType: 'form', layoutType: 'form', renderMode: 'governed', contractVersion: '2.2.0', clientType: 'web_pc' },
@@ -123,9 +141,17 @@ const previewSnapshot = {
 assert.equal(decodeContractV2Snapshot(previewSnapshot).formStructureContract?.sourceAuthority.governance_source.businessConfigContracts?.[0].source_kind, 'change_set_preview');
 previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].source_kind = 'published';
 assert.throws(() => decodeContractV2Snapshot(previewSnapshot), /positive published ID/);
-console.log('[contract_v2_runtime_policy_test] preview provenance cases=2 passed');
-
 previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].source_kind = 'change_set_preview';
+previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].status = 'published';
+assert.equal(
+  decodeContractV2Snapshot(previewSnapshot).formStructureContract?.sourceAuthority.governance_source.businessConfigContracts?.[0].status,
+  'published',
+);
+previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].status = 'superseded';
+assert.throws(() => decodeContractV2Snapshot(previewSnapshot), /status must be draft, published, or preview/);
+previewSnapshot.formStructureContract.sourceAuthority.governance_source.businessConfigContracts[0].status = 'preview';
+console.log('[contract_v2_runtime_policy_test] preview provenance cases=4 passed');
+
 const unnamedTree = decodeContractV2Snapshot({ ...previewSnapshot, layoutContract: {
   ...previewSnapshot.layoutContract, containerTree: [{ containerId: 'native.group', containerType: 'group', type: 'group',
     name: '', title: 'Group', span: 24, nativeLocator: '/form/group[2]', occurrenceIndex: 2, children: [], widgetList: [] }],

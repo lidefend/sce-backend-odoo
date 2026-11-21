@@ -1535,11 +1535,15 @@ function decodeFormStructureGovernanceContract(
     issues.push({ path, message: 'must be an object' });
     return null;
   }
-  rejectUnknownKeys(raw, ['id', 'name', 'priority', 'view_type', 'version_no', 'source_kind'], path, issues);
+  rejectUnknownKeys(raw, ['id', 'name', 'status', 'priority', 'view_type', 'version_no', 'source_kind'], path, issues);
   const id = raw.id;
   const preview = raw.source_kind === 'change_set_preview';
   if (raw.source_kind !== undefined && raw.source_kind !== 'published' && !preview) {
     issues.push({ path: `${path}.source_kind`, message: 'must be published or change_set_preview' });
+  }
+  const status = raw.status;
+  if (status !== undefined && status !== 'draft' && status !== 'published' && status !== 'preview') {
+    issues.push({ path: `${path}.status`, message: 'must be draft, published, or preview' });
   }
   if (typeof id !== 'number' || !Number.isInteger(id) || id < (preview ? 0 : 1)) {
     issues.push({ path: `${path}.id`, message: 'must be a positive published ID or a non-negative preview ID' });
@@ -1555,6 +1559,7 @@ function decodeFormStructureGovernanceContract(
     name: requiredString(raw, 'name', path, issues),
     ...(preview ? { source_kind: 'change_set_preview' as const }
       : raw.source_kind === 'published' ? { source_kind: 'published' as const } : {}),
+    ...(status === 'draft' || status === 'published' || status === 'preview' ? { status } : {}),
     ...(decodeOptionalInteger('priority') !== undefined ? { priority: decodeOptionalInteger('priority') } : {}),
     ...(optionalString(raw, 'view_type') ? { view_type: optionalString(raw, 'view_type') } : {}),
     ...(decodeOptionalInteger('version_no') !== undefined ? { version_no: decodeOptionalInteger('version_no') } : {}),

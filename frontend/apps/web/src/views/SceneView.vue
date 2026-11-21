@@ -221,7 +221,7 @@ import { resolveSceneActivityTitle, shouldRenderScenePageHeading } from '../app/
 import { usePageContract } from '../app/pageContract';
 import { config } from '../config';
 import type { NavNode } from '@sc/schema';
-import { setSceneRegistryFromSceneReadyContract, type Scene, type SceneTarget } from '../app/resolvers/sceneRegistry';
+import { mergeSceneRegistryFromSceneReadyContract, type Scene, type SceneTarget } from '../app/resolvers/sceneRegistry';
 import { isSceneBlocksDebugEnabled } from '../config/debug';
 
 const route = useRoute();
@@ -646,7 +646,7 @@ async function hydrateSceneReadyForCurrentScene(sceneKey: string) {
     if (contract && typeof contract === 'object' && Array.isArray((contract as Record<string, unknown>).scenes)) {
       const readyContract = contract as Record<string, unknown>;
       session.sceneReadyContract = readyContract as never;
-      setSceneRegistryFromSceneReadyContract(readyContract as never);
+      mergeSceneRegistryFromSceneReadyContract(readyContract as never);
       // A targeted response retains other scenes as registry entries, so only
       // this last detailed scene can be reused without another hydration.
       hydratedSceneScope = scopeKey;

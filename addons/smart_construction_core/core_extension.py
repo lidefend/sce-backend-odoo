@@ -187,7 +187,7 @@ _PROJECT_DASHBOARD_ROW_ACTION = {
         "route": "/s/project.management",
         "scene_key": "project.management",
         "entry_intent": "project.dashboard.enter",
-        "project_id": "${id}",
+        "query": {"project_id": "${id}"},
     },
     "trigger": "row_click",
     "level": "row",

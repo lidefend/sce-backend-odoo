@@ -4,6 +4,7 @@ import assert from 'node:assert/strict';
 import {
   applyReleasedNavigationTarget,
   findReleasedNavigationTargetByMenuXmlid,
+  findReleasedNavigationTargetBySceneKey,
 } from './released_navigation_target.mjs';
 import {
   deniedRoleCandidatesFor,
@@ -83,6 +84,29 @@ check(
   findReleasedNavigationTargetByMenuXmlid(nav, 'smart_construction_core.menu_action_two', 'other.action'),
   null,
   'a menu identity cannot borrow another action identity',
+);
+
+check(
+  findReleasedNavigationTargetBySceneKey([{
+    menu_xmlid: 'scene.contract.workspace_home',
+    menu_id: 42,
+    action_id: 0,
+    route: '/s/workspace.home',
+    scene_key: 'workspace.home',
+  }, ...nav], 'workspace.home')?.menu_xmlid,
+  'scene.contract.workspace_home',
+  'a released actionless scene carrier is resolved by its scene identity when the catalogue XMLID aliases it',
+);
+check(
+  findReleasedNavigationTargetBySceneKey([{
+    menu_xmlid: 'smart_construction_core.menu_action_scene',
+    menu_id: 43,
+    action_id: 201,
+    route: '/s/entry.action_scene',
+    scene_key: 'entry.action_scene',
+  }], 'entry.action_scene'),
+  null,
+  'an action-bearing scene cannot be accepted as the actionless carrier',
 );
 
 const targets = { entry: {} };

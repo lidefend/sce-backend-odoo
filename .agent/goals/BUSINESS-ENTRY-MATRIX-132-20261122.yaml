@@ -4,21 +4,26 @@ goal:
   id: BUSINESS-ENTRY-MATRIX-132-20261122
   title: business_entry_matrix_132_declared_surface
   status: active
-  formal_product_layer: P4
+  formal_product_layer: P0/P1/P4
   layer_target: >-
     Acceptance declaration and validation tooling for the approved 132-page
-    Construction product scenario organization.
+    Construction product scenario organization, plus the narrowly scoped
+    runtime defects that prevented the declared pages from reaching their
+    authoritative contracts or routes.
   module:
     - scripts/verify
     - docs/product
     - config/frontend
     - make
+    - frontend/apps/web
+    - addons/smart_construction_core
     - .agent
   standard_vs_user_specific: construction_standard_product_acceptance_declaration
   objective: >-
     Replace the stale 91-action acceptance universe with the complete current
     product surface: 131 action-bearing pages plus the one declared scene
-    carrier, for exactly 132 matrix units.
+    carrier, for exactly 132 matrix units, then close discovered product
+    blockers without changing environment topology or rebuilding data.
   product_result: >-
     The declaration-driven matrix plans and reports 132 units, preserves the
     existing 91 observations when their inputs are unchanged, marks newly
@@ -26,7 +31,10 @@ goal:
     organization, matrix rows, scene carrier, or 132-page product policy drift.
     A narrow acceptance-only reconciliation tool preserves the 17 legacy scene
     enablements and adds the 22 published current scenarios whose union covers
-    all 132 pages.
+    all 132 pages. Runtime triage additionally aligns V2 form provenance,
+    native analysis capabilities, scene catalogue merging, actionless scene
+    aliases and explicit admin-surface precedence with the declarations the
+    backend already publishes.
   why_here: >-
     The missing rows are acceptance declarations and verification-tool inputs.
     Product menus, actions, models, ACLs, and runtime business semantics are
@@ -42,9 +50,14 @@ goal:
       - matrix total units grows from 92 to 132 including the scene carrier
       - new rows remain pending until real execution
       - structural drift guard covers product organization, CSV and scene registry
+      - V2 accepts legal business-config publication status provenance
+      - released scene inventory survives scene-ready enrichment
+      - native pivot/graph renderers are declared to the contract negotiation
+      - actionless scene carriers resolve by scene identity
+      - admin surfaces keep their declared route through scenario projection
     exclusions:
-      - no runtime menu, model, action, ACL, record rule, contract, or frontend changes
-      - no database or fixture mutation
+      - no menu, model, ACL, record-rule or business-data changes
+      - no database rebuild or module reinstall
       - no reuse or relabeling of old evidence for newly added entries
   rollback: >-
     Revert the CSV, role-surface declaration, structural guard, Make wiring and

@@ -6,7 +6,12 @@ import {
   resolveSceneContractEntryIntent,
 } from '../src/app/sceneEntryContract';
 
-import { getSceneByKey, setSceneRegistryFromSceneReadyContract } from '../src/app/resolvers/sceneRegistry';
+import {
+  getSceneByKey,
+  mergeSceneRegistryFromSceneReadyContract,
+  setSceneRegistry,
+  setSceneRegistryFromSceneReadyContract,
+} from '../src/app/resolvers/sceneRegistry';
 let cases = 0;
 const equal: typeof assert.equal = (...args) => { cases += 1; assert.equal(...args); };
 
@@ -82,6 +87,29 @@ equal(projected?.target.intent, 'custom.entry');
 equal(projected?.target.entry_intent, 'custom.override');
 equal(resolveSceneContractEntryIntent({ ...base, routeName: 'scene', declaredTarget: projected?.target }), 'custom.override');
 equal(getSceneByKey('project.management'), null, 'no synthetic scene when absent from effective contract');
+
+setSceneRegistry([{
+  key: 'enterprise.department',
+  label: '组织架构',
+  route: '/s/enterprise.department',
+  target: { route: '/s/enterprise.department', action_id: 804, menu_id: 427, model: 'hr.department' },
+}, {
+  key: 'custom.dashboard',
+  label: 'Catalogue title',
+  route: '/s/custom.dashboard',
+  target: { route: '/s/custom.dashboard' },
+}]);
+mergeSceneRegistryFromSceneReadyContract({ scenes: [{
+  scene: { key: 'custom.dashboard', title: 'Configured title' },
+  page: { route: '/s/custom.dashboard' },
+  meta: { target: { intent: 'custom.entry' } },
+}] });
+equal(
+  getSceneByKey('enterprise.department')?.target.action_id,
+  804,
+  'ready rows enrich, rather than replace, the released scene catalogue',
+);
+equal(getSceneByKey('custom.dashboard')?.label, 'Configured title', 'ready rows override the matching catalogue identity');
 console.log(`[scene_entry_contract_test] PASS cases=${cases}`);
 
 import { resolveSceneRuntimeFetchRequest } from '../src/app/sceneRuntimeFetchContract';

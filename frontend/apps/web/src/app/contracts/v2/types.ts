@@ -76,6 +76,7 @@ export interface ContractV2FormStructureGovernanceContract {
   id: number;
   name: string;
   source_kind?: 'published' | 'change_set_preview';
+  status?: 'draft' | 'published' | 'preview';
   priority?: number;
   view_type?: string;
   version_no?: number;

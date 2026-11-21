@@ -129,3 +129,43 @@ Evidence:
   `70c9c2e24303b2c6ab25681978aa0b424bd01f17b83f57b9451ea5ae2cae0e39`
 - matrix summary SHA256
   `770029dab255cf478fd82fc57d84934c561a1c3f83122c30a6eb1ced0e5c7ac6`
+
+## Runtime defect triage
+
+The matrix findings were classified before any product change:
+
+- the scene-ready hydration call replaced the released scene catalogue with its
+  own subset, so valid `enterprise.department`, `enterprise.post`,
+  `enterprise.user` and `portal.notifications` scenes disappeared after the
+  first route resolution;
+- V2 form decoding rejected the legal business-config `status` provenance
+  returned by the backend;
+- the web client did not negotiate the pivot/graph renderers it already
+  implements;
+- an actionless scene carrier was looked up only by catalogue XMLID, although
+  runtime published the same scene under its released scene identity;
+- `requested_only` accidentally filtered the affected list rather than the
+  executable list, dropping authorized blocked retries;
+- generic menu/action scene projection overwrote an explicit
+  `admin_surface=business_config` route;
+- the project dashboard row action declared project context at the target root
+  instead of the route query, so the selected project was not carried.
+
+The focused fixes add no alternate registry or second navigation engine. They
+only make the existing V2 consumer, scene registry, navigation projection and
+matrix planner honor declarations already emitted by the backend.
+
+## Targeted reruns
+
+The 20 previously blocked units were re-opened explicitly, without rerunning
+the 100 units that had remained checked. Eighteen passed immediately. After the
+frontend fixes and an in-place static rebuild, the current ledger is:
+
+- 130 checked;
+- 1 project-kanban detail failure waiting for the exact-head backend row target;
+- 1 business-config workbench failure waiting for the exact-head backend
+  admin-surface projection.
+
+No database was recreated, no module was reinstalled, and no base/container
+topology was rebuilt. The two remaining entries are rerun only after the
+existing acceptance backend is reloaded from the exact committed HEAD.

@@ -228,15 +228,24 @@ def partial_fold_plan(folded: dict, selected_count: int) -> dict:
 
 
 def restrict_selection_to_requested(selection: dict, requested: list[str]) -> dict:
-    """Narrow an affected plan to explicitly requested, still-affected units."""
+    """Narrow an execution plan to explicitly requested units.
+
+    ``select_units`` keeps failed-but-requested units in ``execute`` without
+    adding them back to ``affected``: they stay blocked unless the caller states
+    a recovery reason. The requested-only filter must preserve that distinction
+    and narrow ``execute`` itself. Filtering the affected list alone silently
+    drops an authorized failure retry and can report that every unit is covered.
+    """
     affected = [str(key) for key in selection.get('affected') or []]
     requested_set = {str(key) for key in requested}
-    selected = [key for key in affected if key in requested_set]
+    executable = [str(key) for key in selection.get('execute') or affected]
+    selected_affected = [key for key in affected if key in requested_set]
+    selected = [key for key in executable if key in requested_set]
     unrequested = [key for key in affected if key not in requested_set]
     return {
         **selection,
         'execute': selected,
-        'affected': selected,
+        'affected': selected_affected,
         'unrequested_affected': unrequested,
         'requested_only': True,
     }
