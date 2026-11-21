@@ -326,6 +326,14 @@ class EditionReleaseSnapshotService:
 
     @staticmethod
     def _draft_fingerprint(*, policy: dict[str, Any], pages: list[dict[str, Any]]) -> str:
+        """Return the frozen identity while preserving pre-composition snapshots.
+
+        Releases created before ``business_scene_composition`` was introduced
+        are immutable and do not contain that policy key. Excluding the key only
+        for those legacy policies keeps their original digest verifiable without
+        weakening validation for current policies, where the normalized policy
+        always carries the field.
+        """
         normalized_pages = [
             {
                 "page_key": _text(row.get("page_key")),
@@ -347,11 +355,12 @@ class EditionReleaseSnapshotService:
             "state": _text(policy.get("state")),
             "access_level": _text(policy.get("access_level")),
             "allowed_role_codes": sorted(_text(item) for item in _list(policy.get("allowed_role_codes")) if _text(item)),
-            "business_scene_composition": _dict(
-                policy.get("business_scene_composition")
-            ),
             "pages": normalized_pages,
         }
+        if "business_scene_composition" in policy:
+            payload["business_scene_composition"] = _dict(
+                policy.get("business_scene_composition")
+            )
         return hashlib.sha256(_stable_json(payload).encode("utf-8")).hexdigest()
 
     def _business_scene_composition_check(

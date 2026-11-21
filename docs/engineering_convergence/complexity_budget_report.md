@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5329`
 - Files requiring split plan: `86`
-- Files above warning threshold: `159`
+- Files above warning threshold: `160`
 
 ## Split Plan Required
 
@@ -117,9 +117,9 @@ Generated from repository source files. This report is informational during the 
 | 1392 | Python source | `scripts/ops/change_impact_planner.py` |
 | 1389 | Python source | `addons/smart_construction_core/models/core/expense_claim.py` |
 | 1361 | Python source | `scripts/ops/test_safe_worktree_cleanup.py` |
+| 1357 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 1354 | Python source | `addons/smart_construction_core/models/support/business_form_policy_templates.py` |
 | 1353 | Python source | `scripts/ops/local_quick_evidence.py` |
-| 1348 | Python source | `addons/smart_core/delivery/edition_release_snapshot_service.py` |
 | 1339 | Python source | `scripts/verify/acceptance_evolution_binding_guard.py` |
 | 1339 | Python source | `scripts/verify/release_v2_0_0_control_docs_guard.py` |
 | 1332 | Python source | `addons/smart_construction_core/core_extension_policy_maps.py` |
@@ -236,6 +236,7 @@ Generated from repository source files. This report is informational during the 
 | 829 | Python source | `addons/smart_core/core/node_component_validation.py` |
 | 828 | TypeScript source | `frontend/apps/web/src/app/presentation/contractFormPresenter.ts` |
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
+| 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |

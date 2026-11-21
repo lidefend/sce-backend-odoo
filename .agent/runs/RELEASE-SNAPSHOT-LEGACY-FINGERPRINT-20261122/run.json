@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "id": "RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122",
+  "branch": "fix/release-snapshot-legacy-fingerprint-20261122",
+  "baseline_sha": "594309dee5430d8f9e69b324ebc9aa53b73e00ba",
+  "status": "verification_pending",
+  "goal": ".agent/goals/RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122.yaml",
+  "record": "docs/ops/iterations/release_snapshot_legacy_fingerprint_20261122.md",
+  "scope": [
+    "addons/smart_core/delivery/edition_release_snapshot_service.py",
+    "addons/smart_core/tests/test_release_preflight_target_validation.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/release_snapshot_legacy_fingerprint_20261122.md",
+    ".agent/active-runs.json",
+    ".agent/goals/RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122.yaml",
+    ".agent/runs/RELEASE-SNAPSHOT-LEGACY-FINGERPRINT-20261122/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository Make target and pure-Python snapshot validation test; no database, fixture, service, or release mutation"
+  },
+  "checks": {
+    "release_snapshot_target_validation": {
+      "target": "verify.daily.published_face.target.unit",
+      "inputs": [
+        "addons/smart_core/delivery/edition_release_snapshot_service.py",
+        "addons/smart_core/tests/test_release_preflight_target_validation.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "observations": {
+    "runtime_failure": "Acceptance browser login returned 200, then system.init returned 500 PUBLISHED_PRODUCT_PAGES_FINGERPRINT_MISMATCH.",
+    "root_cause": "PR #945 added business_scene_composition to the fingerprint payload; active snapshots frozen before that change retain their original immutable digest without the new field.",
+    "database_readback": "sc_frontend_acceptance active snapshots 54 and 82 match the legacy algorithm exactly and do not match the current algorithm.",
+    "regression_test": "verify.daily.published_face.target.unit passed 14 tests, including legacy preservation, current-field distinction, and tamper rejection.",
+    "local_iteration": "ci.local.iteration passed with two affected targets executed; no Quick, database rebuild, fixture reset, or migration.",
+    "generated_evidence": "The commit hook refreshed the complexity report because the changed production and test files crossed its warning rows; no unrelated generated artifact changed."
+  },
+  "next_exact_step": "Commit the reviewed compatibility change, push the exact branch, create the GitHub PR, and obtain independent review plus all required checks.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
