@@ -63,13 +63,14 @@ def committed_runtime_tree_sha256(root: Path, head: str) -> str:
             stdout=subprocess.PIPE,
         ).stdout.split(b"\0")
         entries = []
-        for raw in sorted(value for value in raw_tree if value):
+        for raw in (value for value in raw_tree if value):
             metadata, raw_path = raw.split(b"\t", 1)
             mode, object_type, object_id = metadata.decode("ascii").split()
             relative = raw_path.decode("utf-8")
             if relative.startswith(NON_RUNTIME_PREFIXES) or object_type != "blob":
                 continue
             entries.append((raw_path, mode, object_id))
+        entries.sort(key=lambda entry: entry[0])
         digest = hashlib.sha256()
         process = subprocess.Popen(
             ["git", "-C", str(root), "cat-file", "--batch"],
@@ -92,7 +93,7 @@ def committed_runtime_tree_sha256(root: Path, head: str) -> str:
                 digest.update(b"symlink\0" + content)
             else:
                 digest.update(b"file\0")
-                digest.update(format(int(mode, 8) & 0o777, "o").encode("ascii") + b"\0")
+                digest.update(str(int(mode, 8) & 0o777).encode("ascii") + b"\0")
                 digest.update(content)
         process.stdin.close()
         stderr = process.stderr.read() if process.stderr is not None else b""

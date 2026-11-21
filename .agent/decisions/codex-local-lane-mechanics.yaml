@@ -204,6 +204,7 @@ decision:
         - reuse_index_is_keyed_by_the_complete_required_target_set
         - mixed_executed_and_reused_receipt_can_close_an_iteration_checkpoint
         - identical_rerun_after_a_complete_mixed_receipt_executes_zero_targets
+        - clean_current_and_committed_runtime_digests_must_match
         - every_orm_run_prints_machine_readable_reuse_or_rebuild_decision
       rebuild_causes:
         - template_missing

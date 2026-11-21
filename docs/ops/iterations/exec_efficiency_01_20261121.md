@@ -49,6 +49,8 @@ preceding the first implementation commit, `2026-11-20T15:30Z` through
 6. Reuse indexes use the complete required target set. A passed receipt mixing
    executed and reused rows can close an iteration checkpoint, and an identical
    rerun executes zero targets.
+7. The clean-worktree and committed-tree runtime digests use the same path-sorted
+   byte stream, so a correct clean candidate is not rejected by digest ordering.
 
 ## Exclusions
 
@@ -93,7 +95,7 @@ Implementation provides:
 ### Passed offline
 
 - `verify.local.development_lifecycle.unit`: 68 tests.
-- `verify.frontend.dev.incremental.unit`: 194 tests.
+- `verify.frontend.dev.incremental.unit`: 195 tests.
 - `verify.agent.resume.unit`: 67 tests.
 - `ci.local.iteration`: all static prerequisites passed; affected planner executed
   `verify.agent.ledger.unit`, `verify.baseline.iteration.execution.policy` and

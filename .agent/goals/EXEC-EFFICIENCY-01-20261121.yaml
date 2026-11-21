@@ -12,6 +12,7 @@ goal:
   module:
     - scripts/dev/local_test_runner.py
     - scripts/ops/agent_run_context.py
+    - scripts/ops/incremental_execution.py
     - scripts/verify/frontend_dev_incremental.py
     - scripts/verify/test_local_test_runner.py
     - scripts/verify/test_agent_run_context.py

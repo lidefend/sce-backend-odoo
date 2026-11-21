@@ -10,6 +10,7 @@
     "addons/smart_construction_acceptance_fixture/tests/test_fixture_scenario_identity.py",
     "scripts/dev/local_test_runner.py",
     "scripts/ops/agent_run_context.py",
+    "scripts/ops/incremental_execution.py",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_dev_incremental.py",
@@ -46,6 +47,7 @@
     "incremental_planner": {
       "target": "verify.frontend.dev.incremental.unit",
       "inputs": [
+        "scripts/ops/incremental_execution.py",
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
         "make/frontend.mk"

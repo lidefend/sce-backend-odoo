@@ -3145,6 +3145,17 @@ class IncrementalExecutionIdentityTest(unittest.TestCase):
         self.assertTrue(identity["worktreeClean"])
         self.assertEqual(len(identity["authoritySha256"]["planner.py"]), 64)
 
+    def test_committed_runtime_digest_matches_clean_worktree(self) -> None:
+        head = subprocess.check_output(
+            ["git", "-C", str(self.root), "rev-parse", "HEAD"],
+            text=True,
+        ).strip()
+        identity = current_identity(self.root, (self.authority,))
+        self.assertEqual(
+            identity["runtimeTreeSha256"],
+            committed_runtime_tree_sha256(self.root, head),
+        )
+
     def test_dirty_worktree_hashes_current_runtime_bytes(self) -> None:
         clean = current_identity(self.root, (self.authority,))
         self.authority.write_text("two\n", encoding="utf-8")
