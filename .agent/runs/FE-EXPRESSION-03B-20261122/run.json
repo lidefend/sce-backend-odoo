@@ -1,0 +1,122 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03B-20261122",
+  "branch": "audit/fe-expression-03b-cross-page-20261122",
+  "baseline_sha": "a408177cde91a6435d5e57a63c50dc35c2e5ce14",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03B-20261122.yaml",
+  "record": "docs/audit/fe_expression_03b_cross_page_semantic_audit_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-20261122/run.json",
+    "docs/audit/fe_expression_03b_cross_page_semantic_audit_20261122.md",
+    "docs/audit/fe_expression_03b_cross_page_semantic_matrix_20261122.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "current main source plus existing registered frontend unit targets; no product write, browser PASS claim or database access"
+  },
+  "checks": {
+    "contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "state_dashboard": {
+      "target": "verify.frontend.state_dashboard.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/product_my_work_presentation_test.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/scripts/activity_page_tab_keyboard_test.ts",
+        "frontend/apps/web/scripts/form_route_instance_identity_test.ts",
+        "frontend/apps/web/scripts/activity_page_retention_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "localized_display": {
+      "target": "verify.frontend.localized_display.unit",
+      "inputs": [
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "source-only frontend diagnosis; no backend behavior changed"
+    },
+    {
+      "gate": "affected source and behavior locks",
+      "state": "passed",
+      "owner_target": "contract shape projection, business semantics, state dashboard and localized display"
+    },
+    {
+      "gate": "production build/browser runtime",
+      "state": "excluded",
+      "reason": "phase 1 makes no product behavior change and does not claim browser PASS"
+    },
+    {
+      "gate": "independent review",
+      "state": "required_after_diagnosis",
+      "owner_target": "owner review of source evidence and implementation selection"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "authority_result": "Two general interpreters remain active: businessValuePresentation and utils/display.formatDisplayValue",
+    "finding_summary": {
+      "P0": 0,
+      "P1": 6,
+      "P2": 4
+    },
+    "focused_checks": {
+      "verify.frontend.contract_shape_projection.unit": "PASS cases=14; the test explicitly locks the current percentage identity omission",
+      "verify.frontend.business_semantics.unit": "PASS positive shared semantics",
+      "verify.frontend.state_dashboard.unit": "PASS positive My Work/state surfaces",
+      "verify.frontend.localized_display.unit": "PASS"
+    },
+    "source_counterexamples": {
+      "field_value_unknown_selection": "unknown",
+      "list_unknown_selection": "unknown",
+      "kanban_unknown_selection": "ContractGapError",
+      "float_precision": "1.23",
+      "my_work_missing_digits": "¥50.00",
+      "shared_utc_datetime": "2026-11-22 08:30",
+      "audit_local_datetime": "2026/11/22 16:30",
+      "bare_many2many_ids": "2"
+    },
+    "browser_claim": "not_run; source audit only",
+    "requested_plan_file": "frontend-convergence-plan-v1.md was absent from the repository at baseline"
+  },
+  "next_exact_step": "Review the source-verified matrix and select only independently acceptable P1 repair batches; do not implement 03C or add a new runtime.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
