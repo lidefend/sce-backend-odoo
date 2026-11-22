@@ -126,7 +126,7 @@ import ScSelect from '../design-system/ScSelect.vue';
 import ScTextarea from '../design-system/ScTextarea.vue';
 import ScRichText from '../content/ScRichText.vue';
 import RestrictedHtmlEditor from '../editor/RestrictedHtmlEditor.vue';
-import { formatDisplayValue } from '../../utils/display';
+import { presentDeclaredBusinessValue } from '../../app/presentation/businessValuePresentation';
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import {
   ScTaskActionResolverKey,
@@ -175,11 +175,22 @@ const normalizedReadonlyValue = computed(() => (
     ? ''
     : props.field.value
 ));
-const readonlyText = computed(() => formatDisplayValue(
-  normalizedReadonlyValue.value,
-  { ...(props.field.descriptor || {}), type: normalizedType.value || props.field.descriptor?.type },
-  { emptyText: resolveReadonlyEmptyText(props.field) },
-));
+const readonlyText = computed(() => presentDeclaredBusinessValue({
+  field: {
+    ...(props.field.descriptor || {}),
+    name: props.field.name,
+    type: normalizedType.value || props.field.descriptor?.type,
+    componentKey: props.field.componentKey,
+    widget: props.field.widget,
+    selection: props.field.descriptor?.selection,
+    digits: props.field.digits,
+    currencyField: props.field.currencyField,
+    currencyLabel: props.field.currencyLabel,
+  },
+  value: normalizedReadonlyValue.value,
+  currencyLabel: props.field.currencyLabel,
+  emptyText: resolveReadonlyEmptyText(props.field),
+}).text);
 const readonlyDateTimeValue = computed(() => {
   const value = normalizedReadonlyValue.value;
   return value === null || typeof value === 'undefined' ? '' : String(value);

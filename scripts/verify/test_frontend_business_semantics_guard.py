@@ -91,20 +91,71 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
     def test_numeric_zero_empty_fails(self):
         failures = guard.validate(lambda path: source(
             path,
-            ("missing) text = emptyText", "missing) text = '0'")
+            (
+                "const presentation = presentDeclaredBusinessValue({",
+                "String(raw); const presentation = presentDeclaredBusinessValue({",
+            )
             if path == "pages/listPage/listCellPresentation.ts"
             else None,
         ))
-        self.assertTrue(any("missing numeric" in failure for failure in failures))
+        self.assertTrue(any("[CFG-002]" in failure and "String(raw)" in failure for failure in failures))
 
     def test_local_money_formatter_fails(self):
         failures = guard.validate(lambda path: source(
             path,
-            ("return formatMonetaryDisplayValue(", "return new Intl.NumberFormat('zh-CN', { style: 'currency', currency: 'CNY' }).format(")
+            (
+                "return presentDeclaredBusinessValue({",
+                "return formatDisplayValue(props.value, props.field); presentDeclaredBusinessValue({",
+            )
             if path == "components/FieldValue.vue"
             else None,
         ))
-        self.assertTrue(any("second monetary formatter" in failure for failure in failures))
+        self.assertTrue(any("[CFG-004]" in failure for failure in failures))
+
+    def test_generic_display_bypass_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "presentDeclaredBusinessValue({",
+                "legacyDeclaredValue({",
+            )
+            if path == "utils/display.ts"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-001]" in failure for failure in failures))
+
+    def test_list_selection_raw_fallback_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("function semanticCell(", "function selectionLabel() { return ''; }\nfunction semanticCell(")
+            if path == "pages/ListPage.vue"
+            else None,
+        ))
+        self.assertTrue(any("[CFG-002]" in failure for failure in failures))
+
+    def test_field_value_component_key_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            ("componentKey: props.componentKey", "componentKey: undefined")
+            if path == "components/FieldValue.vue"
+            else None,
+        ))
+        self.assertTrue(any(
+            "[CFG-004]" in failure and "componentKey: props.componentKey" in failure
+            for failure in failures
+        ))
+
+    def test_relation_locale_resolution_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "value = resolveLocalizedDisplayValue(value, locale);",
+                "value = String(value);",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("resolveLocalizedDisplayValue(" in failure for failure in failures))
 
     def test_local_empty_text_fails(self):
         failures = guard.validate(lambda path: source(

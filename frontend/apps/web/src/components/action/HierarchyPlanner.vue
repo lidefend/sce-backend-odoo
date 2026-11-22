@@ -117,7 +117,19 @@ import ScIconButton from '../design-system/ScIconButton.vue';
 import ProductListHeader from '../product-list/ProductListHeader.vue';
 
 type Dict = Record<string, unknown>;
-type Column = { field: string; label: string; type?: string; ttype?: string; selection?: Array<[string, string]> };
+type Column = {
+  field: string;
+  label: string;
+  type?: string;
+  ttype?: string;
+  dataType?: string;
+  componentKey?: string;
+  widget?: string;
+  cellRole?: string;
+  selection?: Array<[string, string]>;
+  digits?: [number, number];
+  currencyField?: string;
+};
 type SurfaceAction = { key: string; label: string; action_id: number; menu_id: number; variant: string; route: string };
 type OutlineEntry = { node: HierarchyTreeNode; record: Dict; depth: number };
 type DetailSection = { title: string; fields: Column[] };

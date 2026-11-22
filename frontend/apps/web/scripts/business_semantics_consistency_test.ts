@@ -10,6 +10,7 @@ import { presentCollectionKanbanCell } from '../src/app/presentation/collectionK
 import { formatProductMyWorkFact } from '../src/app/presentation/productMyWorkPresentation';
 import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
 import { isListAttachmentCountColumn, presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { formatDisplayValue } from '../src/utils/display';
 
 const moneyField = {
   name: 'unrelated_value',
@@ -63,13 +64,13 @@ const rateNamedFloat = presentDeclaredBusinessValue({
   value: 12.5,
 });
 assert.equal(rateNamedFloat.kind, 'plain');
-assert.equal(rateNamedFloat.text, '12.5', 'field names never infer percentage identity');
+assert.equal(rateNamedFloat.text, '12.50', 'field names never infer percentage identity; plain floats share the authority default');
 assert.equal(presentCollectionKanbanCell({
   field: 'conversion_rate',
   value: 12.5,
   statusFields: [],
   columnOptions: [{ name: 'conversion_rate', type: 'float', componentKey: 'sc.input.number' }],
-}).text, '12.5', 'Kanban never infers percentage from a field name');
+}).text, '12.50', 'Kanban never infers percentage from a field name; plain floats share the authority default');
 
 const declaredPercentage = presentDeclaredBusinessValue({
   field: { name: 'unrelated_ratio', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
@@ -367,12 +368,94 @@ assert.equal(isListAttachmentCountColumn({
 }), true, 'attachment behavior requires an explicit contract cell role');
 assert.deepEqual(presentListCell({
   raw: 'pending',
-  column: { field: 'opaque_state', label: '状态', type: 'selection', cellRole: 'status' },
-  selectionText: '待处理',
+  column: {
+    field: 'opaque_state',
+    label: '状态',
+    type: 'selection',
+    cellRole: 'status',
+    selection: [...statusSelection],
+  },
 }), {
   text: '待处理',
   tone: 'warning',
 });
+assert.throws(() => presentListCell({
+  raw: 'missing',
+  column: {
+    field: 'opaque_state',
+    label: '状态',
+    type: 'selection',
+    cellRole: 'status',
+    selection: [...statusSelection],
+  },
+}), { name: 'ContractGapError' }, 'List unknown selection must fail closed without exposing its storage key');
+assert.throws(() => formatDisplayValue('missing', {
+  type: 'selection',
+  selection: [['pending', '待处理']],
+}), { name: 'ContractGapError' }, 'generic display delegates selection semantics to the authority');
+assert.equal(formatDisplayValue(12.5, {
+  type: 'float',
+  componentKey: 'sc.value.percentage',
+  digits: [16, 4],
+}), '12.5000%', 'generic display delegates percentage identity and digits');
+
+const relationField = { name: 'project_id', type: 'many2one' };
+assert.deepEqual(presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, '项目甲'],
+}), {
+  kind: 'relation',
+  text: '项目甲',
+  tone: 'neutral',
+  badgeSemantic: 'default',
+});
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: { id: 7, displayName: '项目甲' },
+}).text, '项目甲');
+const localizedRelationLabel = {
+  zh_CN: '项目甲',
+  en_US: 'Project A',
+};
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, localizedRelationLabel],
+  locale: 'zh-CN',
+}).text, '项目甲');
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, localizedRelationLabel],
+  locale: 'en-US',
+}).text, 'Project A');
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: { id: 7, display_name: localizedRelationLabel },
+  locale: 'en-US',
+}).text, 'Project A');
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: false,
+}).text, FIELD_VALUE_EMPTY_TEXT);
+assert.throws(() => presentDeclaredBusinessValue({
+  field: relationField,
+  value: 7,
+}), { name: 'ContractGapError' }, 'bare relation identity is never rendered as a business value');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, ''],
+}), { name: 'ContractGapError' }, 'relation identity without a declared label fails closed');
+assert.equal(formatDisplayValue([7, '项目甲'], relationField), '项目甲');
+assert.equal(formatDisplayValue([7, localizedRelationLabel], relationField, { locale: 'zh_CN' }), '项目甲');
+assert.equal(formatDisplayValue([7, localizedRelationLabel], relationField, { locale: 'en_US' }), 'Project A');
+assert.throws(() => formatDisplayValue(7, relationField), { name: 'ContractGapError' });
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'tag_ids', type: 'many2many' },
+  value: [[1, '标签甲'], { id: 2, display_name: '标签乙' }],
+}).text, '标签甲、标签乙');
+assert.throws(() => presentDeclaredBusinessValue({
+  field: { name: 'tag_ids', type: 'many2many' },
+  value: [1, 2],
+}), { name: 'ContractGapError' }, 'many2many bare IDs fail closed');
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'generated_value', componentKey: 'sc.input.text' },
   value: null,

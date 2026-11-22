@@ -109,7 +109,10 @@
             v-else
             :value="field.value"
             :field="field.descriptor"
+            :component-key="field.componentKey"
+            :widget="field.widget"
             :digits="field.digits"
+            :currency-field="field.currencyField"
             :currency-label="field.currencyLabel"
           />
         </div>

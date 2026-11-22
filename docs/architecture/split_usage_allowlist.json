@@ -214,7 +214,11 @@
       "mechanism": "route_identifier"
     },
     "frontend/apps/web/src/utils/display.ts": {
-      "count": 3,
+      "count": 1,
+      "mechanism": "locale_and_label_format"
+    },
+    "frontend/apps/web/src/utils/localizedDisplay.ts": {
+      "count": 2,
       "mechanism": "locale_and_label_format"
     },
     "frontend/apps/web/src/views/BusinessConfigSurfaceView.vue": {

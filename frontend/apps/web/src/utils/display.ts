@@ -1,4 +1,3 @@
-import type { FieldDescriptor } from '@sc/schema';
 import {
   ATTACHMENT_REFERENCE_URL_SOURCE,
   FIELD_VALUE_EMPTY_TEXT,
@@ -6,24 +5,24 @@ import {
   FIELD_VALUE_TRUE_TEXT,
   containsAttachmentReference,
   containsAttachmentReferenceIn,
-  formatNumericFieldValue,
-  formatTemporalFieldValue,
   isEmptyFieldValue,
-  isBooleanFieldType,
-  isJsonFieldType,
-  isNumericFieldType,
-  isScalarRelationFieldType,
-  isSelectionFieldType,
-  isTemporalFieldType,
   normalizeFieldType,
 } from './fieldSemantics.ts';
+import {
+  presentDeclaredBusinessValue,
+  type DeclaredBusinessField,
+} from '../app/presentation/businessValuePresentation.ts';
+import {
+  resolveLocalizedDisplayValue,
+  type LocalizedDisplayOptions,
+} from './localizedDisplay.ts';
 
-export type DisplayFormatOptions = {
-  emptyText?: string;
+export { resolveLocalizedDisplayValue };
+
+export type DisplayFormatOptions = LocalizedDisplayOptions & {
   booleanTrueText?: string;
   booleanFalseText?: string;
-  locale?: string;
-  fallbackLocales?: string[];
+  currencyLabel?: string;
 };
 
 const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
@@ -32,6 +31,7 @@ const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
   booleanFalseText: FIELD_VALUE_FALSE_TEXT,
   locale: '',
   fallbackLocales: ['zh_CN', 'en_US'],
+  currencyLabel: '',
 };
 
 function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayFormatOptions> {
@@ -41,110 +41,8 @@ function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayForma
     booleanFalseText: options?.booleanFalseText ?? DEFAULT_OPTIONS.booleanFalseText,
     locale: options?.locale ?? DEFAULT_OPTIONS.locale,
     fallbackLocales: options?.fallbackLocales ?? DEFAULT_OPTIONS.fallbackLocales,
+    currencyLabel: options?.currencyLabel ?? DEFAULT_OPTIONS.currencyLabel,
   };
-}
-
-function normalizeLocale(value: unknown): string {
-  const text = String(value || '').trim().replace('-', '_');
-  if (!text) return '';
-  const [language, territory] = text.split('_', 2);
-  return territory ? `${language.toLowerCase()}_${territory.toUpperCase()}` : language.toLowerCase();
-}
-
-function runtimeLocale(): string {
-  if (typeof document !== 'undefined') {
-    const documentLocale = normalizeLocale(document.documentElement.lang);
-    if (documentLocale) return documentLocale;
-  }
-  if (typeof navigator !== 'undefined') return normalizeLocale(navigator.language);
-  return '';
-}
-
-function parseQuotedValue(source: string, start: number): { value: string; end: number } | null {
-  let cursor = start;
-  while (cursor < source.length && /\s/.test(source[cursor] || '')) cursor += 1;
-  const quote = source[cursor];
-  if (quote !== "'" && quote !== '"') return null;
-  cursor += 1;
-  let value = '';
-  while (cursor < source.length) {
-    const character = source[cursor] || '';
-    if (character === '\\') {
-      const next = source[cursor + 1];
-      if (next === undefined) return null;
-      value += next === 'n' ? '\n' : next === 't' ? '\t' : next;
-      cursor += 2;
-      continue;
-    }
-    if (character === quote) return { value, end: cursor + 1 };
-    value += character;
-    cursor += 1;
-  }
-  return null;
-}
-
-function localizedMapping(value: unknown): Record<string, string> | null {
-  if (value && typeof value === 'object' && !Array.isArray(value)) {
-    return Object.entries(value as Record<string, unknown>).reduce<Record<string, string>>((out, [key, item]) => {
-      const locale = normalizeLocale(key);
-      if (locale) out[locale] = String(item || '').trim();
-      return out;
-    }, {});
-  }
-  if (typeof value !== 'string') return null;
-  const source = value.trim();
-  if (!source.startsWith('{') || !source.endsWith('}')) return null;
-  try {
-    const parsed = JSON.parse(source);
-    if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-      return localizedMapping(parsed);
-    }
-  } catch {
-    // Legacy imports may carry a safe, shallow Python mapping literal.
-  }
-  const result: Record<string, string> = {};
-  const keyPattern = /(['"])([a-z]{2}(?:[_-][a-z]{2})?)\1\s*:/gi;
-  for (const match of source.matchAll(keyPattern)) {
-    const parsed = parseQuotedValue(source, Number(match.index || 0) + match[0].length);
-    const locale = normalizeLocale(match[2]);
-    if (parsed && locale) result[locale] = parsed.value.trim();
-  }
-  return Object.keys(result).length ? result : {};
-}
-
-function selectLocalizedMappingValue(
-  mapping: Record<string, string>,
-  options?: Pick<DisplayFormatOptions, 'locale' | 'fallbackLocales' | 'emptyText'>,
-): string {
-  const requested = normalizeLocale(options?.locale) || runtimeLocale();
-  const candidates = [
-    requested,
-    requested.split('_', 1)[0],
-    ...(options?.fallbackLocales || DEFAULT_OPTIONS.fallbackLocales).map(normalizeLocale),
-  ];
-  for (const locale of candidates) {
-    if (locale && mapping[locale]) return mapping[locale];
-  }
-  return Object.values(mapping).find((item) => item) || options?.emptyText || '';
-}
-
-export function resolveLocalizedDisplayValue(
-  value: unknown,
-  options?: Pick<DisplayFormatOptions, 'locale' | 'fallbackLocales' | 'emptyText'>,
-): unknown {
-  const mapping = localizedMapping(value);
-  if (mapping === null) {
-    if (value && typeof value === 'object' && !Array.isArray(value)) return options?.emptyText ?? '';
-    if (typeof value === 'string') {
-      if (value.trim().startsWith('{')) return options?.emptyText ?? '';
-      return value.replace(/\{[^{}]*(?:zh_CN|en_US)[^{}]*\}/g, (literal) => {
-        const embedded = localizedMapping(literal);
-        return embedded ? selectLocalizedMappingValue(embedded, options) : literal;
-      });
-    }
-    return value;
-  }
-  return selectLocalizedMappingValue(mapping, options);
 }
 
 function relationalTupleDisplayValue(
@@ -194,104 +92,86 @@ export function parseAttachmentReferenceLinks(value: unknown): Array<{ name: str
   return links;
 }
 
-/**
- * JSON 字段没有编辑控件，只读展示必须反映契约里的真实值：对象与数组输出其 JSON
- * 文本，空对象、空数组与空值走既有空值口径。它必须早于本地化归一，否则对象会被
- * 当成多语言映射而退化为空文本。
- */
-function formatJsonDisplayValue(value: unknown, emptyText: string): string {
-  if (value === null || value === undefined || value === false) return emptyText;
-  if (typeof value === 'string') return value.trim() ? value : emptyText;
-  if (Array.isArray(value)) return value.length ? JSON.stringify(value) : emptyText;
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return Object.keys(record).length ? JSON.stringify(record) : emptyText;
-  }
-  return String(value);
+type DeclaredDisplayField = DeclaredBusinessField;
+
+function normalizeDeclaredValue(
+  value: unknown,
+  field: DeclaredDisplayField,
+  options: Required<DisplayFormatOptions>,
+): unknown {
+  const fieldType = normalizeFieldType(field);
+  if (fieldType === 'json') return value;
+  if (fieldType === 'many2one' || fieldType === 'many2many' || fieldType === 'one2many') return value;
+  return resolveLocalizedDisplayValue(value, options);
 }
 
-export function formatDisplayValue(
+function formatDeclaredDisplayValue(
   value: unknown,
-  field?: Pick<FieldDescriptor, 'ttype' | 'type' | 'selection' | 'digits'>,
-  options?: DisplayFormatOptions,
+  field: DeclaredDisplayField,
+  options: Required<DisplayFormatOptions>,
 ): string {
-  const normalized = normalizeOptions(options);
-  const fieldType = normalizeFieldType(field);
-  if (isJsonFieldType(fieldType)) {
-    return formatJsonDisplayValue(value, normalized.emptyText);
+  const normalizedValue = normalizeDeclaredValue(value, field, options);
+  const presentation = presentDeclaredBusinessValue({
+    field: {
+      name: field.name,
+      type: field.type,
+      ttype: field.ttype,
+      dataType: field.dataType,
+      componentKey: field.componentKey,
+      widget: field.widget,
+      cellRole: field.cellRole,
+      selection: field.selection,
+      digits: field.digits,
+      currencyField: field.currencyField || field.currency_field,
+      currencyLabel: field.currencyLabel,
+      relation: field.relation,
+    },
+    value: normalizedValue,
+    currencyLabel: options.currencyLabel,
+    emptyText: options.emptyText,
+    temporalProfile: 'full',
+    locale: options.locale,
+    fallbackLocales: options.fallbackLocales,
+  });
+  if (presentation.kind === 'plain') {
+    const text = stripInternalMigrationMetadata(presentation.text);
+    if (containsAttachmentReference(text)) return formatAttachmentReferenceValue(text) || text;
+    return text || options.emptyText;
   }
-  value = resolveLocalizedDisplayValue(value, normalized);
+  return presentation.text;
+}
 
-  if (isEmptyFieldValue(value)) {
-    return normalized.emptyText;
-  }
-
-  if (isBooleanFieldType(fieldType)) {
-    return value ? normalized.booleanTrueText : normalized.booleanFalseText;
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? String(value) : normalized.emptyText;
-  }
-
-  if (isTemporalFieldType(fieldType)) {
-    if (value === false) return normalized.emptyText;
-    const temporal = formatTemporalFieldValue(value, 'full');
-    if (temporal) return temporal;
-  }
-
-  if (isSelectionFieldType(fieldType) && Array.isArray(field?.selection)) {
-    const match = field.selection.find((item) => item[0] === value);
-    return match ? String(match[1]) : String(value);
-  }
-
-  if (isNumericFieldType(fieldType)) {
-    const formatted = formatNumericFieldValue(value, fieldType, {
-      digits: normalizeDigits(field?.digits),
-    });
-    if (formatted !== null) return formatted;
-  }
-
-  if (isScalarRelationFieldType(fieldType) && Array.isArray(value)) {
-    const relationalLabel = relationalTupleDisplayValue(value, normalized);
-    if (relationalLabel !== null) return relationalLabel;
-    if (value[0] != null) {
-      return String(value[0]);
-    }
-    return normalized.emptyText;
-  }
-
+function formatUndeclaredDisplayValue(
+  value: unknown,
+  options: Required<DisplayFormatOptions>,
+): string {
+  value = resolveLocalizedDisplayValue(value, options);
+  if (isEmptyFieldValue(value)) return options.emptyText;
+  if (typeof value === 'boolean') return value ? String(value) : options.emptyText;
   if (Array.isArray(value)) {
-    if (!value.length) {
-      return normalized.emptyText;
-    }
-    const relationalLabel = relationalTupleDisplayValue(value, normalized);
+    if (!value.length) return options.emptyText;
+    const relationalLabel = relationalTupleDisplayValue(value, options);
     if (relationalLabel !== null) return relationalLabel;
     const attachmentText = formatAttachmentReferenceValue(value);
-    if (attachmentText && containsAttachmentReferenceIn(value)) {
-      return attachmentText;
-    }
+    if (attachmentText && containsAttachmentReferenceIn(value)) return attachmentText;
     return value.map((item) => String(item)).join(', ');
   }
-
-  if (typeof value === 'object') {
-    return normalized.emptyText;
-  }
-
+  if (typeof value === 'object') return options.emptyText;
   const rawText = stripInternalMigrationMetadata(String(value));
-  if (!rawText) return normalized.emptyText;
+  if (!rawText) return options.emptyText;
   if (containsAttachmentReference(rawText)) {
     return formatAttachmentReferenceValue(rawText) || rawText;
   }
   return rawText;
 }
 
-function normalizeDigits(value: unknown): [number, number] | undefined {
-  if (!Array.isArray(value) || value.length !== 2) return undefined;
-  const precision = Number(value[0]);
-  const scale = Number(value[1]);
-  return Number.isInteger(precision) && precision > 0
-    && Number.isInteger(scale) && scale >= 0 && scale <= 20 && scale <= precision
-    ? [precision, scale]
-    : undefined;
+export function formatDisplayValue(
+  value: unknown,
+  field?: DeclaredDisplayField,
+  options?: DisplayFormatOptions,
+): string {
+  const normalized = normalizeOptions(options);
+  return field
+    ? formatDeclaredDisplayValue(value, field, normalized)
+    : formatUndeclaredDisplayValue(value, normalized);
 }

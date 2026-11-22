@@ -3,7 +3,7 @@
   "id": "FE-CONTRACT-FIDELITY-02",
   "branch": "feature/fe-contract-fidelity-02-planning-20261122",
   "baseline_sha": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
   "record": "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
   "scope": [
@@ -178,7 +178,16 @@
     "deployment": false,
     "plan_scope": true
   },
-  "next_exact_step": "Commit and publish this planning-only candidate, obtain current exact-head required checks, open the external-review PR and await architecture-owner approval before any product remediation.",
+  "mainline_integration": {
+    "pr": 970,
+    "source_head": "c47eec3c88f52f9e0dd971548b6f888590ce84f8",
+    "merge_commit": "08ce19985aadd7f91b11c42f650b32893638b4c9",
+    "target_before_merge": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+    "merge_method": "squash",
+    "architecture_owner_decision": "approved_fcf_02_1_start",
+    "product_source_modified": false
+  },
+  "next_exact_step": "Proceed only with FCF-02-1 Unified Business Semantic Authority under its separately registered run.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

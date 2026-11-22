@@ -1,0 +1,319 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-FIDELITY-02-1",
+  "branch": "feature/fcf-02-1-semantic-authority-20261123",
+  "baseline_sha": "08ce19985aadd7f91b11c42f650b32893638b4c9",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02-1.yaml",
+  "record": "docs/audit/fe_contract_fidelity_02_1_semantic_authority_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02-1.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02/run.json",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02-1/run.json",
+    "docs/audit/fe_contract_fidelity_02_1_semantic_authority_20261123.md",
+    "docs/architecture/split_usage_allowlist.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/utils/display.ts",
+    "frontend/apps/web/src/utils/localizedDisplay.ts",
+    "frontend/apps/web/src/components/FieldValue.vue",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
+    "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+    "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+    "frontend/apps/web/src/pages/KanbanPage.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/collection_kanban_selection_label_test.ts",
+    "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+    "frontend/apps/web/scripts/list_surface_component_test.mjs",
+    "scripts/verify/frontend_localized_display_contract_test.ts",
+    "scripts/verify/frontend_business_semantics_guard.py",
+    "scripts/verify/test_frontend_business_semantics_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree, governed static/unit/component-browser tests; no database, service or persistent runtime writes"
+  },
+  "checks": {
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_fidelity_plan": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "shared_surface_boundary": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "inputs": [
+        "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.guard",
+      "inputs": [
+        "frontend/apps/web/src/pages",
+        "frontend/apps/web/src/views",
+        "frontend/apps/web/src/app",
+        "docs/frontend_productization/decision-authority-inventory-v1.json"
+      ],
+      "kind": "offline"
+    },
+    "contract_gap_primitive": {
+      "target": "verify.frontend.contract_gap_primitive.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/scripts/contract_gap_primitive_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/scripts/collection_kanban_selection_label_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+        "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "scripts/verify/frontend_business_semantics_guard.py",
+        "scripts/verify/test_frontend_business_semantics_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "localized_display": {
+      "target": "verify.frontend.localized_display.unit",
+      "inputs": [
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "professional_base_field": {
+      "target": "verify.frontend.professional_base_field.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/src/utils/display.ts",
+        "scripts/verify/frontend_professional_base_field_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "collection_row_cell": {
+      "target": "verify.frontend.collection_row_cell.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "scripts/verify/frontend_collection_row_cell_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/utils/display.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_kanban": {
+      "target": "verify.frontend.collection_kanban_record_card.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_kanban_selection_label_test.ts",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "professional_business_value": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+        "frontend/apps/web/src/components/FieldValue.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts"
+      ],
+      "kind": "offline"
+    },
+    "standard_collection_composition": {
+      "target": "verify.frontend.standard_collection_composition.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/list_surface_component_test.mjs",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/KanbanPage.vue",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/app/presentation/contractFormPresenter.ts",
+        "frontend/apps/web/src/components/template/FormSection.vue"
+      ],
+      "kind": "offline"
+    },
+    "hierarchy": {
+      "target": "verify.frontend.hierarchy_command_authority.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/action/HierarchyPlanner.vue",
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue",
+        "frontend/apps/web/src/utils/display.ts"
+      ],
+      "kind": "offline"
+    },
+    "detail_collection_regression": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "form_runtime_state": {
+      "target": "verify.contract_form_runtime_state.behavior",
+      "inputs": [
+        "frontend/apps/web/src/components/template/FormSection.vue",
+        "frontend/apps/web/src/pages/contractForm/ContractFormNativeCanvas.vue",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "onchange_roundtrip": {
+      "target": "verify.frontend.onchange_roundtrip.guard",
+      "inputs": [
+        "frontend/apps/web/src/pages/contractForm/useRecordFormState.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "x2many_command_regression": {
+      "target": "verify.frontend.x2many_command_semantic.guard",
+      "inputs": [
+        "frontend/apps/web/src/app/x2manyCommands.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/ui/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module ORM baseline",
+      "state": "excluded",
+      "reason": "no Odoo model, service, handler, permission, workflow, persisted-data or backend-contract change"
+    },
+    {
+      "gate": "existing affected frontend tests",
+      "state": "required",
+      "owner_target": "business semantics, localized display, professional base field, List, Kanban, canonical form, Hierarchy and One2many regression"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "new FCF-01/06/07/08 positive and negative cases"
+    },
+    {
+      "gate": "contract and planning gates",
+      "state": "required",
+      "owner_target": "contract basis, semantic boundary, Contract Fidelity planning guard"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "verify.frontend.lint.src, verify.frontend.typecheck.strict; build via registered frontend.standard.preview.build because this worktree has no .env.dev authority"
+    },
+    {
+      "gate": "component browser and responsive evidence",
+      "state": "required",
+      "reason": "affected Form/List/Kanban/readonly behavior must be observed at 1440 and 390"
+    },
+    {
+      "gate": "database/fixture/deployment",
+      "state": "excluded",
+      "reason": "no persisted data or runtime environment change"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "current exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "review_authority": "Architecture owner approved PR #970 and explicitly authorized FCF-02-1 only.",
+    "source_boundary": "No backend or product contract mutation is authorized.",
+    "implementation": "presentDeclaredBusinessValue is the declared-field semantic authority for selection, status, relation, money, percentage, duration, temporal, boolean, JSON and numeric values. formatDisplayValue delegates declared fields and retains only undeclared text/localization/attachment fallback.",
+    "consumers": "FieldValue, ProfessionalBaseFieldControl, FormSection, ContractFormNativeCanvas descriptor transport, ListPage/listCellPresentation, Kanban title formatting and Hierarchy descriptor types now share the authority.",
+    "guard": "The existing business semantics guard now enforces CFG-001, CFG-002, CFG-004 and CFG-009 with positive repository checks and mutation negatives.",
+    "review_r1": "The independent review found relation label localization existed only in formatDisplayValue. Locale resolution moved to utils/localizedDisplay.ts and relation tuple/object labels are now resolved inside presentDeclaredBusinessValue. Raw relation identity and selection keys remain unchanged.",
+    "browser": "Actual FieldValue, ProfessionalBaseFieldControl, FormSection, ListPage and KanbanPage components passed shared selection, relation, money, percentage, duration and boolean scenarios at 1440 and 390. Relation tuple/object cases passed in both zh_CN and en_US with no console/page errors or document horizontal overflow.",
+    "validation": "All declared checks were revalidated after the review fix. The Planner executed 12 affected targets; additional focused targets covered locale normalization, authority delegation, relation/member identity, component-key transport and full List/Kanban/readonly component behavior.",
+    "build": "The registered frontend.standard.preview.build completed with 5,419 modules and no build error.",
+    "known_unrelated_failure": "verify.frontend.onchange_line_patch.guard fails at the approved main baseline because its text marker expects `context.onchangeLinePatches.value=linePatches`; useRecordFormState.ts is unchanged by this batch and was not edited to satisfy the stale marker.",
+    "known_unrelated_no_new_any_failure": "verify.frontend.no_new_any_guard reports five existing `any` uses in useRecordFormFieldSchemas.ts against a frozen allowance of four. The file is unchanged by this batch; no unrelated type cleanup was mixed into FCF-02-1.",
+    "build_environment": "Direct verify.frontend.build stops before compilation because .env.dev is absent in this worktree. The registered frontend.standard.preview.build entry completed the same production frontend build without creating or copying credentials."
+  },
+  "next_exact_step": "Prepare generated evidence, commit the clean FCF-02-1 candidate, rebuild that exact HEAD, publish the PR and obtain all exact-head remote gates.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

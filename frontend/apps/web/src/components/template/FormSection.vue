@@ -456,8 +456,10 @@ import {
 import { layoutGridUnits, declaredLayoutSpan, declaredLayoutBand, requireDeclaredLayoutColumns } from './layoutSpan';
 import { isProfessionalRelationField } from '../professional-fields/professionalRelationFieldModel';
 import X2ManyRelationRenderer from './X2ManyRelationRenderer.vue';
-import { formatDisplayValue } from '../../utils/display';
-import { formatMonetaryDisplayValue, monetaryInputStep } from '../../app/presentation/businessValuePresentation';
+import {
+  monetaryInputStep,
+  presentDeclaredBusinessValue,
+} from '../../app/presentation/businessValuePresentation';
 import type {
   FormSectionFieldAction,
   FormSectionFieldActionPayload,
@@ -943,24 +945,27 @@ function inputPlaceholderText(field: FormSectionFieldSchema) {
 
 function readonlyText(field: FormSectionFieldSchema) {
   const fieldType = String(field.type || field.descriptor?.ttype || field.descriptor?.type || '').trim().toLowerCase();
-  if (fieldType === 'monetary') {
-    return formatMonetaryDisplayValue(
-      field.value,
-      field.digits,
-      field.currencyLabel,
-      'zh-CN',
-      resolveReadonlyEmptyText(field),
-    );
-  }
   const normalizedValue = ['date', 'datetime', 'many2one'].includes(fieldType)
     && String(field.value).trim().toLowerCase() === 'false'
     ? ''
     : field.value;
-  return formatDisplayValue(
-    normalizedValue,
-    { ...(field.descriptor || {}), type: fieldType || field.descriptor?.type },
-    { emptyText: resolveReadonlyEmptyText(field) },
-  );
+  return presentDeclaredBusinessValue({
+    field: {
+      ...(field.descriptor || {}),
+      name: field.name,
+      type: fieldType || field.descriptor?.type,
+      componentKey: field.componentKey,
+      widget: field.widget,
+      selection: field.descriptor?.selection,
+      digits: field.digits,
+      currencyField: field.currencyField,
+      currencyLabel: field.currencyLabel,
+    },
+    value: normalizedValue,
+    currencyLabel: field.currencyLabel,
+    emptyText: resolveReadonlyEmptyText(field),
+    temporalProfile: 'full',
+  }).text;
 }
 
 const taskActionResolver = inject(ScTaskActionResolverKey, null);

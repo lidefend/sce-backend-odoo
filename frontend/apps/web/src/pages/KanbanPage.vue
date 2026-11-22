@@ -256,9 +256,9 @@ function rowTone(row: Record<string, unknown>) {
 }
 
 function rowTitle(row: Record<string, unknown>): string {
-  return formatValue(row[props.titleField])
-    || formatValue(row.name)
-    || formatValue(row.display_name)
+  return formatValue(row[props.titleField], props.titleField)
+    || formatValue(row.name, 'name')
+    || formatValue(row.display_name, 'display_name')
     || String(row.id ?? FIELD_VALUE_EMPTY_TEXT);
 }
 
@@ -339,8 +339,11 @@ watch(
   { immediate: true },
 );
 
-function formatValue(value: unknown) {
-  return formatDisplayValue(value, undefined, { emptyText: FIELD_VALUE_EMPTY_TEXT });
+function formatValue(value: unknown, field?: string) {
+  const option = field
+    ? (props.columnOptions || []).find((candidate) => candidate.name === field)
+    : undefined;
+  return formatDisplayValue(value, option, { emptyText: FIELD_VALUE_EMPTY_TEXT });
 }
 </script>
 
