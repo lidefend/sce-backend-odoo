@@ -121,7 +121,11 @@ class ActionDispatcher:
         if atype == 'ir.actions.server':
             mapped = self.resolver.map_server_to_window(info.get('id'), info.get('xml_id'))
             if mapped:
-                return self._dispatch_resolved(mapped, p)
+                return self._dispatch_resolved(
+                    mapped,
+                    p,
+                    request_context=request_context,
+                )
             return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(
                 p,
                 info,
@@ -139,7 +143,7 @@ class ActionDispatcher:
         _logger.warning("UNSUPPORTED_ACTION_TYPE action_id=%s type=%s", aid, atype)
         return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(p, info, issue=f"不支持的动作类型: {atype}")
 
-    def _dispatch_resolved(self, info, p):
+    def _dispatch_resolved(self, info, p, *, request_context=None):
         """
         给已物化的 server 动作再次分发（仅支持 act_window/client）
         """

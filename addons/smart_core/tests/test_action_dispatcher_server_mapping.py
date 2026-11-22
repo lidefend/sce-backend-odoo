@@ -109,6 +109,7 @@ class TestActionDispatcherServerMapping(TransactionCase):
             "exists": True,
         }
         expected = ({"subject": "mapped"}, {"v": 1})
+        request_context = object()
 
         with (
             patch.object(dispatcher.resolver, "resolve_action", return_value=object()),
@@ -116,11 +117,15 @@ class TestActionDispatcherServerMapping(TransactionCase):
             patch.object(dispatcher.resolver, "map_server_to_window", return_value=mapped) as mocked_map,
             patch.object(dispatcher, "_dispatch_resolved", return_value=expected) as mocked_dispatch,
         ):
-            result = dispatcher.dispatch(payload)
+            result = dispatcher.dispatch(payload, request_context=request_context)
 
         self.assertEqual(result, expected)
         mocked_map.assert_called_once_with(462, "smart_construction_core.action_exec_structure_entry")
-        mocked_dispatch.assert_called_once_with(mapped, payload)
+        mocked_dispatch.assert_called_once_with(
+            mapped,
+            payload,
+            request_context=request_context,
+        )
 
     def test_unmapped_server_action_fails_closed_without_execution(self):
         dispatcher = ActionDispatcher(self.env, self.env)
