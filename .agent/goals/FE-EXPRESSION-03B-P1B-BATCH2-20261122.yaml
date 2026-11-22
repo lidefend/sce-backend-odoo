@@ -1,0 +1,57 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03B-P1B-BATCH2-20261122
+  title: list_aggregate_currency_and_numeric_semantics_diagnosis
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend collection aggregation and shared business-value
+    interpretation across Form, List, Kanban, One2many, readonly detail, My Work
+    and page blocks.
+  module:
+    - frontend/apps/web
+    - addons/smart_core
+    - addons/smart_construction_core
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Perform a read-only diagnosis of the List aggregate currency authority
+    consumption path and the percentage/precision projection paths. Produce
+    source-backed matrices and a minimal implementation recommendation without
+    changing product source.
+  product_result: >-
+    Establish exactly where aggregate currency identity, percentage semantics,
+    numeric precision and shared value interpretation are preserved or lost so
+    the next implementation batch has a bounded, contract-correct target.
+  why_here: >-
+    The defects concern generic frontend consumption of already declared
+    contract metadata and aggregate results.
+  why_not_elsewhere:
+    - Do not change backend aggregation algorithms in this diagnosis.
+    - Do not infer business semantics from field names, labels or first rows.
+    - Do not add a Renderer, Registry, Bundle, page engine or second value runtime.
+    - Do not implement P1-B or Batch 2 product changes in this read-only batch.
+  blast_radius:
+    behavior:
+      - List flat and grouped aggregate currency identity
+      - Percentage identity across List, Kanban and One2many
+      - Float and quantity precision projection and consumption
+      - Shared versus generic value interpreter coverage
+    exclusions:
+      - no product source modification
+      - no backend contract, ACL, workflow or database change
+      - no browser acceptance claim
+      - no unrelated UI cleanup
+  rollback: >-
+    Revert only the audit records and run metadata. No runtime or product state
+    changes require rollback.
+  completion:
+    p1b_diagnosis: completed
+    batch2_diagnosis: completed
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_run
