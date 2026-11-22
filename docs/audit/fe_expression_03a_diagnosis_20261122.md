@@ -124,6 +124,9 @@ to the existing `CollectionRowCell` attachment action without a second runtime.
    semantic gap.
 9. Updated the cross-page business-semantics authority audit so its completion
    ledger no longer reports the resolved One2many formatter bypass as open.
+10. Made One2many monetary footer aggregation fail closed when the participating
+    rows do not expose one unique, non-empty currency identity. A mixed currency
+    set no longer inherits the first row currency.
 
 ### Autosave retention rule
 
@@ -157,6 +160,8 @@ Focused outcomes:
 - Localized display: PASS with `registered_formatter_allowances=0`.
 - Collection row cell: 9 tests PASS.
 - Professional detail collection: 23 + 46 tests PASS.
+- Professional detail collection model also covers homogeneous currency,
+  mixed currency and missing currency for aggregate presentation.
 - Intake autosave: 33 cases PASS, including a declared 60-second policy,
   60-second boundary and missing-retention fail-closed case.
 - Contract basis: PASS, `open_defects=0`.
@@ -200,3 +205,8 @@ Browser result:
 These one-time browser artifacts are evidence for this candidate only. They are
 not a cross-environment replay mechanism; future environments must resolve
 their own runtime identity and fixture records through the managed tools.
+
+The read-only sample did not exercise a mixed-currency footer. That case is
+covered by the pure model test instead: mixed or missing row currencies produce
+no aggregate currency authority, so the footer cell is omitted rather than
+mislabeling a sum with the first row currency.

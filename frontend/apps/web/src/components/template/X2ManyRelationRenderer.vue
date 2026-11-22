@@ -460,6 +460,7 @@ import { mergeUploadedAttachmentIds } from './attachmentRelationMerge';
 import { readRecord } from '../../api/data';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 import {
+  detailCollectionAggregateColumn,
   detailCollectionColumnPresentation,
   detailCollectionMobileColumnSplit,
 } from '../professional-fields/professionalDetailCollectionModel';
@@ -897,11 +898,12 @@ const o2mTableFootData = computed(() => {
   const amountColumns = aggregateAmountColumns.value;
   if (!amountColumns.length || !one2manyRows.value.length) return [];
   amountColumns.forEach((column) => {
-    const effectiveColumn = props.adapter.one2manyEffectiveColumn(
-      props.field.name,
-      one2manyRows.value[0],
+    const effectiveColumn = detailCollectionAggregateColumn(
       column,
+      one2manyRows.value,
+      (row, current) => props.adapter.one2manyEffectiveColumn(props.field.name, row, current),
     );
+    if (!effectiveColumn) return;
     footRow[column.name] = props.adapter.one2manyColumnDisplayValue(effectiveColumn, o2mAmountTotal(column));
   });
   return [footRow];

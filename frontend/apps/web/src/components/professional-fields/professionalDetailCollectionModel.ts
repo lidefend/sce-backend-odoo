@@ -1,7 +1,7 @@
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import { layoutGridUnits } from '../template/layoutSpan';
 import type { RelationFieldAdapter } from '../template/relationField.types';
-import type { RelationFieldColumn } from '../template/relationField.types';
+import type { RelationFieldColumn, RelationFieldRow } from '../template/relationField.types';
 
 export const PROFESSIONAL_DETAIL_COLLECTION_COMPONENT_KEY = 'sc.relation.table' as const;
 
@@ -151,6 +151,20 @@ export function detailCollectionMobileColumnSplit(columns: RelationFieldColumn[]
     primary: Object.freeze(columns.slice(0, 6)),
     additional: Object.freeze(columns.slice(6)),
   });
+}
+
+export function detailCollectionAggregateColumn(
+  column: RelationFieldColumn,
+  rows: RelationFieldRow[],
+  resolveEffectiveColumn: (row: RelationFieldRow, column: RelationFieldColumn) => RelationFieldColumn,
+): RelationFieldColumn | null {
+  const effectiveColumns = rows.map((row) => resolveEffectiveColumn(row, column));
+  if (String(column.ttype || '').trim().toLowerCase() !== 'monetary' || !column.currencyField) {
+    return effectiveColumns[0] || column;
+  }
+  const currencies = new Set(effectiveColumns.map((item) => String(item.currencyLabel || '').trim()));
+  if (currencies.size !== 1 || ![...currencies][0]) return null;
+  return effectiveColumns[0] || null;
 }
 
 export function isProfessionalDetailCollectionField(field: FormSectionFieldSchema): boolean {

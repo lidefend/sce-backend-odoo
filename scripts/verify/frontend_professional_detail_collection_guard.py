@@ -221,6 +221,11 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         failures.append("detail collection does not aggregate every authoritative monetary column")
     if ".find(isO2mAmountColumn)" in renderer:
         failures.append("detail collection silently narrows aggregation to the first monetary column")
+    if "detailCollectionAggregateColumn(" not in renderer or "one2manyRows.value[0]" in renderer:
+        failures.append("detail collection footer does not fail closed on mixed or missing row currency")
+    if ("const currencies = new Set(effectiveColumns.map" not in model
+            or "currencies.size !== 1 || ![...currencies][0]" not in model):
+        failures.append("detail collection aggregate currency authority is not declared")
     if "one2manyCanUnlink: (name: string) => boolean;" not in relation_types:
         failures.append("detail collection adapter omits backend unlink authority")
     if "return policies.can_create === true;" not in relation_utils:
