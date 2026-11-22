@@ -284,6 +284,11 @@ RULES = (
         "verify.system.performance.baseline.unit",
     )),
     Rule((
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+    ), (
+        "verify.frontend.scene_entry_contract.unit",
+    )),
+    Rule((
         "addons/smart_core/core/system_init_extension_fact_merger.py",
         "addons/smart_core/tests/test_system_init_extension_fact_merger.py",
     ), ("verify.backend.navigation_delivery.unit",)),

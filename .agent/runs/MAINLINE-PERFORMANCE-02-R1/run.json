@@ -77,6 +77,15 @@
         "make/frontend.mk"
       ],
       "kind": "offline"
+    },
+    "scene_entry_contract_unit": {
+      "target": "verify.frontend.scene_entry_contract.unit",
+      "inputs": [
+        "addons/smart_core/core/scene_provider.py",
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
     }
   },
   "blockers": [],
@@ -89,6 +98,7 @@
     "runtime_equality": "After syncing to main d8ce851a, base and R1 complete response, navigation and route-authority hashes were identical for finance/company1, owner/company2 and project-manager/company1. Scene loads changed 6->1 and declaration fingerprint 8e98be87... stayed identical.",
     "performance": "On synced base d8ce851a, backend median request 1001.84ms -> 866.67ms, warm 998.82ms -> 807.41ms, process-first 2155.73ms -> 1957.74ms. Browser login total improved 2947ms -> 2789ms and system.init HTTP improved 1413.47ms -> 1289.42ms without post-response UI absorbing the saving.",
     "validation": "verify.system.performance.baseline.unit passed 78 tests; verify.backend.navigation_delivery.unit passed 176 tests; ORM_RESULT_GUARD passed 81 tests; ci.local.iteration passed all affected targets.",
-    "public_guard_repair": "The prior unpublished R1 history contains one diagnostic document blob whose raw host-memory byte count matches the mobile-phone regex. The replacement candidate stores GiB text and registers one exact path/blob/classification false positive; no directory, wildcard or regex exemption is added."
+    "public_guard_repair": "The prior unpublished R1 history contains one diagnostic document blob whose raw host-memory byte count matches the mobile-phone regex. The replacement candidate stores GiB text and registers one exact path/blob/classification false positive; no directory, wildcard or regex exemption is added.",
+    "scope_planning_repair": "The changed helper signatures were initially traced through production callers but not every mock/test-double caller. The provider identity test file is now in scope, mapped in the affected-target planner, and registered as a third local check."
   }
 }
