@@ -1,0 +1,373 @@
+{
+  "schema": "fe_contract_fidelity.guard_catalog.v1",
+  "id": "FE-CONTRACT-FIDELITY-GUARD",
+  "status": "planned_not_implemented",
+  "not_a_runtime": true,
+  "purpose": "Prevent reintroduction of unsupported frontend semantic decisions, semantic loss during transport and duplicate business-value interpretation paths.",
+  "intended_entrypoint": "make verify.frontend.contract_fidelity.guard",
+  "intended_inputs": [
+    "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+    "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+    "docs/audit/fe_contract_fidelity_01/matrix.json",
+    "frontend/apps/web/src",
+    "frontend/packages/ui/src",
+    "frontend/apps/web/scripts",
+    "scripts/verify"
+  ],
+  "enforcement_layers": {
+    "type": "Contract value carriers preserve raw value, field identity and presentation context.",
+    "static": "Source scanning rejects unregistered semantic bypasses and invented defaults.",
+    "behavior": "Component and unit tests exercise fail-closed and semantic-preservation cases.",
+    "contract": "Producer/consumer assertions reconcile declared field semantics.",
+    "evidence": "The source-backed matrix binds each applicable semantic to real evidence."
+  },
+  "allowlist_policy": {
+    "scope": "single repository path, exact rule and reviewed reason",
+    "directory_wildcard_allowed": false,
+    "mutable_branch_allowed": false,
+    "runtime_default_allowed": false,
+    "business_semantic_exception_allowed": false,
+    "mechanism_constant_requires_registry": true
+  },
+  "semantic_carrier_requirements": [
+    {
+      "id": "CARRIER-01",
+      "requirement": "rawValue preserves the original backend type",
+      "failure": "A bridge stringifies, rounds or otherwise reconstructs the business fact before final presentation."
+    },
+    {
+      "id": "CARRIER-02",
+      "requirement": "the field descriptor preserves all applicable type, widget, componentKey, digits, currency, unit, selection and temporal semantics",
+      "failure": "The final renderer must infer meaning from a label or value shape."
+    },
+    {
+      "id": "CARRIER-03",
+      "requirement": "relation identity includes verifiable record identity and the authoritative display label",
+      "failure": "A display name is treated as identity or a bare database ID is exposed as the business value."
+    },
+    {
+      "id": "CARRIER-04",
+      "requirement": "attachment identity, record ownership, role, authorized action and failure feedback each have an explicit contract source",
+      "failure": "A label or URL-shaped string determines attachment behavior."
+    },
+    {
+      "id": "CARRIER-05",
+      "requirement": "currency and timezone come from authoritative runtime context",
+      "failure": "A display label, process locale or browser host timezone replaces the declared authority."
+    },
+    {
+      "id": "CARRIER-06",
+      "requirement": "display values never become ORM write values",
+      "failure": "Formatted numeric, relation, status or temporal text is sent through a save command."
+    }
+  ],
+  "rollout": [
+    {
+      "phase": "planning",
+      "mode": "catalog_only",
+      "state": "current"
+    },
+    {
+      "phase": "FCF-02-1",
+      "mode": "enforce_rules",
+      "rules": [
+        "CFG-001",
+        "CFG-002",
+        "CFG-004",
+        "CFG-009"
+      ]
+    },
+    {
+      "phase": "FCF-02-2",
+      "mode": "enforce_rules",
+      "rules": [
+        "CFG-005",
+        "CFG-006",
+        "CFG-007",
+        "CFG-011"
+      ]
+    },
+    {
+      "phase": "FCF-02-3",
+      "mode": "enforce_rules",
+      "rules": [
+        "CFG-003",
+        "CFG-010"
+      ]
+    },
+    {
+      "phase": "FCF-02-5",
+      "mode": "enforce_all",
+      "rules": [
+        "CFG-001",
+        "CFG-002",
+        "CFG-003",
+        "CFG-004",
+        "CFG-005",
+        "CFG-006",
+        "CFG-007",
+        "CFG-008",
+        "CFG-009",
+        "CFG-010",
+        "CFG-011"
+      ]
+    }
+  ],
+  "rules": [
+    {
+      "id": "CFG-001",
+      "title": "Declared fields use the contract-aware semantic authority",
+      "maps_findings": [
+        "FCF-07",
+        "FCF-08"
+      ],
+      "failure_prevented": "A generic or component-local formatter independently decides business meaning.",
+      "mechanisms": [
+        "type",
+        "static",
+        "behavior"
+      ],
+      "pass_condition": "Every production consumer of a declared business field resolves semantic kind through the approved authority.",
+      "negative_cases": [
+        "percentage componentKey passed as generic float",
+        "duration widget treated as ordinary number",
+        "status field falls through to raw text",
+        "money bypasses declared currency and digits"
+      ],
+      "enforce_from_batch": "FCF-02-1"
+    },
+    {
+      "id": "CFG-002",
+      "title": "Unknown selection values fail closed",
+      "maps_findings": [
+        "FCF-01"
+      ],
+      "failure_prevented": "The UI exposes a raw storage key as if it were a business label.",
+      "mechanisms": [
+        "behavior",
+        "evidence"
+      ],
+      "pass_condition": "A value absent from a declared selection enters a visible contract-gap state; no surface returns the key as display text.",
+      "negative_cases": [
+        "List unknown selection",
+        "Kanban unknown selection",
+        "Readonly Detail unknown selection",
+        "changed translation or label does not alter behavior"
+      ],
+      "enforce_from_batch": "FCF-02-1"
+    },
+    {
+      "id": "CFG-003",
+      "title": "No frontend-invented precision, unit, percentage or value transformation",
+      "maps_findings": [
+        "FCF-04",
+        "FCF-05"
+      ],
+      "failure_prevented": "A missing declaration is replaced by a plausible frontend default.",
+      "mechanisms": [
+        "type",
+        "static",
+        "behavior"
+      ],
+      "pass_condition": "Missing digits, unit, currency or percentage identity produces a contract gap. Presentation may honor declared digits, but it never clamps, rounds or otherwise mutates the raw business fact or decides whether the fact is valid.",
+      "negative_cases": [
+        "My Work money lacks digits",
+        "Progress row lacks unit",
+        "percentage-like float lacks componentKey",
+        "raw percentage 125.75 is clamped to 100",
+        "raw count -1 is changed to 0",
+        "fractional fact 12.345 is silently rounded without a declared display rule",
+        "displayed digits replace the raw ORM-compatible value"
+      ],
+      "enforce_from_batch": "FCF-02-3"
+    },
+    {
+      "id": "CFG-004",
+      "title": "Field descriptors and componentKey are preserved",
+      "maps_findings": [
+        "FCF-06",
+        "FCF-08"
+      ],
+      "failure_prevented": "A generic readonly or fallback path drops type, widget, selection, digits or componentKey.",
+      "mechanisms": [
+        "type",
+        "static",
+        "behavior"
+      ],
+      "pass_condition": "Every contract-declared field reaching a presentation component carries the complete applicable descriptor.",
+      "negative_cases": [
+        "FieldValue receives percentage field",
+        "ProfessionalBaseFieldControl receives duration field",
+        "Kanban title fallback receives a declared field",
+        "Hierarchy value receives status field"
+      ],
+      "enforce_from_batch": "FCF-02-1"
+    },
+    {
+      "id": "CFG-005",
+      "title": "No semantic stringification in transport adapters",
+      "maps_findings": [
+        "FCF-02",
+        "FCF-03"
+      ],
+      "failure_prevented": "A bridge converts values to text before the final renderer can interpret type or identity.",
+      "mechanisms": [
+        "type",
+        "static",
+        "behavior"
+      ],
+      "pass_condition": "Readonly collection and page-block bridges preserve raw values and semantic envelopes; intentional plain text is explicitly registered.",
+      "negative_cases": [
+        "String(record[field]) in readonly bridge",
+        "JSON.stringify(object) as Page Block business value",
+        "money and digits lost before table rendering",
+        "attachment reference reduced to a label"
+      ],
+      "enforce_from_batch": "FCF-02-2"
+    },
+    {
+      "id": "CFG-006",
+      "title": "Relation identity is preserved or rejected",
+      "maps_findings": [
+        "FCF-07"
+      ],
+      "failure_prevented": "A many-to-one or many-to-many value is shown as a bare numeric ID.",
+      "mechanisms": [
+        "behavior",
+        "contract",
+        "evidence"
+      ],
+      "pass_condition": "Relation values retain record identity and display name; a bare ID without declared identity handling is treated as a contract gap.",
+      "negative_cases": [
+        "tuple with missing label",
+        "object with only id",
+        "stringified tuple",
+        "many2many collection degraded to comma-separated IDs"
+      ],
+      "enforce_from_batch": "FCF-02-2"
+    },
+    {
+      "id": "CFG-007",
+      "title": "Attachment behavior uses identity and role",
+      "maps_findings": [
+        "FCF-02",
+        "FCF-03"
+      ],
+      "failure_prevented": "Field labels or display strings determine attachment behavior.",
+      "mechanisms": [
+        "type",
+        "behavior",
+        "contract",
+        "evidence"
+      ],
+      "pass_condition": "Attachment count, reference, preview and download consume a stable declared role and identity; ordinary integers and labels never trigger attachment actions.",
+      "negative_cases": [
+        "localized label changes",
+        "ordinary integer resembles an attachment count",
+        "URL text is not an attachment record",
+        "missing attachment role fails closed"
+      ],
+      "enforce_from_batch": "FCF-02-2"
+    },
+    {
+      "id": "CFG-008",
+      "title": "Display format never becomes an ORM input value",
+      "maps_findings": [],
+      "failure_prevented": "Locale separators, currency symbols or human-readable status text are persisted.",
+      "mechanisms": [
+        "type",
+        "behavior"
+      ],
+      "pass_condition": "Input and command builders consume raw ORM-compatible values while presentation functions remain display-only.",
+      "negative_cases": [
+        "formatted decimal used in payload",
+        "status label used instead of selection key",
+        "relation display name used instead of record ID",
+        "formatted datetime used as ORM value"
+      ],
+      "enforce_from_batch": "FCF-02-5"
+    },
+    {
+      "id": "CFG-009",
+      "title": "One business semantic has one interpretation authority",
+      "maps_findings": [
+        "FCF-07"
+      ],
+      "failure_prevented": "Two production interpreters disagree for the same declared field.",
+      "mechanisms": [
+        "static",
+        "behavior",
+        "contract"
+      ],
+      "pass_condition": "Compatibility helpers either delegate semantic decisions or are unreachable for contract-declared fields.",
+      "negative_cases": [
+        "contract-aware and generic unknown-selection results differ",
+        "percentage is formatted differently by list and form",
+        "relation object has different fallback by surface",
+        "empty and boolean values vary by surface"
+      ],
+      "enforce_from_batch": "FCF-02-1"
+    },
+    {
+      "id": "CFG-010",
+      "title": "Unresolved contract gaps are explicit and fail closed",
+      "maps_findings": [
+        "FCF-04",
+        "FCF-05"
+      ],
+      "failure_prevented": "A frontend fallback hides a missing backend declaration.",
+      "mechanisms": [
+        "type",
+        "behavior",
+        "contract",
+        "evidence"
+      ],
+      "pass_condition": "Every missing required semantic has a registered gap identity, owning declaration layer and visible fail-closed behavior.",
+      "negative_cases": [
+        "missing unit silently becomes percent",
+        "missing digits silently becomes two decimals",
+        "missing attachment role is guessed from a label",
+        "missing timezone falls back to the host browser timezone"
+      ],
+      "enforce_from_batch": "FCF-02-3"
+    },
+    {
+      "id": "CFG-011",
+      "title": "Page Block actions and failure feedback retain contract identity",
+      "maps_findings": [
+        "FCF-03"
+      ],
+      "failure_prevented": "A Page Block guesses action authority or drops the backend failure reason.",
+      "mechanisms": [
+        "type",
+        "behavior",
+        "contract",
+        "evidence"
+      ],
+      "required_semantics": [
+        "action target",
+        "permission result",
+        "disabled reason",
+        "error reason code",
+        "message",
+        "trace identity"
+      ],
+      "pass_condition": "Page Block actions consume declared target and availability, and failures preserve the backend reason code, readable message, trace identity and visibility semantics.",
+      "negative_cases": [
+        "Page Block invents an action target",
+        "disabled action has no declared reason",
+        "error feedback is reduced to a generic success or failure toast",
+        "reasonCode, message or trace identity is dropped",
+        "Page Block infers permission from a label or visual state"
+      ],
+      "enforce_from_batch": "FCF-02-2"
+    }
+  ],
+  "non_claims": [
+    "does not prove backend ORM correctness",
+    "does not prove ACL or action authorization",
+    "does not replace runtime timezone readback",
+    "does not replace attachment authorization tests",
+    "does not replace full business journey or deployment acceptance"
+  ]
+}

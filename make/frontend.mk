@@ -856,6 +856,16 @@ verify.frontend.pr.unit: verify.frontend.decision_authority.unit verify.frontend
 verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.frontend.record_delete_action.unit verify.frontend.collection_action_capability.unit verify.frontend.contract_gap_primitive.unit verify.frontend.product_capability_catalog.unit verify.frontend.product_system_parameter.unit verify.semantic_runtime_resolution verify.frontend.list_surface_evidence_binding.unit verify.frontend.contract_consumption_verdicts.unit verify.frontend.native_action_contract_consumption.unit
 verify.frontend.release.unit: verify.frontend.project_domain_rollout.unit
 
+.PHONY: verify.frontend.contract_fidelity.plan.unit
+verify.frontend.contract_fidelity.plan.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/contract_fidelity_plan_guard.py scripts/verify/test_contract_fidelity_plan_guard.py
+	@python3 -m unittest scripts.verify.test_contract_fidelity_plan_guard
+	@python3 scripts/verify/contract_fidelity_plan_guard.py
+
+verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit
+verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit
+verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit
+
 verify.frontend.ui.lint: guard.prod.forbid
 	@cd frontend/apps/web && node_modules/.bin/eslint --no-eslintrc --config .eslintrc.cjs ../../packages/ui/src --ext .ts,.tsx,.vue
 

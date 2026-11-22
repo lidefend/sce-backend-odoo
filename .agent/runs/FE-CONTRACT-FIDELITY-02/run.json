@@ -1,0 +1,184 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-FIDELITY-02",
+  "branch": "feature/fe-contract-fidelity-02-planning-20261122",
+  "baseline_sha": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+  "record": "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-01.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-01/run.json",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02/run.json",
+    "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+    "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+    "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+    "make/frontend.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/contract_fidelity_plan_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_contract_fidelity_plan_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree, accepted audit artifacts and governed local static checks; no product, database or service writes"
+  },
+  "checks": {
+    "plan_consistency": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "make/frontend.mk",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.guard",
+      "inputs": [
+        "frontend/apps/web/src/pages",
+        "frontend/apps/web/src/views",
+        "frontend/apps/web/src/app",
+        "docs/frontend_productization/decision-authority-inventory-v1.json"
+      ],
+      "kind": "offline"
+    },
+    "shared_surface_boundary": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "inputs": [
+        "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    }
+  },
+  "supplemental_validations": {
+    "baseline_iteration": {
+      "target": "ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.final-pass.log",
+      "log_sha256": "98c33dd47bfac3dc97818c624c535afc4b1168205aef3f133c97af3045b33501",
+      "execution_receipt": ".runtime/frontend-dev-validation/executions/20261122T160619Z-1428663-822136925/receipt.json",
+      "execution_receipt_sha256": "c0c7e00beafe5f26c246dd5e96c1453a35ecc3902b2f755d140f06b7f234ff11",
+      "observed_nonzero_counts": {
+        "planning_guard": 12,
+        "agent_ledger": 18,
+        "frontend_dev_incremental": 211,
+        "verification_lane_coverage": 74
+      }
+    },
+    "failure_history": [
+      {
+        "classification": "validation_tool_wiring_defect",
+        "reason": "plan_consistency was placed under checks but is not a registered verify target",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration.failed.log",
+        "recovery": "Plan consistency moved out of checks; gate verdicts use agent.run.begin/record receipts."
+      },
+      {
+        "classification": "validation_baseline_scope_defect",
+        "reason": "new planning guard scripts expanded the frozen remote-only verification surface without registered identities",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.failed.log",
+        "log_sha256": "2f99cfb5a1b8d40a03dfa3e552ef97a52cdf58a556aa5da7f1c0b1b86f78b5a9",
+        "recovery": "Registered exactly the two reviewed scripts in the verification-lane exemptions and frozen identity set; no unrelated baseline drift retained."
+      },
+      {
+        "classification": "validation_tool_wiring_defect",
+        "reason": "the two planning scripts had a governed target but no changed-path-to-target mapping",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.mapping.failed.log",
+        "log_sha256": "87bcd2ae4a58936116789344d3be044d372c1e13e75efa29e0dbed399cd63907",
+        "recovery": "Mapped the plan artifacts and guard scripts to verify.frontend.contract_fidelity.plan.unit and passed the planner behavior lock."
+      }
+    ]
+  },
+  "review_revision": {
+    "source_review_head": "aa9fdefa07242d1e8c65322bfece671b70fcc427",
+    "findings_addressed": [
+      "NV-11 uniquely assigned to CFG-GAP-04",
+      "NV-15 assigned to independent CFG-GAP-07",
+      "contract-gap resolution expressed as machine DAG branches",
+      "CFG-003 explicitly forbids clamping and rounding",
+      "CFG-011 explicitly covers Page Block actions and feedback",
+      "CARRIER-01..06 define the FCF-02-2 carrier design gate"
+    ],
+    "product_fix_authorized": false
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "planning JSON syntax and referential consistency",
+      "state": "required",
+      "owner_target": "json.tool plus repository plan consistency assertions"
+    },
+    {
+      "gate": "product source modification",
+      "state": "excluded",
+      "reason": "planning-only phase; no frontend, backend, contract, ACL or workflow source changes"
+    },
+    {
+      "gate": "owning module ORM baseline",
+      "state": "excluded",
+      "reason": "no model, service, permission, workflow or persisted-data change"
+    },
+    {
+      "gate": "frontend runtime/browser",
+      "state": "excluded",
+      "reason": "documentation and machine-plan artifacts do not alter runtime behavior"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "audit_acceptance": "PR #969 was merged through the protected squash path at 0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e; the project source tree is unchanged by the audit.",
+    "plan": "The remediation plan organizes FCF-01 through FCF-08 into four capability batches plus a final readiness review, with an explicit dependency DAG and missing-declaration fail-closed policy.",
+    "review_revision": "The PR #970 review findings were incorporated: NV-11 now belongs only to CFG-GAP-04, NV-15 has independent CFG-GAP-07 dialog-duration ownership, and contract-gap resolution is an explicit machine DAG branch.",
+    "not_verified": "The machine plan contains exactly the same 19 surface/semantic NOT_VERIFIED cells as the accepted audit matrix, with one explicit gap-probe owner per cell.",
+    "guard": "The Contract Fidelity Guard catalog defines eleven planned rules and six semantic-carrier requirements. CFG-003 forbids value clamping/rounding; CFG-011 covers Page Block action and failure-feedback identity. The product Guard remains unimplemented.",
+    "dependency_graph": "Dependency edges now include batch dependencies and contract-gate edges. sufficient/not_applicable unlock the dependent batch; contract_gap redirects to P0 producer remediation and locks the frontend batch until declaration, decode, independent review and verification complete.",
+    "implementation_boundary": "No frontend or backend product source, ACL, workflow, database or runtime configuration was changed in this planning result.",
+    "validation": "Planning artifacts are covered by a registered P4 planning consistency target. Final result markers are recorded through agent.run receipts; prior validation failures remain preserved rather than rewritten."
+  },
+  "authorization": {
+    "product_fixes": false,
+    "backend_contract_changes": false,
+    "database_writes": false,
+    "deployment": false,
+    "plan_scope": true
+  },
+  "next_exact_step": "Commit and publish this planning-only candidate, obtain current exact-head required checks, open the external-review PR and await architecture-owner approval before any product remediation.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

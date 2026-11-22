@@ -1332,6 +1332,20 @@ RULES = (
         "verify.frontend.contract_basis.unit",
         "verify.frontend.contract_basis.enforce",
     )),
+    # The remediation plan, its audit matrix and Guard catalog are one
+    # planning-only executable contract. Changes to either implementation or
+    # declaration files must run the plan guard instead of relying on the
+    # non-source documentation exemption.
+    Rule((
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+    ), (
+        "verify.frontend.contract_fidelity.plan.unit",
+    )),
     # Guard registry rows and their audit implementation are one executable
     # contract. A disposition-only fix must run the full registry audit instead
     # of falling through as an unmapped verification-tool path.

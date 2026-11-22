@@ -1,0 +1,61 @@
+schema_version: 1
+
+goal:
+  id: FE-CONTRACT-FIDELITY-02
+  title: frontend_contract_fidelity_systemic_remediation_planning
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend contract interpretation, semantic transport and shared
+    presentation boundaries across Form, List, Kanban, One2many, readonly
+    detail, My Work, page blocks, dialogs, native Contract V2 and navigation.
+  module:
+    - frontend/apps/web
+    - frontend/packages/ui
+    - scripts/verify
+    - scripts/audit
+    - make/frontend.mk
+    - addons/smart_core
+    - .agent
+    - docs/architecture
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Convert the accepted FE-CONTRACT-FIDELITY-01 findings into one reviewed
+    systemic remediation plan with explicit ownership, dependencies, acceptance
+    criteria, contract-gap probes and a declarative Contract Fidelity Guard.
+  product_result: >-
+    A planning-only architecture decision that authorizes later capability-based
+    remediation batches without changing product source now. The plan must make
+    clear when an existing contract is sufficient, when P0 must add a declaration,
+    and which frontend behavior must fail closed rather than invent semantics.
+  why_here: >-
+    The defects concern the generic frontend's interpretation of already declared
+    contracts and the transport of those declarations between shared components.
+  why_not_elsewhere:
+    - Do not implement product fixes in this planning phase.
+    - Do not establish a second value runtime, Renderer, Registry, Bundle or page engine.
+    - Do not infer missing precision, units, timezone, attachment roles or relation identity.
+    - Do not modify ACL, workflow, persisted business state or database schema.
+    - Do not restart audits or reimplement already-passing Contract V2, action, navigation,
+      List aggregate currency or One2many precision/relation boundaries.
+  blast_radius:
+    behavior:
+      - future semantic authority and semantic transport batches
+      - future runtime-evidence closure for 19 NOT_VERIFIED matrix cells
+      - declarative guard inputs and planning-consistency verification
+    exclusions:
+      - no frontend product source in this planning result
+      - no backend contract producer change in this planning result
+      - no database, fixture, service, credential or deployment write
+      - no visual beautification or interaction redesign
+  rollback: >-
+    Remove the planning report, machine plan, guard catalog and run metadata.
+    No product or runtime state requires rollback.
+  completion:
+    planning: completed
+    plan_review: pending
+    planning_guard: implemented_local
+    product_remediation: blocked_by_plan_approval
+    mainline_integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable

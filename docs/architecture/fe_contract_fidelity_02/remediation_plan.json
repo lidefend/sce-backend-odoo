@@ -1,0 +1,852 @@
+{
+  "schema": "fe_contract_fidelity.remediation_plan.v1",
+  "id": "FE-CONTRACT-FIDELITY-02",
+  "status": "planning_only",
+  "product_fix_authorized": false,
+  "architecture_owner_decision": {
+    "audit_conclusion": "NOT_READY",
+    "decision": "accept_audit_and_require_systemic_remediation_plan",
+    "scattered_fixes_authorized": false
+  },
+  "identity": {
+    "repository": "lidefend/sce-backend-odoo",
+    "planning_base_sha": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+    "audit_pr": 969,
+    "audit_head_sha": "bd70df6171ec930ea866e2fdd7b525ca5bcd7573",
+    "audit_merge_sha": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+    "audit_base_sha": "b7bea61727e9bf75270e65292f523910a93a667c",
+    "audit_matrix": "docs/audit/fe_contract_fidelity_01/matrix.json",
+    "audit_report": "docs/audit/fe_contract_fidelity_01_report.md"
+  },
+  "principles": [
+    "Backend owns declared business facts and rules.",
+    "Frontend interprets declarations and presents them without inventing missing semantics.",
+    "Contract-aware business value presentation remains the semantic decision authority.",
+    "Display formatting and semantic decision are separate responsibilities.",
+    "Raw business values and field identity survive transport until final presentation.",
+    "Different surfaces may use different density, but not different business meaning.",
+    "Missing declarations fail closed and move to the owning P0 producer layer.",
+    "No second value runtime, Renderer registry, Bundle or page engine is introduced."
+  ],
+  "preserved_passing_boundaries": [
+    "Contract V2 schema decode",
+    "field modifiers and readonly/required projection",
+    "action status, target, reason and executor",
+    "canonical navigation and route authority",
+    "semantic registry",
+    "List aggregate currency identity",
+    "One2many relation identity, percentage identity and declared digits"
+  ],
+  "contract_gap_probes": [
+    {
+      "id": "CFG-GAP-01",
+      "semantic": "user_timezone_authority",
+      "required_output": [
+        "authoritative declaration",
+        "request transport",
+        "frontend consumption",
+        "runtime readback"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-01",
+        "NV-03",
+        "NV-04",
+        "NV-05",
+        "NV-09",
+        "NV-14",
+        "NV-17",
+        "NV-19"
+      ]
+    },
+    {
+      "id": "CFG-GAP-02",
+      "semantic": "page_block_business_value_carrier",
+      "required_output": [
+        "field identity",
+        "raw value",
+        "precision",
+        "currency",
+        "unit",
+        "selection",
+        "relation identity",
+        "temporal semantics",
+        "attachment role"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "FCF-03",
+        "FCF-04"
+      ]
+    },
+    {
+      "id": "CFG-GAP-03",
+      "semantic": "my_work_fact_identity",
+      "required_output": [
+        "percentage role",
+        "currency identity",
+        "digits",
+        "selection identity",
+        "relation identity",
+        "duration identity"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "FCF-05",
+        "NV-07",
+        "NV-08",
+        "NV-10"
+      ]
+    },
+    {
+      "id": "CFG-GAP-04",
+      "semantic": "attachment_identity_and_role",
+      "required_output": [
+        "stable attachment identity",
+        "record ownership",
+        "semantic role",
+        "preview/download action",
+        "failure feedback"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-06",
+        "NV-11",
+        "NV-16",
+        "NV-18"
+      ]
+    },
+    {
+      "id": "CFG-GAP-05",
+      "semantic": "page_block_action_and_feedback",
+      "required_output": [
+        "action target",
+        "permission result",
+        "disabled reason",
+        "error reason code",
+        "message",
+        "trace identity"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-12",
+        "NV-13"
+      ]
+    },
+    {
+      "id": "CFG-GAP-06",
+      "semantic": "form_embedded_collection_aggregate",
+      "required_output": [
+        "applicability decision",
+        "contract declaration",
+        "consumer evidence"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-02"
+      ]
+    },
+    {
+      "id": "CFG-GAP-07",
+      "semantic": "dialog_duration_semantics",
+      "required_output": [
+        "duration field identity",
+        "duration unit and calculation rule",
+        "input projection",
+        "readonly presentation",
+        "ORM-compatible write value"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-15"
+      ]
+    }
+  ],
+  "gap_resolution_policy": {
+    "branches": {
+      "sufficient": {
+        "unlocks": "dependent_frontend_batch",
+        "additional_requirement": "record declaration, transport and consumer evidence"
+      },
+      "not_applicable": {
+        "unlocks": "dependent_frontend_batch",
+        "additional_requirement": "record why the semantic does not apply to the surface"
+      },
+      "contract_gap": {
+        "unlocks": "p0_producer_remediation_only",
+        "producer_batch_id_template": "P0-<gap-id>-CONTRACT-REMEDIATION",
+        "frontend_fallback_forbidden": true,
+        "dependent_frontend_batch_locked": true,
+        "required_before_frontend_unlock": [
+          "owning P0 producer declaration",
+          "consumer contract decoding",
+          "independent review",
+          "registered verification"
+        ]
+      }
+    }
+  },
+  "not_verified_cells": [
+    {
+      "id": "NV-01",
+      "surface": "form",
+      "semantic": "temporal_timezone",
+      "probe": "user declaration, request context, datetime input and readonly presentation",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-02",
+      "surface": "form",
+      "semantic": "collection_sort_filter_page_aggregate",
+      "probe": "whether Form carries embedded collections and aggregates",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-06"
+    },
+    {
+      "id": "NV-03",
+      "surface": "list",
+      "semantic": "temporal_timezone",
+      "probe": "list API timezone context and temporal column readback",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-04",
+      "surface": "kanban",
+      "semantic": "temporal_timezone",
+      "probe": "card temporal facts under the declared user timezone",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-05",
+      "surface": "one2many",
+      "semantic": "temporal_timezone",
+      "probe": "detail datetime edit and readonly behavior",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-06",
+      "surface": "one2many",
+      "semantic": "attachments",
+      "probe": "row attachment identity, role, preview and download",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-04"
+    },
+    {
+      "id": "NV-07",
+      "surface": "my_work",
+      "semantic": "selection_status",
+      "probe": "state and status labels including unknown-value handling",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-03"
+    },
+    {
+      "id": "NV-08",
+      "surface": "my_work",
+      "semantic": "relation_identity",
+      "probe": "project, partner and actor record identity",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-03"
+    },
+    {
+      "id": "NV-09",
+      "surface": "my_work",
+      "semantic": "temporal_timezone",
+      "probe": "create and update timestamps under the declared user timezone",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-10",
+      "surface": "my_work",
+      "semantic": "duration_unit",
+      "probe": "duration fact identity and calculation rule",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-03"
+    },
+    {
+      "id": "NV-11",
+      "surface": "my_work",
+      "semantic": "attachments",
+      "probe": "attachment facts, identity and authorized actions",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-04"
+    },
+    {
+      "id": "NV-12",
+      "surface": "page_blocks",
+      "semantic": "action_target_permission_reason",
+      "probe": "action target, permission result and disabled reason",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-05"
+    },
+    {
+      "id": "NV-13",
+      "surface": "page_blocks",
+      "semantic": "feedback_errors",
+      "probe": "reason code, message, trace identity and visible feedback",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-05"
+    },
+    {
+      "id": "NV-14",
+      "surface": "dialog_drawer",
+      "semantic": "temporal_timezone",
+      "probe": "dialog datetime input and readback",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-15",
+      "surface": "dialog_drawer",
+      "semantic": "duration_unit",
+      "probe": "duration input, presentation and write",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-07"
+    },
+    {
+      "id": "NV-16",
+      "surface": "dialog_drawer",
+      "semantic": "attachments",
+      "probe": "selection, stable identity and failure feedback",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-04"
+    },
+    {
+      "id": "NV-17",
+      "surface": "native_view_contract_runtime",
+      "semantic": "temporal_timezone",
+      "probe": "locale/context decode and all native temporal consumers",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    },
+    {
+      "id": "NV-18",
+      "surface": "native_view_contract_runtime",
+      "semantic": "attachments",
+      "probe": "attachment zone, relation field and action declarations",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-04"
+    },
+    {
+      "id": "NV-19",
+      "surface": "shared_value_interpreters",
+      "semantic": "temporal_timezone",
+      "probe": "shared temporal helpers consume the authoritative timezone",
+      "closure_batch": "FCF-02-4",
+      "gap_probe": "CFG-GAP-01"
+    }
+  ],
+  "batches": [
+    {
+      "id": "FCF-02-1",
+      "title": "Unified business semantic authority",
+      "priority": "P1",
+      "status": "planned",
+      "depends_on": [],
+      "findings": [
+        "FCF-01",
+        "FCF-06",
+        "FCF-07",
+        "FCF-08"
+      ],
+      "surfaces": [
+        "form",
+        "list",
+        "kanban",
+        "readonly_detail",
+        "shared_value_interpreters",
+        "one2many_regression"
+      ],
+      "objectives": [
+        "Make the contract-aware path the only business semantic decision authority.",
+        "Preserve componentKey and field descriptors through generic and professional readonly controls.",
+        "Fail closed on unknown selection values instead of exposing storage keys.",
+        "Preserve relation identity and apply field descriptors to Kanban title fallback."
+      ],
+      "acceptance": [
+        "unknown selection negative tests enter a contract-gap state and never render raw keys",
+        "relation tuple, object and bare-ID negative tests preserve identity or fail closed",
+        "componentKey propagation tests cover money, percentage, duration and status",
+        "empty, zero, negative, boolean and unknown values have discriminating tests",
+        "affected component browser checks pass at 1440 and 390",
+        "One2many edit, dirtyFields, onchange, row identity and save payload regressions remain unchanged"
+      ],
+      "exit_criteria": [
+        "FCF-01, FCF-06, FCF-07 and FCF-08 are closed",
+        "production bypasses of the semantic authority are removed or explicitly classified"
+      ]
+    },
+    {
+      "id": "FCF-02-2",
+      "title": "Preserve semantic transport",
+      "priority": "P1",
+      "status": "planned",
+      "depends_on": [
+        "FCF-02-1",
+        "CFG-GAP-02",
+        "CFG-GAP-04",
+        "CFG-GAP-05"
+      ],
+      "findings": [
+        "FCF-02",
+        "FCF-03"
+      ],
+      "surfaces": [
+        "readonly_detail",
+        "page_blocks",
+        "form",
+        "one2many",
+        "dialog_drawer"
+      ],
+      "objectives": [
+        "Stop stringifying business values in readonly collection and page-block bridges.",
+        "Transport raw value, field identity and presentation context together.",
+        "Make the final renderer consume semantic facts rather than reconstruct them from text.",
+        "Move genuinely absent declarations to a P0 producer-layer gap."
+      ],
+      "acceptance": [
+        "rawValue retains the original backend type through bridge-to-renderer transport",
+        "the field descriptor retains every applicable type, widget, componentKey, digits, currency, unit, selection, temporal and attachment semantic",
+        "relation identity includes verifiable record identity and the authoritative display label",
+        "attachment identity, record ownership, semantic role, authorized action and failure feedback each have an explicit contract source",
+        "Page Block action target, permission result, disabled reason, error reason code, message and trace identity survive bridge-to-renderer transport",
+        "currency and timezone come from authoritative runtime context rather than display labels or browser defaults",
+        "display values never become ORM write values",
+        "ordinary integers and textual URLs do not trigger attachment behavior",
+        "missing page-block declarations fail closed with a visible contract gap",
+        "read-only browser journeys create no persistent business-write intent",
+        "1440 and 390 layout checks show no horizontal overflow"
+      ],
+      "design_gate": [
+        "raw_value_type_preservation",
+        "complete_field_descriptor",
+        "verifiable_relation_identity",
+        "complete_attachment_identity_and_actions",
+        "page_block_action_and_feedback_identity",
+        "authoritative_currency_and_timezone",
+        "display_write_separation"
+      ],
+      "exit_criteria": [
+        "FCF-02 and FCF-03 are closed",
+        "no unregistered adapter stringifies a declared business value"
+      ]
+    },
+    {
+      "id": "FCF-02-3",
+      "title": "Remove frontend-invented business rules",
+      "priority": "P1",
+      "status": "planned",
+      "depends_on": [
+        "FCF-02-1",
+        "FCF-02-2",
+        "CFG-GAP-03"
+      ],
+      "findings": [
+        "FCF-04",
+        "FCF-05"
+      ],
+      "surfaces": [
+        "page_blocks",
+        "my_work"
+      ],
+      "objectives": [
+        "Remove the percent fallback, value clamping and rounding from Progress Summary.",
+        "Remove the default two-decimal precision from My Work.",
+        "Consume declared percentage, currency, selection, relation and duration facts.",
+        "Fail closed when a required declaration is missing."
+      ],
+      "acceptance": [
+        "missing unit, precision, percentage identity or currency enters a contract-gap state",
+        "zero, negative and greater-than-100 raw facts are not altered by the frontend",
+        "the same money value shares currency and scale across My Work, List, Form and One2many",
+        "My Work percentage uses a percentage semantic instead of generic string output",
+        "My Work action, sorting, grouping and target routing regressions remain unchanged"
+      ],
+      "exit_criteria": [
+        "FCF-04 and FCF-05 are closed",
+        "no unregistered frontend default supplies a business unit or precision"
+      ]
+    },
+    {
+      "id": "FCF-02-4",
+      "title": "Close all NOT_VERIFIED matrix cells",
+      "priority": "P1",
+      "status": "planned",
+      "depends_on": [
+        "FCF-02-1",
+        "FCF-02-2",
+        "FCF-02-3",
+        "CFG-GAP-01",
+        "CFG-GAP-02",
+        "CFG-GAP-03",
+        "CFG-GAP-04",
+        "CFG-GAP-05",
+        "CFG-GAP-06",
+        "CFG-GAP-07"
+      ],
+      "findings": [
+        "NV-01",
+        "NV-02",
+        "NV-03",
+        "NV-04",
+        "NV-05",
+        "NV-06",
+        "NV-07",
+        "NV-08",
+        "NV-09",
+        "NV-10",
+        "NV-11",
+        "NV-12",
+        "NV-13",
+        "NV-14",
+        "NV-15",
+        "NV-16",
+        "NV-17",
+        "NV-18",
+        "NV-19"
+      ],
+      "surfaces": [
+        "form",
+        "list",
+        "kanban",
+        "one2many",
+        "my_work",
+        "page_blocks",
+        "dialog_drawer",
+        "native_view_contract_runtime",
+        "shared_value_interpreters"
+      ],
+      "objectives": [
+        "Bind every unresolved semantic cell to declaration, decode, consumption and observed behavior.",
+        "Close each cell as PASS, a newly registered defect, NOT_APPLICABLE or truthful NOT_VERIFIED.",
+        "Use stable fixture aliases and runtime identities rather than hard-coded database IDs."
+      ],
+      "acceptance": [
+        "not_verified reaches zero before readiness review",
+        "every closed cell records source identity, declaration, consumer and evidence",
+        "timezone tests fix the declared user timezone and reject host-timezone dependence",
+        "attachment checks use governed authorization and stable record/field identities",
+        "full product acceptance is not inferred from component checks"
+      ],
+      "exit_criteria": [
+        "all 19 cells are resolved",
+        "newly discovered defects have an owning remediation batch and acceptance contract"
+      ]
+    },
+    {
+      "id": "FCF-02-5",
+      "title": "Final contract-fidelity readiness review",
+      "priority": "P0",
+      "status": "planned",
+      "depends_on": [
+        "FCF-02-1",
+        "FCF-02-2",
+        "FCF-02-3",
+        "FCF-02-4"
+      ],
+      "findings": [
+        "FCF-01",
+        "FCF-02",
+        "FCF-03",
+        "FCF-04",
+        "FCF-05",
+        "FCF-06",
+        "FCF-07",
+        "FCF-08"
+      ],
+      "surfaces": [
+        "all_contract_consumption_surfaces"
+      ],
+      "objectives": [
+        "Recompute the source-backed matrix and delivery verdict after all remediation batches.",
+        "Require exact-head static, component, runtime and remote integration evidence.",
+        "Confirm that no second semantic authority was introduced."
+      ],
+      "acceptance": [
+        "no unresolved LOST, ALTERED, INFERRED or DUPLICATED cell remains",
+        "not_verified is zero",
+        "Contract Fidelity Guard rules are enforced",
+        "lint, strict typecheck, non-zero unit tests, production build and affected browser evidence pass",
+        "current exact-head required remote checks pass",
+        "independent review closes declaration-to-behavior evidence"
+      ],
+      "exit_criteria": [
+        "architecture owner may then decide CONTRACT FIDELITY READY",
+        "this plan itself does not grant product delivery or deployment"
+      ]
+    }
+  ],
+  "dependency_edges": [
+    {
+      "id": "DEP-BATCH-01",
+      "from": "FCF-02-1",
+      "to": "FCF-02-2",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-02",
+      "from": "FCF-02-1",
+      "to": "FCF-02-3",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-03",
+      "from": "FCF-02-2",
+      "to": "FCF-02-3",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-04",
+      "from": "FCF-02-1",
+      "to": "FCF-02-4",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-05",
+      "from": "FCF-02-2",
+      "to": "FCF-02-4",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-06",
+      "from": "FCF-02-3",
+      "to": "FCF-02-4",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-07",
+      "from": "FCF-02-4",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-08",
+      "from": "FCF-02-1",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-09",
+      "from": "FCF-02-2",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-10",
+      "from": "FCF-02-3",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-GAP-01-CLOSE",
+      "from": "CFG-GAP-01",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-02-TRANSPORT",
+      "from": "CFG-GAP-02",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-02-CLOSE",
+      "from": "CFG-GAP-02",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-03-RULES",
+      "from": "CFG-GAP-03",
+      "to": "FCF-02-3",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-03-CLOSE",
+      "from": "CFG-GAP-03",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-04-TRANSPORT",
+      "from": "CFG-GAP-04",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-04-CLOSE",
+      "from": "CFG-GAP-04",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-05-TRANSPORT",
+      "from": "CFG-GAP-05",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-05-CLOSE",
+      "from": "CFG-GAP-05",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-06-CLOSE",
+      "from": "CFG-GAP-06",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-07-CLOSE",
+      "from": "CFG-GAP-07",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    }
+  ],
+  "global_acceptance": {
+    "exact_identity": [
+      "base sha",
+      "branch",
+      "head sha",
+      "tree sha",
+      "owned file scope",
+      "clean worktree"
+    ],
+    "static": [
+      "make ci.local.iteration",
+      "frontend contract basis guard",
+      "Contract Fidelity Guard",
+      "lint",
+      "strict typecheck"
+    ],
+    "tests": [
+      "non-zero affected unit tests",
+      "new positive and negative semantic cases",
+      "regression of preserved passing boundaries"
+    ],
+    "runtime": [
+      "affected component browser checks",
+      "1440 and 390 viewports",
+      "real project ledger, revenue contract, payment request and My Work samples",
+      "no extra persistent write for read-only checks"
+    ],
+    "integration": [
+      "production frontend build",
+      "exact-head public_guard",
+      "exact-head merge_policy_gate",
+      "exact-head professional_quality_gate",
+      "exact-head frontend_release_gate",
+      "independent review"
+    ]
+  },
+  "cross_environment_rules": [
+    "Resolve fixture records by stable business key, action identity or fixture alias.",
+    "Do not hard-code Odoo database IDs in tests or acceptance scripts.",
+    "Read currency, company, role and record identity from the governed runtime.",
+    "Pin the declared user timezone in temporal evidence and do not rely on the browser host timezone.",
+    "Use governed attachment APIs and existing authorization."
+  ],
+  "non_goals": [
+    "visual redesign or interaction polish",
+    "new business modules or feature expansion",
+    "new value runtime, Renderer registry, Bundle or page engine",
+    "backend business rule or database migration",
+    "reimplementation of already passing platform boundaries",
+    "counting NOT_VERIFIED as PASS"
+  ]
+}

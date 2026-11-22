@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-CONTRACT-FIDELITY-01
   title: frontend_contract_fidelity_and_expression_completeness_audit
-  status: verification_pending
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Generic frontend contract consumption across Form, List, Kanban, One2many,
@@ -46,10 +46,10 @@ goal:
     Remove the audit report, machine inventories and run metadata. No product or
     runtime state requires rollback.
   completion:
-    audit: completed
+    audit: accepted_by_architecture_owner
     remediation: not_started_by_design
-    batch: verification_pending
-    independent_review: not_run
-    mainline_integration: not_run
+    batch: completed
+    independent_review: accepted_audit_artifact
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable
