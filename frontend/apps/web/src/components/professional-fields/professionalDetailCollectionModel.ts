@@ -162,9 +162,17 @@ export function detailCollectionAggregateColumn(
   if (String(column.ttype || '').trim().toLowerCase() !== 'monetary' || !column.currencyField) {
     return effectiveColumns[0] || column;
   }
-  const currencies = new Set(effectiveColumns.map((item) => String(item.currencyLabel || '').trim()));
-  if (currencies.size !== 1 || ![...currencies][0]) return null;
-  return effectiveColumns[0] || null;
+  const currencies = rows.map((row) => {
+    const value = row.values?.[column.currencyField!];
+    if (!Array.isArray(value) || value.length < 2) return null;
+    const id = Number(value[0]);
+    const label = String(value[1] || '').trim();
+    return Number.isSafeInteger(id) && id > 0 && label ? { id, label } : null;
+  });
+  if (currencies.some((currency) => !currency)) return null;
+  const ids = new Set(currencies.map((currency) => currency!.id));
+  if (ids.size !== 1 || !effectiveColumns[0]) return null;
+  return { ...effectiveColumns[0], currencyLabel: currencies[0]!.label };
 }
 
 export function isProfessionalDetailCollectionField(field: FormSectionFieldSchema): boolean {

@@ -124,9 +124,10 @@ to the existing `CollectionRowCell` attachment action without a second runtime.
    semantic gap.
 9. Updated the cross-page business-semantics authority audit so its completion
    ledger no longer reports the resolved One2many formatter bypass as open.
-10. Made One2many monetary footer aggregation fail closed when the participating
-    rows do not expose one unique, non-empty currency identity. A mixed currency
-    set no longer inherits the first row currency.
+10. Made One2many monetary footer aggregation fail closed unless every
+    participating row carries one unique positive currency record ID and a
+    non-empty display name. Display names alone never establish currency
+    identity, and a column-level label never substitutes for a missing row ID.
 
 ### Autosave retention rule
 
@@ -167,8 +168,10 @@ Focused outcomes:
 - Localized display: PASS with `registered_formatter_allowances=0`.
 - Collection row cell: 9 tests PASS.
 - Professional detail collection: 23 + 46 tests PASS.
-- Professional detail collection model also covers homogeneous currency,
-  mixed currency and missing currency for aggregate presentation.
+- Professional detail collection model covers homogeneous ID/name, different
+  IDs with the same display name, missing IDs with a column label and a
+  partially missing row identity. Only the homogeneous valid identity may
+  aggregate.
 - Intake autosave: 33 cases PASS, including a declared 60-second policy,
   60-second boundary and missing-retention fail-closed case.
 - Contract basis: PASS, `open_defects=0`.
@@ -214,9 +217,9 @@ not a cross-environment replay mechanism; future environments must resolve
 their own runtime identity and fixture records through the managed tools.
 
 The read-only sample did not exercise a mixed-currency footer. That case is
-covered by the pure model test instead: mixed or missing row currencies produce
-no aggregate currency authority, so the footer cell is omitted rather than
-mislabeling a sum with the first row currency.
+covered by the pure model test instead: all participating rows must resolve the
+same positive currency record ID. Different IDs, missing IDs and partial
+identity failure produce no aggregate currency authority.
 
 The initial remote `public_guard` failure for this candidate came from `RH018`
 matching a 13-digit run number in a performance-branch historical document

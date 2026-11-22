@@ -208,7 +208,7 @@
     "browser_reuse_boundary": "The exact-head browser probe is a one-time read-only observation, not a reusable test entry; record/action/menu identities came from the managed resolution envelope and no database id is a stable batch input",
     "remaining_contract_gaps": [
       "P0 list contract does not yet declare attachment-count cell role, so the old localized-label preview behavior is removed until the declaration exists",
-      "The One2many footer has no declared mixed-row currency aggregation rule; mixed or missing row currencies now fail closed by omitting that aggregate instead of attaching the first row currency"
+      "The One2many footer has no declared mixed-row currency aggregation rule; it now requires every participating row to expose the same positive currency record id and uses that row-carried identity, otherwise the aggregate is omitted"
     ],
     "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. It is a separate P4 history/evidence-governance blocker; this frontend candidate does not weaken the guard or rewrite unrelated history.",
     "autosave_retention": "Project-intake draft retention is a P1 smart_construction_core standard constant of 86400 seconds, published through runtimeContract.intakeAutosave.retention.seconds; it is not a user or administrator setting and the frontend has no local 24-hour fallback"
