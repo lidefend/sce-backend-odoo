@@ -4,6 +4,7 @@ import {
   resolveBusinessActivityTitle,
   resolveSceneActivityTitle,
   shouldRenderScenePageHeading,
+  shouldRenderSceneContractFallbackHeading,
 } from '../src/app/activityPageTitle';
 import { formatLoadingProgress } from '../src/app/presentation/loadingProgress';
 import { resolveListColumnPreferenceScope } from '../src/app/runtime/listPreferenceScope';
@@ -119,10 +120,24 @@ check(
   'an explicit handling-surface heading is not duplicated',
 );
 check(
+  shouldRenderScenePageHeading({
+    hasSceneIdentity: 'projects.ledger',
+    hasEmbeddedContentHeading: true,
+  }),
+  false,
+  'an embedded ActionView or form keeps heading ownership',
+);
+check(
   shouldRenderScenePageHeading({ hasSceneIdentity: '' }),
   false,
   'a page without scene identity does not invent a heading',
 );
+check(shouldRenderSceneContractFallbackHeading('loading'), true,
+  'embedded scene contract loading keeps one semantic heading');
+check(shouldRenderSceneContractFallbackHeading('error'), true,
+  'embedded scene contract failure keeps one semantic heading');
+check(shouldRenderSceneContractFallbackHeading('idle'), false,
+  'ready PageRenderer owns the semantic heading');
 check(
   formatLoadingProgress(14_700),
   {

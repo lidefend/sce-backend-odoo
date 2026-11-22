@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-02AB-20261122",
+  "branch": "feature/fe-expression-02ab-feedback-responsive-20261122",
+  "baseline_sha": "94bfb32465593341a97b16fbac3595f25b152eb6",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-02AB-20261122.yaml",
+  "record": "docs/ops/iterations/fe_expression_02ab_20261122.md",
+  "scope": [
+    "frontend/apps/web/src/app/routeFailure.ts",
+    "frontend/apps/web/src/api/envelope.ts",
+    "frontend/apps/web/src/api/intents.ts",
+    "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+    "frontend/apps/web/src/router/index.ts",
+    "frontend/apps/web/src/views/RouteErrorView.vue",
+    "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewBatchRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
+    "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+    "frontend/apps/web/src/app/activityPageTitle.ts",
+    "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/route_authority_guard_test.ts",
+    "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+    "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+    "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+    "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+    "make/frontend.mk",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_page_contract_boundary_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/ops/iterations/fe_expression_02ab_20261122.md",
+    "docs/audit/frontend_page_contract_boundary_report.md",
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-02AB-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-02AB-20261122/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "frontend source and focused node tests; browser/acceptance readback uses the registered sc_frontend_acceptance carrier only after earlier gates pass"
+  },
+  "checks": {
+    "route_failure_unit": {
+      "target": "verify.nav.pro01r.route_authority.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/routeFailure.ts",
+        "frontend/apps/web/src/api/envelope.ts",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    },
+    "relation_read_unit": {
+      "target": "verify.frontend.record_form_return.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+        "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "selection_feedback_unit": {
+      "target": "verify.frontend.action_view_selection_feedback.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
+        "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_header_unit": {
+      "target": "verify.frontend.product_page_header.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/app/activityPageTitle.ts",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
+        "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+        "scripts/verify/frontend_product_page_header_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "heading_contract_unit": {
+      "target": "verify.frontend.dev_acceptance_remediation.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/activityPageTitle.ts",
+        "frontend/apps/web/src/views/SceneView.vue",
+        "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "incremental_planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_boundary": {
+      "target": "verify.frontend.page_contract_boundary.guard",
+      "inputs": [
+        "frontend/apps/web/src/views",
+        "frontend/apps/web/src/router/index.ts",
+        "scripts/verify/frontend_page_contract_boundary_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "generic frontend source change; no Odoo module runtime behavior changed"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "route authority, relation read, collection action, product page header and incremental planner units"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "new export-feedback unit plus modified source-level contracts"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce and frontend page-header guard"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "lint, strict typecheck and production build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "owner_target": "affected router failure and four representative pages at 1440 and 390 on the registered acceptance carrier"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "r09_source": ".runtime/FE-RUNTIME-RESEARCH-01/evidence/r09/observations/five-focus-findings.md",
+    "product_acceptance": "R09 remains 2/4 complete journeys PASS; income contract and payment request retain FAIL until backend configuration and this responsive fix are closure-verified",
+    "diagnosis_only": "02C One2many/attachment formatting and 02D PM income-contract configuration are not implemented in this batch",
+    "route_failure_unit": "PASS: 401 authentication return, 403/forbidden, 404, 409, 503/service, network and intent numeric status classification locked; 401 retains trace_id and login redirect",
+    "relation_read_unit": "PASS: 22 cases; relation authority errors now cross the guard boundary",
+    "selection_feedback_unit": "PASS: backend reason/message/trace retained and concurrent duplicate export blocked",
+    "page_header_unit": "PASS: 77 Python tests plus 28 model and adapter contract cases; narrow mobile stacking rule locked",
+    "heading_contract_unit": "PASS: 21 cases; embedded Action/Form content retains page heading ownership",
+    "incremental_planner_unit": "PASS: 208 tests; route, relation, feedback and heading inputs route to their owning units",
+    "lint_type_contract": "PASS: lint 0 errors, strict typecheck PASS, contract-basis open defects=0",
+    "correction": "First header contract run required explicit registration of RouteErrorView as the seventh ScPageHeader call site; no expected assertion was weakened"
+    ,
+    "mainline_sync": "PR #959 merged as 94bfb32465593341a97b16fbac3595f25b152eb6; FE candidate merge commit 81afddb33f8aeb932cd31a94aa917094e1099ff0, then metadata baseline binding 1322cc98dfb3bc42eff6ce7c6c6a67734bcf137c",
+    "ci_local_iteration": "PASS on final evidence HEAD 1322cc98d; 23 affected targets executed, unmappedPathCount=0",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T061250Z-2555571-426428254/receipt.json",
+    "ci_local_iteration_receipt_sha256": "862b67ef3602da0d81c7ffb323a05030284147753f49cd6244a14ee1b158eefe",
+    "production_build": "PASS on evidence HEAD 1322cc98d: build-info source 1322cc98d, tree 169fdc6ee; authoritative runtime build sha256 a9d13ed5af931347c62c2d5f9564c77834366061956fc420c8356aeb6467f63e",
+    "browser_precheck": "PASS exact-code-HEAD run: 10/10 cases, 0 failures, 0 page errors, 72/72 loaded resources present in dist-release; expected injected 500/503 Console resource errors only",
+    "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/exact-1322cc98d/report.json",
+    "browser_evidence_sha256": "507ff5f4ee99bc6c7977925dcd6b4c5ffcd7c5d6a757c9cce34662072bf5982a",
+    "browser_results": "project ledger and My Work return one H1; income/payment desktop and mobile have one H1 and zero overflow; payment mobile status/actions are full-width stacked; export failure exposes message+reason+trace with one request; 503 route failure reaches route-error and is not shown as access denial",
+    "final_exact_head_rebuild": "PASS on 1322cc98d: backend source revision, build-info SHA, database, acceptance runtime environment and frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same evidence HEAD"
+  },
+  "next_exact_step": "Commit the exact evidence record for 1322cc98d, run ci.local.iteration on the resulting clean metadata head, publish PR #961 against main 94bfb3246, bind the final head and receipts, and require all exact-head remote gates before the protected merge decision.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

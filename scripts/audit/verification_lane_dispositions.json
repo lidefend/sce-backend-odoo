@@ -2388,11 +2388,6 @@
       "reason": "Existing public-auth bootstrap probe remains outside this capability explorer batch; its current sandbox failure is recorded separately and is not a dependency of the page-contract declaration.",
       "review_by": "2026-12-31"
     },
-    "verify.frontend.record_form_return.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：.agent/runs/FE-TPL-OFFICIAL-TEMPLATE-ADOPTION/run.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.frontend.relation_navigation.diagnostic": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",

@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        633
+        637
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -468,6 +468,20 @@
       "ownerLayer": "P0_frontend_renderer"
     },
     {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/RouteErrorView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/RouteErrorView.vue",
+      "lines": [
+        62
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
       "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/WorkbenchView.vue",
       "rule": "R3_router_literal_destination",
       "literal": "/",
@@ -516,6 +530,34 @@
       "path": "frontend/apps/web/src/app/action_semantics.ts",
       "lines": [
         65
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|error|frontend/apps/web/src/app/activityPageTitle.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "error",
+      "path": "frontend/apps/web/src/app/activityPageTitle.ts",
+      "lines": [
+        82
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|loading|frontend/apps/web/src/app/activityPageTitle.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "loading",
+      "path": "frontend/apps/web/src/app/activityPageTitle.ts",
+      "lines": [
+        82
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1580,7 +1622,7 @@
       "literal": "error",
       "path": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
       "lines": [
-        4
+        5
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1594,7 +1636,7 @@
       "literal": "loading",
       "path": "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
       "lines": [
-        3
+        4
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1608,7 +1650,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1027
+        1031
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1654,15 +1696,15 @@
       "lines": [
         82,
         88,
-        93,
-        98,
-        104,
-        145,
-        169,
-        174,
+        94,
+        99,
+        105,
+        146,
+        170,
         175,
-        177,
-        181
+        176,
+        178,
+        182
       ],
       "occurrences": 11,
       "classification": "excluded-render-interaction",
@@ -1879,21 +1921,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 174,
-    "distinctDecisions": 127,
+    "totalFindings": 177,
+    "distinctDecisions": 130,
     "byRule": {
       "R2_intent_literal": 19,
-      "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 138
+      "R3_router_literal_destination": 18,
+      "R4_business_state_literal": 140
     },
     "byClassification": {
       "contract-derived": 71,
-      "excluded-render-interaction": 103
+      "excluded-render-interaction": 106
     },
     "unclassified": 0,
     "contractDerived": 71,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 103
+    "excludedRenderInteraction": 106
   }
 }

@@ -137,6 +137,23 @@ export function resolveBatchDeleteFailureMessage(error: unknown, text: (key: str
   return resolveBatchActionFailureMessage({ action: 'delete', text });
 }
 
+export function resolveBatchOperationFailureMessage(options: {
+  error: unknown;
+  fallback: string;
+  text: (key: string, fallback: string) => string;
+}): string {
+  const base = options.error instanceof ApiError && String(options.error.message || '').trim()
+    ? String(options.error.message).trim()
+    : options.fallback;
+  const reasonCode = options.error instanceof ApiError ? String(options.error.reasonCode || '').trim() : '';
+  const traceId = options.error instanceof ApiError ? String(options.error.traceId || '').trim() : '';
+  return [
+    base,
+    reasonCode ? `${options.text('operation_error_reason_prefix', '原因：')}${reasonCode}` : '',
+    traceId ? `${options.text('operation_error_trace_prefix', '追踪 ID：')}${traceId}` : '',
+  ].filter(Boolean).join(' · ');
+}
+
 export function resolveBatchActionErrorLabel(options: {
   action: 'archive' | 'activate' | 'delete';
   text: (key: string, fallback: string) => string;

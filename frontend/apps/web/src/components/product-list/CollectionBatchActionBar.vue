@@ -61,7 +61,7 @@
     <ScButton class="batch-clear" size="small" variant="ghost" :disabled="loading" @click="clearSelection">
       {{ clearLabel }}
     </ScButton>
-    <span v-if="selectedCount > 0 && message" class="batch-message" aria-live="polite">{{ message }}</span>
+    <span v-if="message" class="batch-message" role="status" aria-live="polite">{{ message }}</span>
   </section>
 </template>
 

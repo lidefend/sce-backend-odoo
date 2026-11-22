@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { isContractGapError } from '../src/app/contract/contractGap';
+import { classifyRouteFailure, routeFailureRedirect } from '../src/app/routeFailure';
+import { parseIntentEnvelope } from '../src/api/envelope';
 import {
   buildRouteAuthorityValidationParams,
   findRouteAuthority,
@@ -277,6 +280,57 @@ assert.equal(routeAuthorityForPrincipal(
   shellOnly,
   { userId: 8, companyId: 3, roleCode: 'pm' },
 ), null);
+
+const envelopeFailure = parseIntentEnvelope({
+  ok: false,
+  data: null,
+  error: { code: 403, reason_code: 'PERMISSION_DENIED', message: 'denied' },
+});
+assert.equal(envelopeFailure.error?.code, 403, 'numeric intent error status is preserved');
+assert.equal(classifyRouteFailure({ status: 503, reasonCode: 'TRANSIENT_TRANSPORT_FAILURE', traceId: 'trace-503' }).kind, 'service');
+assert.equal(classifyRouteFailure({ status: 403, reasonCode: 'PERMISSION_DENIED' }).kind, 'forbidden');
+assert.equal(classifyRouteFailure({ status: 0, kind: 'network', reasonCode: 'NETWORK_ERROR' }).kind, 'network');
+assert.deepEqual(routeFailureRedirect({ status: 503, reasonCode: 'TRANSIENT_TRANSPORT_FAILURE', traceId: 'trace-503' }, '/a/42'), {
+  name: 'route-error',
+  query: {
+    from: '/a/42',
+    kind: 'service',
+    reason: 'TRANSIENT_TRANSPORT_FAILURE',
+    status: '503',
+    trace_id: 'trace-503',
+  },
+});
+assert.deepEqual(routeFailureRedirect({ status: 403, reasonCode: 'PERMISSION_DENIED' }, '/a/42'), {
+  name: 'access-denied',
+  query: { from: '/a/42', kind: 'forbidden', reason: 'PERMISSION_DENIED', status: '403' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 401, reasonCode: 'AUTH_401', traceId: 'trace-401' }, '/a/42'), {
+  name: 'login',
+  query: {
+    from: '/a/42',
+    kind: 'authentication',
+    reason: 'AUTH_401',
+    status: '401',
+    trace_id: 'trace-401',
+    redirect: '/a/42',
+  },
+});
+assert.deepEqual(routeFailureRedirect({ status: 404, reasonCode: 'NOT_FOUND', traceId: 'trace-404' }, '/a/42'), {
+  name: 'not-found',
+  query: { from: '/a/42', kind: 'not_found', reason: 'NOT_FOUND', status: '404', trace_id: 'trace-404' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 409, reasonCode: 'CONTEXT_CONFLICT', traceId: 'trace-409' }, '/a/42'), {
+  name: 'route-error',
+  query: { from: '/a/42', kind: 'conflict', reason: 'CONTEXT_CONFLICT', status: '409', trace_id: 'trace-409' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 0, kind: 'network', reasonCode: 'NETWORK_ERROR', traceId: 'trace-net' }, '/a/42'), {
+  name: 'route-error',
+  query: { from: '/a/42', kind: 'network', reason: 'NETWORK_ERROR', trace_id: 'trace-net' },
+});
+const routeErrorSource = readFileSync(resolve('frontend/apps/web/src/views/RouteErrorView.vue'), 'utf8');
+assert.match(routeErrorSource, /<ScErrorState title="请求处理结果"/);
+assert.match(routeErrorSource, /:disabled="!from"/);
+console.log('[route_failure_classification] PASS transport/auth/scope separation');
 
 console.log('[route-authority-guard] PASS');
 

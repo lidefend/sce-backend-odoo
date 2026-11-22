@@ -88,6 +88,7 @@
       v-if="status === 'idle' && sceneContractEntryIntent"
       :intent="sceneContractEntryIntent"
       :scene-key="currentSceneKey"
+      :semantic-title="scenePageHeading"
     />
     <SceneBlocksRenderer
       v-if="status === 'idle' && !sceneContractEntryIntent && showSceneBlocksDebug && sceneBlocks.length"
@@ -380,6 +381,9 @@ const scenePageHeading = computed(() => resolveSceneActivityTitle({
 const renderScenePageHeading = computed(() => shouldRenderScenePageHeading({
   hasSceneIdentity: currentSceneKey.value,
   hasExplicitHeading: handlingEntryGroups.value.length > 0,
+  hasEmbeddedContentHeading: Boolean(sceneContractEntryIntent.value)
+    || embeddedActionId.value > 0
+    || embeddedRecordActionId.value > 0,
 }));
 watch(scenePageHeading, (title) => {
   if (status.value === 'error' || !currentSceneKey.value || !title) return;

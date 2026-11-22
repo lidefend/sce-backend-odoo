@@ -248,6 +248,21 @@ check('relation read receipt requires every target identity field and read mode'
   assert.equal(await validateRelationReadRoute(route,()=> 'stable',async()=>({allowed:true})),false);
   assert.equal(await validateRelationReadRoute(route,()=> 'stable',async()=>{throw new Error('revoked');}),false);
 });
+check('relation read request failures cross the guard boundary for error classification', async () => {
+  const failure = Object.assign(new Error('service unavailable'), {
+    status: 503,
+    reasonCode: 'TRANSIENT_TRANSPORT_FAILURE',
+    traceId: 'trace-relation-503',
+  });
+  let observed: unknown = null;
+  assert.equal(await validateRelationReadRoute(
+    relationRoute(),
+    () => 'stable',
+    async () => { throw failure; },
+    (error) => { observed = error; },
+  ), false);
+  assert.equal(observed, failure);
+});
 check('relation origin cannot authorize edit/list/create or coerced IDs', async () => {
   const route=relationRoute();
   for (const [name,path] of [['model-form','/f/x.partner/56'],['action','/a/324'],['record','/r/x.partner/new'],['record','/r/x.partner/57']]) {

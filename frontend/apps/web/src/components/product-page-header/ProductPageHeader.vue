@@ -161,4 +161,24 @@ const model = computed(() => resolveProductPageHeaderModel({
     justify-self: end;
   }
 }
+@media (max-width: 600px) {
+  .product-page-header {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: stretch;
+  }
+  .product-page-header__identity,
+  .product-page-header__status,
+  .product-page-header__actions {
+    grid-column: 1 / -1;
+    width: 100%;
+    max-width: 100%;
+    justify-self: stretch;
+  }
+  .product-page-header__status {
+    text-align: left;
+  }
+  .product-page-header__actions {
+    justify-content: flex-start;
+  }
+}
 </style>

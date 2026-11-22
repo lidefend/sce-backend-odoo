@@ -16,6 +16,7 @@ import {
   resolveBatchActionGuardMessage,
   resolveBatchActionResultMessage,
   resolveBatchDeleteFailureMessage,
+  resolveBatchOperationFailureMessage,
 } from '../runtime/actionViewBatchRuntime';
 import {
   resolveBatchActionGuardDecision,
@@ -58,6 +59,7 @@ type UseActionViewSelectionActionRuntimeOptions<Action extends DeclaredAction> =
   clearSelection: () => void;
   reload: () => Promise<unknown>;
   runDeclaredAction: (action: Action) => void;
+  executeExport?: typeof executeActionViewSelectionExport;
 };
 
 /**
@@ -83,7 +85,8 @@ export function useActionViewSelectionActionRuntime<Action extends DeclaredActio
     if (key.startsWith('batch:')) {
       const action = key.slice('batch:'.length);
       if (action === 'export') {
-        void executeActionViewSelectionExport({
+        if (options.batchBusy.value) return;
+        void (options.executeExport || executeActionViewSelectionExport)({
           model: options.resolveTargetModel(),
           ids: [...options.selectedIds.value],
           columns: options.columns.value,
@@ -96,8 +99,12 @@ export function useActionViewSelectionActionRuntime<Action extends DeclaredActio
             options.clearSelection();
             options.batchMessage.value = options.text('batch_msg_export_done', `已导出 ${count} 条记录`);
           },
-          onFailure: () => {
-            options.batchMessage.value = options.text('batch_msg_export_failed', '导出失败，请稍后重试');
+          onFailure: (error) => {
+            options.batchMessage.value = resolveBatchOperationFailureMessage({
+              error,
+              fallback: options.text('batch_msg_export_failed', '导出失败，请稍后重试'),
+              text: options.text,
+            });
           },
         });
         return;
@@ -168,9 +175,13 @@ export function useActionViewSelectionActionRuntime<Action extends DeclaredActio
         await options.reload();
         options.batchMessage.value = resultMessage;
       } catch (err) {
-        options.batchMessage.value = action === 'delete'
-          ? resolveBatchDeleteFailureMessage(err, options.text)
-          : resolveBatchActionFailureMessage({ action, text: options.text });
+        options.batchMessage.value = resolveBatchOperationFailureMessage({
+          error: err,
+          fallback: action === 'delete'
+            ? resolveBatchDeleteFailureMessage(err, options.text)
+            : resolveBatchActionFailureMessage({ action, text: options.text }),
+          text: options.text,
+        });
       } finally {
         options.batchBusy.value = false;
       }
@@ -207,8 +218,12 @@ export function useActionViewSelectionActionRuntime<Action extends DeclaredActio
       options.clearSelection();
       await options.reload();
       options.batchMessage.value = resultMessage;
-    } catch {
-      options.batchMessage.value = resolveBatchActionFailureMessage({ action, text: options.text });
+    } catch (error) {
+      options.batchMessage.value = resolveBatchOperationFailureMessage({
+        error,
+        fallback: resolveBatchActionFailureMessage({ action, text: options.text }),
+        text: options.text,
+      });
     } finally {
       options.batchBusy.value = false;
     }

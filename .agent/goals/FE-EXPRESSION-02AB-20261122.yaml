@@ -1,0 +1,59 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-02AB-20261122
+  title: frontend_error_feedback_and_responsive_hierarchy
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend transport-error presentation, collection action feedback,
+    shared page-heading ownership and responsive ProductPageHeader layout.
+  module:
+    - frontend/apps/web
+    - make
+    - scripts/verify
+    - .agent
+    - docs/ops/iterations
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Close the user-visible FE-EXPRESSION-02A/B defects reproduced by R09:
+    distinguish route transport failures from authorization denials, preserve
+    backend export failure reasons with retryable feedback, stack the payment
+    request header safely at 390px, and retain one authoritative visible page H1
+    on the project ledger.
+  product_result: >-
+    A network or service failure is no longer shown as a permission denial;
+    list export failures retain their authoritative reason and trace and can be
+    retried; the shared ProductPageHeader preserves title, status and action
+    hierarchy without horizontal squeezing on mobile; embedded Scene content
+    does not compete with the child page's H1.
+  why_here: >-
+    These are generic HTTP/error presentation, shared feedback and responsive
+    layout responsibilities in the platform frontend. They do not require
+    business semantics or a second renderer/runtime.
+  why_not_elsewhere:
+    - Do not change backend contracts, ACL, workflow or business state.
+    - Do not special-case a model, menu or Chinese label.
+    - Do not add a Renderer, Registry, Bundle Manager or page engine.
+    - Do not implement 02C business-value formatting or 02D backend configuration.
+  blast_radius:
+    behavior:
+      - route authority 401/403/404/409/5xx/network outcomes are classified separately
+      - true 403 remains fail-closed
+      - export failure exposes the backend reason/trace and remains retryable
+      - shared header stacks status and actions below identity on narrow screens
+      - embedded Scene content does not emit a competing semantic H1
+    exclusions:
+      - no database or fixture mutation
+      - no backend/module source change
+      - no customer module or business data
+      - no One2many/attachment formatter implementation in this batch
+  rollback: >-
+    Revert the generic frontend files, their focused tests, incremental mapping
+    and run metadata together. No persisted data or deployment state changes.
+  completion:
+    batch: active
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: verification_pending

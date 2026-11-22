@@ -53,7 +53,7 @@ export async function executeActionViewSelectionExport(options: {
   context: Record<string, unknown>;
   setBusy: (busy: boolean) => void;
   onSuccess: (count: number) => void;
-  onFailure: () => void;
+  onFailure: (error: unknown) => void;
 }): Promise<void> {
   options.setBusy(true);
   try {
@@ -73,8 +73,8 @@ export async function executeActionViewSelectionExport(options: {
     });
     downloadBase64(result.file_name, result.mime_type, result.content_b64);
     options.onSuccess(Number(result.count || 0));
-  } catch {
-    options.onFailure();
+  } catch (error) {
+    options.onFailure(error);
   } finally {
     options.setBusy(false);
   }

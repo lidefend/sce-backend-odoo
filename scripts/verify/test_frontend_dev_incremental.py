@@ -274,6 +274,45 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.daily_dev.acceptance_fixture.unit"],
         )
 
+    def test_expression_feedback_and_responsive_inputs_route_to_owning_units(self) -> None:
+        self.assertEqual(
+            select_targets(["frontend/apps/web/src/app/routeFailure.ts"]),
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.product_page_header.unit",
+                "verify.frontend.typecheck.strict",
+                "verify.nav.pro01r.route_authority.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets(["frontend/apps/web/src/app/relationReadRouteAuthority.ts"]),
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.record_form_return.unit",
+                "verify.frontend.typecheck.strict",
+            ],
+        )
+        self.assertIn(
+            "verify.frontend.action_view_selection_feedback.unit",
+            select_targets(["frontend/apps/web/src/app/runtime/actionViewSelectionExportRuntime.ts"]),
+        )
+        self.assertEqual(
+            set(select_targets(["frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue"])),
+            {
+                "verify.frontend.lint.src",
+                "verify.frontend.product_page_header.unit",
+                "verify.frontend.typecheck.strict",
+            },
+        )
+        self.assertEqual(
+            set(select_targets(["frontend/apps/web/src/views/SceneContractBlockGridView.vue"])),
+            {
+                "verify.frontend.lint.src",
+                "verify.frontend.product_page_header.unit",
+                "verify.frontend.typecheck.strict",
+            },
+        )
+
     def test_acceptance_runtime_tooling_routes_to_its_owning_unit(self) -> None:
         for path in (
             "scripts/dev/backend_acceptance_up.sh",
@@ -1569,14 +1608,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "frontend/apps/web/src/views/SceneView.vue",
             "frontend/apps/web/src/app/sceneEntryContract.ts",
         ):
+            expected = [
+                "verify.frontend.lint.src",
+                "verify.frontend.navigation_shell.unit",
+                "verify.frontend.scene_entry_contract.unit",
+                "verify.frontend.typecheck.strict",
+            ]
+            if path.endswith("/SceneView.vue"):
+                expected.insert(2, "verify.frontend.product_page_header.unit")
             self.assertEqual(
                 select_targets([path]),
-                [
-                    "verify.frontend.lint.src",
-                    "verify.frontend.navigation_shell.unit",
-                    "verify.frontend.scene_entry_contract.unit",
-                    "verify.frontend.typecheck.strict",
-                ],
+                expected,
             )
         self.assertEqual(
             select_targets([

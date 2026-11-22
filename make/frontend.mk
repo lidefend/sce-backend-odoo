@@ -825,6 +825,11 @@ verify.frontend.dev_acceptance_remediation.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/dev_acceptance_remediation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/dev-acceptance-remediation-test.mjs >/dev/null
 	@node /tmp/dev-acceptance-remediation-test.mjs
 
+.PHONY: verify.frontend.action_view_selection_feedback.unit
+verify.frontend.action_view_selection_feedback.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/action_view_selection_feedback_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/action-view-selection-feedback-test.mjs >/dev/null
+	@node /tmp/action-view-selection-feedback-test.mjs
+
 .PHONY: verify.frontend.startup_performance.unit
 verify.frontend.startup_performance.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/startup_performance_test.ts --bundle --platform=node --format=esm --outfile=/tmp/startup-performance-test.mjs >/dev/null

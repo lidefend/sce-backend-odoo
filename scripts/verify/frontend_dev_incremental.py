@@ -358,9 +358,19 @@ RULES = (
     )),
     Rule((
         "frontend/apps/web/scripts/route_authority_guard_test.ts",
+        "frontend/apps/web/src/app/routeFailure.ts",
+        "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/RouteErrorView.vue",
         "addons/smart_core/delivery/runtime_route_authority.py",
     ), (
         "verify.nav.pro01r.route_authority.unit",
+        "verify.frontend.product_page_header.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/relationReadRouteAuthority.ts",
+        "frontend/apps/web/scripts/record_form_return_navigation_test.ts",
+    ), (
+        "verify.frontend.record_form_return.unit",
     )),
     Rule((
         "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
@@ -1268,6 +1278,10 @@ RULES = (
     # 或两个消费运行时都要跑对应行为锁，否则契约消费回归只能在部署面上暴露。
     Rule((
         "/views/ActionView.vue",
+        "/app/action_runtime/useActionViewSelectionActionRuntime.ts",
+        "/app/runtime/actionViewSelectionExportRuntime.ts",
+        "/app/runtime/actionViewBatchRuntime.ts",
+        "frontend/apps/web/scripts/action_view_selection_feedback_test.ts",
         "/app/runtime/actionViewInteractionRuntime.ts",
         "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
         "scripts/verify/frontend_action_view_page_actions_guard.py",
@@ -1278,6 +1292,7 @@ RULES = (
         "verify.frontend.action_view_page_actions.unit",
         "verify.frontend.action_view_surface_gate_runtime.unit",
         "verify.frontend.action_view_page_size_runtime.unit",
+        "verify.frontend.action_view_selection_feedback.unit",
         "verify.frontend.contract_basis.unit",
         "verify.frontend.style_system.guard",
     )),
@@ -1633,9 +1648,20 @@ RULES = (
     Rule((
         "scripts/verify/frontend_product_page_header_guard.py",
         "scripts/verify/test_frontend_product_page_header_guard.py",
+        "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
+        "frontend/apps/web/src/app/activityPageTitle.ts",
         "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+        "frontend/apps/web/src/views/SceneView.vue",
         "frontend/apps/web/src/views/MyWorkView.vue",
+        "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",
     ), (
+        "verify.frontend.product_page_header.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/dev_acceptance_remediation_test.ts",
+    ), (
+        "verify.frontend.dev_acceptance_remediation.unit",
         "verify.frontend.product_page_header.unit",
     )),
     Rule((

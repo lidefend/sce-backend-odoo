@@ -43,6 +43,7 @@ export async function validateRelationReadRoute(
   route: RelationRoute,
   currentScope: () => string,
   request: (params: RelationReadRequest) => Promise<Record<string, unknown>>,
+  onError?: (error: unknown) => void,
 ): Promise<boolean> {
   const params = relationReadRouteRequest(route);
   if (!params) return false;
@@ -54,7 +55,8 @@ export async function validateRelationReadRoute(
       && receipt.action_id === params.action_id && receipt.menu_id === params.menu_id
       && receipt.route_path === params.route_path && receipt.access_mode === 'read'
       && receipt.render_profile === 'readonly';
-  } catch {
+  } catch (error) {
+    onError?.(error);
     return false;
   }
 }

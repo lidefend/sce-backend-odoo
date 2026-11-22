@@ -71,6 +71,13 @@ export function resolveSceneActivityTitle(input: SceneActivityTitleInput): strin
 export function shouldRenderScenePageHeading(input: {
   hasSceneIdentity?: unknown;
   hasExplicitHeading?: unknown;
+  hasEmbeddedContentHeading?: unknown;
 }): boolean {
-  return Boolean(titleText(input.hasSceneIdentity)) && !input.hasExplicitHeading;
+  return Boolean(titleText(input.hasSceneIdentity))
+    && !input.hasExplicitHeading
+    && !input.hasEmbeddedContentHeading;
+}
+
+export function shouldRenderSceneContractFallbackHeading(status: unknown): boolean {
+  return status === 'loading' || status === 'error';
 }
