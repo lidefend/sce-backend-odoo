@@ -63,8 +63,7 @@ jobs:
             expected_head_branch=main
           fi
           case "${GITHUB_EVENT_NAME}" in
-            schedule|pull_request) producer_event="${GITHUB_EVENT_NAME}" ;;
-            workflow_dispatch) producer_event=push ;;
+            schedule|pull_request|workflow_dispatch) producer_event="${GITHUB_EVENT_NAME}" ;;
             *) echo "unsupported aggregate event: ${GITHUB_EVENT_NAME}" >&2; exit 1 ;;
           esac
           echo "EXPECTED_HEAD_BRANCH=${expected_head_branch}" >> "$GITHUB_ENV"
@@ -86,7 +85,8 @@ jobs:
                 --head "$HEAD_SHA" \
                 --aggregate-event "$GITHUB_EVENT_NAME" \
                 --head-branch "$expected_head_branch" \
-                --head-repository "$GITHUB_REPOSITORY" <<<"$runs")"
+                --head-repository "$GITHUB_REPOSITORY" \
+                --workflow-dispatch-producer workflow_dispatch <<<"$runs")"
               test -n "$latest" || { pending=1; missing+=("$workflow"); continue; }
               status="$(jq -r '.status' <<<"$latest")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
@@ -143,6 +143,7 @@ jobs:
             --tree "${tree}"
             --event "${GITHUB_EVENT_NAME}"
             --head-branch "${expected_head_branch}"
+            --workflow-dispatch-producer workflow_dispatch
           )
           if [ "${GITHUB_EVENT_NAME}" = schedule ]; then
             args+=(--scheduled-slot "${SCHEDULED_SLOT}")

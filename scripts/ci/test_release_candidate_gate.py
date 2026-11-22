@@ -39,6 +39,8 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn('--aggregate-event "$GITHUB_EVENT_NAME"', self.workflow)
         self.assertIn('--head-branch "$expected_head_branch"', self.workflow)
         self.assertIn('--head-repository "$GITHUB_REPOSITORY"', self.workflow)
+        self.assertIn("--workflow-dispatch-producer workflow_dispatch", self.workflow)
+        self.assertIn('schedule|pull_request|workflow_dispatch) producer_event="${GITHUB_EVENT_NAME}"', self.workflow)
         self.assertIn("MISSING_DEPENDENCY_GRACE_ATTEMPTS", self.workflow)
         self.assertIn("Missing Candidate Dependencies", self.workflow)
         self.assertIn("candidate workflow failed", self.workflow)

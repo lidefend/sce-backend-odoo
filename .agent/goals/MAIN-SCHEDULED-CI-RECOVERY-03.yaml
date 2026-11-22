@@ -1,0 +1,58 @@
+schema_version: 1
+
+goal:
+  id: MAIN-SCHEDULED-CI-RECOVERY-03
+  title: release_candidate_dispatch_requires_full_audit_producers
+  status: active
+  formal_product_layer: P4
+  layer_target: governed GitHub Actions release-candidate dependency semantics
+  module:
+    - .github/workflows
+    - scripts/ci
+    - .agent
+  standard_vs_user_specific: repository_delivery_mechanism
+  objective: >-
+    Split workflow_dispatch producer policy by aggregate purpose. Keep the merge
+    policy gate authorized to reuse exact-SHA mainline Push evidence, while the
+    release-candidate gate must require and wait for same-event
+    workflow_dispatch full-audit producers on the exact main SHA.
+  product_result: >-
+    A complete manual scheduled-CI run cannot produce an operator_full_audit
+    release condition until the manually dispatched public_guard,
+    professional_quality_gate, frontend_release_gate and merge_policy_gate runs
+    on that same SHA have completed successfully.
+  why_here: >-
+    The defect is in P4 event-policy selection. The previous repair correctly
+    removed impossible same-event polling for merge eligibility, but applying
+    the same Push reuse policy to release-candidate validation made its success
+    semantically stronger than the evidence it consumed.
+  why_not_elsewhere:
+    - Do not change product source, tests, contracts or runtime behavior.
+    - Do not remove exact-SHA, branch, repository, workflow-path or latest-run checks.
+    - Do not claim that a Push-backed merge result is a full manual audit.
+    - Do not cancel the full-audit runs currently in flight.
+  blast_radius:
+    behavior:
+      - workflow_dispatch producer policy is explicit per aggregate workflow
+      - release_candidate_gate waits for same-event full-audit producer runs
+      - merge_policy_gate continues to reuse exact-SHA mainline Push evidence
+    exclusions:
+      - no product or customer behavior
+      - no database, fixture, deployment or runtime mutation
+      - no automatic producer dispatch
+      - no weakening of required workflow success criteria
+  validation:
+    required:
+      - selector and release-condition unit coverage for both dispatch policies
+      - workflow-contract and scheduled-gate checks
+      - ci.local.iteration and freeze preparation
+      - exact-head remote gates
+      - post-merge complete five-workflow manual dispatch on the new main
+  rollback: >-
+    Revert the policy split, workflow flags, tests and run metadata together. The
+    previous Push-reuse merge behavior remains independently recoverable.
+  completion:
+    batch: verification_pending
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

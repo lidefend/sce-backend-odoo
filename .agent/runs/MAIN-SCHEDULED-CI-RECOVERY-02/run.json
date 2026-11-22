@@ -3,7 +3,7 @@
   "id": "MAIN-SCHEDULED-CI-RECOVERY-02",
   "branch": "fix/main-scheduled-ci-recovery-02-isolated-20261122",
   "baseline_sha": "fe635515dda270ed230d07a77ed4bcc9ab4fe5ac",
-  "status": "verification_pending",
+  "status": "superseded",
   "goal": ".agent/goals/MAIN-SCHEDULED-CI-RECOVERY-02.yaml",
   "record": "docs/ops/iterations/main_scheduled_ci_recovery_02_20261122.md",
   "scope": [
@@ -88,7 +88,8 @@
     "live_identity": "With real GitHub payloads, workflow_dispatch selection resolved all four exact-main Push runs and release-condition materialized kind=operator_full_audit with producer_event=push.",
     "iteration": "ci.local.iteration exited zero after managed cached frontend dependency restoration; no unmapped or blocked target remained.",
     "freeze_prepare": "ci.delivery.freeze.prepare passed; generated complexity and split-plan reports were refreshed for the two planner line-count changes.",
-    "isolation": "The candidate runs in its own governed worktree; the original worktree retains only four unrelated concurrent changes and none of this batch's source, run metadata or runtime evidence."
+    "isolation": "The candidate ran in its own governed worktree; the original worktree was cleaned before integration.",
+    "mainline": "PR #957 merged as 9b0d16f21b0fe3316c3640dada48a7eb307ff499. Manual dispatch proved the merge gate could reuse Push evidence, but it also exposed that release_candidate_gate must not apply that reuse policy to full manual audit producers."
   },
-  "next_exact_step": "Commit the reviewed clean candidate and publish it through the protected PR path."
+  "next_exact_step": "Continue under MAIN-SCHEDULED-CI-RECOVERY-03 for release-candidate same-event producer enforcement."
 }

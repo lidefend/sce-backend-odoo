@@ -53,11 +53,16 @@ def build_condition(
     tree: str,
     event: str,
     head_branch: str,
+    workflow_dispatch_producer: str,
     schedule_slot: str | None,
 ) -> dict[str, Any]:
     head_sha = _full_sha(head_sha, "head")
     tree = _full_sha(tree, "tree")
-    producer_event, head_branch = resolve_producer_identity(event, head_branch)
+    producer_event, head_branch = resolve_producer_identity(
+        event,
+        head_branch,
+        workflow_dispatch_producer=workflow_dispatch_producer,
+    )
     by_workflow: dict[str, dict[str, Any]] = {}
     for run in runs:
         path = str(run.get("path") or "")
@@ -144,6 +149,11 @@ def main() -> int:
     parser.add_argument("--tree", required=True)
     parser.add_argument("--event", required=True)
     parser.add_argument("--head-branch", required=True)
+    parser.add_argument(
+        "--workflow-dispatch-producer",
+        choices=["push", "workflow_dispatch"],
+        default="push",
+    )
     parser.add_argument("--scheduled-slot")
     args = parser.parse_args()
     try:
@@ -154,6 +164,7 @@ def main() -> int:
             tree=args.tree,
             event=args.event,
             head_branch=args.head_branch,
+            workflow_dispatch_producer=args.workflow_dispatch_producer,
             schedule_slot=args.scheduled_slot,
         )
     except (OSError, ValueError) as exc:

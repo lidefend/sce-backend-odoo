@@ -193,7 +193,7 @@ Generated from repository source files. This report is informational during the 
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 989 | Python source | `scripts/ops/agent_run_context.py` |
 | 984 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
-| 983 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
+| 984 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |

@@ -49,13 +49,30 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
         self.assertEqual(("push", "main"), resolve_producer_identity("push", "main"))
         self.assertEqual(("pull_request", "feature/candidate"),
                          resolve_producer_identity("pull_request", "feature/candidate"))
-        self.assertEqual(("push", "main"), resolve_producer_identity("workflow_dispatch", "main"))
+        self.assertEqual(
+            ("push", "main"),
+            resolve_producer_identity("workflow_dispatch", "main"),
+        )
+        self.assertEqual(
+            ("workflow_dispatch", "main"),
+            resolve_producer_identity(
+                "workflow_dispatch",
+                "main",
+                workflow_dispatch_producer="workflow_dispatch",
+            ),
+        )
         for aggregate, branch in (("push", "feature/candidate"),
                                   ("workflow_dispatch", "feature/candidate"),
                                   ("pull_request", None),
                                   ("workflow_run", "main")):
             with self.subTest(aggregate=aggregate, branch=branch), self.assertRaises(ValueError):
                 resolve_producer_identity(aggregate, branch)
+        with self.assertRaises(ValueError):
+            resolve_producer_identity(
+                "workflow_dispatch",
+                "main",
+                workflow_dispatch_producer="schedule",
+            )
 
     def test_scheduled_gate_never_accepts_previous_day_same_head(self):
         try:
@@ -123,6 +140,7 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
                 "--aggregate-event", "workflow_dispatch",
                 "--head-branch", "main",
                 "--head-repository", REPOSITORY,
+                "--workflow-dispatch-producer", "push",
             ],
             input=json.dumps(payload),
             text=True,
@@ -132,6 +150,35 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
         selected = json.loads(proc.stdout)
         self.assertEqual(2, selected["id"])
         self.assertEqual("push", selected["event"])
+
+    def test_cli_aggregate_dispatch_can_require_manual_producers(self):
+        payload = {"workflow_runs": [
+            run(1, status="in_progress", conclusion=None,
+                event="workflow_dispatch", head_branch="main"),
+            run(2, status="completed", conclusion="success",
+                event="push", head_branch="main"),
+        ]}
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--repository", REPOSITORY,
+                "--workflow-path", WORKFLOW,
+                "--head", HEAD,
+                "--aggregate-event", "workflow_dispatch",
+                "--head-branch", "main",
+                "--head-repository", REPOSITORY,
+                "--workflow-dispatch-producer", "workflow_dispatch",
+            ],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        selected = json.loads(proc.stdout)
+        self.assertEqual(1, selected["id"])
+        self.assertEqual("workflow_dispatch", selected["event"])
+        self.assertEqual("in_progress", selected["status"])
 
     def test_cross_branch_and_cross_repository_runs_are_rejected(self):
         rows = [
