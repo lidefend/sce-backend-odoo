@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-CONTRACT-FIDELITY-02-1
   title: unified_business_semantic_authority
-  status: verification_pending
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Generic frontend business-value semantic authority and its Form, List,
@@ -49,8 +49,12 @@ goal:
     Revert the shared semantic authority, consumer delegation and focused tests.
     No database or persisted business value requires rollback.
   completion:
-    batch: verification_pending
-    independent_review: not_started
-    mainline_integration: not_started
+    batch: completed
+    independent_review: approved
+    mainline_integration: completed
     deployment: not_applicable
-    user_acceptance: not_started
+    user_acceptance: not_applicable
+  integration:
+    pull_request: 971
+    reviewed_head: 29029ddd339130426b255b55badf1fceacecdd44
+    merge_commit: 5f032c1729e37ae7ac4642f51a5018ef3f78b02c

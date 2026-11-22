@@ -1,0 +1,140 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-FIDELITY-02-2",
+  "branch": "audit/fcf-02-1-closeout-fcf-02-2-probes-20261123",
+  "baseline_sha": "5f032c1729e37ae7ac4642f51a5018ef3f78b02c",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02-2.yaml",
+  "record": "docs/audit/fe_contract_fidelity_02_2_gap_probes_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02-1.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02-2.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02-1/run.json",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02-2/run.json",
+    "docs/audit/fe_contract_fidelity_02_1_semantic_authority_20261123.md",
+    "docs/audit/fe_contract_fidelity_02_2_gap_probes_20261123.md",
+    "docs/audit/fe_contract_fidelity_02_2/gap_probes.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "source inspection plus checked-in contract readbacks; no database, service, credential or runtime write"
+  },
+  "checks": {
+    "contract_fidelity_plan": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_orchestration": {
+      "target": "verify.page_contract.orchestration_schema.guard",
+      "inputs": [
+        "scripts/verify/page_contract_orchestration_schema_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py"
+      ],
+      "kind": "offline"
+    },
+    "page_block_renderer": {
+      "target": "verify.frontend.page_block_renderer_smoke",
+      "inputs": [
+        "scripts/verify/frontend_page_block_renderer_smoke_guard.py",
+        "frontend/apps/web/src/components/page",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "page_block_registry": {
+      "target": "verify.frontend.page_block_registry_guard",
+      "inputs": [
+        "scripts/verify/frontend_page_block_registry_guard.py",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "probe source and contract readback identity",
+      "state": "required",
+      "owner_target": "gap_probes.json source_evidence and readbacks"
+    },
+    {
+      "gate": "plan and dependency consistency",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_fidelity.plan.unit"
+    },
+    {
+      "gate": "current Page Block producer/renderer boundary",
+      "state": "required",
+      "owner_target": "page contract, registry and renderer guards"
+    },
+    {
+      "gate": "frontend product transport implementation",
+      "state": "blocked",
+      "reason": "CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05 conclude contract_gap"
+    },
+    {
+      "gate": "backend contract implementation",
+      "state": "not_authorized",
+      "reason": "the probe result must be independently reviewed before a P0 producer batch"
+    },
+    {
+      "gate": "database, fixture, deployment and user acceptance",
+      "state": "excluded",
+      "reason": "read-only source and contract evidence only"
+    }
+  ],
+  "blockers": [
+    {
+      "id": "CFG-GAP-02",
+      "state": "contract_gap",
+      "owner": "P0 producer declaration",
+      "detail": "Page Block values do not carry field identity, raw type or presentational semantics."
+    },
+    {
+      "id": "CFG-GAP-04",
+      "state": "contract_gap",
+      "owner": "P0 producer declaration",
+      "detail": "Attachment identity, ownership, role, authorized actions and failure feedback are not carried by one contract."
+    },
+    {
+      "id": "CFG-GAP-05",
+      "state": "contract_gap",
+      "owner": "P0 producer declaration",
+      "detail": "Page Block actions do not carry permission result, disabled reason, failure reason, message or trace identity."
+    }
+  ],
+  "observations": {
+    "probe_method": "Static producer/consumer call-chain inspection plus checked-in runtime contract snapshots. No browser PASS or served-runtime correctness claim is made.",
+    "fcf_02_2": "Remains locked. Frontend defaults or local reconstruction are prohibited until the producer declarations, consumer decoding, independent review and registered verification close the gaps.",
+    "scope_boundary": "No product source or backend contract file is modified in this batch.",
+    "baseline_guard_exclusion": "verify.page_orchestration.target_completion.guard fails on unchanged main because it requires removed legacy tokens in workspace_home_contract_builder.py and WorkbenchView.vue. Classified as validation_tool_defect and excluded from this probe evidence."
+  },
+  "next_exact_step": "Await independent review of PR #972 at its final exact metadata head. Do not start FCF-02-2 product implementation while CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05 remain contract gaps.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "integration": {
+    "pull_request": 972,
+    "initial_candidate_head": "1e4d3e4a45ab0e2baf10b7120199d47b6896ea74"
+  }
+}

@@ -55,7 +55,9 @@ goal:
     planning: completed
     plan_review: approved_by_architecture_owner
     planning_guard: implemented_local
-    product_remediation: in_progress_FE_CONTRACT_FIDELITY_02_1
+    product_remediation: >-
+      FE_CONTRACT_FIDELITY_02_1_completed;
+      FE_CONTRACT_FIDELITY_02_2_gap_probes_contract_gap_pending_p0
     mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable
