@@ -1,7 +1,7 @@
 import type { FormSectionFieldSchema } from '../template/formSection.types';
 import { layoutGridUnits } from '../template/layoutSpan';
 import type { RelationFieldAdapter } from '../template/relationField.types';
-import type { RelationFieldColumn } from '../template/relationField.types';
+import type { RelationFieldColumn, RelationFieldRow } from '../template/relationField.types';
 
 export const PROFESSIONAL_DETAIL_COLLECTION_COMPONENT_KEY = 'sc.relation.table' as const;
 
@@ -151,6 +151,28 @@ export function detailCollectionMobileColumnSplit(columns: RelationFieldColumn[]
     primary: Object.freeze(columns.slice(0, 6)),
     additional: Object.freeze(columns.slice(6)),
   });
+}
+
+export function detailCollectionAggregateColumn(
+  column: RelationFieldColumn,
+  rows: RelationFieldRow[],
+  resolveEffectiveColumn: (row: RelationFieldRow, column: RelationFieldColumn) => RelationFieldColumn,
+): RelationFieldColumn | null {
+  const effectiveColumns = rows.map((row) => resolveEffectiveColumn(row, column));
+  if (String(column.ttype || '').trim().toLowerCase() !== 'monetary' || !column.currencyField) {
+    return effectiveColumns[0] || column;
+  }
+  const currencies = rows.map((row) => {
+    const value = row.values?.[column.currencyField!];
+    if (!Array.isArray(value) || value.length < 2) return null;
+    const id = Number(value[0]);
+    const label = String(value[1] || '').trim();
+    return Number.isSafeInteger(id) && id > 0 && label ? { id, label } : null;
+  });
+  if (currencies.some((currency) => !currency)) return null;
+  const ids = new Set(currencies.map((currency) => currency!.id));
+  if (ids.size !== 1 || !effectiveColumns[0]) return null;
+  return { ...effectiveColumns[0], currencyLabel: currencies[0]!.label };
 }
 
 export function isProfessionalDetailCollectionField(field: FormSectionFieldSchema): boolean {

@@ -26,7 +26,8 @@ def validate(
         "onToggleFavorite: () => toggleRecordFavorite(row, field)",
         "onOpenRecord: () => handleRow(row)",
         "onOpenAttachment: (link:",
-        "onOpenAttachmentCount: () => previewRecordAttachmentCount(row, columnValue(row, field))",
+        "onOpenAttachmentCount: () => previewRecordAttachmentCount(row, field)",
+        "isListAttachmentCountColumn(columnSemanticInput(field))",
         "relationItems,",
     )
     for marker in required_list:
@@ -38,6 +39,8 @@ def validate(
         'class="cell-primary-link"',
         'class="attachment-links"',
         'class="attachment-count-link"',
+        "label === '附件'",
+        "/^附件\\([1-9]",
     )
     for marker in forbidden_list:
         if marker in list_text:

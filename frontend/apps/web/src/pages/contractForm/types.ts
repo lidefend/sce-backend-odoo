@@ -182,6 +182,9 @@ export type One2ManyColumn = {
   relationActiveActions?: Record<string, unknown>;
   selection?: Array<[string, string]>;
   relation?: string;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
   relationReadable?: boolean;
   disabledReason?: string;
 };

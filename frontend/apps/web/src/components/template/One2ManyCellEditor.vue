@@ -65,7 +65,7 @@
       :status="invalid ? 'error' : 'default'"
       :described-by="describedBy"
       :title="column.disabledReason || readonlyReason || cellDisplayValue"
-      :model-value="adapter.one2manyColumnDisplayValue(column, value)"
+      :model-value="adapter.one2manyColumnInputValue(column, value)"
       :placeholder="column.label"
       @update:model-value="$emit('update', $event)"
     />

@@ -1935,7 +1935,9 @@ RULES = (
     Rule((
         "scripts/ci/personal_data_false_positives.json",
     ), (
-        "verify.repository.clean_history",
+        "repository.clean_history.scan",
+        "verify.repository.clean_history.unit",
+        "security.personal_data_scan",
     )),
     # The payment action contract's reason presentation is consumed by the
     # contract action projector; keep the producer and its consumer test in one

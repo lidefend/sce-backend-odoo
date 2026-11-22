@@ -1338,7 +1338,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 )
         self.assertEqual(
             select_targets(["scripts/ci/personal_data_false_positives.json"]),
-            ["verify.repository.clean_history"],
+            [
+                "repository.clean_history.scan",
+                "security.personal_data_scan",
+                "verify.repository.clean_history.unit",
+            ],
         )
         for path in (
             "scripts/verify/frontend_v2_policy_projection_guard.py",

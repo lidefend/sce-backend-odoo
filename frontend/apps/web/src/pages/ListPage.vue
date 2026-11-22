@@ -348,7 +348,7 @@ import {
   numericFieldValue,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
-import { isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
+import { isListAttachmentCountColumn, isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
 import {
   canListGroupPageNext,
   canListGroupPagePrev,
@@ -792,14 +792,12 @@ async function previewAttachmentLink(link: { name: string; url: string }, row: R
     attachmentPreviewError.value = err instanceof Error ? err.message : '附件打开失败';
   }
 }
-function isAttachmentCountCell(field: string, value: unknown) {
-  const label = columnLabel(field).trim();
-  const text = String(normalizeCellRawValue(value) ?? '').trim();
-  return label === '附件' && /^附件\([1-9]\d*\)$/.test(text);
+function isAttachmentCountCell(field: string) {
+  return isListAttachmentCountColumn(columnSemanticInput(field));
 }
-async function previewRecordAttachmentCount(row: Record<string, unknown>, value: unknown) {
+async function previewRecordAttachmentCount(row: Record<string, unknown>, field: string) {
   attachmentPreviewError.value = '';
-  const text = String(normalizeCellRawValue(value) ?? '').trim() || '附件';
+  const text = columnLabel(field).trim() || '附件';
   try {
     await attachmentViewerRef.value?.open({
       model: props.model,
@@ -855,7 +853,7 @@ function collectionRowCellProps(row: Record<string, unknown>, field: string) {
   else if (isStatusLikeColumn(field)) kind = 'status';
   else if (isPrimaryTextColumn(field)) kind = 'primary';
   else if (links.length) kind = 'attachments';
-  else if (isAttachmentCountCell(field, value)) kind = 'attachment-count';
+  else if (isAttachmentCountCell(field)) kind = 'attachment-count';
   else if (relationItems.length) kind = 'relation-tags';
   return {
     kind,
@@ -1664,7 +1662,7 @@ function collectionCell(row: Record<string, unknown>, field: string) {
     onToggleFavorite: () => toggleRecordFavorite(row, field),
     onOpenRecord: () => handleRow(row),
     onOpenAttachment: (link: { name: string; url: string }) => previewAttachmentLink(link, row),
-    onOpenAttachmentCount: () => previewRecordAttachmentCount(row, columnValue(row, field)),
+    onOpenAttachmentCount: () => previewRecordAttachmentCount(row, field),
   });
 }
 function collectionTableColumns(groupKey = '') {

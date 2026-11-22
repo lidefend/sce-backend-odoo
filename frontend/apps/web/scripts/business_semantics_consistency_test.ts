@@ -9,7 +9,7 @@ import {
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
 import { formatProductMyWorkFact } from '../src/app/presentation/productMyWorkPresentation';
 import { FIELD_VALUE_EMPTY_TEXT } from '../src/utils/fieldSemantics';
-import { presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { isListAttachmentCountColumn, presentListCell } from '../src/pages/listPage/listCellPresentation';
 
 const moneyField = {
   name: 'unrelated_value',
@@ -333,6 +333,22 @@ assert.equal(presentListCell({
   column: { field: 'amount', label: '金额', type: 'monetary', cellRole: 'money' },
   numeric: true,
 }).text, FIELD_VALUE_EMPTY_TEXT, 'missing list amounts are not business zeroes');
+assert.equal(isListAttachmentCountColumn({
+  field: 'attachment_summary',
+  label: '附件',
+  type: 'char',
+}), false, 'attachment behavior is never inferred from a localized label');
+assert.equal(isListAttachmentCountColumn({
+  field: 'ordinary_integer',
+  label: '附件',
+  type: 'integer',
+}), false, 'ordinary integers cannot become attachment actions');
+assert.equal(isListAttachmentCountColumn({
+  field: 'attachment_count',
+  label: 'Attachments',
+  type: 'integer',
+  cellRole: 'attachment-count',
+}), true, 'attachment behavior requires an explicit contract cell role');
 assert.deepEqual(presentListCell({
   raw: 'pending',
   column: { field: 'opaque_state', label: '状态', type: 'selection', cellRole: 'status' },

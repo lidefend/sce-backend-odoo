@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import {
+  detailCollectionAggregateColumn,
   detailCollectionAuthority,
   isProfessionalDetailCollectionField,
   optionalDetailCollectionPresentation,
@@ -29,6 +30,64 @@ import {
 } from '../src/app/x2manyCommands';
 import { one2manyRemovalLabelsFromPolicies } from '../src/pages/contractForm/one2manyUtils';
 import { nativeNodeFieldDescriptor } from '../src/pages/contractForm/nativeLayoutUtils';
+
+const aggregateRows = [
+  { key: 'a', id: 1, values: { amount: 10, currency_id: [1, 'CNY'] } },
+  { key: 'b', id: 2, values: { amount: 20, currency_id: [1, 'CNY'] } },
+];
+const amountColumn = {
+  name: 'amount',
+  label: '金额',
+  ttype: 'monetary',
+  required: false,
+  currencyField: 'currency_id',
+  currencyLabel: 'CNY',
+};
+const effectiveAmountColumn = (row: typeof aggregateRows[number], column: typeof amountColumn) => {
+  const currency = row.values.currency_id as unknown[];
+  return { ...column, currencyLabel: String(currency[1] || '') };
+};
+assert.equal(
+  detailCollectionAggregateColumn(amountColumn, aggregateRows, effectiveAmountColumn)?.currencyLabel,
+  'CNY',
+  'a homogeneous currency set may expose one aggregate currency',
+);
+assert.equal(
+  detailCollectionAggregateColumn(
+    amountColumn,
+    [...aggregateRows.slice(0, 1), { key: 'c', id: 3, values: { amount: 30, currency_id: [2, 'CNY'] } }],
+    effectiveAmountColumn,
+  ),
+  null,
+  'different currency record ids cannot be merged by a shared display name',
+);
+assert.equal(
+  detailCollectionAggregateColumn(
+    amountColumn,
+    aggregateRows.map((row) => ({ ...row, values: { ...row.values, currency_id: [0, 'CNY'] } })),
+    effectiveAmountColumn,
+  ),
+  null,
+  'missing positive currency record ids fail closed instead of inheriting a column label',
+);
+assert.equal(
+  detailCollectionAggregateColumn(
+    amountColumn,
+    [...aggregateRows.slice(0, 1), { key: 'c', id: 3, values: { amount: 30, currency_id: [] } }],
+    effectiveAmountColumn,
+  ),
+  null,
+  'one missing row currency identity fails the whole aggregate closed',
+);
+assert.equal(
+  detailCollectionAggregateColumn(
+    { ...amountColumn, currencyLabel: 'CNY' },
+    aggregateRows.map((row) => ({ ...row, values: { ...row.values, currency_id: [] } })),
+    () => ({ ...amountColumn, currencyLabel: 'CNY' }),
+  ),
+  null,
+  'a column-level label never replaces missing row currency identity',
+);
 
 const modes = ['task', 'workspace'] as const;
 const profiles = ['create', 'edit', 'readonly'] as const;

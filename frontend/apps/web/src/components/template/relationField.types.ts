@@ -25,6 +25,9 @@ export type RelationFieldColumn = {
   columnInvisible?: boolean;
   selection?: Array<[string, string]>;
   relation?: string;
+  digits?: [number, number];
+  currencyField?: string;
+  currencyLabel?: string;
   relationReadable?: boolean;
   relationDomainSupported?: boolean;
   relationDependencies?: string[];
@@ -96,6 +99,7 @@ export type RelationFieldAdapter = {
   one2manyRowLabel: (name: string, row: RelationFieldRow) => string;
   selectPlaceholder: (label: string) => string;
   one2manyColumnInputType: (column: RelationFieldColumn) => RelationFieldInputType;
+  one2manyColumnInputValue: (column: RelationFieldColumn, value: unknown) => string | number;
   one2manyColumnDisplayValue: (column: RelationFieldColumn, value: unknown) => string;
   inputFieldValue: (name: string) => string;
   fieldInputType: (type: string) => RelationFieldInputType;
