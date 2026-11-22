@@ -2234,6 +2234,7 @@ RULES = (
         "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
         "addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py",
         "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/app_config_engine/models/app_view_config.py",
         "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
         "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
