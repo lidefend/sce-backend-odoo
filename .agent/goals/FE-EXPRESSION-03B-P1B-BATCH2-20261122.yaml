@@ -1,0 +1,61 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03B-P1B-BATCH2-20261122
+  title: list_aggregate_currency_identity_and_numeric_semantics
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend collection aggregation and shared business-value
+    interpretation across Form, List, Kanban, One2many, readonly detail, My Work
+    and page blocks.
+  module:
+    - frontend/apps/web
+    - addons/smart_core
+    - addons/smart_construction_core
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Implement fail-closed consumption of the backend list aggregate currency
+    identity without changing backend aggregation semantics. Retain the
+    percentage/precision diagnosis as read-only evidence for a later batch.
+  product_result: >-
+    List monetary footers render only when the backend aggregate declares a
+    successful sum and a currency record identity that matches a relation label
+    in the same rendered page or group scope. Unsupported monetary aggregates
+    fail closed while non-monetary aggregates remain visible. Percentage and
+    precision findings stay read-only for a later batch.
+  why_here: >-
+    The defects concern generic frontend consumption of already declared
+    contract metadata and aggregate results.
+  why_not_elsewhere:
+    - Do not change backend aggregation algorithms in this diagnosis.
+    - Do not infer business semantics from field names, labels or first rows.
+    - Do not add a Renderer, Registry, Bundle, page engine or second value runtime.
+    - Do not implement Batch 2 percentage or precision changes in this batch.
+    - Do not change backend aggregation algorithms or business semantics.
+  blast_radius:
+    behavior:
+      - List flat and grouped aggregate currency identity
+      - Percentage identity across List, Kanban and One2many
+      - Float and quantity precision projection and consumption
+      - Shared versus generic value interpreter coverage
+    exclusions:
+      - no backend contract, ACL, workflow or database change
+      - no Batch 2 percentage or precision implementation
+      - no full backend acceptance claim
+      - no unrelated UI cleanup
+  rollback: >-
+    Revert the bounded P1-B frontend consumer, schema typing, guard, component
+    test and run records to the baseline tree. No database, service or runtime
+    state requires rollback.
+  completion:
+    p1b_diagnosis: completed
+    p1b_implementation: verification_pending
+    batch2_diagnosis: completed
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_run

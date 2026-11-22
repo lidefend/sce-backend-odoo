@@ -1,5 +1,8 @@
 import { strict as assert } from 'node:assert';
-import { resolveCollectionAggregateEntry } from '../src/app/presentation/collectionAggregatePresentation';
+import {
+  resolveCollectionAggregateCurrencyIdentity,
+  resolveCollectionAggregateEntry,
+} from '../src/app/presentation/collectionAggregatePresentation';
 import { mapActionViewGroupedRows } from '../src/app/runtime/actionViewLoadResultRuntime';
 
 const displayEntry = { page_sum: 30, sum: 50, aggregation_field: 'amount' };
@@ -17,6 +20,99 @@ assert.equal(resolveCollectionAggregateEntry(
 
 assert.deepEqual(resolveCollectionAggregateEntry({}, 'request_amount_display', 'amount'), {});
 assert.deepEqual(resolveCollectionAggregateEntry(null, 'request_amount_display', 'amount'), {});
+
+const monetaryAggregate = {
+  aggregate: 'sum',
+  data_type: 'monetary',
+  currency_field: 'currency_id',
+  currency_id: 1,
+  page_sum: 10,
+  sum: 20,
+};
+assert.deepEqual(
+  resolveCollectionAggregateCurrencyIdentity(monetaryAggregate, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  { id: 1, label: 'CNY' },
+  'matching aggregate currency id resolves its relation label',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity(monetaryAggregate, 'currency_id', [
+    { currency_id: [2, 'CNY'] },
+  ]),
+  null,
+  'same display label with a different record id is rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, currency_id: undefined }, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'missing aggregate currency id is rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, currency_id: 0 }, 'currency_id', [
+    { currency_id: [0, 'CNY'] },
+  ]),
+  null,
+  'invalid aggregate currency id is rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, currency_id: '1' }, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'string aggregate currency ids are rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, aggregate: 'none' }, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'unavailable aggregate is rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, data_type: 'float' }, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'monetary footer currency is rejected when the aggregate declares another data type',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, data_type: undefined }, 'currency_id', [
+    { currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'missing aggregate data type is rejected',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity({ ...monetaryAggregate, currency_field: 'company_currency_id' }, 'currency_id', [
+    { company_currency_id: [1, 'CNY'], currency_id: [1, 'CNY'] },
+  ]),
+  null,
+  'aggregate and column currency fields must agree',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity(monetaryAggregate, 'currency_id', [
+    { currency_id: 1 },
+  ]),
+  null,
+  'bare currency ids do not provide a product-facing label',
+);
+assert.equal(
+  resolveCollectionAggregateCurrencyIdentity(monetaryAggregate, 'currency_id', [
+    { currency_id: ['1', 'CNY'] },
+  ]),
+  null,
+  'string relation currency ids are rejected',
+);
+assert.deepEqual(
+  resolveCollectionAggregateCurrencyIdentity(monetaryAggregate, 'currency_id', [
+    { currency_id: { id: 1, symbol: '¥' } },
+  ]),
+  { id: 1, label: '¥' },
+  'currency relation objects require and preserve record identity',
+);
 
 // api.data.list always declares the grouped page size; the consumer refuses
 // to invent one, so the fixture must carry the declaration the response has.
@@ -59,4 +155,4 @@ const [groupedRowWithoutAuthority] = mapActionViewGroupedRows({
 });
 assert.equal(groupedRowWithoutAuthority?.aggregates, undefined);
 
-console.log('[collection_aggregate_presentation_test] PASS cases=7');
+console.log('[collection_aggregate_presentation_test] PASS cases=19');

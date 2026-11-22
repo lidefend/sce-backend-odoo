@@ -1,0 +1,168 @@
+{
+  "schema": "fe_expression_03b.p1b_batch2_diagnosis.v1",
+  "baseline_sha": "c524ef6af025319e09a71e24db0549b2f903c4b5",
+  "evidence_level": "SOURCE_VERIFIED_STATIC_VERIFIED_AFFECTED_COMPONENT_BROWSER_DIRTY_BUILD_VERIFIED",
+  "product_source_modified": true,
+  "browser_acceptance_claimed": "affected_component_only",
+  "p1b": {
+    "backend_authority": {
+      "sum_scope": "complete_filtered_domain",
+      "page_sum_scope": "current_page_subset",
+      "currency_validation_scope": "complete_filtered_domain_or_complete_group_domain",
+      "success_fields": ["aggregate", "data_type", "value_field", "aggregation_field", "page_sum", "sum", "currency_field", "currency_id", "precision"],
+      "fail_closed_aggregate": "none",
+      "reason_codes": [
+        "CURRENCY_FIELD_MISSING",
+        "CURRENCY_FIELD_NOT_READABLE",
+        "CURRENCY_SCOPE_UNVERIFIED",
+        "MULTI_CURRENCY_AGGREGATION_PROHIBITED"
+      ]
+    },
+    "frontend_consumer": {
+      "aggregate_entry": "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts",
+      "footer_formatter": "ListPage formatFooterNumber plus resolveCollectionAggregateCurrencyIdentity",
+      "current_currency_source": "backend_currency_id_matched_to_same_scope_relation",
+      "uses_returned_currency_id": true,
+      "flat_and_grouped_share_fail_closed_rule": true,
+      "transport_type_declares_aggregates": true
+    },
+    "scenario_matrix": [
+      {
+        "scenario": "same_currency_complete_domain",
+        "backend": "sum_page_sum_currency_id",
+        "frontend": "first_page_row_label",
+        "verdict": "coincidental_pass_only"
+      },
+      {
+        "scenario": "mixed_currency_complete_domain",
+        "backend": "aggregate_none",
+        "frontend": "footer_hidden",
+        "verdict": "safe"
+      },
+      {
+        "scenario": "page_and_out_of_page_currency_differ",
+        "backend": "aggregate_none",
+        "frontend": "footer_hidden",
+        "verdict": "safe"
+      },
+      {
+        "scenario": "missing_currency_id_with_numeric_sum",
+        "backend": "numeric_sum_without_authoritative_currency_identity",
+        "frontend": "unlabeled_or_unrelated_label",
+        "verdict": "defect_fail_open"
+      },
+      {
+        "scenario": "known_currency_id_no_matching_page_label",
+        "backend": "valid_currency_id",
+        "frontend": "unrelated_first_row_or_unlabeled",
+        "verdict": "defect"
+      },
+      {
+        "scenario": "group_currencies_differ_but_each_group_is_single_currency",
+        "backend": "per_group_currency_id",
+        "frontend": "parent_first_row_currency_for_all_groups",
+        "verdict": "defect"
+      },
+      {
+        "scenario": "current_page_empty",
+        "backend": "page_sum_null_total_may_still_be_valid",
+        "frontend": "normal_empty_branch_hides_flat_footer",
+        "verdict": "safe_but_not_currency_proof"
+      }
+    ],
+    "other_aggregate_currency_consumers": [
+      {
+        "path": "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts:156-176",
+        "behavior": "compares_all_row_currency_ids_and_fails_closed",
+        "status": "compliant"
+      },
+      {
+        "path": "frontend/apps/web/src/pages/ListPage.vue:1999-2011",
+        "behavior": "first_page_row_currency_label",
+        "status": "defect"
+      },
+      {
+        "path": "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue:62-103",
+        "behavior": "raw_numeric_without_currency_or_unit",
+        "status": "batch3"
+      }
+    ],
+    "implemented_controls": [
+      "type_existing_aggregate_response_fields",
+      "require_sum_and_valid_currency_id_for_monetary_footer",
+      "resolve_label_from_page_or_group_row_with_matching_currency_id",
+      "hide_unproven_currency",
+      "apply_flat_and_grouped_same_rule",
+      "do_not_use_first_row_as_scope_authority"
+    ]
+  },
+  "batch2": {
+    "percentage_identity": {
+      "contract_component_key": "sc.value.percentage",
+      "backend_contract_preserves_identity": true,
+      "loss_points": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts:278-294",
+        "frontend/apps/web/src/pages/contractForm/types.ts:168-190",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:946-964",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts:72-114"
+      ],
+      "surface_output_for_12_5": {
+        "form": "12.5%",
+        "list": "12.50",
+        "kanban": "12.5",
+        "one2many": "12.50"
+      },
+      "owner": "frontend"
+    },
+    "numeric_precision": {
+      "declared_examples": [
+        {"field": "general_contract.tax_rate", "digits": [16, 4]},
+        {"field": "cost_plan.budget_rate", "digits": [16, 6]},
+        {"field": "cost_plan.budget_unit_consumption", "digits": [16, 8]},
+        {"field": "cost_plan.adjustment_ratio", "digits": [16, 6]}
+      ],
+      "backend_projection": {
+        "native_field_descriptor_float_digits": false,
+        "tree_column_occurrence_float_digits": false,
+        "v2_component_config_can_carry_digits": true
+      },
+      "frontend_consumers": {
+        "form_mapper_float_digits": false,
+        "canonical_renderer_float_digits": false,
+        "one2many_float_digits": false,
+        "generic_numeric_formatter": "fixed_two_decimals",
+        "percentage_formatter": "fixed_max_two_decimals",
+        "kanban_plain_float": "raw_numeric_string"
+      },
+      "owner": ["P0", "frontend"]
+    },
+    "semantic_authority_coverage": [
+      {"surface": "professional_form", "path": "shared_helpers", "status": "partial_precision"},
+      {"surface": "generic_form_readonly", "path": "formatDisplayValue", "status": "secondary_interpreter"},
+      {"surface": "list", "path": "mixed_shared_and_legacy_numeric", "status": "mixed"},
+      {"surface": "kanban", "path": "presentCollectionKanbanCell", "status": "identity_loss_upstream"},
+      {"surface": "one2many", "path": "custom_relation_json_numeric_plus_shared", "status": "mixed"},
+      {"surface": "record_detail", "path": "FieldValue_special_money_else_formatDisplayValue", "status": "secondary_interpreter"},
+      {"surface": "my_work", "path": "shared_money_and_temporal", "status": "partial"},
+      {"surface": "page_metric_blocks", "path": "String_value", "status": "bypass"},
+      {"surface": "hierarchy_worksheet", "path": "formatDisplayValue", "status": "secondary_interpreter"}
+    ],
+    "interpreter_divergence": {
+      "declared_presenter_unknown_selection": "ContractGapError",
+      "generic_formatter_unknown_selection": "raw_storage_key",
+      "generic_relation_tuple": "may_expose_first_id",
+      "one2many_bare_relation_id": "suppressed"
+    },
+    "contract_gaps": [
+      "float_and_quantity_digits_not_projected",
+      "page_block_value_type_currency_relation_and_unit_carrier"
+    ]
+  },
+  "recommended_order": [
+    "P1B_list_aggregate_currency_identity_implemented_verification_pending",
+    "F02_P0_float_digits_projection",
+    "F01_percentage_identity_and_shared_consumer_routing",
+    "Batch3_F03_F04_interpreter_and_page_block_units",
+    "P2_expression_boundary_convergence"
+  ]
+}

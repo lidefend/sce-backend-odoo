@@ -1,0 +1,168 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03B-P1B-BATCH2-20261122",
+  "branch": "audit/fe-expression-03b-p1b-batch2-20261122",
+  "baseline_sha": "c524ef6af025319e09a71e24db0549b2f903c4b5",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03B-P1B-BATCH2-20261122.yaml",
+  "record": "docs/audit/fe_expression_03b_p1b_batch2_diagnosis_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-P1B-BATCH2-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-P1B-BATCH2-20261122/run.json",
+    "docs/audit/fe_expression_03b_p1b_batch2_diagnosis_20261122.md",
+    "docs/audit/fe_expression_03b_p1b_batch2_matrix_20261122.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/scripts/collection_aggregate_currency_component_test.mjs",
+    "frontend/apps/web/scripts/collection_aggregate_presentation_test.ts",
+    "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/packages/schema/src/index.ts",
+    "make/frontend.mk",
+    "scripts/verify/frontend_collection_aggregate_footer_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_collection_aggregate_footer_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree, governed local frontend checks, affected component browser fixture and a dirty-worktree build artifact under .runtime; no backend, database or service writes"
+  },
+  "checks": {
+    "contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "scripts/verify/collection_view_semantics_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_aggregate_currency": {
+      "target": "verify.frontend.collection_aggregate_footer.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/packages/schema/src/index.ts",
+        "frontend/apps/web/scripts/collection_aggregate_presentation_test.ts",
+        "frontend/apps/web/scripts/collection_aggregate_currency_component_test.mjs",
+        "scripts/verify/frontend_collection_aggregate_footer_guard.py",
+        "scripts/verify/test_frontend_collection_aggregate_footer_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "no Odoo model, service, permission, workflow or database state changed"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "contract shape, collection semantics and business semantics static tests"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "verify.frontend.collection_aggregate_footer.unit"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce plus aggregate presentation tests"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "verify.frontend.lint.src, verify.frontend.typecheck.strict and verify.frontend.build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "reason": "affected ListPage aggregate footer component fixture at 1440 and 390; full backend business journey remains not_run"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks if published"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "scope": "P1-B aggregation currency authority and Batch 2 percentage/precision/interpreter diagnosis only.",
+    "p1b_result": "Confirmed P1: backend sum covers the complete filtered domain, page_sum the current page, and monetary currency identity is validated over the complete flat/group domain and returned as currency_id. ListPage ignores that identity and formats flat/group footers from the first parent page row. No backend aggregation-algorithm gap is proven.",
+    "p1b_contract_gap": "The frontend transport type does not declare existing list aggregates or grouped aggregate payloads, so ListPage carries them as loose records. This is a frontend consumer schema gap.",
+    "batch2_result": "Confirmed F01: collection projection preserves only duration and drops percentage identity; List and One2many also use generic numeric formatting before the shared presenter. Confirmed F02: native field descriptors project digits only for monetary, form/list/One2many metadata consumes digits only for monetary, generic float display is fixed at two decimals, and percentage formatting hardcodes two decimal places.",
+    "batch2_boundary": "F02 requires a P0 float digits projection first; frontend-only precision guesses would violate the contract boundary.",
+    "authority_result": "businessValuePresentation.ts is not yet the sole active interpreter. Form readonly/detail/hierarchy paths still use formatDisplayValue, while page metric blocks stringify raw values. Legitimate attachment and JSON handling must be preserved during later convergence.",
+    "source_tests": "Backend aggregate pure tests passed 38; contract shape projection passed 14; collection semantics and business semantics targets passed.",
+    "p1b_implementation": "ListPage now types the existing aggregate payload, consumes aggregate.currency_id and verifies it against the declared relation field; flat and grouped monetary page/total values require a matching page/group relation label and otherwise fail closed. Non-monetary aggregates remain visible. The component fixture covers same currency, missing/invalid id, missing label, id mismatch, backend aggregate none, out-of-page currency mismatch, grouped currency identities and both 1440/390 viewports.",
+    "p1b_validation": "collection aggregate target PASS with 50 assertions/cases; collection view semantics PASS with 79 collected tests; contract basis, lint and strict typecheck PASS; ci.local.iteration PASS across the affected target set and trusted scans PASS; ci.delivery.freeze.prepare PASS. The governed frontend build transformed 5419 modules and produced dirty artifact SHA256 b9b47e2da3fcacb04b696169e87445f4d705a7de7a64e5ed6d107728aab9b3a7. It is a build check, not frozen candidate evidence."
+  },
+  "next_exact_step": "Commit the clean P1-B candidate, then await exact-head publication and integration authority.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
