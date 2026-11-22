@@ -282,7 +282,7 @@ class CarrierDiscardSourceGuards(unittest.TestCase):
         # The authoritative identity is derived from the profile resolver, not
         # re-declared inline, so the two managed carriers cannot drift.
         self.assertIn("frontend_acceptance_runtime_profile.py", COMMON)
-        self.assertIn("local|candidate)", COMMON)
+        self.assertIn("local|candidate|disposable)", COMMON)
         for key in (
             "COMPOSE_PROJECT_NAME",
             "DB_NAME",

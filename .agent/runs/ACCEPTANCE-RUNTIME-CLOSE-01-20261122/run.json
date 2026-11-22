@@ -1,0 +1,160 @@
+{
+  "schema_version": 1,
+  "id": "ACCEPTANCE-RUNTIME-CLOSE-01-20261122",
+  "branch": "audit/FE-RUNTIME-RESEARCH-01-R09-20261122",
+  "baseline_sha": "fe635515dda270ed230d07a77ed4bcc9ab4fe5ac",
+  "status": "verification_pending",
+  "goal": ".agent/goals/ACCEPTANCE-RUNTIME-CLOSE-01-20261122.yaml",
+  "record": "docs/ops/iterations/acceptance_runtime_close_01_20261122.md",
+  "scope": [
+    "config/acceptance/backend_contract_instance_v1.json",
+    "config/acceptance/backend_contract_instance_daily_v1.json",
+    "scripts/dev/backend_acceptance_up.sh",
+    "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_acceptance_artifact.py",
+    "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+    "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "make/dev.mk",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/acceptance_runtime_close_01_20261122.md",
+    ".agent/active-runs.json",
+    ".agent/goals/ACCEPTANCE-RUNTIME-CLOSE-01-20261122.yaml",
+    ".agent/runs/ACCEPTANCE-RUNTIME-CLOSE-01-20261122/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "offline P4 unit/static checks; the separately declared read-only runtime audit uses existing local/sc-fe-r2-p1-01/sc_frontend_acceptance identity and performs no database writes, rebuild or reset"
+  },
+  "checks": {
+    "baseline_rebuild_unit": {
+      "target": "verify.acceptance.runtime.baseline_rebuild.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+        "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+        "scripts/verify/test_acceptance_artifact.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_environment_guard": {
+      "target": "verify.frontend.acceptance.environment.guard",
+      "inputs": [
+        "config/acceptance/backend_contract_instance_v1.json",
+        "config/acceptance/backend_contract_instance_daily_v1.json",
+        "scripts/verify/environment_topology_guard.py",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "dev_incremental_planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/dev/backend_acceptance_up.sh",
+        "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+        "scripts/verify/test_acceptance_artifact.py",
+        "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+        "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+        "make/frontend.mk",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_runtime_tooling_unit": {
+      "target": "verify.acceptance.runtime.tooling.unit",
+      "inputs": [
+        "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+        "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+        "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+        "scripts/verify/frontend_acceptance_environment_source_guard.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "acceptance_artifact_unit": {
+      "target": "verify.acceptance.artifact.unit",
+      "inputs": [
+        "scripts/dev/backend_acceptance_up.sh",
+        "scripts/dev/acceptance_artifact.py",
+        "scripts/verify/test_acceptance_artifact.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "P4 verification tooling has no Odoo module runtime behavior"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "registered P4 unit, environment and recovery targets"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "verify.acceptance.runtime.baseline_rebuild.unit and carrier-discard unit"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.acceptance.environment.guard"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "excluded",
+      "reason": "no frontend product source changed relative to fe635515"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "excluded",
+      "reason": "P4 candidate has no product behavior delta; R09 evidence is reused and not relabeled"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "product_delta": "none relative to fe635515 for addons, demo_addons, addons_external and frontend/apps/web/src",
+    "r09_result": "verification complete; 2/4 journeys PASS and 2/4 FAIL for product-owned issues",
+    "r09_identity": "P4 candidate 299f9b6266ab238380fc1749f589f1e6712aa3c9; database sc_frontend_acceptance; project sc-fe-r2-p1-01",
+    "post_299_closures": "dirty P4 follow-up closes six acceptance capabilities, stale carrier text, and stopped rollback-custody classification",
+    "baseline_rebuild_unit": "PASS: 220 tests across 81 + 10 + 129 executions; source guard verified",
+    "acceptance_environment_guard": "PASS: 63 tests; daily credential confirmation 15 cases; environment and form-editability discovery checks passed",
+    "dev_incremental_planner_gap": "ci.local.iteration first blocked on five unmapped P4 paths, then the mapping was split to preserve the existing artifact target reference; both failures were validation-tool defects and remained fail-closed",
+    "ci_local_iteration": "PASS on HEAD 299f9b62 plus declared dirty worktree; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T031341Z-1502087-553630310/receipt.json",
+    "ci_local_iteration_receipt_sha256": "1149c7893c8e75fdb6ed6a2710b50ecb482ac8e00e5e81ce9a3b9622725af150",
+    "ci_local_iteration_test_counts": {
+      "verify.acceptance.artifact.unit": 10,
+      "verify.acceptance.runtime.tooling.unit": 129,
+      "verify.agent.ledger.unit": 18,
+      "verify.agent.resume.unit": 67,
+      "verify.baseline.iteration.execution.policy": 19,
+      "verify.daily_dev.acceptance_fixture.unit": 40,
+      "verify.frontend.acceptance.environment.guard": 63,
+      "verify.frontend.dev.incremental.unit": 208
+    },
+    "freeze_prepare": "PASS twice; generated reports current, frontend contract basis open defects 0, list-surface evidence bindings valid, delivery guard passed",
+    "complexity_budget": "scripts/dev/frontend_acceptance_baseline_rebuild.sh remains 499 lines; no new split-plan entry was introduced by this P4 follow-up",
+    "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
+    "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
+  },
+  "next_exact_step": "Commit the frozen P4 candidate and obtain independent read-only review on the exact resulting HEAD.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
