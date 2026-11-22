@@ -175,6 +175,74 @@ class TestCompanyRouteScopeCache(TransactionCase):
             self.assertNotIn((0, old_action.id), cached_pairs)
             self.assertEqual(cached_pairs, published_pairs(delivery.EffectiveDeliveryService(self.env).resolve().route_authority))
 
+    def test_scene_runtime_consumes_an_isolated_projection_of_the_request_snapshot(self):
+        from odoo.addons.smart_construction_scene import scene_registry
+        from odoo.addons.smart_core.core.scene_runtime_orchestrator import SceneRuntimeOrchestrator
+        from odoo.addons.smart_core.core.scene_provider import load_scenes_from_db_or_fallback
+        from odoo.addons.smart_core.core.system_init_request_context import SystemInitRequestContext
+        from odoo.addons.smart_core.core.system_init_runtime_context import SystemInitRuntimeContext
+        from odoo.addons.smart_core.governance.scene_normalizer import SceneNormalizer
+
+        request_context = SystemInitRequestContext(self.env)
+        scene_diagnostics = {
+            "timings": {},
+            "drift": [],
+            "normalize_warnings": [],
+            "resolve_errors": [],
+        }
+        runtime_ctx = SystemInitRuntimeContext(
+            env=self.env,
+            user=self.env.user,
+            params={},
+            data={"scenes": [], "capabilities": [], "nav": []},
+            nav_tree=[],
+            scene_channel="stable",
+            rollback_active=False,
+            trace_id="scene-snapshot-immutability",
+            diagnostics_collector=None,
+            scene_diagnostics=scene_diagnostics,
+            load_scene_contract_fn=lambda env, channel, pinned: (None, "test/no-contract"),
+            load_scenes_fallback_fn=load_scenes_from_db_or_fallback,
+            merge_missing_scenes_fn=lambda *args, **kwargs: args[1],
+            append_resolve_error_fn=lambda bucket, **kwargs: bucket.append(kwargs),
+            request_context=request_context,
+            published_authority={},
+        )
+
+        class NoopDriftEngine:
+            @staticmethod
+            def evaluate(scenes, diagnostics):
+                del scenes, diagnostics
+
+        class NoopAutoDegradeEngine:
+            @staticmethod
+            def evaluate(*args, **kwargs):
+                del args, kwargs
+                return {"triggered": False}
+
+        SceneRuntimeOrchestrator(logger=None).execute(
+            runtime_ctx=runtime_ctx,
+            scene_normalizer=SceneNormalizer(),
+            scene_drift_engine=NoopDriftEngine(),
+            auto_degrade_engine=NoopAutoDegradeEngine(),
+        )
+
+        fact = request_context.fact(scene_registry.EFFECTIVE_SCENE_DECLARATIONS_FACT)
+        self.assertIsNotNone(fact)
+        snapshot = fact.value
+        self.assertGreater(len(runtime_ctx.data["scenes"]), 0)
+        self.assertEqual(
+            scene_registry.scene_declaration_fingerprint(snapshot.declarations),
+            snapshot.content_fingerprint,
+        )
+        declared = next(
+            scene
+            for scene in snapshot.declarations
+            if isinstance(scene.get("target"), dict) and scene["target"]
+        )
+        with self.assertRaisesRegex(TypeError, "read-only"):
+            declared["target"]["route"] = "/s/mutated"
+
     def test_imported_target_refreshes_navigation_identity_map(self):
         from odoo.addons.smart_construction_scene import core_extension, scene_registry
         from odoo.addons.smart_construction_scene.services.scene_package_service import ScenePackageService

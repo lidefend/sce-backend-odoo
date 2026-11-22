@@ -5,6 +5,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 from xml.etree import ElementTree as ET
 
 
@@ -1415,6 +1416,85 @@ class TestActionOnlySceneSemanticSupply(unittest.TestCase):
         self.assertEqual(payload["route"], "/s/finance.operating_metrics")
         self.assertEqual(payload["action_id"], 931)
         self.assertEqual(payload["menu_id"], 417)
+
+    def test_request_scene_target_facts_precede_process_caches(self):
+        _reset_caches()
+        stale_rows = [
+            {
+                "code": "scene.stale",
+                "target": {
+                    "route": "/s/scene.stale",
+                    "action_xmlid": "test.action.stale",
+                },
+            }
+        ]
+        request_rows = [
+            {
+                "code": "scene.current",
+                "target": {
+                    "route": "/s/scene.current",
+                    "action_xmlid": "test.action.current",
+                },
+            }
+        ]
+        env = _DummyEnv(
+            refs={
+                "test.action.stale": 901,
+                "test.action.current": 902,
+            }
+        )
+
+        class RequestContext:
+            def __init__(self):
+                self.values = {}
+
+            def resolve(self, key, loader):
+                if key in self.values:
+                    return self.values[key], False
+                value = loader()
+                self.values[key] = value
+                return value, True
+
+        context = RequestContext()
+        with patch.object(
+            target_capability.scene_registry,
+            "load_effective_scene_declarations_with_timings",
+            return_value=(stale_rows, {}),
+        ), patch.object(
+            target_capability.scene_registry,
+            "load_effective_scene_declarations_with_timings_for_request",
+            create=True,
+            return_value=(request_rows, {"load_from_db": 1}),
+        ):
+            target_capability._load_scene_map_with_timings(env)
+            target_capability._build_target_scene_lookup(env)
+            current = target_capability.build_capability_entry_target(
+                "",
+                explicit_target={"action_xmlid": "test.action.current"},
+                env=env,
+                request_context=context,
+            )
+            legacy = target_capability.build_capability_entry_target(
+                "",
+                explicit_target={"action_xmlid": "test.action.stale"},
+                env=env,
+            )
+
+        self.assertEqual(current["scene_key"], "scene.current")
+        self.assertEqual(legacy["scene_key"], "scene.stale")
+        self.assertIn(target_capability.CAPABILITY_SCENE_MAP_FACT, context.values)
+        self.assertIn(target_capability.CAPABILITY_TARGET_SCENE_LOOKUP_FACT, context.values)
+        self.assertEqual(
+            context.values[target_capability.CAPABILITY_SCENE_MAP_FACT]["scene_map"],
+            {
+                "scene.current": {
+                    "target": {
+                        "route": "/s/scene.current",
+                        "action_xmlid": "test.action.current",
+                    },
+                },
+            },
+        )
 
 
 if __name__ == "__main__":

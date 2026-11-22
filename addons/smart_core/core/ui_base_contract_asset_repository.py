@@ -117,6 +117,7 @@ def _auto_refresh_missing_assets(
     scene_rows: list[dict] | None = None,
     role_code: str | None,
     company_id: int | None,
+    request_context=None,
 ) -> None:
     if not scene_keys:
         return
@@ -133,6 +134,7 @@ def _auto_refresh_missing_assets(
                 company_id=company_id,
                 source_type="runtime_intent",
                 code_version="auto-refresh-missing-v1",
+                request_context=request_context,
             )
     except Exception:
         return
@@ -565,6 +567,7 @@ def bind_scene_assets(
     scenes: list[dict] | None,
     role_code: str | None = None,
     company_id: int | None = None,
+    request_context=None,
 ) -> dict:
     rows = [item for item in (scenes or []) if isinstance(item, dict)]
     scene_keys: list[str] = []
@@ -656,6 +659,7 @@ def bind_scene_assets(
             scene_rows=[row for row in rows if _text(row.get("code") or row.get("key")) in set(missing_keys)],
             role_code=role_code,
             company_id=company_id,
+            request_context=request_context,
         )
         refreshed_assets = build_scene_asset_map(
             env,

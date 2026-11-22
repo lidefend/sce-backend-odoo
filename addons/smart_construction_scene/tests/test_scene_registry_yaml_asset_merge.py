@@ -110,6 +110,66 @@ class TestSceneRegistryYamlAssetMerge(unittest.TestCase):
         self.assertEqual(calls, [1, 1])
         self.assertNotEqual(first, second)
 
+    def test_request_snapshot_is_deeply_read_only_and_runtime_projection_is_isolated(self):
+        registry = _load_module()
+
+        class RequestContext:
+            def __init__(self):
+                self.values = {}
+
+            def resolve(self, key, loader):
+                if key in self.values:
+                    return self.values[key], False
+                value = loader()
+                self.values[key] = value
+                return value, True
+
+        declaration = {
+            "code": "projects.list",
+            "target": {"route": "/s/projects.list", "model": "project.project"},
+            "tiles": [{"key": "project.read", "status": "ga"}],
+            "handling_entry_catalog": {
+                "groups": [{"key": "operations", "items": [{"key": "open"}]}],
+            },
+        }
+        context = RequestContext()
+        with patch.object(
+            registry,
+            "_load_scene_declarations_with_timings",
+            return_value=([deepcopy(declaration)], {"load_from_db": 1}),
+        ):
+            effective = registry.load_effective_scene_declarations_for_request(
+                None,
+                request_context=context,
+            )
+            snapshot = context.values[registry.EFFECTIVE_SCENE_DECLARATIONS_FACT]
+            initial_fingerprint = snapshot.content_fingerprint
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["target"]["route"] = "/s/changed"
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["tiles"].append({"key": "changed"})
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["handling_entry_catalog"]["groups"][0]["items"][0]["key"] = "changed"
+
+            projected = registry.load_scene_configs_for_request(
+                None,
+                request_context=context,
+            )
+            projected[0]["target"]["route"] = "/s/runtime"
+            projected[0]["tiles"].append({"key": "runtime"})
+            projected[0]["access"] = {"allowed": False}
+
+        self.assertEqual(
+            registry.scene_declaration_fingerprint(snapshot.declarations),
+            initial_fingerprint,
+        )
+        self.assertEqual(effective[0]["target"]["route"], "/s/projects.list")
+        self.assertEqual(len(effective[0]["tiles"]), 1)
+        self.assertEqual(
+            effective[0]["handling_entry_catalog"]["groups"][0]["items"][0]["key"],
+            "open",
+        )
+
     def test_scene_fingerprint_detects_content_mutation(self):
         registry = _load_module()
         declarations = [{"code": "projects.list", "target": {"route": "/s/projects.list"}}]

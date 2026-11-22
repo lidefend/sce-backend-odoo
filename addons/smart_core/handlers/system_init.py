@@ -1307,6 +1307,13 @@ class SystemInitHandler(BaseIntentHandler):
             params,
             request_context=request_context,
         )
+        from odoo.addons.smart_core.delivery.runtime_route_authority import (
+            EFFECTIVE_ROUTE_AUTHORITY_FACT,
+        )
+        request_context.resolve(
+            EFFECTIVE_ROUTE_AUTHORITY_FACT,
+            lambda: effective_delivery.route_authority,
+        )
 
         # -------- 2) 导航（净化 + 指纹）--------
         p_nav = SystemInitNavRequestBuilder.build(params, scene)
@@ -1605,6 +1612,7 @@ class SystemInitHandler(BaseIntentHandler):
             bind_scene_assets_fn=_bind_scene_assets,
             build_scene_ready_contract_fn=build_scene_ready_contract,
             build_scene_nav_contract_fn=build_scene_nav_contract,
+            request_context=request_context,
         )
         scene_runtime_surface_result = SystemInitSceneRuntimeSurfaceBuilder.apply(surface_ctx=scene_runtime_surface_ctx)
         data = scene_runtime_surface_result["data"]

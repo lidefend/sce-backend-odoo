@@ -11,6 +11,9 @@ _SCENE_CONFIGS_CACHE: dict[str, list[dict[str, Any]]] = {}
 _SCENE_MAP_CACHE: dict[str, dict[str, dict[str, Any]]] = {}
 _TARGET_SCENE_LOOKUP_CACHE: dict[str, dict[tuple[str, str], str]] = {}
 
+CAPABILITY_SCENE_MAP_FACT = "capability_scene_targets.scene_map"
+CAPABILITY_TARGET_SCENE_LOOKUP_FACT = "capability_scene_targets.target_scene_lookup"
+
 
 CAPABILITY_ENTRY_SCENE_MAP: dict[str, str] = {
     "project.initiation.enter": "projects.intake",
@@ -118,6 +121,59 @@ def _load_scene_map_with_timings(
     *,
     request_context=None,
 ) -> Tuple[dict[str, dict[str, Any]], dict[str, int]]:
+    def load_scene_map() -> tuple[dict[str, dict[str, Any]], dict[str, int]]:
+        timings_ms: dict[str, int] = {}
+        request_loader = getattr(
+            scene_registry,
+            "load_effective_scene_declarations_with_timings_for_request",
+            None,
+        )
+        if callable(request_loader):
+            scenes, scene_config_timings_ms = request_loader(
+                env,
+                request_context=request_context,
+            )
+        else:
+            scenes, scene_config_timings_ms = (
+                scene_registry.load_effective_scene_declarations_with_timings(env)
+            )
+        if isinstance(scene_config_timings_ms, dict):
+            for key, value in scene_config_timings_ms.items():
+                timings_ms[key] = int(value)
+        map_ts = time.perf_counter()
+        scene_map = {}
+        for scene in scenes or []:
+            if not isinstance(scene, dict):
+                continue
+            scene_key = str(scene.get("code") or scene.get("key") or "").strip()
+            if not scene_key:
+                continue
+            scene_map[scene_key] = {
+                field: (
+                    dict(scene[field])
+                    if field == "target" and isinstance(scene[field], dict)
+                    else scene[field]
+                )
+                for field in ("target", "alias_of", "identity_owner")
+                if field in scene
+            }
+        timings_ms["build_scene_map"] = int((time.perf_counter() - map_ts) * 1000)
+        return scene_map, timings_ms
+
+    if request_context is not None:
+        def load():
+            scene_map, timings_ms = load_scene_map()
+            return {
+                "scene_map": scene_map,
+                "timings_ms": timings_ms,
+            }
+
+        fact, loaded = request_context.resolve(CAPABILITY_SCENE_MAP_FACT, load)
+        return (
+            fact.get("scene_map") if isinstance(fact, dict) else {},
+            dict(fact.get("timings_ms") or {}) if loaded and isinstance(fact, dict) else {},
+        )
+
     cache_key = _scene_cache_key(env)
     cached_map = _SCENE_MAP_CACHE.get(cache_key)
     if isinstance(cached_map, dict):
@@ -126,24 +182,14 @@ def _load_scene_map_with_timings(
             "build_scene_map_cache_hit": 0,
         }
 
-    timings_ms: dict[str, int] = {}
-    request_loader = getattr(
-        scene_registry,
-        "load_effective_scene_declarations_with_timings_for_request",
-        None,
+    scenes, scene_config_timings_ms = (
+        scene_registry.load_effective_scene_declarations_with_timings(env)
     )
-    if callable(request_loader):
-        scenes, scene_config_timings_ms = request_loader(
-            env,
-            request_context=request_context,
-        )
-    else:
-        scenes, scene_config_timings_ms = (
-            scene_registry.load_effective_scene_declarations_with_timings(env)
-        )
-    if isinstance(scene_config_timings_ms, dict):
-        for key, value in scene_config_timings_ms.items():
-            timings_ms[key] = int(value)
+    timings_ms = {
+        str(key): int(value)
+        for key, value in (scene_config_timings_ms or {}).items()
+        if isinstance(value, (int, float))
+    }
     if isinstance(scenes, list):
         _SCENE_CONFIGS_CACHE[cache_key] = list(scenes)
     map_ts = time.perf_counter()
@@ -164,13 +210,9 @@ def _load_scene_map_with_timings(
     return scene_map, timings_ms
 
 
-def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
-    cache_key = _scene_cache_key(env)
-    cached = _TARGET_SCENE_LOOKUP_CACHE.get(cache_key)
-    if isinstance(cached, dict):
-        return cached
-
-    scene_map, _timings = _load_scene_map_with_timings(env)
+def _target_scene_lookup_from_map(
+    scene_map: dict[str, dict[str, Any]],
+) -> dict[tuple[str, str], str]:
     lookup: dict[tuple[str, str], str] = {}
 
     def _claim(scene_key: str, scene: dict[str, Any]) -> None:
@@ -199,6 +241,35 @@ def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
     for scene_key, scene in claims:
         if not scene.get("identity_owner"):
             _claim(scene_key, scene)
+    return lookup
+
+
+def _build_target_scene_lookup(
+    env,
+    *,
+    request_context=None,
+) -> dict[tuple[str, str], str]:
+    if request_context is not None:
+        def load():
+            scene_map, _timings = _load_scene_map_with_timings(
+                env,
+                request_context=request_context,
+            )
+            return _target_scene_lookup_from_map(scene_map)
+
+        lookup, _loaded = request_context.resolve(
+            CAPABILITY_TARGET_SCENE_LOOKUP_FACT,
+            load,
+        )
+        return lookup if isinstance(lookup, dict) else {}
+
+    cache_key = _scene_cache_key(env)
+    cached = _TARGET_SCENE_LOOKUP_CACHE.get(cache_key)
+    if isinstance(cached, dict):
+        return cached
+
+    scene_map, _timings = _load_scene_map_with_timings(env)
+    lookup = _target_scene_lookup_from_map(scene_map)
     _TARGET_SCENE_LOOKUP_CACHE[cache_key] = lookup
     return lookup
 
@@ -206,10 +277,12 @@ def _build_target_scene_lookup(env) -> dict[tuple[str, str], str]:
 def _derive_scene_key_from_explicit_target(
     env,
     explicit_target: dict[str, Any] | None = None,
+    *,
+    request_context=None,
 ) -> str:
     if not env or not isinstance(explicit_target, dict):
         return ""
-    lookup = _build_target_scene_lookup(env)
+    lookup = _build_target_scene_lookup(env, request_context=request_context)
     action_xmlid = str(explicit_target.get("action_xmlid") or "").strip()
     if action_xmlid:
         scene_key = str(lookup.get(("action_xmlid", action_xmlid), "") or "").strip()
@@ -232,6 +305,7 @@ def resolve_capability_entry_scene_key(
     *,
     env=None,
     explicit_target: dict[str, Any] | None = None,
+    request_context=None,
 ) -> str:
     resolved = str(CAPABILITY_ENTRY_SCENE_MAP.get(str(capability_key or "").strip(), "") or "").strip()
     if resolved:
@@ -239,6 +313,7 @@ def resolve_capability_entry_scene_key(
     return _derive_scene_key_from_explicit_target(
         env,
         explicit_target=explicit_target,
+        request_context=request_context,
     )
 
 
@@ -247,12 +322,14 @@ def build_capability_entry_target(
     explicit_target: dict[str, Any] | None = None,
     *,
     env=None,
+    request_context=None,
 ) -> dict[str, Any]:
     target = dict(explicit_target or {})
     scene_key = resolve_capability_entry_scene_key(
         capability_key,
         env=env,
         explicit_target=explicit_target,
+        request_context=request_context,
     )
     if scene_key and not str(target.get("scene_key") or "").strip():
         target["scene_key"] = scene_key
@@ -294,6 +371,7 @@ def resolve_capability_entry_target_payload_with_timings(
         capability_key,
         explicit_target=explicit_target,
         env=env,
+        request_context=request_context,
     )
     stage_ts = _mark("build_capability_entry_target", stage_ts)
     scene_key = str(target.get("scene_key") or "").strip()

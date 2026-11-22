@@ -22,10 +22,88 @@ _SCENE_REGISTRY_CONTENT_MODULE = None
 _SCENE_REGISTRY_ENGINE_MODULE = None
 
 
+class FrozenDict(dict):
+    """Read-only dict that preserves existing ``isinstance(..., dict)`` checks."""
+
+    def _immutable(self, *args, **kwargs):
+        del args, kwargs
+        raise TypeError("scene declaration facts are read-only")
+
+    __setitem__ = _immutable
+    __delitem__ = _immutable
+    __ior__ = _immutable
+    clear = _immutable
+    pop = _immutable
+    popitem = _immutable
+    setdefault = _immutable
+    update = _immutable
+
+    def __init__(self, value=()):
+        dict.__init__(
+            self,
+            (
+                (key, _freeze_declaration_value(item))
+                for key, item in dict(value).items()
+            ),
+        )
+
+
+class FrozenList(list):
+    """Read-only list that preserves existing ``isinstance(..., list)`` checks."""
+
+    def _immutable(self, *args, **kwargs):
+        del args, kwargs
+        raise TypeError("scene declaration facts are read-only")
+
+    __setitem__ = _immutable
+    __delitem__ = _immutable
+    __iadd__ = _immutable
+    __imul__ = _immutable
+    append = _immutable
+    clear = _immutable
+    extend = _immutable
+    insert = _immutable
+    pop = _immutable
+    remove = _immutable
+    reverse = _immutable
+    sort = _immutable
+
+    def __init__(self, value=()):
+        list.__init__(self, (_freeze_declaration_value(item) for item in value))
+
+
+def _freeze_declaration_value(value):
+    if isinstance(value, (FrozenDict, FrozenList)):
+        return value
+    if isinstance(value, dict):
+        return FrozenDict(value)
+    if isinstance(value, list):
+        return FrozenList(value)
+    if isinstance(value, tuple):
+        return tuple(_freeze_declaration_value(item) for item in value)
+    if isinstance(value, set):
+        return frozenset(_freeze_declaration_value(item) for item in value)
+    return value
+
+
+def _mutable_runtime_scene_projection(scene):
+    """Clone only fields mutated by the scene runtime projection."""
+    if not isinstance(scene, dict):
+        return scene
+    out = dict(scene)
+    for field in ("target", "access", "tiles"):
+        value = scene.get(field)
+        if isinstance(value, dict):
+            out[field] = dict(value)
+        elif isinstance(value, list):
+            out[field] = [dict(item) if isinstance(item, dict) else item for item in value]
+    return out
+
+
 @dataclass(frozen=True)
 class SceneDeclarationSnapshot:
-    declarations: tuple[dict, ...]
-    timings_ms: dict[str, int]
+    declarations: tuple[FrozenDict, ...]
+    timings_ms: FrozenDict
     content_fingerprint: str
 
 
@@ -490,11 +568,12 @@ def load_effective_scene_declarations(env, drift=None):
 def _scene_declaration_snapshot(env, drift=None, request_context=None):
     def load():
         scenes, timings_ms = _load_scene_declarations_with_timings(env, drift=drift)
-        declarations = tuple(scenes or ())
+        content_fingerprint = scene_declaration_fingerprint(scenes or ())
+        declarations = tuple(_freeze_declaration_value(scene) for scene in (scenes or ()))
         return SceneDeclarationSnapshot(
             declarations=declarations,
-            timings_ms=dict(timings_ms or {}),
-            content_fingerprint=scene_declaration_fingerprint(declarations),
+            timings_ms=_freeze_declaration_value(dict(timings_ms or {})),
+            content_fingerprint=content_fingerprint,
         )
 
     if request_context is None:
@@ -542,10 +621,9 @@ def load_scene_configs_with_timings_for_request(
         drift=drift,
         request_context=request_context,
     )
-    # Tile qualification is a consumer projection. Copy only the scene mapping
-    # whose top-level tile list is replaced; nested declaration facts stay shared
-    # and read-only.
-    scenes = [dict(scene) for scene in snapshot.declarations]
+    # Runtime normalization and target hydration own mutable projections. Clone
+    # only those fields; the request snapshot itself remains deeply read-only.
+    scenes = [_mutable_runtime_scene_projection(scene) for scene in snapshot.declarations]
     records = {scene.code: scene for scene in _published_db_scenes(env)}
     for scene in scenes:
         record = records.get(scene.get("code"))

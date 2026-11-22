@@ -51,12 +51,23 @@ and is passed explicitly through the existing call chain.
 - the first consumer loads the effective declarations;
 - the snapshot stores the ordered declarations, load timings and a canonical
   content SHA-256;
+- the stored declarations, nested mappings and nested lists are deeply
+  read-only; a saved fingerprint cannot outlive a mutable declaration;
 - later consumers receive the same request fact without invoking the registry
   loader again;
-- `load_scene_configs` creates a shallow top-level scene mapping only where its
-  tile projection replaces a value;
+- the scene runtime receives a targeted mutable projection of only the fields
+  it owns (`target`, `access`, `tiles`), while raw facts remain immutable;
+- scene normalization copies each tile mapping before applying runtime
+  qualification, and capability scene-map/index derivations are request facts
+  before the process-level compatibility cache is consulted;
 - no module-level or registry-wide scene declaration cache was added;
 - no large object is placed in `env.context`.
+
+`system.init` also stores its already-resolved final Route Authority as a
+request fact. Asset refresh, relation-entry assembly and action dispatch receive
+the same explicit context instead of starting a nested delivery calculation.
+The assembly-cache version is `ui-contract-v2-demand-driven-snapshot-v99`, with
+its input digest re-pinned after the assembler/dispatcher signatures changed.
 
 The context identity records database, user, company, product key, base
 product key and edition key. A new `system.init` invocation always creates a
@@ -86,6 +97,30 @@ different role/company identities retained their distinct authority hashes.
 The 96 declaration count is local runtime evidence, not a hard-coded business
 constant. The invariant is the identical content fingerprint and complete
 response identity, not the number itself.
+
+### Review remediation runtime recheck
+
+The independent review required immutable nested facts, both ordered Hook
+providers, request-scoped capability indexes and the existing frontend test
+double compatibility. The repaired current environment contains 96 effective
+declarations with fingerprint
+`5a69da05a0c683d769260ea948c3e40ca3411bbde66c90cf45cd6c89aa86e2a5`;
+the earlier `8e98...` value remains historical evidence for its original
+database state and is not overwritten.
+
+With asset-row writes disabled to remove non-semantic sequence IDs, candidate
+and a probe-only no-scene-fact cache path were compared on the same database:
+
+| Identity | Candidate loads | No-share control loads | Full data | Navigation | Route Authority | Scene content |
+| --- | ---: | ---: | --- | --- | --- | --- |
+| finance / company 1 | 1 | 21 | identical | identical | identical | identical |
+| owner / company 2 | 1 | 9 | identical | identical | identical | identical |
+| project manager / company 1 | 1 | 46 | identical | identical | identical | identical |
+
+This closes the deeper bypasses found during runtime recheck: scene asset
+refresh had reloaded registry rows despite receiving request rows, and relation
+authority had rebuilt effective delivery during asset projection. Both now
+consume the request facts.
 
 ## Performance Result
 
@@ -133,14 +168,26 @@ Passed:
   `verify.extension.runtime_context.unit`,
   `verify.extension.consumers.unit`: PASS.
 - `verify.system_init.menu_boundary.guard`: PASS.
+- `verify.smart_construction_core.module_baseline`: 1712 non-zero ORM tests.
+- `verify.extension.hook_authority.orm`: 4 tests, both ordered providers
+  receive the same request context.
+- `verify.scene.company_route_scope_cache.orm`: 9 tests, including complete
+  `SceneRuntimeOrchestrator` post-consumer fingerprint invariance.
 - `verify.daily.permission_truth.capability.orm`: PASS,
-  `ORM_RESULT_GUARD=PASS`, 81 tests.
+  `ORM_RESULT_GUARD=PASS`, 82 tests.
+- `verify.smart_core.ui_base_asset_refresh.unit`: 10 tests.
+- `verify.unified_page_contract.v2.assembler`: PASS at cache version v99.
 - `ci.local.iteration`: PASS after the affected execution set, including ORM.
 
 Runtime assertions:
 
 - one effective declaration load per request;
 - initial and post-consumer content fingerprints equal;
+- the raw request snapshot rejects nested mapping/list mutation;
+- both Hook providers execute with one request context and preserve
+  `ordered_merge/deep_dict`;
+- request-scoped capability scene maps and target lookups win over stale
+  process caches, while legacy non-`system.init` callers retain compatibility;
 - finance, project manager and owner/company 2 retain distinct authority
   results;
 - no cross-context fact reuse;
@@ -152,6 +199,11 @@ Excluded:
 - release snapshot reuse remains for R3;
 - broad deepcopy ownership remains for R4;
 - scenario projection Hook and frontend startup remain for R5/R6.
+
+Latest local backend observation after review remediation: process-first
+`1863.02 ms`; subsequent samples `941.40`, `936.30`, `844.78`, `842.63` and
+`902.21 ms`; warm median `902.21 ms`. This is diagnostic timing, not browser or
+release acceptance.
 
 ## Evidence
 

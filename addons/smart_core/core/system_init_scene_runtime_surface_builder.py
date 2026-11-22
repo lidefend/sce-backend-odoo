@@ -234,6 +234,7 @@ class SystemInitSceneRuntimeSurfaceBuilder:
                 scenes=scene_ready_input,
                 role_code=role_code or None,
                 company_id=env.company.id if env.company else None,
+                request_context=surface_ctx.request_context,
             )
             if isinstance(bind_result, dict) and bind_result:
                 scene_ready_input = bind_result.get("scenes") or scene_ready_input
