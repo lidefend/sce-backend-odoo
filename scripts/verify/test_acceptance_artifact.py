@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import re
 import subprocess
 import tempfile
 import unittest
@@ -92,15 +93,19 @@ class ArtifactTest(unittest.TestCase):
             artifact.verify(self.root, self.sha)
 
 class BackendReplacementTest(unittest.TestCase):
-    def run_case(self, *, artifact_ok=True, healthy=True):
+    def run_case(self, *, artifact_ok=True, healthy=True, external_frontend=False):
         import os
         root_repo = Path(__file__).resolve().parents[2]
-        with tempfile.TemporaryDirectory() as directory:
+        with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as external:
             root = Path(directory)
             bin_dir = root / 'bin'
             bin_dir.mkdir()
             (root / 'VERSION').write_text('1')
-            frontend_dist = root / 'frontend/apps/web/dist-release'
+            frontend_dist = (
+                Path(external) / 'frontend/apps/web/dist-release'
+                if external_frontend
+                else root / 'frontend/apps/web/dist-release'
+            )
             frontend_dist.mkdir(parents=True)
             (frontend_dist / 'index.html').write_text('synthetic frontend')
             (root / 'scripts/dev').mkdir(parents=True)
@@ -131,10 +136,15 @@ esac
                 file = bin_dir / name
                 file.write_text(source)
                 file.chmod(0o755)
+            child_env = {
+                'PATH':str(bin_dir)+':'+os.environ['PATH'], 'ROOT_DIR':str(root),
+                'ARTIFACT_ROOT':str(artifact_root), 'TRACE':str(trace),
+                'XDG_RUNTIME_DIR':str(root / 'leases'),
+            }
+            if external_frontend:
+                child_env['FRONTEND_ACCEPTANCE_STATIC_DIST'] = str(frontend_dist)
             result = subprocess.run(['bash', str(root_repo / 'scripts/dev/backend_acceptance_up.sh')],
-                env={'PATH':str(bin_dir)+':'+os.environ['PATH'], 'ROOT_DIR':str(root),
-                     'ARTIFACT_ROOT':str(artifact_root), 'TRACE':str(trace),
-                     'XDG_RUNTIME_DIR':str(root / 'leases')}, capture_output=True, text=True)
+                env=child_env, capture_output=True, text=True)
             return result, trace.read_text() if trace.exists() else ''
 
     def test_invalid_artifact_causes_no_docker_mutation(self):
@@ -151,6 +161,18 @@ esac
         self.assertLess(trace.index('rename '), trace.index('compose -f '))
         self.assertIn('-e SC_ENVIRONMENT=acceptance', trace)
         self.assertIn('-e SC_DEPLOY_ENV=acceptance', trace)
+
+    def test_frontend_build_hash_is_independent_of_dist_worktree_path(self):
+        internal, internal_trace = self.run_case()
+        external, external_trace = self.run_case(external_frontend=True)
+        self.assertEqual(internal.returncode, 0, internal.stderr)
+        self.assertEqual(external.returncode, 0, external.stderr)
+        pattern = re.compile(r'-e FRONTEND_BUILD_SHA256=([0-9a-f]{64})')
+        internal_hash = pattern.search(internal_trace)
+        external_hash = pattern.search(external_trace)
+        self.assertIsNotNone(internal_hash)
+        self.assertIsNotNone(external_hash)
+        self.assertEqual(internal_hash.group(1), external_hash.group(1))
 
     def test_failed_start_restores_previous_without_starting_stopped_service(self):
         result, trace = self.run_case(healthy=False)

@@ -153,10 +153,11 @@
     "complexity_budget": "scripts/dev/frontend_acceptance_baseline_rebuild.sh remains 499 lines; no new split-plan entry was introduced by this P4 follow-up",
     "main_sync": "unpublished branch replayed from fe635515 onto cb182c9e9 through workspace.branch.sync-main; new base tree accepted with regenerated complexity reports only",
     "previous_review_head": "873a8091ef0560b360efd0fa3efe2c4fc1f566b3 is superseded by the governed main sync and must not be used for review or publication",
+    "cross_worktree_build_identity": "P4 runtime bootstrap from a sibling worktree exposed path-dependent frontend digest input; the candidate now hashes dist contents after entering the dist root and has a regression proving identical content in different worktree paths yields the same digest",
     "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
     "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
   },
-  "next_exact_step": "Commit the current-head metadata update, confirm a clean exact HEAD, then publish the independent P4 PR.",
+  "next_exact_step": "Run the artifact/tooling units and freeze preparation, commit the cross-worktree identity fix, update PR #959, and merge only after its exact-head required checks pass.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

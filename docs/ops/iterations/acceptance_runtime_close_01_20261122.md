@@ -52,6 +52,9 @@ HEAD 为 `638f9a9599b9c299148dd34b0ca745c2b7d81b34`。旧
 7. 保持 `verify.acceptance.artifact.unit` 的显式目标引用；
    `backend_acceptance_up.sh` 和 artifact 测试路由到该目标，其余验收运行工具路由到
    轻量 tooling 目标，避免重复执行并保持验证面基线不增长。
+8. P4 runtime 从 sibling worktree 启动时发现旧 `frontend_build_sha256` 把
+   `../<worktree>` 路径段计入摘要；现已改为进入 dist 根目录后对 `./` 内容求哈希，
+   并增加“不同 worktree 路径中相同内容得到相同 digest”的回归测试。
 
 ## 门禁责任
 

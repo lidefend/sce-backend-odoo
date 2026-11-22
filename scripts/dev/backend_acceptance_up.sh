@@ -17,10 +17,9 @@ DEPLOY_ENVIRONMENT="${SC_DEPLOY_ENV:-$RUNTIME_ENVIRONMENT}"
 FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256:-}"
 frontend_dist="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
 if [[ -z "$FRONTEND_BUILD_SHA256" && -f "$frontend_dist/index.html" ]]; then
-  frontend_relative="$(realpath --relative-to="$ROOT_DIR" "$frontend_dist")"
   FRONTEND_BUILD_SHA256="$(
-    cd "$ROOT_DIR"
-    find "$frontend_relative" -type f -print0 \
+    cd "$frontend_dist"
+    find . -type f -print0 \
       | sort -z \
       | xargs -0 sha256sum \
       | sha256sum \
