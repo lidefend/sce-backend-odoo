@@ -149,6 +149,13 @@ Source and test candidate:
   `.runtime/frontend-dev-validation/executions/20261122T074640Z-3130925-157950073/receipt.json`
 - Receipt SHA256:
   `9212a6d572fed910a6d820b4f3d3f55e4068f734110d2e816317698f27402a53`
+- Documentation/evidence metadata HEAD `cf79580c4` produced a subsequent clean
+  iteration receipt with `unmappedPathCount=0`; its product path delta from
+  `ec0ac73f0` is zero.
+- Metadata receipt:
+  `.runtime/frontend-dev-validation/executions/20261122T075209Z-3165079-988583825/receipt.json`
+- Metadata receipt SHA256:
+  `a3cbdb430b31666f3a1e907e1193da430494a111fbbe2cb774fb835e248e7a5c`
 
 Focused outcomes:
 
@@ -210,3 +217,9 @@ The read-only sample did not exercise a mixed-currency footer. That case is
 covered by the pure model test instead: mixed or missing row currencies produce
 no aggregate currency authority, so the footer cell is omitted rather than
 mislabeling a sum with the first row currency.
+
+The initial remote `public_guard` failure for this candidate came from `RH018`
+matching a 13-digit run number in a performance-branch historical document
+outside this PR and its base. That is a separate P4 history/evidence governance
+blocker. This batch does not weaken the privacy guard and does not rewrite
+unrelated branch history.

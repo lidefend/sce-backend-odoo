@@ -188,6 +188,15 @@
     "ci_local_iteration": "PASS on clean ec0ac73f0: 13 required targets resolved, one executed, 12 content-identical targets reused; unmappedPathCount=0",
     "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T074640Z-3130925-157950073/receipt.json",
     "ci_local_iteration_receipt_sha256": "9212a6d572fed910a6d820b4f3d3f55e4068f734110d2e816317698f27402a53",
+    "ci_local_iteration_final_metadata": "PASS on clean cf79580c4: one required metadata-path target reused from the product-head receipt; unmappedPathCount=0",
+    "ci_local_iteration_final_metadata_receipt": ".runtime/frontend-dev-validation/executions/20261122T075209Z-3165079-988583825/receipt.json",
+    "ci_local_iteration_final_metadata_receipt_sha256": "a3cbdb430b31666f3a1e907e1193da430494a111fbbe2cb774fb835e248e7a5c",
+    "evidence_heads": {
+      "product_code_head": "ec0ac73f05b9370fdad7bece856b966080f05a5c",
+      "evidence_metadata_head": "cf79580c40d500902489e02b1704b1d73b2c2869",
+      "product_path_delta": "zero",
+      "final_publication_head": "current PR head; metadata-only tip after the recorded evidence heads"
+    },
     "contract_basis": "verify.frontend.contract_basis.enforce PASS with open_defects=0",
     "localized_display": "verify.frontend.localized_display.unit PASS with registered_formatter_allowances=0",
     "production_build": "PASS on ec0ac73f0: build-info source and runtime source match; authoritative frontend build sha256 b93c589e3cec3a8c2e015d6deabb0b942b69815bfc99bac5e6953e9912f369e0 matches /api/runtime-version",
@@ -200,9 +209,10 @@
       "P0 list contract does not yet declare attachment-count cell role, so the old localized-label preview behavior is removed until the declaration exists",
       "The One2many footer has no declared mixed-row currency aggregation rule; mixed or missing row currencies now fail closed by omitting that aggregate instead of attaching the first row currency"
     ],
+    "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. It is a separate P4 history/evidence-governance blocker; this frontend candidate does not weaken the guard or rewrite unrelated history.",
     "autosave_retention": "Project-intake draft retention is a P1 smart_construction_core standard constant of 86400 seconds, published through runtimeContract.intakeAutosave.retention.seconds; it is not a user or administrator setting and the frontend has no local 24-hour fallback"
   },
-  "next_exact_step": "Commit the refreshed exact-candidate evidence record, rerun ci.local.iteration on the resulting clean metadata head, update PR #964 and bind all required checks to the final head.",
+  "next_exact_step": "Push the final metadata-only candidate to PR #964, update the PR body with its exact head, and bind the required checks and independent review to that head.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
