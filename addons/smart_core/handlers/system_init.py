@@ -1271,34 +1271,50 @@ class SystemInitHandler(BaseIntentHandler):
         )
         # Qualification is the common upstream fact for capabilities, navigation,
         # scenes and the landing route. Produce it once before those consumers.
+        effective_delivery_ts = time.perf_counter()
         effective_delivery = EffectiveDeliveryService(env).resolve(params)
+        _mark_substage("build_nav", "effective_delivery", effective_delivery_ts)
 
         # -------- 2) 导航（净化 + 指纹）--------
-        p_nav = SystemInitNavRequestBuilder.build(params, scene)
-        try:
-            nav_data, nav_versions = NavDispatcher(env, su_env).build_nav(p_nav)
-        except KeyError as exc:
-            if "app.menu.config" not in str(exc):
-                raise
-            _logger.warning(
-                "system.init: app.menu.config missing, fallback to minimal nav surface trace=%s db=%s",
-                trace_id,
-                env.cr.dbname,
+        compatibility_nav_ts = time.perf_counter()
+        effective_nav = effective_delivery.payload.get("nav")
+        root_scoped = bool(params.get("root_xmlid") or params.get("root_menu_id"))
+        if (
+            build_mode == SystemInitPayloadBuilder.BUILD_MODE_BOOT
+            and isinstance(effective_nav, list)
+            and not root_scoped
+        ):
+            nav_data, nav_versions = SystemInitPayloadBuilder.build_effective_navigation_compatibility(
+                effective_delivery.payload,
+                effective_delivery.role_surface,
+                params,
             )
-            nav_data = {
-                "nav": [],
-                "defaultRoute": {"menu_id": None},
-                "feature_flags": {"ai_enabled": True},
-            }
-            nav_versions = {
-                "menu": 1,
-                "fingerprint": "fallback-no-app-menu-config",
-                "nav_source": "fallback_minimal",
-            }
+        else:
+            p_nav = SystemInitNavRequestBuilder.build(params, scene)
+            try:
+                nav_data, nav_versions = NavDispatcher(env, su_env).build_nav(p_nav)
+            except KeyError as exc:
+                if "app.menu.config" not in str(exc):
+                    raise
+                _logger.warning(
+                    "system.init: app.menu.config missing, fallback to minimal nav surface trace=%s db=%s",
+                    trace_id,
+                    env.cr.dbname,
+                )
+                nav_data = {
+                    "nav": [],
+                    "defaultRoute": {"menu_id": None},
+                    "feature_flags": {"ai_enabled": True},
+                }
+                nav_versions = {
+                    "menu": 1,
+                    "fingerprint": "fallback-no-app-menu-config",
+                    "nav_source": "fallback_minimal",
+                }
+        _mark_substage("build_nav", "compatibility_navigation", compatibility_nav_ts)
         # NavDispatcher remains the compatibility adapter for versions and legacy
         # flags. Its independently built tree must not replace the qualified
         # delivery navigation fact.
-        effective_nav = effective_delivery.payload.get("nav")
         if isinstance(effective_nav, list):
             nav_data["nav"] = effective_nav
         stage_ts = _mark("build_nav", stage_ts)

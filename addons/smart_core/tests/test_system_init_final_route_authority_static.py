@@ -58,6 +58,13 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertLess(delivery_position, capability_position)
         self.assertIn("published_authority=effective_delivery.route_authority", system_init)
         self.assertIn('effective_nav = effective_delivery.payload.get("nav")', system_init)
+        self.assertIn("build_effective_navigation_compatibility(", system_init)
+        fast_path = system_init.split(
+            "effective_nav = effective_delivery.payload.get(\"nav\")",
+            1,
+        )[1].split("else:", 1)[0]
+        self.assertIn("BUILD_MODE_BOOT", fast_path)
+        self.assertNotIn("NavDispatcher(", fast_path)
         self.assertLess(
             system_init.index('effective_nav = effective_delivery.payload.get("nav")'),
             system_init.index("nav_tree_raw = nav_data.get(\"nav\") or []"),

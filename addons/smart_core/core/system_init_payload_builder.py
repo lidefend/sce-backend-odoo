@@ -191,6 +191,54 @@ class SystemInitPayloadBuilder:
         return cls.BUILD_MODE_BOOT
 
     @classmethod
+    def build_effective_navigation_compatibility(
+        cls,
+        delivery_payload: dict,
+        role_surface: dict,
+        params: dict | None = None,
+    ) -> tuple[dict, dict]:
+        """Project already-qualified navigation into boot compatibility fields.
+
+        Effective delivery is the navigation authority for system.init. Rebuilding
+        the complete menu tree through NavDispatcher only to discard it adds a
+        request-local performance cost without changing the response navigation.
+        """
+        payload = delivery_payload if isinstance(delivery_payload, dict) else {}
+        role = role_surface if isinstance(role_surface, dict) else {}
+        params = params if isinstance(params, dict) else {}
+        nav = payload.get("nav") if isinstance(payload.get("nav"), list) else []
+        meta = payload.get("meta") if isinstance(payload.get("meta"), dict) else {}
+        policy = payload.get("product_policy") if isinstance(payload.get("product_policy"), dict) else {}
+        raw_version = policy.get("version") or 1
+        try:
+            menu_version = int(raw_version)
+        except (TypeError, ValueError):
+            menu_version = 1
+        default_route = {
+            "menu_id": role.get("landing_menu_id"),
+            "scene_key": str(role.get("landing_scene_key") or "").strip(),
+            "route": str(role.get("landing_path") or "").strip(),
+            "reason": "effective_delivery",
+        }
+        nav_data = {
+            "nav": nav,
+            "defaultRoute": default_route,
+            "feature_flags": {"ai_enabled": True},
+        }
+        nav_versions = {
+            "source_authority": meta.get("nav_source_authority")
+            if isinstance(meta.get("nav_source_authority"), dict)
+            else {},
+            "menu": menu_version,
+            "root_xmlid": params.get("root_xmlid"),
+            "root_menu_id": params.get("root_menu_id"),
+            "root_resolved_id": None,
+            "root_found": None,
+            "root_filtered_fallback": False,
+        }
+        return nav_data, nav_versions
+
+    @classmethod
     def extension_fact_context(cls, params: dict, *, build_mode: str, include_workspace_home: bool) -> dict:
         """Tell producers what this request consumes without changing request parameters."""
         return {

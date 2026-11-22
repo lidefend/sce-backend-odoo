@@ -1,0 +1,53 @@
+schema_version: 1
+
+goal:
+  id: FRONTEND-DELIVERY-PERFORMANCE-01
+  title: remove_redundant_startup_navigation_materialization
+  status: active
+  formal_product_layer: P0
+  layer_target: system.init startup navigation projection
+  module:
+    - smart_core
+  standard_vs_user_specific: platform_mechanism
+  objective: >-
+    Remove redundant startup navigation materialization without changing the
+    selected navigation, route authority, payload fields, permissions, scene
+    semantics or frontend behavior. Effective delivery remains the sole
+    navigation authority; compatibility metadata must be derived without
+    rebuilding a full menu tree that is immediately discarded.
+  product_result: >-
+    system.init returns the same effective navigation and route identity with a
+    materially lower build_nav stage cost, restoring login_to_interactive,
+    my_work, form_open and company_switch execution performance budgets.
+  why_here: >-
+    The measured regression is in the P0 system.init startup projection. The
+    same navigation is built first by EffectiveDeliveryService and then rebuilt
+    by NavDispatcher solely for compatibility metadata before being replaced.
+  why_not_elsewhere:
+    - Do not change frontend product behavior, page contracts, menu semantics or visible entries.
+    - Do not change RBAC, route authority, default routes or capability resolution.
+    - Do not relax performance budgets or omit the full frontend gate.
+    - Do not move the startup projection into customer or construction-specific modules.
+  blast_radius:
+    behavior:
+      - system.init startup profile stage timings
+      - compatibility navigation metadata derivation
+      - response construction order
+    exclusions:
+      - no user-visible behavior or business rule changes
+      - no frontend component or style changes
+      - no database, fixture, deployment or runtime-profile changes
+  validation:
+    required:
+      - focused system.init performance semantics tests
+      - registered local runtime performance observation
+      - non-zero targeted smart_core checks
+      - full manual frontend release gate on the exact main SHA
+  rollback: >-
+    Revert the system.init performance change and its focused tests. Effective
+    delivery, navigation content and route authority remain unchanged.
+  completion:
+    batch: verification_pending
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

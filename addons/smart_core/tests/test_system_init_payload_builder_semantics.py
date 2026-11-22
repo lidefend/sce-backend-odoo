@@ -66,6 +66,38 @@ class TestExtensionFactConsumption(unittest.TestCase):
                 self.assertEqual(context["with"], "nav")
                 self.assertIs(context["include_workspace_collections"], expected)
 
+    def test_effective_navigation_compatibility_preserves_qualified_boot_surface(self):
+        payload = {
+            "nav": [{"menu_id": 7, "label": "合同中心"}],
+            "meta": {
+                "nav_source_authority": {
+                    "kind": "smart_core.delivery.menu_service",
+                    "projection_only": True,
+                },
+            },
+            "product_policy": {"version": "19"},
+        }
+        role_surface = {
+            "landing_scene_key": "contracts.workspace",
+            "landing_path": "/s/contracts.workspace",
+            "landing_menu_id": 7,
+        }
+
+        nav_data, versions = target.SystemInitPayloadBuilder.build_effective_navigation_compatibility(
+            payload,
+            role_surface,
+            {"root_xmlid": None},
+        )
+
+        self.assertEqual(nav_data["nav"], payload["nav"])
+        self.assertEqual(nav_data["defaultRoute"]["scene_key"], "contracts.workspace")
+        self.assertEqual(nav_data["defaultRoute"]["route"], "/s/contracts.workspace")
+        self.assertEqual(versions["menu"], 19)
+        self.assertEqual(
+            versions["source_authority"]["kind"],
+            "smart_core.delivery.menu_service",
+        )
+
 
 class TestSystemInitIdentityPayloadDeterminism(unittest.TestCase):
     def test_groups_xmlids_are_emitted_in_stable_order(self):
