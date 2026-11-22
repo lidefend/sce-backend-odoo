@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "id": "MAINLINE-PERFORMANCE-02",
+  "branch": "fix/frontend-delivery-performance-20261122",
+  "baseline_sha": "0e4292232a0f35a5e4019f261463095c8de0f370",
+  "status": "completed",
+  "goal": ".agent/goals/MAINLINE-PERFORMANCE-02.yaml",
+  "record": "docs/ops/iterations/mainline_performance_02_system_initialization_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-PERFORMANCE-02.yaml",
+    ".agent/runs/MAINLINE-PERFORMANCE-02/run.json",
+    "docs/ops/iterations/mainline_performance_02_system_initialization_20261122.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered offline unit tools for receipts; the separate local.dev sc-local-dev/sc_dev_demo observation is read-only and recorded in the batch record"
+  },
+  "checks": {
+    "runtime_performance_unit": {
+      "target": "verify.local.dev.runtime.performance.unit",
+      "inputs": [
+        "scripts/verify/local_dev_runtime_performance.py",
+        "scripts/verify/test_local_dev_runtime_performance.py",
+        "scripts/verify/local_dev_runtime_permission_probe.py",
+        "scripts/verify/test_local_dev_runtime_permission_probe.py"
+      ],
+      "kind": "offline"
+    },
+    "performance_baseline_unit": {
+      "target": "verify.system.performance.baseline.unit",
+      "inputs": [
+        "scripts/verify/system_performance_baseline.py",
+        "scripts/verify/test_system_performance_baseline.py",
+        "scripts/verify/local_dev_runtime_contract_role_matrix_probe.py",
+        "scripts/verify/local_dev_runtime_record_form_probe.py",
+        "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+        "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+        "scripts/ops/local_dev_performance_identity.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Request implementation authorization for the evidence-backed P0/P1 request-scoped fact reuse candidates; do not merge PR #960 from this diagnosis.",
+  "observations": {
+    "candidate": "PR #960 at 0e4292232a0f35a5e4019f261463095c8de0f370; remote candidate is validation only and is not approved for merge.",
+    "baseline": "Main performance run 44980704390 at cb182c9e94abe515b0d987fc514bc46ca98d1cfb.",
+    "candidate_performance": "Run 44985395085 at 5a0405f85def553cca950b7f55b991aec51978bd retained only login_to_interactive above budget at 3152ms against 3000ms.",
+    "scope_lock": "R1 is read-only. No cache, menu, ACL, product-contract or performance-budget change is authorized.",
+    "browser_decomposition": "At 5a0405f85, median login_to_interactive decomposed into 516ms before the first request, about 571ms login request, 1596ms system.init HTTP, 332ms post-response UI and approximately 137ms residual/gap. These phase medians are diagnostic and not additive to a budget.",
+    "backend_attribution": "On restarted sc-local-dev/sc_dev_demo at the 0e4292232 tree, profiling attributed 984ms to Effective Delivery: 486ms DeliveryEngine.build, 196ms navigation authority hook, 143ms internal actions and 123ms platform release gate, followed by the remaining filtering projections.",
+    "scene_reuse": "One request loaded effective scene declarations five times: four through load_effective_scene_declarations (247ms cumulative) and once through load_scene_configs_with_timings (36ms). The two extension-hook calls consumed 168ms.",
+    "menu_scope": "The same 132-menu scenario index was built twice and resolved each menu reference twice per build, producing 528 env.ref SQL calls. The two indexes consumed 170ms and the resolutions about 140ms cumulatively.",
+    "deepcopy": "Deepcopy consumed 446ms cumulatively. Instrumentation found 178 field-conversion copies dominated by scene declaration dictionaries containing layout, action_specs, data_sources, targets and role variants; product-policy normalization also copied the published policy.",
+    "release_snapshot": "The active construction.standard release snapshot is 734059 JSON bytes and its policy is 504480 bytes. ProductPolicyService and the effective-delivery release gate both read and project that same active snapshot in one request.",
+    "frontend_profile": "A read-only local browser probe used the existing startupTiming marks and five warm login samples: median first request 233ms, login request 342ms, system.init HTTP 1072ms, post-response UI 878ms; boot_start was 34.3ms after navigation and session_ready was 1616.6ms. The frontend source tree is identical to the served fe635515 build. Values are diagnostic and not a remote budget comparison."
+  }
+}
