@@ -55,6 +55,11 @@ HEAD 为 `638f9a9599b9c299148dd34b0ca745c2b7d81b34`。旧
 8. P4 runtime 从 sibling worktree 启动时发现旧 `frontend_build_sha256` 把
    `../<worktree>` 路径段计入摘要；现已改为进入 dist 根目录后对 `./` 内容求哈希，
    并增加“不同 worktree 路径中相同内容得到相同 digest”的回归测试。
+9. 独立复审 S1：外部传入的 `FRONTEND_BUILD_SHA256` 过去可绕过 dist 绑定。
+   现在只要 `index.html` 存在就始终重算 observed digest；传入值不一致立即拒绝，
+   且在任何 Docker mutation 之前失败。
+10. 独立复审 S2：dist 文件顺序固定为 `LC_ALL=C sort -z`，消除 locale 依赖。
+    artifact 目标现有 12 个非零测试。
 
 ## 门禁责任
 

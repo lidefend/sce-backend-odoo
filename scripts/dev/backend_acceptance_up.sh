@@ -14,17 +14,26 @@ SOURCE_REVISION="${SC_ACCEPTANCE_SOURCE_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD
 SOURCE_FINGERPRINT="$(printf '%s\n' "$SOURCE_REVISION" | sha256sum | cut -d' ' -f1)"
 RUNTIME_ENVIRONMENT="${SC_ENVIRONMENT:-acceptance}"
 DEPLOY_ENVIRONMENT="${SC_DEPLOY_ENV:-$RUNTIME_ENVIRONMENT}"
-FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256:-}"
+FRONTEND_BUILD_SHA256_SUPPLIED="${FRONTEND_BUILD_SHA256:-}"
+FRONTEND_BUILD_SHA256=""
 frontend_dist="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
-if [[ -z "$FRONTEND_BUILD_SHA256" && -f "$frontend_dist/index.html" ]]; then
-  FRONTEND_BUILD_SHA256="$(
+if [[ -f "$frontend_dist/index.html" ]]; then
+  observed_frontend_build_sha256="$(
     cd "$frontend_dist"
     find . -type f -print0 \
-      | sort -z \
+      | LC_ALL=C sort -z \
       | xargs -0 sha256sum \
       | sha256sum \
       | cut -d' ' -f1
   )"
+  [[ -z "$FRONTEND_BUILD_SHA256_SUPPLIED" \
+    || "$FRONTEND_BUILD_SHA256_SUPPLIED" == "$observed_frontend_build_sha256" ]] || {
+    echo "DENY supplied frontend build SHA256 does not match dist release" >&2
+    exit 2
+  }
+  FRONTEND_BUILD_SHA256="$observed_frontend_build_sha256"
+else
+  FRONTEND_BUILD_SHA256="$FRONTEND_BUILD_SHA256_SUPPLIED"
 fi
 [[ "$FRONTEND_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
   echo "DENY exact frontend build SHA256 required" >&2

@@ -93,7 +93,7 @@ class ArtifactTest(unittest.TestCase):
             artifact.verify(self.root, self.sha)
 
 class BackendReplacementTest(unittest.TestCase):
-    def run_case(self, *, artifact_ok=True, healthy=True, external_frontend=False):
+    def run_case(self, *, artifact_ok=True, healthy=True, external_frontend=False, frontend_build_sha256=None):
         import os
         root_repo = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as external:
@@ -143,6 +143,8 @@ esac
             }
             if external_frontend:
                 child_env['FRONTEND_ACCEPTANCE_STATIC_DIST'] = str(frontend_dist)
+            if frontend_build_sha256:
+                child_env['FRONTEND_BUILD_SHA256'] = frontend_build_sha256
             result = subprocess.run(['bash', str(root_repo / 'scripts/dev/backend_acceptance_up.sh')],
                 env=child_env, capture_output=True, text=True)
             return result, trace.read_text() if trace.exists() else ''
@@ -173,6 +175,12 @@ esac
         self.assertIsNotNone(internal_hash)
         self.assertIsNotNone(external_hash)
         self.assertEqual(internal_hash.group(1), external_hash.group(1))
+
+    def test_supplied_frontend_build_hash_must_match_dist(self):
+        result, trace = self.run_case(frontend_build_sha256='f' * 64)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('does not match dist release', result.stderr)
+        self.assertEqual(trace, '')
 
     def test_failed_start_restores_previous_without_starting_stopped_service(self):
         result, trace = self.run_case(healthy=False)

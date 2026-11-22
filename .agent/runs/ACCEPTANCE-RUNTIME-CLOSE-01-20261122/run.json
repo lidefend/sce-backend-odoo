@@ -135,6 +135,7 @@
     "post_299_closures": "dirty P4 follow-up closes six acceptance capabilities, stale carrier text, and stopped rollback-custody classification",
     "baseline_rebuild_unit": "PASS: 220 tests across 81 + 10 + 129 executions; source guard verified",
     "acceptance_environment_guard": "PASS: 63 tests; daily credential confirmation 15 cases; environment and form-editability discovery checks passed",
+    "acceptance_artifact_unit": "PASS: 12 tests after adding wrong supplied-digest rejection",
     "dev_incremental_planner_gap": "ci.local.iteration first blocked on five unmapped P4 paths, then the mapping was split to preserve the existing artifact target reference; both failures were validation-tool defects and remained fail-closed",
     "ci_local_iteration": "PASS on HEAD 299f9b62 plus declared dirty worktree; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
     "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T033231Z-1619625-646681715/receipt.json",
@@ -154,10 +155,13 @@
     "main_sync": "unpublished branch replayed from fe635515 onto cb182c9e9 through workspace.branch.sync-main; new base tree accepted with regenerated complexity reports only",
     "previous_review_head": "873a8091ef0560b360efd0fa3efe2c4fc1f566b3 is superseded by the governed main sync and must not be used for review or publication",
     "cross_worktree_build_identity": "P4 runtime bootstrap from a sibling worktree exposed path-dependent frontend digest input; the candidate now hashes dist contents after entering the dist root and has a regression proving identical content in different worktree paths yields the same digest",
+    "independent_review_r1": "REQUEST_CHANGES: supplied frontend hash was unbound, sort locale was unpinned, and run counts/HEAD were stale; all three are addressed in the R2 candidate",
+    "supplied_hash_binding": "whenever dist-release/index.html exists, the observed digest is always computed; an inherited FRONTEND_BUILD_SHA256 is accepted only if it exactly equals the observed digest, with a no-Docker-mutation negative test",
+    "canonical_digest_order": "dist file ordering is pinned with LC_ALL=C sort -z",
     "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
     "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
   },
-  "next_exact_step": "Run the artifact/tooling units and freeze preparation, commit the cross-worktree identity fix, update PR #959, and merge only after its exact-head required checks pass.",
+  "next_exact_step": "Run the R2 focused units and freeze preparation, commit the fixes, push PR #959, and re-run its exact-head required checks.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
