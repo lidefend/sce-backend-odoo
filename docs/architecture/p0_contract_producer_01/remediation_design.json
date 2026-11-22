@@ -286,9 +286,15 @@
           "widget_type_authority": {
             "declaration": "contracts/registry/semantic.yaml",
             "property": "native_widgets",
-            "admissible_vocabulary": "every key declared by native_widgets",
+            "known_vocabulary": "every key declared by native_widgets",
             "schema_enum_role": "validated projection of native_widgets, not a second widget-name list",
-            "status_authority": "the declared ready, fallback or unsupported status remains runtime semantic data; an unsupported status is fail-closed by its consumer and is not reinterpreted as a supported component",
+            "status_authority": "the ready, fallback or unsupported status and fallback reason_code come only from semantic.yaml.native_widgets",
+            "status_policy": {
+              "ready": "accepted for normal descriptor consumption",
+              "fallback": "accepted only when the same native_widgets entry declares a reason_code; preserve that declared fallback reason",
+              "unsupported": "reject as a normal Field Descriptor",
+              "unknown_status": "reject"
+            },
             "unknown_widget_type": "reject"
           },
           "shared_by": [
@@ -368,7 +374,9 @@
             "FIELD_DESCRIPTOR_TYPE_INVALID",
             "FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED",
             "FIELD_DESCRIPTOR_SEMANTIC_MISMATCH",
-            "FIELD_DESCRIPTOR_WIDGET_UNKNOWN"
+            "FIELD_DESCRIPTOR_WIDGET_UNKNOWN",
+            "FIELD_DESCRIPTOR_WIDGET_UNSUPPORTED",
+            "FIELD_DESCRIPTOR_WIDGET_FALLBACK_REASON_MISSING"
           ],
           "digit_rules": [
             "exactly two integers",

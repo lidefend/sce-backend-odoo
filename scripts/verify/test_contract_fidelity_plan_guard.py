@@ -176,8 +176,18 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             if "*" not in supported and field_type not in supported:
                 errors.append(f"componentKey {component_key!r} does not support fieldType {field_type!r}")
         widget_type = descriptor.get("widgetType")
-        if widget_type not in self.descriptor_widget_statuses():
+        widget_declaration = self.semantic_registry["native_widgets"].get(widget_type)
+        if not isinstance(widget_declaration, dict):
             errors.append(f"widgetType {widget_type!r} is not declared by semantic.yaml.native_widgets")
+        else:
+            widget_status = widget_declaration.get("status")
+            reason_code = str(widget_declaration.get("reason_code") or "").strip()
+            if widget_status == "unsupported":
+                errors.append(f"widgetType {widget_type!r} is declared unsupported")
+            elif widget_status == "fallback" and not reason_code:
+                errors.append(f"widgetType {widget_type!r} requires a declared fallback reason_code")
+            elif widget_status not in {"ready", "fallback"}:
+                errors.append(f"widgetType {widget_type!r} has unknown status {widget_status!r}")
         digits = descriptor.get("digits")
         if isinstance(digits, list) and len(digits) == 2 and all(isinstance(item, int) for item in digits):
             if digits[0] < 1 or digits[1] < 0 or digits[1] > digits[0]:
@@ -307,9 +317,15 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             schema_contract["widget_type_authority"]["property"],
             "native_widgets",
         )
-        self.assertIn("every key", schema_contract["widget_type_authority"]["admissible_vocabulary"])
+        self.assertIn("every key", schema_contract["widget_type_authority"]["known_vocabulary"])
+        self.assertEqual(
+            schema_contract["widget_type_authority"]["status_policy"]["unsupported"],
+            "reject as a normal Field Descriptor",
+        )
         self.assertEqual(schema_contract["widget_type_authority"]["unknown_widget_type"], "reject")
         self.assertIn("FIELD_DESCRIPTOR_WIDGET_UNKNOWN", schema_contract["error_codes"])
+        self.assertIn("FIELD_DESCRIPTOR_WIDGET_UNSUPPORTED", schema_contract["error_codes"])
+        self.assertIn("FIELD_DESCRIPTOR_WIDGET_FALLBACK_REASON_MISSING", schema_contract["error_codes"])
         self.assertIn(
             "const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor'",
             (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8"),
@@ -346,6 +362,14 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             set(self.descriptor_schema["properties"]["widgetType"]["enum"]),
             set(self.descriptor_widget_statuses()),
         )
+        fallback_widgets = {
+            widget_type: declaration
+            for widget_type, declaration in self.semantic_registry["native_widgets"].items()
+            if declaration["status"] == "fallback"
+        }
+        self.assertTrue(fallback_widgets)
+        for widget_type, declaration in fallback_widgets.items():
+            self.assertTrue(declaration.get("reason_code"), widget_type)
         self.assertEqual(
             set(self.descriptor_schema["required"]),
             {"schemaVersion", "fieldCode", "label", "fieldType", "widgetType", "componentKey", "semanticType"},
@@ -373,8 +397,27 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             for row in self.matrix["cases"]
             if row["evidence"] == "executed_schema_validation"
         }
-        self.assertEqual(len(expected), 22)
+        self.assertEqual(len(expected), 24)
         self.assertEqual(schema_matrix, expected)
+
+    def test_fallback_widget_without_registry_reason_is_rejected(self) -> None:
+        descriptor = {
+            "schemaVersion": "1.0.0",
+            "fieldCode": "project.is_favorite",
+            "label": "收藏",
+            "fieldType": "boolean",
+            "widgetType": "boolean_toggle",
+            "componentKey": "sc.input.boolean",
+            "semanticType": "boolean",
+        }
+        original_registry = self.semantic_registry
+        self.semantic_registry = copy.deepcopy(original_registry)
+        try:
+            self.semantic_registry["native_widgets"]["boolean_toggle"].pop("reason_code", None)
+            errors = self.descriptor_registry_errors(descriptor)
+        finally:
+            self.semantic_registry = original_registry
+        self.assertTrue(any("fallback reason_code" in error for error in errors), errors)
 
     def test_p0_b_keeps_attachment_identities_separate(self) -> None:
         contract = self.packages["P0-B"]["schema_contract"]

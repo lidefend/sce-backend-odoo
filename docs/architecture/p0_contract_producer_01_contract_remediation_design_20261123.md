@@ -325,10 +325,20 @@ explicit responsibility boundary, not a missing semantic declaration.
 
 `widgetType` uses the existing `semantic.yaml.native_widgets` vocabulary as its
 sole authority. The schema enum is a test-checked projection of every declared
-widget token; no second widget-name list exists. The declared `ready`,
-`fallback` or `unsupported` status remains separate semantic data. An
-`unsupported` token is not reinterpreted as supported; its consumer continues
-to fail closed. Unknown widget names are rejected by the strict decoder.
+widget token; no second widget-name list exists. The same registry entry owns
+the consumption policy:
+
+- `ready` is accepted normally;
+- `fallback` is accepted only when the same entry declares a fallback
+  `reason_code`, and that declared reason is preserved;
+- `unsupported` is rejected as a normal Field Descriptor and is not
+  reinterpreted as a supported component;
+- an unknown Widget name or unknown status fails closed.
+
+The strict schema keeps all declared Widget names in its projection so that the
+status layer, rather than a second name/status allow-list, decides whether a
+declared token is consumable. `domain` and `tier_validation` therefore pass
+name-vocabulary validation and are rejected by the registry-status layer.
 
 Component consistency is resolved through the explicit
 `semantic.yaml.semantics[semanticType].component` mapping, with
@@ -781,8 +791,8 @@ Rollback:
 
 Read-only design verification passed:
 
-- Contract Fidelity plan plus P0 design consistency: 21 Python tests.
-- Strict Descriptor structural and registry validation: 22 positive/negative
+- Contract Fidelity plan plus P0 design consistency: 22 Python tests.
+- Strict Descriptor structural and registry validation: 24 positive/negative
   fixture cases.
 - Semantic registry lint: PASS; 28 semantics and 33 components remain
   consistent with their generated frontend and backend projections.
@@ -795,7 +805,7 @@ Read-only design verification passed:
 - Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
   two undeclared carriers rejected.
 - Machine design reconciliation: 3 packages, 56 planned positive/negative
-  cases, 42 compatibility rows and 27 current-source hashes.
+  cases, 44 compatibility rows and 27 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 

@@ -375,6 +375,22 @@
       "expectation": "invalid",
       "evidence": "executed_schema_validation",
       "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNSUPPORTED-DOMAIN-WIDGET",
+      "consumer": "strict descriptor widget-status registry layer",
+      "payload": "semantic.yaml.native_widgets domain entry with unsupported status",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNSUPPORTED-TIER-WIDGET",
+      "consumer": "strict descriptor widget-status registry layer",
+      "payload": "semantic.yaml.native_widgets tier_validation entry with unsupported status",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
     }
   ]
 }

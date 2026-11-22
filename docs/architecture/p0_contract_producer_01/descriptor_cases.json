@@ -356,6 +356,38 @@
         "componentKey": "sc.input.number",
         "semanticType": "number"
       }
+    },
+    {
+      "id": "DESC-UNSUPPORTED-DOMAIN-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.advanced_domain",
+        "label": "高级筛选",
+        "fieldType": "text",
+        "widgetType": "domain",
+        "componentKey": "sc.input.textarea",
+        "semanticType": "long_text"
+      }
+    },
+    {
+      "id": "DESC-UNSUPPORTED-TIER-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.approval_tier",
+        "label": "审批层级",
+        "fieldType": "char",
+        "widgetType": "tier_validation",
+        "componentKey": "sc.input.text",
+        "semanticType": "text"
+      }
     }
   ]
 }
