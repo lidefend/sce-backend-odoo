@@ -48,6 +48,8 @@
     "make/dev.mk",
     "make/frontend.mk",
     "scripts/contract/generate_semantic_registry.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
     "scripts/verify/frontend_decision_authority.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_professional_component_registry_guard.py",
@@ -158,6 +160,20 @@
         "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
         "addons/smart_core/core/contract_version_negotiation.py",
         "contracts/registry/semantic.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/ops/pre-commit_refresh_generated.sh",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     },

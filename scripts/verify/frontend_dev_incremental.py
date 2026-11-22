@@ -931,12 +931,6 @@ RULES = (
         "verify.p0_contract_producer.p0a.unit",
     )),
     Rule((
-        "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
-        "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
-    ), (
-        "verify.p0_contract_producer.p0a.browser",
-    )),
-    Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",
         "scripts/verify/frontend_contract_route_guard.py",
     ), (
