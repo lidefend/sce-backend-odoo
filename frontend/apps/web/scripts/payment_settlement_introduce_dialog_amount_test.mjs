@@ -133,6 +133,8 @@ const currency = {
   rounding: 0.01,
 };
 
+const NON_FINITE_AMOUNT_SENTINEL = '__NON_FINITE_AMOUNT__';
+
 const preview = {
   currency,
   settlement: {
@@ -196,6 +198,24 @@ const preview = {
       applied_to_settlement: -12.34,
       date_request: '2026-11-22',
     },
+    {
+      id: 6,
+      name: 'PAY/EMPTY',
+      state: 'draft',
+      state_label: '草稿',
+      amount: 55.5,
+      applied_to_settlement: '',
+      date_request: '2026-11-22',
+    },
+    {
+      id: 7,
+      name: 'PAY/NON-FINITE',
+      state: 'draft',
+      state_label: '草稿',
+      amount: 66.6,
+      applied_to_settlement: NON_FINITE_AMOUNT_SENTINEL,
+      date_request: '2026-11-22',
+    },
   ],
   totals: {
     settlement_amount: 0,
@@ -237,10 +257,15 @@ try {
     } else {
       throw new Error(`unexpected intent ${payload.intent}`);
     }
+    const responseBody = JSON.stringify({
+      ok: true,
+      data,
+      meta: { trace_id: 'trace-dialog-amount' },
+    }).replace(JSON.stringify(NON_FINITE_AMOUNT_SENTINEL), '1e999');
     await route.fulfill({
       status: 200,
       contentType: 'application/json',
-      body: JSON.stringify({ ok: true, data, meta: { trace_id: 'trace-dialog-amount' } }),
+      body: responseBody,
     });
   });
   await page.route('http://dialog.test/', async (route) => {
@@ -280,14 +305,18 @@ try {
   const history = page.locator('[data-settle-history]');
   await history.locator('.settle-history-head').click();
   const historyAmounts = await history.locator('.settle-history-amount').allInnerTexts();
-  assert.equal(historyAmounts.length, 5);
+  assert.equal(historyAmounts.length, 7);
   assert.ok(historyAmounts[0].includes('0.00'), historyAmounts[0]);
   assert.equal(historyAmounts[1].trim(), '--');
   assert.equal(historyAmounts[2].trim(), '--');
   assert.ok(historyAmounts[3].includes('1,234.50'), historyAmounts[3]);
   assert.ok(historyAmounts[4].trim().startsWith('-'), historyAmounts[4]);
   assert.ok(historyAmounts[4].includes('12.34'), historyAmounts[4]);
+  assert.equal(historyAmounts[5].trim(), '--');
+  assert.equal(historyAmounts[6].trim(), '--');
   assert.ok(!historyAmounts[0].includes('999.99'), historyAmounts[0]);
+  assert.ok(!historyAmounts[5].includes('55.5'), historyAmounts[5]);
+  assert.ok(!historyAmounts[6].includes('66.6'), historyAmounts[6]);
 
   assert.equal(requestIntents.filter((intent) => intent === 'payment.request.add.settlement.lines').length, 0);
   assert.deepEqual(errors, []);
@@ -298,10 +327,12 @@ try {
 
   console.log(JSON.stringify({
     browser: browser.version(),
-    cases: 12,
+    historyCases: historyAmounts.length,
     viewports: [1440, 390],
     zeroPreserved: 'PASS',
     missingPreserved: 'PASS',
+    emptyStringPreserved: 'PASS',
+    nonFinitePreserved: 'PASS',
     positiveAndNegative: 'PASS',
     writeRequests: 0,
     consoleErrors: 0,

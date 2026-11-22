@@ -136,3 +136,26 @@ close the correctness defect. A mixed-currency total must remain unavailable.
 This batch implements P1-A only. P1-B remains a read-only diagnosis and its
 recommended frontend consumption change belongs to a later independently
 reviewable candidate.
+
+## PR #966 R1 CI correction
+
+The first remote PR head failed `public_guard` because the new verification target
+used an early duplicate `verify.frontend.pr.unit` declaration. The workflow
+contract test intentionally reads the first canonical lane declaration, so it saw
+only the new amount target and no longer saw the established merge dependencies.
+`merge_policy_gate` failed because its upstream fact check was not successful.
+
+This is a `validation_tool_defect`, not a failure of the amount implementation.
+The correction:
+
+- removed the early duplicate PR/release declarations;
+- added the independent amount target to the existing PR lane declaration;
+- added it to the existing release lane declaration;
+- retained the canonical lane dependencies and ordering;
+- added real-browser cases for an empty string and a non-finite amount, both of
+  which must display `--` and must not fall back to `amount`.
+
+`python3 scripts/ci/test_ci_risk_workflow_contract.py` passes `29/29`.
+The focused browser test passes with seven history amount cases at 1440 and 390,
+including zero, missing, empty string, non-finite, positive and negative values,
+with zero introduction writes and zero Console errors.

@@ -35,6 +35,18 @@
       ],
       "kind": "offline"
     },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_release_candidate_gate.py"
+      ],
+      "kind": "offline"
+    },
     "professional_detail_collection": {
       "target": "verify.frontend.professional_detail_collection.unit",
       "inputs": [
@@ -124,9 +136,12 @@
     "p1b_result": "Read-only source verification shows api_data.py already computes sum over the complete filtered domain, page_sum over the page, validates currency across the complete monetary aggregate scope, returns currency_field/currency_id, and fails closed for mixed or unverifiable currency scope. The remaining P1 defect is frontend consumption in ListPage.vue, not a missing backend aggregate authority.",
     "p1b_diagnostic": "python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py passed 38/38 stubbed pure tests without a database write.",
     "p1b_p0_gap": "No P0 correctness gap is proven. A P0 payload enhancement to include a currency relation label would remove the frontend's need to match currency_id against page rows, but correctness can fail closed without it.",
-    "local_validation": "Focused real Vue component test 12 cases PASS; affected professional detail family PASS; contract basis PASS; lint 0 errors; strict typecheck PASS; acceptance release build PASS.",
+    "local_validation": "Focused real Vue component test PASS with seven history amount cases; affected professional detail family PASS; contract basis PASS; lint 0 errors; strict typecheck PASS; acceptance release build PASS.",
     "ci_local_iteration": "PASS with five reusable registered run checks, lane coverage PASS and no mapped path excluded.",
-    "freeze_prepare": "ci.delivery.freeze.prepare PASS on the unfrozen candidate; generated evidence reviewed before commit."
+    "freeze_prepare": "ci.delivery.freeze.prepare PASS on the unfrozen candidate; generated evidence reviewed before commit.",
+    "pr966_r1_ci_root_cause": "public_guard failed because a new early verify.frontend.pr.unit declaration displaced the canonical lane line parsed by test_frontend_lane_commands_are_explicit; merge_policy_gate then failed on that upstream fact. Classified validation_tool_defect.",
+    "pr966_r1_fix": "Removed the duplicate lane declarations, added the focused amount target to the canonical PR and release lane lines, and added empty-string and non-finite amount cases to the real Vue component browser test.",
+    "pr966_r1_product_scope": "The payment component implementation is unchanged in R1; no backend, contract, payload, permission, currency, precision or write chain changed."
   },
   "next_exact_step": "Commit the reviewed candidate, rebuild and fingerprint the clean HEAD, capture exact-HEAD component evidence, then publish an independent-review PR.",
   "write_replay_authorized": false,
