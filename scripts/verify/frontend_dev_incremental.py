@@ -276,8 +276,12 @@ RULES = (
         "addons/smart_core/core/scene_registry_provider.py",
         "addons/smart_core/core/scene_runtime_orchestrator.py",
         "addons/smart_core/core/system_init_runtime_context.py",
+        "addons/smart_core/core/system_init_request_context.py",
+        "addons/smart_core/adapters/odoo_nav_adapter.py",
+        "addons/smart_core/tests/test_system_init_request_context.py",
     ), (
         "verify.backend.navigation_delivery.unit",
+        "verify.system.performance.baseline.unit",
     )),
     Rule((
         "addons/smart_core/core/system_init_extension_fact_merger.py",

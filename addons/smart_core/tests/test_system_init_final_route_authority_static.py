@@ -44,10 +44,13 @@ class TestSystemInitFinalRouteAuthorityStatic(unittest.TestCase):
         self.assertNotIn("project_navigation_product_policy(", system_init)
 
         shared = (Path(__file__).resolve().parents[1] / "delivery" / "effective_delivery_service.py").read_text()
-        self.assertIn("EffectiveDeliveryService(env).resolve(params)", system_init)
+        self.assertIn("EffectiveDeliveryService(env).resolve(", system_init)
+        self.assertIn("request_context=request_context", system_init)
         self.assertIn("effective_authority=effective_delivery.route_authority", system_init)
-        self.assertEqual(system_init.count("EffectiveDeliveryService(env).resolve(params)"), 1)
-        delivery_position = system_init.index("effective_delivery = EffectiveDeliveryService(env).resolve(params)")
+        self.assertEqual(system_init.count("EffectiveDeliveryService(env).resolve("), 1)
+        delivery_position = system_init.index(
+            "effective_delivery = EffectiveDeliveryService(env).resolve("
+        )
         capability_position = system_init.index(
             "capabilities_raw, capability_load_timings_ms = _load_capabilities_for_user_with_timings("
         )

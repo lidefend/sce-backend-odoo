@@ -63,8 +63,21 @@ class EffectiveDeliveryService:
         )
         return deepcopy(nav), deepcopy(authority)
 
-    def _internal_actions(self, nav, authority, menu_service, role):
-        sources = call_extension_hook_first(self.env, "smart_core_delivery_scene_declarations", self.env)
+    def _internal_actions(
+        self,
+        nav,
+        authority,
+        menu_service,
+        role,
+        *,
+        request_context=None,
+    ):
+        sources = call_extension_hook_first(
+            self.env,
+            "smart_core_delivery_scene_declarations",
+            self.env,
+            request_context=request_context,
+        )
         if not isinstance(sources, list):
             return []
         scene_keys = self._scene_keys(nav, authority)
@@ -102,7 +115,7 @@ class EffectiveDeliveryService:
                     qualified.append(entry)
         return qualified
 
-    def resolve(self, params=None):
+    def resolve(self, params=None, *, request_context=None):
         env = self.env
         identity = _resolve_startup_delivery_identity(env, {**dict(env.context or {}), **(params or {})})
         resolver = IdentityResolver(env)
@@ -125,8 +138,22 @@ class EffectiveDeliveryService:
             is_tenant_config_admin=bool(role.get("is_tenant_config_admin")),
         )
         authority = merge_platform_duty_route_authority(authority, env=env, surface=duty)
-        authority.setdefault("contextual_actions", []).extend(self._internal_actions(nav, authority, engine.menu_service, role))
-        finalized = call_extension_hook_first(env, "smart_core_navigation_authority_filter", env, authority)
+        authority.setdefault("contextual_actions", []).extend(
+            self._internal_actions(
+                nav,
+                authority,
+                engine.menu_service,
+                role,
+                request_context=request_context,
+            )
+        )
+        finalized = call_extension_hook_first(
+            env,
+            "smart_core_navigation_authority_filter",
+            env,
+            authority,
+            request_context=request_context,
+        )
         if isinstance(finalized, dict):
             authority = finalized
         authority = deepcopy(authority)
