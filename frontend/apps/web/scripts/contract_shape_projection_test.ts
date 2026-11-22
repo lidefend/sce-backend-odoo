@@ -136,16 +136,15 @@ check(presentCollectionKanbanCell({
   columnOptions: [durationOption],
 }).text, '1 小时 30 分钟', 'Kanban consumes projected duration identity');
 
-// The duration repair must not become a blanket componentKey migration for
-// fields outside this batch. Before this change the collection producer omitted
-// percentage identity, so Kanban displayed its ordinary float value.
+// Percentage is an existing declared component identity. It must cross the same
+// Contract V2 collection producer before List or Kanban interprets the value.
 const percentageWidget = {
   widgetId: 'percentage',
   fieldCode: 'completion_ratio',
   label: 'Ratio',
   widgetType: 'percentage',
   componentKey: 'sc.value.percentage',
-  componentConfig: { fieldType: 'float' },
+  componentConfig: { fieldType: 'float', digits: [16, 4] },
 };
 const percentageStore = {
   snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
@@ -156,11 +155,16 @@ const percentageStore = {
   primaryDataSource: {},
 } as unknown as ContractV2NormalizedStore;
 const percentageOption = runtime.resolveListColumnOptions(percentageStore, { columns: ['completion_ratio'] })[0];
-check(percentageOption?.componentKey, undefined, 'collection projection does not widen percentage identity in this batch');
+check(percentageOption?.componentKey, 'sc.value.percentage', 'collection projection preserves percentage component identity');
+check(JSON.stringify(percentageOption?.digits), JSON.stringify([16, 4]), 'collection projection preserves declared float digits');
+check(presentListCell({
+  raw: 12.5,
+  column: { ...percentageOption, field: percentageOption.name },
+}).text, '12.5000%', 'List consumes projected percentage identity and precision');
 check(presentCollectionKanbanCell({
   field: 'completion_ratio',
   value: 12.5,
   columnOptions: [percentageOption],
-}).text, '12.5', 'Kanban percentage output remains unchanged in this batch');
+}).text, '12.5000%', 'Kanban consumes projected percentage identity and precision');
 
 console.log(`[frontend.contract.shape.projection] PASS cases=${cases}`);

@@ -4,7 +4,7 @@ import type { FormSectionFieldSchema, TemplateSelectOption } from '../../compone
 import type { RelationFieldAdapter } from '../../components/template/relationField.types';
 import { fieldIsBusinessRelationCollection } from '../../app/presentation/canonicalFormFloorplan';
 import {
-  normalizeMonetaryDigits,
+  normalizeDeclaredDigits,
   resolveCurrencyDisplayLabel,
 } from '../../app/presentation/businessValuePresentation';
 import { projectMany2oneCapabilities } from '../../components/template/formSection.mapper';
@@ -77,7 +77,7 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
         ? { relation: text(canonicalDescriptor.relation) }
       : {}),
     ...(text(config.filename) ? { filename: text(config.filename) } : {}),
-    ...(normalizeMonetaryDigits(config.digits) ? { digits: normalizeMonetaryDigits(config.digits) } : {}),
+    ...(normalizeDeclaredDigits(config.digits) ? { digits: normalizeDeclaredDigits(config.digits) } : {}),
     ...(text(config.currencyField || config.currency_field)
       ? { currency_field: text(config.currencyField || config.currency_field) }
       : {}),
@@ -144,8 +144,8 @@ export function canonicalFieldToFormSection(
       many2oneOpenToken: MANY2ONE_OPEN_RECORD_OPTION,
     })
     : { relationCreateMode: 'none' as const };
-  const digits = type === 'monetary'
-    ? normalizeMonetaryDigits(config.digits || descriptor.digits)
+  const digits = ['float', 'monetary'].includes(type)
+    ? normalizeDeclaredDigits(config.digits || descriptor.digits)
     : undefined;
   const currencyField = type === 'monetary'
     ? text(config.currencyField || config.currency_field || descriptor.currency_field)

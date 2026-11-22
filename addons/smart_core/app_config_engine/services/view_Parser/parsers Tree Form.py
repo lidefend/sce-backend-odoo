@@ -25,6 +25,9 @@ from odoo.addons.smart_core.utils.native_action_scope import (
 from odoo.addons.smart_core.utils.native_collection_presentation import (
     native_collection_presentation,
 )
+from odoo.addons.smart_core.core.contract_runtime.semantic_resolver import (
+    resolve as resolve_field_semantic,
+)
 
 _logger = logging.getLogger(__name__)
 
@@ -574,6 +577,9 @@ class _TreeFormParserMixin:
                         fname, occurrence['widget'], self._safe_eval_expr(el.get('options')) if el.get('options') else {})
                     if widget_semantics:
                         occurrence['widget_semantics'] = widget_semantics
+                    resolved_semantic = resolve_field_semantic(field_info, occurrence["widget"])
+                    if resolved_semantic.get("semantic") == "percentage":
+                        occurrence["component_key"] = resolved_semantic["componentKey"]
                     selection = (field_info or {}).get("selection")
                     if isinstance(selection, (list, tuple)):
                         occurrence["selection"] = [
@@ -581,13 +587,14 @@ class _TreeFormParserMixin:
                             for item in selection
                             if isinstance(item, (list, tuple)) and len(item) >= 2
                         ]
+                    if occurrence["field_type"] in {"float", "monetary"}:
+                        digits = (field_info or {}).get("digits")
+                        if isinstance(digits, (list, tuple)) and len(digits) == 2:
+                            occurrence["digits"] = list(digits)
                     if occurrence["field_type"] == "monetary":
                         occurrence["currency_field"] = str(
                             (field_info or {}).get("currency_field") or "currency_id"
                         ).strip()
-                        digits = (field_info or {}).get("digits")
-                        if isinstance(digits, (list, tuple)) and len(digits) == 2:
-                            occurrence["digits"] = list(digits)
                     if relation_active_actions:
                         occurrence["relation_active_actions"] = relation_active_actions
                     column_occurrences.append(occurrence)
@@ -701,6 +708,9 @@ class _TreeFormParserMixin:
         semantics = self._field_widget_semantics(name, widget, mods.get('options'))
         if semantics:
             schema['widget_semantics'] = semantics
+        resolved_semantic = resolve_field_semantic(meta, widget)
+        if resolved_semantic.get("semantic") == "percentage":
+            schema["component_key"] = resolved_semantic["componentKey"]
         selection = meta.get('selection')
         if isinstance(selection, (list, tuple)):
             schema["selection"] = [

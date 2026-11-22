@@ -212,7 +212,7 @@ function formatJsonDisplayValue(value: unknown, emptyText: string): string {
 
 export function formatDisplayValue(
   value: unknown,
-  field?: Pick<FieldDescriptor, 'ttype' | 'type' | 'selection'>,
+  field?: Pick<FieldDescriptor, 'ttype' | 'type' | 'selection' | 'digits'>,
   options?: DisplayFormatOptions,
 ): string {
   const normalized = normalizeOptions(options);
@@ -246,7 +246,9 @@ export function formatDisplayValue(
   }
 
   if (isNumericFieldType(fieldType)) {
-    const formatted = formatNumericFieldValue(value, fieldType);
+    const formatted = formatNumericFieldValue(value, fieldType, {
+      digits: normalizeDigits(field?.digits),
+    });
     if (formatted !== null) return formatted;
   }
 
@@ -282,4 +284,14 @@ export function formatDisplayValue(
     return formatAttachmentReferenceValue(rawText) || rawText;
   }
   return rawText;
+}
+
+function normalizeDigits(value: unknown): [number, number] | undefined {
+  if (!Array.isArray(value) || value.length !== 2) return undefined;
+  const precision = Number(value[0]);
+  const scale = Number(value[1]);
+  return Number.isInteger(precision) && precision > 0
+    && Number.isInteger(scale) && scale >= 0 && scale <= 20 && scale <= precision
+    ? [precision, scale]
+    : undefined;
 }

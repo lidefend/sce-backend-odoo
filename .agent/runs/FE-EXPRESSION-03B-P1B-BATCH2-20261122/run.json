@@ -3,7 +3,7 @@
   "id": "FE-EXPRESSION-03B-P1B-BATCH2-20261122",
   "branch": "audit/fe-expression-03b-p1b-batch2-20261122",
   "baseline_sha": "c524ef6af025319e09a71e24db0549b2f903c4b5",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-EXPRESSION-03B-P1B-BATCH2-20261122.yaml",
   "record": "docs/audit/fe_expression_03b_p1b_batch2_diagnosis_20261122.md",
   "scope": [
@@ -162,7 +162,7 @@
     "p1b_implementation": "ListPage now types the existing aggregate payload, consumes aggregate.currency_id and verifies it against the declared relation field; flat and grouped monetary page/total values require a matching page/group relation label and otherwise fail closed. Non-monetary aggregates remain visible. The component fixture covers same currency, missing/invalid id, missing label, id mismatch, backend aggregate none, out-of-page currency mismatch, grouped currency identities and both 1440/390 viewports.",
     "p1b_validation": "collection aggregate target PASS with 50 assertions/cases; collection view semantics PASS with 79 collected tests; contract basis, lint and strict typecheck PASS; ci.local.iteration PASS across the affected target set and trusted scans PASS; ci.delivery.freeze.prepare PASS. The governed frontend build transformed 5419 modules and produced dirty artifact SHA256 b9b47e2da3fcacb04b696169e87445f4d705a7de7a64e5ed6d107728aab9b3a7. It is a build check, not frozen candidate evidence."
   },
-  "next_exact_step": "Commit the clean P1-B candidate, then await exact-head publication and integration authority.",
+  "next_exact_step": "Closed: merged through PR #967 as main commit 328ba916ee62215c6234c8b03757cffde18787c0.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

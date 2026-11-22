@@ -1,7 +1,7 @@
 import type { FieldDescriptor } from '@sc/schema';
 import type { FormSectionFieldSchema, TemplateSelectOption } from './formSection.types';
 import {
-  normalizeMonetaryDigits,
+  normalizeDeclaredDigits,
   resolveCurrencyDisplayLabel,
 } from '../../app/presentation/businessValuePresentation';
 
@@ -109,7 +109,9 @@ export function buildFormSectionFieldSchemas(
   return fields.map((field) => {
     const type = options.resolveFieldType(field.descriptor) || 'char';
     const descriptor = (field.descriptor || {}) as Record<string, unknown>;
-    const digits = type === 'monetary' ? normalizeMonetaryDigits(descriptor.digits) : undefined;
+    const digits = ['float', 'monetary'].includes(type)
+      ? normalizeDeclaredDigits(descriptor.digits)
+      : undefined;
     const currencyField = type === 'monetary'
       ? String(descriptor.currency_field || 'currency_id').trim()
       : '';

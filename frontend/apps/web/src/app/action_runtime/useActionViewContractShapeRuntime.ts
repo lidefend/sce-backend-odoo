@@ -104,7 +104,7 @@ function normalizeFieldNames(rows: unknown): string[] {
     .filter((name) => /^[A-Za-z_][A-Za-z0-9_]*$/.test(name));
 }
 
-function normalizeListMonetaryDigits(value: unknown): [number, number] | undefined {
+function normalizeDeclaredDigits(value: unknown): [number, number] | undefined {
   if (!Array.isArray(value) || value.length !== 2) return undefined;
   const precision = Number(value[0]);
   const scale = Number(value[1]);
@@ -173,7 +173,7 @@ export function extractListFieldSemanticsFromContract(store: ContractV2Normalize
         data_type: String(row.data_type || row.type || '').trim(),
         widget: String(row.widget || '').trim(),
         currency_field: String(row.currency_field || '').trim(),
-        digits: normalizeListMonetaryDigits(row.digits || row.precision),
+        digits: normalizeDeclaredDigits(row.digits || row.precision),
         precision: row.precision,
         aggregate,
         sort_field: String(row.sort_field || valueField).trim(),
@@ -279,7 +279,9 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
         // Collection projection previously omitted component identity. Expose
         // only the duration identity in this batch so Kanban does not acquire
         // unrelated percentage/money/status semantics while fixing float_time.
-        const componentKey = declaredComponentKey === 'sc.value.duration' ? declaredComponentKey : '';
+        const componentKey = ['sc.value.duration', 'sc.value.percentage'].includes(declaredComponentKey)
+          ? declaredComponentKey
+          : '';
         const valueField = String(schema.value_field || name).trim() || name;
         const aggregate = String(schema.aggregate || (schema.sum ? 'sum' : '')).trim();
         const rawSelection = Array.isArray(schema.selection) ? schema.selection : field?.selection;
@@ -315,7 +317,7 @@ export function useActionViewContractShapeRuntime(options: UseActionViewContract
           aggregationField: String(schema.aggregation_field || (aggregate === 'sum' ? valueField : '')).trim() || undefined,
           dataType: String(schema.data_type || type || '').trim() || undefined,
           currencyField: String(schema.currency_field || '').trim() || undefined,
-          digits: normalizeListMonetaryDigits(schema.digits),
+          digits: normalizeDeclaredDigits(schema.digits || schema.precision),
           aggregate: aggregate || 'none',
           sortField: String(schema.sort_field || valueField).trim() || undefined,
           filterField: String(schema.filter_field || valueField).trim() || undefined,

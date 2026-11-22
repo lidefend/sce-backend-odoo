@@ -166,6 +166,7 @@ export type One2manyChildInteraction = {
 };
 
 export type One2ManyColumn = {
+  componentKey?: string;
   widget?: string;
   widgetSemantics?: Record<string, unknown>;
   key?: string;

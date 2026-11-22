@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-EXPRESSION-03B-P1B-BATCH2-20261122
   title: list_aggregate_currency_identity_and_numeric_semantics
-  status: verification_pending
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Generic frontend collection aggregation and shared business-value
@@ -52,10 +52,10 @@ goal:
     state requires rollback.
   completion:
     p1b_diagnosis: completed
-    p1b_implementation: verification_pending
+    p1b_implementation: completed
     batch2_diagnosis: completed
-    batch: verification_pending
+    batch: completed
     independent_review: not_run
-    mainline_integration: not_run
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_run

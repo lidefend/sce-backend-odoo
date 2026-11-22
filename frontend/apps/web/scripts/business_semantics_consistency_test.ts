@@ -72,12 +72,28 @@ assert.equal(presentCollectionKanbanCell({
 }).text, '12.5', 'Kanban never infers percentage from a field name');
 
 const declaredPercentage = presentDeclaredBusinessValue({
-  field: { name: 'unrelated_ratio', type: 'float', componentKey: 'sc.value.percentage' },
+  field: { name: 'unrelated_ratio', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
   value: 12.5,
 });
 assert.equal(declaredPercentage.kind, 'percentage');
-assert.equal(declaredPercentage.text, '12.5%');
-assert.equal(formatBusinessPercentage(12.5), declaredPercentage.text);
+assert.equal(declaredPercentage.text, '12.5000%');
+assert.equal(formatBusinessPercentage(12.5, FIELD_VALUE_EMPTY_TEXT, [16, 4]), declaredPercentage.text);
+assert.equal(formatBusinessPercentage(12.5), '12.5%');
+assert.equal(presentDeclaredBusinessValue({
+  field: { name: 'declared_quantity', type: 'float', componentKey: 'sc.input.number', digits: [16, 6] },
+  value: 12.5,
+}).text, '12.500000', 'plain declared floats consume their contract precision');
+assert.equal(presentCollectionKanbanCell({
+  field: 'unrelated_ratio',
+  value: 12.5,
+  statusFields: [],
+  columnOptions: [{
+    name: 'unrelated_ratio',
+    type: 'float',
+    componentKey: 'sc.value.percentage',
+    digits: [16, 4],
+  }],
+}).text, '12.5000%', 'Kanban consumes percentage identity and declared precision');
 
 const durationCases: Array<[unknown, string]> = [
   [null, FIELD_VALUE_EMPTY_TEXT],

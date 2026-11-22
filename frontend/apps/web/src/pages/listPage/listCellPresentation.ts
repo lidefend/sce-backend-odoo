@@ -18,6 +18,7 @@ export type ColumnSemanticInput = {
   componentKey?: string;
   widget?: string;
   cellRole?: string;
+  digits?: [number, number];
 };
 
 export function resolveListDisplayField(
@@ -82,7 +83,7 @@ export function presentListCell(input: CellPresentationInput) {
     numeric = false,
   } = input;
   const displayRaw = resolveLocalizedDisplayValue(raw, { emptyText });
-  if (column.componentKey === 'sc.value.duration') {
+  if (column.componentKey === 'sc.value.duration' || column.componentKey === 'sc.value.percentage') {
     const presentation = presentDeclaredBusinessValue({
       field: {
         name: column.field,
@@ -91,6 +92,7 @@ export function presentListCell(input: CellPresentationInput) {
         componentKey: column.componentKey,
         widget: column.widget,
         cellRole: column.cellRole,
+        digits: column.digits,
       },
       value: displayRaw,
       emptyText,

@@ -40,11 +40,12 @@ def project_native_field_descriptor(
             out["model_field"] = model_field
         else:
             out.pop("model_field", None)
-    if field_type == "monetary":
-        out["currency_field"] = str(meta.get("currency_field") or "currency_id").strip()
+    if field_type in {"float", "monetary"}:
         digits = meta.get("digits")
         if isinstance(digits, (list, tuple)) and len(digits) == 2:
             out["digits"] = list(digits)
         else:
             out.pop("digits", None)
+    if field_type == "monetary":
+        out["currency_field"] = str(meta.get("currency_field") or "currency_id").strip()
     return out
