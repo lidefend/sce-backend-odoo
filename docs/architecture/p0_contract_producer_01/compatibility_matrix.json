@@ -1,0 +1,132 @@
+{
+  "schema": "p0_contract_producer_01.compatibility_matrix.v1",
+  "base_sha": "dec7e985d3985e248c8b5c4903e8f77739bb807d",
+  "accepted_contract_versions": {
+    "current_client": [
+      "2.0.x",
+      "2.1.x",
+      "2.2.x",
+      "2.3.x",
+      "2.4.x",
+      "2.5.x"
+    ],
+    "target_client": [
+      "2.0.x",
+      "2.1.x",
+      "2.2.x",
+      "2.3.x",
+      "2.4.x",
+      "2.5.x",
+      "2.6.x"
+    ],
+    "current_backend_selection": "not_implemented",
+    "required_backend_selection": "highest_common_accepted_version"
+  },
+  "capabilities": [
+    "page_block_data.v1",
+    "attachment_fact.v1",
+    "page_block_action.v1"
+  ],
+  "projections": {
+    "legacy": {
+      "contract_v2": "2.5.0",
+      "page_orchestration": "2.0.0",
+      "new_carriers": "absent"
+    },
+    "new": {
+      "contract_v2": "2.6.0",
+      "page_orchestration": "2.1.0",
+      "new_carriers": "present"
+    }
+  },
+  "cases": [
+    {
+      "id": "DEC-01",
+      "consumer": "current/base frontend decoder",
+      "payload": "legacy projection",
+      "expectation": "accept",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-02",
+      "consumer": "current/base frontend decoder",
+      "payload": "contract V2 2.6.0 marker",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-03",
+      "consumer": "current/base frontend decoder",
+      "payload": "unknown attachmentFacts carrier",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-04",
+      "consumer": "current/base frontend decoder",
+      "payload": "unknown actionFeedback carrier",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-05",
+      "consumer": "implementation frontend decoder",
+      "payload": "legacy projection",
+      "expectation": "accept",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "DEC-06",
+      "consumer": "implementation frontend decoder",
+      "payload": "new projection",
+      "expectation": "accept",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-01",
+      "consumer": "server negotiation",
+      "payload": "client omits page_block_data.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-02",
+      "consumer": "server negotiation",
+      "payload": "client omits attachment_fact.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-03",
+      "consumer": "server negotiation",
+      "payload": "client omits page_block_action.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-04",
+      "consumer": "server negotiation",
+      "payload": "no common accepted contract version",
+      "expectation": "fail closed with unsupported-version error",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-05",
+      "consumer": "server negotiation",
+      "payload": "client advertises 2.6.x but decoder test is old",
+      "expectation": "must reject the declaration test and never ship",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    }
+  ]
+}

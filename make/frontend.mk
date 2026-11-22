@@ -857,10 +857,15 @@ verify.frontend.release.unit: verify.frontend.decision_authority.unit verify.fro
 verify.frontend.release.unit: verify.frontend.project_domain_rollout.unit
 
 .PHONY: verify.frontend.contract_fidelity.plan.unit
-verify.frontend.contract_fidelity.plan.unit: guard.prod.forbid
+verify.frontend.contract_fidelity.plan.unit: guard.prod.forbid verify.p0_contract_producer.design.unit
 	@python3 -m py_compile scripts/verify/contract_fidelity_plan_guard.py scripts/verify/test_contract_fidelity_plan_guard.py
 	@python3 -m unittest scripts.verify.test_contract_fidelity_plan_guard
 	@python3 scripts/verify/contract_fidelity_plan_guard.py
+
+.PHONY: verify.p0_contract_producer.design.unit
+verify.p0_contract_producer.design.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-design-decoder-test.mjs >/dev/null
+	@node /tmp/p0-contract-producer-design-decoder-test.mjs
 
 verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit
 verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit

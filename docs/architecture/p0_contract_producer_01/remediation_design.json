@@ -22,12 +22,18 @@
     "addons/smart_core/core/unified_page_contract_v2_status.py": "880639609f653adf483068ae8d1ab26d3cf5fbbc42f3471ee29e70f4fea29987",
     "addons/smart_core/core/action_target_schema.py": "ad954769962bfc4d4bbaa044672bf9763dc3264fadb5a742743777316dc6bf2c",
     "addons/smart_core/core/contract_version_compatibility.py": "f3051933d11bdc125b0a0fa9098e7d31c578fffc41945d3610d1b517ee5fdb6f",
+    "addons/smart_core/app_config_engine/utils/payload.py": "fbdba97d4e2753d436542324386dda52a8f50e07f95d57bcf9c1d7929425866e",
+    "addons/smart_core/handlers/ui_contract.py": "45d60550e76d978f91f2ce3450b3f617ae6b8a8cb5a3a2f14bc86a0ffca29d63",
+    "addons/smart_core/core/node_component_capabilities.py": "15448be02e29b8c8fc7f32dd1d01eb82b7ab5f932b3a3194a5e15a403db3b4c7",
     "addons/smart_core/handlers/chatter_timeline.py": "36ca8d7669ad7ba153cfc15822e2a6eaa6a2f9636551ad5c3962ff7d2bf45597",
     "addons/smart_core/handlers/file_download.py": "95dd4344b3c31c6671f5725ed986eae03f0b422fc6f1b82b1dabf7dfce576112",
     "addons/smart_core/handlers/file_upload.py": "15548fd80797c836bbc8c2bf94adc9016162e8bbb13cd817888529c1f1a6aa3e",
     "addons/smart_core/handlers/chatter_attachment_delete.py": "e2df0ea6733931959965ad0f6e63cbd3f4751ed9b71ff7e1cd62f39394414dd8",
     "addons/smart_construction_core/services/scene_block_schema.py": "17ab6faf664c07855848c85f0f4e7735fab79cc79c838428b9f1637fa3227999",
     "frontend/apps/web/src/app/contracts/v2/types.ts": "3c9ea1ebb3d51a00a629486d4fbc379895592e3a429e22abab665acb4911eaf8",
+    "frontend/apps/web/src/app/contracts/v2/client.ts": "493f180cac7810906921ca88ac95cf87017a2ea4aad8a8218653bb269ae83dae",
+    "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts": "61feb091a7fb2b1d69cd0ba6b563387b986a79097680ca752be5bd38a68867c8",
+    "frontend/apps/web/src/app/contracts/v2/actionRuleAuthority.ts": "2257d27b9909fc97d0f732d69ff07773c9f38573123cd27cd765f375c3899a26",
     "frontend/apps/web/src/app/contracts/v2/schema.ts": "4d1dadef32bba904f34f82f6a631cf1d677cab182a31dd9a8e82ce8fb177e467",
     "frontend/apps/web/src/app/contracts/v2/store.ts": "eef9ec7aef22b556c1b98457293a31900c82660fc48c4ef7dd218fbeb8e10304",
     "frontend/apps/web/src/app/pageOrchestration.ts": "7a67f25e844f29d5cb84a590328caf400fa7b16c3370b97df0faf40f161ea1c8",
@@ -63,13 +69,114 @@
       "attachment_fact": "1.0.0",
       "page_block_action": "1.0.0"
     },
+    "current_state": {
+      "frontend_accepted_contract_versions": [
+        "2.0.x",
+        "2.1.x",
+        "2.2.x",
+        "2.3.x",
+        "2.4.x",
+        "2.5.x"
+      ],
+      "frontend_decoder_accepts": "2.0.x through 2.5.x only",
+      "page_orchestration_consumer_accepts": "2.0.0 only",
+      "backend_request_normalizer": "preserves client_contract_capabilities but does not preserve or select from accepted_contract_versions",
+      "ui_contract_v2_dispatch": "forwards client_contract_capabilities but has no outer-version projection selector",
+      "contract_compatibility_core": "proves JSON key-surface compatibility only; it is not frontend decoder evidence"
+    },
+    "accepted_contract_versions_extension": {
+      "client_constant": "CONTRACT_V2_ACCEPTED_VERSIONS",
+      "target_values": [
+        "2.0.x",
+        "2.1.x",
+        "2.2.x",
+        "2.3.x",
+        "2.4.x",
+        "2.5.x",
+        "2.6.x"
+      ],
+      "server_request_field": "accepted_contract_versions",
+      "server_parser_file": "addons/smart_core/app_config_engine/utils/payload.py",
+      "selection_rule": "intersect accepted versions with producer-supported versions, select the highest common version, and never emit a newer version without a common accepted version",
+      "no_common_version_result": "fail closed with a declared unsupported-contract-version error"
+    },
+    "client_contract_capabilities_extension": {
+      "client_catalog_file": "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+      "required_new_capabilities": [
+        "page_block_data.v1",
+        "attachment_fact.v1",
+        "page_block_action.v1"
+      ],
+      "server_consumer_file": "addons/smart_core/core/node_component_capabilities.py",
+      "selection_rule": "the new carriers are emitted only when the requested outer version and every required carrier capability are declared"
+    },
+    "projection_contract": {
+      "new_projection": {
+        "contract_v2": "2.6.0",
+        "page_orchestration": "2.1.0",
+        "new_carriers": "present"
+      },
+      "legacy_projection": {
+        "contract_v2": "2.5.0",
+        "page_orchestration": "2.0.0",
+        "new_carriers": "absent",
+        "completeness": "the entire legacy payload must be internally consistent; no v2.6 field or carrier may leak into v2.5"
+      },
+      "unadvertised_capability": "select the complete legacy projection"
+    },
     "compatibility_rules": [
       "Minor additions are optional and backward-compatible.",
       "Unknown major carrier versions fail closed.",
       "Undeclared keys never become semantic authority.",
       "A client that does not advertise new-carrier support receives the previous internally consistent contract.",
       "Consumers must never mix a new version marker with old semantics.",
-      "The N-1/N/N+1 drill uses contract_version_compatibility.py."
+      "The N-1/N/N+1 key-surface drill uses contract_version_compatibility.py.",
+      "Real frontend decoder tests are mandatory; the compatibility core cannot substitute for them.",
+      "A server must never send contract V2 2.6.0 or Page Orchestration 2.1.0 to a client that does not declare support."
+    ],
+    "real_decoder_acceptance": [
+      {
+        "case": "old_decoder_old_projection",
+        "decoder": "current base decoder",
+        "payload": "contract V2 2.5.0 without new carriers",
+        "expected": "PASS",
+        "evidence_status": "executed"
+      },
+      {
+        "case": "old_decoder_new_outer_version",
+        "decoder": "current base decoder",
+        "payload": "contract V2 2.6.0",
+        "expected": "REJECT",
+        "evidence_status": "executed"
+      },
+      {
+        "case": "old_decoder_undeclared_carrier",
+        "decoder": "current base decoder",
+        "payload": "contract V2 2.5.0 with attachment-fact or action-feedback carrier",
+        "expected": "REJECT",
+        "evidence_status": "executed"
+      },
+      {
+        "case": "new_decoder_old_projection",
+        "decoder": "implementation decoder",
+        "payload": "contract V2 2.5.0 without new carriers",
+        "expected": "PASS",
+        "evidence_status": "required_not_run_pending_implementation"
+      },
+      {
+        "case": "new_decoder_new_projection",
+        "decoder": "implementation decoder",
+        "payload": "contract V2 2.6.0 with all declared carriers",
+        "expected": "PASS",
+        "evidence_status": "required_not_run_pending_implementation"
+      },
+      {
+        "case": "server_unadvertised_capability",
+        "decoder": "request negotiation probe",
+        "payload": "client accepts 2.6.x but omits one required carrier capability",
+        "expected": "server returns complete legacy projection",
+        "evidence_status": "required_not_run_pending_implementation"
+      }
     ],
     "rollout_order": [
       "consumer schema accepts additive carriers without requiring them",
@@ -95,26 +202,30 @@
         "location": "page_orchestration.block_data_contracts[dataSourceKey]",
         "required": [
           "schemaVersion",
-          "fields",
+          "fieldRefs",
           "rows",
           "context",
           "sourceAuthority"
         ],
-        "fields": {
-          "fieldCode": "stable field identity",
-          "fieldType": "declared logical type",
-          "widgetType": "declared widget identity",
-          "componentKey": "shared semantic component identity",
-          "label": "display label",
-          "digits": "optional [total, scale]",
-          "currencyField": "optional currency identity field",
-          "unit": "optional declared unit object",
-          "selection": "optional storage-key/label pairs",
-          "relation": "optional comodel",
-          "temporal": "optional date/datetime and timezone authority",
-          "attachmentRole": "optional attachment role reference"
+        "descriptor_source": {
+          "type": "ContractV2Widget",
+          "field_descriptor": "ContractV2Widget.fieldDescriptor",
+          "component_config": "ContractV2Widget.componentConfig",
+          "lookup": "layoutContract.containerTree.*.widgetList[].widgetId",
+          "no_parallel_descriptor_map": true
         },
-        "rows": "array of stable rowKey plus raw JSON values by field key",
+        "fieldRefs": {
+          "<slot-key>": {
+            "widgetId": "reference to the canonical ContractV2Widget",
+            "rawValuePath": "path into the row values object"
+          }
+        },
+        "descriptor_extensions": {
+          "unit": "componentConfig.unit when the declared semantic requires a non-currency unit",
+          "temporal": "componentConfig.temporal when date/datetime projection needs an explicit timezone authority",
+          "attachmentRole": "componentConfig.attachmentRole when the value is an attachment reference"
+        },
+        "rows": "array of stable rowKey plus raw JSON values addressed by fieldRefs; no display string is authoritative",
         "context": {
           "currencies": "identity-keyed authoritative currency facts",
           "timezone": "authoritative user timezone"
@@ -128,7 +239,8 @@
         "Relations preserve record identity and authoritative label.",
         "Selection preserves the storage key.",
         "Datetime preserves type and timezone authority.",
-        "Attachment values reference a fact and role, not a count."
+        "Attachment values reference a fact and role, not a count.",
+        "Field identity, type, widget, component key, selection, relation, digits and currency field are consumed from the canonical ContractV2Widget descriptor; page-block-data does not define a parallel field descriptor."
       ],
       "producer_files": [
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
@@ -170,10 +282,14 @@
             "mimetype": "mime type",
             "size": "byte count"
           },
-          "owner": {
-            "model": "owning model",
-            "recordId": "owning record identity"
-          },
+      "storageOwner": {
+        "model": "attachment.res_model",
+        "recordId": "attachment.res_id"
+      },
+      "businessOwner": {
+        "model": "page/business-context model",
+        "recordId": "page/business-context record identity"
+      },
           "role": {
             "code": "stable context-specific role",
             "label": "role label",
@@ -183,15 +299,24 @@
             "preview": "page-block-action id or empty",
             "download": "page-block-action id or empty",
             "delete": "page-block-action id or empty"
+      },
+      "authorizationSubject": {
+        "scope": "per-action",
+        "source": "server-only action resolution",
+        "clientInputAllowed": false,
+        "resolvedBy": "existing action-specific service resolver; file.download uses resolve_file_download_auth_subject",
+        "valueLocation": "page-block-action.v1.actions[actionId].authorization.subject"
           }
         }
       },
       "rules": [
         "Attachment identity is never a label, count or URL-shape inference.",
-        "The fact declares its owning model and record.",
+      "storageOwner and businessOwner are independent and are never collapsed.",
+      "authorizationSubject is per-action and is resolved only by the existing server service.",
+      "The frontend must not provide or override authorizationSubject.",
         "Role vocabulary is context-owned; P0 owns only the carrier shape.",
         "Preview/download/delete reference P0-C actions.",
-        "Existing file services remain authorization and execution authorities.",
+      "Existing file services remain authorization and execution authorities.",
         "Failure identity comes from P0-C execution feedback."
       ],
       "producer_files": [
@@ -218,20 +343,39 @@
         "smart_core"
       ],
       "schema_contract": {
-        "declaration_location": "page_orchestration.action_schema.actions[actionId]",
+      "declaration_location": "page_orchestration.action_schema.actions[actionId] referenced by an existing ContractV2ActionRule.actionId",
         "feedback_location": "runtimeContract.actionFeedback or equivalent runtime action-patch envelope",
+      "action_rule_source": {
+        "type": "ContractV2ActionRule",
+        "identity": "actionId",
+        "target_source": "ContractV2ActionRule.target",
+        "target_schema": "addons/smart_core/core/action_target_schema.py",
+        "no_parallel_action_target_schema": true
+      },
         "declaration": {
           "actionId": "stable action identity",
           "actionKey": "stable action key",
           "label": "display label",
           "intent": "declared intent",
-          "target": "resolved target object",
+        "target": {
+          "source": "ContractV2ActionRule.target",
+          "validation": "exact existing action_target_schema.py target object",
+          "existing_static_kinds": [
+            "scene.key",
+            "route.path",
+            "page.refresh",
+            "menu.first_reachable"
+          ],
+          "concrete_action_and_record_forms": "unchanged ContractV2ActionRule target forms",
+          "frontend_translation_allowed": false
+        },
           "visibility.visible": "visibility decision",
-          "permission.evaluated": "permission result exists",
-          "permission.allowed": "authorization result",
-          "permission.authorizationAllowed": "authorization service result",
-          "permission.businessAvailable": "business availability result",
-          "state.enabled": "final executable state",
+        "permission.evaluated": "all required action authority sources were evaluated",
+        "permission.allowed": "server-computed compatibility aggregate: target resolved and authorization and business availability permit the action; never an independent frontend input",
+        "permission.authorizationAllowed": "actor authorization result only: ACL, record rules and action entitlement",
+        "permission.businessAvailable": "business/workflow state availability only",
+        "authorization.subject": "server-resolved actor/record subject for execution; never supplied by the frontend",
+        "state.enabled": "server-computed final execution state; may be narrower than allowed, but enabled=true requires allowed=true",
           "state.disabled": "final disabled state",
           "state.reasonCode": "required when visible and unavailable",
           "state.reasonMessage": "visible explanation"
@@ -246,9 +390,12 @@
         }
       },
       "rules": [
-        "Visibility, authorization, business availability and final enablement are distinct.",
+      "Visibility, actor authorization, business availability, compatibility allowed and final enablement are distinct.",
+      "allowed is a producer-computed compatibility aggregate, not an authorization fact and never a frontend input.",
+      "enabled is the final server-produced execution state and must not be recomputed by the frontend.",
         "Missing permission evaluation fails closed.",
-        "Page Block actions reference canonical action IDs.",
+      "Page Block actions reference canonical ContractV2ActionRule actionIds.",
+      "target equals the complete existing ContractV2ActionRule target validated by action_target_schema.py.",
         "Block-local target invention and open_scene fallback are forbidden.",
         "Feedback must correlate to the action ID.",
         "Existing action services remain execution and authorization authorities."
@@ -323,10 +470,19 @@
       "no open_scene or local target fallback"
     ],
     "compatibility": [
+      "current decoder accepts the old 2.5.0 projection",
+      "current decoder rejects a 2.6.0 outer version",
+      "current decoder rejects undeclared attachmentFacts",
+      "current decoder rejects undeclared actionFeedback",
+      "implementation decoder accepts the old projection",
+      "implementation decoder accepts the new projection",
+      "server omitting page_block_data.v1 returns the complete legacy projection",
+      "server omitting attachment_fact.v1 returns the complete legacy projection",
+      "server omitting page_block_action.v1 returns the complete legacy projection",
+      "no common accepted version fails closed",
       "N-1 consumer reads N payload",
       "N consumer reads N-1 payload",
       "N consumer reads N+1 payload after append-only rollback",
-      "unknown major carrier version fails closed",
       "old Page Orchestration 2.0 projection remains internally consistent",
       "new Page Orchestration 2.1 and Contract V2 2.6 projection are internally consistent"
     ]
@@ -349,10 +505,10 @@
     ]
   },
   "implementation_sequence": [
-    "P0 shared carrier/version schema and tests",
+    "P0 shared carrier schema, accepted-version negotiation and real decoder tests",
     "P0-A and P0-C producer projections",
     "P0-B attachment fact projection using P0-C action references",
-    "contract fixtures and N-1/N/N+1 compatibility drill",
+    "contract fixtures and executable old/new decoder plus N-1/N/N+1 compatibility drill",
     "governed runtime readback and independent review",
     "FCF-02-2 consumer implementation only after the new probes are sufficient"
   ],
@@ -362,6 +518,7 @@
     "P1 project mappings implemented and reviewed",
     "existing file and action services remain authorities",
     "positive and negative carrier tests pass",
+    "accepted-version negotiation and real old/new decoder evidence pass",
     "CFG-GAP-02/04/05 probes no longer return contract_gap for required surfaces",
     "new contract served and read back at an exact governed runtime identity",
     "producer change independently reviewed"

@@ -14,8 +14,12 @@
     ".agent/runs/FE-CONTRACT-FIDELITY-02-2/run.json",
     ".agent/runs/P0-CONTRACT-PRODUCER-01/run.json",
     "docs/audit/fe_contract_fidelity_02_2_gap_probes_20261123.md",
+    "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
     "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
-    "docs/architecture/p0_contract_producer_01/remediation_design.json"
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+    "make/frontend.mk",
+    "scripts/verify/test_contract_fidelity_plan_guard.py"
   ],
   "environment": {
     "kind": "offline",
@@ -31,6 +35,18 @@
         "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
         "scripts/verify/contract_fidelity_plan_guard.py",
         "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "p0_contract_producer_design": {
+      "target": "verify.p0_contract_producer.design.unit",
+      "inputs": [
+        "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
+        "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     },
@@ -136,8 +152,8 @@
     "architecture_boundary": "Extend existing Contract V2/Page Orchestration; no second protocol runtime.",
     "authority_boundary": "Odoo ACL, record rules, action services and file services remain execution authorities.",
     "product_implementation": "Not started. FCF-02-2 and FCF-02-3 remain locked.",
-    "design_matrix": "3 packages, 41 planned compatibility/positive/negative cases and 19 current-source hashes.",
-    "validation": "Contract Fidelity 12 tests; Page Contract orchestration/action/data-source guards 19 pages each; Page Block renderer and registry guards PASS; compatibility core 31 tests; agent ledger 18 tests; ci.local.iteration and ci.delivery.freeze.prepare PASS.",
+    "design_matrix": "3 packages, 50 planned compatibility/positive/negative cases, 11 executable/legacy compatibility rows and 25 current-source hashes.",
+    "validation": "Contract Fidelity plus P0 design consistency 20 Python tests; current decoder 4 checks accepts the legacy projection and rejects the 2.6.0 marker plus undeclared carriers; Page Contract orchestration/action/data-source guards 19 pages each; Page Block renderer and registry guards PASS; compatibility core 31 tests; agent ledger 18 tests; verification lane coverage 74 tests; ci.local.iteration and ci.delivery.freeze.prepare PASS.",
     "source_boundary": "No product source, backend contract, database, fixture or runtime change."
   },
   "next_exact_step": "Await independent architecture review of PR #973 at its final exact metadata head. Do not implement any P0 carrier or FCF-02-2 consumer before that review.",

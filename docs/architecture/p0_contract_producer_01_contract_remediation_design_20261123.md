@@ -16,6 +16,8 @@ Baseline:
   `docs/audit/fe_contract_fidelity_02_2/gap_probes.json`
 - Machine-readable design:
   `docs/architecture/p0_contract_producer_01/remediation_design.json`
+- Compatibility matrix:
+  `docs/architecture/p0_contract_producer_01/compatibility_matrix.json`
 
 Formal product layer and scope:
 
@@ -107,11 +109,58 @@ and tested before the producer emits the new versions.
 
 ### Negotiation and mixed-version safety
 
-The existing client request carrier should gain an explicit supported-contract
-range/capability declaration. A client that does not advertise support for the
-new carriers must continue to receive the `2.0.0` Page Orchestration projection
-without the optional keys. A client that advertises support receives one
-internally consistent `2.1.0`/`2.6.0` payload.
+Current implementation facts:
+
+- `frontend/apps/web/src/app/contracts/v2/client.ts` sends
+  `accepted_contract_versions = 2.0.x ... 2.5.x`;
+- `schema.ts` accepts only Contract V2 `2.0` through `2.5`;
+- `app_config_engine/utils/payload.py` preserves
+  `client_contract_capabilities` but does not preserve
+  `accepted_contract_versions`;
+- the `ui.contract.v2` dispatch chain currently resolves component
+  capabilities, not an outer contract-version projection;
+- `contract_version_compatibility.py` tolerates unknown payload keys by design,
+  while the real frontend Decoder rejects unknown keys.
+
+Therefore the current code sends a version list but does not yet provide real
+version negotiation. That must be corrected before the new carriers are
+emitted.
+
+Required implementation:
+
+1. Add `CONTRACT_V2_ACCEPTED_VERSIONS` as the single client declaration and
+   extend it to include `2.6.x` only after the new decoder is implemented.
+2. Preserve and type-check `accepted_contract_versions` in the server request
+   normalizer.
+3. Add the three protocol capabilities:
+   `page_block_data.v1`, `attachment_fact.v1`, `page_block_action.v1`.
+4. Select the highest common accepted outer version at the request boundary.
+5. Emit the new carriers only when the selected version and all required
+   capabilities are present.
+6. If no accepted version is common, return an explicit unsupported-contract
+   error; never send a newer payload to an older decoder.
+7. If capability negotiation is absent or incomplete, return the complete
+   `2.5.0` Contract V2 / `2.0.0` Page Orchestration projection with no new
+   carrier keys.
+
+The same client and server declaration must drive request construction,
+response selection and tests. Sending a version array without server selection
+is not negotiation evidence.
+
+Real Decoder acceptance is mandatory:
+
+| Case | Expected | Current evidence state |
+| --- | --- | --- |
+| Old/base Decoder + old `2.5.0` projection | PASS | executed against current decoder |
+| Old/base Decoder + new `2.6.0` marker | REJECT | executed against current decoder |
+| Old/base Decoder + undeclared carrier key | REJECT | executed against current decoder |
+| New Decoder + old `2.5.0` projection | PASS | required after implementation |
+| New Decoder + new `2.6.0` projection | PASS | required after implementation |
+| Client accepts 2.6 but omits a carrier capability | complete old projection | required after implementation |
+
+The offline key-surface compatibility drill remains useful for declaration
+delta analysis, but it does not replace these executable Decoder/negotiation
+tests.
 
 This is contract negotiation, not a second renderer or runtime. It prevents an
 older strict decoder from receiving unknown keys merely because the backend has
@@ -155,33 +204,17 @@ Add an optional Page Orchestration map:
   "block_data_contracts": {
     "<data-source-key>": {
       "schemaVersion": "1.0.0",
-      "fields": {
-        "<field-key>": {
-          "fieldCode": "<stable-field-code>",
-          "fieldType": "monetary|float|integer|selection|many2one|one2many|many2many|date|datetime|...",
-          "widgetType": "<declared-widget>",
-          "componentKey": "<semantic-component-key>",
-          "label": "<display-label>",
-          "digits": [16, 2],
-          "currencyField": "currency_id",
-          "unit": {
-            "code": "%|h|item|<other-declared-unit>",
-            "label": "%|小时|项|<other-declared-label>"
-          },
-          "selection": [["<storage-key>", "<label>"]],
-          "relation": "<comodel>",
-          "temporal": {
-            "kind": "date|datetime",
-            "timezoneAuthority": "user"
-          },
-          "attachmentRole": "<role-code>"
+      "fieldRefs": {
+        "<slot-key>": {
+          "widgetId": "<canonical ContractV2Widget widgetId>",
+          "rawValuePath": "<path under row.values>"
         }
       },
       "rows": [
         {
           "rowKey": "<stable-row-key>",
           "values": {
-            "<field-key>": "<raw-json-value>"
+            "<slot-key>": "<raw-json-value>"
           }
         }
       ],
@@ -204,6 +237,23 @@ Add an optional Page Orchestration map:
 }
 ```
 
+The field source is intentionally not redeclared here. The canonical descriptor
+is:
+
+```text
+ContractV2Widget.fieldDescriptor
+ContractV2Widget.componentConfig
+```
+
+resolved through
+`layoutContract.containerTree.*.widgetList[].widgetId`. This includes the
+existing field identity, type, widget, `componentKey`, Selection, relation,
+digits and currency-field declarations.
+
+Only necessary projection extensions belong in the canonical
+`componentConfig`: `unit`, `temporal` and `attachmentRole`. They must not create
+a second field-descriptor map.
+
 Rules:
 
 1. `values` contain raw JSON values. Formatted display strings are not the
@@ -221,6 +271,8 @@ Rules:
    not attachment identity.
 9. Each block consumes the carrier through a declared field binding. A block
    must not infer a field from its title, label or dataset key.
+10. The block-data carrier contains values and references only; the canonical
+    `ContractV2Widget` remains the sole field-semantic authority.
 
 Suggested block binding:
 
@@ -240,7 +292,9 @@ Suggested block binding:
 P0 `smart_core`:
 
 - defines the carrier schema, normalization, version gate and tests;
-- projects existing field descriptors into block-data fields;
+- resolves block-data slots to existing `ContractV2Widget` identities and
+  descriptors;
+- adds only missing projection context to the existing `componentConfig`;
 - supplies authoritative currency/timezone context from the runtime contract;
 - guarantees no display value is written back as a form or ORM value.
 
@@ -280,9 +334,13 @@ Add `runtimeContract.attachmentFacts`:
         "mimetype": "<mime-type>",
         "size": 0
       },
-      "owner": {
-        "model": "<owning-model>",
-        "recordId": "<positive-record-identity>"
+      "storageOwner": {
+        "model": "<attachment.res_model>",
+        "recordId": "<attachment.res_id>"
+      },
+      "businessOwner": {
+        "model": "<page-or-business-context-model>",
+        "recordId": "<page-or-business-context-record-identity>"
       },
       "role": {
         "code": "<role-code>",
@@ -296,6 +354,13 @@ Add `runtimeContract.attachmentFacts`:
         "preview": "<action-id-or-empty>",
         "download": "<action-id-or-empty>",
         "delete": "<action-id-or-empty>"
+      },
+      "authorizationSubject": {
+        "scope": "per-action",
+        "source": "server-only action resolution",
+        "clientInputAllowed": false,
+        "resolvedBy": "existing action-specific service resolver",
+        "valueLocation": "page-block-action.v1.actions[actionId].authorization.subject"
       }
     }
   ]
@@ -309,15 +374,25 @@ Rules:
 
 1. Attachment identity is an attachment record identity, not a display label,
    count or URL shape.
-2. `owner` identifies the record whose authorization is evaluated.
-3. `role` is explicit and may differ by industry context. P0 owns the role
+2. `storageOwner` is the attachment's actual `res_model` / `res_id` storage
+   association.
+3. `businessOwner` is the page or business-context record whose meaning gives
+   the attachment its role. It may differ from `storageOwner`.
+4. `authorizationSubject` is action-scoped and identifies the record actually
+   checked by the owning service. The frontend never supplies or overrides it.
+5. For download, the existing `resolve_file_download_auth_subject()` remains
+   authoritative and may return a subject different from `storageOwner`.
+6. Upload and delete continue to use their existing server-side record and ACL
+   checks.
+7. These three identities must never be collapsed into a single `owner` field.
+8. `role` is explicit and may differ by industry context. P0 owns the role
    field, while P1/P2 may own which role applies.
-4. Preview derives from an explicitly authorized retrieval action; unsupported
+9. Preview derives from an explicitly authorized retrieval action; unsupported
    file types may disable preview while download remains allowed.
-5. Download and delete use existing governed file services.
-6. Failure feedback is supplied by `page-block-action.v1`, preserving reason
+10. Download and delete use existing governed file services.
+11. Failure feedback is supplied by `page-block-action.v1`, preserving reason
    code, message and trace identity.
-7. Text URLs and ordinary integers are never attachment facts unless a producer
+12. Text URLs and ordinary integers are never attachment facts unless a producer
    explicitly emits this carrier.
 
 ### Producer ownership
@@ -325,6 +400,8 @@ Rules:
 - `smart_core` owns the generic attachment fact envelope and handles existing
   `file.download`, `file.upload` and `chatter.attachment.delete` authorization.
 - `chatter_timeline.py` projects current attachment rows into the envelope.
+- `file_download.py` supplies its resolved authorization subject through the
+  action result; a request-supplied subject is never accepted as authority.
 - Contract V2 attachment surfaces and form collaboration fields reference
   facts; they do not duplicate authorization booleans.
 - `smart_construction_core` supplies construction-domain role assignments when
@@ -358,11 +435,13 @@ contract:
   "actions": {
     "<action-id>": {
       "actionId": "<action-id>",
+      "actionRuleRef": "<ContractV2ActionRule.actionId>",
       "actionKey": "<stable-action-key>",
       "label": "<label>",
       "intent": "<intent>",
       "target": {
-        "kind": "<declared-target-kind>"
+        "source": "ContractV2ActionRule.target",
+        "value": "<exact target object produced and validated by action_target_schema.py>"
       },
       "visibility": {
         "visible": true,
@@ -374,6 +453,13 @@ contract:
         "authorizationAllowed": true,
         "businessAvailable": true
       },
+      "authorization": {
+        "subject": {
+          "model": "<server-resolved-model>",
+          "recordId": "<server-resolved-record-identity>",
+          "source": "server_only"
+        }
+      },
       "state": {
         "enabled": true,
         "disabled": false,
@@ -384,6 +470,21 @@ contract:
   }
 }
 ```
+
+The target object itself is not wrapped or re-defined by this carrier. Existing
+Page Block target shapes remain exactly as the Action Target Schema publishes
+them:
+
+```text
+{"kind": "scene.key", "scene_key": "..."}
+{"kind": "route.path", "path": "..."}
+{"kind": "page.refresh"}
+{"kind": "menu.first_reachable"}
+```
+
+Target forms already used by `ContractV2ActionRule` for concrete action/record
+opens remain unchanged and must be validated by that existing schema. The
+frontend does not translate one kind into another or fall back to `open_scene`.
 
 Execution feedback uses the same action identity:
 
@@ -406,17 +507,27 @@ Execution feedback uses the same action identity:
 
 Rules:
 
-1. Block action definitions only reference `actionId`; they do not invent a
-   local target.
-2. `visibility`, `authorizationAllowed`, `businessAvailable` and final
-   `enabled` are distinct facts.
-3. A visible but unavailable action requires a disabled reason.
-4. Missing permission evaluation fails closed.
-5. Action execution results are correlated by `actionId`, `reasonCode`,
+1. `actionId` must resolve to one existing `ContractV2ActionRule`.
+2. `target` is the complete existing `ContractV2ActionRule.target` produced by
+   `action_target_schema.py`; the design does not define a parallel target
+   vocabulary.
+3. `visibility.visible` is presentation/role visibility.
+4. `authorizationAllowed` is actor authorization only.
+5. `businessAvailable` is business/workflow-state availability only.
+6. `allowed` is a producer-computed compatibility aggregate equal to
+   `authorizationAllowed && businessAvailable && targetResolved &&
+   permissionEvaluated`. It is not an independent fact or frontend input.
+7. `enabled` is the final server-produced execution state. It may be narrower
+   than `allowed`, and `enabled=true` implies `allowed=true`.
+8. The frontend consumes `enabled`; it must not recompute it from role labels,
+   target shape or business fields.
+9. A visible but unavailable action requires a disabled reason.
+10. Missing permission evaluation fails closed.
+11. Action execution results are correlated by `actionId`, `reasonCode`,
    `message` and `traceId`, carried in `runtimeContract.actionFeedback` (or the
    equivalent runtime action-patch envelope using the same versioned shape).
-6. The frontend must not synthesize `open_scene` or another fallback target.
-7. The existing Odoo action/authorization service remains the decision and
+12. The frontend must not synthesize `open_scene` or another fallback target.
+13. The existing Odoo action/authorization service remains the decision and
    execution authority.
 
 ### Producer ownership
@@ -501,6 +612,13 @@ Each implementation package must cover:
 
 ### Compatibility
 
+- current/base Decoder accepts the existing `2.5.0` projection;
+- current/base Decoder rejects a `2.6.0` outer version;
+- current/base Decoder rejects undeclared attachment/action-feedback carriers;
+- implementation Decoder accepts both the old and new complete projections;
+- a client omitting any required carrier capability receives the complete old
+  projection;
+- no common accepted version fails closed;
 - N-1 consumer reads N payload;
 - N consumer reads N-1 payload;
 - additive keys are optional;
@@ -532,15 +650,17 @@ Rollback:
 
 Read-only design verification passed:
 
-- Contract Fidelity plan: 12 tests.
+- Contract Fidelity plan plus P0 design consistency: 20 Python tests.
 - Page Contract orchestration: 19 pages.
 - Page Contract action semantics: 19 pages.
 - Page Contract data-source semantics: 19 pages.
 - Page Block renderer smoke and registry guard: PASS.
 - Contract N-1/N/N+1 compatibility core: 31 tests.
 - Agent ledger: 18 tests.
-- Machine design reconciliation: 3 packages, 41 planned positive/negative
-  cases, 19 current-source hashes.
+- Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
+  two undeclared carriers rejected.
+- Machine design reconciliation: 3 packages, 50 planned positive/negative
+  cases, 11 compatibility rows and 25 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 
@@ -556,9 +676,11 @@ FCF-02-2 remains locked until all of the following are true:
 3. P1 mappings in `smart_construction_core` are implemented and reviewed;
 4. existing file and action services remain the execution authorities;
 5. positive and negative tests cover all three carriers;
-6. the CFG-GAP-02/04/05 probes are rerun on the new exact source identity and
+6. accepted-version negotiation and both old/new Decoder tests pass, including
+   the capability-omission and no-common-version negatives;
+7. the CFG-GAP-02/04/05 probes are rerun on the new exact source identity and
    no longer return `contract_gap` for the required surfaces;
-7. the new contract is served and read back through a governed runtime identity;
-8. an independent review approves the producer change.
+8. the new contract is served and read back through a governed runtime identity;
+9. an independent review approves the producer change.
 
 Until then, no second frontend interpretation path may be introduced.

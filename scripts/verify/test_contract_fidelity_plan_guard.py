@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import importlib.util
 import json
 import tempfile
@@ -105,6 +106,111 @@ class ContractFidelityPlanGuardTest(unittest.TestCase):
     def test_semantic_carrier_requirement_is_required(self) -> None:
         self.guard["semantic_carrier_requirements"].pop()
         self.assert_error("semantic carrier requirements must be exactly CARRIER-01..06")
+
+
+class P0ContractProducerDesignTest(unittest.TestCase):
+    DESIGN_PATH = Path("docs/architecture/p0_contract_producer_01/remediation_design.json")
+    MATRIX_PATH = Path("docs/architecture/p0_contract_producer_01/compatibility_matrix.json")
+    REPORT_PATH = Path("docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md")
+
+    @classmethod
+    def setUpClass(cls) -> None:
+        cls.design = json.loads((ROOT / cls.DESIGN_PATH).read_text(encoding="utf-8"))
+        cls.matrix = json.loads((ROOT / cls.MATRIX_PATH).read_text(encoding="utf-8"))
+        cls.report = (ROOT / cls.REPORT_PATH).read_text(encoding="utf-8")
+        cls.packages = {item["id"]: item for item in cls.design["work_packages"]}
+
+    def test_product_implementation_remains_unauthorized(self) -> None:
+        self.assertFalse(self.design["product_implementation_authorized"])
+        self.assertEqual(self.design["status"], "design_candidate")
+
+    def test_source_hashes_match_current_baseline(self) -> None:
+        for relative, expected in self.design["source_evidence"].items():
+            actual = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+            self.assertEqual(actual, expected, relative)
+
+    def test_accepted_versions_and_capabilities_are_real_negotiation_inputs(self) -> None:
+        strategy = self.design["version_strategy"]
+        self.assertIn("2.6.x", strategy["accepted_contract_versions_extension"]["target_values"])
+        self.assertEqual(
+            set(strategy["client_contract_capabilities_extension"]["required_new_capabilities"]),
+            {"page_block_data.v1", "attachment_fact.v1", "page_block_action.v1"},
+        )
+        self.assertEqual(
+            strategy["accepted_contract_versions_extension"]["server_request_field"],
+            "accepted_contract_versions",
+        )
+        self.assertIn("does not preserve", strategy["current_state"]["backend_request_normalizer"])
+        self.assertIn("not frontend decoder evidence", strategy["current_state"]["contract_compatibility_core"])
+        client_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts").read_text(encoding="utf-8")
+        schema_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8")
+        payload_source = (ROOT / "addons/smart_core/app_config_engine/utils/payload.py").read_text(encoding="utf-8")
+        workbench_source = (ROOT / "frontend/apps/web/src/views/WorkbenchView.vue").read_text(encoding="utf-8")
+        self.assertNotIn("2.6.x", client_source)
+        self.assertIn(r"/^2\.(0|1|2|3|4|5)\.\d+$/", schema_source)
+        self.assertNotIn("accepted_contract_versions", payload_source)
+        self.assertIn("asText(contract.contract_version) === '2.0.0'", workbench_source)
+
+    def test_decoder_evidence_distinguishes_executed_and_pending(self) -> None:
+        cases = {row["case"]: row for row in self.design["version_strategy"]["real_decoder_acceptance"]}
+        self.assertEqual(cases["old_decoder_old_projection"]["evidence_status"], "executed")
+        self.assertEqual(cases["old_decoder_new_outer_version"]["expected"], "REJECT")
+        self.assertEqual(cases["old_decoder_undeclared_carrier"]["expected"], "REJECT")
+        self.assertEqual(
+            cases["new_decoder_new_projection"]["evidence_status"],
+            "required_not_run_pending_implementation",
+        )
+        executed = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "executed"}
+        self.assertEqual(executed, {"DEC-01", "DEC-02", "DEC-03", "DEC-04", "NEG-05"})
+        pending = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "not_run_pending_implementation"}
+        self.assertEqual(pending, {"DEC-05", "DEC-06", "NEG-01", "NEG-02", "NEG-03", "NEG-04"})
+
+    def test_p0_a_reuses_contract_v2_field_descriptor(self) -> None:
+        contract = self.packages["P0-A"]["schema_contract"]
+        self.assertNotIn("fields", contract)
+        self.assertIn("fieldRefs", contract["required"])
+        source = contract["descriptor_source"]
+        self.assertEqual(source["field_descriptor"], "ContractV2Widget.fieldDescriptor")
+        self.assertEqual(source["component_config"], "ContractV2Widget.componentConfig")
+        self.assertTrue(source["no_parallel_descriptor_map"])
+        self.assertIn("does not define a parallel field descriptor", " ".join(self.packages["P0-A"]["rules"]))
+
+    def test_p0_b_keeps_attachment_identities_separate(self) -> None:
+        fact = self.packages["P0-B"]["schema_contract"]["fact"]
+        self.assertIn("storageOwner", fact)
+        self.assertIn("businessOwner", fact)
+        self.assertIn("authorizationSubject", fact)
+        self.assertNotIn("owner", fact)
+        subject = fact["authorizationSubject"]
+        self.assertFalse(subject["clientInputAllowed"])
+        self.assertEqual(subject["source"], "server-only action resolution")
+        self.assertIn("resolve_file_download_auth_subject", subject["resolvedBy"])
+
+    def test_p0_c_reuses_action_rule_and_target_schema(self) -> None:
+        contract = self.packages["P0-C"]["schema_contract"]
+        source = contract["action_rule_source"]
+        self.assertEqual(source["type"], "ContractV2ActionRule")
+        self.assertEqual(source["identity"], "actionId")
+        self.assertEqual(source["target_source"], "ContractV2ActionRule.target")
+        self.assertTrue(source["no_parallel_action_target_schema"])
+        declaration = contract["declaration"]
+        self.assertEqual(
+            declaration["target"]["existing_static_kinds"],
+            ["scene.key", "route.path", "page.refresh", "menu.first_reachable"],
+        )
+        self.assertFalse(declaration["target"]["frontend_translation_allowed"])
+        self.assertIn("compatibility aggregate", declaration["permission.allowed"])
+        self.assertIn("actor authorization result only", declaration["permission.authorizationAllowed"])
+        self.assertIn("business/workflow state availability only", declaration["permission.businessAvailable"])
+        self.assertIn("enabled=true requires allowed=true", declaration["state.enabled"])
+
+    def test_report_uses_decoder_and_identity_boundaries(self) -> None:
+        self.assertIn("Real Decoder acceptance is mandatory", self.report)
+        self.assertIn("storageOwner", self.report)
+        self.assertIn("businessOwner", self.report)
+        self.assertIn("authorizationSubject", self.report)
+        self.assertIn("ContractV2Widget.fieldDescriptor", self.report)
+        self.assertIn("ContractV2ActionRule.target", self.report)
 
 
 if __name__ == "__main__":
