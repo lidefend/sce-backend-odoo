@@ -137,9 +137,9 @@
     "acceptance_environment_guard": "PASS: 63 tests; daily credential confirmation 15 cases; environment and form-editability discovery checks passed",
     "acceptance_artifact_unit": "PASS: 12 tests after adding wrong supplied-digest rejection",
     "dev_incremental_planner_gap": "ci.local.iteration first blocked on five unmapped P4 paths, then the mapping was split to preserve the existing artifact target reference; both failures were validation-tool defects and remained fail-closed",
-    "ci_local_iteration": "PASS on HEAD 299f9b62 plus declared dirty worktree; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
-    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T033231Z-1619625-646681715/receipt.json",
-    "ci_local_iteration_receipt_sha256": "c6d796774ef1b495052822fad0df2f7292e4ff8a6fbe39cc3c0487657633f48e",
+    "ci_local_iteration": "PASS on clean P4 R2 HEAD 0dfe3d4dd; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T042330Z-1914635-330298370/receipt.json",
+    "ci_local_iteration_receipt_sha256": "b6888f348dd50b7842bbf008c41b93cfcc2c8f027a5dd065665d447e8dfe4ecc",
     "ci_local_iteration_test_counts": {
       "verify.acceptance.artifact.unit": 10,
       "verify.acceptance.runtime.tooling.unit": 129,
@@ -161,7 +161,7 @@
     "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
     "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
   },
-  "next_exact_step": "Run the R2 focused units and freeze preparation, commit the fixes, push PR #959, and re-run its exact-head required checks.",
+  "next_exact_step": "Push this evidence-index update and re-run PR #959 exact-head required checks before merge.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
