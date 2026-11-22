@@ -59,7 +59,15 @@ HEAD 为 `638f9a9599b9c299148dd34b0ca745c2b7d81b34`。旧
    现在只要 `index.html` 存在就始终重算 observed digest；传入值不一致立即拒绝，
    且在任何 Docker mutation 之前失败。
 10. 独立复审 S2：dist 文件顺序固定为 `LC_ALL=C sort -z`，消除 locale 依赖。
-    artifact 目标现有 12 个非零测试。
+    artifact 目标现有 15 个非零测试，tooling 目标为 131 个非零测试。
+11. 外部复审 F01 进一步收口：backend acceptance 复用仓库唯一权威
+    `frontend_build_fingerprint.sh`，继承 `.build-sha256` 排除与 `LC_ALL=C` 排序；
+    production 模式成为硬要求，live static server 的 `STATIC_ROOT` 必须与
+    fingerprinted dist 一致，显式传入错误 hash 在 Docker mutation 前拒绝。
+12. F02/F03：rollback custody 名称要求精确 12 位 hex 后缀，并新增“运行中
+    rollback 容器拒绝”和“非法后缀拒绝”回归。artifact 目标现为 15 个测试，
+    tooling 目标为 131 个测试，完整 R2 组合为 81 + 15 + 131 = 227；
+    复杂度过线脚本仍保持 499 行。
 
 ## 门禁责任
 

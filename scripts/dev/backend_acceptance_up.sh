@@ -17,23 +17,47 @@ DEPLOY_ENVIRONMENT="${SC_DEPLOY_ENV:-$RUNTIME_ENVIRONMENT}"
 FRONTEND_BUILD_SHA256_SUPPLIED="${FRONTEND_BUILD_SHA256:-}"
 FRONTEND_BUILD_SHA256=""
 frontend_dist="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
-if [[ -f "$frontend_dist/index.html" ]]; then
-  observed_frontend_build_sha256="$(
-    cd "$frontend_dist"
-    find . -type f -print0 \
-      | LC_ALL=C sort -z \
-      | xargs -0 sha256sum \
-      | sha256sum \
-      | cut -d' ' -f1
-  )"
-  [[ -z "$FRONTEND_BUILD_SHA256_SUPPLIED" \
-    || "$FRONTEND_BUILD_SHA256_SUPPLIED" == "$observed_frontend_build_sha256" ]] || {
-    echo "DENY supplied frontend build SHA256 does not match dist release" >&2
-    exit 2
-  }
-  FRONTEND_BUILD_SHA256="$observed_frontend_build_sha256"
-else
-  FRONTEND_BUILD_SHA256="$FRONTEND_BUILD_SHA256_SUPPLIED"
+[[ "${FRONTEND_ACCEPTANCE_MODE:-production}" == "production" ]] || {
+  echo "DENY exact frontend build identity requires production mode" >&2
+  exit 2
+}
+frontend_dist="$(realpath -e "$frontend_dist" 2>/dev/null)" || {
+  echo "DENY production frontend dist is missing" >&2
+  exit 2
+}
+observed_frontend_build_sha256="$(
+  ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/verify/frontend_build_fingerprint.sh" "$frontend_dist" \
+    | sed -nE 's/.*sha256=([0-9a-f]{64})$/\1/p' | tail -n 1
+)"
+[[ "$observed_frontend_build_sha256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "DENY authoritative frontend build fingerprint unavailable" >&2
+  exit 2
+}
+[[ -z "$FRONTEND_BUILD_SHA256_SUPPLIED" \
+  || "$FRONTEND_BUILD_SHA256_SUPPLIED" == "$observed_frontend_build_sha256" ]] || {
+  echo "DENY supplied frontend build SHA256 does not match dist release" >&2
+  exit 2
+}
+FRONTEND_BUILD_SHA256="$observed_frontend_build_sha256"
+frontend_pidfile="${FRONTEND_ACCEPTANCE_PIDFILE:-}"
+if [[ -f "$frontend_pidfile" && ! -L "$frontend_pidfile" ]]; then
+  frontend_pid="$(<"$frontend_pidfile")"
+  if [[ "$frontend_pid" =~ ^[0-9]+$ ]] && kill -0 "$frontend_pid" 2>/dev/null; then
+    frontend_cmd="$(tr '\0' ' ' < "/proc/$frontend_pid/cmdline")"
+    [[ "$frontend_cmd" == *"scripts/release/release_static_server.mjs"* ]] || {
+      echo "DENY live acceptance frontend is not the production static server" >&2
+      exit 2
+    }
+    served_frontend_dist="$(
+      tr '\0' '\n' < "/proc/$frontend_pid/environ" \
+        | sed -n 's/^STATIC_ROOT=//p' | tail -n 1
+    )"
+    [[ -n "$served_frontend_dist" \
+      && "$(realpath -e "$served_frontend_dist" 2>/dev/null)" == "$frontend_dist" ]] || {
+      echo "DENY served frontend STATIC_ROOT does not match the fingerprinted dist" >&2
+      exit 2
+    }
+  fi
 fi
 [[ "$FRONTEND_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
   echo "DENY exact frontend build SHA256 required" >&2

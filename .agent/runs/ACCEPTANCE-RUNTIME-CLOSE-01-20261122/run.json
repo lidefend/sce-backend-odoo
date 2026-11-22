@@ -133,9 +133,9 @@
     "r09_result": "verification complete; 2/4 journeys PASS and 2/4 FAIL for product-owned issues",
     "r09_identity": "P4 candidate 299f9b6266ab238380fc1749f589f1e6712aa3c9; database sc_frontend_acceptance; project sc-fe-r2-p1-01",
     "post_299_closures": "dirty P4 follow-up closes six acceptance capabilities, stale carrier text, and stopped rollback-custody classification",
-    "baseline_rebuild_unit": "PASS: 220 tests across 81 + 10 + 129 executions; source guard verified",
+    "baseline_rebuild_unit": "PASS: 227 tests across 81 + 15 + 131 executions; source guard verified",
     "acceptance_environment_guard": "PASS: 63 tests; daily credential confirmation 15 cases; environment and form-editability discovery checks passed",
-    "acceptance_artifact_unit": "PASS: 12 tests after adding wrong supplied-digest rejection",
+    "acceptance_artifact_unit": "PASS: 15 tests covering authoritative marker, cross-worktree equality, wrong supplied digest, development-mode rejection, and served STATIC_ROOT mismatch",
     "dev_incremental_planner_gap": "ci.local.iteration first blocked on five unmapped P4 paths, then the mapping was split to preserve the existing artifact target reference; both failures were validation-tool defects and remained fail-closed",
     "ci_local_iteration": "PASS on clean P4 R2 HEAD 0dfe3d4dd; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
     "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T042330Z-1914635-330298370/receipt.json",
@@ -158,10 +158,12 @@
     "independent_review_r1": "REQUEST_CHANGES: supplied frontend hash was unbound, sort locale was unpinned, and run counts/HEAD were stale; all three are addressed in the R2 candidate",
     "supplied_hash_binding": "whenever dist-release/index.html exists, the observed digest is always computed; an inherited FRONTEND_BUILD_SHA256 is accepted only if it exactly equals the observed digest, with a no-Docker-mutation negative test",
     "canonical_digest_order": "dist file ordering is pinned with LC_ALL=C sort -z",
+    "authoritative_fingerprint": "backend acceptance now invokes scripts/verify/frontend_build_fingerprint.sh, inherits its .build-sha256 exclusion and LC_ALL=C ordering, and does not maintain a second algorithm",
+    "served_frontend_binding": "production mode is required; if a live acceptance frontend pid exists, it must be release_static_server.mjs and its STATIC_ROOT must resolve to the fingerprinted dist",
     "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
     "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
   },
-  "next_exact_step": "Push this evidence-index update and re-run PR #959 exact-head required checks before merge.",
+  "next_exact_step": "Freeze and commit F01/F02/F03, then run ci.local.iteration and exact-head PR #959 checks.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

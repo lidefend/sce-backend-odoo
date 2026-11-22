@@ -93,7 +93,8 @@ class ArtifactTest(unittest.TestCase):
             artifact.verify(self.root, self.sha)
 
 class BackendReplacementTest(unittest.TestCase):
-    def run_case(self, *, artifact_ok=True, healthy=True, external_frontend=False, frontend_build_sha256=None):
+    def run_case(self, *, artifact_ok=True, healthy=True, external_frontend=False, frontend_build_sha256=None,
+                 frontend_mode='production', served_static_root=None):
         import os
         root_repo = Path(__file__).resolve().parents[2]
         with tempfile.TemporaryDirectory() as directory, tempfile.TemporaryDirectory() as external:
@@ -109,8 +110,11 @@ class BackendReplacementTest(unittest.TestCase):
             frontend_dist.mkdir(parents=True)
             (frontend_dist / 'index.html').write_text('synthetic frontend')
             (root / 'scripts/dev').mkdir(parents=True)
+            (root / 'scripts/verify').mkdir(parents=True)
             (root / 'scripts/dev/acceptance_source_fingerprint.sh').write_text(
                 (root_repo / 'scripts/dev/acceptance_source_fingerprint.sh').read_text())
+            (root / 'scripts/verify/frontend_build_fingerprint.sh').write_text(
+                (root_repo / 'scripts/verify/frontend_build_fingerprint.sh').read_text())
             artifact_root = root / 'artifact'
             for item in ['addons', 'demo_addons', 'addons_external', 'scripts', 'docs', 'config']:
                 (artifact_root / item).mkdir(parents=True)
@@ -140,13 +144,30 @@ esac
                 'PATH':str(bin_dir)+':'+os.environ['PATH'], 'ROOT_DIR':str(root),
                 'ARTIFACT_ROOT':str(artifact_root), 'TRACE':str(trace),
                 'XDG_RUNTIME_DIR':str(root / 'leases'),
+                'FRONTEND_ACCEPTANCE_MODE': frontend_mode,
             }
             if external_frontend:
                 child_env['FRONTEND_ACCEPTANCE_STATIC_DIST'] = str(frontend_dist)
             if frontend_build_sha256:
                 child_env['FRONTEND_BUILD_SHA256'] = frontend_build_sha256
+            served_process = None
+            if served_static_root is not None:
+                pidfile = root / 'frontend.pid'
+                static_server = root / 'release_static_server.mjs'
+                static_server.write_text(
+                    '#!/bin/bash\nexec -a "node scripts/release/release_static_server.mjs" sleep 30\n')
+                static_server.chmod(0o755)
+                process_env = dict(os.environ, STATIC_ROOT=str(served_static_root))
+                served_process = subprocess.Popen([str(static_server)], env=process_env)
+                pidfile.write_text(f'{served_process.pid}\n')
+                child_env['FRONTEND_ACCEPTANCE_PIDFILE'] = str(pidfile)
             result = subprocess.run(['bash', str(root_repo / 'scripts/dev/backend_acceptance_up.sh')],
                 env=child_env, capture_output=True, text=True)
+            if served_process is not None:
+                served_process.terminate()
+                served_process.wait(timeout=5)
+            marker = frontend_dist / '.build-sha256'
+            self.last_frontend_marker = marker.read_text().strip() if marker.is_file() else None
             return result, trace.read_text() if trace.exists() else ''
 
     def test_invalid_artifact_causes_no_docker_mutation(self):
@@ -175,11 +196,31 @@ esac
         self.assertIsNotNone(internal_hash)
         self.assertIsNotNone(external_hash)
         self.assertEqual(internal_hash.group(1), external_hash.group(1))
+        self.assertEqual(internal_hash.group(1), self.last_frontend_marker)
+
+    def test_authoritative_fingerprint_marker_matches_runtime_identity(self):
+        result, trace = self.run_case()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        runtime_hash = re.search(r'-e FRONTEND_BUILD_SHA256=([0-9a-f]{64})', trace).group(1)
+        self.assertEqual(runtime_hash, self.last_frontend_marker)
 
     def test_supplied_frontend_build_hash_must_match_dist(self):
         result, trace = self.run_case(frontend_build_sha256='f' * 64)
         self.assertNotEqual(result.returncode, 0)
         self.assertIn('does not match dist release', result.stderr)
+        self.assertEqual(trace, '')
+
+    def test_development_frontend_mode_cannot_claim_a_static_build(self):
+        result, trace = self.run_case(frontend_mode='development')
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('requires production mode', result.stderr)
+        self.assertEqual(trace, '')
+
+    def test_live_static_server_root_must_match_fingerprinted_dist(self):
+        with tempfile.TemporaryDirectory() as other:
+            result, trace = self.run_case(served_static_root=Path(other))
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn('STATIC_ROOT does not match', result.stderr)
         self.assertEqual(trace, '')
 
     def test_failed_start_restores_previous_without_starting_stopped_service(self):

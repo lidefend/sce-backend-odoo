@@ -152,7 +152,7 @@ require_volume_mount_scope() {
       deny "volume=$volume mount owner mismatch project=$project service=$service"
       return
     }
-    if [[ "$expected_service" == "odoo" && "$oneoff" == "True" && "$name" == "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}-rollback-"* ]]; then
+    if [[ "$expected_service" == "odoo" && "$oneoff" == "True" && "$name" == "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}-rollback-"* && "${name##*-rollback-}" =~ ^[0-9a-f]{12}$ ]]; then
       [[ "$(docker inspect "$container_id" --format '{{.State.Running}}')" == "false" ]] || {
         deny "volume=$volume rollback custody container is running name=$name"; return; }
       continue

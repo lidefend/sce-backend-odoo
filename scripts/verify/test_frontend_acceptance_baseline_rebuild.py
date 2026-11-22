@@ -220,7 +220,7 @@ class FrontendAcceptanceBaselineRebuildContractTest(unittest.TestCase):
         rows = {
             "compose": ("sc-fe-r2-p1-01", "odoo", "False", "sc-fe-r2-p1-01-odoo-1"),
             "current": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance"),
-            "rollback": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance-rollback-deadbeef"),
+            "rollback": ("sc-fe-r2-p1-01", "odoo", "True", "sc-backend-odoo-acceptance-rollback-deadbeefcafe"),
         }
         table = "\n".join(
             f'STUB_ROWS[{cid}]="{project}|{svc}|{oneoff}|{name}"'
@@ -251,6 +251,56 @@ class FrontendAcceptanceBaselineRebuildContractTest(unittest.TestCase):
             require_volume_mount_scope sc_fe_r2_p1_01_odoo odoo
         """)
         self.assertEqual(result.returncode, 0, result.stdout)
+
+    def test_running_rollback_custody_still_fails_closed(self) -> None:
+        result = run_library("""
+            declare -A STUB_ROWS
+            STUB_ROWS[compose]="sc-fe-r2-p1-01|odoo|False|sc-fe-r2-p1-01-odoo-1"
+            STUB_ROWS[rollback]="sc-fe-r2-p1-01|odoo|True|sc-backend-odoo-acceptance-rollback-deadbeefcafe"
+            docker() {
+              if [[ "$1" == "ps" ]]; then printf '%s\n' compose rollback; return 0; fi
+              if [[ "$1" == "inspect" ]]; then
+                IFS='|' read -r project service oneoff name <<<"${STUB_ROWS[$2]}"
+                case "$4" in
+                  *'com.docker.compose.project'*) echo "$project" ;;
+                  *'com.docker.compose.service'*) echo "$service" ;;
+                  *'com.docker.compose.oneoff'*) echo "$oneoff" ;;
+                  *'.Name'*) echo "/$name" ;;
+                  *'.State.Running'*) echo true ;;
+                esac
+                return 0
+              fi
+              return 0
+            }
+            require_volume_mount_scope sc_fe_r2_p1_01_odoo odoo
+        """)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("rollback custody container is running", result.stdout)
+
+    def test_rollback_name_requires_exact_12_hex_suffix(self) -> None:
+        result = run_library("""
+            declare -A STUB_ROWS
+            STUB_ROWS[compose]="sc-fe-r2-p1-01|odoo|False|sc-fe-r2-p1-01-odoo-1"
+            STUB_ROWS[rollback]="sc-fe-r2-p1-01|odoo|True|sc-backend-odoo-acceptance-rollback-not-a-sha"
+            docker() {
+              if [[ "$1" == "ps" ]]; then printf '%s\n' compose rollback; return 0; fi
+              if [[ "$1" == "inspect" ]]; then
+                IFS='|' read -r project service oneoff name <<<"${STUB_ROWS[$2]}"
+                case "$4" in
+                  *'com.docker.compose.project'*) echo "$project" ;;
+                  *'com.docker.compose.service'*) echo "$service" ;;
+                  *'com.docker.compose.oneoff'*) echo "$oneoff" ;;
+                  *'.Name'*) echo "/$name" ;;
+                  *'.State.Running'*) echo false ;;
+                esac
+                return 0
+              fi
+              return 0
+            }
+            require_volume_mount_scope sc_fe_r2_p1_01_odoo odoo
+        """)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertIn("undeclared one-off mount consumer", result.stdout)
 
     def test_active_database_client_blocks_cold_backup(self) -> None:
         result = run_library("""
