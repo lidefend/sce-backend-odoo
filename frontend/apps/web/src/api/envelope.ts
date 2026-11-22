@@ -1,7 +1,7 @@
 import type { IntentEnvelope } from '@sc/schema';
 
 export type IntentEnvelopeError = {
-  code?: string;
+  code?: string | number;
   reason_code?: string;
   message?: string;
   hint?: string;
@@ -32,7 +32,7 @@ function parseMeta(raw: unknown): Record<string, unknown> {
 function parseError(raw: unknown): IntentEnvelopeError | undefined {
   if (!isObject(raw)) return undefined;
   return {
-    code: typeof raw.code === 'string' ? raw.code : undefined,
+    code: typeof raw.code === 'string' || typeof raw.code === 'number' ? raw.code : undefined,
     reason_code: typeof raw.reason_code === 'string' ? raw.reason_code : undefined,
     message: typeof raw.message === 'string' ? raw.message : undefined,
     hint: typeof raw.hint === 'string' ? raw.hint : undefined,

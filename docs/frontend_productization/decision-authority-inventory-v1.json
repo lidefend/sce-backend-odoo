@@ -250,7 +250,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        633
+        636
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -462,6 +462,20 @@
         64
       ],
       "occurrences": 2,
+      "classification": "excluded-render-interaction",
+      "reason": "shell_navigation_destination",
+      "declaredClass": "navigation_shell",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R3_router_literal_destination|/|frontend/apps/web/src/views/RouteErrorView.vue",
+      "rule": "R3_router_literal_destination",
+      "literal": "/",
+      "path": "frontend/apps/web/src/views/RouteErrorView.vue",
+      "lines": [
+        62
+      ],
+      "occurrences": 1,
       "classification": "excluded-render-interaction",
       "reason": "shell_navigation_destination",
       "declaredClass": "navigation_shell",
@@ -1608,7 +1622,7 @@
       "literal": "disabled_permission",
       "path": "frontend/apps/web/src/views/SceneView.vue",
       "lines": [
-        1027
+        1030
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1879,21 +1893,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 174,
-    "distinctDecisions": 127,
+    "totalFindings": 175,
+    "distinctDecisions": 128,
     "byRule": {
       "R2_intent_literal": 19,
-      "R3_router_literal_destination": 17,
+      "R3_router_literal_destination": 18,
       "R4_business_state_literal": 138
     },
     "byClassification": {
       "contract-derived": 71,
-      "excluded-render-interaction": 103
+      "excluded-render-interaction": 104
     },
     "unclassified": 0,
     "contractDerived": 71,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 103
+    "excludedRenderInteraction": 104
   }
 }

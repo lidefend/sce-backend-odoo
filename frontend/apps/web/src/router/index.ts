@@ -26,6 +26,7 @@ import { currentContextEpoch } from '../app/contextEpoch';
 import { isAdminRouteAccessDenied } from '../app/adminRouteAccess';
 import { resolveEntryBasePath } from '../services/entryNamespace';
 import { resolveActivityRouteKey } from '../app/activityPageCacheIdentity';
+import { routeFailureRedirect } from '../app/routeFailure';
 
 function routeTitle(routeName: string | symbol | null | undefined): string {
   const name = typeof routeName === 'string' ? routeName : '';
@@ -53,6 +54,7 @@ function routeTitle(routeName: string | symbol | null | undefined): string {
     'model-form': '记录表单',
     record: '记录详情',
     'access-denied': '无权访问',
+    'route-error': '请求未完成',
   };
   return map[name] || '系统';
 }
@@ -346,6 +348,7 @@ const router = createRouter({
     { path: '/s/:sceneKey', name: 'scene', component: () => import('../views/SceneView.vue'), meta: { layout: 'shell' } },
     { path: '/m/:menuId', name: 'menu', component: () => import('../views/MenuView.vue'), meta: { layout: 'shell' } },
     { path: '/access-denied', name: 'access-denied', component: () => import('../views/AccessDeniedView.vue'), meta: { layout: 'shell' } },
+    { path: '/route-error', name: 'route-error', component: () => import('../views/RouteErrorView.vue'), meta: { layout: 'shell', pageHeadingOwner: 'content' } },
     // Diagnostic-only surface; must not be used as product navigation.
     { path: '/workbench', name: 'workbench', component: () => import('../views/WorkbenchView.vue'), meta: { layout: 'shell' } },
     { path: '/admin/scene-health', name: 'scene-health', component: () => import('../views/SceneHealthView.vue'), meta: { layout: 'shell', adminOnly: true } },
@@ -383,7 +386,7 @@ router.beforeEach(async (to) => {
       if (err instanceof ApiError && err.status === 401) {
         return { name: 'login', query: { redirect: to.fullPath } };
       }
-      return false;
+      return routeFailureRedirect(err, to.fullPath);
     }
     if (!session.isReady || !session.routeAuthority) return false;
   }
@@ -404,6 +407,7 @@ router.beforeEach(async (to) => {
       selectedRecordId: Number(session.recordContext?.selected?.id || 0) || null,
     }) : null;
     let runtimeRouteAuthorized = Boolean(routeAuthority);
+    let routeAuthorityFailure: unknown = null;
     if (routeAuthority && Array.isArray(routeAuthority.context_requirements.required_query)
       && routeAuthority.context_requirements.required_query.length > 0) {
       try {
@@ -417,7 +421,8 @@ router.beforeEach(async (to) => {
             params,
           }),
         });
-      } catch {
+      } catch (error) {
+        routeAuthorityFailure = error;
         runtimeRouteAuthorized = false;
       }
     }
@@ -426,6 +431,7 @@ router.beforeEach(async (to) => {
         () => JSON.stringify({ token: session.token, user: session.user,
           context: session.recordContext, epoch: currentContextEpoch() }),
         (params) => intentRequest<Record<string, unknown>>({ intent: 'route.authority.validate', params }),
+        (error) => { routeAuthorityFailure = error; },
       );
     }
     if (to.name === 'action' && routeAuthority && runtimeRouteAuthorized && !currentActionMatches(session, actionId)) {
@@ -451,6 +457,7 @@ router.beforeEach(async (to) => {
       }
     }
     if (authorityBoundRoute && (actionId > 0 || menuId > 0) && !runtimeRouteAuthorized) {
+      if (routeAuthorityFailure) return routeFailureRedirect(routeAuthorityFailure, to.fullPath);
       return {
         name: 'access-denied',
         query: { from: to.fullPath, reason: 'NAVIGATION_AUTHORITY_DENIED' },

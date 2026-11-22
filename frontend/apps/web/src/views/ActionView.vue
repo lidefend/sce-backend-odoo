@@ -68,7 +68,7 @@
       <p class="contract-missing-summary">{{ vm.strictAlert.summary }}</p>
       <p v-if="vm.strictAlert.defaultsSummary" class="contract-missing-defaults">{{ vm.strictAlert.defaultsSummary }}</p>
     </section>
-    <section v-if="batchMessage" class="contract-block batch-feedback">
+    <section v-if="batchMessage && !standardListOperationsInCard" class="contract-block batch-feedback" role="status" aria-live="polite">
       <p>{{ batchMessage }}</p>
     </section>
     <section v-if="showStandaloneQuickFilters" class="contract-block" :style="getSectionStyle('quick_filters')">

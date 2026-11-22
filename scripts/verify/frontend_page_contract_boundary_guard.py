@@ -62,6 +62,7 @@ def main() -> int:
         "PlatformCapabilityExplorerView.vue",
         "PlatformDutyView.vue",
         "ReleaseOperatorView.vue",
+        "RouteErrorView.vue",
         "SceneContractBlockGridView.vue",
         "SceneHealthView.vue",
         "ScenePackagesView.vue",
@@ -139,6 +140,7 @@ def main() -> int:
         "ActionViewShell.vue",
         "MyWorkView.vue",
         "PlatformDutyView.vue",
+        "RouteErrorView.vue",
     }
 
     # A view may keep its extracted parts in a companion module directory of the

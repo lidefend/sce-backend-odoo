@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { isContractGapError } from '../src/app/contract/contractGap';
+import { classifyRouteFailure, routeFailureRedirect } from '../src/app/routeFailure';
+import { parseIntentEnvelope } from '../src/api/envelope';
 import {
   buildRouteAuthorityValidationParams,
   findRouteAuthority,
@@ -277,6 +279,31 @@ assert.equal(routeAuthorityForPrincipal(
   shellOnly,
   { userId: 8, companyId: 3, roleCode: 'pm' },
 ), null);
+
+const envelopeFailure = parseIntentEnvelope({
+  ok: false,
+  data: null,
+  error: { code: 403, reason_code: 'PERMISSION_DENIED', message: 'denied' },
+});
+assert.equal(envelopeFailure.error?.code, 403, 'numeric intent error status is preserved');
+assert.equal(classifyRouteFailure({ status: 503, reasonCode: 'TRANSIENT_TRANSPORT_FAILURE', traceId: 'trace-503' }).kind, 'service');
+assert.equal(classifyRouteFailure({ status: 403, reasonCode: 'PERMISSION_DENIED' }).kind, 'forbidden');
+assert.equal(classifyRouteFailure({ status: 0, kind: 'network', reasonCode: 'NETWORK_ERROR' }).kind, 'network');
+assert.deepEqual(routeFailureRedirect({ status: 503, reasonCode: 'TRANSIENT_TRANSPORT_FAILURE', traceId: 'trace-503' }, '/a/42'), {
+  name: 'route-error',
+  query: {
+    from: '/a/42',
+    kind: 'service',
+    reason: 'TRANSIENT_TRANSPORT_FAILURE',
+    status: '503',
+    trace_id: 'trace-503',
+  },
+});
+assert.deepEqual(routeFailureRedirect({ status: 403, reasonCode: 'PERMISSION_DENIED' }, '/a/42'), {
+  name: 'access-denied',
+  query: { from: '/a/42', kind: 'forbidden', reason: 'PERMISSION_DENIED', status: '403' },
+});
+console.log('[route_failure_classification] PASS transport/auth/scope separation');
 
 console.log('[route-authority-guard] PASS');
 

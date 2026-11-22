@@ -123,10 +123,14 @@ function throwEnvelopeError(
   parsedError?: IntentEnvelopeError,
 ): never {
   const message = parsedError?.message || `intent failed: ${payload.intent}`;
-  const reasonCode = parsedError?.reason_code || parsedError?.code || 'INTENT_FAILED';
+  const reasonCode = parsedError?.reason_code || String(parsedError?.code || '') || 'INTENT_FAILED';
   const hint = parsedError?.hint;
   const kind = parsedError?.kind || parsedError?.error_category || 'contract';
-  throw new ApiError(message, 400, parsedError?.trace_id || traceId, {
+  const parsedStatus = Number(parsedError?.code);
+  const status = Number.isInteger(parsedStatus) && parsedStatus >= 400 && parsedStatus <= 599
+    ? parsedStatus
+    : 400;
+  throw new ApiError(message, status, parsedError?.trace_id || traceId, {
     reasonCode,
     hint,
     kind,

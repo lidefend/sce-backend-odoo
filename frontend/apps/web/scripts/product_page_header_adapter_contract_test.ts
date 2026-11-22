@@ -592,6 +592,7 @@ const KNOWN_CALL_SITES = [
   'pages/contractForm/ContractFormProductHeader.vue#PageHeaderTemplate',
   'views/ApiKeyManagementView.vue#ScPageHeader',
   'views/NotFoundView.vue#ScPageHeader',
+  'views/RouteErrorView.vue#ScPageHeader',
   'views/businessConfigSurface/BusinessConfigContextBar.vue#ScPageHeader',
 ];
 
@@ -768,6 +769,17 @@ for (const id of ids) {
     `${id} 未对全部正式轴作出决策`,
   );
 }
+
+assert.match(
+  authoritySource,
+  /@media\s*\(max-width:\s*600px\)\s*\{[\s\S]*?\.product-page-header\s*\{[\s\S]*?grid-template-columns:\s*minmax\(0,\s*1fr\)/,
+  'ProductPageHeader must stack its identity at narrow mobile widths',
+);
+assert.match(
+  authoritySource,
+  /@media\s*\(max-width:\s*600px\)\s*\{[\s\S]*?\.product-page-header__status,[\s\S]*?\.product-page-header__actions\s*\{[\s\S]*?grid-column:\s*1\s*\/\s*-1/,
+  'ProductPageHeader status and actions must occupy full-width rows on narrow mobile widths',
+);
 
 console.log(
   `[product_page_header_adapter_contract] PASS entries=${PRODUCT_PAGE_HEADER_ENTRIES.length} axes=${PRODUCT_PAGE_HEADER_AXES.length} call_sites=${discoveredCallSites.length} direct_consumers=${PRODUCT_PAGE_HEADER_DIRECT_CONSUMERS.length}`,
