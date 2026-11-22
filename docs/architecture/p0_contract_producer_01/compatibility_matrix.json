@@ -127,6 +127,54 @@
       "expectation": "must reject the declaration test and never ship",
       "evidence": "executed",
       "owner": "P4 design validation"
+    },
+    {
+      "id": "VER-05",
+      "consumer": "server negotiation",
+      "payload": "known stable client type omits accepted_contract_versions",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "VER-06",
+      "consumer": "server negotiation",
+      "payload": "unknown or missing client type omits accepted_contract_versions",
+      "expectation": "CONTRACT_VERSION_UNSUPPORTED",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "SEC-01",
+      "consumer": "server request boundary",
+      "payload": "client supplies or overrides authorizationSubject",
+      "expectation": "request value is not accepted as authorization authority",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "SEC-02",
+      "consumer": "public attachment/action carrier",
+      "payload": "serialize the carrier",
+      "expectation": "authorizationSubject is absent",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-01",
+      "consumer": "widget-backed field reference",
+      "payload": "kind=widget",
+      "expectation": "resolve the existing widget fieldDescriptor",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-02",
+      "consumer": "non-widget business fact",
+      "payload": "kind=descriptor",
+      "expectation": "resolve block_field_descriptors without creating a fake widget",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
     }
   ]
 }

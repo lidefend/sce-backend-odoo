@@ -98,7 +98,18 @@
       "server_request_field": "accepted_contract_versions",
       "server_parser_file": "addons/smart_core/app_config_engine/utils/payload.py",
       "selection_rule": "intersect accepted versions with producer-supported versions, select the highest common version, and never emit a newer version without a common accepted version",
-      "no_common_version_result": "fail closed with a declared unsupported-contract-version error"
+      "missing_declaration_policy": {
+        "known_stable_client_types": [
+          "web_pc",
+          "wx_mini",
+          "harmony_h5"
+        ],
+        "known_client_without_versions": "serve the complete legacy projection",
+        "unknown_or_missing_client_type": "fail closed with CONTRACT_VERSION_UNSUPPORTED",
+        "new_carriers_allowed": false,
+        "legacy_projection_ceiling": "2.5.0"
+      },
+      "no_common_version_result": "fail closed with CONTRACT_VERSION_UNSUPPORTED"
     },
     "client_contract_capabilities_extension": {
       "client_catalog_file": "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
@@ -176,6 +187,20 @@
         "payload": "client accepts 2.6.x but omits one required carrier capability",
         "expected": "server returns complete legacy projection",
         "evidence_status": "required_not_run_pending_implementation"
+      },
+      {
+        "case": "known_legacy_client_missing_versions",
+        "decoder": "request negotiation probe",
+        "payload": "known stable client type with no accepted_contract_versions and no new capabilities",
+        "expected": "server returns complete legacy projection",
+        "evidence_status": "required_not_run_pending_implementation"
+      },
+      {
+        "case": "unknown_client_missing_versions",
+        "decoder": "request negotiation probe",
+        "payload": "unknown or absent client type with no accepted_contract_versions",
+        "expected": "CONTRACT_VERSION_UNSUPPORTED",
+        "evidence_status": "required_not_run_pending_implementation"
       }
     ],
     "rollout_order": [
@@ -208,22 +233,39 @@
           "sourceAuthority"
         ],
         "descriptor_source": {
-          "type": "ContractV2Widget",
-          "field_descriptor": "ContractV2Widget.fieldDescriptor",
-          "component_config": "ContractV2Widget.componentConfig",
-          "lookup": "layoutContract.containerTree.*.widgetList[].widgetId",
+          "type": "ContractV2FieldDescriptor",
+          "descriptor_registry_location": "page_orchestration.block_field_descriptors",
+          "widget_backed": {
+            "referenceKind": "widget",
+            "lookup": "layoutContract.containerTree.*.widgetList[widgetId].fieldDescriptor",
+            "componentConfig": "layoutContract.containerTree.*.widgetList[widgetId].componentConfig"
+          },
+          "non_widget_backed": {
+            "referenceKind": "descriptor",
+            "registry": "page_orchestration.block_field_descriptors[descriptorId]",
+            "value_origin": "computed or aggregate business fact",
+            "fake_widget_creation_allowed": false
+          },
+          "single_descriptor_type": true,
           "no_parallel_descriptor_map": true
         },
         "fieldRefs": {
           "<slot-key>": {
-            "widgetId": "reference to the canonical ContractV2Widget",
+            "kind": "widget|descriptor",
+            "widgetId": "required only when kind=widget",
+            "descriptorId": "required only when kind=descriptor",
             "rawValuePath": "path into the row values object"
           }
         },
+        "block_field_descriptors": {
+          "<descriptorId>": "exact ContractV2FieldDescriptor object; used only for non-widget-backed business facts"
+        },
         "descriptor_extensions": {
-          "unit": "componentConfig.unit when the declared semantic requires a non-currency unit",
-          "temporal": "componentConfig.temporal when date/datetime projection needs an explicit timezone authority",
-          "attachmentRole": "componentConfig.attachmentRole when the value is an attachment reference"
+          "digits": "optional total/scale on ContractV2FieldDescriptor",
+          "currencyField": "optional currency identity field on ContractV2FieldDescriptor",
+          "unit": "optional declared unit object on ContractV2FieldDescriptor",
+          "temporal": "optional date/datetime timezone authority on ContractV2FieldDescriptor",
+          "attachmentRole": "optional attachment role on ContractV2FieldDescriptor"
         },
         "rows": "array of stable rowKey plus raw JSON values addressed by fieldRefs; no display string is authoritative",
         "context": {
@@ -274,6 +316,13 @@
           "schemaVersion",
           "facts"
         ],
+      "server_only_identities": {
+        "authorizationSubject": {
+          "valueLocation": "server execution authorization",
+          "publicCarrier": false,
+          "clientInputAllowed": false
+        }
+      },
         "fact": {
           "factKey": "stable fact identity",
           "identity": {
@@ -299,21 +348,14 @@
             "preview": "page-block-action id or empty",
             "download": "page-block-action id or empty",
             "delete": "page-block-action id or empty"
-      },
-      "authorizationSubject": {
-        "scope": "per-action",
-        "source": "server-only action resolution",
-        "clientInputAllowed": false,
-        "resolvedBy": "existing action-specific service resolver; file.download uses resolve_file_download_auth_subject",
-        "valueLocation": "page-block-action.v1.actions[actionId].authorization.subject"
-          }
+      }
         }
       },
       "rules": [
         "Attachment identity is never a label, count or URL-shape inference.",
       "storageOwner and businessOwner are independent and are never collapsed.",
-      "authorizationSubject is per-action and is resolved only by the existing server service.",
-      "The frontend must not provide or override authorizationSubject.",
+      "AuthorizationSubject is per-action and server-only; it is never copied into attachmentFacts or page-block-action public payloads.",
+      "The frontend must not provide, receive or override authorizationSubject.",
         "Role vocabulary is context-owned; P0 owns only the carrier shape.",
         "Preview/download/delete reference P0-C actions.",
       "Existing file services remain authorization and execution authorities.",
@@ -352,6 +394,13 @@
         "target_schema": "addons/smart_core/core/action_target_schema.py",
         "no_parallel_action_target_schema": true
       },
+      "server_only_identities": {
+        "authorizationSubject": {
+          "publicCarrier": false,
+          "clientInputAllowed": false,
+          "authorityResolver": "existing action-specific service resolver"
+        }
+      },
         "declaration": {
           "actionId": "stable action identity",
           "actionKey": "stable action key",
@@ -374,7 +423,6 @@
         "permission.allowed": "server-computed compatibility aggregate: target resolved and authorization and business availability permit the action; never an independent frontend input",
         "permission.authorizationAllowed": "actor authorization result only: ACL, record rules and action entitlement",
         "permission.businessAvailable": "business/workflow state availability only",
-        "authorization.subject": "server-resolved actor/record subject for execution; never supplied by the frontend",
         "state.enabled": "server-computed final execution state; may be narrower than allowed, but enabled=true requires allowed=true",
           "state.disabled": "final disabled state",
           "state.reasonCode": "required when visible and unavailable",
@@ -393,6 +441,7 @@
       "Visibility, actor authorization, business availability, compatibility allowed and final enablement are distinct.",
       "allowed is a producer-computed compatibility aggregate, not an authorization fact and never a frontend input.",
       "enabled is the final server-produced execution state and must not be recomputed by the frontend.",
+      "The internal authorizationSubject remains server-only and is not serialized to the frontend.",
         "Missing permission evaluation fails closed.",
       "Page Block actions reference canonical ContractV2ActionRule actionIds.",
       "target equals the complete existing ContractV2ActionRule target validated by action_target_schema.py.",
@@ -441,6 +490,8 @@
       "many2one missing identity fails closed",
       "date and datetime with authoritative timezone",
       "attachment value references a fact and role",
+    "widget-backed descriptor reference resolves through the existing widget",
+    "non-widget computed fact resolves through block_field_descriptors without a fake widget",
       "legacy display-only block required semantics fails closed"
     ],
     "P0-B": [
@@ -454,6 +505,8 @@
       "preview unsupported while download remains allowed",
       "delete owner allowed",
       "delete non-owner denied with reason",
+    "forged Authorization Subject is not accepted as authority",
+    "public attachment and action payload excludes Authorization Subject",
       "text URL does not create attachment behavior",
       "ordinary integer does not become attachment identity"
     ],
@@ -479,6 +532,8 @@
       "server omitting page_block_data.v1 returns the complete legacy projection",
       "server omitting attachment_fact.v1 returns the complete legacy projection",
       "server omitting page_block_action.v1 returns the complete legacy projection",
+    "known stable client without accepted_contract_versions receives the legacy projection",
+    "unknown client without accepted_contract_versions gets CONTRACT_VERSION_UNSUPPORTED",
       "no common accepted version fails closed",
       "N-1 consumer reads N payload",
       "N consumer reads N-1 payload",

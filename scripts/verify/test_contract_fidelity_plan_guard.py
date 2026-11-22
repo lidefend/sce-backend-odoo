@@ -142,6 +142,16 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         )
         self.assertIn("does not preserve", strategy["current_state"]["backend_request_normalizer"])
         self.assertIn("not frontend decoder evidence", strategy["current_state"]["contract_compatibility_core"])
+        missing = strategy["accepted_contract_versions_extension"]["missing_declaration_policy"]
+        self.assertEqual(
+            missing["known_client_without_versions"],
+            "serve the complete legacy projection",
+        )
+        self.assertEqual(
+            missing["unknown_or_missing_client_type"],
+            "fail closed with CONTRACT_VERSION_UNSUPPORTED",
+        )
+        self.assertFalse(missing["new_carriers_allowed"])
         client_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/client.ts").read_text(encoding="utf-8")
         schema_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8")
         payload_source = (ROOT / "addons/smart_core/app_config_engine/utils/payload.py").read_text(encoding="utf-8")
@@ -163,28 +173,53 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         executed = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "executed"}
         self.assertEqual(executed, {"DEC-01", "DEC-02", "DEC-03", "DEC-04", "NEG-05"})
         pending = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "not_run_pending_implementation"}
-        self.assertEqual(pending, {"DEC-05", "DEC-06", "NEG-01", "NEG-02", "NEG-03", "NEG-04"})
+        self.assertEqual(
+            pending,
+            {"DEC-05", "DEC-06", "NEG-01", "NEG-02", "NEG-03", "NEG-04", "VER-05", "VER-06"},
+        )
+        design_asserted = {
+            row["id"] for row in self.matrix["cases"]
+            if row["evidence"] == "executed_design_assertion"
+        }
+        self.assertEqual(design_asserted, {"SEC-01", "SEC-02", "FIELD-01", "FIELD-02"})
 
     def test_p0_a_reuses_contract_v2_field_descriptor(self) -> None:
         contract = self.packages["P0-A"]["schema_contract"]
         self.assertNotIn("fields", contract)
         self.assertIn("fieldRefs", contract["required"])
         source = contract["descriptor_source"]
-        self.assertEqual(source["field_descriptor"], "ContractV2Widget.fieldDescriptor")
-        self.assertEqual(source["component_config"], "ContractV2Widget.componentConfig")
+        self.assertEqual(source["type"], "ContractV2FieldDescriptor")
+        self.assertEqual(source["widget_backed"]["referenceKind"], "widget")
+        self.assertEqual(source["non_widget_backed"]["referenceKind"], "descriptor")
+        self.assertEqual(
+            source["non_widget_backed"]["registry"],
+            "page_orchestration.block_field_descriptors[descriptorId]",
+        )
+        self.assertFalse(source["non_widget_backed"]["fake_widget_creation_allowed"])
         self.assertTrue(source["no_parallel_descriptor_map"])
+        self.assertIn("kind", contract["fieldRefs"]["<slot-key>"])
+        self.assertIn("descriptorId", contract["fieldRefs"]["<slot-key>"])
+        self.assertIn("block_field_descriptors", contract)
         self.assertIn("does not define a parallel field descriptor", " ".join(self.packages["P0-A"]["rules"]))
 
     def test_p0_b_keeps_attachment_identities_separate(self) -> None:
-        fact = self.packages["P0-B"]["schema_contract"]["fact"]
+        contract = self.packages["P0-B"]["schema_contract"]
+        fact = contract["fact"]
         self.assertIn("storageOwner", fact)
         self.assertIn("businessOwner", fact)
-        self.assertIn("authorizationSubject", fact)
         self.assertNotIn("owner", fact)
-        subject = fact["authorizationSubject"]
+        self.assertNotIn("authorizationSubject", fact)
+        subject = contract["server_only_identities"]["authorizationSubject"]
+        self.assertFalse(subject["publicCarrier"])
         self.assertFalse(subject["clientInputAllowed"])
-        self.assertEqual(subject["source"], "server-only action resolution")
-        self.assertIn("resolve_file_download_auth_subject", subject["resolvedBy"])
+        self.assertEqual(subject["valueLocation"], "server execution authorization")
+        action_contract = self.packages["P0-C"]["schema_contract"]
+        self.assertNotIn("authorization.subject", action_contract["declaration"])
+        self.assertFalse(action_contract["server_only_identities"]["authorizationSubject"]["publicCarrier"])
+        self.assertFalse(action_contract["server_only_identities"]["authorizationSubject"]["clientInputAllowed"])
+        public_payload = {"fact": fact, "declaration": action_contract["declaration"]}
+        self.assertNotIn("authorizationSubject", str(public_payload))
+        self.assertNotIn("authorization.subject", str(public_payload))
 
     def test_p0_c_reuses_action_rule_and_target_schema(self) -> None:
         contract = self.packages["P0-C"]["schema_contract"]
@@ -209,7 +244,9 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         self.assertIn("storageOwner", self.report)
         self.assertIn("businessOwner", self.report)
         self.assertIn("authorizationSubject", self.report)
-        self.assertIn("ContractV2Widget.fieldDescriptor", self.report)
+        self.assertIn("ContractV2FieldDescriptor", self.report)
+        self.assertIn("block_field_descriptors", self.report)
+        self.assertIn("fake UI Widget", self.report)
         self.assertIn("ContractV2ActionRule.target", self.report)
 
 

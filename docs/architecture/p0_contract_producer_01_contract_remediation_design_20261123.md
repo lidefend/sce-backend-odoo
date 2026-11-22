@@ -142,6 +142,15 @@ Required implementation:
 7. If capability negotiation is absent or incomplete, return the complete
    `2.5.0` Contract V2 / `2.0.0` Page Orchestration projection with no new
    carrier keys.
+8. If `accepted_contract_versions` is completely absent:
+   - a recognized stable client type (`web_pc`, `wx_mini`, `harmony_h5`)
+     receives the complete `2.5.0` / `2.0.0` legacy projection;
+   - an unknown or absent client type receives the typed
+     `CONTRACT_VERSION_UNSUPPORTED` error.
+
+The absence fallback is a protocol-compatibility default, not a product
+semantic. It is capped at version `2.5.0`, never carries the new carriers, and
+must be removed or explicitly renewed after the legacy-client migration window.
 
 The same client and server declaration must drive request construction,
 response selection and tests. Sending a version array without server selection
@@ -157,6 +166,8 @@ Real Decoder acceptance is mandatory:
 | New Decoder + old `2.5.0` projection | PASS | required after implementation |
 | New Decoder + new `2.6.0` projection | PASS | required after implementation |
 | Client accepts 2.6 but omits a carrier capability | complete old projection | required after implementation |
+| Known stable client omits `accepted_contract_versions` | complete old projection | required after implementation |
+| Unknown/missing client omits `accepted_contract_versions` | `CONTRACT_VERSION_UNSUPPORTED` | required after implementation |
 
 The offline key-surface compatibility drill remains useful for declaration
 delta analysis, but it does not replace these executable Decoder/negotiation
@@ -201,12 +212,17 @@ Add an optional Page Orchestration map:
 
 ```json
 {
+  "block_field_descriptors": {
+    "<descriptor-id>": "<exact ContractV2FieldDescriptor>"
+  },
   "block_data_contracts": {
     "<data-source-key>": {
       "schemaVersion": "1.0.0",
       "fieldRefs": {
         "<slot-key>": {
-          "widgetId": "<canonical ContractV2Widget widgetId>",
+          "kind": "widget|descriptor",
+          "widgetId": "<required only for kind=widget>",
+          "descriptorId": "<required only for kind=descriptor>",
           "rawValuePath": "<path under row.values>"
         }
       },
@@ -238,21 +254,36 @@ Add an optional Page Orchestration map:
 ```
 
 The field source is intentionally not redeclared here. The canonical descriptor
-is:
+is the existing `ContractV2FieldDescriptor` type, with only the missing
+projection keys added to that same type:
 
 ```text
-ContractV2Widget.fieldDescriptor
-ContractV2Widget.componentConfig
+ContractV2FieldDescriptor
+  optional digits
+  optional currencyField
+  optional unit
+  optional temporal
+  optional attachmentRole
 ```
 
-resolved through
-`layoutContract.containerTree.*.widgetList[].widgetId`. This includes the
-existing field identity, type, widget, `componentKey`, Selection, relation,
-digits and currency-field declarations.
+A `fieldRef` resolves through one of two mutually exclusive references:
 
-Only necessary projection extensions belong in the canonical
-`componentConfig`: `unit`, `temporal` and `attachmentRole`. They must not create
-a second field-descriptor map.
+```text
+kind=widget
+  -> layoutContract.containerTree.*.widgetList[widgetId].fieldDescriptor
+
+kind=descriptor
+  -> page_orchestration.block_field_descriptors[descriptorId]
+```
+
+Both branches return the same `ContractV2FieldDescriptor` shape. Non-widget
+business facts such as `project.total`, `payment.pending_amount` and
+`project.completion_rate` therefore do not require a fake UI Widget. They also
+do not create a second field-descriptor schema.
+
+For widget-backed values, the existing `componentConfig` remains a compatibility
+transport projection. For semantic decisions, the canonical
+`ContractV2FieldDescriptor` wins.
 
 Rules:
 
@@ -272,7 +303,8 @@ Rules:
 9. Each block consumes the carrier through a declared field binding. A block
    must not infer a field from its title, label or dataset key.
 10. The block-data carrier contains values and references only; the canonical
-    `ContractV2Widget` remains the sole field-semantic authority.
+    `ContractV2FieldDescriptor` remains the sole field-semantic authority.
+11. Widget-backed and non-widget-backed values are both required test cases.
 
 Suggested block binding:
 
@@ -354,13 +386,6 @@ Add `runtimeContract.attachmentFacts`:
         "preview": "<action-id-or-empty>",
         "download": "<action-id-or-empty>",
         "delete": "<action-id-or-empty>"
-      },
-      "authorizationSubject": {
-        "scope": "per-action",
-        "source": "server-only action resolution",
-        "clientInputAllowed": false,
-        "resolvedBy": "existing action-specific service resolver",
-        "valueLocation": "page-block-action.v1.actions[actionId].authorization.subject"
       }
     }
   ]
@@ -370,6 +395,11 @@ Add `runtimeContract.attachmentFacts`:
 Action details remain in `P0-C`. This prevents attachment facts from defining a
 second permission model.
 
+The internal `authorizationSubject` is not part of this public carrier and is
+not included in the response fixture. It remains only in server execution
+authorization; the client receives the resolved authorization result, disabled
+reason and failure feedback.
+
 Rules:
 
 1. Attachment identity is an attachment record identity, not a display label,
@@ -378,13 +408,14 @@ Rules:
    association.
 3. `businessOwner` is the page or business-context record whose meaning gives
    the attachment its role. It may differ from `storageOwner`.
-4. `authorizationSubject` is action-scoped and identifies the record actually
-   checked by the owning service. The frontend never supplies or overrides it.
+4. `authorizationSubject` is action-scoped, server-only and never serialized to
+   the client. The frontend neither supplies nor overrides it.
 5. For download, the existing `resolve_file_download_auth_subject()` remains
    authoritative and may return a subject different from `storageOwner`.
 6. Upload and delete continue to use their existing server-side record and ACL
    checks.
-7. These three identities must never be collapsed into a single `owner` field.
+7. Public storage/business owners and the server-only authorization subject must
+   never be collapsed into a single `owner` field.
 8. `role` is explicit and may differ by industry context. P0 owns the role
    field, while P1/P2 may own which role applies.
 9. Preview derives from an explicitly authorized retrieval action; unsupported
@@ -400,8 +431,9 @@ Rules:
 - `smart_core` owns the generic attachment fact envelope and handles existing
   `file.download`, `file.upload` and `chatter.attachment.delete` authorization.
 - `chatter_timeline.py` projects current attachment rows into the envelope.
-- `file_download.py` supplies its resolved authorization subject through the
-  action result; a request-supplied subject is never accepted as authority.
+- `file_download.py` evaluates its resolved authorization subject internally
+  and publishes only the authorization result; the subject is not serialized,
+  and a request-supplied subject is never accepted as authority.
 - Contract V2 attachment surfaces and form collaboration fields reference
   facts; they do not duplicate authorization booleans.
 - `smart_construction_core` supplies construction-domain role assignments when
@@ -453,13 +485,6 @@ contract:
         "authorizationAllowed": true,
         "businessAvailable": true
       },
-      "authorization": {
-        "subject": {
-          "model": "<server-resolved-model>",
-          "recordId": "<server-resolved-record-identity>",
-          "source": "server_only"
-        }
-      },
       "state": {
         "enabled": true,
         "disabled": false,
@@ -470,6 +495,9 @@ contract:
   }
 }
 ```
+
+The internal `authorizationSubject` is not part of this public action payload.
+It stays inside the server authorization execution path.
 
 The target object itself is not wrapped or re-defined by this carrier. Existing
 Page Block target shapes remain exactly as the Action Target Schema publishes
@@ -584,6 +612,8 @@ Each implementation package must cover:
 - missing relation identity;
 - date/datetime with explicit timezone;
 - attachment role reference;
+- widget-backed descriptor reference;
+- non-widget computed/aggregate business fact descriptor;
 - old payload without a carrier fails closed for a block whose business
   semantics require it.
 
@@ -597,6 +627,8 @@ Each implementation package must cover:
 - preview supported/not supported;
 - delete owner/admin/non-owner paths;
 - failure reason/message/trace;
+- forged Authorization Subject is rejected/ignored as authority;
+- public fact and action payloads contain no Authorization Subject;
 - text URL and ordinary integer do not become attachments.
 
 ### Action feedback
@@ -618,6 +650,10 @@ Each implementation package must cover:
 - implementation Decoder accepts both the old and new complete projections;
 - a client omitting any required carrier capability receives the complete old
   projection;
+- a known stable client sending no version declaration receives the complete
+  old projection;
+- an unknown/missing client with no version declaration receives the typed
+  `CONTRACT_VERSION_UNSUPPORTED` error;
 - no common accepted version fails closed;
 - N-1 consumer reads N payload;
 - N consumer reads N-1 payload;
@@ -659,8 +695,8 @@ Read-only design verification passed:
 - Agent ledger: 18 tests.
 - Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
   two undeclared carriers rejected.
-- Machine design reconciliation: 3 packages, 50 planned positive/negative
-  cases, 11 compatibility rows and 25 current-source hashes.
+- Machine design reconciliation: 3 packages, 56 planned positive/negative
+  cases, 17 compatibility rows and 25 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 
