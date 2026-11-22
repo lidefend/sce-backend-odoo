@@ -104,8 +104,10 @@ def negotiate_client_contract(
 ) -> dict[str, Any]:
     """Choose one complete contract projection.
 
-    Pre-negotiation clients that send neither a client type, accepted version nor
-    capability receive the complete 2.5/2.0 legacy projection. Once any
+    A pre-negotiation client that sends neither a client type, accepted version
+    nor capability receives the complete 2.5/2.0 legacy projection. Its client
+    identity remains empty: absence of negotiation fields is evidence of the old
+    request shape, not evidence that the caller is ``web_pc``. Once any
     negotiation field is present, an unknown/missing client type fails closed.
     """
 
@@ -115,10 +117,10 @@ def negotiate_client_contract(
     if not resolved_client:
         if not versions and not capabilities:
             return _legacy_result(
-                client_type="web_pc",
+                client_type="",
                 accepted_versions=[],
                 capabilities=[],
-                compatibility_mode="pre_negotiation_client",
+                compatibility_mode="pre_negotiation_client_without_identity",
             )
         raise ContractNegotiationError(
             REASON_CONTRACT_VERSION_UNSUPPORTED,

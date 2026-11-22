@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import base64
+import json
+
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.page_block_data_contract import field_descriptor
@@ -6,6 +9,48 @@ from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import _stri
 from odoo.addons.smart_construction_core.handlers.workspace_home_enter import WorkspaceHomeEnterHandler
 from odoo.addons.smart_construction_core.services.scene_block_schema import build_contract, metric_card
 from odoo.addons.smart_construction_core.services.workspace_contract_builder import WorkspaceContractBuilder
+
+
+def _build_real_money_contract(env):
+    project = env["project.project"].create({
+        "name": "P0-A contract producer",
+        "company_id": env.company.id,
+    })
+    field = project._fields["budget_active_cost_target"]
+    if field.type != "monetary":
+        raise AssertionError("budget_active_cost_target must be monetary")
+    currency = project.company_currency_id or env.company.currency_id
+    if not currency:
+        raise AssertionError("P0-A monetary fixture requires a company currency")
+    block = metric_card(
+        "budget_active_cost_target",
+        "当前预算成本",
+        project.budget_active_cost_target,
+        subtitle="真实项目金额事实",
+        currency_identity=currency.id,
+        currency={
+            "id": currency.id,
+            "code": currency.name,
+            "symbol": currency.symbol,
+        },
+    )
+    block["value_descriptor"] = field_descriptor(
+        field_code="project.budget_active_cost_target",
+        label="当前预算成本",
+        field_type="monetary",
+        widget_type="monetary",
+        component_key="sc.value.money",
+        semantic_type="money",
+        digits=[16, int(currency.decimal_places or 2)],
+        currencyField="company_currency_id",
+    )
+    return build_contract(
+        scene_key="p0a.monetary",
+        title="P0-A 金额",
+        blocks=[block],
+        page_block_data_enabled=True,
+        timezone=env.user.tz or "UTC",
+    ), project, currency
 
 
 @tagged("post_install", "-at_install", "p0_contract_producer_p0a")
@@ -71,19 +116,50 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
 
+    def test_pre_negotiation_request_keeps_identity_unassigned(self):
+        result = WorkspaceHomeEnterHandler(self.env).handle({"params": {}})
+        self.assertTrue(result["ok"])
+        self.assertEqual(result["meta"]["contract_negotiation"]["clientType"], "")
+        self.assertEqual(
+            result["meta"]["contract_negotiation"]["compatibilityMode"],
+            "pre_negotiation_client_without_identity",
+        )
+        self.assertEqual(result["data"]["page_orchestration"]["contract_version"], "2.0.0")
+
     def test_real_monetary_model_field_keeps_raw_value_and_currency_semantics(self):
-        project = self.env["project.project"].create({"name": "P0-A contract producer"})
-        field = project._fields["budget_active_cost_target"]
-        self.assertEqual(field.type, "monetary")
+        contract, project, currency = _build_real_money_contract(self.env)
+        data_contract = contract["page_orchestration"]["block_data_contracts"]["ds_budget_active_cost_target"]
+        row = data_contract["rows"][0]
+        self.assertEqual(row["values"]["value"], project.budget_active_cost_target)
+        self.assertEqual(row["values"]["company_currency_id"], currency.id)
+        self.assertIn("company_currency_id", data_contract["fieldRefs"])
+        self.assertEqual(
+            data_contract["context"]["currencies"][str(currency.id)]["code"],
+            currency.name,
+        )
+        descriptor = contract["page_orchestration"]["block_field_descriptors"]["budget_active_cost_target.value"]
+        self.assertEqual(descriptor["semanticType"], "money")
+        self.assertEqual(descriptor["currencyField"], "company_currency_id")
+        self.assertEqual(descriptor["digits"], [16, int(currency.decimal_places or 2)])
+        currency_descriptor = contract["page_orchestration"]["block_field_descriptors"][
+            "budget_active_cost_target.company_currency_id"
+        ]
+        self.assertEqual(currency_descriptor["fieldCode"], "company_currency_id")
+        self.assertEqual(currency_descriptor["relation"], "res.currency")
+
+    def test_real_monetary_page_block_without_currency_identity_fails_closed(self):
+        project = self.env["project.project"].create({
+            "name": "P0-A missing currency",
+            "company_id": self.env.company.id,
+        })
         block = metric_card(
-            "budget_active_cost_target",
-            "当前预算成本",
+            "missing_currency_amount",
+            "缺少币种金额",
             project.budget_active_cost_target,
-            subtitle="真实项目金额事实",
         )
         block["value_descriptor"] = field_descriptor(
             field_code="project.budget_active_cost_target",
-            label="当前预算成本",
+            label="缺少币种金额",
             field_type="monetary",
             widget_type="monetary",
             component_key="sc.value.money",
@@ -91,26 +167,14 @@ class TestP0ContractProducerP0A(TransactionCase):
             digits=[16, int(project.company_currency_id.decimal_places or 2)],
             currencyField="company_currency_id",
         )
-        block["currencies"] = {
-            project.company_currency_id.id: {
-                "id": project.company_currency_id.id,
-                "code": project.company_currency_id.name,
-                "symbol": project.company_currency_id.symbol,
-            },
-        }
-        contract = build_contract(
-            scene_key="p0a.monetary",
-            title="P0-A 金额",
-            blocks=[block],
-            page_block_data_enabled=True,
-            timezone=self.env.user.tz or "UTC",
-        )
-        row = contract["page_orchestration"]["block_data_contracts"]["ds_budget_active_cost_target"]["rows"][0]
-        self.assertEqual(row["values"]["value"], project.budget_active_cost_target)
-        descriptor = contract["page_orchestration"]["block_field_descriptors"]["budget_active_cost_target.value"]
-        self.assertEqual(descriptor["semanticType"], "money")
-        self.assertEqual(descriptor["currencyField"], "company_currency_id")
-        self.assertEqual(descriptor["digits"], [16, int(project.company_currency_id.decimal_places or 2)])
+        with self.assertRaisesRegex(ValueError, "requires a declared currency field and matching identity"):
+            build_contract(
+                scene_key="p0a.missing.currency",
+                title="P0-A 缺少币种",
+                blocks=[block],
+                page_block_data_enabled=True,
+                timezone=self.env.user.tz or "UTC",
+            )
 
     def test_strict_widget_descriptor_uses_native_vocabulary_and_selection_pairs(self):
         descriptor = _strict_field_descriptor({
@@ -152,3 +216,16 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertIsNotNone(numeric)
         self.assertEqual(numeric["widgetType"], "number")
         self.assertEqual(numeric["semanticType"], "number")
+
+
+@tagged("post_install", "-at_install", "p0_contract_producer_p0a_money_evidence")
+class TestP0ContractProducerMoneyEvidence(TransactionCase):
+    def test_emit_real_orm_page_block_money_contract(self):
+        contract, _project, currency = _build_real_money_contract(self.env)
+        orchestration = contract["page_orchestration"]
+        row = orchestration["block_data_contracts"]["ds_budget_active_cost_target"]["rows"][0]
+        self.assertEqual(row["values"]["company_currency_id"], currency.id)
+        encoded = base64.b64encode(
+            json.dumps(orchestration, ensure_ascii=False, sort_keys=True).encode("utf-8")
+        ).decode("ascii")
+        print(f"P0A_REAL_ORM_MONEY_CONTRACT_B64={encoded}", flush=True)

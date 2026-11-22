@@ -9,8 +9,10 @@ try:
     from odoo.addons.smart_core.core.page_block_data_contract import (
         build_data_contract,
         build_page_orchestration_page_block_data,
+        currency_field_descriptor,
         descriptor_ref,
         field_descriptor,
+        normalize_currency_context,
     )
 except ModuleNotFoundError:
     _provider_path = Path(__file__).resolve().parents[2] / "smart_core" / "core" / "page_block_data_contract.py"
@@ -21,8 +23,10 @@ except ModuleNotFoundError:
     _provider_spec.loader.exec_module(_provider)
     build_data_contract = _provider.build_data_contract
     build_page_orchestration_page_block_data = _provider.build_page_orchestration_page_block_data
+    currency_field_descriptor = _provider.currency_field_descriptor
     descriptor_ref = _provider.descriptor_ref
     field_descriptor = _provider.field_descriptor
+    normalize_currency_context = _provider.normalize_currency_context
 
 
 CONTRACT_SCHEMA_VERSION = "2.0.0"
@@ -62,8 +66,18 @@ def action_target(*, action_xmlid: str = "", intent: str = "", params: Dict[str,
     return {"type": "none"}
 
 
-def metric_card(key: str, title: str, value: Any, *, subtitle: str = "", tone: str = "neutral", target=None) -> Dict[str, Any]:
-    return {
+def metric_card(
+    key: str,
+    title: str,
+    value: Any,
+    *,
+    subtitle: str = "",
+    tone: str = "neutral",
+    target=None,
+    currency_identity: Any = None,
+    currency: Dict[str, Any] | None = None,
+) -> Dict[str, Any]:
+    block = {
         "key": text(key),
         "type": "metric_card",
         "title": text(title),
@@ -72,6 +86,14 @@ def metric_card(key: str, title: str, value: Any, *, subtitle: str = "", tone: s
         "tone": text(tone) or "neutral",
         "target": target or {"type": "none"},
     }
+    if currency_identity not in (None, ""):
+        block["currency_identity"] = currency_identity
+    if isinstance(currency, dict):
+        identity = text(currency.get("id") or currency_identity)
+        if not identity:
+            raise ValueError("metric_card currency requires an identity")
+        block["currencies"] = {identity: dict(currency, id=currency.get("id") or identity)}
+    return block
 
 
 def shortcut_grid(key: str, title: str, items: Iterable[Dict[str, Any]]) -> Dict[str, Any]:
@@ -320,18 +342,46 @@ def _page_block_data_projection(
                 )
             )
             descriptors[descriptor_id] = descriptor
+            currencies = normalize_currency_context(
+                block.get("currencies") if isinstance(block.get("currencies"), dict) else {}
+            )
             values: Dict[str, Any] = {}
             if "value" in block:
                 values["value"] = block.get("value")
+            field_refs = {
+                "value": descriptor_ref(
+                    descriptor_id=descriptor_id,
+                    raw_value_path="value",
+                ),
+            }
+            if text(descriptor.get("semanticType")) == "money":
+                currency_field = text(descriptor.get("currencyField"))
+                identity = block.get("currency_identity")
+                if identity in (None, ""):
+                    identity = block.get("currency_id")
+                normalized_identity = text(identity)
+                if (
+                    not currency_field
+                    or currency_field == "value"
+                    or not normalized_identity
+                    or normalized_identity not in currencies
+                ):
+                    raise ValueError(
+                        f"money Page Block {key} requires a declared currency field and matching identity"
+                    )
+                currency_descriptor_id = f"{key}.{currency_field}"
+                descriptors[currency_descriptor_id] = currency_field_descriptor(
+                    field_code=currency_field,
+                )
+                field_refs[currency_field] = descriptor_ref(
+                    descriptor_id=currency_descriptor_id,
+                    raw_value_path=currency_field,
+                )
+                values[currency_field] = identity
             data_contracts[f"ds_{key}"] = build_data_contract(
                 rows=[{"rowKey": key, "values": values}],
-                field_refs={
-                    "value": descriptor_ref(
-                        descriptor_id=descriptor_id,
-                        raw_value_path="value",
-                    ),
-                },
-                currencies=block.get("currencies") if isinstance(block.get("currencies"), dict) else {},
+                field_refs=field_refs,
+                currencies=currencies,
                 timezone=timezone,
             )
     return build_page_orchestration_page_block_data(

@@ -928,7 +928,14 @@ RULES = (
         "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
     ), (
         "verify.p0_contract_producer.p0a.backend_unit",
+        "verify.p0_contract_producer.p0a.money",
         "verify.p0_contract_producer.p0a.unit",
+    )),
+    Rule((
+        "scripts/verify/p0_contract_producer_money_evidence.py",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+    ), (
+        "verify.p0_contract_producer.p0a.money",
     )),
     Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",

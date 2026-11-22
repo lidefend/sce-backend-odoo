@@ -31,6 +31,7 @@
     "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
     "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
     "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
     "frontend/apps/web/src/api/intents.ts",
     "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
     "frontend/apps/web/src/app/contracts/v2/client.ts",
@@ -53,6 +54,7 @@
     "scripts/verify/frontend_decision_authority.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/frontend_professional_component_registry_guard.py",
+    "scripts/verify/p0_contract_producer_money_evidence.py",
     "scripts/verify/test_contract_fidelity_plan_guard.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
@@ -138,6 +140,7 @@
       "inputs": [
         "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
         "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
         "frontend/apps/web/src/app/contracts/v2",
         "frontend/apps/web/src/app/pageOrchestration.ts",
         "frontend/apps/web/src/components/page/PageRenderer.vue",
@@ -147,6 +150,23 @@
       "kind": "runtime",
       "readback": {
         "artifact": "artifacts/p0_contract_producer_01/p0a_browser_acceptance.json"
+      }
+    },
+    "p0a_money_chain": {
+      "target": "verify.p0_contract_producer.p0a.money",
+      "inputs": [
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+        "scripts/verify/p0_contract_producer_money_evidence.py",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/p0_contract_producer_01/real-money-page-block-contract.json"
       }
     },
     "frontend_decision_authority": {

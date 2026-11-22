@@ -68,6 +68,7 @@ async function validateCompatMatrix(page) {
     known_old_without_versions: {
       client_type: 'web_pc',
     },
+    pre_negotiation_without_identity: {},
     legacy_25: base,
     legacy_26_without_capability: {
       ...base,
@@ -209,6 +210,13 @@ async function main() {
       const run = await renderViewport(browser, viewport);
       assertCurrentPayload(`${viewport.name}.current`, run.matrix.current_page_block_data);
       assertLegacyPayload(`${viewport.name}.known_old_without_versions`, run.matrix.known_old_without_versions);
+      assertLegacyPayload(
+        `${viewport.name}.pre_negotiation_without_identity`,
+        run.matrix.pre_negotiation_without_identity,
+      );
+      if (run.matrix.pre_negotiation_without_identity.body?.meta?.contract_negotiation?.clientType !== '') {
+        throw new Error(`${viewport.name}: missing client identity was implicitly assigned`);
+      }
       assertLegacyPayload(`${viewport.name}.legacy_25`, run.matrix.legacy_25);
       assertLegacyPayload(`${viewport.name}.legacy_26_without_capability`, run.matrix.legacy_26_without_capability);
       if (run.matrix.no_common_version.status === 200 && run.matrix.no_common_version.body?.ok !== false) {
@@ -250,6 +258,7 @@ async function main() {
             ok: value.body?.ok,
             contract_version: value.body?.data?.page_orchestration?.contract_version,
             reason_code: value.body?.error?.reason_code || value.body?.error?.reasonCode || '',
+            client_type: value.body?.meta?.contract_negotiation?.clientType,
           },
         ])),
         contract_v2: Object.fromEntries(Object.entries(run.contractV2Matrix).map(([key, value]) => [

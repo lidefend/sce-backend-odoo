@@ -89,6 +89,47 @@ function push(issues: FieldDescriptorDecodeIssue[], path: string, code: string, 
   issues.push({ path, code, message });
 }
 
+function rejectNestedUnknownKeys(
+  value: UnknownRecord,
+  allowed: readonly string[],
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): void {
+  Object.keys(value).forEach((key) => {
+    if (!allowed.includes(key)) {
+      push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_UNKNOWN_KEY', 'unknown nested descriptor property');
+    }
+  });
+}
+
+function decodeOptionalBoolean(
+  raw: UnknownRecord,
+  key: string,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): boolean | undefined {
+  if (raw[key] === undefined) return undefined;
+  if (typeof raw[key] !== 'boolean') {
+    push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be boolean');
+    return undefined;
+  }
+  return raw[key] as boolean;
+}
+
+function decodeOptionalText(
+  raw: UnknownRecord,
+  key: string,
+  path: string,
+  issues: FieldDescriptorDecodeIssue[],
+): string | undefined {
+  if (raw[key] === undefined) return undefined;
+  if (typeof raw[key] !== 'string' || !raw[key].trim()) {
+    push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be a non-empty string');
+    return undefined;
+  }
+  return raw[key].trim();
+}
+
 function applicableFieldSemantics(): Set<string> {
   const out = new Set<string>();
   Object.entries(SEMANTIC_COMPONENT_REGISTRY).forEach(([semanticType, componentKey]) => {
@@ -184,6 +225,7 @@ function decodeUnit(
     push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'unit must be an object');
     return undefined;
   }
+  rejectNestedUnknownKeys(value, ['kind', 'code', 'label'], path, issues);
   const kind = text(value.kind);
   const code = text(value.code);
   const label = text(value.label);
@@ -207,6 +249,7 @@ function decodeTemporal(
     push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'temporal must be an object');
     return undefined;
   }
+  rejectNestedUnknownKeys(value, ['kind', 'timezoneAuthority'], path, issues);
   const kind = text(value.kind);
   const timezoneAuthority = text(value.timezoneAuthority);
   if (kind === 'date' && timezoneAuthority === 'not_applicable') {
@@ -228,6 +271,7 @@ function decodeFormStructureRole(
     push(issues, path, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'formStructureRole must be an object');
     return undefined;
   }
+  rejectNestedUnknownKeys(value, ['role', 'slot', 'group'], path, issues);
   const role = text(value.role);
   const slot = text(value.slot);
   const group = text(value.group);
@@ -297,6 +341,21 @@ export function decodeContractV2FieldDescriptor(
   const widgetResolution = widgetType
     ? decodeWidgetResolution(widgetType, path, issues)
     : null;
+  const required = decodeOptionalBoolean(raw, 'required', path, issues);
+  const readonly = decodeOptionalBoolean(raw, 'readonly', path, issues);
+  const invisible = decodeOptionalBoolean(raw, 'invisible', path, issues);
+  const technical = decodeOptionalBoolean(raw, 'technical', path, issues);
+  const relation = decodeOptionalText(raw, 'relation', path, issues) || '';
+  const relationField = decodeOptionalText(raw, 'relationField', path, issues);
+  const currencyField = decodeOptionalText(raw, 'currencyField', path, issues) || '';
+  const filename = decodeOptionalText(raw, 'filename', path, issues);
+  const surfaceRole = decodeOptionalText(raw, 'surfaceRole', path, issues);
+  const attachmentRole = decodeOptionalText(raw, 'attachmentRole', path, issues) || '';
+  for (const key of ['relationEntry', 'widgetOptions', 'subview'] as const) {
+    if (raw[key] !== undefined && !isRecord(raw[key])) {
+      push(issues, `${path}.${key}`, 'FIELD_DESCRIPTOR_TYPE_INVALID', 'must be an object');
+    }
+  }
   const digits = raw.digits === undefined ? undefined : decodeDigits(raw.digits, `${path}.digits`, issues);
   const selection = raw.selection === undefined
     ? undefined
@@ -306,12 +365,15 @@ export function decodeContractV2FieldDescriptor(
   const formStructureRole = raw.formStructureRole === undefined
     ? undefined
     : decodeFormStructureRole(raw.formStructureRole, `${path}.formStructureRole`, issues);
-  const currencyField = raw.currencyField === undefined ? '' : text(raw.currencyField);
-  const relation = raw.relation === undefined ? '' : text(raw.relation);
-  const attachmentRole = raw.attachmentRole === undefined ? '' : text(raw.attachmentRole);
 
   if (fieldType === 'monetary' || semanticType === 'money') {
-    if (fieldType !== 'monetary' || semanticType !== 'money' || !digits || !currencyField) {
+    if (
+      fieldType !== 'monetary'
+      || semanticType !== 'money'
+      || !digits
+      || !currencyField
+      || currencyField === fieldCode
+    ) {
       push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'money requires monetary fieldType, digits and currencyField');
     }
     if (raw.unit !== undefined || raw.temporal !== undefined || raw.attachmentRole !== undefined) {
@@ -362,11 +424,11 @@ export function decodeContractV2FieldDescriptor(
     widgetType,
     componentKey,
     semanticType,
-    ...(typeof raw.required === 'boolean' ? { required: raw.required } : {}),
-    ...(typeof raw.readonly === 'boolean' ? { readonly: raw.readonly } : {}),
-    ...(typeof raw.invisible === 'boolean' ? { invisible: raw.invisible } : {}),
+    ...(required !== undefined ? { required } : {}),
+    ...(readonly !== undefined ? { readonly } : {}),
+    ...(invisible !== undefined ? { invisible } : {}),
     ...(relation ? { relation } : {}),
-    ...(text(raw.relationField) ? { relationField: text(raw.relationField) } : {}),
+    ...(relationField ? { relationField } : {}),
     ...(selection ? { selection } : {}),
     ...(raw.domain !== undefined ? { domain: raw.domain } : {}),
     ...(raw.domainExpression !== undefined ? { domainExpression: raw.domainExpression } : {}),
@@ -374,9 +436,9 @@ export function decodeContractV2FieldDescriptor(
     ...(isRecord(raw.relationEntry) ? { relationEntry: raw.relationEntry } : {}),
     ...(isRecord(raw.widgetOptions) ? { widgetOptions: raw.widgetOptions } : {}),
     ...(isRecord(raw.subview) ? { subview: raw.subview } : {}),
-    ...(text(raw.filename) ? { filename: text(raw.filename) } : {}),
-    ...(text(raw.surfaceRole) ? { surfaceRole: text(raw.surfaceRole) } : {}),
-    ...(typeof raw.technical === 'boolean' ? { technical: raw.technical } : {}),
+    ...(filename ? { filename } : {}),
+    ...(surfaceRole ? { surfaceRole } : {}),
+    ...(technical !== undefined ? { technical } : {}),
     ...(formStructureRole ? { formStructureRole } : {}),
     ...(digits ? { digits } : {}),
     ...(currencyField ? { currencyField } : {}),

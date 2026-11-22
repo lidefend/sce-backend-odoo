@@ -640,7 +640,7 @@
       "literal": "legacy",
       "path": "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
       "lines": [
-        76
+        110
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -653,8 +653,8 @@
       "literal": "fallback",
       "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
       "lines": [
-        118,
-        134
+        159,
+        175
       ],
       "occurrences": 2,
       "classification": "contract-derived",
@@ -667,7 +667,7 @@
       "literal": "unsupported",
       "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
       "lines": [
-        114
+        155
       ],
       "occurrences": 1,
       "classification": "contract-derived",

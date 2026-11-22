@@ -190,7 +190,11 @@ class ContractVersionNegotiationTest(unittest.TestCase):
             client_contract_capabilities=None,
         )
         self.assertEqual(result["contractVersion"], "2.5.0")
-        self.assertEqual(result["compatibilityMode"], "pre_negotiation_client")
+        self.assertEqual(result["clientType"], "")
+        self.assertEqual(
+            result["compatibilityMode"],
+            "pre_negotiation_client_without_identity",
+        )
 
     def test_new_version_never_leaks_unrequested_carriers(self):
         result = self.negotiate(
@@ -217,16 +221,20 @@ class PageBlockDataContractTest(unittest.TestCase):
         )
         data = PAGE_BLOCK_DATA_MODULE.build_data_contract(
             rows=[
-                {"rowKey": "pending", "values": {"value": "0.00"}},
+                {"rowKey": "pending", "values": {"value": "0.00", "currency_id": 7}},
                 {"rowKey": "missing", "values": {}},
             ],
             field_refs={
                 "value": PAGE_BLOCK_DATA_MODULE.descriptor_ref(
                     descriptor_id="payment.pending_amount.value",
                     raw_value_path="value",
-                )
+                ),
+                "currency_id": PAGE_BLOCK_DATA_MODULE.descriptor_ref(
+                    descriptor_id="payment.pending_amount.currency",
+                    raw_value_path="currency_id",
+                ),
             },
-            currencies={"CNY": {"code": "CNY", "symbol": "¥"}},
+            currencies={"7": {"id": 7, "code": "CNY", "symbol": "¥"}},
             timezone="Asia/Shanghai",
         )
         carrier = PAGE_BLOCK_DATA_MODULE.build_page_orchestration_page_block_data(
@@ -237,9 +245,27 @@ class PageBlockDataContractTest(unittest.TestCase):
         self.assertEqual(carrier["contract_version"], "2.1.0")
         self.assertEqual(carrier["schema_version"], "2.1.0")
         self.assertEqual(carrier["block_data_contracts"]["ds_pending_amount"]["rows"][0]["values"]["value"], "0.00")
+        self.assertEqual(
+            carrier["block_data_contracts"]["ds_pending_amount"]["rows"][0]["values"]["currency_id"],
+            7,
+        )
         self.assertNotIn("value", carrier["block_data_contracts"]["ds_pending_amount"]["rows"][1]["values"])
         self.assertEqual(carrier["block_field_descriptors"]["payment.pending_amount.value"], descriptor)
         self.assertEqual(carrier["block_data_contracts"]["ds_pending_amount"]["context"]["timezone"], "Asia/Shanghai")
+        self.assertEqual(
+            carrier["block_data_contracts"]["ds_pending_amount"]["context"]["currencies"]["7"]["code"],
+            "CNY",
+        )
+
+    def test_currency_context_rejects_unknown_fields_and_identity_mismatch(self):
+        with self.assertRaisesRegex(ValueError, "unknown fields"):
+            PAGE_BLOCK_DATA_MODULE.normalize_currency_context({
+                "7": {"id": 7, "code": "CNY", "unexpected": True},
+            })
+        with self.assertRaisesRegex(ValueError, "does not match its key"):
+            PAGE_BLOCK_DATA_MODULE.normalize_currency_context({
+                "7": {"id": 8, "code": "CNY"},
+            })
 
     def test_legacy_projection_has_no_new_carriers(self):
         carrier = PAGE_BLOCK_DATA_MODULE.build_page_orchestration_page_block_data(

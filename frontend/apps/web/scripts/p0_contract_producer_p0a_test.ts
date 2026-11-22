@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict';
 import { decodeContractV2FieldDescriptor } from '../src/app/contracts/v2/fieldDescriptor';
 import { decodeContractCarrierCapabilities } from '../src/app/contracts/v2/carrierCapabilities';
+import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
 import {
   PageOrchestrationDecodeError,
   decodePageOrchestrationContract,
@@ -43,6 +44,10 @@ const fallback = decodeContractV2FieldDescriptor({
 const carrierCapabilities = decodeContractCarrierCapabilities({
   negotiationVersion: '1.0.0',
   status: 'current',
+  clientType: 'web_pc',
+  compatibilityMode: 'page_block_data_v1',
+  acceptedContractVersions: ['2.5.x', '2.6.x'],
+  clientContractCapabilities: ['page_block_data.v1'],
   contractVersion: '2.6.0',
   pageOrchestrationVersion: '2.1.0',
   carriers: {
@@ -81,6 +86,26 @@ assert.throws(
   }),
   /CONTRACT_CARRIER_CAPABILITIES_INVALID:negotiationVersion/,
 );
+assert.throws(
+  () => decodeContractCarrierCapabilities({
+    ...carrierCapabilities,
+    carriers: {
+      ...carrierCapabilities.carriers,
+      'page_block_data.v1': {
+        schemaVersion: '1.0.0',
+        enabled: true,
+        unexpected: true,
+      },
+    },
+  }),
+  /CONTRACT_CARRIER_CAPABILITIES_INVALID:page_block_data\.v1\.unexpected/,
+);
+const missingClientType = { ...carrierCapabilities } as Record<string, unknown>;
+delete missingClientType.clientType;
+assert.throws(
+  () => decodeContractCarrierCapabilities(missingClientType),
+  /CONTRACT_CARRIER_CAPABILITIES_INVALID:clientType/,
+);
 assert.deepEqual(fallback.registryResolution.widget, {
   widgetType: 'boolean_toggle',
   widgetStatus: 'fallback',
@@ -94,6 +119,62 @@ assert.throws(
 assert.throws(
   () => decodeContractV2FieldDescriptor({ ...readyMoney, widgetType: 'mystery' }),
   /FIELD_DESCRIPTOR_WIDGET_UNKNOWN/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...readyMoney,
+    unit: { kind: 'percent', code: 'percent', label: '%', unexpected: true },
+  }),
+  /FIELD_DESCRIPTOR_UNKNOWN_KEY/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...readyMoney,
+    temporal: { kind: 'datetime', timezoneAuthority: 'user', unexpected: true },
+  }),
+  /FIELD_DESCRIPTOR_UNKNOWN_KEY/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...readyMoney,
+    formStructureRole: { role: 'summary', slot: 'identity', group: 'main', unexpected: true },
+  }),
+  /FIELD_DESCRIPTOR_UNKNOWN_KEY/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, required: 'yes' }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, relationEntry: [] }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, widgetOptions: [] }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, subview: [] }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, surfaceRole: 7 }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, technical: 'false' }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({ ...readyMoney, currencyField: 7 }),
+  /FIELD_DESCRIPTOR_TYPE_INVALID/,
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...readyMoney,
+    currencyField: readyMoney.fieldCode,
+  }),
+  /FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED/,
 );
 
 const pageContract = decodePageOrchestrationContract({
@@ -132,25 +213,36 @@ const pageContract = decodePageOrchestrationContract({
       componentKey: 'sc.input.text',
       semanticType: 'text',
     },
+    'metric.currency': {
+      schemaVersion: '1.0.0',
+      fieldCode: 'currency_id',
+      label: '币种',
+      fieldType: 'many2one',
+      widgetType: 'many2one',
+      componentKey: 'sc.relation.many2one',
+      semanticType: 'relation',
+      relation: 'res.currency',
+    },
   },
   block_data_contracts: {
     ds_metrics: {
       schemaVersion: '1.0.0',
       fieldRefs: {
         value: { kind: 'descriptor', descriptorId: 'metric.value', rawValuePath: 'value' },
+        currency_id: { kind: 'descriptor', descriptorId: 'metric.currency', rawValuePath: 'currency_id' },
         active: { kind: 'descriptor', descriptorId: 'metric.active', rawValuePath: 'active' },
         note: { kind: 'descriptor', descriptorId: 'metric.note', rawValuePath: 'note' },
       },
       rows: [
-        { rowKey: 'money', values: { value: 0, active: false, note: '' } },
-        { rowKey: 'null', values: { value: null, active: null, note: null } },
+        { rowKey: 'money', values: { value: 0, currency_id: 7, active: false, note: '' } },
+        { rowKey: 'null', values: { value: null, currency_id: 7, active: null, note: null } },
         { rowKey: 'missing', values: {} },
       ],
       context: {
-        currencies: { CNY: { code: 'CNY', symbol: '¥' } },
+        currencies: { '7': { id: 7, code: 'CNY', symbol: '¥' } },
         timezone: 'Asia/Shanghai',
       },
-      sourceAuthority: { kind: 'test' },
+      sourceAuthority: { kind: 'test', projectionOnly: true },
     },
   },
 });
@@ -159,6 +251,19 @@ assert.equal(resolved[0].values.value, 0);
 assert.equal(resolved[0].values.active, false);
 assert.equal(resolved[0].values.note, '');
 assert.equal(resolved[0].fieldDescriptors.value.semanticType, 'money');
+assert.equal(resolvePageBlockCurrencyLabel(resolved[0], 'currency_id'), 'CNY');
+const moneyText = presentDeclaredBusinessValue({
+  field: {
+    name: resolved[0].fieldDescriptors.value.fieldCode,
+    type: resolved[0].fieldDescriptors.value.fieldType,
+    componentKey: resolved[0].fieldDescriptors.value.componentKey,
+    widget: resolved[0].fieldDescriptors.value.widgetType,
+    digits: [16, 2],
+    currencyLabel: resolvePageBlockCurrencyLabel(resolved[0], 'currency_id'),
+  },
+  value: 1234.5,
+}).text;
+assert.match(moneyText, /1,234\.50/);
 assert.equal(resolved[1].values.value, null);
 assert.equal(resolved[1].values.active, null);
 assert.equal(resolved[1].values.note, null);
@@ -173,18 +278,35 @@ const overlaid = overlayPageBlockDataRows(
 );
 assert.equal(overlaid[0].value, 0);
 assert.equal(overlaid[1].value, undefined);
+const reordered = overlayPageBlockDataRows(
+  [resolved[0], resolved[1]],
+  [
+    { key: 'null', title: 'Null row', value: 9, action_key: 'wrong-null' },
+    { key: 'external', title: 'External row', value: 8, action_key: 'wrong-external' },
+    { key: 'money', title: 'Money row', value: 1, action_key: 'money-action' },
+  ],
+);
+assert.equal(reordered[0].title, 'Money row');
+assert.equal(reordered[0].action_key, 'money-action');
+assert.equal(reordered[1].title, 'Null row');
+assert.equal(reordered[1].action_key, 'wrong-null');
+const unmatched = overlayPageBlockDataRows(
+  [resolved[2]],
+  [{ key: 'external', title: 'External row', value: 8, action_key: 'wrong-external' }],
+);
+assert.equal('title' in unmatched[0], false);
+assert.equal('action_key' in unmatched[0], false);
+assert.equal('value' in unmatched[0], false);
+assert.throws(
+  () => overlayPageBlockDataRows(
+    [resolved[0]],
+    [{ key: 'money', title: 'First' }, { key: 'money', title: 'Second' }],
+  ),
+  /stable rowKey matching is ambiguous/,
+);
 
-const currencyRow = {
-  ...resolved[0],
-  values: { ...resolved[0].values, currency_id: 7 },
-  context: {
-    currencies: { '7': { code: 'CNY', symbol: '¥' } },
-    timezone: 'Asia/Shanghai',
-  },
-};
-assert.equal(resolvePageBlockCurrencyLabel(currencyRow, 'currency_id'), 'CNY');
 assert.equal(resolvePageBlockCurrencyLabel(
-  { ...currencyRow, values: { value: 0 } },
+  { ...resolved[0], values: { value: 0 } },
   'currency_id',
 ), '');
 
@@ -193,16 +315,29 @@ const widgetBackedContract = decodePageOrchestrationContract({
   schema_version: '2.1.0',
   page: { key: 'widget-backed' },
   zones: [],
-  block_field_descriptors: { 'anchor.descriptor': readyMoney },
+  block_field_descriptors: {
+    'anchor.descriptor': readyMoney,
+    'anchor.currency': {
+      schemaVersion: '1.0.0',
+      fieldCode: 'currency_id',
+      label: '币种',
+      fieldType: 'many2one',
+      widgetType: 'many2one',
+      componentKey: 'sc.relation.many2one',
+      semanticType: 'relation',
+      relation: 'res.currency',
+    },
+  },
   block_data_contracts: {
     ds_widget: {
       schemaVersion: '1.0.0',
       fieldRefs: {
         value: { kind: 'widget', widgetId: 'widget.money', rawValuePath: 'value' },
+        currency_id: { kind: 'descriptor', descriptorId: 'anchor.currency', rawValuePath: 'currency_id' },
       },
-      rows: [{ rowKey: 'widget', values: { value: 0 } }],
-      context: { currencies: {}, timezone: 'UTC' },
-      sourceAuthority: { kind: 'test' },
+      rows: [{ rowKey: 'widget', values: { value: 0, currency_id: 7 } }],
+      context: { currencies: { '7': { id: 7, code: 'CNY', symbol: '¥' } }, timezone: 'UTC' },
+      sourceAuthority: { kind: 'test', projectionOnly: true },
     },
   },
 });
@@ -231,6 +366,79 @@ assert.throws(
     block_data_contracts: {},
   }),
   (error: unknown) => error instanceof PageOrchestrationDecodeError,
+);
+
+function cloneContract<T>(value: T): T {
+  return JSON.parse(JSON.stringify(value)) as T;
+}
+
+const missingAuthority = cloneContract(pageContract as Record<string, unknown>);
+delete (((missingAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority);
+assert.throws(
+  () => decodePageOrchestrationContract(missingAuthority),
+  /sourceAuthority must be an object/,
+);
+
+const unknownAuthority = cloneContract(pageContract as Record<string, unknown>);
+((unknownAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority = {
+  kind: 'test',
+  projectionOnly: true,
+  unexpected: true,
+};
+assert.throws(
+  () => decodePageOrchestrationContract(unknownAuthority),
+  /sourceAuthority\.unexpected is not allowed/,
+);
+
+const unknownFieldRef = cloneContract(pageContract as Record<string, unknown>);
+const fieldRefs = (((unknownFieldRef.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).fieldRefs) as Record<string, Record<string, unknown>>;
+fieldRefs.value.unexpected = true;
+assert.throws(
+  () => decodePageOrchestrationContract(unknownFieldRef),
+  /fieldRefs\.value\.unexpected is not allowed/,
+);
+
+const unknownRowEnvelope = cloneContract(pageContract as Record<string, unknown>);
+const rows = (((unknownRowEnvelope.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).rows) as Array<Record<string, unknown>>;
+rows[0].unexpected = true;
+assert.throws(
+  () => decodePageOrchestrationContract(unknownRowEnvelope),
+  /rows\[0\]\.unexpected is not allowed/,
+);
+
+const unknownContext = cloneContract(pageContract as Record<string, unknown>);
+const context = (((unknownContext.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).context) as Record<string, unknown>;
+context.unexpected = true;
+assert.throws(
+  () => decodePageOrchestrationContract(unknownContext),
+  /context\.unexpected is not allowed/,
+);
+
+const unknownCurrency = cloneContract(pageContract as Record<string, unknown>);
+const currencies = ((((unknownCurrency.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).context) as Record<string, unknown>).currencies as Record<string, Record<string, unknown>>;
+currencies['7'].unexpected = true;
+assert.throws(
+  () => decodePageOrchestrationContract(unknownCurrency),
+  /currencies\.7\.unexpected is not allowed/,
+);
+
+const missingCurrencyIdentity = cloneContract(pageContract as Record<string, unknown>);
+delete (((missingCurrencyIdentity.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).fieldRefs as Record<string, unknown>).currency_id;
+const decodedMissingCurrency = decodePageOrchestrationContract(missingCurrencyIdentity);
+assert.throws(
+  () => resolvePageBlockData(decodedMissingCurrency, 'ds_metrics'),
+  /money value requires a uniquely resolvable currency identity/,
+);
+
+const wrongCurrencyDescriptor = cloneContract(pageContract as Record<string, unknown>);
+const wrongCurrencyFields = wrongCurrencyDescriptor.block_field_descriptors as Record<string, Record<string, unknown>>;
+wrongCurrencyFields['metric.currency'].relation = 'res.partner';
+assert.throws(
+  () => resolvePageBlockData(
+    decodePageOrchestrationContract(wrongCurrencyDescriptor),
+    'ds_metrics',
+  ),
+  /money value requires a uniquely resolvable currency identity/,
 );
 
 console.log('P0_A_DESCRIPTOR_AND_PAGE_BLOCK_DATA=PASS');

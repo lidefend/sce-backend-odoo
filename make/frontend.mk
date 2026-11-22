@@ -894,8 +894,15 @@ verify.p0_contract_producer.p0a.backend_unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_page_contracts_builder_boundaries.py
 	@python3 addons/smart_construction_core/tests/test_scene_block_schema_contract.py
 
-.PHONY: verify.p0_contract_producer.p0a.browser
+.PHONY: verify.p0_contract_producer.p0a.money verify.p0_contract_producer.p0a.browser
+verify.p0_contract_producer.p0a.money: guard.prod.forbid
+	@python3 scripts/verify/p0_contract_producer_money_evidence.py \
+		--output artifacts/p0_contract_producer_01/real-money-page-block-contract.json
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-money-decode-test.mjs >/dev/null
+	@P0A_MONEY_CONTRACT_PATH=artifacts/p0_contract_producer_01/real-money-page-block-contract.json node /tmp/p0-contract-producer-real-money-decode-test.mjs
+
 verify.p0_contract_producer.p0a.browser: guard.prod.forbid local.dev.ready local.dev.health
+	@$(MAKE) --no-print-directory verify.p0_contract_producer.p0a.money
 	@node frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-contract-decode-test.mjs >/dev/null
 	@node /tmp/p0-contract-producer-real-contract-decode-test.mjs

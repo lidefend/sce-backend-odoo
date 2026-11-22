@@ -98,10 +98,23 @@ export function overlayPageBlockDataRows(
   rows: PageBlockDataResolvedRow[],
   legacyRows: Array<Record<string, unknown>>,
 ): Array<Record<string, unknown>> {
-  return rows.map((row, index) => {
-    const legacy = legacyRows.find((item) => (
-      String(item.key || item.id || '').trim() === row.rowKey
-    )) || legacyRows[index] || {};
+  const legacyByKey = new Map<string, Record<string, unknown>>();
+  const duplicateKeys = new Set<string>();
+  legacyRows.forEach((item) => {
+    const key = String(item.key || item.id || '').trim();
+    if (!key) return;
+    if (legacyByKey.has(key)) duplicateKeys.add(key);
+    else legacyByKey.set(key, item);
+  });
+  const duplicate = rows.find((row) => duplicateKeys.has(row.rowKey));
+  if (duplicate) {
+    throw new PageOrchestrationDecodeError([{
+      path: `page_block_data.rows.${duplicate.rowKey}`,
+      message: 'legacy row identity is duplicated; stable rowKey matching is ambiguous',
+    }]);
+  }
+  return rows.map((row) => {
+    const legacy = legacyByKey.get(row.rowKey) || {};
     const merged = { ...legacy };
     Object.keys(row.fieldDescriptors).forEach((slotKey) => {
       if (!Object.prototype.hasOwnProperty.call(row.values, slotKey)) {
@@ -122,20 +135,18 @@ export function resolvePageBlockCurrencyLabel(
 ): string {
   const field = String(currencyField || '').trim();
   if (!field) return '';
-  const candidates: string[] = [];
   const currencySlot = Object.entries(row.fieldDescriptors)
     .find(([slotKey, descriptor]) => slotKey === field || descriptor.fieldCode === field);
   const currencyValue = currencySlot ? row.values[currencySlot[0]] : row.values[field];
+  let identity = '';
   if (Array.isArray(currencyValue)) {
-    candidates.push(String(currencyValue[0] ?? '').trim());
+    identity = String(currencyValue[0] ?? '').trim();
   } else if (currencyValue && typeof currencyValue === 'object') {
-    const identity = currencyValue as Record<string, unknown>;
-    candidates.push(String(identity.id ?? '').trim());
+    const currency = currencyValue as Record<string, unknown>;
+    identity = String(currency.id ?? '').trim();
   } else if (currencyValue !== undefined && currencyValue !== null) {
-    candidates.push(String(currencyValue).trim());
+    identity = String(currencyValue).trim();
   }
-  candidates.push(field);
-  const identity = candidates.find((candidate) => candidate && row.context.currencies[candidate]);
   if (!identity) return '';
   const currency = row.context.currencies[identity];
   if (!currency || typeof currency !== 'object') return '';
@@ -157,6 +168,26 @@ const PAGE_ORCHESTRATION_KEYS = new Set([
   'data_sources', 'state_schema', 'action_schema', 'render_hints', 'meta',
   'block_field_descriptors', 'block_data_contracts',
 ]);
+const PAGE_BLOCK_DATA_KEYS = new Set([
+  'schemaVersion', 'fieldRefs', 'rows', 'context', 'sourceAuthority',
+]);
+const PAGE_BLOCK_CONTEXT_KEYS = new Set(['currencies', 'timezone']);
+const CURRENCY_KEYS = new Set(['id', 'code', 'label', 'symbol']);
+const SOURCE_AUTHORITY_KEYS = new Set([
+  'kind',
+  'authorities',
+  'projectionOnly',
+  'noFrontendDefaults',
+  'noBusinessFactAuthority',
+  'carrier',
+  'schemaVersion',
+]);
+const FIELD_REF_BASE_KEYS = new Set(['kind', 'rawValuePath']);
+const DESCRIPTOR_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'descriptorId']);
+const WIDGET_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'widgetId']);
+const ROW_KEYS = new Set(['rowKey', 'values']);
+const FIELD_IDENTIFIER_PATTERN = /^[A-Za-z_][A-Za-z0-9_.:-]*$/;
+const FORBIDDEN_PATH_SEGMENTS = new Set(['__proto__', 'constructor', 'prototype']);
 
 function asRecord(value: unknown): ContractV2Dictionary {
   return value && typeof value === 'object' && !Array.isArray(value)
@@ -168,23 +199,53 @@ function asText(value: unknown): string {
   return typeof value === 'string' ? value.trim() : '';
 }
 
+function rejectUnknownKeys(
+  value: ContractV2Dictionary,
+  allowed: Set<string>,
+  path: string,
+): void {
+  const unknown = Object.keys(value).filter((key) => !allowed.has(key));
+  if (unknown.length) {
+    throw new PageOrchestrationDecodeError(
+      unknown.map((key) => ({ path: `${path}.${key}`, message: 'is not allowed' })),
+    );
+  }
+}
+
+function decodeRawValuePath(value: unknown, path: string): string {
+  const rawValuePath = asText(value);
+  const segments = Array.from(rawValuePath.matchAll(/[^.]+/g), (match) => match[0]);
+  if (
+    !rawValuePath
+    || rawValuePath.startsWith('.')
+    || rawValuePath.endsWith('.')
+    || rawValuePath.includes('..')
+    || segments.some((segment) => !segment || FORBIDDEN_PATH_SEGMENTS.has(segment))
+  ) {
+    throw new PageOrchestrationDecodeError([{
+      path,
+      message: 'must be a non-empty safe object path',
+    }]);
+  }
+  return rawValuePath;
+}
+
 function decodeFieldRef(value: unknown, path: string): ContractV2PageBlockFieldRef {
   const row = asRecord(value);
   const kind = asText(row.kind);
-  const rawValuePath = asText(row.rawValuePath);
-  if (!rawValuePath) {
-    throw new PageOrchestrationDecodeError([{ path: `${path}.rawValuePath`, message: 'must be non-empty' }]);
-  }
+  const rawValuePath = decodeRawValuePath(row.rawValuePath, `${path}.rawValuePath`);
   if (kind === 'descriptor') {
+    rejectUnknownKeys(row, DESCRIPTOR_REF_KEYS, path);
     const descriptorId = asText(row.descriptorId);
-    if (!descriptorId || asText(row.widgetId)) {
+    if (!descriptorId) {
       throw new PageOrchestrationDecodeError([{ path, message: 'descriptor ref requires descriptorId only' }]);
     }
     return { kind, descriptorId, rawValuePath };
   }
   if (kind === 'widget') {
+    rejectUnknownKeys(row, WIDGET_REF_KEYS, path);
     const widgetId = asText(row.widgetId);
-    if (!widgetId || asText(row.descriptorId)) {
+    if (!widgetId) {
       throw new PageOrchestrationDecodeError([{ path, message: 'widget ref requires widgetId only' }]);
     }
     return { kind, widgetId, rawValuePath };
@@ -196,9 +257,13 @@ function decodeDataRows(value: unknown, path: string): ContractV2PageBlockDataRo
   if (!Array.isArray(value)) {
     throw new PageOrchestrationDecodeError([{ path, message: 'must be an array' }]);
   }
+  if (!value.length) {
+    throw new PageOrchestrationDecodeError([{ path, message: 'must not be empty' }]);
+  }
   const seen = new Set<string>();
   return value.map((raw, index) => {
     const row = asRecord(raw);
+    rejectUnknownKeys(row, ROW_KEYS, `${path}[${index}]`);
     const rowKey = asText(row.rowKey);
     if (!rowKey || seen.has(rowKey)) {
       throw new PageOrchestrationDecodeError([{
@@ -214,23 +279,109 @@ function decodeDataRows(value: unknown, path: string): ContractV2PageBlockDataRo
   });
 }
 
+function decodeSourceAuthority(value: unknown, path: string): ContractV2Dictionary {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new PageOrchestrationDecodeError([{ path, message: 'must be an object' }]);
+  }
+  const authority = value as ContractV2Dictionary;
+  rejectUnknownKeys(authority, SOURCE_AUTHORITY_KEYS, path);
+  if (!asText(authority.kind)) {
+    throw new PageOrchestrationDecodeError([{ path: `${path}.kind`, message: 'must be non-empty' }]);
+  }
+  if (authority.projectionOnly !== true) {
+    throw new PageOrchestrationDecodeError([{ path: `${path}.projectionOnly`, message: 'must be true' }]);
+  }
+  for (const key of ['noFrontendDefaults', 'noBusinessFactAuthority']) {
+    if (authority[key] !== undefined && typeof authority[key] !== 'boolean') {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.${key}`, message: 'must be boolean' }]);
+    }
+  }
+  for (const key of ['carrier', 'schemaVersion']) {
+    if (authority[key] !== undefined && !asText(authority[key])) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.${key}`, message: 'must be non-empty' }]);
+    }
+  }
+  if (authority.authorities !== undefined) {
+    if (
+      !Array.isArray(authority.authorities)
+      || authority.authorities.length === 0
+      || authority.authorities.some((item) => !asText(item))
+    ) {
+      throw new PageOrchestrationDecodeError([{
+        path: `${path}.authorities`,
+        message: 'must be a non-empty string array',
+      }]);
+    }
+  }
+  return authority;
+}
+
+function decodeCurrencies(value: unknown, path: string): Record<string, ContractV2Dictionary> {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new PageOrchestrationDecodeError([{ path, message: 'must be an object' }]);
+  }
+  const decoded: Record<string, ContractV2Dictionary> = {};
+  Object.entries(value as Record<string, unknown>).forEach(([identity, raw]) => {
+    if (!identity.trim() || FORBIDDEN_PATH_SEGMENTS.has(identity)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.${identity}`, message: 'identity is invalid' }]);
+    }
+    if (!raw || typeof raw !== 'object' || Array.isArray(raw)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.${identity}`, message: 'must be an object' }]);
+    }
+    const currency = raw as ContractV2Dictionary;
+    rejectUnknownKeys(currency, CURRENCY_KEYS, `${path}.${identity}`);
+    if (currency.id !== undefined && String(currency.id).trim() !== identity) {
+      throw new PageOrchestrationDecodeError([{
+        path: `${path}.${identity}.id`,
+        message: 'must match the currency identity key',
+      }]);
+    }
+    for (const key of ['id', 'code', 'label', 'symbol']) {
+      if (currency[key] !== undefined && String(currency[key]).trim() === '') {
+        throw new PageOrchestrationDecodeError([{
+          path: `${path}.${identity}.${key}`,
+          message: 'must be non-empty when present',
+        }]);
+      }
+    }
+    if (!['code', 'label', 'symbol'].some((key) => asText(currency[key]))) {
+      throw new PageOrchestrationDecodeError([{
+        path: `${path}.${identity}`,
+        message: 'must declare at least one of code, label or symbol',
+      }]);
+    }
+    decoded[identity] = currency;
+  });
+  return decoded;
+}
+
 function decodePageBlockDataContract(
   raw: unknown,
   path: string,
 ): ContractV2PageBlockDataContract {
   const source = asRecord(raw);
+  rejectUnknownKeys(source, PAGE_BLOCK_DATA_KEYS, path);
   if (asText(source.schemaVersion) !== '1.0.0') {
     throw new PageOrchestrationDecodeError([{ path: `${path}.schemaVersion`, message: 'must be 1.0.0' }]);
   }
   const refsRaw = asRecord(source.fieldRefs);
   const fieldRefs = Object.fromEntries(
-    Object.entries(refsRaw).map(([key, value]) => [key, decodeFieldRef(value, `${path}.fieldRefs.${key}`)]),
+    Object.entries(refsRaw).map(([key, value]) => {
+      if (!FIELD_IDENTIFIER_PATTERN.test(key) || FORBIDDEN_PATH_SEGMENTS.has(key)) {
+        throw new PageOrchestrationDecodeError([{
+          path: `${path}.fieldRefs.${key}`,
+          message: 'field ref identity is invalid',
+        }]);
+      }
+      return [key, decodeFieldRef(value, `${path}.fieldRefs.${key}`)];
+    }),
   );
   if (!Object.keys(fieldRefs).length) {
     throw new PageOrchestrationDecodeError([{ path: `${path}.fieldRefs`, message: 'must not be empty' }]);
   }
   const context = asRecord(source.context);
-  const currencies = asRecord(context.currencies) as Record<string, ContractV2Dictionary>;
+  rejectUnknownKeys(context, PAGE_BLOCK_CONTEXT_KEYS, `${path}.context`);
+  const currencies = decodeCurrencies(context.currencies, `${path}.context.currencies`);
   const timezone = asText(context.timezone);
   if (!timezone) {
     throw new PageOrchestrationDecodeError([{ path: `${path}.context.timezone`, message: 'must be non-empty' }]);
@@ -240,7 +391,7 @@ function decodePageBlockDataContract(
     fieldRefs,
     rows: decodeDataRows(source.rows, `${path}.rows`),
     context: { currencies, timezone },
-    sourceAuthority: asRecord(source.sourceAuthority),
+    sourceAuthority: decodeSourceAuthority(source.sourceAuthority, `${path}.sourceAuthority`),
   };
 }
 
@@ -316,12 +467,56 @@ export function decodePageOrchestrationContract(raw: unknown): PageOrchestration
 function readPath(value: unknown, path: string): { found: boolean; value: unknown } {
   let current = value;
   for (const segment of Array.from(path.matchAll(/[^.]+/g), (match) => match[0])) {
-    if (!current || typeof current !== 'object' || Array.isArray(current) || !(segment in current)) {
+    if (
+      !current
+      || typeof current !== 'object'
+      || Array.isArray(current)
+      || !Object.prototype.hasOwnProperty.call(current, segment)
+    ) {
       return { found: false, value: undefined };
     }
     current = (current as Record<string, unknown>)[segment];
   }
   return { found: true, value: current };
+}
+
+function currencyIdentityOf(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? '').trim();
+  if (value && typeof value === 'object') {
+    return String((value as Record<string, unknown>).id ?? '').trim();
+  }
+  return value === undefined || value === null ? '' : String(value).trim();
+}
+
+function validateMoneyCurrency(
+  dataSourceKey: string,
+  row: PageBlockDataResolvedRow,
+): void {
+  Object.entries(row.fieldDescriptors).forEach(([slotKey, descriptor]) => {
+    if (descriptor.semanticType !== 'money') return;
+    const value = row.values[slotKey];
+    if (
+      !Object.prototype.hasOwnProperty.call(row.values, slotKey)
+      || value === null
+      || value === false
+      || value === ''
+    ) return;
+    const currencyField = asText(descriptor.currencyField);
+    const currencySlot = Object.entries(row.fieldDescriptors)
+      .find(([candidateSlot, candidate]) => (
+        candidateSlot !== slotKey
+        && (candidateSlot === currencyField || candidate.fieldCode === currencyField)
+        && candidate.semanticType === 'relation'
+        && candidate.relation === 'res.currency'
+      ));
+    const identity = currencySlot ? currencyIdentityOf(row.values[currencySlot[0]]) : '';
+    if (!currencyField || !identity || !row.context.currencies[identity]) {
+      throw new PageOrchestrationDecodeError([{
+        path: `block_data_contracts.${dataSourceKey}.rows.${row.rowKey}.${slotKey}`,
+        message: 'money value requires a uniquely resolvable currency identity',
+      }]);
+    }
+  });
 }
 
 export function resolvePageBlockData(
@@ -357,12 +552,14 @@ export function resolvePageBlockData(
         throw error;
       }
     });
-    return {
+    const resolved = {
       rowKey: row.rowKey,
       values,
       fieldDescriptors,
       registryResolution,
       context: block.context,
     };
+    validateMoneyCurrency(dataSourceKey, resolved);
+    return resolved;
   });
 }

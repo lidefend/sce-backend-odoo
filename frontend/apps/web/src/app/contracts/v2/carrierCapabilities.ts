@@ -11,6 +11,10 @@ export interface ContractCarrierCapabilityRow {
 export interface ContractCarrierCapabilities {
   negotiationVersion: string;
   status: 'legacy' | 'current';
+  clientType: string;
+  compatibilityMode: string;
+  acceptedContractVersions: string[];
+  clientContractCapabilities: string[];
   contractVersion: string;
   pageOrchestrationVersion: string;
   carriers: Record<ContractCarrierCapability, ContractCarrierCapabilityRow>;
@@ -32,9 +36,17 @@ const ALLOWED_KEYS = new Set([
   'pageOrchestrationVersion',
   'carriers',
 ]);
+const CARRIER_ROW_KEYS = new Set(['schemaVersion', 'enabled']);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function requireStringArray(value: unknown, key: string): string[] {
+  if (!Array.isArray(value) || value.some((item) => typeof item !== 'string' || !item.trim())) {
+    throw new Error(`CONTRACT_CARRIER_CAPABILITIES_INVALID:${key}`);
+  }
+  return value as string[];
 }
 
 export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrierCapabilities {
@@ -52,6 +64,12 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
   const carriers = {} as Record<ContractCarrierCapability, ContractCarrierCapabilityRow>;
   EXPECTED_CARRIERS.forEach((carrier) => {
     const row = carriersRaw[carrier];
+    if (isRecord(row)) {
+      const unknown = Object.keys(row).find((key) => !CARRIER_ROW_KEYS.has(key));
+      if (unknown) {
+        throw new Error(`CONTRACT_CARRIER_CAPABILITIES_INVALID:${carrier}.${unknown}`);
+      }
+    }
     if (
       !isRecord(row)
       || row.schemaVersion !== '1.0.0'
@@ -68,6 +86,22 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
   if (raw.negotiationVersion !== '1.0.0') {
     throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:negotiationVersion');
   }
+  if (typeof raw.clientType !== 'string') {
+    throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:clientType');
+  }
+  if (!String(raw.compatibilityMode || '').trim()) {
+    throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:compatibilityMode');
+  }
+  const clientType = String(raw.clientType).trim();
+  const compatibilityMode = String(raw.compatibilityMode).trim();
+  const acceptedContractVersions = requireStringArray(
+    raw.acceptedContractVersions,
+    'acceptedContractVersions',
+  );
+  const clientContractCapabilities = requireStringArray(
+    raw.clientContractCapabilities,
+    'clientContractCapabilities',
+  );
   const contractVersion = String(raw.contractVersion || '').trim();
   const pageOrchestrationVersion = String(raw.pageOrchestrationVersion || '').trim();
   if (!contractVersion || !pageOrchestrationVersion) {
@@ -96,6 +130,10 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
   return {
     negotiationVersion: '1.0.0',
     status,
+    clientType,
+    compatibilityMode,
+    acceptedContractVersions: [...acceptedContractVersions],
+    clientContractCapabilities: [...clientContractCapabilities],
     contractVersion,
     pageOrchestrationVersion,
     carriers,

@@ -17,6 +17,8 @@ LEGACY_PAGE_ORCHESTRATION_VERSION = "2.0.0"
 
 SOURCE_KIND = "page_block_data_producer"
 SOURCE_AUTHORITIES = ("odoo_model_fields", "page_orchestration", "semantic_registry")
+FORBIDDEN_IDENTITIES = frozenset({"__proto__", "constructor", "prototype"})
+CURRENCY_KEYS = frozenset({"id", "code", "label", "symbol"})
 
 
 def _text(value: Any) -> str:
@@ -67,6 +69,53 @@ def field_descriptor(
     return descriptor
 
 
+def currency_field_descriptor(*, field_code: str, label: str = "币种") -> dict[str, Any]:
+    return field_descriptor(
+        field_code=field_code,
+        label=label,
+        field_type="many2one",
+        widget_type="many2one",
+        component_key="sc.relation.many2one",
+        semantic_type="relation",
+        relation="res.currency",
+    )
+
+
+def normalize_currency_context(currencies: Any = None) -> dict[str, dict[str, Any]]:
+    """Normalize authoritative currency facts to one identity-keyed shape."""
+
+    if currencies is None:
+        return {}
+    if not isinstance(currencies, dict):
+        raise ValueError("page-block-data currencies must be an object")
+    normalized: dict[str, dict[str, Any]] = {}
+    for raw_identity, raw_currency in currencies.items():
+        identity = _text(raw_identity)
+        if not identity or identity in FORBIDDEN_IDENTITIES:
+            raise ValueError("page-block-data currency identity is invalid")
+        if not isinstance(raw_currency, dict):
+            raise ValueError(f"page-block-data currency {identity} must be an object")
+        unknown = sorted(set(raw_currency) - CURRENCY_KEYS)
+        if unknown:
+            raise ValueError(
+                f"page-block-data currency {identity} has unknown fields: {', '.join(unknown)}"
+            )
+        if "id" in raw_currency and _text(raw_currency.get("id")) != identity:
+            raise ValueError(f"page-block-data currency {identity} id does not match its key")
+        for key, value in raw_currency.items():
+            if key == "id":
+                if isinstance(value, bool) or not isinstance(value, (int, str)) or not _text(value):
+                    raise ValueError(f"page-block-data currency {identity}.id is invalid")
+            elif not _text(value):
+                raise ValueError(f"page-block-data currency {identity}.{key} must be non-empty")
+        if not any(_text(raw_currency.get(key)) for key in ("code", "label", "symbol")):
+            raise ValueError(
+                f"page-block-data currency {identity} requires code, label or symbol"
+            )
+        normalized[identity] = deepcopy(raw_currency)
+    return normalized
+
+
 def descriptor_ref(*, descriptor_id: str, raw_value_path: str) -> dict[str, str]:
     return {
         "kind": "descriptor",
@@ -111,7 +160,7 @@ def build_data_contract(
         "fieldRefs": deepcopy(field_refs),
         "rows": normalized_rows,
         "context": {
-            "currencies": deepcopy(currencies or {}),
+            "currencies": normalize_currency_context(currencies),
             "timezone": _text(timezone) or "UTC",
         },
         "sourceAuthority": deepcopy(source_authority or source_authority_contract()),

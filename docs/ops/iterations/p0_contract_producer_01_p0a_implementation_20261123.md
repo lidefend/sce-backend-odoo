@@ -117,3 +117,42 @@ mutation intents whose request body is identity-bound. Negotiation is now scoped
 to `system.init`, contract load intents and declared `.enter` entries. The
 previously failing `verify.frontend.workspace_scenario_lifecycle.unit` now
 passes 11 lifecycle cases, and the P0-A browser/decoder acceptance still passes.
+
+## Independent correctness closure
+
+The review remediation keeps the P0-A implementation and closes four delivery
+correctness gaps:
+
+1. Monetary Page Block facts now carry a real `currencyField` reference and the
+   same row's currency identity. The producer rejects a monetary fact when the
+   currency field, identity, or identity-keyed currency context is missing.
+   `verify.p0_contract_producer.p0a.money` captures a real ORM monetary contract,
+   decodes it with the real Contract V2 consumer, resolves its currency and runs
+   the shared business-value presentation path.
+2. Legacy dataset overlay matches only by stable `rowKey`. The array-index
+   fallback is removed; duplicate identities fail closed, unmatched rows inherit
+   no title/value/action, and unrelated old rows are ignored.
+3. Page Block data decoding now requires and strictly validates source authority,
+   field refs, row envelopes, context, currencies, and nested Descriptor
+   semantics. Optional Descriptor properties with invalid types are rejected
+   instead of silently dropped.
+4. A request with no client identity and no negotiation declaration is recognized
+   only as a pre-negotiation old request shape. It receives the complete legacy
+   projection with an empty `clientType`; it is never relabeled as `web_pc`.
+   Known clients that declare no versions, 2.5-only clients, 2.6-without-
+   capability clients, current capability clients, unknown clients, and
+   no-common-version clients retain the approved compatibility matrix.
+
+Evidence:
+
+- P0-A Python tests: 37 PASS.
+- P0-A ORM tag: 8 PASS.
+- Real ORM money evidence target: 1 PASS; produced value and `USD` identity were
+  decoded and presented as `US$0.00`.
+- Browser/decoder target: PASS at 1440/390; missing client identity remained
+  empty and current Page Block Data remained `2.1.0`.
+- `make ci.local.iteration`: PASS for the 8-target correctness-closure affected
+  set; no required target was skipped.
+- `make local.test.baseline`: PASS, 6 cases x 3 fresh orders.
+- `make verify.test.baseline`: PASS, 366 cases x 3 independent orders,
+  quarantine 0.
