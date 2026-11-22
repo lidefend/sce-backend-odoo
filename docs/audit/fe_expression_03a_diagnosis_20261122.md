@@ -133,17 +133,70 @@ constant, not a user or administrator setting. It is published as
 value and has no 24-hour fallback. Tests now cover a 60-second declared policy,
 the 60-second boundary, and missing-retention fail-closed behavior.
 
-## Validation plan
+## Verification result
 
-- One2many money: digits, currency, empty, zero and negative values.
-- Date/datetime/float_time: compact display and edit values.
-- Selection, boolean, many2one and many2many boundaries.
-- Editable input differs from readonly display while persisted values remain raw.
-- Attachment behavior is independent of Chinese/English labels and ordinary
-  integer columns.
-- `verify.frontend.collection_view_semantics.unit`
-- `verify.frontend.business_semantics.unit`
-- `verify.frontend.localized_display.unit`
-- `verify.frontend.collection_row_cell.unit`
-- `verify.frontend.professional_detail_collection.unit`
-- lint, strict typecheck, production build and affected browser journeys.
+Source and test candidate:
+
+- HEAD: `9acc0c2c82828ced37b7d771171e5824cd9f9527`
+- tree: `2a22c8d412c9f09c1fd728c7a492c1f616d4aa6c`
+- `ci.local.iteration`: PASS; 22 required targets resolved, one executed and
+  21 content-identical targets reused through the registered local evidence
+  authority.
+- Receipt:
+  `.runtime/frontend-dev-validation/executions/20261122T072014Z-2986497-291281420/receipt.json`
+- Receipt SHA256:
+  `6eca7d46170aa823884c81f78ae97a11e1fbdbb2908be978b9c263e915df6f6f`
+
+Focused outcomes:
+
+- One2many collection semantics: 50 Python guard tests plus the Node semantic
+  assertion harness PASS.
+- Business semantics: 12 guard tests plus the model assertion harness PASS;
+  money, temporal, duration, status and empty-value consumers remain on the
+  shared authorities.
+- Localized display: PASS with `registered_formatter_allowances=0`.
+- Collection row cell: 9 tests PASS.
+- Professional detail collection: 23 + 46 tests PASS.
+- Intake autosave: 33 cases PASS, including a declared 60-second policy,
+  60-second boundary and missing-retention fail-closed case.
+- Contract basis: PASS, `open_defects=0`.
+- Strict typecheck: PASS.
+- Lint: PASS, zero errors; three pre-existing warnings remain.
+
+Exact runtime identity:
+
+- Production frontend build source: `9acc0c2c8`
+- Served `build-info.sha`: `9acc0c2c8`
+- Runtime source/database: `9acc0c2c8` /
+  `sc_frontend_acceptance`
+- Authoritative frontend artifact fingerprint:
+  `d11035630664d775f81ee7816610a2dea1e6abeb8b132ebcc7dcf1ac11b35a71`
+- `/api/runtime-version` returned the same source, database and frontend
+  fingerprint.
+
+The browser sample used a one-time probe, not a reusable test framework or a
+future acceptance entry. It was bound to the exact build above and read all
+record/action/menu identities from the managed
+`acceptance.record_identity_resolution.v1` envelope. No database record ID is a
+stable input to this batch.
+
+Browser result:
+
+- 8/8 page/viewport cases PASS: project ledger, income contract, payment request
+  and My Work at 1440 and 390.
+- Every sampled page had exactly one visible H1 and zero document-level
+  horizontal overflow.
+- The declared payment-request carrier rendered a populated One2many row.
+  Desktop readonly values used currency and declared scale (`¥200.00`); mobile
+  editable inputs stayed raw two-decimal business values (`200.00`) and did not
+  use display decoration as write values.
+- Console errors, page errors and persistence intents were all zero. The probe
+  did not save or execute any business action.
+- Report:
+  `.runtime/FE-EXPRESSION-03A/evidence/browser-exact-9acc0c2c8/report.json`
+- Report SHA256:
+  `10b7124d8ab6c63ff5dd4a3d6f1be568db3985049330d91bd0d9a58c99b59e64`
+
+These one-time browser artifacts are evidence for this candidate only. They are
+not a cross-environment replay mechanism; future environments must resolve
+their own runtime identity and fixture records through the managed tools.

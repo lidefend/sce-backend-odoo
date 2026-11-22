@@ -55,7 +55,7 @@ goal:
     metadata together. No persisted business data or deployment state changes.
   completion:
     diagnosis: completed
-    batch: active
+    batch: completed
     independent_review: not_run
     mainline_integration: not_run
     deployment: not_applicable
