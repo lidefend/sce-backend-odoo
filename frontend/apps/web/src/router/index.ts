@@ -3,7 +3,6 @@ import { useSessionStore } from '../stores/session';
 import LoginView from '../views/LoginView.vue';
 import AccountActivationView from '../views/AccountActivationView.vue';
 import PasswordRecoveryView from '../views/PasswordRecoveryView.vue';
-import { ApiError } from '../api/client';
 import { buildCanonicalSceneRouteTarget, normalizeEmbeddedSceneQuery, normalizeLegacyWorkbenchPath, parseSceneKeyFromQuery } from '../app/routeQuery';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
 import { resolveCreateFormActivityRedirect } from '../app/recordFormActivityRoute';

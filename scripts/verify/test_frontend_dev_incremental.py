@@ -304,6 +304,14 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.typecheck.strict",
             },
         )
+        self.assertEqual(
+            set(select_targets(["frontend/apps/web/src/views/SceneContractBlockGridView.vue"])),
+            {
+                "verify.frontend.lint.src",
+                "verify.frontend.product_page_header.unit",
+                "verify.frontend.typecheck.strict",
+            },
+        )
 
     def test_candidate_runtime_identity_tools_select_their_unit(self) -> None:
         for path in (

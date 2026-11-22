@@ -8,9 +8,9 @@
     :data-trace-id="traceId || undefined"
   >
     <ScPageHeader :title="presentation.title" />
-    <ScErrorState :title="presentation.title" :description="description">
+    <ScErrorState title="请求处理结果" :description="description">
       <template #actions>
-        <ScButton variant="primary" @click="retry">重试</ScButton>
+        <ScButton variant="primary" :disabled="!from" title="没有可重试的页面" @click="retry">重试</ScButton>
         <ScButton variant="secondary" @click="returnSafely">返回安全页面</ScButton>
       </template>
     </ScErrorState>

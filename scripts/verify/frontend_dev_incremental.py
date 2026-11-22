@@ -1635,6 +1635,7 @@ RULES = (
         "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
         "frontend/apps/web/src/app/activityPageTitle.ts",
         "frontend/apps/web/src/router/index.ts",
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
         "frontend/apps/web/src/views/SceneView.vue",
         "frontend/apps/web/src/views/MyWorkView.vue",
         "frontend/apps/web/scripts/product_page_header_adapter_contract_test.ts",

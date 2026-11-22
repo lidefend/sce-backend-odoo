@@ -20,6 +20,7 @@
     "frontend/apps/web/src/components/product-list/CollectionBatchActionBar.vue",
     "frontend/apps/web/src/components/product-page-header/ProductPageHeader.vue",
     "frontend/apps/web/src/app/activityPageTitle.ts",
+    "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
     "frontend/apps/web/src/views/SceneView.vue",
     "frontend/apps/web/scripts/route_authority_guard_test.ts",
     "frontend/apps/web/scripts/record_form_return_navigation_test.ts",

@@ -1,5 +1,6 @@
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import { classifyRouteFailure, routeFailureRedirect } from '../src/app/routeFailure';
@@ -319,6 +320,9 @@ assert.deepEqual(routeFailureRedirect({ status: 0, kind: 'network', reasonCode: 
   name: 'route-error',
   query: { from: '/a/42', kind: 'network', reason: 'NETWORK_ERROR', trace_id: 'trace-net' },
 });
+const routeErrorSource = readFileSync(resolve('frontend/apps/web/src/views/RouteErrorView.vue'), 'utf8');
+assert.match(routeErrorSource, /<ScErrorState title="请求处理结果"/);
+assert.match(routeErrorSource, /:disabled="!from"/);
 console.log('[route_failure_classification] PASS transport/auth/scope separation');
 
 console.log('[route-authority-guard] PASS');

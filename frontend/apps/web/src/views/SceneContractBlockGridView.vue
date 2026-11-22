@@ -1,6 +1,6 @@
 <template>
   <section v-if="pageSectionsReady" class="scene-contract-block-grid" :style="pageSectionStyle('root')" :data-contract-sections="pageSectionsFingerprint" data-semantic-component="SceneContractBlockGridView" :data-state="status">
-    <h1 v-if="shouldRenderSceneContractFallbackHeading(status)" class="sc-visually-hidden" data-scene-contract-fallback-heading>{{ semanticTitle }}</h1>
+    <h1 v-if="shouldRenderSceneContractFallbackHeading(status)" class="sc-visually-hidden" data-scene-contract-fallback-heading>{{ semanticTitle || '业务场景' }}</h1>
     <StatusPanel v-if="status === 'loading'" title="正在加载场景..." variant="info" />
     <StatusPanel v-else-if="status === 'error'" title="场景加载失败" :message="errorMessage" variant="error" />
     <PageRenderer
@@ -57,7 +57,7 @@ type SceneContract = {
 const props = defineProps<{
   intent: string;
   sceneKey: string;
-  semanticTitle: string;
+  semanticTitle?: string;
 }>();
 
 const route = useRoute();
