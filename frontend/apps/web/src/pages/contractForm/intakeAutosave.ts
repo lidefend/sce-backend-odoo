@@ -252,8 +252,13 @@ export function buildIntakeAutosaveKey(
 
 export function intakeAutosaveCoverageText(policy: IntakeAutosavePolicy): string {
   const labels = policy.fields.map((field) => field.label).join('、');
-  const hours = Math.max(1, Math.round(policy.retention.seconds / 3600));
-  return `仅暂存本机允许字段：${labels}；不含附件、明细和流程状态，保留 ${hours} 小时。`;
+  const seconds = policy.retention.seconds;
+  const retention = seconds % 3600 === 0
+    ? `${seconds / 3600} 小时`
+    : seconds % 60 === 0
+      ? `${seconds / 60} 分钟`
+      : `${seconds} 秒`;
+  return `仅暂存本机允许字段：${labels}；不含附件、明细和流程状态，保留 ${retention}。`;
 }
 
 function storage(): Storage | null {

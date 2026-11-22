@@ -3,6 +3,7 @@ import { ref } from 'vue';
 import {
   buildIntakeAutosaveKey,
   clearIntakeAutosavePayload,
+  intakeAutosaveCoverageText,
   persistIntakeAutosavePayload,
   resolveIntakeAutosavePolicy,
   restoreIntakeAutosavePayload,
@@ -132,6 +133,7 @@ const policy = resolveIntakeAutosavePolicy({ intakeAutosave: rawPolicy }) as Int
 assert.equal(policy.scope, 'project_intake_standard');
 assert.equal(policy.retention.seconds, 86400);
 assert.equal(policy.fields.length, 5);
+assert.match(intakeAutosaveCoverageText(policy), /保留 24 小时/);
 const shortRetentionPolicy = resolveIntakeAutosavePolicy({
   intakeAutosave: {
     ...rawPolicy,
@@ -140,6 +142,8 @@ const shortRetentionPolicy = resolveIntakeAutosavePolicy({
   },
 }) as IntakeAutosavePolicy;
 assert.equal(shortRetentionPolicy.retention.seconds, 60, 'frontend consumes the declared retention instead of a local 24-hour default');
+assert.match(intakeAutosaveCoverageText(shortRetentionPolicy), /保留 1 分钟/,
+  'coverage copy must express the declared seconds exactly instead of rounding to an hour');
 const missingRetentionPolicy = { ...rawPolicy } as Record<string, unknown>;
 delete missingRetentionPolicy.retention;
 assert.throws(

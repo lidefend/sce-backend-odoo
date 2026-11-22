@@ -29,6 +29,7 @@
     "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
     "frontend/apps/web/src/pages/ContractFormPage.vue",
     "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
     "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
     "frontend/apps/web/src/pages/contractForm/types.ts",
     "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
