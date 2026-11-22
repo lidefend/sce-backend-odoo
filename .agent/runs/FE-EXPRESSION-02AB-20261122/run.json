@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "FE-EXPRESSION-02AB-20261122",
   "branch": "feature/fe-expression-02ab-feedback-responsive-20261122",
-  "baseline_sha": "cb182c9e94abe515b0d987fc514bc46ca98d1cfb",
+  "baseline_sha": "94bfb32465593341a97b16fbac3595f25b152eb6",
   "status": "verification_pending",
   "goal": ".agent/goals/FE-EXPRESSION-02AB-20261122.yaml",
   "record": "docs/ops/iterations/fe_expression_02ab_20261122.md",
