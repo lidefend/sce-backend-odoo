@@ -143,8 +143,8 @@
     "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T043355Z-1979765-85727871/receipt.json",
     "ci_local_iteration_receipt_sha256": "47fb09b907b9f6d394c1eb428ae8ceff83acf18a53c0b5933bf8d4f38aa2d178",
     "ci_local_iteration_test_counts": {
-      "verify.acceptance.artifact.unit": 10,
-      "verify.acceptance.runtime.tooling.unit": 129,
+      "verify.acceptance.artifact.unit": 15,
+      "verify.acceptance.runtime.tooling.unit": 131,
       "verify.agent.ledger.unit": 18,
       "verify.agent.resume.unit": 67,
       "verify.baseline.iteration.execution.policy": 19,
@@ -152,6 +152,7 @@
       "verify.frontend.acceptance.environment.guard": 63,
       "verify.frontend.dev.incremental.unit": 208
     },
+    "ci_local_iteration_count_scope": "Counts are the real test counts of the focused targets actually invoked in the final incremental plan; unchanged targets were reused and not relabeled as newly executed.",
     "freeze_prepare": "PASS twice; generated reports current, frontend contract basis open defects 0, list-surface evidence bindings valid, delivery guard passed",
     "complexity_budget": "scripts/dev/frontend_acceptance_baseline_rebuild.sh remains 499 lines; no new split-plan entry was introduced by this P4 follow-up",
     "main_sync": "unpublished branch replayed from fe635515 onto cb182c9e9 through workspace.branch.sync-main; new base tree accepted with regenerated complexity reports only",
