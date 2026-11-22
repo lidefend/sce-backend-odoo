@@ -1,0 +1,59 @@
+schema_version: 1
+
+goal:
+  id: MAIN-SCHEDULED-CI-20261122
+  title: main_scheduled_ci_coverage_repair
+  status: active
+  formal_product_layer: P4
+  layer_target: governed test-coverage registration and scheduled CI recovery
+  module:
+    - scripts/verify
+    - make
+    - docs/audit/test_coverage_registry
+    - .agent
+  standard_vs_user_specific: repository_delivery_mechanism
+  objective: >-
+    Restore the scheduled mainline professional quality gate by registering the
+    four test groups introduced or previously omitted after ARCH-CLOSE-01, and
+    provide a real governed ORM selection for the enterprise initialization
+    journey instead of masking it as unwired debt.
+  product_result: >-
+    The coverage registry accounts for enterprise_initialization_journey,
+    extension_hook_authority, extension_lifecycle and extension_runtime_context;
+    the enterprise journey is executable through a registered non-zero ORM
+    target; the generated inventory is fresh; and the new exact-head PR passes
+    all required remote gates before protected integration.
+  why_here: >-
+    The failure is in the P4 verification registry. Product source, manifests,
+    permissions, scenario contracts and customer data already have their owning
+    authorities and do not need changes for this failure.
+  why_not_elsewhere:
+    - Do not alter Odoo product behavior to satisfy a coverage-bookkeeping gate.
+    - Do not suppress the audit, remove test groups or weaken assertions.
+    - Do not reuse the failed scheduled run at an obsolete SHA as current evidence.
+    - Do not rebuild persistent development or customer databases.
+  blast_radius:
+    behavior:
+      - coverage audit disposition for four declared Odoo test groups
+      - one focused scene ORM selection for enterprise initialization
+      - generated coverage inventory
+      - execution metadata and recovery record
+    exclusions:
+      - no product model, contract, ACL, scenario or frontend behavior changes
+      - no database migration, module upgrade or fixture reset
+      - no customer or persistent development database writes
+  validation:
+    required:
+      - coverage registry unit and audit
+      - enterprise initialization journey ORM with non-zero collection
+      - ci.local.iteration for the affected P4 surface
+      - generated evidence preparation on the final source scope
+      - all required remote gates on the exact PR head
+  rollback: >-
+    Revert the Make target, registry bindings, generated inventory and run
+    metadata together. No runtime or customer data is affected.
+  completion:
+    batch: verification_pending
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable
