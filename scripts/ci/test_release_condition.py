@@ -17,17 +17,20 @@ REPOSITORY = "lidefend/sce-backend-odoo"
 SLOT = "2026-11-17T18:00:00+00:00"
 
 
-def run(path: str, index: int, *, event: str = "schedule") -> dict:
+def run(path: str, index: int, *, event: str = "schedule",
+        head_branch: str | None = None) -> dict:
     return {
         "id": 1000 + index,
         "run_attempt": 1,
         "path": path,
         "event": event,
+        "head_branch": head_branch or ("feature/candidate" if event == "pull_request" else "main"),
         "status": "completed",
         "conclusion": "success",
         "head_sha": HEAD,
         "created_at": "2026-11-18T01:00:00Z",
         "repository": {"full_name": REPOSITORY},
+        "head_repository": {"full_name": REPOSITORY},
     }
 
 
@@ -35,13 +38,15 @@ class ReleaseConditionTests(unittest.TestCase):
     def runs(self, event: str = "schedule") -> list[dict]:
         return [run(path, index, event=event) for index, path in enumerate(sorted(REQUIRED_WORKFLOWS))]
 
-    def build(self, runs: list[dict], event: str = "schedule") -> dict:
+    def build(self, runs: list[dict], event: str = "schedule",
+              head_branch: str | None = None) -> dict:
         return build_condition(
             runs,
             repository=REPOSITORY,
             head_sha=HEAD,
             tree=TREE,
             event=event,
+            head_branch=head_branch or ("feature/candidate" if event == "pull_request" else "main"),
             schedule_slot=SLOT if event == "schedule" else None,
         )
 
@@ -61,7 +66,17 @@ class ReleaseConditionTests(unittest.TestCase):
     def test_explicit_candidate_keeps_the_same_exact_identity(self) -> None:
         result = self.build(self.runs("pull_request"), event="pull_request")
         self.assertEqual(result["kind"], "explicit_candidate")
+        self.assertEqual(result["producer_event"], "pull_request")
+        self.assertEqual(result["head_branch"], "feature/candidate")
         self.assertIsNone(result["scheduled_slot_utc"])
+
+    def test_operator_dispatch_materializes_exact_push_evidence(self) -> None:
+        result = self.build(self.runs("push"), event="workflow_dispatch")
+        self.assertEqual(result["kind"], "operator_full_audit")
+        self.assertEqual(result["event"], "workflow_dispatch")
+        self.assertEqual(result["producer_event"], "push")
+        self.assertEqual(result["head_branch"], "main")
+        self.assertEqual({row["event"] for row in result["required_workflows"]}, {"push"})
 
     def test_missing_duplicate_wrong_identity_and_unsuccessful_runs_fail_closed(self) -> None:
         cases = []
@@ -75,6 +90,12 @@ class ReleaseConditionTests(unittest.TestCase):
         wrong_event = self.runs()
         wrong_event[0]["event"] = "push"
         cases.append(wrong_event)
+        wrong_branch = self.runs()
+        wrong_branch[0]["head_branch"] = "feature/other"
+        cases.append(wrong_branch)
+        wrong_repository = self.runs()
+        wrong_repository[0]["head_repository"] = {"full_name": "other/repo"}
+        cases.append(wrong_repository)
         failed = self.runs()
         failed[0]["conclusion"] = "failure"
         cases.append(failed)
@@ -93,6 +114,7 @@ class ReleaseConditionTests(unittest.TestCase):
                 head_sha="main",
                 tree=TREE,
                 event="schedule",
+                head_branch="main",
                 schedule_slot=SLOT,
             )
 

@@ -1,0 +1,62 @@
+schema_version: 1
+
+goal:
+  id: MAIN-SCHEDULED-CI-RECOVERY-02
+  title: exact_event_dependency_selection_and_bounded_wait
+  status: active
+  formal_product_layer: P4
+  layer_target: governed GitHub Actions aggregate dependency orchestration
+  module:
+    - .github/workflows
+    - scripts/ci
+    - scripts/verify
+    - .agent
+  standard_vs_user_specific: repository_delivery_mechanism
+  objective: >-
+    Make aggregate CI dependency selection bind each workflow event to its
+    explicitly authorized producer identity, reuse exact-SHA mainline Push
+    evidence for operator workflow_dispatch validation, bind pull-request
+    dependencies to the same source branch and head, and fail a bounded time
+    after required dependencies remain undiscoverable.
+  product_result: >-
+    merge_policy_gate and release_candidate_gate no longer wait for impossible
+    same-event workflow_dispatch producer runs while preserving strict
+    schedule-slot, mainline-Push, pull-request-head, repository, path, SHA and
+    successful-latest-run checks. A missing dependency reports the workflow,
+    aggregate event, producer event, branch and exact head before exiting.
+  why_here: >-
+    The defect is in P4 workflow selection and waiting behavior. Existing
+    producer workflows already execute successfully and their identities are
+    observable; product source and runtime behavior are not involved.
+  why_not_elsewhere:
+    - Do not change product code, tests, contracts, permissions or runtime data to satisfy CI orchestration.
+    - Do not remove event checks or allow arbitrary cross-event evidence reuse.
+    - Do not cancel or replay successful producer workflows merely to manufacture matching event labels.
+    - Do not weaken exact-SHA, repository, workflow-path or scheduled-slot identity checks.
+  blast_radius:
+    behavior:
+      - aggregate producer event policy
+      - exact-head dependency selection for pull_request, push, schedule and workflow_dispatch
+      - bounded missing-dependency failure and status reporting
+      - release-condition producer identity materialization
+    exclusions:
+      - no end-user product behavior or UI
+      - no Odoo model, contract, ACL, fixture, database or runtime changes
+      - no changes to required workflow success criteria
+      - no automatic cancellation or dispatch as part of this repair
+  validation:
+    required:
+      - focused selector, release-condition and workflow-contract unit tests
+      - verify.ci.workflow.contract with non-zero collection
+      - verify.ci.scheduled_gates
+      - ci.local.iteration for the exact candidate
+      - clean candidate publication and exact-head remote gates when requested
+  rollback: >-
+    Revert the selector policy, wait-bound changes, release-condition producer
+    identity changes, contract tests and run metadata together. No product or
+    persistent data state is affected.
+  completion:
+    batch: verification_pending
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable
