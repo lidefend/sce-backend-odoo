@@ -50,7 +50,7 @@ class ActionDispatcher:
             return self.env['app.action.gateway']
         raise ValueError("缺少 app.action.gateway：operation 执行网关未注册")
 
-    def dispatch(self, p):
+    def dispatch(self, p, *, request_context=None):
         subject = p.get('subject')
 
         # ---- 1) model：直接按模型构造页面契约
@@ -58,7 +58,10 @@ class ActionDispatcher:
             if not p.get("model"):
                 raise ValueError("model subject 需要提供 model 名")
             p["view_types"] = PageAssembler.normalize_view_types(p.get('view_type') or 'tree,form')
-            return self._page_assembler().assemble_page_contract(p)
+            return self._page_assembler().assemble_page_contract(
+                p,
+                request_context=request_context,
+            )
 
         # ---- 2) operation：execute/onchange/validate/report
         if subject == 'operation':
@@ -103,7 +106,11 @@ class ActionDispatcher:
                 # 把 active_menu_id 放入上下文，利于 domain/context 计算
                 ctx = p.setdefault('context', {})
                 ctx.setdefault('active_menu_id', amid)
-            return self._page_assembler().assemble_page_contract(p, action=info)
+            return self._page_assembler().assemble_page_contract(
+                p,
+                action=info,
+                request_context=request_context,
+            )
 
         # client：不需要模型
         if atype == 'ir.actions.client':
@@ -114,7 +121,11 @@ class ActionDispatcher:
         if atype == 'ir.actions.server':
             mapped = self.resolver.map_server_to_window(info.get('id'), info.get('xml_id'))
             if mapped:
-                return self._dispatch_resolved(mapped, p)
+                return self._dispatch_resolved(
+                    mapped,
+                    p,
+                    request_context=request_context,
+                )
             return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(
                 p,
                 info,
@@ -132,7 +143,7 @@ class ActionDispatcher:
         _logger.warning("UNSUPPORTED_ACTION_TYPE action_id=%s type=%s", aid, atype)
         return ClientUrlReportAssembler(self.env).assemble_diagnostic_contract(p, info, issue=f"不支持的动作类型: {atype}")
 
-    def _dispatch_resolved(self, info, p):
+    def _dispatch_resolved(self, info, p, *, request_context=None):
         """
         给已物化的 server 动作再次分发（仅支持 act_window/client）
         """
@@ -140,7 +151,11 @@ class ActionDispatcher:
         if atype == 'ir.actions.act_window':
             p['model'] = info.get('res_model') or p.get('model')
             p['view_types'] = PageAssembler.normalize_view_types(p.get('view_type') or info.get('view_mode') or 'tree,form')
-            return self._page_assembler().assemble_page_contract(p, action=info)
+            return self._page_assembler().assemble_page_contract(
+                p,
+                action=info,
+                request_context=request_context,
+            )
         if atype == 'ir.actions.client':
             return ClientUrlReportAssembler(self.env, self.su_env).assemble_client_contract(p, info)
         raise ValueError(f"server 动作返回了不支持的类型：{atype}")

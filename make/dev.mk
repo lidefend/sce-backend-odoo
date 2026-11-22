@@ -1767,8 +1767,9 @@ local.dev.runtime.performance.baseline: guard.prod.forbid local.dev.ready
 # complete baseline; negative cases must register a gap or fail closed.
 .PHONY: verify.system.performance.baseline.unit
 verify.system.performance.baseline.unit: guard.prod.forbid
-	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/verify/local_dev_runtime_record_form_probe.py scripts/verify/test_local_dev_runtime_record_form_probe.py scripts/verify/local_dev_runtime_projection_cache_identity_probe.py scripts/ops/local_dev_performance_identity.py
+	@python3 -m py_compile scripts/verify/system_performance_baseline.py scripts/verify/test_system_performance_baseline.py scripts/verify/local_dev_runtime_contract_role_matrix_probe.py scripts/verify/local_dev_runtime_record_form_probe.py scripts/verify/test_local_dev_runtime_record_form_probe.py scripts/verify/local_dev_runtime_projection_cache_identity_probe.py scripts/ops/local_dev_performance_identity.py addons/smart_core/core/system_init_request_context.py addons/smart_core/tests/test_system_init_request_context.py
 	@python3 -m unittest scripts.verify.test_system_performance_baseline scripts.verify.test_local_dev_runtime_record_form_probe
+	@python3 addons/smart_core/tests/test_system_init_request_context.py
 
 # Candidate view metadata is changed only inside a rollback-only shell transaction.
 .PHONY: local.dev.user_permission.rehearsal

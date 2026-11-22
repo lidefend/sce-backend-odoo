@@ -256,7 +256,8 @@ def _normalize_scene_targets(env, scenes, nav_targets, resolve_errors):
         scene_key = scene.get("code") or scene.get("key")
         if not scene_key:
             continue
-        target = scene.get("target") or {}
+        raw_target = scene.get("target")
+        target = dict(raw_target) if isinstance(raw_target, dict) else {}
         route = target.get("route")
         route_is_missing_fallback = isinstance(route, str) and "TARGET_MISSING" in route
         action_xmlid = target.get("action_xmlid") or target.get("actionXmlid")
@@ -465,12 +466,14 @@ def _normalize_scene_tiles(scenes, capabilities, warnings):
         if not isinstance(scene, dict):
             continue
         scene_key = scene.get("code") or scene.get("key") or ""
-        tiles = scene.get("tiles")
-        if not isinstance(tiles, list):
+        raw_tiles = scene.get("tiles")
+        if not isinstance(raw_tiles, list):
             continue
-        for tile in tiles:
-            if not isinstance(tile, dict):
+        tiles = []
+        for raw_tile in raw_tiles:
+            if not isinstance(raw_tile, dict):
                 continue
+            tile = dict(raw_tile)
             key = str(tile.get("key") or "").strip()
             cap_meta = cap_map.get(key) if key else None
             status = _normalize_tile_status(tile.get("status"))
@@ -507,6 +510,8 @@ def _normalize_scene_tiles(scenes, capabilities, warnings):
                     "field": "tiles.key",
                     "reason": "missing_key",
                 })
+            tiles.append(tile)
+        scene["tiles"] = tiles
     return scenes
 
 

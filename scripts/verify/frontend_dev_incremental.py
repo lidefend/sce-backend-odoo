@@ -275,9 +275,27 @@ RULES = (
         "addons/smart_core/core/scene_provider.py",
         "addons/smart_core/core/scene_registry_provider.py",
         "addons/smart_core/core/scene_runtime_orchestrator.py",
+        "addons/smart_core/governance/scene_normalizer.py",
         "addons/smart_core/core/system_init_runtime_context.py",
+        "addons/smart_core/core/system_init_request_context.py",
+        "addons/smart_core/adapters/odoo_nav_adapter.py",
+        "addons/smart_core/tests/test_system_init_request_context.py",
     ), (
         "verify.backend.navigation_delivery.unit",
+        "verify.system.performance.baseline.unit",
+    )),
+    Rule((
+        "addons/smart_core/core/ui_base_contract_asset_producer.py",
+        "addons/smart_core/core/ui_base_contract_asset_repository.py",
+        "addons/smart_core/tests/test_ui_base_contract_asset_producer.py",
+        "addons/smart_core/tests/test_ui_base_contract_asset_repository.py",
+    ), (
+        "verify.smart_core.ui_base_asset_refresh.unit",
+    )),
+    Rule((
+        "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+    ), (
+        "verify.frontend.scene_entry_contract.unit",
     )),
     Rule((
         "addons/smart_core/core/system_init_extension_fact_merger.py",
@@ -2214,7 +2232,9 @@ RULES = (
         "addons/smart_core/core/form_structure_authority.py",
         "addons/smart_core/core/native_view_projection.py",
         "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+        "addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py",
         "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
         "addons/smart_core/app_config_engine/models/app_view_config.py",
         "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
         "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",

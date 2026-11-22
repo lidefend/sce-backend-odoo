@@ -22,9 +22,19 @@ ROUTE_AUTHORITY_BUCKETS = (
     "contextual_actions",
     "admin_actions",
 )
+EFFECTIVE_ROUTE_AUTHORITY_FACT = "effective_delivery.route_authority"
 
 
 _GROUP_XMLID_REQUEST_MEMO: "WeakKeyDictionary[object, dict]" = WeakKeyDictionary()
+
+
+def _request_fact_context(value):
+    return (
+        value
+        if callable(getattr(value, "fact", None))
+        and callable(getattr(value, "resolve", None))
+        else None
+    )
 
 
 def _request_cached_user_group_xmlids(env) -> set:
@@ -187,7 +197,7 @@ def principal_group_signature(env) -> str:
         return ""
 
 
-def published_route_authority(env) -> dict:
+def published_route_authority(env, *, request_context=None) -> dict:
     """Effective published route authority, cached per principal and revision.
 
     The startup navigation authority is rebuilt only when the principal's
@@ -195,6 +205,18 @@ def published_route_authority(env) -> dict:
     (menus, actions, xmlids, rules, users) or when the smart_core publication
     models signal a change. Any failure keeps the caller fail-closed.
     """
+    request_context = _request_fact_context(request_context)
+    if request_context is not None:
+        fact = request_context.fact(EFFECTIVE_ROUTE_AUTHORITY_FACT)
+        if fact is not None and isinstance(fact.value, dict):
+            return fact.value
+        authority = _build_runtime_route_authority(
+            env,
+            request_context=request_context,
+        )
+        if isinstance(authority, dict):
+            request_context.resolve(EFFECTIVE_ROUTE_AUTHORITY_FACT, lambda: authority)
+        return authority
     try:
         policy = env["sc.product.policy"]
         try:
@@ -206,14 +228,17 @@ def published_route_authority(env) -> dict:
         return {}
 
 
-def build_runtime_route_authority(env) -> dict:
+def build_runtime_route_authority(env, *, request_context=None) -> dict:
     """Public entrypoint returning the current principal's route authority."""
-    return published_route_authority(env)
+    return published_route_authority(env, request_context=request_context)
 
 
-def _build_runtime_route_authority(env) -> dict:
+def _build_runtime_route_authority(env, *, request_context=None) -> dict:
     """Read the same effective qualification used by startup navigation."""
     # Let the outer consumer fail closed. An exception must not become an
     # apparently valid empty result stored by the principal's ormcache.
     from .effective_delivery_service import EffectiveDeliveryService
-    return EffectiveDeliveryService(env).resolve(dict(env.context or {})).route_authority
+    return EffectiveDeliveryService(env).resolve(
+        dict(env.context or {}),
+        request_context=request_context,
+    ).route_authority

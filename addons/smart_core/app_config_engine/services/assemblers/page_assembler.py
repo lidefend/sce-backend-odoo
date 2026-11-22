@@ -551,13 +551,19 @@ class PageAssembler:
         )
         return search_view_data, native_identity
 
-    def assemble_page_contract(self, p, action=None):
+    def assemble_page_contract(self, p, action=None, *, request_context=None):
         """
         页面契约主装配：
         - 确保 views.tree.columns 存在（必要时用严格提取填充）
         - 禁用“使用原始视图字段覆盖生成列”的脏逻辑，防止隐字段/one2many 混入
         - ★ 权限：使用 su_env 生成权限聚合，并返回“已按当前用户裁剪”的权限契约（effective）
         """
+        request_context = (
+            request_context
+            if callable(getattr(request_context, "fact", None))
+            and callable(getattr(request_context, "resolve", None))
+            else None
+        )
         model = p.get("model")
         if not model:
             # 如动作没有模型，退回诊断契约
@@ -875,7 +881,11 @@ class PageAssembler:
 
         # 4.x) 关系字段维护入口（many2one/many2many/one2many）
         # 由后端契约提供 relation_entry，前端禁止自行猜测 action/menu。
-        self._inject_relation_entry_contract(data, model)
+        self._inject_relation_entry_contract(
+            data,
+            model,
+            request_context=request_context,
+        )
 
         # 5) 权限契约（★ 关键改造点）
         #    - 用 su_env 生成完整权限聚合
@@ -3771,6 +3781,7 @@ class PageAssembler:
         model_name="",
         stage_timings=None,
         relation_cache_key="",
+        request_context=None,
     ):
         fields = data.get("fields") if isinstance(data, dict) else None
         if not isinstance(fields, dict) or not fields:
@@ -3813,7 +3824,13 @@ class PageAssembler:
         )
         dialog_required_fields = demand_declaration["dialog_required_fields"]
         relation_demand_ready_at = time.monotonic()
-        relation_entry_map = self._build_relation_entry_map(relation_models)
+        if request_context is None:
+            relation_entry_map = self._build_relation_entry_map(relation_models)
+        else:
+            relation_entry_map = self._build_relation_entry_map(
+                relation_models,
+                request_context=request_context,
+            )
         relation_map_ready_at = time.monotonic()
         relation_projection_cache = {}
         projected_relation_entries = {}
@@ -4505,7 +4522,7 @@ class PageAssembler:
             "reason_code": "INLINE_CREATE_READY",
         }
 
-    def _relation_open_authority(self, relation_models):
+    def _relation_open_authority(self, relation_models, *, request_context=None):
         """Published relation open entries for the current principal.
 
         A relation open declaration is the same publication decision as a
@@ -4528,9 +4545,17 @@ class PageAssembler:
             )
         except Exception:
             return published_pairs, published_open_by_model
+        authority = (
+            build_runtime_route_authority(
+                self.env,
+                request_context=request_context,
+            )
+            if request_context is not None
+            else build_runtime_route_authority(self.env)
+        )
         ordered_pairs = [
             (menu_id, action_id)
-            for menu_id, action_id in iter_published_pairs(build_runtime_route_authority(self.env))
+            for menu_id, action_id in iter_published_pairs(authority)
             if menu_id and action_id
         ]
         published_pairs = set(ordered_pairs)
@@ -4549,7 +4574,7 @@ class PageAssembler:
             published_open_by_model[model_name] = (int(menu_id), action)
         return published_pairs, published_open_by_model
 
-    def _build_relation_entry_map(self, relation_models):
+    def _build_relation_entry_map(self, relation_models, *, request_context=None):
         relation_models = sorted(str(m).strip() for m in (relation_models or []) if str(m).strip())
         if not relation_models:
             return {}
@@ -4590,7 +4615,15 @@ class PageAssembler:
                     "dry_run_supported": True,
                 }
 
-        published_pairs, published_open_by_model = self._relation_open_authority(relation_models)
+        if request_context is None:
+            published_pairs, published_open_by_model = self._relation_open_authority(
+                relation_models,
+            )
+        else:
+            published_pairs, published_open_by_model = self._relation_open_authority(
+                relation_models,
+                request_context=request_context,
+            )
         entry_map = {}
         try:
             visible_menu_ids = set(self.env["ir.ui.menu"]._visible_menu_ids())

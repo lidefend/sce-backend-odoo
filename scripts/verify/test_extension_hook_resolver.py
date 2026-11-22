@@ -86,32 +86,53 @@ class ExtensionHookResolverTests(unittest.TestCase):
             )
 
     def test_ordered_merge_uses_declared_provider_order(self):
-        _module(
-            "smart_construction_core",
-            smart_core_nav_scene_maps=lambda env: {
+        seen = []
+
+        def core_provider(env, *, request_context=None):
+            del env
+            seen.append(("smart_construction_core", request_context))
+            return {
                 "menu_scene_map": {"shared": "core", "core_only": "core"},
                 "action_xmlid_scene_map": {},
                 "model_view_scene_map": {},
-            },
-        )
-        _module(
-            "smart_construction_scene",
-            smart_core_nav_scene_maps=lambda env: {
+            }
+
+        def scene_provider(env, *, request_context=None):
+            del env
+            seen.append(("smart_construction_scene", request_context))
+            return {
                 "menu_scene_map": {"shared": "scene", "scene_only": "scene"},
                 "action_xmlid_scene_map": {"action": "scene"},
                 "model_view_scene_map": {},
-            },
+            }
+
+        _module(
+            "smart_construction_core",
+            smart_core_nav_scene_maps=core_provider,
+        )
+        _module(
+            "smart_construction_scene",
+            smart_core_nav_scene_maps=scene_provider,
         )
         ENV_MODULES[:] = ["smart_construction_scene", "smart_construction_core"]
+        request_context = object()
         result = RESOLVER.call_extension_hook_first(
             TEST_ENV,
             "smart_core_nav_scene_maps",
             object(),
+            request_context=request_context,
         )
         self.assertEqual(result["menu_scene_map"]["shared"], "scene")
         self.assertEqual(result["menu_scene_map"]["core_only"], "core")
         self.assertEqual(result["menu_scene_map"]["scene_only"], "scene")
         self.assertEqual(result["action_xmlid_scene_map"]["action"], "scene")
+        self.assertEqual(
+            seen,
+            [
+                ("smart_construction_core", request_context),
+                ("smart_construction_scene", request_context),
+            ],
+        )
 
     def test_ordered_merge_unions_scene_targets(self):
         _module(

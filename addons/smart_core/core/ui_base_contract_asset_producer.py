@@ -86,7 +86,7 @@ def _normalize_scene_rows(scene_rows: list[dict] | None) -> list[dict]:
     return [row for row in (scene_rows or []) if isinstance(row, dict)]
 
 
-def _build_runtime_ui_base_contract(env, *, action_id: int) -> dict:
+def _build_runtime_ui_base_contract(env, *, action_id: int, request_context=None) -> dict:
     if int(action_id or 0) <= 0:
         return {}
     dispatch_ctx = api.Environment(env.cr, env.user.id, dict(env.context or {}))
@@ -95,7 +95,8 @@ def _build_runtime_ui_base_contract(env, *, action_id: int) -> dict:
             "subject": "action",
             "action_id": int(action_id),
             "with_data": False,
-        }
+        },
+        request_context=request_context,
     )
     contract_service = ContractService(env)
     finalized = contract_service.finalize_contract(
@@ -131,13 +132,14 @@ def refresh_ui_base_contract_assets(
     company_id: int | None = None,
     source_type: str = "precompile",
     code_version: str | None = None,
+    request_context=None,
 ) -> dict:
     requested_keys = {_text(item) for item in (scene_keys or []) if _text(item)}
-    rows, scene_source = _load_scene_rows(env)
-    if not rows:
-        rows = _normalize_scene_rows(scene_rows)
-        if rows:
-            scene_source = "runtime_rows"
+    rows = _normalize_scene_rows(scene_rows)
+    if rows:
+        scene_source = "runtime_rows"
+    else:
+        rows, scene_source = _load_scene_rows(env)
     produced = 0
     skipped = 0
     failed = 0
@@ -158,7 +160,11 @@ def refresh_ui_base_contract_assets(
         try:
             source_ref = ""
             if action_id > 0:
-                payload = _build_runtime_ui_base_contract(env, action_id=action_id)
+                payload = _build_runtime_ui_base_contract(
+                    env,
+                    action_id=action_id,
+                    request_context=request_context,
+                )
                 source_ref = f"action:{action_id}"
             else:
                 payload = _build_scene_minimal_ui_base_contract(scene_key, scene)

@@ -21,7 +21,13 @@ def source_authority_contract():
     )
 
 
-def load_scene_configs(env, *, drift=None, published_authority=None):
+def load_scene_configs(
+    env,
+    *,
+    drift=None,
+    published_authority=None,
+    request_context=None,
+):
     optional_kwargs = (
         {"published_authority": published_authority}
         if isinstance(published_authority, dict)
@@ -31,7 +37,11 @@ def load_scene_configs(env, *, drift=None, published_authority=None):
         env,
         "smart_core_load_scene_configs",
         env,
-        optional_kwargs={**optional_kwargs, "drift": drift},
+        optional_kwargs={
+            **optional_kwargs,
+            "drift": drift,
+            "request_context": request_context,
+        },
     )
     return payload if isinstance(payload, list) else []
 

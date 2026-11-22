@@ -1192,7 +1192,11 @@ def _native_primary_center_sequences(env) -> dict[str, int]:
     return sequences
 
 
-def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
+def _scene_targets_by_pair(
+    env,
+    *,
+    request_context=None,
+) -> tuple[dict[tuple[int, int], str], list[str]]:
     """Compose scene identities over existing native menu/action facts.
 
     The scene registry owns scene composition identities, not a second copy of
@@ -1207,7 +1211,12 @@ def _scene_targets_by_pair(env) -> tuple[dict[tuple[int, int], str], list[str]]:
     except ModuleNotFoundError:
         scenes = None
     else:
-        scenes = call_extension_hook_first(env, "smart_core_delivery_scene_declarations", env)
+        scenes = call_extension_hook_first(
+            env,
+            "smart_core_delivery_scene_declarations",
+            env,
+            request_context=request_context,
+        )
     # An empty declaration list is authoritative; only older providers fall back.
     if not isinstance(scenes, list):
         try:
@@ -1367,7 +1376,13 @@ def _scenarioized_navigation(env, centers, route_authority) -> list[dict[str, An
     return MenuService(env).project_canonical_navigation([root], route_authority)
 
 
-def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str, Any]:
+def project_authorized_nav_with_env(
+    env,
+    nav,
+    route_authority=None,
+    *,
+    request_context=None,
+) -> dict[str, Any]:
     """Project authorized navigation into composed center -> scenario -> entries.
 
     Reads the maintainable ``sc.product.scenario`` bindings server-side and only
@@ -1409,7 +1424,10 @@ def project_authorized_nav_with_env(env, nav, route_authority=None) -> dict[str,
             int(menu.id): int(getattr(getattr(menu, "action", None), "id", 0) or 0)
             for menu in menus
         }
-    scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(env)
+    scene_targets, ambiguous_scene_targets = _scene_targets_by_pair(
+        env,
+        request_context=request_context,
+    )
     for leaf in leaves:
         _apply_scene_target_projection(leaf, scene_targets)
     published_surface = (

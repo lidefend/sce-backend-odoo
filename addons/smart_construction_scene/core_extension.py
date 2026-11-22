@@ -381,7 +381,22 @@ def _normalize_view_mode(raw: Any) -> str:
     return value
 
 
-def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
+def _load_effective_scene_declarations_for_request(env, request_context=None):
+    loader = getattr(
+        scene_registry,
+        "load_effective_scene_declarations_for_request",
+        None,
+    )
+    if callable(loader):
+        return loader(env, request_context=request_context)
+    return scene_registry.load_effective_scene_declarations(env)
+
+
+def _derive_nav_scene_maps_from_registry(
+    env,
+    *,
+    request_context=None,
+) -> dict[str, dict[Any, str]]:
     # Effective declarations change with imports and published DB versions.
     # The shared result uses registry caching; no independent dbname cache.
     menu_scene_map: dict[str, str] = {}
@@ -389,7 +404,10 @@ def _derive_nav_scene_maps_from_registry(env) -> dict[str, dict[Any, str]]:
     model_view_scene_map: dict[tuple[str, str], str] = {}
 
     try:
-        scenes = scene_registry.load_effective_scene_declarations(env)
+        scenes = _load_effective_scene_declarations_for_request(
+            env,
+            request_context=request_context,
+        )
     except Exception:
         scenes = []
 
@@ -511,8 +529,11 @@ def smart_core_identity_profile(env):
     }
 
 
-def smart_core_nav_scene_maps(env):
-    derived = _derive_nav_scene_maps_from_registry(env)
+def smart_core_nav_scene_maps(env, *, request_context=None):
+    derived = _derive_nav_scene_maps_from_registry(
+        env,
+        request_context=request_context,
+    )
     # Scene Registry is the dynamic authority. Static Scene maps are retained
     # only as compatibility gaps for data not yet represented in the registry.
     menu_scene_map = dict(NAV_MENU_SCENE_MAP)
@@ -528,7 +549,21 @@ def smart_core_nav_scene_maps(env):
     }
 
 
-def smart_core_load_scene_configs(env, drift=None, published_authority=None):
+def smart_core_load_scene_configs(
+    env,
+    drift=None,
+    published_authority=None,
+    *,
+    request_context=None,
+):
+    loader = getattr(scene_registry, "load_scene_configs_for_request", None)
+    if callable(loader):
+        return loader(
+            env,
+            drift=drift,
+            published_authority=published_authority,
+            request_context=request_context,
+        )
     return scene_registry.load_scene_configs(
         env,
         drift=drift,
@@ -580,12 +615,15 @@ def smart_core_critical_scene_target_route_overrides(env):
     return dict(CRITICAL_SCENE_TARGET_ROUTE_OVERRIDES)
 
 
-def smart_core_delivery_scene_declarations(env):
+def smart_core_delivery_scene_declarations(env, *, request_context=None):
     """Effective declarations shared with pages, without capability consumers."""
-    return scene_registry.load_effective_scene_declarations(env)
+    return _load_effective_scene_declarations_for_request(
+        env,
+        request_context=request_context,
+    )
 
 
-def smart_core_navigation_authority_filter(env, authority):
+def smart_core_navigation_authority_filter(env, authority, *, request_context=None):
     """Apply tenant-selected scenario composition to route authority.
 
     This is a scene-layer authority producer, not an initialization rule. It
@@ -627,7 +665,10 @@ def smart_core_navigation_authority_filter(env, authority):
         authority,
         surface_index=index,
         enabled=business_states(stored),
-        entries=scene_registry.load_effective_scene_declarations(env),
+        entries=_load_effective_scene_declarations_for_request(
+            env,
+            request_context=request_context,
+        ),
         menu_xmlids_by_id=menu_xmlids_by_id,
         menu_xmlids_by_action=menu_xmlids_by_action,
         company_id=company_id,

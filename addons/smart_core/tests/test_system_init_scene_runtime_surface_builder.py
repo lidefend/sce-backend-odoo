@@ -177,7 +177,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
             },
             startup_scene_subset_resolver_fn=lambda data, params=None: ["workspace.home"],
             filter_startup_scenes_for_preload_fn=lambda scene_rows, subset: [scene_rows[0]],
-            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None: {"scenes": scenes},
+            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None, request_context=None: {"scenes": scenes},
             build_scene_ready_contract_fn=_build_full_contract,
             build_scene_nav_contract_fn=lambda data: {"nav": [], "meta": {}},
         )
@@ -265,7 +265,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
             filter_delivery_scenes_fn=lambda scenes, **kwargs: {"delivery_scenes": scenes, "meta": {"enabled": False}},
             startup_scene_subset_resolver_fn=lambda data, params=None: set(),
             filter_startup_scenes_for_preload_fn=lambda scenes, subset: scenes,
-            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None: {"scenes": scenes},
+            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None, request_context=None: {"scenes": scenes},
             build_scene_ready_contract_fn=lambda **kwargs: {"scenes": kwargs.get("scenes") or []},
             build_scene_nav_contract_fn=lambda data: scene_nav_contract,
         )
@@ -421,7 +421,7 @@ class TestSystemInitSceneRuntimeSurfaceBuilder(unittest.TestCase):
             },
             startup_scene_subset_resolver_fn=lambda data, params=None: ["projects.list", "workspace.home"],
             filter_startup_scenes_for_preload_fn=lambda scene_rows, subset: [scene_rows[0]],
-            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None: {"scenes": scenes},
+            bind_scene_assets_fn=lambda env, scenes, role_code=None, company_id=None, request_context=None: {"scenes": scenes},
             build_scene_ready_contract_fn=_build_full_contract,
             build_scene_nav_contract_fn=lambda data: {"nav": [], "meta": {}},
         )
