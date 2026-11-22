@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03B-P1A-P1B-20261122",
+  "branch": "feature/fe-expression-03b-p1a-p1b-20261122",
+  "baseline_sha": "a408177cde91a6435d5e57a63c50dc35c2e5ce14",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03B-P1A-P1B-20261122.yaml",
+  "record": "docs/ops/iterations/fe_expression_03b_p1a_p1b_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-P1A-P1B-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-P1A-P1B-20261122/run.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_expression_03b_p1a_p1b_20261122.md",
+    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
+    "make/frontend.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing frontend source, registered local test targets and the repository-managed local Chromium runtime; no network dependency, database, fixture reset or business write"
+  },
+  "checks": {
+    "payment_settlement_amount": {
+      "target": "verify.frontend.payment_settlement_introduce.amount.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "generic frontend-only presentation change; no Odoo module behavior changed"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "verify.frontend.professional_detail_collection.unit"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "verify.frontend.payment_settlement_introduce.amount.unit"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "lint, strict typecheck and frontend.acceptance.release.build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "owner_target": "mounted real dialog component with governed intent stubs, then affected payment-request browser readback"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "diagnosis": "User-approved FE-EXPRESSION-03B review establishes P1-A as the first implementation and P1-B as a separate read-only diagnosis.",
+    "p1a_contract": "SettleRelatedPaymentRequest.applied_to_settlement is required; zero is valid and must not fall back to amount.",
+    "p1a_result": "The pre-fix real Vue component test failed because a legal zero settlement amount was hidden. The fixed component preserves zero and absent values, positive and negative values, and issues no introduction write request at 1440 or 390.",
+    "p1b_constraint": "The current page cannot establish currency identity for aggregate scope that may extend beyond displayed records.",
+    "p1b_result": "Read-only source verification shows api_data.py already computes sum over the complete filtered domain, page_sum over the page, validates currency across the complete monetary aggregate scope, returns currency_field/currency_id, and fails closed for mixed or unverifiable currency scope. The remaining P1 defect is frontend consumption in ListPage.vue, not a missing backend aggregate authority.",
+    "p1b_diagnostic": "python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py passed 38/38 stubbed pure tests without a database write.",
+    "p1b_p0_gap": "No P0 correctness gap is proven. A P0 payload enhancement to include a currency relation label would remove the frontend's need to match currency_id against page rows, but correctness can fail closed without it.",
+    "local_validation": "Focused real Vue component test 12 cases PASS; affected professional detail family PASS; contract basis PASS; lint 0 errors; strict typecheck PASS; acceptance release build PASS.",
+    "ci_local_iteration": "PASS with five reusable registered run checks, lane coverage PASS and no mapped path excluded.",
+    "freeze_prepare": "ci.delivery.freeze.prepare PASS on the unfrozen candidate; generated evidence reviewed before commit."
+  },
+  "next_exact_step": "Commit the reviewed candidate, rebuild and fingerprint the clean HEAD, capture exact-HEAD component evidence, then publish an independent-review PR.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

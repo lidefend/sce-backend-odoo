@@ -457,6 +457,14 @@ verify.frontend.professional_detail_collection.unit: guard.prod.forbid
 	@python3 -m unittest scripts/verify/test_frontend_professional_detail_collection_guard.py
 	@python3 scripts/verify/frontend_professional_detail_collection_guard.py
 
+.PHONY: verify.frontend.payment_settlement_introduce.amount.unit
+verify.frontend.payment_settlement_introduce.amount.unit: guard.prod.forbid
+	@node --check frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs
+	@node frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs
+
+verify.frontend.pr.unit: verify.frontend.payment_settlement_introduce.amount.unit
+verify.frontend.release.unit: verify.frontend.payment_settlement_introduce.amount.unit
+
 .PHONY: verify.frontend.professional_workflow.unit
 verify.frontend.professional_workflow.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/professional_workflow_model_test.ts --bundle --platform=node --format=esm --outfile=/tmp/professional-workflow-model-test.mjs >/dev/null

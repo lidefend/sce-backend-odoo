@@ -1,0 +1,60 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03B-P1A-P1B-20261122
+  title: payment_settlement_amount_integrity_and_list_aggregate_currency_diagnosis
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend monetary-value presentation for the payment settlement
+    introduction dialog, plus a read-only diagnosis of list aggregate currency
+    authority.
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - make
+    - .agent
+    - docs/ops/iterations
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Preserve the distinction between a missing payment-settlement amount and
+    a legitimate zero. Do not substitute one monetary field for another and do
+    not convert absent values to zero. Separately determine whether list
+    aggregates carry an authoritative currency identity for the complete
+    aggregate scope, without changing product source in the P1-B diagnosis.
+  product_result: >-
+    Payment settlement history and search surfaces display missing values as
+    empty and zero values as zero. P1-B supplies source-backed evidence about
+    aggregate scope and currency identity so a later fix can fail closed rather
+    than infer currency from the current page.
+  why_here: >-
+    The defect is in how the generic frontend consumes declared numeric values;
+    the backend contract already declares the amount fields and their currency.
+  why_not_elsewhere:
+    - Do not change backend contracts, ACL, workflow, ORM fields or business state.
+    - Do not add a Renderer, Registry, Bundle, page engine or second value runtime.
+    - Do not infer a replacement amount from another field.
+    - Do not treat the P1-B diagnosis as authorization to change list aggregation.
+  blast_radius:
+    behavior:
+      - Payment settlement historical request amounts preserve zero versus absent.
+      - Payment settlement search amounts preserve legitimate zero values.
+      - Positive and negative monetary values use the existing shared formatter.
+      - Confirmation payloads and business writes remain unchanged.
+      - List aggregate diagnosis records scope, currency authority and fail-closed conditions.
+    exclusions:
+      - no database migration, fixture reset, module upgrade or business-data write
+      - no backend source or contract change
+      - no FE-EXPRESSION-03C or unrelated page work
+      - no new browser acceptance framework
+  rollback: >-
+    Revert the dialog presentation change, focused amount test and run metadata
+    together. P1-B is documentation-only and can be reverted independently.
+  completion:
+    diagnosis: completed
+    implementation: completed
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_run

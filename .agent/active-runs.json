@@ -37,6 +37,7 @@
     "feature/fe-close-01-workflow-handling-20261118": ".agent/runs/FE-CLOSE-01/run.json",
     "feature/exec-efficiency-01-20261121": ".agent/runs/EXEC-EFFICIENCY-01-20261121/run.json",
     "feature/fe-expression-03a-business-value-convergence-20261122": ".agent/runs/FE-EXPRESSION-03A-20261122/run.json",
+    "feature/fe-expression-03b-p1a-p1b-20261122": ".agent/runs/FE-EXPRESSION-03B-P1A-P1B-20261122/run.json",
     "feature/fe-collection-numeric-header-alignment-20261118": ".agent/runs/FE-COLLECTION-NUMERIC-HEADER-ALIGNMENT-20261118/run.json",
     "feature/fe-expression-02ab-feedback-responsive-20261122": ".agent/runs/FE-EXPRESSION-02AB-20261122/run.json",
     "feature/fe-collection-scroll-accessibility-20261118": ".agent/runs/FE-COLLECTION-SCROLL-ACCESSIBILITY-20261118/run.json",
