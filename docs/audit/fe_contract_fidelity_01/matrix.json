@@ -1,0 +1,470 @@
+{
+  "schema": "fe_contract_fidelity.matrix.v1",
+  "identity": {
+    "base_sha": "b7bea61727e9bf75270e65292f523910a93a667c",
+    "product_source_modified": false
+  },
+  "semantics": [
+    "type_identity",
+    "selection_status",
+    "relation_identity",
+    "money_currency",
+    "percentage_precision",
+    "temporal_timezone",
+    "duration_unit",
+    "empty_zero_boolean",
+    "visibility_readonly_required",
+    "action_target_permission_reason",
+    "feedback_errors",
+    "collection_sort_filter_page_aggregate",
+    "layout_structure",
+    "attachments"
+  ],
+  "status_definitions": {
+    "PASS": "A source-backed consumer preserves the declared semantic. Static-only evidence is identified separately.",
+    "MISSING": "The contract requires expression or execution but no consumer exists.",
+    "LOST": "A consumer exists but discards declared type, identity, precision, unit, state or feedback.",
+    "ALTERED": "Frontend changes or replaces a backend-declared fact.",
+    "INFERRED": "Frontend supplies a rule or value without contract authority.",
+    "DUPLICATED": "More than one interpreter can produce different results for the same declared semantic.",
+    "NOT_APPLICABLE": "The semantic is not part of the surface's applicable contract.",
+    "NOT_VERIFIED": "Source or runtime evidence is insufficient for a positive or negative conclusion."
+  },
+  "evidence_modes": {
+    "source": "direct source and call-chain inspection",
+    "static": "governed unit/guard execution",
+    "browser": "real component/Vite/Chromium execution",
+    "full_runtime": "not_run"
+  },
+  "surfaces": [
+    {
+      "id": "form",
+      "evidence_modes": ["source", "static", "browser"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "layout_structure",
+          "attachments"
+        ],
+        "NOT_VERIFIED": ["temporal_timezone", "collection_sort_filter_page_aggregate"]
+      }
+    },
+    {
+      "id": "list",
+      "evidence_modes": ["source", "static", "browser"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "money_currency",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure",
+          "attachments"
+        ],
+        "ALTERED": ["selection_status"],
+        "LOST": ["relation_identity"],
+        "NOT_VERIFIED": ["temporal_timezone"]
+      }
+    },
+    {
+      "id": "kanban",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "PASS": [
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure",
+          "attachments"
+        ],
+        "LOST": ["type_identity"],
+        "NOT_VERIFIED": ["temporal_timezone"]
+      }
+    },
+    {
+      "id": "one2many",
+      "evidence_modes": ["source", "static", "browser"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure"
+        ],
+        "NOT_VERIFIED": ["temporal_timezone", "attachments"]
+      }
+    },
+    {
+      "id": "readonly_detail",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "LOST": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "temporal_timezone",
+          "duration_unit",
+          "empty_zero_boolean",
+          "attachments"
+        ],
+        "PASS": [
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure"
+        ],
+        "NOT_APPLICABLE": ["feedback_errors"]
+      }
+    },
+    {
+      "id": "my_work",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "layout_structure"
+        ],
+        "INFERRED": ["money_currency"],
+        "LOST": ["percentage_precision"],
+        "NOT_VERIFIED": [
+          "selection_status",
+          "relation_identity",
+          "temporal_timezone",
+          "duration_unit",
+          "attachments"
+        ],
+        "NOT_APPLICABLE": ["collection_sort_filter_page_aggregate"]
+      }
+    },
+    {
+      "id": "page_blocks",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "LOST": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "temporal_timezone",
+          "attachments"
+        ],
+        "INFERRED": ["duration_unit"],
+        "ALTERED": ["empty_zero_boolean"],
+        "PASS": ["visibility_readonly_required", "layout_structure"],
+        "NOT_VERIFIED": ["action_target_permission_reason", "feedback_errors"],
+        "NOT_APPLICABLE": ["collection_sort_filter_page_aggregate"]
+      }
+    },
+    {
+      "id": "dialog_drawer",
+      "evidence_modes": ["source", "static", "browser"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "layout_structure"
+        ],
+        "NOT_VERIFIED": ["temporal_timezone", "duration_unit", "attachments"],
+        "NOT_APPLICABLE": ["collection_sort_filter_page_aggregate"]
+      }
+    },
+    {
+      "id": "native_view_contract_runtime",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "PASS": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure"
+        ],
+        "NOT_VERIFIED": ["temporal_timezone", "attachments"]
+      }
+    },
+    {
+      "id": "navigation",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "PASS": [
+          "empty_zero_boolean",
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "layout_structure"
+        ],
+        "NOT_APPLICABLE": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "temporal_timezone",
+          "duration_unit",
+          "attachments",
+          "collection_sort_filter_page_aggregate"
+        ]
+      }
+    },
+    {
+      "id": "shared_value_interpreters",
+      "evidence_modes": ["source", "static", "browser"],
+      "statuses": {
+        "DUPLICATED": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "percentage_precision",
+          "duration_unit",
+          "empty_zero_boolean"
+        ],
+        "PASS": ["money_currency", "attachments"],
+        "NOT_VERIFIED": ["temporal_timezone"],
+        "NOT_APPLICABLE": [
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "collection_sort_filter_page_aggregate",
+          "layout_structure"
+        ]
+      }
+    },
+    {
+      "id": "action_renderer",
+      "evidence_modes": ["source", "static"],
+      "statuses": {
+        "PASS": [
+          "visibility_readonly_required",
+          "action_target_permission_reason",
+          "feedback_errors",
+          "layout_structure"
+        ],
+        "NOT_APPLICABLE": [
+          "type_identity",
+          "selection_status",
+          "relation_identity",
+          "money_currency",
+          "percentage_precision",
+          "temporal_timezone",
+          "duration_unit",
+          "empty_zero_boolean",
+          "attachments",
+          "collection_sort_filter_page_aggregate"
+        ]
+      }
+    }
+  ],
+  "findings": [
+    {
+      "id": "FCF-01",
+      "severity": "P1",
+      "status": "ALTERED",
+      "surface": "list",
+      "semantic": "selection_status",
+      "title": "List falls back to the raw selection key when a label is unavailable",
+      "source": [
+        "frontend/apps/web/src/pages/ListPage.vue:734-753",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts:73-111",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts:112-142"
+      ],
+      "call_chain": "selectionLabel() returns '' -> presentListCell() -> String(displayRaw)",
+      "evidence": "The fail-closed resolveCollectionCell helper exists but has no production caller. An unknown backend selection value is therefore shown as its storage key.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-02",
+      "severity": "P1",
+      "status": "LOST",
+      "surface": "readonly_detail",
+      "semantic": "type_identity, relation_identity, money_currency, percentage_precision, temporal_timezone, duration_unit, empty_zero_boolean, attachments",
+      "title": "Scene readonly collection bridge strips field semantics before rendering",
+      "source": [
+        "frontend/apps/web/src/app/renderers/sceneReadonlyCollectionBridge.ts:145-156",
+        "frontend/packages/ui/src/contracts/normalizedCollectionAdapter.ts:20-30",
+        "frontend/packages/ui/src/contracts/normalizedCollectionAdapter.ts:123-170"
+      ],
+      "call_chain": "V2 contract -> normalized collection bridge -> String(record[field] ?? '') -> readonly table",
+      "evidence": "Normalized widgets retain only id/fieldCode/label, and every row value is stringified before the readonly table receives it.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-03",
+      "severity": "P1",
+      "status": "LOST",
+      "surface": "page_blocks",
+      "semantic": "type_identity, selection_status, relation_identity, money_currency, percentage_precision, temporal_timezone, attachments",
+      "title": "Generic page blocks stringify contract values",
+      "source": [
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue:62-103",
+        "frontend/apps/web/src/components/scene/SceneBlocksRenderer.vue:242-278",
+        "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue:50-66",
+        "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue:47-65"
+      ],
+      "call_chain": "block dataset -> String()/JSON.stringify() -> rendered text",
+      "evidence": "The blocks do not consume field type, componentKey, digits, currency, relation identity, unit or temporal semantics.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-04",
+      "severity": "P1",
+      "status": "INFERRED",
+      "surface": "page_blocks",
+      "semantic": "duration_unit, empty_zero_boolean",
+      "title": "Progress summary invents percent and mutates values",
+      "source": [
+        "frontend/apps/web/src/components/page/blocks/BlockProgressSummary.vue:32-58"
+      ],
+      "call_chain": "row.unit absent -> '%' -> clampPercent/normalizeCount -> rendered value/unit",
+      "evidence": "A missing unit is replaced with percent and a real value is rounded/clamped by the frontend. This is a frontend rule not present in the row.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-05",
+      "severity": "P1",
+      "status": "INFERRED",
+      "surface": "my_work",
+      "semantic": "money_currency, percentage_precision",
+      "title": "My Work defaults missing money precision and has no percentage fact interpreter",
+      "source": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts:10-31"
+      ],
+      "call_chain": "money fact -> normalizedDigits() -> fallback 2 -> monetary formatter; other display roles -> String(value)",
+      "evidence": "Missing digits becomes two decimals in the frontend. A percentage display role has no shared percentage presentation and falls through as text.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-06",
+      "severity": "P2",
+      "status": "LOST",
+      "surface": "kanban",
+      "semantic": "type_identity",
+      "title": "Kanban title fallback ignores the declared field descriptor",
+      "source": [
+        "frontend/apps/web/src/pages/KanbanPage.vue:259-260",
+        "frontend/apps/web/src/pages/KanbanPage.vue:342-344"
+      ],
+      "call_chain": "record[titleField] -> formatDisplayValue(value, undefined)",
+      "evidence": "The primary/card fallback path cannot apply type, selection, relation, currency or precision semantics.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-07",
+      "severity": "P1",
+      "status": "DUPLICATED",
+      "surface": "shared_value_interpreters",
+      "semantic": "type_identity, selection_status, relation_identity, percentage_precision, duration_unit, empty_zero_boolean",
+      "title": "Contract-aware and generic value interpreters diverge",
+      "source": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts:247-405",
+        "frontend/apps/web/src/utils/display.ts:213-268",
+        "frontend/apps/web/src/components/FieldValue.vue:39-52",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue:174-180",
+        "frontend/apps/web/src/components/template/FormSection.vue:945-964",
+        "frontend/apps/web/src/components/action/HierarchyPlanner.vue:256",
+        "frontend/apps/web/src/components/action/HierarchyBrowser.vue:201"
+      ],
+      "call_chain": "componentKey/type semantics -> presentDeclaredBusinessValue OR formatDisplayValue depending on surface",
+      "evidence": "Unknown selections throw in the contract-aware path but can render raw in generic paths; bare relation tuples and componentKey semantics differ by consumer.",
+      "owner": "frontend"
+    },
+    {
+      "id": "FCF-08",
+      "severity": "P1",
+      "status": "LOST",
+      "surface": "readonly_detail",
+      "semantic": "percentage_precision, duration_unit, selection_status",
+      "title": "Generic readonly controls ignore declared componentKey",
+      "source": [
+        "frontend/apps/web/src/components/FieldValue.vue:39-52",
+        "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue:174-180"
+      ],
+      "call_chain": "readonly field -> money special case OR formatDisplayValue",
+      "evidence": "The non-money path does not pass componentKey to presentDeclaredBusinessValue, so declared percentage/duration/status identity is not used.",
+      "owner": "frontend"
+    }
+  ],
+  "checks": [
+    {"command": "make verify.frontend.contract_basis.enforce", "result": "PASS"},
+    {"command": "make verify.frontend.decision_authority.guard", "result": "PASS"},
+    {"command": "make verify.frontend.shared_surface_semantic_boundary.guard", "result": "PASS"},
+    {"command": "make verify.frontend.contract_shape_projection.unit", "result": "PASS"},
+    {"command": "make verify.frontend.collection_view_semantics.unit", "result": "PASS"},
+    {"command": "make verify.frontend.business_semantics.unit", "result": "PASS"},
+    {"command": "make verify.frontend.native_action_contract_consumption.unit", "result": "PASS"},
+    {"command": "make verify.frontend.action_view_page_actions.unit", "result": "PASS"},
+    {"command": "make verify.frontend.navigation_shell.unit", "result": "PASS"},
+    {"command": "make verify.semantic.registry.lint", "result": "PASS"},
+    {"command": "make verify.frontend.professional_business_value.unit", "result": "PASS", "runtime": "Chromium component"},
+    {"command": "make verify.frontend.collection_aggregate_footer.unit", "result": "PASS", "runtime": "Chromium ListPage, 1440/390"},
+    {"command": "make verify.frontend.professional_detail_collection.unit", "result": "PASS", "runtime": "actual FormSection/NativeFormTreeRenderer/X2ManyRelationRenderer"}
+  ],
+  "summary": {
+    "surfaces": 12,
+    "semantic_dimensions": 14,
+    "matrix_cells": 168,
+    "applicable_cells": 140,
+    "pass": 92,
+    "missing": 0,
+    "lost": 19,
+    "altered": 2,
+    "inferred": 2,
+    "duplicated": 6,
+    "not_applicable": 28,
+    "not_verified": 19,
+    "defect_cells_excluding_not_verified": 29,
+    "source_consumer_coverage": "140/140 applicable cells have a visible source-level consumer",
+    "verified_correctness_rate": "92/121 adjudicable applicable cells = 76.0%",
+    "overall_correctness_rate": "92/140 applicable cells = 65.7%; not suitable as a release score",
+    "delivery_conclusion": "NOT READY"
+  }
+}

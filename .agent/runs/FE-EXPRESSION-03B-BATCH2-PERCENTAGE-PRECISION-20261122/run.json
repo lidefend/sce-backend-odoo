@@ -3,7 +3,7 @@
   "id": "FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122",
   "branch": "feature/fe-expression-03b-batch2-percentage-precision-20261122",
   "baseline_sha": "328ba916ee62215c6234c8b03757cffde18787c0",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122.yaml",
   "record": "docs/audit/fe_expression_03b_batch2_percentage_precision_20261122.md",
   "scope": [
@@ -228,7 +228,7 @@
     "build": "Production frontend build PASS with 5419 modules; dirty-worktree artifact SHA256 46e8263915421ea4ca96c5eccedc9516d5e9fc301576817fdf07ce04e593ce30.",
     "cache": "Remote professional_quality_checks exposed the required assembled-contract cache invalidation. The cache version is now v100 and the assembler input digest is pinned to 01581b30d785e2679b134f2a96d6074f97488cdea7fdeab65c7ac4b81aaa836c; the assembler guard and incremental mapping pass."
   },
-  "next_exact_step": "Review generated evidence, update the batch record, and commit the clean Batch 2 candidate.",
+  "next_exact_step": "Closed: merged through PR #968 as main commit b7bea61727e9bf75270e65292f523910a93a667c.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
