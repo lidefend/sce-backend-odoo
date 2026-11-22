@@ -121,13 +121,13 @@ class TestCompanyRouteScopeCache(TransactionCase):
                 "id": menu.id, "name": "Imported", "meta": dict(main), "children": []}],
                 "route_authority": {"primary_actions": [main]}}
         real_hook = delivery.call_extension_hook_first
-        def hook(env, name, *args):
+        def hook(env, name, *args, **kwargs):
             if name == "smart_core_navigation_authority_filter":
                 return filter_business_authority(args[1], surface_index={menu_xmlid: {
                     "location": "scenario", "scenario_key": "effective", "scenario_active": True}},
                     enabled={"effective": True}, entries=[original], menu_xmlids_by_id={menu.id: menu_xmlid},
                     company_id=env.company.id)
-            return real_hook(env, name, *args)
+            return real_hook(env, name, *args, **kwargs)
         with patch.object(scene_registry, "_load_scene_registry_content_entries_with_timings", side_effect=lambda: ([deepcopy(original)], {})), \
                 patch.object(delivery.DeliveryEngine, "build", side_effect=lambda **kwargs: deepcopy(seed)), \
                 patch.object(delivery, "_load_platform_release_gate", return_value={}), \
@@ -285,12 +285,12 @@ class TestCompanyRouteScopeCache(TransactionCase):
         with patch.object(MenuService, "_action_is_runtime_allowed", return_value=False):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
         real_hook = delivery.call_extension_hook_first
-        def selection_denies(env, name, *args):
+        def selection_denies(env, name, *args, **kwargs):
             if name == "smart_core_navigation_authority_filter":
                 # A final selection result with no admitted scenes must win
                 # over the role's earlier, otherwise valid landing preference.
                 return {"primary_actions": [], "role_home_actions": [], "contextual_actions": [], "admin_actions": []}
-            return real_hook(env, name, *args)
+            return real_hook(env, name, *args, **kwargs)
         with patch.object(delivery, "call_extension_hook_first", side_effect=selection_denies):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
 

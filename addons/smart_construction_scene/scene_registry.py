@@ -1,8 +1,10 @@
 # -*- coding: utf-8 -*-
+import hashlib
 import json
 import logging
 import os
 import time
+from dataclasses import dataclass
 from importlib.util import module_from_spec, spec_from_file_location
 from pathlib import Path
 
@@ -11,12 +13,31 @@ import yaml
 SCENE_VERSION = "v2"
 SCHEMA_VERSION = "v2"
 IMPORTED_SCENES_PARAM = "sc.scene.package.imported_scenes"
+EFFECTIVE_SCENE_DECLARATIONS_FACT = "effective_scene_declarations"
 
 _logger = logging.getLogger(__name__)
 
 
 _SCENE_REGISTRY_CONTENT_MODULE = None
 _SCENE_REGISTRY_ENGINE_MODULE = None
+
+
+@dataclass(frozen=True)
+class SceneDeclarationSnapshot:
+    declarations: tuple[dict, ...]
+    timings_ms: dict[str, int]
+    content_fingerprint: str
+
+
+def scene_declaration_fingerprint(declarations) -> str:
+    payload = json.dumps(
+        list(declarations or ()),
+        ensure_ascii=False,
+        sort_keys=True,
+        default=str,
+        separators=(",", ":"),
+    ).encode("utf-8")
+    return hashlib.sha256(payload).hexdigest()
 
 
 def _scene_route(scene_key) -> str:
@@ -463,6 +484,93 @@ def load_effective_scene_declarations_with_timings(env, drift=None):
 def load_effective_scene_declarations(env, drift=None):
     """DB, imported, registry and asset declarations in existing precedence."""
     scenes, _timings = load_effective_scene_declarations_with_timings(env, drift=drift)
+    return scenes
+
+
+def _scene_declaration_snapshot(env, drift=None, request_context=None):
+    def load():
+        scenes, timings_ms = _load_scene_declarations_with_timings(env, drift=drift)
+        declarations = tuple(scenes or ())
+        return SceneDeclarationSnapshot(
+            declarations=declarations,
+            timings_ms=dict(timings_ms or {}),
+            content_fingerprint=scene_declaration_fingerprint(declarations),
+        )
+
+    if request_context is None:
+        return load(), True
+    return request_context.resolve(EFFECTIVE_SCENE_DECLARATIONS_FACT, load)
+
+
+def load_effective_scene_declarations_with_timings_for_request(
+    env,
+    drift=None,
+    *,
+    request_context=None,
+):
+    snapshot, loaded = _scene_declaration_snapshot(
+        env,
+        drift=drift,
+        request_context=request_context,
+    )
+    return list(snapshot.declarations), dict(snapshot.timings_ms) if loaded else {}
+
+
+def load_effective_scene_declarations_for_request(
+    env,
+    drift=None,
+    *,
+    request_context=None,
+):
+    scenes, _timings = load_effective_scene_declarations_with_timings_for_request(
+        env,
+        drift=drift,
+        request_context=request_context,
+    )
+    return scenes
+
+
+def load_scene_configs_with_timings_for_request(
+    env,
+    drift=None,
+    published_authority=None,
+    *,
+    request_context=None,
+):
+    snapshot, loaded = _scene_declaration_snapshot(
+        env,
+        drift=drift,
+        request_context=request_context,
+    )
+    # Tile qualification is a consumer projection. Copy only the scene mapping
+    # whose top-level tile list is replaced; nested declaration facts stay shared
+    # and read-only.
+    scenes = [dict(scene) for scene in snapshot.declarations]
+    records = {scene.code: scene for scene in _published_db_scenes(env)}
+    for scene in scenes:
+        record = records.get(scene.get("code"))
+        if record is not None:
+            scene["tiles"] = record._filter_payload_tiles(
+                scene.get("tiles") or [],
+                env.user,
+                published_authority=published_authority,
+            )
+    return scenes, dict(snapshot.timings_ms) if loaded else {}
+
+
+def load_scene_configs_for_request(
+    env,
+    drift=None,
+    published_authority=None,
+    *,
+    request_context=None,
+):
+    scenes, _timings = load_scene_configs_with_timings_for_request(
+        env,
+        drift=drift,
+        published_authority=published_authority,
+        request_context=request_context,
+    )
     return scenes
 
 
