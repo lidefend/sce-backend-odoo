@@ -102,7 +102,12 @@ class SceneDeclarationConsumptionTest(unittest.TestCase):
                 }):
                     env = object()
                     self.assertEqual(PROJ._scene_targets_by_pair(env), (expected, []))
-                    hook.assert_called_once_with(env, "smart_core_delivery_scene_declarations", env)
+                    hook.assert_called_once_with(
+                        env,
+                        "smart_core_delivery_scene_declarations",
+                        env,
+                        request_context=None,
+                    )
                     self.assertEqual(provider.call_count, fallback_calls)
 
     def test_declaration_xmlid_default_action_and_conflicts(self):
@@ -115,7 +120,7 @@ class SceneDeclarationConsumptionTest(unittest.TestCase):
         action = types.SimpleNamespace(id=20)
         env = types.SimpleNamespace(ref=lambda key, **kw: {"menu": types.SimpleNamespace(id=10, action=action), "action": action}.get(key))
         with patch.dict(sys.modules, {
-            "odoo.addons.smart_core.utils.extension_hooks": types.SimpleNamespace(call_extension_hook_first=lambda *args: scenes),
+            "odoo.addons.smart_core.utils.extension_hooks": types.SimpleNamespace(call_extension_hook_first=lambda *args, **kwargs: scenes),
             "odoo.addons.smart_core.core.scene_provider": types.SimpleNamespace(load_scenes_from_db_or_fallback=Mock(side_effect=AssertionError("unused full projection"))),
         }):
             self.assertEqual(PROJ._scene_targets_by_pair(env), ({(11, 20): "scene.b"}, ["10/20"]))

@@ -1045,7 +1045,8 @@ def smart_core_identity_profile(env):
     }
 
 
-def smart_core_nav_scene_maps(env):
+def smart_core_nav_scene_maps(env, *, request_context=None):
+    del request_context
     return {
         "menu_scene_map": dict(NAV_MENU_SCENE_MAP),
         "action_xmlid_scene_map": dict(NAV_ACTION_SCENE_MAP),
@@ -1196,7 +1197,13 @@ def smart_core_register(registry):
             registry[intent_name] = handler
 
 
-def get_capability_contributions(env, user, *, published_authority=None):
+def get_capability_contributions(
+    env,
+    user,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user as registry_list_capabilities_for_user,
@@ -1208,13 +1215,20 @@ def get_capability_contributions(env, user, *, published_authority=None):
             env,
             user,
             published_authority=published_authority,
+            request_context=request_context,
         )
     except Exception:
         return []
     return _capability_rows.normalize_capability_rows(capabilities)
 
 
-def get_capability_contributions_with_timings(env, user, *, published_authority=None):
+def get_capability_contributions_with_timings(
+    env,
+    user,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     try:
         from odoo.addons.smart_construction_core.services.capability_registry import (
             list_capabilities_for_user_with_timings as registry_list_capabilities_for_user_with_timings,
@@ -1226,6 +1240,7 @@ def get_capability_contributions_with_timings(env, user, *, published_authority=
             env,
             user,
             published_authority=published_authority,
+            request_context=request_context,
         )
     except Exception:
         return [], {}
@@ -1251,21 +1266,35 @@ def get_capability_group_contributions(env):
     return out
 
 
-def smart_core_list_capabilities_for_user(env, user, *, published_authority=None):
+def smart_core_list_capabilities_for_user(
+    env,
+    user,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     """Compatibility hook consumed by smart_core capability provider."""
     return get_capability_contributions(
         env,
         user,
         published_authority=published_authority,
+        request_context=request_context,
     )
 
 
-def smart_core_list_capabilities_for_user_with_timings(env, user, *, published_authority=None):
+def smart_core_list_capabilities_for_user_with_timings(
+    env,
+    user,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     """Expose capability projection stages to the startup provider."""
     return get_capability_contributions_with_timings(
         env,
         user,
         published_authority=published_authority,
+        request_context=request_context,
     )
 
 
@@ -1446,7 +1475,13 @@ def smart_core_extend_system_init(data, env, user):
     return _system_init_rows.apply_system_init_profile_overrides(data)
 
 
-def smart_core_scenario_surface_projection(env, nav, route_authority=None):
+def smart_core_scenario_surface_projection(
+    env,
+    nav,
+    route_authority=None,
+    *,
+    request_context=None,
+):
     """Project the scenario product surface over the final authorized navigation.
 
     Returns ``None`` on any failure so the caller keeps the legacy navigation
@@ -1458,7 +1493,12 @@ def smart_core_scenario_surface_projection(env, nav, route_authority=None):
         from odoo.addons.smart_construction_core.services.scenario_surface_projection import (
             project_authorized_nav_with_env,
         )
-        return project_authorized_nav_with_env(env, nav=nav, route_authority=route_authority)
+        return project_authorized_nav_with_env(
+            env,
+            nav=nav,
+            route_authority=route_authority,
+            request_context=request_context,
+        )
     except Exception:
         return None
 

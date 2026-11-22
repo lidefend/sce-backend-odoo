@@ -37,6 +37,7 @@ from odoo.addons.smart_core.core.platform_duty_contract import (
 from odoo.addons.smart_core.core.system_init_identity_payload import SystemInitIdentityPayload
 from odoo.addons.smart_core.core.system_init_nav_request_builder import SystemInitNavRequestBuilder
 from odoo.addons.smart_core.core.system_init_payload_builder import SystemInitPayloadBuilder
+from odoo.addons.smart_core.core.system_init_request_context import SystemInitRequestContext
 from odoo.addons.smart_core.core.scene_component_driver_feature_flags import resolve_system_feature_flags
 from odoo.addons.smart_core.security.platform_company_access import platform_feature_flags_for_user_readonly
 from odoo.addons.smart_core.utils.backend_contract_boundaries import (
@@ -142,11 +143,18 @@ _BUSINESS_MASTER_DATA_MENU_XMLIDS: set[str] = set()
 
 # ===================== 工具函数（权限 / 指纹 / 导航净化） =====================
 
-def _load_capabilities_for_user(env, user, *, published_authority=None) -> List[dict]:
+def _load_capabilities_for_user(
+    env,
+    user,
+    *,
+    published_authority=None,
+    request_context=None,
+) -> List[dict]:
     return provider_load_capabilities_for_user(
         env,
         user,
         published_authority=published_authority,
+        request_context=request_context,
     )
 
 
@@ -155,11 +163,13 @@ def _load_capabilities_for_user_with_timings(
     user,
     *,
     published_authority=None,
+    request_context=None,
 ) -> tuple[List[dict], dict[str, int]]:
     return provider_load_capabilities_for_user_with_timings(
         env,
         user,
         published_authority=published_authority,
+        request_context=request_context,
     )
 
 
@@ -1162,19 +1172,34 @@ def _resolve_scene_channel(env, user, params: dict | None) -> tuple[str, str, st
 def _load_scene_contract(env, scene_channel: str, use_pinned: bool) -> tuple[dict | None, str]:
     return provider_load_scene_contract(env, scene_channel, use_pinned, logger=_logger)
 
-def _load_scenes_from_db_or_fallback(env, drift=None, logger=None):
+def _load_scenes_from_db_or_fallback(
+    env,
+    drift=None,
+    logger=None,
+    *,
+    request_context=None,
+):
     return provider_load_scenes_from_db_or_fallback(
         env,
         drift=drift,
         logger=logger or _logger,
+        request_context=request_context,
     )
 
-def _merge_missing_scenes_from_registry(env, scenes, warnings, *, published_authority=None):
+def _merge_missing_scenes_from_registry(
+    env,
+    scenes,
+    warnings,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     return provider_merge_missing_scenes_from_registry(
         env,
         scenes,
         warnings,
         published_authority=published_authority,
+        request_context=request_context,
     )
 
 # ===================== Handler =====================
@@ -1236,6 +1261,13 @@ class SystemInitHandler(BaseIntentHandler):
             if key in params:
                 delivery_context[key] = params[key]
         env = self.env(context=delivery_context)
+        request_context = SystemInitRequestContext(
+            env,
+            request_identity={
+                key: params.get(key)
+                for key in ("product_key", "base_product_key", "edition_key")
+            },
+        )
         su_env = api.Environment(env.cr, SUPERUSER_ID, delivery_context)
 
         stage_ts = time.perf_counter()
@@ -1271,7 +1303,10 @@ class SystemInitHandler(BaseIntentHandler):
         )
         # Qualification is the common upstream fact for capabilities, navigation,
         # scenes and the landing route. Produce it once before those consumers.
-        effective_delivery = EffectiveDeliveryService(env).resolve(params)
+        effective_delivery = EffectiveDeliveryService(env).resolve(
+            params,
+            request_context=request_context,
+        )
 
         # -------- 2) 导航（净化 + 指纹）--------
         p_nav = SystemInitNavRequestBuilder.build(params, scene)
@@ -1306,7 +1341,7 @@ class SystemInitHandler(BaseIntentHandler):
         nav_tree_raw = nav_data.get("nav") or []
         nav_tree = NavTreeCleaner().clean(nav_tree_raw)
         nav_adapter = OdooNavAdapter()
-        nav_adapter.enrich(env, nav_tree)
+        nav_adapter.enrich(env, nav_tree, request_context=request_context)
         nav_fp = stable_fingerprint({"scene": scene, "nav": nav_tree})
         if nav_versions and nav_versions.get("root_filtered_fallback"):
             _logger.warning(
@@ -1349,6 +1384,7 @@ class SystemInitHandler(BaseIntentHandler):
             env,
             user,
             published_authority=effective_delivery.route_authority,
+            request_context=request_context,
         )
         prepare_runtime_context_ts = _mark_substage(
             "prepare_runtime_context",
@@ -1498,6 +1534,7 @@ class SystemInitHandler(BaseIntentHandler):
             load_scenes_fallback_fn=_load_scenes_from_db_or_fallback,
             merge_missing_scenes_fn=_merge_missing_scenes_from_registry,
             append_resolve_error_fn=drift_append_resolve_error,
+            request_context=request_context,
         )
         scene_runtime_orchestrator = SceneRuntimeOrchestrator(logger=_logger)
         runtime_ctx = scene_runtime_orchestrator.execute(
@@ -1821,6 +1858,7 @@ class SystemInitHandler(BaseIntentHandler):
                 env,
                 current_nav,
                 current_authority,
+                request_context=request_context,
             ),
             action_pair_walker=MenuService._walk_nav_action_refs,
         ).compile(

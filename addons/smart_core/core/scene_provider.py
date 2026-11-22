@@ -206,7 +206,14 @@ def _resolve_scene_provider_payload(scene_key: str, runtime_context: dict | None
     return payload if isinstance(payload, dict) else {}
 
 
-def merge_missing_scenes_from_registry(env, scenes, warnings, *, published_authority=None):
+def merge_missing_scenes_from_registry(
+    env,
+    scenes,
+    warnings,
+    *,
+    published_authority=None,
+    request_context=None,
+):
     critical_target_overrides = _critical_scene_target_overrides(env)
     critical_route_overrides = _critical_scene_target_route_overrides(env)
     def _capability_target_map() -> dict[str, dict]:
@@ -416,6 +423,7 @@ def merge_missing_scenes_from_registry(env, scenes, warnings, *, published_autho
     registry_scenes = registry_load_scene_configs(
         env,
         published_authority=published_authority,
+        request_context=request_context,
     ) or []
     registry_map = {}
     for scene in registry_scenes:
@@ -552,7 +560,13 @@ def merge_missing_scenes_from_registry(env, scenes, warnings, *, published_autho
     return current
 
 
-def load_scenes_from_db_or_fallback(env, *, drift=None, logger=None) -> dict:
+def load_scenes_from_db_or_fallback(
+    env,
+    *,
+    drift=None,
+    logger=None,
+    request_context=None,
+) -> dict:
     out = {
         "scenes": [],
         "scene_version": None,
@@ -560,7 +574,11 @@ def load_scenes_from_db_or_fallback(env, *, drift=None, logger=None) -> dict:
         "loaded_from": "fallback",
     }
     try:
-        scenes_payload = registry_load_scene_configs(env, drift=drift) or []
+        scenes_payload = registry_load_scene_configs(
+            env,
+            drift=drift,
+            request_context=request_context,
+        ) or []
         out["scenes"] = scenes_payload if isinstance(scenes_payload, list) else []
         out["loaded_from"] = "db" if registry_has_db_scenes(env) else "fallback"
         out["scene_version"] = registry_get_scene_version(env)

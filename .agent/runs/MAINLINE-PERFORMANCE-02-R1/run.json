@@ -1,0 +1,90 @@
+{
+  "schema_version": 1,
+  "id": "MAINLINE-PERFORMANCE-02-R1",
+  "branch": "fix/mainline-performance-02-scene-facts-20261122",
+  "baseline_sha": "422c4a0cb8bd4d9fd0a7cd6a62123a507c38a519",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAINLINE-PERFORMANCE-02-R1.yaml",
+  "record": "docs/ops/iterations/mainline_performance_02_r1_scene_facts_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAINLINE-PERFORMANCE-02-R1.yaml",
+    ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json",
+    "addons/smart_core/core/system_init_request_context.py",
+    "addons/smart_core/core/system_init_runtime_context.py",
+    "addons/smart_core/core/scene_runtime_orchestrator.py",
+    "addons/smart_core/core/scene_registry_provider.py",
+    "addons/smart_core/core/scene_provider.py",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_core/adapters/odoo_nav_adapter.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/tests/test_system_init_request_context.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+    "docs/ops/iterations/mainline_performance_02_r1_scene_facts_20261122.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "make/dev.mk",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered local test tools for receipts; separate local.dev observations are read-only runtime evidence in the batch record"
+  },
+  "checks": {
+    "request_context_unit": {
+      "target": "verify.system.performance.baseline.unit",
+      "inputs": [
+        "addons/smart_core/core/system_init_request_context.py",
+        "addons/smart_core/tests/test_system_init_request_context.py",
+        "scripts/verify/system_performance_baseline.py",
+        "scripts/verify/test_system_performance_baseline.py",
+        "scripts/verify/local_dev_runtime_contract_role_matrix_probe.py",
+        "scripts/verify/local_dev_runtime_record_form_probe.py",
+        "scripts/verify/test_local_dev_runtime_record_form_probe.py",
+        "scripts/verify/local_dev_runtime_projection_cache_identity_probe.py",
+        "scripts/ops/local_dev_performance_identity.py",
+        "make/dev.mk"
+      ],
+      "kind": "offline"
+    },
+    "navigation_delivery_unit": {
+      "target": "verify.backend.navigation_delivery.unit",
+      "inputs": [
+        "addons/smart_core/core",
+        "addons/smart_core/adapters",
+        "addons/smart_core/delivery",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+        "addons/smart_construction_core/core_extension.py",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/services/capability_registry.py",
+        "addons/smart_construction_scene/core_extension.py",
+        "addons/smart_construction_scene/scene_registry.py",
+        "addons/smart_construction_scene/services/capability_scene_targets.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Refresh generated evidence, commit the clean R1 candidate, publish it separately from PR #960, and validate the exact-head remote gates.",
+  "observations": {
+    "diagnosis": "MAINLINE-PERFORMANCE-02 identified six cold system.init scene declaration loads: internal actions, navigation authority, nav scene maps, capability targets, scene runtime fallback and final scenario projection.",
+    "measured_cost": "Cold `_load_scene_declarations_with_timings` ownership is 284ms across five calls in a warm process and adds the cached capability caller on a cold process.",
+    "scope_lock": "R1 changes scene declaration loading only. Menu index, release snapshot, broad deepcopy and frontend optimizations remain excluded.",
+    "implementation": "SystemInitRequestContext owns one explicit request fact. SceneDeclarationSnapshot stores ordered declarations, timings and a canonical content fingerprint. All six cold system.init consumers read that fact.",
+    "runtime_equality": "After syncing to main d8ce851a, base and R1 complete response, navigation and route-authority hashes were identical for finance/company1, owner/company2 and project-manager/company1. Scene loads changed 6->1 and declaration fingerprint 8e98be87... stayed identical.",
+    "performance": "On synced base d8ce851a, backend median request 1001.84ms -> 866.67ms, warm 998.82ms -> 807.41ms, process-first 2155.73ms -> 1957.74ms. Browser login total improved 2947ms -> 2789ms and system.init HTTP improved 1413.47ms -> 1289.42ms without post-response UI absorbing the saving.",
+    "validation": "verify.system.performance.baseline.unit passed 78 tests; verify.backend.navigation_delivery.unit passed 176 tests; ORM_RESULT_GUARD passed 81 tests; ci.local.iteration passed all affected targets."
+  }
+}

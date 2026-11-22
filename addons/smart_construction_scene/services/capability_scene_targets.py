@@ -113,7 +113,11 @@ def _scene_cache_key(env) -> str:
     return dbname or "__default__"
 
 
-def _load_scene_map_with_timings(env) -> Tuple[dict[str, dict[str, Any]], dict[str, int]]:
+def _load_scene_map_with_timings(
+    env,
+    *,
+    request_context=None,
+) -> Tuple[dict[str, dict[str, Any]], dict[str, int]]:
     cache_key = _scene_cache_key(env)
     cached_map = _SCENE_MAP_CACHE.get(cache_key)
     if isinstance(cached_map, dict):
@@ -123,9 +127,20 @@ def _load_scene_map_with_timings(env) -> Tuple[dict[str, dict[str, Any]], dict[s
         }
 
     timings_ms: dict[str, int] = {}
-    scenes, scene_config_timings_ms = (
-        scene_registry.load_effective_scene_declarations_with_timings(env)
+    request_loader = getattr(
+        scene_registry,
+        "load_effective_scene_declarations_with_timings_for_request",
+        None,
     )
+    if callable(request_loader):
+        scenes, scene_config_timings_ms = request_loader(
+            env,
+            request_context=request_context,
+        )
+    else:
+        scenes, scene_config_timings_ms = (
+            scene_registry.load_effective_scene_declarations_with_timings(env)
+        )
     if isinstance(scene_config_timings_ms, dict):
         for key, value in scene_config_timings_ms.items():
             timings_ms[key] = int(value)
@@ -248,11 +263,14 @@ def resolve_capability_entry_target_payload(
     env,
     capability_key: str,
     explicit_target: dict[str, Any] | None = None,
+    *,
+    request_context=None,
 ) -> dict[str, Any]:
     payload, _timings = resolve_capability_entry_target_payload_with_timings(
         env,
         capability_key,
         explicit_target=explicit_target,
+        request_context=request_context,
     )
     return payload
 
@@ -262,6 +280,8 @@ def resolve_capability_entry_target_payload_with_timings(
     capability_key: str,
     explicit_target: dict[str, Any] | None = None,
     ref_id_cache: dict[str, int | None] | None = None,
+    *,
+    request_context=None,
 ) -> Tuple[dict[str, Any], dict[str, int]]:
     timings_ms: dict[str, int] = {}
 
@@ -281,7 +301,10 @@ def resolve_capability_entry_target_payload_with_timings(
     if scene_key:
         payload["scene_key"] = scene_key
         scene_ts = time.perf_counter()
-        scene_map, scene_map_timings_ms = _load_scene_map_with_timings(env)
+        scene_map, scene_map_timings_ms = _load_scene_map_with_timings(
+            env,
+            request_context=request_context,
+        )
         scene_ts = _mark("resolve_scene_map", scene_ts)
         if isinstance(scene_map_timings_ms, dict):
             for key, value in scene_map_timings_ms.items():
