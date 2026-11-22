@@ -3,7 +3,7 @@
   "id": "FE-EXPRESSION-03A-20261122",
   "branch": "feature/fe-expression-03a-business-value-convergence-20261122",
   "baseline_sha": "d8ce851a7222a07491518749faf9cf7e8f2f53ed",
-  "status": "verification_pending",
+  "status": "blocked",
   "goal": ".agent/goals/FE-EXPRESSION-03A-20261122.yaml",
   "record": "docs/audit/fe_expression_03a_diagnosis_20261122.md",
   "scope": [
@@ -179,7 +179,9 @@
       "owner_target": "exact-head GitHub PR checks"
     }
   ],
-  "blockers": [],
+  "blockers": [
+    "GOV-01: public_guard RH018 still matches a performance-branch historical document outside PR #964 and its base; merge_policy_gate fails as an upstream dependency. Resolve in the owning P4 history/evidence task without weakening the guard."
+  ],
   "observations": {
     "diagnosis": "SOURCE_VERIFIED diagnosis committed at 78acb4d24; implementation now follows the diagnosed ownership",
     "one2many_metadata_gap": "One2ManyColumn and RelationFieldColumn do not carry contract-provided digits/currency_field",
@@ -210,7 +212,7 @@
     "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. It is a separate P4 history/evidence-governance blocker; this frontend candidate does not weaken the guard or rewrite unrelated history.",
     "autosave_retention": "Project-intake draft retention is a P1 smart_construction_core standard constant of 86400 seconds, published through runtimeContract.intakeAutosave.retention.seconds; it is not a user or administrator setting, the frontend has no local 24-hour fallback, and coverage copy renders the declared duration without rounding sub-hour values"
   },
-  "next_exact_step": "Push the final metadata-only candidate to PR #964, update the PR body with its exact head, and bind the required checks and independent review to that head.",
+  "next_exact_step": "Resolve GOV-01 RH018 in the owning P4 history/evidence task, then rerun public_guard and merge_policy_gate for the current PR #964 head; do not merge until both pass.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
