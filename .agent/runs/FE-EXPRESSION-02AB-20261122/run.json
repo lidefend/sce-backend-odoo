@@ -211,7 +211,7 @@
     "browser_results": "project ledger and My Work return one H1; income/payment desktop and mobile have one H1 and zero overflow; payment mobile status/actions are full-width stacked; export failure exposes message+reason+trace with one request; 503 route failure reaches route-error and is not shown as access denial",
     "final_exact_head_rebuild": "PASS on b9d5db978: build-info, Git SHA/tree, runtime source revision and runtime frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same code HEAD"
   },
-  "next_exact_step": "Commit the stable evidence wording, run ci.local.iteration on the resulting clean metadata head, publish it, update PR #961 with that exact head and receipt, then require all exact-head remote gates and final independent review.",
+  "next_exact_step": "The product code and browser evidence are frozen at b9d5db978. Run ci.local.iteration on the final clean metadata head, publish it, bind that exact head and receipt in PR #961, require all five exact-head remote gates, then close independent review before the protected merge decision.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

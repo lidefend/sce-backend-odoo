@@ -58,7 +58,7 @@ R09 在当前验收运行身份上已经将问题从推测转为可复现事实�
 - lint：0 error；strict typecheck 通过；contract-basis open defects=0。
 - 首次增量入口将原先零引用的 `verify.frontend.record_form_return.unit` 变成真实
   引用，验证覆盖工具按治理入口移除 stale disposition；没有放宽 coverage 基线。
-- `ci.local.iteration` 最终执行 22 个真实受影响目标，`unmappedPathCount=0`；
+- 中间轮次的 `ci.local.iteration` 曾执行 22 个真实受影响目标，`unmappedPathCount=0`；
   receipt SHA256 =
   `8b1b8566d27b40156b00d8f36d36db25c7020934bf693a192b963d3610c2c466`。
 - acceptance 生产构建通过；dist artifact SHA256 =
