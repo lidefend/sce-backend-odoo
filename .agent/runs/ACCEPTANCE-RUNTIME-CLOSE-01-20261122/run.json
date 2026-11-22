@@ -11,6 +11,8 @@
     "config/acceptance/backend_contract_instance_daily_v1.json",
     "scripts/dev/backend_acceptance_up.sh",
     "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "scripts/dev/frontend_acceptance_up.sh",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_acceptance_artifact.py",
     "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
@@ -137,9 +139,9 @@
     "acceptance_environment_guard": "PASS: 63 tests; daily credential confirmation 15 cases; environment and form-editability discovery checks passed",
     "acceptance_artifact_unit": "PASS: 15 tests covering authoritative marker, cross-worktree equality, wrong supplied digest, development-mode rejection, and served STATIC_ROOT mismatch",
     "dev_incremental_planner_gap": "ci.local.iteration first blocked on five unmapped P4 paths, then the mapping was split to preserve the existing artifact target reference; both failures were validation-tool defects and remained fail-closed",
-    "ci_local_iteration": "PASS on clean P4 R2 HEAD 0dfe3d4dd; 8/8 required targets executed, unmappedPathCount=0, testsRun=true, trusted scans completed, verification surface within frozen baseline",
-    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T042330Z-1914635-330298370/receipt.json",
-    "ci_local_iteration_receipt_sha256": "b6888f348dd50b7842bbf008c41b93cfcc2c8f027a5dd065665d447e8dfe4ecc",
+    "ci_local_iteration": "PASS against code HEAD f9c8e3c21 with only this run-record metadata dirty; 4 affected targets executed and unchanged inputs reused, unmappedPathCount=0, testsRun=true, trusted scans completed",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T043355Z-1979765-85727871/receipt.json",
+    "ci_local_iteration_receipt_sha256": "47fb09b907b9f6d394c1eb428ae8ceff83acf18a53c0b5933bf8d4f38aa2d178",
     "ci_local_iteration_test_counts": {
       "verify.acceptance.artifact.unit": 10,
       "verify.acceptance.runtime.tooling.unit": 129,
@@ -163,7 +165,7 @@
     "recovery_audit": "PASS read-only: profile=local project=sc-fe-r2-p1-01 database=sc_frontend_acceptance; compatibility backup not found; no filesystem or database repair executed",
     "read_only_runtime_check": "acceptance.runtime.baseline_recovery.audit is recorded as an observation after offline checks; it is not registered as a reusable verify target"
   },
-  "next_exact_step": "Freeze and commit F01/F02/F03, then run ci.local.iteration and exact-head PR #959 checks.",
+  "next_exact_step": "Commit this evidence-index update, push PR #959, and require all exact-head checks plus independent re-review before merge.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

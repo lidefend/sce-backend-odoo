@@ -109,6 +109,10 @@ HEAD 为 `638f9a9599b9c299148dd34b0ca745c2b7d81b34`。旧
 - R2 clean HEAD `0dfe3d4dd` 的最终增量回执为
   `.runtime/frontend-dev-validation/executions/20261122T042330Z-1914635-330298370/receipt.json`
   （SHA256 `b6888f348dd50b7842bbf008c41b93cfcc2c8f027a5dd065665d447e8dfe4ecc`）。
+- F01/F02/F03 代码 HEAD `f9c8e3c21` 的增量回执为
+  `.runtime/frontend-dev-validation/executions/20261122T043355Z-1979765-85727871/receipt.json`
+  （SHA256 `47fb09b907b9f6d394c1eb428ae8ceff83acf18a53c0b5933bf8d4f38aa2d178`）；
+  该次运行仅本记录文件为 dirty，4 个受影响目标实跑、其余未变输入复用。
 - `ci.delivery.freeze.prepare` 连续两轮 PASS；generated reports current，
   frontend contract basis open defects=0，list-surface evidence bindings valid。
 - `frontend_acceptance_baseline_rebuild.sh` 最终为 499 行；本 P4 收口没有
