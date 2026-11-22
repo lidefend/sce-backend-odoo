@@ -18,16 +18,28 @@ PRODUCER_EVENT_BY_AGGREGATE = {
     "schedule": "schedule",
     "push": "push",
     "pull_request": "pull_request",
-    "workflow_dispatch": "push",
 }
+WORKFLOW_DISPATCH_PRODUCERS = {"push", "workflow_dispatch"}
 
 
-def resolve_producer_identity(aggregate_event: str, head_branch: str | None) -> tuple[str, str]:
+def resolve_producer_identity(
+    aggregate_event: str,
+    head_branch: str | None,
+    *,
+    workflow_dispatch_producer: str = "push",
+) -> tuple[str, str]:
     """Resolve the only producer event/branch approved for an aggregate run."""
-    try:
-        producer_event = PRODUCER_EVENT_BY_AGGREGATE[aggregate_event]
-    except KeyError as exc:
-        raise ValueError(f"unsupported aggregate event: {aggregate_event}") from exc
+    if aggregate_event == "workflow_dispatch":
+        if workflow_dispatch_producer not in WORKFLOW_DISPATCH_PRODUCERS:
+            raise ValueError(
+                f"unsupported workflow_dispatch producer: {workflow_dispatch_producer}"
+            )
+        producer_event = workflow_dispatch_producer
+    else:
+        try:
+            producer_event = PRODUCER_EVENT_BY_AGGREGATE[aggregate_event]
+        except KeyError as exc:
+            raise ValueError(f"unsupported aggregate event: {aggregate_event}") from exc
     if not head_branch:
         raise ValueError("aggregate selection requires the source branch")
     if aggregate_event in {"schedule", "push", "workflow_dispatch"} and head_branch != "main":
@@ -91,6 +103,12 @@ def main() -> int:
     )
     parser.add_argument("--head-branch")
     parser.add_argument("--head-repository")
+    parser.add_argument(
+        "--workflow-dispatch-producer",
+        choices=sorted(WORKFLOW_DISPATCH_PRODUCERS),
+        default="push",
+        help="Producer event authorized for workflow_dispatch aggregate runs",
+    )
     parser.add_argument("--history", action="store_true", help="Return successful producer history across candidates; not reuse authorization")
     args = parser.parse_args()
     payload = json.load(sys.stdin)
@@ -109,7 +127,11 @@ def main() -> int:
         if args.head_repository != args.repository:
             parser.error('--head-repository must match --repository')
         try:
-            event, head_branch = resolve_producer_identity(args.aggregate_event, args.head_branch)
+            event, head_branch = resolve_producer_identity(
+                args.aggregate_event,
+                args.head_branch,
+                workflow_dispatch_producer=args.workflow_dispatch_producer,
+            )
         except ValueError as exc:
             parser.error(str(exc))
     else:

@@ -144,6 +144,6 @@
     "fix/scheduled-ci-navigation-20261119": ".agent/runs/SCHEDULED-CI-COVERAGE-20261119/run.json",
     "fix/main-scheduled-ci-20261120": ".agent/runs/MAIN-SCHEDULED-CI-20261120/run.json",
     "fix/main-scheduled-ci-recovery-20261122": ".agent/runs/MAIN-SCHEDULED-CI-20261122/run.json",
-    "fix/main-scheduled-ci-recovery-02-isolated-20261122": ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-02/run.json"
+    "fix/release-candidate-dispatch-evidence-20261122": ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-03/run.json"
   }
 }

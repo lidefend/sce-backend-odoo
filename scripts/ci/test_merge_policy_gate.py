@@ -35,6 +35,7 @@ class MergePolicyGateContractTests(unittest.TestCase):
         self.assertIn('--aggregate-event "$GITHUB_EVENT_NAME"', wait_job)
         self.assertIn('--head-branch "$expected_head_branch"', wait_job)
         self.assertIn('--head-repository "$GITHUB_REPOSITORY"', wait_job)
+        self.assertIn("--workflow-dispatch-producer push", wait_job)
         self.assertIn("MISSING_DEPENDENCY_GRACE_ATTEMPTS", wait_job)
         self.assertIn("Missing Merge Fact Dependencies", wait_job)
         self.assertIn("public_guard.yml", wait_job)

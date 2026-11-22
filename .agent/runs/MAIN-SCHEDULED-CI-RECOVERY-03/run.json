@@ -1,0 +1,89 @@
+{
+  "schema_version": 1,
+  "id": "MAIN-SCHEDULED-CI-RECOVERY-03",
+  "branch": "fix/release-candidate-dispatch-evidence-20261122",
+  "baseline_sha": "9b0d16f21b0fe3316c3640dada48a7eb307ff499",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAIN-SCHEDULED-CI-RECOVERY-03.yaml",
+  "record": "docs/ops/iterations/release_candidate_dispatch_evidence_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-SCHEDULED-CI-RECOVERY-02.yaml",
+    ".agent/goals/MAIN-SCHEDULED-CI-RECOVERY-03.yaml",
+    ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-02/run.json",
+    ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-03/run.json",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/ops/iterations/release_candidate_dispatch_evidence_20261122.md",
+    "scripts/ci/release_condition.py",
+    "scripts/ci/select_authoritative_workflow_run.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_merge_policy_gate.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/ci/test_select_authoritative_workflow_run.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local CI contract tools; no database, service or runtime mutation"
+  },
+  "checks": {
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "Makefile",
+        "make/ci.mk",
+        ".github/workflows",
+        "scripts/ci"
+      ],
+      "kind": "offline"
+    },
+    "scheduled_gates": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        "Makefile",
+        "make/ci.mk",
+        ".github/workflows",
+        "scripts/verify/frontend_release_gate.py",
+        "scripts/verify/test_frontend_release_gate.py",
+        "scripts/verify/ci_artifact_host_write_guard.py",
+        "scripts/verify/test_ci_artifact_host_write_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "github_actions_security": {
+      "target": "verify.github_actions.security",
+      "inputs": [
+        "Makefile",
+        "make",
+        ".github/workflows",
+        "scripts/verify/github_actions_security_guard.py",
+        "scripts/verify/test_github_actions_security_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "Makefile",
+        "make/frontend.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "observations": {
+    "observed_defect": "On 9b0d16f2 five scheduled workflows were manually dispatched together. release_candidate_gate passed immediately from existing Push evidence while professional_quality_gate and frontend_release_gate manual full runs were still in progress.",
+    "semantic_split": "merge_policy_gate may reuse Push evidence for merge eligibility; release_candidate_gate may not label such evidence operator_full_audit.",
+    "workflow_contract": "484 tests passed for both policy branches and all workflow contracts.",
+    "scheduled_gates": "98 tests passed.",
+    "github_actions_security": "18 tests passed.",
+    "frontend_dev_incremental": "207 tests passed.",
+    "iteration": "ci.local.iteration exited zero with zero unmapped or blocked paths.",
+    "freeze_prepare": "ci.delivery.freeze.prepare passed; the complexity report reflects the one-line contract-test increase."
+  },
+  "next_exact_step": "Commit the clean candidate, publish PR, verify exact-head gates and merge before rerunning all five manual workflows on the new main."
+}

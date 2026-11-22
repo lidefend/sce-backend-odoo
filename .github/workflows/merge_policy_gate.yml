@@ -121,7 +121,8 @@ jobs:
                 --head "$HEAD_SHA" \
                 --aggregate-event "$GITHUB_EVENT_NAME" \
                 --head-branch "$expected_head_branch" \
-                --head-repository "$GITHUB_REPOSITORY" <<<"$runs")"
+                --head-repository "$GITHUB_REPOSITORY" \
+                --workflow-dispatch-producer push <<<"$runs")"
               test -n "$latest" || { pending=1; missing+=("$workflow"); continue; }
               status="$(jq -r '.status' <<<"$latest")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"

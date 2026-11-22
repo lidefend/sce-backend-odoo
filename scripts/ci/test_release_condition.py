@@ -47,6 +47,7 @@ class ReleaseConditionTests(unittest.TestCase):
             tree=TREE,
             event=event,
             head_branch=head_branch or ("feature/candidate" if event == "pull_request" else "main"),
+            workflow_dispatch_producer="workflow_dispatch",
             schedule_slot=SLOT if event == "schedule" else None,
         )
 
@@ -70,13 +71,20 @@ class ReleaseConditionTests(unittest.TestCase):
         self.assertEqual(result["head_branch"], "feature/candidate")
         self.assertIsNone(result["scheduled_slot_utc"])
 
-    def test_operator_dispatch_materializes_exact_push_evidence(self) -> None:
-        result = self.build(self.runs("push"), event="workflow_dispatch")
+    def test_operator_dispatch_requires_same_event_full_audit_evidence(self) -> None:
+        result = self.build(self.runs("workflow_dispatch"), event="workflow_dispatch")
         self.assertEqual(result["kind"], "operator_full_audit")
         self.assertEqual(result["event"], "workflow_dispatch")
-        self.assertEqual(result["producer_event"], "push")
+        self.assertEqual(result["producer_event"], "workflow_dispatch")
         self.assertEqual(result["head_branch"], "main")
-        self.assertEqual({row["event"] for row in result["required_workflows"]}, {"push"})
+        self.assertEqual(
+            {row["event"] for row in result["required_workflows"]},
+            {"workflow_dispatch"},
+        )
+
+    def test_operator_dispatch_rejects_push_only_evidence(self) -> None:
+        with self.assertRaises(ValueError):
+            self.build(self.runs("push"), event="workflow_dispatch")
 
     def test_missing_duplicate_wrong_identity_and_unsuccessful_runs_fail_closed(self) -> None:
         cases = []
@@ -115,6 +123,7 @@ class ReleaseConditionTests(unittest.TestCase):
                 tree=TREE,
                 event="schedule",
                 head_branch="main",
+                workflow_dispatch_producer="workflow_dispatch",
                 schedule_slot=SLOT,
             )
 

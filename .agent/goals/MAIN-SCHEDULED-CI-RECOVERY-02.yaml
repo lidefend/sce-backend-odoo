@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: MAIN-SCHEDULED-CI-RECOVERY-02
   title: exact_event_dependency_selection_and_bounded_wait
-  status: active
+  status: superseded
   formal_product_layer: P4
   layer_target: governed GitHub Actions aggregate dependency orchestration
   module:
@@ -56,7 +56,7 @@ goal:
     identity changes, contract tests and run metadata together. No product or
     persistent data state is affected.
   completion:
-    batch: verification_pending
-    mainline_integration: not_run
+    batch: superseded
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable
