@@ -83,10 +83,11 @@ R09 在当前验收运行身份上已经将问题从推测转为可复现事实�
   `ec28b526a5fa76b1903af37e90a35b333599d1b000d19fcd76e7b9e11cc0ef8a`；
 - `ci.local.iteration` 11 个受影响目标通过，receipt SHA256 =
   `56e160073165681ca9b489444c5ce5e84abec3d87e2c4113cb87c557a309e83f`。
-- 元数据 HEAD `916fc6971` 的最终增量入口复用同一已通过执行，
-  receipt SHA256 =
-  `b68c38a45a4f4abf3ab2de84c007911c11691e3c99160573776b05c04fc6bd4b`，
-  `unmappedPathCount=0`，工作树 clean。
+- 代码冻结后的连续 clean 元数据 HEAD 均通过增量入口，且产品/运行输入未变化；
+  其中 `b7debde7d` 的精确 HEAD receipt =
+  `.runtime/frontend-dev-validation/executions/20261122T050855Z-2189587-340207416/receipt.json`，
+  `unmappedPathCount=0`，工作树 clean。最终推送 HEAD 的精确 receipt 由 PR 描述绑定，
+  避免文档自引用产生循环身份。
 
 P2 收尾：RouteErrorView 只保留一个 H1 主标题；没有 `from` 时重试按钮禁用；
 嵌入 SceneContractBlockGridView 在 loading/error 阶段保留隐藏语义 H1，ready 后由

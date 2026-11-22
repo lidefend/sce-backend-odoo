@@ -201,9 +201,9 @@
     "ci_local_iteration": "PASS on final code HEAD b9d5db978; 11 affected targets were rechecked/reused into a passed receipt, unmappedPathCount=0, testsRun=true",
     "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T045415Z-2100751-714531062/receipt.json",
     "ci_local_iteration_receipt_sha256": "56e160073165681ca9b489444c5ce5e84abec3d87e2c4113cb87c557a309e83f",
-    "final_metadata_head_ci_iteration": "PASS on 916fc6971: identical code inputs reused the prior passing execution; unmappedPathCount=0, worktreeClean=true",
-    "final_metadata_head_ci_receipt": ".runtime/frontend-dev-validation/executions/20261122T050447Z-2159807-389729871/receipt.json",
-    "final_metadata_head_ci_receipt_sha256": "b68c38a45a4f4abf3ab2de84c007911c11691e3c99160573776b05c04fc6bd4b",
+    "metadata_head_ci_iteration": "PASS after the final code commit on successive clean metadata HEADs; product/runtime inputs are unchanged, unmappedPathCount=0, worktreeClean=true",
+    "metadata_head_ci_receipt_before_final_sync": ".runtime/frontend-dev-validation/executions/20261122T050855Z-2189587-340207416/receipt.json",
+    "metadata_head_ci_receipt_before_final_sync_sha256": "f4d62c474a960539c223f88ac0c471f5a726f47e9cf82afa007d4566cacf508f",
     "production_build": "PASS on code HEAD b9d5db978: build-info source b9d5db978, tree 636644e0b; authoritative runtime build sha256 177560323d737f3a1b590b765657c65dc0bfceeebe7f65724c8e3c44060376d8",
     "browser_precheck": "PASS exact-code-HEAD run: 10/10 cases, 0 failures, 0 page errors, 72/72 loaded resources present in dist-release; expected injected 500/503 Console resource errors only",
     "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/exact-b9d5db978/report.json",
@@ -211,7 +211,7 @@
     "browser_results": "project ledger and My Work return one H1; income/payment desktop and mobile have one H1 and zero overflow; payment mobile status/actions are full-width stacked; export failure exposes message+reason+trace with one request; 503 route failure reaches route-error and is not shown as access denial",
     "final_exact_head_rebuild": "PASS on b9d5db978: build-info, Git SHA/tree, runtime source revision and runtime frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same code HEAD"
   },
-  "next_exact_step": "Commit the final evidence receipt, push PR #961, then require all exact-head remote gates and final independent review.",
+  "next_exact_step": "Commit the stable evidence wording, run ci.local.iteration on the resulting clean metadata head, publish it, update PR #961 with that exact head and receipt, then require all exact-head remote gates and final independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
