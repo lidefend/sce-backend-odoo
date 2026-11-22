@@ -110,8 +110,7 @@
         "FCF-05",
         "NV-07",
         "NV-08",
-        "NV-10",
-        "NV-11"
+        "NV-10"
       ]
     },
     {
@@ -176,8 +175,52 @@
       "blocks": [
         "NV-02"
       ]
+    },
+    {
+      "id": "CFG-GAP-07",
+      "semantic": "dialog_duration_semantics",
+      "required_output": [
+        "duration field identity",
+        "duration unit and calculation rule",
+        "input projection",
+        "readonly presentation",
+        "ORM-compatible write value"
+      ],
+      "decision_states": [
+        "sufficient",
+        "contract_gap",
+        "not_applicable"
+      ],
+      "fallback_allowed": false,
+      "blocks": [
+        "NV-15"
+      ]
     }
   ],
+  "gap_resolution_policy": {
+    "branches": {
+      "sufficient": {
+        "unlocks": "dependent_frontend_batch",
+        "additional_requirement": "record declaration, transport and consumer evidence"
+      },
+      "not_applicable": {
+        "unlocks": "dependent_frontend_batch",
+        "additional_requirement": "record why the semantic does not apply to the surface"
+      },
+      "contract_gap": {
+        "unlocks": "p0_producer_remediation_only",
+        "producer_batch_id_template": "P0-<gap-id>-CONTRACT-REMEDIATION",
+        "frontend_fallback_forbidden": true,
+        "dependent_frontend_batch_locked": true,
+        "required_before_frontend_unlock": [
+          "owning P0 producer declaration",
+          "consumer contract decoding",
+          "independent review",
+          "registered verification"
+        ]
+      }
+    }
+  },
   "not_verified_cells": [
     {
       "id": "NV-01",
@@ -265,7 +308,7 @@
       "semantic": "attachments",
       "probe": "attachment facts, identity and authorized actions",
       "closure_batch": "FCF-02-4",
-      "gap_probe": "CFG-GAP-03"
+      "gap_probe": "CFG-GAP-04"
     },
     {
       "id": "NV-12",
@@ -297,7 +340,7 @@
       "semantic": "duration_unit",
       "probe": "duration input, presentation and write",
       "closure_batch": "FCF-02-4",
-      "gap_probe": "CFG-GAP-03"
+      "gap_probe": "CFG-GAP-07"
     },
     {
       "id": "NV-16",
@@ -401,12 +444,26 @@
         "Move genuinely absent declarations to a P0 producer-layer gap."
       ],
       "acceptance": [
-        "raw values and types survive bridge-to-renderer transport",
-        "money, percentage, temporal, duration, selection, relation and attachment semantics survive",
+        "rawValue retains the original backend type through bridge-to-renderer transport",
+        "the field descriptor retains every applicable type, widget, componentKey, digits, currency, unit, selection, temporal and attachment semantic",
+        "relation identity includes verifiable record identity and the authoritative display label",
+        "attachment identity, record ownership, semantic role, authorized action and failure feedback each have an explicit contract source",
+        "Page Block action target, permission result, disabled reason, error reason code, message and trace identity survive bridge-to-renderer transport",
+        "currency and timezone come from authoritative runtime context rather than display labels or browser defaults",
+        "display values never become ORM write values",
         "ordinary integers and textual URLs do not trigger attachment behavior",
         "missing page-block declarations fail closed with a visible contract gap",
         "read-only browser journeys create no persistent business-write intent",
         "1440 and 390 layout checks show no horizontal overflow"
+      ],
+      "design_gate": [
+        "raw_value_type_preservation",
+        "complete_field_descriptor",
+        "verifiable_relation_identity",
+        "complete_attachment_identity_and_actions",
+        "page_block_action_and_feedback_identity",
+        "authoritative_currency_and_timezone",
+        "display_write_separation"
       ],
       "exit_criteria": [
         "FCF-02 and FCF-03 are closed",
@@ -463,7 +520,8 @@
         "CFG-GAP-03",
         "CFG-GAP-04",
         "CFG-GAP-05",
-        "CFG-GAP-06"
+        "CFG-GAP-06",
+        "CFG-GAP-07"
       ],
       "findings": [
         "NV-01",
@@ -559,32 +617,185 @@
   ],
   "dependency_edges": [
     {
+      "id": "DEP-BATCH-01",
       "from": "FCF-02-1",
-      "to": "FCF-02-2"
+      "to": "FCF-02-2",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-02",
       "from": "FCF-02-1",
-      "to": "FCF-02-3"
+      "to": "FCF-02-3",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-03",
       "from": "FCF-02-2",
-      "to": "FCF-02-3"
+      "to": "FCF-02-3",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-04",
       "from": "FCF-02-1",
-      "to": "FCF-02-4"
+      "to": "FCF-02-4",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-05",
       "from": "FCF-02-2",
-      "to": "FCF-02-4"
+      "to": "FCF-02-4",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-06",
       "from": "FCF-02-3",
-      "to": "FCF-02-4"
+      "to": "FCF-02-4",
+      "kind": "batch"
     },
     {
+      "id": "DEP-BATCH-07",
       "from": "FCF-02-4",
-      "to": "FCF-02-5"
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-08",
+      "from": "FCF-02-1",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-09",
+      "from": "FCF-02-2",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-BATCH-10",
+      "from": "FCF-02-3",
+      "to": "FCF-02-5",
+      "kind": "batch"
+    },
+    {
+      "id": "DEP-GAP-01-CLOSE",
+      "from": "CFG-GAP-01",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-02-TRANSPORT",
+      "from": "CFG-GAP-02",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-02-CLOSE",
+      "from": "CFG-GAP-02",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-03-RULES",
+      "from": "CFG-GAP-03",
+      "to": "FCF-02-3",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-03-CLOSE",
+      "from": "CFG-GAP-03",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-04-TRANSPORT",
+      "from": "CFG-GAP-04",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-04-CLOSE",
+      "from": "CFG-GAP-04",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-05-TRANSPORT",
+      "from": "CFG-GAP-05",
+      "to": "FCF-02-2",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-05-CLOSE",
+      "from": "CFG-GAP-05",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-06-CLOSE",
+      "from": "CFG-GAP-06",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
+    },
+    {
+      "id": "DEP-GAP-07-CLOSE",
+      "from": "CFG-GAP-07",
+      "to": "FCF-02-4",
+      "kind": "contract_gate",
+      "branches": {
+        "sufficient": "unlock",
+        "not_applicable": "unlock",
+        "contract_gap": "redirect_to_p0_producer"
+      }
     }
   ],
   "global_acceptance": {

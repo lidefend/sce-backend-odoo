@@ -14,13 +14,32 @@
     ".agent/runs/FE-CONTRACT-FIDELITY-02/run.json",
     "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
     "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
-    "docs/architecture/fe_contract_fidelity_02/guard_catalog.json"
+    "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+    "make/frontend.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_exemptions.json",
+    "scripts/verify/contract_fidelity_plan_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_contract_fidelity_plan_guard.py"
   ],
   "environment": {
     "kind": "offline",
     "authority": "existing source tree, accepted audit artifacts and governed local static checks; no product, database or service writes"
   },
   "checks": {
+    "plan_consistency": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "make/frontend.mk",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
     "agent_ledger": {
       "target": "verify.agent.ledger.unit",
       "inputs": [
@@ -60,32 +79,54 @@
     }
   },
   "supplemental_validations": {
-    "plan_consistency": {
-      "target": "inline jq matrix and reference assertions",
-      "inputs": [
-        "docs/audit/fe_contract_fidelity_01/matrix.json",
-        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
-        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
-        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md"
-      ],
-      "status": "passed",
-      "test_count": 4,
-      "log": ".runtime/FE-CONTRACT-FIDELITY-02/plan-consistency.log",
-      "log_sha256": "e873d52822ed0fb65bca17c1077c762edc1d17dc631712e3d04bc9a04d0ec4a6"
-    },
     "baseline_iteration": {
       "target": "ci.local.iteration",
       "status": "passed",
-      "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration.verified-final.log",
-      "nonzero_observed_test_count": 85,
-      "failure": {
+      "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.final-pass.log",
+      "log_sha256": "98c33dd47bfac3dc97818c624c535afc4b1168205aef3f133c97af3045b33501",
+      "execution_receipt": ".runtime/frontend-dev-validation/executions/20261122T160619Z-1428663-822136925/receipt.json",
+      "execution_receipt_sha256": "c0c7e00beafe5f26c246dd5e96c1453a35ecc3902b2f755d140f06b7f234ff11",
+      "observed_nonzero_counts": {
+        "planning_guard": 12,
+        "agent_ledger": 18,
+        "frontend_dev_incremental": 211,
+        "verification_lane_coverage": 74
+      }
+    },
+    "failure_history": [
+      {
         "classification": "validation_tool_wiring_defect",
         "reason": "plan_consistency was placed under checks but is not a registered verify target",
         "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration.failed.log",
-        "observed_tests_before_reconcile_error": 85
+        "recovery": "Plan consistency moved out of checks; gate verdicts use agent.run.begin/record receipts."
       },
-      "recovery": "Plan consistency moved to supplemental_validations and gate verdicts moved to agent.run.begin/record receipts. The final iteration is rerun after the result-index correction."
-    }
+      {
+        "classification": "validation_baseline_scope_defect",
+        "reason": "new planning guard scripts expanded the frozen remote-only verification surface without registered identities",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.failed.log",
+        "log_sha256": "2f99cfb5a1b8d40a03dfa3e552ef97a52cdf58a556aa5da7f1c0b1b86f78b5a9",
+        "recovery": "Registered exactly the two reviewed scripts in the verification-lane exemptions and frozen identity set; no unrelated baseline drift retained."
+      },
+      {
+        "classification": "validation_tool_wiring_defect",
+        "reason": "the two planning scripts had a governed target but no changed-path-to-target mapping",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration-r1.mapping.failed.log",
+        "log_sha256": "87bcd2ae4a58936116789344d3be044d372c1e13e75efa29e0dbed399cd63907",
+        "recovery": "Mapped the plan artifacts and guard scripts to verify.frontend.contract_fidelity.plan.unit and passed the planner behavior lock."
+      }
+    ]
+  },
+  "review_revision": {
+    "source_review_head": "aa9fdefa07242d1e8c65322bfece671b70fcc427",
+    "findings_addressed": [
+      "NV-11 uniquely assigned to CFG-GAP-04",
+      "NV-15 assigned to independent CFG-GAP-07",
+      "contract-gap resolution expressed as machine DAG branches",
+      "CFG-003 explicitly forbids clamping and rounding",
+      "CFG-011 explicitly covers Page Block actions and feedback",
+      "CARRIER-01..06 define the FCF-02-2 carrier design gate"
+    ],
+    "product_fix_authorized": false
   },
   "validation_responsibility": [
     {
@@ -123,10 +164,12 @@
   "observations": {
     "audit_acceptance": "PR #969 was merged through the protected squash path at 0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e; the project source tree is unchanged by the audit.",
     "plan": "The remediation plan organizes FCF-01 through FCF-08 into four capability batches plus a final readiness review, with an explicit dependency DAG and missing-declaration fail-closed policy.",
-    "not_verified": "The machine plan contains exactly the same 19 surface/semantic NOT_VERIFIED cells as the accepted audit matrix.",
-    "guard": "The Contract Fidelity Guard catalog defines ten planned rules across type, static, behavior, contract and evidence layers. No rule is claimed implemented or enforced yet.",
+    "review_revision": "The PR #970 review findings were incorporated: NV-11 now belongs only to CFG-GAP-04, NV-15 has independent CFG-GAP-07 dialog-duration ownership, and contract-gap resolution is an explicit machine DAG branch.",
+    "not_verified": "The machine plan contains exactly the same 19 surface/semantic NOT_VERIFIED cells as the accepted audit matrix, with one explicit gap-probe owner per cell.",
+    "guard": "The Contract Fidelity Guard catalog defines eleven planned rules and six semantic-carrier requirements. CFG-003 forbids value clamping/rounding; CFG-011 covers Page Block action and failure-feedback identity. The product Guard remains unimplemented.",
+    "dependency_graph": "Dependency edges now include batch dependencies and contract-gate edges. sufficient/not_applicable unlock the dependent batch; contract_gap redirects to P0 producer remediation and locks the frontend batch until declaration, decode, independent review and verification complete.",
     "implementation_boundary": "No frontend or backend product source, ACL, workflow, database or runtime configuration was changed in this planning result.",
-    "validation": "Planning artifacts passed JSON/reference/matrix consistency, 18 agent-ledger tests and three existing frontend authority guards. Final ci.local.iteration revalidation runs after the run-index wiring correction; its original failed receipt remains preserved."
+    "validation": "Planning artifacts are covered by a registered P4 planning consistency target. Final result markers are recorded through agent.run receipts; prior validation failures remain preserved rather than rewritten."
   },
   "authorization": {
     "product_fixes": false,

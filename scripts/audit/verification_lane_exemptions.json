@@ -137,6 +137,18 @@
   ],
   "remote_only": [
     {
+      "script": "scripts/verify/contract_fidelity_plan_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "FE-CONTRACT-FIDELITY-02 planning-consistency guard. It validates only the remediation plan, audit matrix, dependency DAG and Guard catalog; verify.frontend.contract_fidelity.plan.unit owns it in the frontend PR/release lanes. It has no product-runtime role."
+    },
+    {
+      "script": "scripts/verify/test_contract_fidelity_plan_guard.py",
+      "lane_owner": "remote",
+      "reason_code": "remote_unit_shard",
+      "reason": "Negative and baseline tests for the planning-only FE-CONTRACT-FIDELITY-02 consistency guard. The governed frontend PR/release unit owns execution; the test does not assert product behavior."
+    },
+    {
       "script": "scripts/verify/frontend_project_domain_rollout.py",
       "lane_owner": "remote",
       "reason_code": "remote_unit_shard",

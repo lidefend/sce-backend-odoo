@@ -116,9 +116,25 @@ type ContractValueEnvelope = {
 6. 传输载体只传递事实，不执行格式化，更不得把展示文本写回 ORM。
 7. 若现有 Contract V2 已有一部分字段，优先扩展既有描述符；不创建平行字段字典。
 
+#### FCF-02-2 载体验收设计门
+
+`ContractValueEnvelope` 只是候选形状，最终实现必须逐项通过以下审查条件：
+
+| 条件 | 必须证明 |
+| --- | --- |
+| `CARRIER-01` | `rawValue` 保留后端原始类型，桥接层不提前字符串化、取整或重构事实 |
+| `CARRIER-02` | field descriptor 保留全部适用 type、widget、componentKey、digits、currency、unit、selection 和 temporal 语义 |
+| `CARRIER-03` | relation identity 同时具备可验证记录身份和权威显示名称；显示名称不能替代身份 |
+| `CARRIER-04` | attachment identity、record ownership、role、authorized action 和 failure feedback 均有明确契约来源 |
+| `CARRIER-05` | currency 与 timezone 来自权威运行上下文，不来自显示标签、进程 locale 或浏览器默认时区 |
+| `CARRIER-06` | 展示值不得成为 ORM 写入值 |
+
+Page Block 还必须单独证明 action target、permission result、disabled reason、
+error reason code、message 和 trace identity 在桥接及最终表达中完整保留。
+
 ### 4. 契约缺口探测
 
-以下六项必须先完成只读核查。已经存在的声明直接消费；确实缺失时登记为 P0
+以下七项必须先完成只读核查。已经存在的声明直接消费；确实缺失时登记为 P0
 生产端缺口，另批修订，前端不得补默认值。
 
 | ID | 待确认语义 | 已有线索 | 缺失时唯一正确动作 |
@@ -129,9 +145,30 @@ type ContractValueEnvelope = {
 | `CFG-GAP-04` | 附件身份与角色 | Contract V2 有 attachment zone，附件 API 有下载授权身份 | 统一稳定角色、附件 ID、记录归属与动作语义 |
 | `CFG-GAP-05` | Page Block 动作与反馈 | 部分块有 action_key，反馈结构尚未形成统一声明 | 明确动作目标、权限原因、失败 reasonCode 与可见反馈 |
 | `CFG-GAP-06` | Form 内嵌集合聚合适用性 | 审计将 Form 的 collection aggregate 标为未验证 | 若 Form 不承载该语义则登记 `NOT_APPLICABLE`，否则消费同一集合契约 |
+| `CFG-GAP-07` | Dialog duration 语义 | 对话框可能承载 `float_time` 或其他 duration 输入 | 明确字段身份、单位、计算、输入投影、只读表达和 ORM 兼容写入值 |
 
 缺口探测输出必须包含：声明位置、API 字段、前端消费者、实际运行回读、结论
 `sufficient` / `contract_gap` / `not_applicable`。不得用文本存在代替运行行为。
+
+缺口结论是机器门控，不是说明文字：
+
+```text
+sufficient ------------------------------+
+                                        |
+not_applicable -------------------------+--> dependent frontend batch
+                                        |
+contract_gap -> P0 producer remediation -+
+                     |
+                     +--> owning declaration
+                          consumer decode
+                          independent review
+                          registered verification
+                          |
+                          +--> dependent frontend batch unlock
+```
+
+`contract_gap` 在 P0 声明、消费解码、独立审查及验证完成之前，禁止通过前端默认值
+或临时兼容规则解锁。`FCF-02-1` 不依赖任何缺口探测，可以独立先行。
 
 ### 5. 整改批次
 
@@ -208,6 +245,10 @@ type ContractValueEnvelope = {
   和 duration 不被字符串化丢失。
 - 附件普通整数、文本中的 URL、真正附件引用三类边界不互相误判。
 - Page Block 缺 value/unit/field/action 声明时 fail-closed 并展示明确契约缺口。
+- Page Block action target、permission result、disabled reason、error reasonCode、
+  message 和 trace identity 在桥接后仍可验证。
+- relation identity、attachment identity/ownership/role/action/feedback、currency、
+  timezone 和 raw value 满足第 3 节 `CARRIER-01..06`。
 - 真实组件浏览器覆盖 1440/390；只读页面不产生额外写请求。
 
 退出条件：
@@ -238,6 +279,8 @@ type ContractValueEnvelope = {
 
 - unit 缺失、precision 缺失、percentage 缺失和 currency 缺失均 fail-closed。
 - 零、负数、超 100 的原始事实不被前端改写；是否合法由契约/后端决定。
+- 小数业务事实不得因缺少声明而被隐式取整；只有已声明呈现精度可以影响显示文本，
+  原始事实和 ORM 写入值保持不变。
 - 同一金额在 My Work、List、Form 和 One2many 使用同一币种和精度。
 - My Work 百分比显示为业务百分比，不显示裸数字字符串。
 - 现有动作、排序、字段分组和目标路由回归不变。
@@ -293,11 +336,11 @@ type ContractValueEnvelope = {
 | `NV-08` | My Work / relation | 项目、往来方、经办记录身份 | PASS 或契约缺口 |
 | `NV-09` | My Work / timezone | 创建/更新时间与用户时区 | PASS 或契约缺口 |
 | `NV-10` | My Work / duration | duration fact 身份和计算规则 | PASS 或契约缺口 |
-| `NV-11` | My Work / attachments | 附件 fact、身份、授权动作 | PASS 或契约缺口 |
+| `NV-11` | My Work / attachments | 附件 fact、身份、授权动作；由 `CFG-GAP-04` 唯一负责 | PASS 或契约缺口 |
 | `NV-12` | Page Block / action reason | action target、授权、disabled reason | PASS 或契约缺口 |
 | `NV-13` | Page Block / feedback | 错误 reasonCode、message、traceId 和可见表达 | PASS 或契约缺口 |
 | `NV-14` | Dialog / timezone | 对话框中的 datetime 输入和回显 | PASS 或缺陷 |
-| `NV-15` | Dialog / duration | 时长输入、显示与写入 | PASS 或缺陷 |
+| `NV-15` | Dialog / duration | 时长输入、显示与写入；由独立 `CFG-GAP-07` 负责 | PASS 或契约缺口 |
 | `NV-16` | Dialog / attachments | 附件选择、稳定身份、失败反馈 | PASS 或契约缺口 |
 | `NV-17` | Native Contract Runtime / timezone | locale/context 解码和所有 native temporal consumer | PASS 或缺陷 |
 | `NV-18` | Native Contract Runtime / attachments | attachment zone、字段关系、动作声明 | PASS 或契约缺口 |
@@ -315,17 +358,25 @@ type ContractValueEnvelope = {
 ```text
 Plan approval
   |
-  +--> CFG-GAP-01..06 read-only probes
-  |       |
-  |       +--> any necessary P0 contract declarations
-  |                    |
-  +--------------------+----> FCF-02-2 semantic transport
-  |                              |
-  +--> FCF-02-1 authority --------+----> FCF-02-3 remove invented rules
-                                         |
-                                         +----> FCF-02-4 close NOT_VERIFIED
-                                                       |
-                                                       +----> FCF-02-5 readiness review
+  +--> FCF-02-1 authority (independent)
+  |
+  +--> CFG-GAP-01..07 read-only probes
+         |
+         +-- sufficient / not_applicable --> dependent batch
+         |
+         +-- contract_gap --> P0 producer remediation
+                                  |
+                                  +--> producer declaration
+                                       consumer decode
+                                       independent review
+                                       registered verification
+                                       |
+                                       +--> dependent batch unlock
+
+FCF-02-1 + CFG-GAP-02/04/05 --> FCF-02-2 semantic transport
+FCF-02-1 + FCF-02-2 + CFG-GAP-03 --> FCF-02-3 remove invented rules
+FCF-02-1/02/03 + CFG-GAP-01..07 --> FCF-02-4 close NOT_VERIFIED
+FCF-02-4 --> FCF-02-5 readiness review
 ```
 
 依赖规则：
@@ -333,6 +384,9 @@ Plan approval
 - `FCF-02-1` 可直接启动，但必须为后续载体定义唯一裁决接口。
 - `FCF-02-2` 依赖对应契约缺口结论；不能先用前端默认值让页面通过。
 - `FCF-02-3` 依赖 `FCF-02-1` 的权威和 `FCF-02-2` 的载体，避免再次出现局部格式化器。
+- `CFG-GAP-03` 仅负责 My Work fact identity，不负责 Dialog duration。
+- `CFG-GAP-04` 是 My Work、One2many、Dialog 和 Native Runtime 附件语义的唯一附件责任探测。
+- `CFG-GAP-07` 独立负责 Dialog duration，不得借用 My Work fact identity。
 - `FCF-02-4` 的静态核查可并行，最终运行证据必须在产品实现稳定后采集。
 - 各批可形成独立 PR；不得并行修改同一批共享文件并把依赖顺序倒置。
 
@@ -347,6 +401,15 @@ Guard 是现有治理体系中的 P4 静态/测试门禁，不是产品运行时
 - `docs/architecture/fe_contract_fidelity_02/guard_catalog.json`
 - 回归矩阵：`docs/audit/fe_contract_fidelity_01/matrix.json`
 
+当前阶段的规划一致性由独立 P4 门禁锁定：
+
+- `make verify.frontend.contract_fidelity.plan.unit`
+- `scripts/verify/contract_fidelity_plan_guard.py`
+- `scripts/verify/test_contract_fidelity_plan_guard.py`
+
+该门禁只验证规划文件的矩阵映射、依赖 DAG、Guard 目录和载体条件，不是已经实现的
+Contract Fidelity Guard，也不声称产品行为通过。
+
 规则分层：
 
 | 层 | Guard 能力 |
@@ -356,6 +419,10 @@ Guard 是现有治理体系中的 P4 静态/测试门禁，不是产品运行时
 | 行为层 | 反例组件测试证明未知值、混合币种、缺精度、缺单位和附件边界 |
 | 契约层 | componentKey、digits、currency、unit、timezone、attachment role 的 producer/consumer 对齐 |
 | 证据层 | 矩阵单元绑定真实源码、定向测试和必要的浏览器/API 回读 |
+
+其中 `CFG-003` 明确禁止前端夹取、取整或改写原始业务事实。`CFG-011` 单独覆盖
+Page Block 的 action target、permission result、disabled reason、error reasonCode、
+message 和 trace identity。
 
 Guard 不覆盖或声称替代以下事项：
 

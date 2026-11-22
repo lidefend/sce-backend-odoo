@@ -13,6 +13,8 @@ goal:
     - frontend/apps/web
     - frontend/packages/ui
     - scripts/verify
+    - scripts/audit
+    - make/frontend.mk
     - addons/smart_core
     - .agent
     - docs/architecture
@@ -40,7 +42,7 @@ goal:
     behavior:
       - future semantic authority and semantic transport batches
       - future runtime-evidence closure for 19 NOT_VERIFIED matrix cells
-      - declarative guard inputs and future CI wiring
+      - declarative guard inputs and planning-consistency verification
     exclusions:
       - no frontend product source in this planning result
       - no backend contract producer change in this planning result
@@ -52,6 +54,7 @@ goal:
   completion:
     planning: completed
     plan_review: pending
+    planning_guard: implemented_local
     product_remediation: blocked_by_plan_approval
     mainline_integration: not_started
     deployment: not_applicable

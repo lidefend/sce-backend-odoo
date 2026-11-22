@@ -29,6 +29,38 @@
     "business_semantic_exception_allowed": false,
     "mechanism_constant_requires_registry": true
   },
+  "semantic_carrier_requirements": [
+    {
+      "id": "CARRIER-01",
+      "requirement": "rawValue preserves the original backend type",
+      "failure": "A bridge stringifies, rounds or otherwise reconstructs the business fact before final presentation."
+    },
+    {
+      "id": "CARRIER-02",
+      "requirement": "the field descriptor preserves all applicable type, widget, componentKey, digits, currency, unit, selection and temporal semantics",
+      "failure": "The final renderer must infer meaning from a label or value shape."
+    },
+    {
+      "id": "CARRIER-03",
+      "requirement": "relation identity includes verifiable record identity and the authoritative display label",
+      "failure": "A display name is treated as identity or a bare database ID is exposed as the business value."
+    },
+    {
+      "id": "CARRIER-04",
+      "requirement": "attachment identity, record ownership, role, authorized action and failure feedback each have an explicit contract source",
+      "failure": "A label or URL-shaped string determines attachment behavior."
+    },
+    {
+      "id": "CARRIER-05",
+      "requirement": "currency and timezone come from authoritative runtime context",
+      "failure": "A display label, process locale or browser host timezone replaces the declared authority."
+    },
+    {
+      "id": "CARRIER-06",
+      "requirement": "display values never become ORM write values",
+      "failure": "Formatted numeric, relation, status or temporal text is sent through a save command."
+    }
+  ],
   "rollout": [
     {
       "phase": "planning",
@@ -51,7 +83,8 @@
       "rules": [
         "CFG-005",
         "CFG-006",
-        "CFG-007"
+        "CFG-007",
+        "CFG-011"
       ]
     },
     {
@@ -75,7 +108,8 @@
         "CFG-007",
         "CFG-008",
         "CFG-009",
-        "CFG-010"
+        "CFG-010",
+        "CFG-011"
       ]
     }
   ],
@@ -124,7 +158,7 @@
     },
     {
       "id": "CFG-003",
-      "title": "No frontend-invented precision, unit or percentage",
+      "title": "No frontend-invented precision, unit, percentage or value transformation",
       "maps_findings": [
         "FCF-04",
         "FCF-05"
@@ -135,12 +169,15 @@
         "static",
         "behavior"
       ],
-      "pass_condition": "Missing digits, unit, currency or percentage identity produces a contract gap; the frontend does not choose 2 decimals, percent or another business value.",
+      "pass_condition": "Missing digits, unit, currency or percentage identity produces a contract gap. Presentation may honor declared digits, but it never clamps, rounds or otherwise mutates the raw business fact or decides whether the fact is valid.",
       "negative_cases": [
         "My Work money lacks digits",
         "Progress row lacks unit",
         "percentage-like float lacks componentKey",
-        "numeric raw value exceeds a visual range"
+        "raw percentage 125.75 is clamped to 100",
+        "raw count -1 is changed to 0",
+        "fractional fact 12.345 is silently rounded without a declared display rule",
+        "displayed digits replace the raw ORM-compatible value"
       ],
       "enforce_from_batch": "FCF-02-3"
     },
@@ -293,6 +330,37 @@
         "missing timezone falls back to the host browser timezone"
       ],
       "enforce_from_batch": "FCF-02-3"
+    },
+    {
+      "id": "CFG-011",
+      "title": "Page Block actions and failure feedback retain contract identity",
+      "maps_findings": [
+        "FCF-03"
+      ],
+      "failure_prevented": "A Page Block guesses action authority or drops the backend failure reason.",
+      "mechanisms": [
+        "type",
+        "behavior",
+        "contract",
+        "evidence"
+      ],
+      "required_semantics": [
+        "action target",
+        "permission result",
+        "disabled reason",
+        "error reason code",
+        "message",
+        "trace identity"
+      ],
+      "pass_condition": "Page Block actions consume declared target and availability, and failures preserve the backend reason code, readable message, trace identity and visibility semantics.",
+      "negative_cases": [
+        "Page Block invents an action target",
+        "disabled action has no declared reason",
+        "error feedback is reduced to a generic success or failure toast",
+        "reasonCode, message or trace identity is dropped",
+        "Page Block infers permission from a label or visual state"
+      ],
+      "enforce_from_batch": "FCF-02-2"
     }
   ],
   "non_claims": [
