@@ -42,10 +42,14 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         ':rows="flatAggregateFooterRows"',
         ':foot-data="collectionFootData(flatAggregateFooterRows)"',
         ':foot-data="collectionFootData(groupAggregateFooterRows(group))"',
-        "function hasServerSemanticAggregate(field: string)",
+        "resolveCollectionAggregateCurrencyIdentity",
+        "pageVisibleRows.value",
+        "group.sampleRows",
     ):
         if marker not in list_text:
             failures.append(f"collection aggregate adapter missing {marker}")
+    if "props.records.find((row)" in list_text:
+        failures.append("collection aggregate footer still infers currency from the first page row")
 
     for marker in (
         "var(--sc-app-muted-bg)",
@@ -74,11 +78,13 @@ def validate(list_source: str | None = None, footer_source: str | None = None, c
         "resolveCollectionAggregateEntry",
         "aggregates[displayKey]",
         "aggregates[sourceKey]",
+        "resolveCollectionAggregateCurrencyIdentity",
+        "aggregate.currency_field",
+        "aggregate.currency_id",
+        "identity?.id === currencyId",
     ):
         if marker not in presentation_text:
             failures.append(f"collection aggregate authority resolver missing {marker}")
-    if list_text.count("resolveCollectionAggregateEntry(") != 4:
-        failures.append("flat and grouped page/total aggregates must share one authority resolver")
     return failures
 
 

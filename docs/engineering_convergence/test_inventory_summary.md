@@ -4,13 +4,13 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1749`
+- Total assets: `1750`
 - Review queue: `4`
 - Unknown runtime: `3`
 - Long-running assets: `247`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1277`
+- PR dedupe candidates: `1278`
 
 ## By Layer
 
@@ -22,7 +22,7 @@ Generated from `test_inventory.csv`.
 | odoo_integration | 161 |
 | e2e | 57 |
 | security | 54 |
-| frontend_acceptance | 49 |
+| frontend_acceptance | 50 |
 | gate | 2 |
 | data_migration | 2 |
 
@@ -30,7 +30,7 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1496 |
+| pr_candidate | 1497 |
 | integration_candidate | 189 |
 | release_candidate | 55 |
 | manual_review | 4 |
@@ -43,7 +43,7 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1277 |
+| deduplicate_before_required | 1278 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 188 |
 | keep_release_only | 55 |
@@ -142,7 +142,7 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1498 |
+| <5m | 1499 |
 | 10-30m | 190 |
 | 30-60m | 57 |
 | unknown | 3 |
@@ -158,7 +158,7 @@ Generated from `test_inventory.csv`.
 | backend owner | 161 |
 | qa owner | 57 |
 | security owner | 54 |
-| frontend owner | 50 |
+| frontend owner | 51 |
 | data owner | 2 |
 
 ## By Directory
@@ -167,7 +167,7 @@ Generated from `test_inventory.csv`.
 | --- | ---: |
 | scripts/verify | 1496 |
 | scripts/ops | 122 |
-| frontend/apps/web/scripts | 61 |
+| frontend/apps/web/scripts | 62 |
 | scripts/ci | 41 |
 | scripts/audit | 13 |
 | make | 5 |
@@ -202,6 +202,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-22671f34 | frontend_acceptance | `frontend/apps/web/scripts/business_config_draft_scope_race_test.mjs` | frontend owner |
 | T-ASSET-45afe216 | frontend_acceptance | `frontend/apps/web/scripts/business_form_all_category_direct_acceptance.mjs` | frontend owner |
 | T-ASSET-9a9e78e4 | frontend_acceptance | `frontend/apps/web/scripts/business_form_frontend_full_walk_acceptance.mjs` | frontend owner |
+| T-ASSET-e0c88b98 | frontend_acceptance | `frontend/apps/web/scripts/collection_aggregate_currency_component_test.mjs` | frontend owner |
 | T-ASSET-82495e35 | frontend_acceptance | `frontend/apps/web/scripts/designer_draft_ownership_test.mjs` | frontend owner |
 | T-ASSET-dd6c390a | frontend_acceptance | `frontend/apps/web/scripts/designer_popup_readiness_test.mjs` | frontend owner |
 | T-ASSET-07014ac4 | frontend_acceptance | `frontend/apps/web/scripts/enterprise_readiness_component_test.mjs` | frontend owner |
@@ -275,8 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-a09b0856 | unit | `scripts/ci/test_ci_path_ownership.py` | test owner |
 | T-ASSET-a827439b | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
 | T-ASSET-a49b9b15 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
-| T-ASSET-94353444 | unit | `scripts/ci/test_complexity_baseline_report.py` | test owner |
-| ... | ... | 1197 more | ... |
+| ... | ... | 1198 more | ... |
 
 ## Dedupe Hotspots
 

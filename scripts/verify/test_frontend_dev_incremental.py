@@ -1532,6 +1532,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertFalse(payload["candidateEvidence"])
         self.assertFalse(payload["testsRun"])
 
+    def test_collection_aggregate_guard_inputs_select_their_own_unit(self) -> None:
+        for path in (
+            "scripts/verify/frontend_collection_aggregate_footer_guard.py",
+            "scripts/verify/test_frontend_collection_aggregate_footer_guard.py",
+        ):
+            self.assertEqual(
+                select_targets([path]),
+                ["verify.frontend.collection_aggregate_footer.unit"],
+            )
+
     def test_backend_mapping_does_not_mask_unknown_frontend_input(self) -> None:
         paths = ["scripts/ci/backend_test_receipt.py",
                  "frontend/apps/web/src/newFeature.ts"]

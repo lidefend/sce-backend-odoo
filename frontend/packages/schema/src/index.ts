@@ -404,12 +404,27 @@ export type ProjectContextContract = RecordContextContract;
 /** @deprecated Backend compatibility type; production frontend uses RecordContextOption. */
 export type ProjectContextOption = RecordContextOption;
 
+export interface ApiDataListAggregateEntry {
+  aggregate?: 'sum' | 'none' | string;
+  data_type?: string;
+  value_field?: string;
+  aggregation_field?: string;
+  page_sum?: number | null;
+  sum?: number | null;
+  currency_field?: string;
+  currency_id?: number;
+  precision?: number;
+  digits?: [number, number];
+  reason_code?: string;
+}
+
 export interface ApiDataListResult {
   records: Array<Record<string, unknown> & {
     __display_values?: Record<string, Array<{ id: number; label: string }>>;
   }>;
   next_offset?: number;
   total?: number;
+  aggregates?: Record<string, ApiDataListAggregateEntry>;
   group_summary?: Array<{
     group_key?: string;
     field?: string;
@@ -486,6 +501,7 @@ export interface ApiDataListResult {
     };
     page_has_prev?: boolean;
     page_has_next?: boolean;
+    aggregates?: Record<string, ApiDataListAggregateEntry>;
   }>;
 }
 

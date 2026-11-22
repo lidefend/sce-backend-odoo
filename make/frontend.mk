@@ -315,6 +315,7 @@ verify.frontend.collection_action_toolbar.unit: guard.prod.forbid
 verify.frontend.collection_aggregate_footer.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/collection_aggregate_presentation_test.ts --bundle --platform=node --format=esm --outfile=/tmp/collection-aggregate-presentation-test.mjs >/dev/null
 	@node /tmp/collection-aggregate-presentation-test.mjs
+	@node frontend/apps/web/scripts/collection_aggregate_currency_component_test.mjs
 	@python3 -m unittest scripts/verify/test_frontend_collection_aggregate_footer_guard.py
 	@python3 scripts/verify/frontend_collection_aggregate_footer_guard.py
 

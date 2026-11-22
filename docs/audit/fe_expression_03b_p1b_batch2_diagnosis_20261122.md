@@ -1,14 +1,16 @@
-# FE-EXPRESSION-03B P1-B / Batch 2 Diagnosis
+# FE-EXPRESSION-03B P1-B Implementation / Batch 2 Diagnosis
 
 ## Identity and boundary
 
 - Baseline: `c524ef6af025319e09a71e24db0549b2f903c4b5`
 - Branch: `audit/fe-expression-03b-p1b-batch2-20261122`
 - Formal Product Layer: P0 generic frontend contract consumption
-- Product source modified: no
+- Product source modified: yes, limited to list aggregate presentation, transport
+  typing and their tests
 - Backend contract, ACL, workflow, database and runtime modified: no
-- Evidence level: `SOURCE_VERIFIED` plus focused `STATIC_VERIFIED` checks
-- Browser acceptance claimed: no
+- Evidence level: `SOURCE_VERIFIED`, `STATIC_VERIFIED`,
+  `AFFECTED_COMPONENT_BROWSER_VERIFIED` and dirty-worktree `BUILD_VERIFIED`
+- Full browser business acceptance claimed: no
 
 This batch answers two questions only:
 
@@ -16,7 +18,8 @@ This batch answers two questions only:
 2. Are percentage identity and declared numeric precision preserved through
    collection projection and every shared value consumer?
 
-No product implementation is included.
+P1-B implementation is included. Batch 2 remains read-only diagnosis for a later
+batch.
 
 ## P1-B: List aggregate currency identity
 
@@ -85,20 +88,22 @@ Contract V2 list semantics
   -> useActionViewLoadSuccessRuntime stores aggregates
   -> ListPage resolveCollectionAggregateEntry
   -> formatFooterNumber
-  -> first row in props.records that has a currency value
+  -> resolveCollectionAggregateCurrencyIdentity
+  -> matching relation-id label in the same page/group scope, or fail closed
 ```
 
-The defective label authority is:
+The baseline defect used the first row in `props.records` as the currency-label
+authority. That inference has been removed from:
 
 - `frontend/apps/web/src/pages/ListPage.vue:1999-2011`
 
-The aggregate entry is not passed into `formatFooterNumber`. Flat and grouped
-footers call it without the aggregate entry or the relevant aggregate-scope rows:
+Flat and grouped footers now pass the aggregate entry and the relevant rendered
+scope rows into the shared formatter:
 
 - `frontend/apps/web/src/pages/ListPage.vue:2065-2084`
 - `frontend/apps/web/src/pages/ListPage.vue:2093-2132`
 
-### Scenario matrix
+### Pre-implementation scenario matrix
 
 | Scenario | Backend result | Current frontend behavior | Verdict |
 | --- | --- | --- | --- |
@@ -113,19 +118,17 @@ footers call it without the aggregate entry or the relevant aggregate-scope rows
 | Group A and Group B each have one but different currency | Each group carries its own `currency_id` | Parent `props.records` first currency is reused for every group footer | Wrong |
 | Group missing currency identity | Group aggregate becomes unavailable | Value is absent and footer omitted | Safe |
 
-### Contract/schema gap
+### Contract/schema closure
 
-The transport TypeScript declaration does not model the fields already emitted by
-the backend:
+The baseline transport declaration omitted fields already emitted by the backend.
+The consumer schema now declares `aggregates` at both list-result level and inside
+`grouped_rows`, with the aggregate status, values, currency identity, precision and
+reason code:
 
-- `frontend/packages/schema/src/index.ts:407-490` does not declare `aggregates`
-  at list-result level or inside `grouped_rows`.
-- `frontend/apps/web/src/pages/ListPage.vue:429` currently uses a loose
-  `Record<string, Record<string, unknown>>` for the aggregate payload.
+- `frontend/packages/schema/src/index.ts`
+- `frontend/apps/web/src/pages/ListPage.vue`
 
-This is a consumer schema typing gap, not a backend aggregation-algorithm gap.
-Adding the existing response fields to the frontend transport type does not alter
-the backend contract.
+This closes a consumer schema typing gap without changing the backend contract.
 
 ### Other currency inference paths
 
@@ -138,11 +141,12 @@ the backend contract.
 - Page metric blocks do not currently consume currency identity; that belongs to
   Batch 3.
 
-Only `ListPage` applies a first-page-row currency label to a server aggregate.
+At the baseline, only `ListPage` applied a first-page-row currency label to a
+server aggregate. The implementation removes that path.
 
-### Minimal P1-B implementation recommendation
+### Implemented P1-B contract
 
-Keep the backend algorithm unchanged and:
+The backend algorithm remains unchanged. The frontend now:
 
 1. Add a typed aggregate entry/helper for the existing response fields, including
    `aggregate`, `page_sum`, `sum`, `currency_field`, `currency_id`,
@@ -159,7 +163,7 @@ Keep the backend algorithm unchanged and:
 6. Use the same helper for flat page totals, flat filtered totals and grouped
    page/filtered totals.
 
-Required tests:
+Implemented regression coverage:
 
 - same complete-domain currency, flat and grouped;
 - mixed currency in the complete domain;
@@ -169,6 +173,10 @@ Required tests:
 - different group currency identities;
 - filter and pagination changes;
 - non-monetary aggregate unaffected.
+
+The component fixture executes the real `ListPage` through Vite in Chromium. It
+covers nine semantic scenarios with 19 checks at 1440 and 390 widths and performs
+no backend or external requests.
 
 ## Batch 2: Percentage and precision
 
@@ -306,22 +314,55 @@ formatting function and not a second Runtime.
 
 ## Validation evidence
 
-Read-only checks performed on baseline `c524ef6a`:
+Baseline diagnosis:
 
 - `python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py`:
   `38/38 PASS`.
 - `make verify.frontend.contract_shape_projection.unit`: `14` cases `PASS`.
-- `make verify.frontend.collection_view_semantics.unit`: all static/unit families
-  `PASS`.
 - `make verify.frontend.business_semantics.unit`: all static/unit families
   `PASS`.
 
-These runs confirm current behavior and guard status. They are not browser
-acceptance evidence and do not turn any finding into PASS.
+P1-B implementation on dirty candidate
+`5a0f9046ea498bc2a192696ff1c51d79fbe08a04` plus the scoped worktree changes:
+
+- `make verify.frontend.collection_aggregate_footer.unit`: `PASS`; `19`
+  presentation cases, `19` real-component checks across `9` scenarios and
+  `1440/390`, and `12` guard tests.
+- `make verify.frontend.collection_view_semantics.unit`: `PASS`; `79`
+  collected tests plus the static semantics guard.
+- `make verify.frontend.contract_basis.enforce`: `PASS`; `0` open defects.
+- `make verify.frontend.lint.src`: `PASS`; `0` errors, `3` pre-existing warnings
+  outside the changed files.
+- `make verify.frontend.typecheck.strict`: `PASS`.
+- `make ci.local.iteration`: `PASS`; ten affected targets executed, including
+  the updated aggregate consumer, contract checks and the `210`-test incremental
+  planner family.
+- `make verify.frontend.dev.incremental.unit`: `PASS`; `210` tests.
+- `make verify.frontend.build ENV=dev ENV_FILE=<existing workspace .env.dev> ...`:
+  `PASS`; `5419` modules transformed and built in `23.60s`.
+- `make ci.delivery.freeze.prepare`: `PASS`; generated evidence refreshed and
+  validated before clean commit.
+
+The build was written under `.runtime/FE-EXPRESSION-03B/P1B-BATCH2/dist-build-r2`
+with authoritative artifact SHA256
+`b9b47e2da3fcacb04b696169e87445f4d705a7de7a64e5ed6d107728aab9b3a7`.
+Because the worktree was dirty, this is build validation and explicitly not
+frozen-candidate or served-build evidence. The component browser fixture is also
+affected-surface evidence, not a full backend business journey.
+
+The first build attempt stopped before compilation because this independent
+worktree has no `.env.dev`. That was an environment-input failure, not a product
+build failure. The successful retry reused the existing workspace-managed
+`.env.dev` read-only through `ENV_FILE`.
+
+The freeze preparation updated only generated inventory, complexity and
+component-driver evidence caused by this batch: the new component test entry,
+the changed source line counts and the changed component-driver input digest.
 
 ## Recommended implementation order
 
-1. P1-B List aggregate currency identity, independent product candidate.
+1. P1-B List aggregate currency identity: implemented and verification pending
+   independent review.
 2. F02 P0 float `digits` projection and contract tests.
 3. F01 percentage identity preservation plus List/One2many shared routing.
 4. Batch 3 contract-interpreter convergence for F03/F04.

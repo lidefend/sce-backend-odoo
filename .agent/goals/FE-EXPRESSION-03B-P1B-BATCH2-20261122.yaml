@@ -2,8 +2,8 @@ schema_version: 1
 
 goal:
   id: FE-EXPRESSION-03B-P1B-BATCH2-20261122
-  title: list_aggregate_currency_and_numeric_semantics_diagnosis
-  status: active
+  title: list_aggregate_currency_identity_and_numeric_semantics
+  status: verification_pending
   formal_product_layer: P0
   layer_target: >-
     Generic frontend collection aggregation and shared business-value
@@ -17,14 +17,15 @@ goal:
     - docs/audit
   standard_vs_user_specific: platform_generic_frontend_runtime
   objective: >-
-    Perform a read-only diagnosis of the List aggregate currency authority
-    consumption path and the percentage/precision projection paths. Produce
-    source-backed matrices and a minimal implementation recommendation without
-    changing product source.
+    Implement fail-closed consumption of the backend list aggregate currency
+    identity without changing backend aggregation semantics. Retain the
+    percentage/precision diagnosis as read-only evidence for a later batch.
   product_result: >-
-    Establish exactly where aggregate currency identity, percentage semantics,
-    numeric precision and shared value interpretation are preserved or lost so
-    the next implementation batch has a bounded, contract-correct target.
+    List monetary footers render only when the backend aggregate declares a
+    successful sum and a currency record identity that matches a relation label
+    in the same rendered page or group scope. Unsupported monetary aggregates
+    fail closed while non-monetary aggregates remain visible. Percentage and
+    precision findings stay read-only for a later batch.
   why_here: >-
     The defects concern generic frontend consumption of already declared
     contract metadata and aggregate results.
@@ -32,7 +33,8 @@ goal:
     - Do not change backend aggregation algorithms in this diagnosis.
     - Do not infer business semantics from field names, labels or first rows.
     - Do not add a Renderer, Registry, Bundle, page engine or second value runtime.
-    - Do not implement P1-B or Batch 2 product changes in this read-only batch.
+    - Do not implement Batch 2 percentage or precision changes in this batch.
+    - Do not change backend aggregation algorithms or business semantics.
   blast_radius:
     behavior:
       - List flat and grouped aggregate currency identity
@@ -40,15 +42,17 @@ goal:
       - Float and quantity precision projection and consumption
       - Shared versus generic value interpreter coverage
     exclusions:
-      - no product source modification
       - no backend contract, ACL, workflow or database change
-      - no browser acceptance claim
+      - no Batch 2 percentage or precision implementation
+      - no full backend acceptance claim
       - no unrelated UI cleanup
   rollback: >-
-    Revert only the audit records and run metadata. No runtime or product state
-    changes require rollback.
+    Revert the bounded P1-B frontend consumer, schema typing, guard, component
+    test and run records to the baseline tree. No database, service or runtime
+    state requires rollback.
   completion:
     p1b_diagnosis: completed
+    p1b_implementation: verification_pending
     batch2_diagnosis: completed
     batch: verification_pending
     independent_review: not_run

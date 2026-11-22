@@ -330,7 +330,11 @@ import { formatMonetaryDisplayValue, resolveCurrencyDisplayLabel } from '../app/
 import { resolveStandardListComposition } from '../app/presentation/standardListComposition';
 import type { StandardPageTypeDecision } from '../app/presentation/standardPageType';
 import { resolveCollectionPageJump, resolveCollectionPageLimit, resolveCollectionPageOffset, resolveCollectionPaginationMode } from '../app/presentation/collectionPaginationPresentation';
-import { resolveCollectionAggregateEntry } from '../app/presentation/collectionAggregatePresentation';
+import {
+  resolveCollectionAggregateCurrencyIdentity,
+  resolveCollectionAggregateEntry,
+  type CollectionAggregateEntry,
+} from '../app/presentation/collectionAggregatePresentation';
 import { resolveCollectionEmptyStateKind } from '../app/presentation/collectionEmptyStatePresentation';
 import { toneToBadgeSemantic } from '../app/presentation/businessValuePresentation';
 import ScTable from '../components/design-system/ScTable.vue';
@@ -426,7 +430,7 @@ const props = defineProps<{
   listLimit?: number;
   pageSizeOptions?: number[];
   pageSizeRange?: { min: number; max: number };
-  listAggregates?: Record<string, Record<string, unknown>>;
+  listAggregates?: Record<string, CollectionAggregateEntry>;
   columnOptions?: ColumnOption[];
   columnVisibility?: Record<string, boolean>;
   columnOrder?: string[];
@@ -471,7 +475,7 @@ const props = defineProps<{
     pageWindow?: { start?: number; end?: number };
     pageHasPrev?: boolean;
     pageHasNext?: boolean;
-    aggregates?: Record<string, Record<string, unknown>>;
+    aggregates?: Record<string, CollectionAggregateEntry>;
     loading?: boolean;
   }>;
   onOpenGroup?: (group: {
@@ -1972,10 +1976,6 @@ function isAggregateColumn(field: string) {
   return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
 }
 
-function hasServerSemanticAggregate(field: string) {
-  return Boolean(String(columnOption(field)?.aggregationField || '').trim());
-}
-
 function isNumericDisplayColumn(field: string) {
   return isNumericColumn(field);
 }
@@ -1996,31 +1996,40 @@ function formatNumericCellValue(field: string, value: unknown, row?: Record<stri
   return formatNumericFieldValue(raw, type) ?? '';
 }
 
-function formatFooterNumber(value: number, field: string) {
+function formatFooterNumber(
+  value: number,
+  field: string,
+  aggregate: CollectionAggregateEntry,
+  rows: readonly Record<string, unknown>[],
+): string | null {
   const option = columnOption(field);
   const type = String(option?.dataType || option?.type || '').trim();
   if (type.toLowerCase() === 'monetary') {
-    const currencyField = String(option?.currencyField || '').trim();
-    const currencyLabel = currencyField
-      ? resolveCurrencyDisplayLabel(
-        props.records.find((row) => row[currencyField] !== null && row[currencyField] !== undefined)?.[currencyField],
-      )
-      : '';
-    return formatMonetaryDisplayValue(value, option?.digits, currencyLabel);
+    const currency = resolveCollectionAggregateCurrencyIdentity(
+      aggregate,
+      String(option?.currencyField || '').trim(),
+      rows,
+    );
+    if (!currency) return null;
+    return formatMonetaryDisplayValue(value, option?.digits, currency.label);
   }
-  return formatNumericFieldValue(value, type) ?? '';
+  return formatNumericFieldValue(value, type);
 }
 
 const pageFooterStats = computed(() =>
   displayedColumns.value
     .filter((field) => isAggregateColumn(field))
     .map((field) => {
+      const aggregate = resolveCollectionAggregateEntry(props.listAggregates, field, columnAggregationField(field));
       const authoritative = pageAggregateValue(field);
+      const text = authoritative === null
+        ? null
+        : formatFooterNumber(authoritative, field, aggregate, pageVisibleRows.value);
       return {
         name: field,
         label: uiLabel('page_footer_summary', '{column} 汇总', { column: columnLabel(field) }),
-        count: authoritative === null ? 0 : pageVisibleRows.value.length,
-        sumText: authoritative === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(authoritative, field),
+        count: text === null ? 0 : pageVisibleRows.value.length,
+        sumText: text ?? FIELD_VALUE_EMPTY_TEXT,
       };
     })
     .filter((item) => item.count > 0),
@@ -2035,11 +2044,10 @@ const pageFooterStatsMap = computed(() =>
 
 const showPageAggregateFooter = computed(() => displayedColumns.value.some((field) => {
   if (!isAggregateColumn(field)) return false;
-  if (hasServerSemanticAggregate(field)) return pageAggregateValue(field) !== null;
   return Boolean(pageFooterStatsMap.value[field]?.count);
 }));
 const showTotalAggregateFooter = computed(() => displayedColumns.value.some((field) => (
-  isAggregateColumn(field) && totalAggregateValue(field) !== null
+  isAggregateColumn(field) && totalFooterText(field) !== null
 )));
 const flatAggregateFooterRows = computed<CollectionAggregateRow[]>(() => {
   const rows: CollectionAggregateRow[] = [];
@@ -2074,13 +2082,19 @@ function pageAggregateValue(field: string) {
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
+function totalFooterText(field: string) {
+  const value = totalAggregateValue(field);
+  if (value === null) return null;
+  const aggregate = resolveCollectionAggregateEntry(props.listAggregates, field, columnAggregationField(field));
+  return formatFooterNumber(value, field, aggregate, pageVisibleRows.value);
+}
+
 function footerCellText(field: string, scope: 'page' | 'total') {
   if (!isAggregateColumn(field)) return '';
   if (scope === 'page') {
     return pageFooterStatsMap.value[field]?.sumText || FIELD_VALUE_EMPTY_TEXT;
   }
-  const value = totalAggregateValue(field);
-  return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
+  return totalFooterText(field) ?? FIELD_VALUE_EMPTY_TEXT;
 }
 
 function footerValues(scope: 'page' | 'total') {
@@ -2090,59 +2104,61 @@ function footerValues(scope: 'page' | 'total') {
   }, {});
 }
 
-function groupAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
+function groupAggregateValue(group: { aggregates?: Record<string, CollectionAggregateEntry> }, field: string) {
   const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
-function groupPageAggregateValue(group: { aggregates?: Record<string, Record<string, unknown>> }, field: string) {
+function groupPageAggregateValue(group: { aggregates?: Record<string, CollectionAggregateEntry> }, field: string) {
   const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
   const value = aggregate.page_sum;
   return typeof value === 'number' && Number.isFinite(value) ? value : null;
 }
 
 function showGroupPageAggregateFooter(
-  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, CollectionAggregateEntry> },
 ) {
   return displayedColumns.value.some((field) => {
     if (!isAggregateColumn(field)) return false;
-    return groupPageAggregateValue(group, field) !== null;
+    return groupFooterCellText(field, group, 'page') !== null;
   });
 }
 
 function showGroupTotalAggregateFooter(
-  group: { aggregates?: Record<string, Record<string, unknown>> },
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, CollectionAggregateEntry> },
 ) {
-  return displayedColumns.value.some((field) => isAggregateColumn(field) && groupAggregateValue(group, field) !== null);
+  return displayedColumns.value.some((field) => (
+    isAggregateColumn(field) && groupFooterCellText(field, group, 'total') !== null
+  ));
 }
 
 function groupFooterCellText(
   field: string,
-  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, CollectionAggregateEntry> },
   scope: 'page' | 'total',
-) {
+): string | null {
   if (!isAggregateColumn(field)) return '';
-  if (scope === 'page') {
-    const value = groupPageAggregateValue(group, field);
-    return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
-  }
-  const value = groupAggregateValue(group, field);
-  return value === null ? FIELD_VALUE_EMPTY_TEXT : formatFooterNumber(value, field);
+  const value = scope === 'page'
+    ? groupPageAggregateValue(group, field)
+    : groupAggregateValue(group, field);
+  if (value === null) return null;
+  const aggregate = resolveCollectionAggregateEntry(group.aggregates, field, columnAggregationField(field));
+  return formatFooterNumber(value, field, aggregate, group.sampleRows);
 }
 
 function groupFooterValues(
-  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+  group: { sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, CollectionAggregateEntry> },
   scope: 'page' | 'total',
 ) {
   return footerValueColumns.value.reduce<Record<string, string>>((values, field) => {
-    values[field] = groupFooterCellText(field, group, scope);
+    values[field] = groupFooterCellText(field, group, scope) ?? FIELD_VALUE_EMPTY_TEXT;
     return values;
   }, {});
 }
 
 function groupAggregateFooterRows(
-  group: { key: string; sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, Record<string, unknown>> },
+  group: { key: string; sampleRows: Array<Record<string, unknown>>; aggregates?: Record<string, CollectionAggregateEntry> },
 ) {
   const rows: CollectionAggregateRow[] = [];
   if (showGroupPageAggregateFooter(group)) {

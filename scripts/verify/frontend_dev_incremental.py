@@ -1762,6 +1762,12 @@ RULES = (
         "verify.frontend.collection_row_cell.unit",
     )),
     Rule((
+        "scripts/verify/frontend_collection_aggregate_footer_guard.py",
+        "scripts/verify/test_frontend_collection_aggregate_footer_guard.py",
+    ), (
+        "verify.frontend.collection_aggregate_footer.unit",
+    )),
+    Rule((
         "scripts/verify/frontend_list_optional_columns_contract_test.ts",
     ), (
         "verify.frontend.list_optional_columns.unit",

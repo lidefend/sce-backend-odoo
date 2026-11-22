@@ -1,9 +1,9 @@
 {
   "schema": "fe_expression_03b.p1b_batch2_diagnosis.v1",
   "baseline_sha": "c524ef6af025319e09a71e24db0549b2f903c4b5",
-  "evidence_level": "SOURCE_VERIFIED_STATIC_VERIFIED",
-  "product_source_modified": false,
-  "browser_acceptance_claimed": false,
+  "evidence_level": "SOURCE_VERIFIED_STATIC_VERIFIED_AFFECTED_COMPONENT_BROWSER_DIRTY_BUILD_VERIFIED",
+  "product_source_modified": true,
+  "browser_acceptance_claimed": "affected_component_only",
   "p1b": {
     "backend_authority": {
       "sum_scope": "complete_filtered_domain",
@@ -20,11 +20,11 @@
     },
     "frontend_consumer": {
       "aggregate_entry": "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts",
-      "footer_formatter": "frontend/apps/web/src/pages/ListPage.vue:1999-2011",
-      "current_currency_source": "first_record_in_props_records",
-      "uses_returned_currency_id": false,
-      "flat_and_grouped_share_problem": true,
-      "transport_type_declares_aggregates": false
+      "footer_formatter": "ListPage formatFooterNumber plus resolveCollectionAggregateCurrencyIdentity",
+      "current_currency_source": "backend_currency_id_matched_to_same_scope_relation",
+      "uses_returned_currency_id": true,
+      "flat_and_grouped_share_fail_closed_rule": true,
+      "transport_type_declares_aggregates": true
     },
     "scenario_matrix": [
       {
@@ -87,7 +87,7 @@
         "status": "batch3"
       }
     ],
-    "minimal_fix": [
+    "implemented_controls": [
       "type_existing_aggregate_response_fields",
       "require_sum_and_valid_currency_id_for_monetary_footer",
       "resolve_label_from_page_or_group_row_with_matching_currency_id",
@@ -155,12 +155,11 @@
     },
     "contract_gaps": [
       "float_and_quantity_digits_not_projected",
-      "list_aggregate_response_type_not_declared",
       "page_block_value_type_currency_relation_and_unit_carrier"
     ]
   },
   "recommended_order": [
-    "P1B_list_aggregate_currency_identity",
+    "P1B_list_aggregate_currency_identity_implemented_verification_pending",
     "F02_P0_float_digits_projection",
     "F01_percentage_identity_and_shared_consumer_routing",
     "Batch3_F03_F04_interpreter_and_page_block_units",
