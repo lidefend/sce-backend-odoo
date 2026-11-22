@@ -340,6 +340,19 @@ status layer, rather than a second name/status allow-list, decides whether a
 declared token is consumable. `domain` and `tier_validation` therefore pass
 name-vocabulary validation and are rejected by the registry-status layer.
 
+Registry status is returned outside the canonical business Descriptor. The
+strict decoder result has a `registryResolution.widget` object containing
+`widgetType`, `widgetStatus` and `fallbackReasonCode`. The Descriptor itself
+must not contain `widgetStatus` or `fallbackReasonCode`.
+
+| Registry outcome | Decode result |
+| --- | --- |
+| ready | `widgetStatus=ready`, `fallbackReasonCode=null` |
+| fallback with reason | `widgetStatus=fallback`, exact registry `reason_code` |
+| fallback without reason | typed failure |
+| unsupported | typed failure |
+| unknown status | typed failure |
+
 Component consistency is resolved through the explicit
 `semantic.yaml.semantics[semanticType].component` mapping, with
 `component.yaml.components[componentKey].field_types` validating the field
@@ -791,7 +804,7 @@ Rollback:
 
 Read-only design verification passed:
 
-- Contract Fidelity plan plus P0 design consistency: 22 Python tests.
+- Contract Fidelity plan plus P0 design consistency: 23 Python tests.
 - Strict Descriptor structural and registry validation: 24 positive/negative
   fixture cases.
 - Semantic registry lint: PASS; 28 semantics and 33 components remain
@@ -805,7 +818,7 @@ Read-only design verification passed:
 - Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
   two undeclared carriers rejected.
 - Machine design reconciliation: 3 packages, 56 planned positive/negative
-  cases, 44 compatibility rows and 27 current-source hashes.
+  cases, 49 compatibility rows and 27 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 

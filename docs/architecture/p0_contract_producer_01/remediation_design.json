@@ -291,11 +291,33 @@
             "status_authority": "the ready, fallback or unsupported status and fallback reason_code come only from semantic.yaml.native_widgets",
             "status_policy": {
               "ready": "accepted for normal descriptor consumption",
-              "fallback": "accepted only when the same native_widgets entry declares a reason_code; preserve that declared fallback reason",
+              "fallback": "accepted only when the same native_widgets entry declares a reason_code; return that exact declared fallback reason in registryResolution",
               "unsupported": "reject as a normal Field Descriptor",
               "unknown_status": "reject"
             },
             "unknown_widget_type": "reject"
+          },
+          "decode_result_contract": {
+            "type": "ContractV2FieldDescriptorDecodeResult",
+            "descriptor": "normalized ContractV2FieldDescriptor; registry runtime status is not added to this canonical business descriptor",
+            "registryResolution": {
+              "widget": {
+                "widgetType": "the decoded descriptor widgetType",
+                "widgetStatus": "ready|fallback",
+                "fallbackReasonCode": "string|null",
+                "sourceAuthority": "contracts/registry/semantic.yaml#native_widgets"
+              }
+            },
+            "status_results": {
+              "ready": "widgetStatus=ready and fallbackReasonCode=null",
+              "fallback": "widgetStatus=fallback and fallbackReasonCode is the exact registry reason_code",
+              "unsupported": "typed decode failure; no successful result",
+              "unknown_status": "typed decode failure; no successful result"
+            },
+            "descriptor_forbidden_runtime_fields": [
+              "widgetStatus",
+              "fallbackReasonCode"
+            ]
           },
           "shared_by": [
             "decodeContractV2Widget.fieldDescriptor",

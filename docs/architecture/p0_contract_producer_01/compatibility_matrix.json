@@ -391,6 +391,46 @@
       "expectation": "invalid",
       "evidence": "executed_schema_validation",
       "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-READY",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "ready Widget",
+      "expectation": "widgetStatus=ready and fallbackReasonCode=null outside the descriptor",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "boolean_toggle fallback Widget",
+      "expectation": "widgetStatus=fallback and exact registry reason_code returned",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK-MISSING",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "fallback Widget with no registry reason_code",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK-EMPTY",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "fallback Widget with an empty registry reason_code",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-STATUS-INVALID",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "native Widget row with an unknown status",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
     }
   ]
 }

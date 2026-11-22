@@ -194,6 +194,21 @@ class P0ContractProducerDesignTest(unittest.TestCase):
                 errors.append(f"digits {digits!r} do not satisfy total > 0, scale >= 0 and scale <= total")
         return errors
 
+    def descriptor_registry_resolution(self, descriptor: dict) -> dict:
+        errors = self.descriptor_registry_errors(descriptor)
+        if errors:
+            raise ValueError("; ".join(errors))
+        widget_type = descriptor["widgetType"]
+        declaration = self.semantic_registry["native_widgets"][widget_type]
+        widget_status = declaration["status"]
+        return {
+            "widget": {
+                "widgetType": widget_type,
+                "widgetStatus": widget_status,
+                "fallbackReasonCode": declaration.get("reason_code") if widget_status == "fallback" else None,
+            },
+        }
+
     def test_product_implementation_remains_unauthorized(self) -> None:
         self.assertFalse(self.design["product_implementation_authorized"])
         self.assertEqual(self.design["status"], "design_candidate")
@@ -257,7 +272,20 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         }
         self.assertEqual(
             design_asserted,
-            {"SEC-01", "SEC-02", "FIELD-01", "FIELD-02", "FIELD-03", "FIELD-04", "FIELD-05"},
+            {
+                "SEC-01",
+                "SEC-02",
+                "FIELD-01",
+                "FIELD-02",
+                "FIELD-03",
+                "FIELD-04",
+                "FIELD-05",
+                "RES-WIDGET-READY",
+                "RES-WIDGET-FALLBACK",
+                "RES-WIDGET-FALLBACK-MISSING",
+                "RES-WIDGET-FALLBACK-EMPTY",
+                "RES-WIDGET-STATUS-INVALID",
+            },
         )
 
     def test_p0_a_reuses_contract_v2_field_descriptor(self) -> None:
@@ -326,6 +354,16 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         self.assertIn("FIELD_DESCRIPTOR_WIDGET_UNKNOWN", schema_contract["error_codes"])
         self.assertIn("FIELD_DESCRIPTOR_WIDGET_UNSUPPORTED", schema_contract["error_codes"])
         self.assertIn("FIELD_DESCRIPTOR_WIDGET_FALLBACK_REASON_MISSING", schema_contract["error_codes"])
+        decode_result = schema_contract["decode_result_contract"]
+        self.assertEqual(decode_result["type"], "ContractV2FieldDescriptorDecodeResult")
+        self.assertEqual(
+            decode_result["registryResolution"]["widget"]["sourceAuthority"],
+            "contracts/registry/semantic.yaml#native_widgets",
+        )
+        self.assertEqual(
+            set(decode_result["descriptor_forbidden_runtime_fields"]),
+            {"widgetStatus", "fallbackReasonCode"},
+        )
         self.assertIn(
             "const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor'",
             (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8"),
@@ -400,7 +438,35 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         self.assertEqual(len(expected), 24)
         self.assertEqual(schema_matrix, expected)
 
-    def test_fallback_widget_without_registry_reason_is_rejected(self) -> None:
+    def test_decode_result_keeps_registry_widget_metadata_outside_descriptor(self) -> None:
+        cases = {case["id"]: case["descriptor"] for case in self.descriptor_cases["cases"]}
+        ready_descriptor = cases["DESC-MONEY-VALID"]
+        fallback_descriptor = cases["DESC-FALLBACK-WIDGET-VALID"]
+        self.assertNotIn("widgetStatus", self.descriptor_schema["properties"])
+        self.assertNotIn("fallbackReasonCode", self.descriptor_schema["properties"])
+        self.assertNotIn("widgetStatus", ready_descriptor)
+        self.assertNotIn("fallbackReasonCode", ready_descriptor)
+        self.assertNotIn("widgetStatus", fallback_descriptor)
+        self.assertNotIn("fallbackReasonCode", fallback_descriptor)
+        self.assertEqual(
+            self.descriptor_registry_resolution(ready_descriptor)["widget"],
+            {
+                "widgetType": "number",
+                "widgetStatus": "ready",
+                "fallbackReasonCode": None,
+            },
+        )
+        fallback = self.semantic_registry["native_widgets"]["boolean_toggle"]
+        self.assertEqual(
+            self.descriptor_registry_resolution(fallback_descriptor)["widget"],
+            {
+                "widgetType": "boolean_toggle",
+                "widgetStatus": "fallback",
+                "fallbackReasonCode": fallback["reason_code"],
+            },
+        )
+
+    def test_widget_registry_status_resolution_fails_closed(self) -> None:
         descriptor = {
             "schemaVersion": "1.0.0",
             "fieldCode": "project.is_favorite",
@@ -411,13 +477,27 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             "semanticType": "boolean",
         }
         original_registry = self.semantic_registry
-        self.semantic_registry = copy.deepcopy(original_registry)
         try:
-            self.semantic_registry["native_widgets"]["boolean_toggle"].pop("reason_code", None)
-            errors = self.descriptor_registry_errors(descriptor)
+            for mutation, expected in (
+                ("missing_reason", "fallback reason_code"),
+                ("empty_reason", "fallback reason_code"),
+                ("invalid_status", "unknown status"),
+            ):
+                self.semantic_registry = copy.deepcopy(original_registry)
+                widget = self.semantic_registry["native_widgets"]["boolean_toggle"]
+                if mutation == "missing_reason":
+                    widget.pop("reason_code", None)
+                elif mutation == "empty_reason":
+                    widget["reason_code"] = ""
+                else:
+                    widget["status"] = "degraded"
+                errors = self.descriptor_registry_errors(descriptor)
+                self.assertTrue(
+                    any(expected in error for error in errors),
+                    f"{mutation}: {errors}",
+                )
         finally:
             self.semantic_registry = original_registry
-        self.assertTrue(any("fallback reason_code" in error for error in errors), errors)
 
     def test_p0_b_keeps_attachment_identities_separate(self) -> None:
         contract = self.packages["P0-B"]["schema_contract"]
