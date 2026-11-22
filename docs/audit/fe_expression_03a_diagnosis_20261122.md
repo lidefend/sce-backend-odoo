@@ -109,19 +109,29 @@ count without guessing from field name, localized label or text format.
 field-name or Chinese-label compensation. A future contract role can be wired
 to the existing `CollectionRowCell` attachment action without a second runtime.
 
-## Planned convergence
+## Implemented convergence
 
-1. Extend One2many/relation column metadata with declared `digits` and
+1. Extended One2many/relation column metadata with declared `digits` and
    `currencyField` only.
-2. Project those fields from `column_occurrences`.
-3. Resolve row `currencyLabel` from the declared currency dependency.
-4. Use `presentDeclaredBusinessValue()` for readonly money, date, datetime,
+2. Projected those fields from `column_occurrences`.
+3. Resolved row `currencyLabel` from the declared currency dependency.
+4. Used `presentDeclaredBusinessValue()` for readonly money, date, datetime,
    duration, selection, boolean and empty presentation.
-5. Introduce a separate input-value projection for editable cells.
-6. Keep many2one/many2many record identity and JSON handling specialized.
-7. Remove the registered local-format exception after the split.
-8. Delete Chinese-label/count-text attachment inference and record the backend
+5. Introduced a separate input-value projection for editable cells.
+6. Kept many2one/many2many record identity and JSON handling specialized.
+7. Removed the registered local-format exception after the split.
+8. Deleted Chinese-label/count-text attachment inference and recorded the backend
    semantic gap.
+9. Updated the cross-page business-semantics authority audit so its completion
+   ledger no longer reports the resolved One2many formatter bypass as open.
+
+### Autosave retention rule
+
+The current 24-hour period is a P1 `smart_construction_core` standard policy
+constant, not a user or administrator setting. It is published as
+`runtimeContract.intakeAutosave.retention.seconds`; the frontend consumes that
+value and has no 24-hour fallback. Tests now cover a 60-second declared policy,
+the 60-second boundary, and missing-retention fail-closed behavior.
 
 ## Validation plan
 

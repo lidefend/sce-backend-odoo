@@ -1,5 +1,5 @@
 import { triggerOnchange } from '../../api/onchange';
-import { one2manyDataColumnsFromSubview } from './one2manyUtils';
+import { one2manyDataColumnsFromSubview, one2manyDataFieldNames } from './one2manyUtils';
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { FieldDescriptor } from '@sc/schema';
 import { reactive, watch } from 'vue';
@@ -183,7 +183,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   }): Promise<One2manyChildInteraction> {
     const model = one2manyRelationModel(name);
     if (!model || !one2manyCanCreate(name)) throw new Error('当前明细未开放新增');
-    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
+    const fields = one2manyDataFieldNames(one2manyDataColumns(name));
     if (!fields.length) throw new Error('当前明细缺少字段契约');
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) {
@@ -218,7 +218,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
   async function loadOne2manyRowChange(name: string, row: { id: number; values: Record<string, unknown>; changed: string[] }, parent: {
     model: string; res_id: number | null; view_id?: unknown; values: Record<string, unknown>;
   }): Promise<One2manyChildInteraction> {
-    const fields = [...new Set(one2manyDataColumns(name).map((column: One2ManyColumn) => column.name).filter((field: string) => field !== 'id'))];
+    const fields = one2manyDataFieldNames(one2manyDataColumns(name));
     const fieldContext = (effectiveFieldDescriptor(name) as Record<string, unknown> | undefined)?.context;
     if (fieldContext != null && (typeof fieldContext !== 'object' || Array.isArray(fieldContext))) throw new Error('明细联动上下文尚未解析');
     const response = normalizeOnchangeResponse(await (dependencies.initializeChild || triggerOnchange)(JSON.parse(JSON.stringify({
@@ -264,7 +264,7 @@ export function useRecordRelationshipFields(dependencies: FieldDependencies) {
     // 注意：不请求 'name' —— 部分子模型（如 payment.request.line）无 name 字段，
     // 请求会触发后端 ValueError 导致整行 hydrate 失败（catch 静默吞掉后列值全空）。
     // display_name 已覆盖名称展示需求。
-    const fields = Array.from(new Set(['id', 'display_name', ...columns.map((column) => column.name)]));
+    const fields = Array.from(new Set(['id', 'display_name', ...one2manyDataFieldNames(columns)]));
     try {
       const response = await readContractFormRecord({
         model: relation,

@@ -24,7 +24,7 @@ const emptyAdapter = {
   prepareOne2manyColumns: () => undefined, isOne2manyHydrating: () => false,
   one2manyCreateLabel: () => '', one2manyCanOpenRow: () => false, one2manyCanCreate: () => false,
   one2manyCanInlineEdit: () => false, one2manyCanUnlink: () => false,
-  one2manyColumnInputType: () => 'text', one2manyRowHints: () => [], one2manyRowErrors: () => [],
+  one2manyColumnInputType: () => 'text', one2manyColumnInputValue: (_column, value) => String(value ?? ''), one2manyRowHints: () => [], one2manyRowErrors: () => [],
   one2manyEffectiveColumn: (_n, _r, c) => c, one2manyCellError: () => '', one2manyRowStateLabel: () => '',
   one2manyRowMessages: () => [], one2manyRowError: () => '', one2manyColumnDisplayValue: (_c, v) => String(v ?? ''),
   one2manySummary: () => '', removedOne2manyRows: () => [], selectedRelationOptions: () => [], relationIds: () => [],

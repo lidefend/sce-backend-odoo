@@ -10,7 +10,32 @@
     ".agent/goals/FE-EXPRESSION-03A-20261122.yaml",
     ".agent/runs/FE-EXPRESSION-03A-20261122/run.json",
     ".agent/active-runs.json",
-    "docs/audit/fe_expression_03a_diagnosis_20261122.md"
+    "docs/audit/fe_expression_03a_diagnosis_20261122.md",
+    "docs/architecture/frontend_business_semantics_authority_audit_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+    "frontend/apps/web/scripts/native_tab_text_component_test.mjs",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+    "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/components/template/relationField.types.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "scripts/verify/frontend_collection_row_cell_guard.py",
+    "scripts/verify/frontend_localized_display_contract_test.ts"
   ],
   "environment": {
     "kind": "offline",
@@ -24,6 +49,7 @@
         "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
         "frontend/apps/web/src/pages/contractForm/types.ts",
         "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
         "scripts/verify/collection_view_semantics_guard.py"
       ],
       "kind": "offline"
@@ -60,8 +86,23 @@
       "inputs": [
         "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
         "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
         "scripts/verify/frontend_professional_detail_collection_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "intake_autosave": {
+      "target": "verify.frontend.intake_autosave.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+        "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
+        "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+        "make/frontend.mk"
       ],
       "kind": "offline"
     },
@@ -135,12 +176,13 @@
   ],
   "blockers": [],
   "observations": {
-    "diagnosis": "SOURCE_VERIFIED only; no browser or database evidence claimed in the diagnostic stage",
+    "diagnosis": "SOURCE_VERIFIED diagnosis committed at 78acb4d24; implementation now follows the diagnosed ownership",
     "one2many_metadata_gap": "One2ManyColumn and RelationFieldColumn do not carry contract-provided digits/currency_field",
     "display_input_bypass": "one2manyColumnDisplayValue is also used as editable input model-value",
-    "attachment_contract_gap": "No stable attachment-count cellRole/componentKey exists in the current list contract"
+    "attachment_contract_gap": "No stable attachment-count cellRole/componentKey exists in the current list contract",
+    "baseline_test_correction": "intake autosave fixture now derives its initial timestamp from Date.now(); the existing >1 day expiry counterexample remains enforced"
   },
-  "next_exact_step": "Commit the read-only FE-EXPRESSION-03A diagnosis and run registration, then implement One2many business-value reuse while recording the attachment declaration gap for backend ownership.",
+  "next_exact_step": "Run the affected frontend tests and incremental planner, then complete Three-page desktop/mobile browser verification with the explicit attachment contract gap recorded.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

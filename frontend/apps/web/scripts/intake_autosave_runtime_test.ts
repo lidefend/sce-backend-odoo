@@ -132,6 +132,21 @@ const policy = resolveIntakeAutosavePolicy({ intakeAutosave: rawPolicy }) as Int
 assert.equal(policy.scope, 'project_intake_standard');
 assert.equal(policy.retention.seconds, 86400);
 assert.equal(policy.fields.length, 5);
+const shortRetentionPolicy = resolveIntakeAutosavePolicy({
+  intakeAutosave: {
+    ...rawPolicy,
+    scope: 'project_intake_short_retention',
+    retention: { seconds: 60, basis: 'last_valid_input' },
+  },
+}) as IntakeAutosavePolicy;
+assert.equal(shortRetentionPolicy.retention.seconds, 60, 'frontend consumes the declared retention instead of a local 24-hour default');
+const missingRetentionPolicy = { ...rawPolicy } as Record<string, unknown>;
+delete missingRetentionPolicy.retention;
+assert.throws(
+  () => resolveIntakeAutosavePolicy({ intakeAutosave: missingRetentionPolicy }),
+  (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
+  'a missing retention declaration must fail closed',
+);
 assert.throws(
   () => resolveIntakeAutosavePolicy({ intakeAutosave: { enabled: true } }),
   (error: unknown) => Boolean(error && typeof error === 'object' && (error as { name?: string }).name === 'ContractGapError'),
@@ -151,7 +166,9 @@ assert.match(key, /policy=1/);
 assert.match(key, /entry_scope=project_intake_standard/);
 assert.equal(buildIntakeAutosaveKey(policy, { ...identity, user: '' }), '');
 
-const now = Date.UTC(2026, 10, 19, 0, 0, 0);
+// Runtime persistence uses the live clock; keep the fixture relative so the
+// happy path cannot become "expired" merely because the calendar day changed.
+const now = Date.now();
 assert.equal(persistIntakeAutosavePayload({
   policy,
   key,
@@ -185,6 +202,24 @@ if (restored.status === 'recoverable') {
 }
 assert.equal(
   restoreIntakeAutosavePayload({ policy, key, identity, now: now + 86401 * 1000 }).status,
+  'expired',
+);
+const shortIdentity = { ...identity, form_instance: 'new|project.project|short-retention' };
+const shortKey = buildIntakeAutosaveKey(shortRetentionPolicy, shortIdentity);
+assert.equal(persistIntakeAutosavePayload({
+  policy: shortRetentionPolicy,
+  key: shortKey,
+  identity: shortIdentity,
+  draftToken: 'short-retention-v1',
+  now,
+  values: { name: 'short retention' },
+}), 'saved');
+assert.equal(
+  restoreIntakeAutosavePayload({ policy: shortRetentionPolicy, key: shortKey, identity: shortIdentity, now: now + 59_000 }).status,
+  'recoverable',
+);
+assert.equal(
+  restoreIntakeAutosavePayload({ policy: shortRetentionPolicy, key: shortKey, identity: shortIdentity, now: now + 61_000 }).status,
   'expired',
 );
 assert.equal(

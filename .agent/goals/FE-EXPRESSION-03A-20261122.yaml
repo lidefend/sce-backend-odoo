@@ -18,8 +18,10 @@ goal:
     Make One2many monetary, date, datetime, duration, selection, boolean,
     relation and empty-value presentation consume the existing shared
     business-value and field-semantics authorities. Remove frontend inference
-    of attachment behavior from Chinese labels and display text. Preserve edit
-    values, row identity, dirtyFields, onchange, persistence and authorization.
+    of attachment behavior from Chinese labels and display text. Verify that
+    project-intake draft retention is consumed from the published backend
+    contract rather than a frontend fallback. Preserve edit values, row
+    identity, dirtyFields, onchange, persistence and authorization.
   product_result: >-
     The same declared business value keeps the same interpretation in normal
     fields, One2many details and list cells, while presentation density may
@@ -41,6 +43,8 @@ goal:
       - One2many relation labels retain record identity and fail-closed behavior
       - Editable cell model values remain separate from readonly display text
       - Attachment preview is not inferred from localized label or count text
+      - Project-intake draft expiry follows the declared retention value and
+        fails closed when that declaration is missing
     exclusions:
       - no database, fixture, module upgrade or customer data mutation
       - no backend source or contract change
@@ -50,7 +54,7 @@ goal:
     Revert the frontend source, focused tests, incremental routing and run
     metadata together. No persisted business data or deployment state changes.
   completion:
-    diagnosis: in_progress
+    diagnosis: completed
     batch: active
     independent_review: not_run
     mainline_integration: not_run

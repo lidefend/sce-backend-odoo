@@ -47,9 +47,9 @@ Generated from repository source files. This report is informational during the 
 | 2334 | YAML workflow | `scripts/verify/registry.yaml` |
 | 2263 | Python source | `scripts/audit/build_scenario_product_organization.py` |
 | 2229 | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2213 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2214 | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2200 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2198 | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2127 | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 2098 | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -73,7 +73,7 @@ Generated from repository source files. This report is informational during the 
 | 1791 | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1783 | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1735 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1750 | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1730 | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1721 | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
@@ -174,6 +174,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
+| 1064 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
@@ -182,7 +183,6 @@ Generated from repository source files. This report is informational during the 
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
 | 1016 | Python source | `scripts/verify/test_fact_source_coverage_guard.py` |
-| 1008 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
 | 1005 | Python source | `addons/smart_core/core/scene_dsl_compiler.py` |
 | 1005 | Python source | `scripts/verify/test_frontend_release_local_entry.py` |
 | 1004 | Python source | `addons/smart_core/app_config_engine/models/app_search_config.py` |
@@ -303,9 +303,9 @@ Generated from repository source files. This report is informational during the 
 | 2334 | split_plan_required | YAML workflow | `scripts/verify/registry.yaml` |
 | 2263 | split_plan_required | Python source | `scripts/audit/build_scenario_product_organization.py` |
 | 2229 | split_plan_required | JavaScript source | `scripts/verify/local_dev_project_profile_write_browser.mjs` |
-| 2213 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
+| 2214 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ContractFormPage.vue` |
 | 2205 | split_plan_required | Python source | `addons/smart_construction_core/wizard/project_boq_import_wizard.py` |
-| 2200 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
+| 2198 | split_plan_required | Vue source | `frontend/apps/web/src/pages/ListPage.vue` |
 | 2127 | split_plan_required | Python source | `addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py` |
 | 2098 | split_plan_required | Python source | `scripts/verify/frontend_professional_component_registry_guard.py` |
 | 2095 | split_plan_required | Python source | `addons/smart_construction_core/models/core/subcontract_management.py` |
@@ -329,7 +329,7 @@ Generated from repository source files. This report is informational during the 
 | 1791 | split_plan_required | YAML workflow | `scripts/verify/test_coverage_registry.yaml` |
 | 1783 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/FormSection.vue` |
 | 1766 | split_plan_required | JavaScript source | `scripts/verify/frontend_list_surface_structure_browser.mjs` |
-| 1735 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
+| 1750 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue` |
 | 1730 | split_plan_required | Python source | `scripts/verify/system_performance_baseline.py` |
 | 1721 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py` |
 | 1693 | split_plan_required | Vue source | `frontend/apps/web/src/components/template/NativeFormTreeRenderer.vue` |
