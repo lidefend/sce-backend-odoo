@@ -141,22 +141,15 @@ the 60-second boundary, and missing-retention fail-closed behavior.
 
 Source and test candidate:
 
-- HEAD: `ec0ac73f05b9370fdad7bece856b966080f05a5c`
-- tree: `82c70fb1e70d3d2a4788ad79208cf9319464aeb9`
-- `ci.local.iteration`: PASS; 13 required targets resolved, one executed and
-  12 content-identical targets reused through the registered local evidence
+- HEAD: `7f307464b9273db050b705cbb8bac9cb0cff972d`
+- tree: `98e3b9725ffbec1b817ed6f2b95d892d775e599f`
+- `ci.local.iteration`: PASS; five required targets resolved, one executed and
+  four content-identical targets reused through the registered local evidence
   authority.
 - Receipt:
-  `.runtime/frontend-dev-validation/executions/20261122T074640Z-3130925-157950073/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261122T080628Z-3248212-52624125/receipt.json`
 - Receipt SHA256:
-  `9212a6d572fed910a6d820b4f3d3f55e4068f734110d2e816317698f27402a53`
-- Documentation/evidence metadata HEAD `cf79580c4` produced a subsequent clean
-  iteration receipt with `unmappedPathCount=0`; its product path delta from
-  `ec0ac73f0` is zero.
-- Metadata receipt:
-  `.runtime/frontend-dev-validation/executions/20261122T075209Z-3165079-988583825/receipt.json`
-- Metadata receipt SHA256:
-  `a3cbdb430b31666f3a1e907e1193da430494a111fbbe2cb774fb835e248e7a5c`
+  `b07361d2d422a458450e38a7a2ad3a982327c12c78efbcfca017c0445339f1df`
 
 Focused outcomes:
 
@@ -180,12 +173,12 @@ Focused outcomes:
 
 Exact runtime identity:
 
-- Production frontend build source: `ec0ac73f0`
-- Served `build-info.sha`: `ec0ac73f0`
-- Runtime source/database: `ec0ac73f0` /
+- Production frontend build source: `7f307464b`
+- Served `build-info.sha`: `7f307464b`
+- Runtime source/database: `7f307464b` /
   `sc_frontend_acceptance`
 - Authoritative frontend artifact fingerprint:
-  `b93c589e3cec3a8c2e015d6deabb0b942b69815bfc99bac5e6953e9912f369e0`
+  `2461d6f594c2a1c6f6b2dc7cb214a74239c1c46fcc42b1312c72e73aa34c3e97`
 - `/api/runtime-version` returned the same source, database and frontend
   fingerprint.
 
@@ -208,9 +201,9 @@ Browser result:
 - Console errors, page errors and persistence intents were all zero. The probe
   did not save or execute any business action.
 - Report:
-  `.runtime/FE-EXPRESSION-03A/evidence/browser-exact-ec0ac73f0/report.json`
+  `.runtime/FE-EXPRESSION-03A/evidence/browser-exact-7f307464b/report.json`
 - Report SHA256:
-  `d6d12cf2d6893a6010b177cd245ba58001909f995ae94bf9f89441852ce3da03`
+  `f031faf35378372319a3b504ceb98710b29d00fb163cf845fc2a5c0de0fca3d0`
 
 These one-time browser artifacts are evidence for this candidate only. They are
 not a cross-environment replay mechanism; future environments must resolve
