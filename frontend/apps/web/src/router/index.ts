@@ -383,9 +383,6 @@ router.beforeEach(async (to) => {
     try {
       await session.ensureReady();
     } catch (err) {
-      if (err instanceof ApiError && err.status === 401) {
-        return { name: 'login', query: { redirect: to.fullPath } };
-      }
       return routeFailureRedirect(err, to.fullPath);
     }
     if (!session.isReady || !session.routeAuthority) return false;

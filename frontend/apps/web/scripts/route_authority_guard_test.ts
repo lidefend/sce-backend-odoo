@@ -303,6 +303,22 @@ assert.deepEqual(routeFailureRedirect({ status: 403, reasonCode: 'PERMISSION_DEN
   name: 'access-denied',
   query: { from: '/a/42', kind: 'forbidden', reason: 'PERMISSION_DENIED', status: '403' },
 });
+assert.deepEqual(routeFailureRedirect({ status: 401, reasonCode: 'AUTH_401', traceId: 'trace-401' }, '/a/42'), {
+  name: 'login',
+  query: { from: '/a/42', kind: 'authentication', reason: 'AUTH_401', status: '401', trace_id: 'trace-401' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 404, reasonCode: 'NOT_FOUND', traceId: 'trace-404' }, '/a/42'), {
+  name: 'not-found',
+  query: { from: '/a/42', kind: 'not_found', reason: 'NOT_FOUND', status: '404', trace_id: 'trace-404' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 409, reasonCode: 'CONTEXT_CONFLICT', traceId: 'trace-409' }, '/a/42'), {
+  name: 'route-error',
+  query: { from: '/a/42', kind: 'conflict', reason: 'CONTEXT_CONFLICT', status: '409', trace_id: 'trace-409' },
+});
+assert.deepEqual(routeFailureRedirect({ status: 0, kind: 'network', reasonCode: 'NETWORK_ERROR', traceId: 'trace-net' }, '/a/42'), {
+  name: 'route-error',
+  query: { from: '/a/42', kind: 'network', reason: 'NETWORK_ERROR', trace_id: 'trace-net' },
+});
 console.log('[route_failure_classification] PASS transport/auth/scope separation');
 
 console.log('[route-authority-guard] PASS');

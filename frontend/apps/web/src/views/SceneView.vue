@@ -88,6 +88,7 @@
       v-if="status === 'idle' && sceneContractEntryIntent"
       :intent="sceneContractEntryIntent"
       :scene-key="currentSceneKey"
+      :semantic-title="scenePageHeading"
     />
     <SceneBlocksRenderer
       v-if="status === 'idle' && !sceneContractEntryIntent && showSceneBlocksDebug && sceneBlocks.length"

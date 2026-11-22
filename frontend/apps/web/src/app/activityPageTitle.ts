@@ -77,3 +77,7 @@ export function shouldRenderScenePageHeading(input: {
     && !input.hasExplicitHeading
     && !input.hasEmbeddedContentHeading;
 }
+
+export function shouldRenderSceneContractFallbackHeading(status: unknown): boolean {
+  return status === 'loading' || status === 'error';
+}
