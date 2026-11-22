@@ -57,7 +57,8 @@ goal:
     planning_guard: implemented_local
     product_remediation: >-
       FE_CONTRACT_FIDELITY_02_1_completed;
-      FE_CONTRACT_FIDELITY_02_2_gap_probes_contract_gap_pending_p0
+      FE_CONTRACT_FIDELITY_02_2_gap_probes_completed_contract_gap;
+      P0_CONTRACT_PRODUCER_01_design_in_progress
     mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable

@@ -1,0 +1,369 @@
+{
+  "schema": "p0_contract_producer_01.remediation_design.v1",
+  "status": "design_candidate",
+  "product_implementation_authorized": false,
+  "base_sha": "dec7e985d3985e248c8b5c4903e8f77739bb807d",
+  "input_audit": {
+    "pull_request": 972,
+    "reviewed_head": "5e3805932dbf04b251193bc5e6b4e65b8cc03271",
+    "merge_commit": "dec7e985d3985e248c8b5c4903e8f77739bb807d",
+    "result": [
+      "CFG-GAP-02 contract_gap",
+      "CFG-GAP-04 contract_gap",
+      "CFG-GAP-05 contract_gap"
+    ]
+  },
+  "source_evidence": {
+    "addons/smart_core/core/page_contracts_builder.py": "b7a2aa0fb9a5a69f52a4c08be7eaf25ca68bc9a6cb3574a049fa0d226baa8dac",
+    "addons/smart_core/core/page_orchestration_data_provider.py": "80438c6489006fb163445a73aa1a7d4597eaf891cafa71d151e6b4957aef0b1e",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py": "481497bc1d2171a78877680ed050fa0b7b3963fd2a1d23e4df2744d9c3534d06",
+    "addons/smart_core/core/unified_page_contract_v2_action.py": "434fa821688d37bfc10bc7fa9c6be43672f4f1f3b4d251f079501c5837db6180",
+    "addons/smart_core/core/unified_page_contract_v2_permissions.py": "8cb51efb86be1268d02cef9e4ee73b6a7556d2fa123e7c8d7e1740c6ba1aaa3a",
+    "addons/smart_core/core/unified_page_contract_v2_status.py": "880639609f653adf483068ae8d1ab26d3cf5fbbc42f3471ee29e70f4fea29987",
+    "addons/smart_core/core/action_target_schema.py": "ad954769962bfc4d4bbaa044672bf9763dc3264fadb5a742743777316dc6bf2c",
+    "addons/smart_core/core/contract_version_compatibility.py": "f3051933d11bdc125b0a0fa9098e7d31c578fffc41945d3610d1b517ee5fdb6f",
+    "addons/smart_core/handlers/chatter_timeline.py": "36ca8d7669ad7ba153cfc15822e2a6eaa6a2f9636551ad5c3962ff7d2bf45597",
+    "addons/smart_core/handlers/file_download.py": "95dd4344b3c31c6671f5725ed986eae03f0b422fc6f1b82b1dabf7dfce576112",
+    "addons/smart_core/handlers/file_upload.py": "15548fd80797c836bbc8c2bf94adc9016162e8bbb13cd817888529c1f1a6aa3e",
+    "addons/smart_core/handlers/chatter_attachment_delete.py": "e2df0ea6733931959965ad0f6e63cbd3f4751ed9b71ff7e1cd62f39394414dd8",
+    "addons/smart_construction_core/services/scene_block_schema.py": "17ab6faf664c07855848c85f0f4e7735fab79cc79c838428b9f1637fa3227999",
+    "frontend/apps/web/src/app/contracts/v2/types.ts": "3c9ea1ebb3d51a00a629486d4fbc379895592e3a429e22abab665acb4911eaf8",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts": "4d1dadef32bba904f34f82f6a631cf1d677cab182a31dd9a8e82ce8fb177e467",
+    "frontend/apps/web/src/app/contracts/v2/store.ts": "eef9ec7aef22b556c1b98457293a31900c82660fc48c4ef7dd218fbeb8e10304",
+    "frontend/apps/web/src/app/pageOrchestration.ts": "7a67f25e844f29d5cb84a590328caf400fa7b16c3370b97df0faf40f161ea1c8",
+    "frontend/apps/web/src/components/page/PageRenderer.vue": "f6261cbd4f1f0776e3c7e8971e79df77675f935b76c11fd81988495678065b7c",
+    "frontend/apps/web/src/components/page/ZoneRenderer.vue": "98835492430fdf6f3a35ae2911f6d55abbe76493fe4dded30e04e060a666ef34"
+  },
+  "authority": {
+    "business_fact_owner": "Odoo/backend producers",
+    "permission_and_action_execution_owner": "existing Odoo ACL, record rules, action execution and intent dispatch",
+    "attachment_execution_owner": "existing file.download, file.upload and chatter.attachment.delete handlers",
+    "frontend_role": "decode and present declared facts",
+    "forbidden": [
+      "field-name inference",
+      "default units",
+      "frontend currency guessing",
+      "attachment identity inferred from count or URL shape",
+      "frontend permission derivation",
+      "default business action target"
+    ]
+  },
+  "reused_contract_assets": [
+    "ContractV2FieldDescriptor",
+    "ContractV2ActionRule",
+    "ContractV2StatusContract",
+    "runtimeContract.collaboration.attachments",
+    "contract_version_compatibility.py"
+  ],
+  "version_strategy": {
+    "page_orchestration_target": "2.1.0",
+    "contract_v2_target": "2.6.0",
+    "carriers": {
+      "page_block_data": "1.0.0",
+      "attachment_fact": "1.0.0",
+      "page_block_action": "1.0.0"
+    },
+    "compatibility_rules": [
+      "Minor additions are optional and backward-compatible.",
+      "Unknown major carrier versions fail closed.",
+      "Undeclared keys never become semantic authority.",
+      "A client that does not advertise new-carrier support receives the previous internally consistent contract.",
+      "Consumers must never mix a new version marker with old semantics.",
+      "The N-1/N/N+1 drill uses contract_version_compatibility.py."
+    ],
+    "rollout_order": [
+      "consumer schema accepts additive carriers without requiring them",
+      "server supports both projections",
+      "selected producers emit carriers",
+      "validate the new exact contract and caller behavior",
+      "fail closed for unsupported required semantics",
+      "retire legacy presentation keys only after zero-consumer proof"
+    ]
+  },
+  "work_packages": [
+    {
+      "id": "P0-A",
+      "title": "Page Block Business Data Carrier",
+      "schema": "page-block-data.v1",
+      "schema_version": "1.0.0",
+      "depends_on": [],
+      "producer_owner": [
+        "smart_core",
+        "smart_construction_core"
+      ],
+      "schema_contract": {
+        "location": "page_orchestration.block_data_contracts[dataSourceKey]",
+        "required": [
+          "schemaVersion",
+          "fields",
+          "rows",
+          "context",
+          "sourceAuthority"
+        ],
+        "fields": {
+          "fieldCode": "stable field identity",
+          "fieldType": "declared logical type",
+          "widgetType": "declared widget identity",
+          "componentKey": "shared semantic component identity",
+          "label": "display label",
+          "digits": "optional [total, scale]",
+          "currencyField": "optional currency identity field",
+          "unit": "optional declared unit object",
+          "selection": "optional storage-key/label pairs",
+          "relation": "optional comodel",
+          "temporal": "optional date/datetime and timezone authority",
+          "attachmentRole": "optional attachment role reference"
+        },
+        "rows": "array of stable rowKey plus raw JSON values by field key",
+        "context": {
+          "currencies": "identity-keyed authoritative currency facts",
+          "timezone": "authoritative user timezone"
+        }
+      },
+      "rules": [
+        "Formatted display strings are not semantic values.",
+        "Zero, false, null, empty and absent remain distinct.",
+        "Money requires declared digits, currencyField and matching currency identity.",
+        "Percentage and duration require an explicit componentKey and unit.",
+        "Relations preserve record identity and authoritative label.",
+        "Selection preserves the storage key.",
+        "Datetime preserves type and timezone authority.",
+        "Attachment values reference a fact and role, not a count."
+      ],
+      "producer_files": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "new addons/smart_core/core/unified_page_contract_v2_semantic_carriers.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py",
+        "addons/smart_construction_core/services/scene_block_schema.py"
+      ],
+      "consumer_boundary": [
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/store.ts",
+        "frontend/apps/web/src/components/page/ZoneRenderer.vue",
+        "Page Block components in FCF-02-2"
+      ]
+    },
+    {
+      "id": "P0-B",
+      "title": "Attachment Identity and Role",
+      "schema": "attachment-fact.v1",
+      "schema_version": "1.0.0",
+      "depends_on": [
+        "P0-C"
+      ],
+      "producer_owner": [
+        "smart_core",
+        "smart_construction_core"
+      ],
+      "schema_contract": {
+        "location": "runtimeContract.attachmentFacts",
+        "required": [
+          "schemaVersion",
+          "facts"
+        ],
+        "fact": {
+          "factKey": "stable fact identity",
+          "identity": {
+            "attachmentId": "attachment record identity",
+            "name": "file name",
+            "mimetype": "mime type",
+            "size": "byte count"
+          },
+          "owner": {
+            "model": "owning model",
+            "recordId": "owning record identity"
+          },
+          "role": {
+            "code": "stable context-specific role",
+            "label": "role label",
+            "sourceAuthority": "P0/P1/P2 role declaration"
+          },
+          "actionRefs": {
+            "preview": "page-block-action id or empty",
+            "download": "page-block-action id or empty",
+            "delete": "page-block-action id or empty"
+          }
+        }
+      },
+      "rules": [
+        "Attachment identity is never a label, count or URL-shape inference.",
+        "The fact declares its owning model and record.",
+        "Role vocabulary is context-owned; P0 owns only the carrier shape.",
+        "Preview/download/delete reference P0-C actions.",
+        "Existing file services remain authorization and execution authorities.",
+        "Failure identity comes from P0-C execution feedback."
+      ],
+      "producer_files": [
+        "addons/smart_core/handlers/chatter_timeline.py",
+        "addons/smart_core/handlers/file_download.py",
+        "addons/smart_core/handlers/file_upload.py",
+        "addons/smart_core/handlers/chatter_attachment_delete.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "P1 attachment-role declarations where applicable"
+      ],
+      "consumer_boundary": [
+        "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "Page Block attachment surfaces in FCF-02-2"
+      ]
+    },
+    {
+      "id": "P0-C",
+      "title": "Page Block Action and Feedback",
+      "schema": "page-block-action.v1",
+      "schema_version": "1.0.0",
+      "depends_on": [],
+      "producer_owner": [
+        "smart_core"
+      ],
+      "schema_contract": {
+        "declaration_location": "page_orchestration.action_schema.actions[actionId]",
+        "feedback_location": "runtimeContract.actionFeedback or equivalent runtime action-patch envelope",
+        "declaration": {
+          "actionId": "stable action identity",
+          "actionKey": "stable action key",
+          "label": "display label",
+          "intent": "declared intent",
+          "target": "resolved target object",
+          "visibility.visible": "visibility decision",
+          "permission.evaluated": "permission result exists",
+          "permission.allowed": "authorization result",
+          "permission.authorizationAllowed": "authorization service result",
+          "permission.businessAvailable": "business availability result",
+          "state.enabled": "final executable state",
+          "state.disabled": "final disabled state",
+          "state.reasonCode": "required when visible and unavailable",
+          "state.reasonMessage": "visible explanation"
+        },
+        "feedback": {
+          "schemaVersion": "carrier version",
+          "actionId": "must match the declaration",
+          "status": "success|denied|failed",
+          "reasonCode": "stable reason identity",
+          "message": "visible message",
+          "traceId": "request/response trace identity"
+        }
+      },
+      "rules": [
+        "Visibility, authorization, business availability and final enablement are distinct.",
+        "Missing permission evaluation fails closed.",
+        "Page Block actions reference canonical action IDs.",
+        "Block-local target invention and open_scene fallback are forbidden.",
+        "Feedback must correlate to the action ID.",
+        "Existing action services remain execution and authorization authorities."
+      ],
+      "producer_files": [
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py",
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "addons/smart_core/core/unified_page_contract_v2_permissions.py",
+        "addons/smart_core/core/unified_page_contract_v2_status.py",
+        "addons/smart_core/core/unified_page_contract_v2_runtime_actions.py",
+        "addons/smart_core/controllers/intent_dispatcher.py"
+      ],
+      "consumer_boundary": [
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue"
+      ]
+    }
+  ],
+  "cross_carrier_invariants": [
+    "One declaration owns each business fact.",
+    "Display strings never reconstruct business semantics.",
+    "Null, empty, zero, false and absent are distinct.",
+    "Currency and timezone come from authoritative context.",
+    "Relation and attachment identity are independent from labels.",
+    "Read-only rendering produces no business write.",
+    "No frontend default action target or default unit."
+  ],
+  "test_matrix": {
+    "P0-A": [
+      "money zero and negative with matching currency context",
+      "money with missing digits fails closed",
+      "percentage 12.5 preserves precision and is not clamped",
+      "duration consumes declared unit and does not round",
+      "integer zero differs from absent/null",
+      "boolean false differs from absent/null",
+      "known selection key and label",
+      "unknown selection key fails closed",
+      "many2one identity and bilingual label",
+      "many2one missing identity fails closed",
+      "date and datetime with authoritative timezone",
+      "attachment value references a fact and role",
+      "legacy display-only block required semantics fails closed"
+    ],
+    "P0-B": [
+      "same attachment fact across form, timeline and One2many",
+      "multiple roles on the same owner record",
+      "owner mismatch fails closed",
+      "missing attachment identity fails closed",
+      "download authorized",
+      "download denied with reason and trace",
+      "preview supported",
+      "preview unsupported while download remains allowed",
+      "delete owner allowed",
+      "delete non-owner denied with reason",
+      "text URL does not create attachment behavior",
+      "ordinary integer does not become attachment identity"
+    ],
+    "P0-C": [
+      "visible allowed enabled action",
+      "authorization denied with disabled reason",
+      "business unavailable with disabled reason",
+      "hidden action remains non-executable",
+      "missing permission evaluation fails closed",
+      "missing target fails closed",
+      "successful execution with actionId and traceId",
+      "denied execution with reasonCode message traceId",
+      "failed execution with reasonCode message traceId",
+      "no open_scene or local target fallback"
+    ],
+    "compatibility": [
+      "N-1 consumer reads N payload",
+      "N consumer reads N-1 payload",
+      "N consumer reads N+1 payload after append-only rollback",
+      "unknown major carrier version fails closed",
+      "old Page Orchestration 2.0 projection remains internally consistent",
+      "new Page Orchestration 2.1 and Contract V2 2.6 projection are internally consistent"
+    ]
+  },
+  "migration": {
+    "database_migration_required": false,
+    "steps": [
+      "add schema and decoder acceptance without requiring the carriers",
+      "add producer projection and version negotiation",
+      "emit typed carriers and legacy fields for covered pages during transition",
+      "switch consumers by supported contract capabilities",
+      "rerun CFG-GAP-02/04/05 probe decisions",
+      "remove legacy display-only values after zero-consumer proof"
+    ],
+    "rollback": [
+      "stop emitting the additive carriers",
+      "serve the previous negotiated contract version",
+      "render explicit contract-gap states for unavailable semantics",
+      "revert code only; no data rollback"
+    ]
+  },
+  "implementation_sequence": [
+    "P0 shared carrier/version schema and tests",
+    "P0-A and P0-C producer projections",
+    "P0-B attachment fact projection using P0-C action references",
+    "contract fixtures and N-1/N/N+1 compatibility drill",
+    "governed runtime readback and independent review",
+    "FCF-02-2 consumer implementation only after the new probes are sufficient"
+  ],
+  "fcf_02_2_unlock_conditions": [
+    "P0 design independently approved",
+    "generic carrier schemas implemented in smart_core",
+    "P1 project mappings implemented and reviewed",
+    "existing file and action services remain authorities",
+    "positive and negative carrier tests pass",
+    "CFG-GAP-02/04/05 probes no longer return contract_gap for required surfaces",
+    "new contract served and read back at an exact governed runtime identity",
+    "producer change independently reviewed"
+  ]
+}

@@ -1,0 +1,55 @@
+schema_version: 1
+
+goal:
+  id: P0-CONTRACT-PRODUCER-01
+  title: page_block_attachment_action_contract_remediation_design
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Generic Contract V2 producer mechanisms for Page Block business values,
+    attachment facts and Page Block action/feedback correlation, with P1
+    industry projection adapters.
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend/apps/web
+    - contracts
+    - docs/architecture
+    - .agent
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Produce a reviewed, minimal P0 producer contract design that closes
+    CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05 without implementing product code.
+  product_result: >-
+    An implementation-ready contract design with explicit schemas, versions,
+    producer/consumer ownership, compatibility and rollback strategy, test
+    matrix and unlock conditions for FCF-02-2.
+  why_here: >-
+    The missing facts must be declared by the generic contract producers before
+    any renderer can preserve them. Page-local or frontend compensation would
+    duplicate backend business authority.
+  why_not_elsewhere:
+    - No product implementation in this design batch.
+    - No frontend semantic defaults or field-name inference.
+    - No second protocol runtime, Renderer, Registry or Bundle.
+    - No database schema, data migration, fixture or deployment.
+    - No bypass of existing Odoo ACL, record rules, action execution or file services.
+  blast_radius:
+    behavior:
+      - Page Orchestration and Contract V2 semantic carriers
+      - attachment fact projection across form, timeline and One2many
+      - Page Block action permission, disabled reason and failure correlation
+    exclusions:
+      - no product source or backend contract implementation
+      - no database or runtime mutation
+      - no browser PASS claim
+      - no FCF-02-2 transport implementation
+  rollback: >-
+    Remove the design report and machine-readable schema plan. No product,
+    contract, database or runtime state requires rollback.
+  completion:
+    design: pending
+    independent_review: not_started
+    implementation: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable

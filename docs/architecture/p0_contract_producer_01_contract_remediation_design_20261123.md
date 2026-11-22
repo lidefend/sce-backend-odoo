@@ -1,0 +1,562 @@
+# P0-CONTRACT-PRODUCER-01
+
+## Page Block, attachment and action/feedback contract remediation design
+
+Status: design candidate; no product implementation authorized.
+
+Baseline:
+
+- PR #972 reviewed head:
+  `5e3805932dbf04b251193bc5e6b4e65b8cc03271`
+- Merge commit / design baseline:
+  `dec7e985d3985e248c8b5c4903e8f77739bb807d`
+- Contract-gap evidence:
+  `docs/audit/fe_contract_fidelity_02_2/gap_probes.json`
+- Machine-readable design:
+  `docs/architecture/p0_contract_producer_01/remediation_design.json`
+
+Formal product layer and scope:
+
+- Layer: P0 generic contract-production mechanism.
+- Target: `smart_core` carrier/schema/action projection, with
+  `smart_construction_core` only mapping industry facts into that carrier.
+- Standard vs user-specific: platform-generic runtime.
+- Why here: these facts must exist before a renderer can preserve them.
+- Why not elsewhere: a page-local format, frontend default or low-code special
+  case would become a second business authority.
+- Blast radius: Page Orchestration value data, attachment facts and Page Block
+  action correlation. This document changes no product or persisted data.
+
+Explicit exclusions:
+
+- no Odoo model, ACL, workflow, ORM, database or migration change;
+- no product or frontend implementation;
+- no new Renderer, Registry, Bundle, page engine or Value Runtime;
+- no new attachment authorization system;
+- no FCF-02-2 or FCF-02-3 product work.
+
+## 1. Decision
+
+The three audited gaps require a producer-layer correction.
+
+The smallest coherent solution is three additive carriers inside the existing
+Contract V2/Page Orchestration delivery:
+
+1. `page-block-data.v1` for business values;
+2. `attachment-fact.v1` for attachment identity, ownership, role and action
+   references;
+3. `page-block-action.v1` for resolved action state and execution feedback.
+
+The carriers share the existing field descriptor, action rule and standard
+response-envelope models. No second protocol runtime is required.
+
+## 2. Existing contract assets to reuse
+
+The design reuses these existing declarations rather than inventing parallel
+ones:
+
+- `frontend/apps/web/src/app/contracts/v2/types.ts::ContractV2FieldDescriptor`
+  already carries field identity, type, widget, component key, selection,
+  relation, relation entry and widget options.
+- `ContractV2ActionRule` already carries action identity, target, visibility,
+  allowed/enabled/disabled state, reason code/message, entitlement evaluation,
+  authorization result and business availability.
+- `ContractV2StatusContract` already carries page, widget, button and container
+  visibility/state declarations.
+- `runtimeContract.collaboration.attachments` already carries partial upload,
+  download, delete and UI-label declarations.
+- `chatter_timeline.py` already emits stable attachment IDs and authorized
+  download/delete projections.
+- Existing `file.download`, `file.upload` and `chatter.attachment.delete`
+  handlers remain execution and authorization authorities.
+- `contract_version_compatibility.py` already provides additive/breaking delta
+  classification and N-1/N/N+1 consumer drills.
+
+The new design does not duplicate these values. It adds missing structure,
+identity and contextual semantics around them.
+
+## 3. Version and negotiation strategy
+
+### Carrier versions
+
+Each nested carrier starts at:
+
+```text
+page-block-data.v1      schemaVersion = 1.0.0
+attachment-fact.v1      schemaVersion = 1.0.0
+page-block-action.v1    schemaVersion = 1.0.0
+```
+
+Minor additions are optional and backward-compatible. Unknown minor versions
+within major `1` may be retained but undeclared keys cannot become semantic
+authority. Unknown major versions fail closed.
+
+### Contract versions
+
+The implementation candidate should publish:
+
+- Page Orchestration `contract_version: "2.1.0"` for the additive block
+  carriers;
+- Contract V2 `pageInfo.contractVersion: "2.6.0"` for the assembled snapshot.
+
+The current Page Orchestration consumer accepts only `2.0.0`, and the Contract
+V2 decoder currently accepts through `2.5.x`. Those consumers must be updated
+and tested before the producer emits the new versions.
+
+### Negotiation and mixed-version safety
+
+The existing client request carrier should gain an explicit supported-contract
+range/capability declaration. A client that does not advertise support for the
+new carriers must continue to receive the `2.0.0` Page Orchestration projection
+without the optional keys. A client that advertises support receives one
+internally consistent `2.1.0`/`2.6.0` payload.
+
+This is contract negotiation, not a second renderer or runtime. It prevents an
+older strict decoder from receiving unknown keys merely because the backend has
+been upgraded.
+
+Rollout order:
+
+1. consumer schema accepts the additive carriers without requiring them;
+2. server negotiates and can project both versions;
+3. selected producers emit the carriers for covered page types;
+4. behavior is validated at the new exact contract identity;
+5. unsupported/legacy projections fail closed where business semantics are
+   required;
+6. legacy `datasets` presentation keys are removed only after zero-consumer
+   proof and a reviewed deprecation window.
+
+No database migration is required.
+
+## 4. P0-A · Page Block business data carrier
+
+### Current chain
+
+```text
+scene_block_schema.build_contract / page_contracts_builder
+  -> page_orchestration.datasets
+  -> ZoneRenderer.resolveDataset
+  -> BlockRenderer
+  -> Page Block component
+  -> String() / JSON.stringify()
+```
+
+The current carrier contains a display-shaped `value` and loses the field
+descriptor before the final component.
+
+### Target carrier
+
+Add an optional Page Orchestration map:
+
+```json
+{
+  "block_data_contracts": {
+    "<data-source-key>": {
+      "schemaVersion": "1.0.0",
+      "fields": {
+        "<field-key>": {
+          "fieldCode": "<stable-field-code>",
+          "fieldType": "monetary|float|integer|selection|many2one|one2many|many2many|date|datetime|...",
+          "widgetType": "<declared-widget>",
+          "componentKey": "<semantic-component-key>",
+          "label": "<display-label>",
+          "digits": [16, 2],
+          "currencyField": "currency_id",
+          "unit": {
+            "code": "%|h|item|<other-declared-unit>",
+            "label": "%|小时|项|<other-declared-label>"
+          },
+          "selection": [["<storage-key>", "<label>"]],
+          "relation": "<comodel>",
+          "temporal": {
+            "kind": "date|datetime",
+            "timezoneAuthority": "user"
+          },
+          "attachmentRole": "<role-code>"
+        }
+      },
+      "rows": [
+        {
+          "rowKey": "<stable-row-key>",
+          "values": {
+            "<field-key>": "<raw-json-value>"
+          }
+        }
+      ],
+      "context": {
+        "currencies": {
+          "<currency-identity-key>": {
+            "code": "CNY",
+            "label": "¥"
+          }
+        },
+        "timezone": "Asia/Shanghai"
+      },
+      "sourceAuthority": {
+        "kind": "page_block_data_contract",
+        "projectionOnly": true,
+        "noBusinessFactAuthority": true
+      }
+    }
+  }
+}
+```
+
+Rules:
+
+1. `values` contain raw JSON values. Formatted display strings are not the
+   semantic value.
+2. `0`, `false`, `null`, empty string and missing key remain distinguishable.
+3. Money requires `digits`, `currencyField`, and a currency identity reachable
+   from the same row/context.
+4. Percentage and duration require `componentKey` and `unit`; the frontend does
+   not clamp, round or append a default unit.
+5. Relations use record identity plus an authoritative label. Bare IDs and
+   label-only objects fail closed.
+6. Selection stores the original storage key; labels do not replace the key.
+7. Datetime values retain the declared type and authoritative timezone.
+8. Attachment values reference an attachment fact/role; attachment counts are
+   not attachment identity.
+9. Each block consumes the carrier through a declared field binding. A block
+   must not infer a field from its title, label or dataset key.
+
+Suggested block binding:
+
+```json
+{
+  "data_binding": {
+    "contract": "<data-source-key>",
+    "rowKeyField": "rowKey",
+    "labelField": "label",
+    "valueField": "amount"
+  }
+}
+```
+
+### Producer ownership
+
+P0 `smart_core`:
+
+- defines the carrier schema, normalization, version gate and tests;
+- projects existing field descriptors into block-data fields;
+- supplies authoritative currency/timezone context from the runtime contract;
+- guarantees no display value is written back as a form or ORM value.
+
+P1 `smart_construction_core`:
+
+- maps construction block sources to stable field identities;
+- supplies industry unit/role meaning where it is a P1 fact;
+- must not define a separate semantic carrier.
+
+## 5. P0-B · Attachment fact contract
+
+### Current chain
+
+```text
+form collaboration contract / chatter.timeline / One2many relation
+  -> partial surface-specific attachment fields
+  -> attachment UI or action
+```
+
+Existing facts and authorization fragments are useful, but there is no one
+fact envelope carrying identity, owner, role, action and failure identity
+together.
+
+### Target carrier
+
+Add `runtimeContract.attachmentFacts`:
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "facts": [
+    {
+      "factKey": "<stable-fact-key>",
+      "identity": {
+        "attachmentId": "<positive-record-identity>",
+        "name": "<file-name>",
+        "mimetype": "<mime-type>",
+        "size": 0
+      },
+      "owner": {
+        "model": "<owning-model>",
+        "recordId": "<positive-record-identity>"
+      },
+      "role": {
+        "code": "<role-code>",
+        "label": "<role-label>",
+        "sourceAuthority": {
+          "kind": "<p0-or-p1-declaration>",
+          "ownerLayer": "P0|P1"
+        }
+      },
+      "actionRefs": {
+        "preview": "<action-id-or-empty>",
+        "download": "<action-id-or-empty>",
+        "delete": "<action-id-or-empty>"
+      }
+    }
+  ]
+}
+```
+
+Action details remain in `P0-C`. This prevents attachment facts from defining a
+second permission model.
+
+Rules:
+
+1. Attachment identity is an attachment record identity, not a display label,
+   count or URL shape.
+2. `owner` identifies the record whose authorization is evaluated.
+3. `role` is explicit and may differ by industry context. P0 owns the role
+   field, while P1/P2 may own which role applies.
+4. Preview derives from an explicitly authorized retrieval action; unsupported
+   file types may disable preview while download remains allowed.
+5. Download and delete use existing governed file services.
+6. Failure feedback is supplied by `page-block-action.v1`, preserving reason
+   code, message and trace identity.
+7. Text URLs and ordinary integers are never attachment facts unless a producer
+   explicitly emits this carrier.
+
+### Producer ownership
+
+- `smart_core` owns the generic attachment fact envelope and handles existing
+  `file.download`, `file.upload` and `chatter.attachment.delete` authorization.
+- `chatter_timeline.py` projects current attachment rows into the envelope.
+- Contract V2 attachment surfaces and form collaboration fields reference
+  facts; they do not duplicate authorization booleans.
+- `smart_construction_core` supplies construction-domain role assignments when
+  the model/page contract needs them.
+
+The existing attachment permission policies remain unchanged. Only the
+transport of the evaluated result becomes complete and consistent.
+
+## 6. P0-C · Page Block action and feedback contract
+
+### Current chain
+
+```text
+page_contracts_builder action_schema
+scene_block_schema block actions
+  -> PageRenderer/Page Block action event
+  -> page-local target fallback and transient error UI
+```
+
+Role visibility is not a resolved authorization result. Block actions can lose
+the target, and failures are not correlated to the action identity.
+
+### Target carrier
+
+Page Block actions become stable references into the existing resolved action
+contract:
+
+```json
+{
+  "schemaVersion": "1.0.0",
+  "actions": {
+    "<action-id>": {
+      "actionId": "<action-id>",
+      "actionKey": "<stable-action-key>",
+      "label": "<label>",
+      "intent": "<intent>",
+      "target": {
+        "kind": "<declared-target-kind>"
+      },
+      "visibility": {
+        "visible": true,
+        "source": "action_contract"
+      },
+      "permission": {
+        "evaluated": true,
+        "allowed": true,
+        "authorizationAllowed": true,
+        "businessAvailable": true
+      },
+      "state": {
+        "enabled": true,
+        "disabled": false,
+        "reasonCode": "",
+        "reasonMessage": ""
+      }
+    }
+  }
+}
+```
+
+Execution feedback uses the same action identity:
+
+```json
+{
+  "runtimeContract": {
+    "actionFeedback": [
+      {
+        "schemaVersion": "1.0.0",
+        "actionId": "<action-id>",
+        "status": "success|denied|failed",
+        "reasonCode": "<declared-reason-code>",
+        "message": "<visible-message>",
+        "traceId": "<request-or-response-trace-id>"
+      }
+    ]
+  }
+}
+```
+
+Rules:
+
+1. Block action definitions only reference `actionId`; they do not invent a
+   local target.
+2. `visibility`, `authorizationAllowed`, `businessAvailable` and final
+   `enabled` are distinct facts.
+3. A visible but unavailable action requires a disabled reason.
+4. Missing permission evaluation fails closed.
+5. Action execution results are correlated by `actionId`, `reasonCode`,
+   `message` and `traceId`, carried in `runtimeContract.actionFeedback` (or the
+   equivalent runtime action-patch envelope using the same versioned shape).
+6. The frontend must not synthesize `open_scene` or another fallback target.
+7. The existing Odoo action/authorization service remains the decision and
+   execution authority.
+
+### Producer ownership
+
+- `page_contracts_builder.py` emits canonical target and action identity.
+- `unified_page_contract_v2_runtime_actions.py` and
+  `unified_page_contract_v2_permissions.py` resolve allowed/enabled state.
+- `unified_page_contract_v2_status.py` projects page/widget/button status.
+- the intent/action dispatcher remains responsible for real execution and
+  standard error metadata.
+- `scene_block_schema.py` references resolved action IDs rather than creating
+  incomplete local action records.
+
+## 7. Cross-carrier rules
+
+- Every business value has exactly one producing declaration.
+- No display string is parsed to recover type, precision, unit, relation,
+  attachment role or action permission.
+- `null`, empty, zero, false and absent remain distinct.
+- Currency and timezone come from authoritative context.
+- Relation and attachment identities are independent from their labels.
+- A producer may emit a compatibility display value during migration, but a
+  consumer that has the typed carrier must not use it for business semantics.
+- Existing read-only surfaces must continue to issue no business writes.
+
+## 8. Responsibility and file map
+
+| Area | Owner | Likely files |
+| --- | --- | --- |
+| Carrier schema and normalized projection | P0 | `addons/smart_core/core/unified_page_contract_v2_assembler.py`, new `unified_page_contract_v2_semantic_carriers.py`, `contract_version_compatibility.py` |
+| Page orchestration producer | P0 | `addons/smart_core/core/page_contracts_builder.py`, `page_orchestration_data_provider.py` |
+| Action resolution and feedback | P0 | `unified_page_contract_v2_action.py`, `unified_page_contract_v2_permissions.py`, `unified_page_contract_v2_status.py`, `action_target_schema.py`, intent/action dispatchers |
+| Attachment facts | P0 | `chatter_timeline.py`, existing file upload/download/delete handlers, Contract V2 collaboration projection |
+| Construction block mapping | P1 | `addons/smart_construction_core/services/scene_block_schema.py` and industry page assemblers |
+| Decode and normalized types | P0 consumer boundary | `frontend/apps/web/src/app/contracts/v2/schema.ts`, `types.ts`, `store.ts`, `app/pageOrchestration.ts` |
+| Page Block consumption | Later FCF-02-2 only | `PageRenderer.vue`, `ZoneRenderer.vue`, block components |
+| Guards | P4 | existing Page Contract guards plus new carrier/negative tests |
+
+This file map is a design inventory, not authorization to modify all files.
+
+## 9. Compatibility and test matrix
+
+Each implementation package must cover:
+
+### Value carrier
+
+- money zero, negative and mixed currencies;
+- percentage `12.5`, precision preservation and no clamping;
+- duration in declared units;
+- count zero versus absent;
+- boolean false versus null/absent;
+- known and unknown selection keys;
+- relation tuple/object with stable record identity;
+- missing relation identity;
+- date/datetime with explicit timezone;
+- attachment role reference;
+- old payload without a carrier fails closed for a block whose business
+  semantics require it.
+
+### Attachment facts
+
+- same attachment role across form, timeline and One2many;
+- different roles on the same owner;
+- attachment owner mismatch;
+- missing attachment ID;
+- download allowed/denied with reason;
+- preview supported/not supported;
+- delete owner/admin/non-owner paths;
+- failure reason/message/trace;
+- text URL and ordinary integer do not become attachments.
+
+### Action feedback
+
+- visible + allowed + enabled;
+- visible + authorization denied + reason;
+- visible + business unavailable + reason;
+- hidden action;
+- missing permission evaluation;
+- missing target;
+- failed execution with reason/message/trace;
+- no `open_scene` or local target fallback.
+
+### Compatibility
+
+- N-1 consumer reads N payload;
+- N consumer reads N-1 payload;
+- additive keys are optional;
+- unknown major carrier version fails closed;
+- old Page Orchestration 2.0 remains readable until the negotiated cutover;
+- Page Orchestration 2.1 and Contract V2 2.6 are internally consistent;
+- append-only rollback follows the existing compatibility core.
+
+## 10. Migration and rollback
+
+Migration:
+
+1. no database schema or data migration;
+2. add schemas, decoder acceptance and fixtures;
+3. add producer projection for selected pages behind explicit contract-version
+   negotiation;
+4. emit typed carriers and legacy display fields together during transition;
+5. switch consumers by capability, then run the contract-gap probes again;
+6. retire legacy display-only fields only after zero consumers are proven.
+
+Rollback:
+
+1. disable producer emission of the additive carriers;
+2. continue serving the previous negotiated contract version;
+3. consumers render an explicit contract-gap state rather than guessing;
+4. revert code only; no data rollback is required.
+
+## 11. Validation
+
+Read-only design verification passed:
+
+- Contract Fidelity plan: 12 tests.
+- Page Contract orchestration: 19 pages.
+- Page Contract action semantics: 19 pages.
+- Page Contract data-source semantics: 19 pages.
+- Page Block renderer smoke and registry guard: PASS.
+- Contract N-1/N/N+1 compatibility core: 31 tests.
+- Agent ledger: 18 tests.
+- Machine design reconciliation: 3 packages, 41 planned positive/negative
+  cases, 19 current-source hashes.
+- `ci.local.iteration`: PASS.
+- `ci.delivery.freeze.prepare`: PASS.
+
+No product source, backend contract, database, fixture or runtime state was
+changed. No runtime or browser PASS is claimed for the future implementation.
+
+## 12. FCF-02-2 unlock conditions
+
+FCF-02-2 remains locked until all of the following are true:
+
+1. this design is independently approved;
+2. generic carrier schemas and version negotiation are implemented in `smart_core`;
+3. P1 mappings in `smart_construction_core` are implemented and reviewed;
+4. existing file and action services remain the execution authorities;
+5. positive and negative tests cover all three carriers;
+6. the CFG-GAP-02/04/05 probes are rerun on the new exact source identity and
+   no longer return `contract_gap` for the required surfaces;
+7. the new contract is served and read back through a governed runtime identity;
+8. an independent review approves the producer change.
+
+Until then, no second frontend interpretation path may be introduced.

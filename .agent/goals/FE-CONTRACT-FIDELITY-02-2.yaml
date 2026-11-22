@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-CONTRACT-FIDELITY-02-2
   title: semantic_transport_and_contract_gap_probes
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Contract V2 business-value carrier, readonly collection bridge, Page Block
@@ -52,11 +52,13 @@ goal:
     Remove the probe report, machine matrix and run metadata. No product or
     persisted runtime state requires rollback.
   completion:
-    probe_batch: verification_pending
-    independent_review: not_started
+    probe_batch: completed
+    independent_review: approved
     product_batch_fcf_02_2: blocked_on_contract_gap
-    mainline_integration: not_started
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable
   integration:
     pull_request: 972
+    reviewed_head: 5e3805932dbf04b251193bc5e6b4e65b8cc03271
+    merge_commit: dec7e985d3985e248c8b5c4903e8f77739bb807d
