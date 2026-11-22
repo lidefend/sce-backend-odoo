@@ -228,7 +228,7 @@ validate_frontend_runtime() {
 }
 
 validate_frontend_launch_contract() {
-  local requested_mode="${FRONTEND_ACCEPTANCE_MODE:-development}"
+  local requested_mode="${FRONTEND_ACCEPTANCE_MODE:-production}"
   case "$requested_mode" in
     development)
       ;;
@@ -884,7 +884,7 @@ PYPROJECTDOM
         validate_frontend_runtime
         exit 0
       }
-      [[ "$validated_frontend_mode" == "${FRONTEND_ACCEPTANCE_MODE:-development}" ]] || {
+      [[ "$validated_frontend_mode" == "${FRONTEND_ACCEPTANCE_MODE:-production}" ]] || {
         echo "[frontend.acceptance.up] DENY existing frontend mode mismatch" >&2
         exit 2
       }

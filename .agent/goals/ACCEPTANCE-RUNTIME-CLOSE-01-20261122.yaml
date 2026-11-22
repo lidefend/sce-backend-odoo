@@ -1,0 +1,60 @@
+schema_version: 1
+
+goal:
+  id: ACCEPTANCE-RUNTIME-CLOSE-01-20261122
+  title: acceptance_runtime_identity_and_recovery_closeout
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: >-
+    Existing frontend acceptance runtime tooling: exact runtime identity
+    binding, canonical database backup writer selection, rollback-custody
+    container classification, and acceptance contract capability declaration.
+  module:
+    - config/acceptance
+    - scripts/dev
+    - scripts/verify
+    - docs/engineering_convergence
+    - .agent
+  standard_vs_user_specific: ops_delivery_tool
+  objective: >-
+    Freeze the P4 candidate produced during R09 as an independently reviewable
+    delivery-tool change. The candidate must preserve product source at the
+    fe635515 baseline, identify the served/runtime/build identity exactly, use
+    the authoritative database writer for backups, ignore only stopped exact
+    rollback-custody containers, and declare the view capabilities already used
+    by the acceptance contract.
+  product_result: >-
+    Acceptance environment verification and recovery tooling can identify the
+    exact candidate without rebuilding or resetting sc_frontend_acceptance, and
+    can distinguish legitimate stopped rollback custody from an unexpected live
+    filestore consumer.
+  why_here: >-
+    These files are verification, acceptance-runtime, evidence and backup
+    tooling. They do not define product behavior, permissions, contract
+    semantics, customer data or module lifecycle.
+  why_not_elsewhere:
+    - Do not modify frontend product source or Renderer behavior here.
+    - Do not modify smart_core or smart_construction_core contracts.
+    - Do not rebuild, reset or migrate the acceptance database.
+    - Do not mix the P4 candidate with FE-EXPRESSION-02 product fixes.
+  blast_radius:
+    behavior:
+      - backend acceptance startup can bind and expose the exact source revision
+      - backup selection chooses the authoritative database writer
+      - stopped exact rollback containers no longer false-fail read-only recovery audit
+      - running or differently named one-off consumers still fail closed
+      - acceptance declarations include already-used view capabilities
+    exclusions:
+      - no product-source delta relative to fe635515
+      - no business data or database migration
+      - no browser journey rerun
+      - no merge or deployment
+  rollback: >-
+    Revert this P4 commit and its run metadata. The acceptance database and
+    product source are unaffected.
+  completion:
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: reuse_of_r09_evidence_only
