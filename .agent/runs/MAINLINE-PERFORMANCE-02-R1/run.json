@@ -33,6 +33,7 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "make/dev.mk",
+    "scripts/ci/personal_data_false_positives.json",
     "scripts/verify/scenario_surface_projection_guard.py",
     "scripts/verify/frontend_dev_incremental.py"
   ],
@@ -85,6 +86,7 @@
     "implementation": "SystemInitRequestContext owns one explicit request fact. SceneDeclarationSnapshot stores ordered declarations, timings and a canonical content fingerprint. All six cold system.init consumers read that fact.",
     "runtime_equality": "After syncing to main d8ce851a, base and R1 complete response, navigation and route-authority hashes were identical for finance/company1, owner/company2 and project-manager/company1. Scene loads changed 6->1 and declaration fingerprint 8e98be87... stayed identical.",
     "performance": "On synced base d8ce851a, backend median request 1001.84ms -> 866.67ms, warm 998.82ms -> 807.41ms, process-first 2155.73ms -> 1957.74ms. Browser login total improved 2947ms -> 2789ms and system.init HTTP improved 1413.47ms -> 1289.42ms without post-response UI absorbing the saving.",
-    "validation": "verify.system.performance.baseline.unit passed 78 tests; verify.backend.navigation_delivery.unit passed 176 tests; ORM_RESULT_GUARD passed 81 tests; ci.local.iteration passed all affected targets."
+    "validation": "verify.system.performance.baseline.unit passed 78 tests; verify.backend.navigation_delivery.unit passed 176 tests; ORM_RESULT_GUARD passed 81 tests; ci.local.iteration passed all affected targets.",
+    "public_guard_repair": "The prior unpublished R1 history contains one diagnostic document blob whose raw host-memory byte count matches the mobile-phone regex. The replacement candidate stores GiB text and registers one exact path/blob/classification false positive; no directory, wildcard or regex exemption is added."
   }
 }
