@@ -1,0 +1,141 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-FIDELITY-02",
+  "branch": "feature/fe-contract-fidelity-02-planning-20261122",
+  "baseline_sha": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+  "record": "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-01.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-01/run.json",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02/run.json",
+    "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+    "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+    "docs/architecture/fe_contract_fidelity_02/guard_catalog.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree, accepted audit artifacts and governed local static checks; no product, database or service writes"
+  },
+  "checks": {
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs",
+        "scripts/verify"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.guard",
+      "inputs": [
+        "frontend/apps/web/src/pages",
+        "frontend/apps/web/src/views",
+        "frontend/apps/web/src/app",
+        "docs/frontend_productization/decision-authority-inventory-v1.json"
+      ],
+      "kind": "offline"
+    },
+    "shared_surface_boundary": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "inputs": [
+        "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    }
+  },
+  "supplemental_validations": {
+    "plan_consistency": {
+      "target": "inline jq matrix and reference assertions",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md"
+      ],
+      "status": "passed",
+      "test_count": 4,
+      "log": ".runtime/FE-CONTRACT-FIDELITY-02/plan-consistency.log",
+      "log_sha256": "e873d52822ed0fb65bca17c1077c762edc1d17dc631712e3d04bc9a04d0ec4a6"
+    },
+    "baseline_iteration": {
+      "target": "ci.local.iteration",
+      "status": "passed",
+      "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration.verified-final.log",
+      "nonzero_observed_test_count": 85,
+      "failure": {
+        "classification": "validation_tool_wiring_defect",
+        "reason": "plan_consistency was placed under checks but is not a registered verify target",
+        "log": ".runtime/FE-CONTRACT-FIDELITY-02/ci-local-iteration.failed.log",
+        "observed_tests_before_reconcile_error": 85
+      },
+      "recovery": "Plan consistency moved to supplemental_validations and gate verdicts moved to agent.run.begin/record receipts. The final iteration is rerun after the result-index correction."
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "planning JSON syntax and referential consistency",
+      "state": "required",
+      "owner_target": "json.tool plus repository plan consistency assertions"
+    },
+    {
+      "gate": "product source modification",
+      "state": "excluded",
+      "reason": "planning-only phase; no frontend, backend, contract, ACL or workflow source changes"
+    },
+    {
+      "gate": "owning module ORM baseline",
+      "state": "excluded",
+      "reason": "no model, service, permission, workflow or persisted-data change"
+    },
+    {
+      "gate": "frontend runtime/browser",
+      "state": "excluded",
+      "reason": "documentation and machine-plan artifacts do not alter runtime behavior"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "audit_acceptance": "PR #969 was merged through the protected squash path at 0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e; the project source tree is unchanged by the audit.",
+    "plan": "The remediation plan organizes FCF-01 through FCF-08 into four capability batches plus a final readiness review, with an explicit dependency DAG and missing-declaration fail-closed policy.",
+    "not_verified": "The machine plan contains exactly the same 19 surface/semantic NOT_VERIFIED cells as the accepted audit matrix.",
+    "guard": "The Contract Fidelity Guard catalog defines ten planned rules across type, static, behavior, contract and evidence layers. No rule is claimed implemented or enforced yet.",
+    "implementation_boundary": "No frontend or backend product source, ACL, workflow, database or runtime configuration was changed in this planning result.",
+    "validation": "Planning artifacts passed JSON/reference/matrix consistency, 18 agent-ledger tests and three existing frontend authority guards. Final ci.local.iteration revalidation runs after the run-index wiring correction; its original failed receipt remains preserved."
+  },
+  "authorization": {
+    "product_fixes": false,
+    "backend_contract_changes": false,
+    "database_writes": false,
+    "deployment": false,
+    "plan_scope": true
+  },
+  "next_exact_step": "Commit and publish this planning-only candidate, obtain current exact-head required checks, open the external-review PR and await architecture-owner approval before any product remediation.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

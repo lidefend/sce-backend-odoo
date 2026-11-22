@@ -3,7 +3,7 @@
   "id": "FE-CONTRACT-FIDELITY-01",
   "branch": "audit/fe-contract-fidelity-01-20261122",
   "baseline_sha": "b7bea61727e9bf75270e65292f523910a93a667c",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-CONTRACT-FIDELITY-01.yaml",
   "record": "docs/audit/fe_contract_fidelity_01_report.md",
   "scope": [
@@ -185,7 +185,16 @@
     "conclusion": "NOT READY for contract-fidelity delivery. Primary Contract Runtime authority is substantially present, but secondary expression paths still lose or alter semantics.",
     "evidence": "Thirteen governed static/component checks passed. Real Chromium evidence covers core Form business values, ListPage aggregate identity at 1440/390, and actual One2many relation rendering. Full per-route backend product acceptance was not run and is not claimed."
   },
-  "next_exact_step": "Publish the frozen audit branch, pass exact-head required checks, merge it, then await architecture-owner remediation decision.",
+  "mainline_integration": {
+    "pr": 969,
+    "source_head": "bd70df6171ec930ea866e2fdd7b525ca5bcd7573",
+    "merge_commit": "0f7dce48a360249ec46ee5b4f6ddc6466f4ad37e",
+    "target_before_merge": "b7bea61727e9bf75270e65292f523910a93a667c",
+    "merge_method": "squash",
+    "architecture_owner_decision": "accepted_not_ready_conclusion",
+    "product_source_modified": false
+  },
+  "next_exact_step": "The accepted audit is integrated. Proceed only through the reviewed FE-CONTRACT-FIDELITY-02 remediation plan; product fixes require architecture-owner approval of that plan.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
