@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122
   title: declared_percentage_and_numeric_precision_convergence
-  status: verification_pending
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Generic native field metadata projection and shared frontend business-value
@@ -51,8 +51,8 @@ goal:
     Revert the Batch 2 metadata, frontend consumers and focused tests. No
     database, service, credential or persisted business value requires rollback.
   completion:
-    batch: verification_pending
+    batch: completed
     independent_review: not_run
-    mainline_integration: not_run
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_run

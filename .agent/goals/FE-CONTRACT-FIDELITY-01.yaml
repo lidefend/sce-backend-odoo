@@ -1,0 +1,55 @@
+schema_version: 1
+
+goal:
+  id: FE-CONTRACT-FIDELITY-01
+  title: frontend_contract_fidelity_and_expression_completeness_audit
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend contract consumption across Form, List, Kanban, One2many,
+    readonly detail, My Work, page blocks, dialogs, native views, navigation and
+    shared presentation/action runtimes.
+  module:
+    - frontend/apps/web
+    - frontend/packages/ui
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Perform one independent, full, read-only audit of whether the custom frontend
+    preserves backend contract authority and semantics: no unauthorized business
+    decisions, no lost declared semantics, and a real consumer for every
+    applicable declared behavior.
+  product_result: >-
+    A complete frontend contract-consumption inventory, source-backed matrix and
+    delivery-fidelity conclusion. Product source, backend contracts, ACL,
+    workflow, database and runtime configuration remain unchanged.
+  why_here: >-
+    The question concerns the generic frontend's interpretation and expression of
+    already declared contracts, not industry rules or a specific customer page.
+  why_not_elsewhere:
+    - Do not repair product source or backend contracts in this phase.
+    - Do not infer missing business semantics to make an audit row pass.
+    - Do not redesign Renderers, Registries, page engines or value runtimes.
+    - Do not treat static guards or one representative page as full acceptance.
+  blast_radius:
+    behavior:
+      - every frontend business surface and shared contract interpreter
+      - authority, loss, omission, duplication and fallback classification
+      - static call-chain evidence plus limited real component-runtime evidence
+    exclusions:
+      - no visual quality, usability or interaction-experience judgment
+      - no product or backend source modification
+      - no database, fixture, credential, deployment or runtime configuration write
+      - no remediation implementation before architecture-owner decision
+  rollback: >-
+    Remove the audit report, machine inventories and run metadata. No product or
+    runtime state requires rollback.
+  completion:
+    audit: completed
+    remediation: not_started_by_design
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

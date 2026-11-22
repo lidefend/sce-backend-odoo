@@ -1,0 +1,191 @@
+{
+  "schema_version": 1,
+  "id": "FE-CONTRACT-FIDELITY-01",
+  "branch": "audit/fe-contract-fidelity-01-20261122",
+  "baseline_sha": "b7bea61727e9bf75270e65292f523910a93a667c",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-CONTRACT-FIDELITY-01.yaml",
+  "record": "docs/audit/fe_contract_fidelity_01_report.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122/run.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-01.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-01/run.json",
+    "docs/audit/fe_contract_fidelity_01_report.md",
+    "docs/audit/fe_contract_fidelity_01/inventory.json",
+    "docs/audit/fe_contract_fidelity_01/matrix.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree, governed static/component tests and existing read-only runtime records; no product, database or service writes"
+  },
+  "checks": {
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "decision_authority": {
+      "target": "verify.frontend.decision_authority.guard",
+      "inputs": [
+        "frontend/apps/web/src/pages",
+        "frontend/apps/web/src/views",
+        "frontend/apps/web/src/app",
+        "docs/frontend_productization/decision-authority-inventory-v1.json"
+      ],
+      "kind": "offline"
+    },
+    "shared_surface_boundary": {
+      "target": "verify.frontend.shared_surface_semantic_boundary.guard",
+      "inputs": [
+        "scripts/verify/frontend_shared_surface_semantic_boundary_guard.py",
+        "frontend/apps/web/src"
+      ],
+      "kind": "offline"
+    },
+    "contract_shape": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "native_action": {
+      "target": "verify.frontend.native_action_contract_consumption.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/native_action_contract_consumption_test.ts",
+        "frontend/apps/web/src/app/contracts"
+      ],
+      "kind": "offline"
+    },
+    "action_renderer": {
+      "target": "verify.frontend.action_view_page_actions.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/action_view_collection_create_authority_test.ts",
+        "frontend/apps/web/src/components/action",
+        "frontend/apps/web/src/app/runtime"
+      ],
+      "kind": "offline"
+    },
+    "navigation": {
+      "target": "verify.frontend.navigation_shell.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/canonicalNavigation.ts",
+        "frontend/apps/web/src/app/routeAuthority.ts",
+        "frontend/apps/web/src/layouts/AppShell.vue",
+        "frontend/apps/web/scripts"
+      ],
+      "kind": "offline"
+    },
+    "semantic_registry": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry",
+        "addons/smart_core/core/contract_runtime",
+        "scripts/verify/semantic_registry_lint.py"
+      ],
+      "kind": "offline"
+    },
+    "professional_business_value_browser": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "list_aggregate_browser": {
+      "target": "verify.frontend.collection_aggregate_footer.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_aggregate_currency_component_test.mjs",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/app/presentation/collectionAggregatePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "detail_collection_browser": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "product source modification",
+      "state": "excluded",
+      "reason": "read-only audit; only audit metadata and reports are written"
+    },
+    {
+      "gate": "backend contract/ORM baseline",
+      "state": "excluded",
+      "reason": "no backend contract or behavior change; source declarations are inspected read-only"
+    },
+    {
+      "gate": "static contract and authority guards",
+      "state": "required",
+      "owner_target": "contract basis, decision authority, shared boundary, semantic registry and action/navigation suites"
+    },
+    {
+      "gate": "focused component browser evidence",
+      "state": "required",
+      "reason": "confirm key Form/List/One2many semantics without claiming full product acceptance"
+    },
+    {
+      "gate": "full business journey acceptance",
+      "state": "not_run",
+      "reason": "audit distinguishes static/component evidence and does not infer runtime PASS for My Work, page blocks or every business route"
+    },
+    {
+      "gate": "product remediation",
+      "state": "excluded",
+      "reason": "phase 1 is read-only; remediation starts only after architecture-owner decision"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "inventory": "Inspected 871 frontend source files across 12 contract-consumption surfaces and 14 semantic dimensions.",
+    "matrix": "168 matrix cells: PASS=92, MISSING=0, LOST=19, ALTERED=2, INFERRED=2, DUPLICATED=6, NOT_APPLICABLE=28, NOT_VERIFIED=19.",
+    "findings": "Seven P1 and one P2 expression-fidelity findings were source-confirmed. None requires a backend business-model change to establish the frontend defect.",
+    "conclusion": "NOT READY for contract-fidelity delivery. Primary Contract Runtime authority is substantially present, but secondary expression paths still lose or alter semantics.",
+    "evidence": "Thirteen governed static/component checks passed. Real Chromium evidence covers core Form business values, ListPage aggregate identity at 1440/390, and actual One2many relation rendering. Full per-route backend product acceptance was not run and is not claimed."
+  },
+  "next_exact_step": "Publish the frozen audit branch, pass exact-head required checks, merge it, then await architecture-owner remediation decision.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
