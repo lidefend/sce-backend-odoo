@@ -100,6 +100,9 @@ class BackendReplacementTest(unittest.TestCase):
             bin_dir = root / 'bin'
             bin_dir.mkdir()
             (root / 'VERSION').write_text('1')
+            frontend_dist = root / 'frontend/apps/web/dist-release'
+            frontend_dist.mkdir(parents=True)
+            (frontend_dist / 'index.html').write_text('synthetic frontend')
             (root / 'scripts/dev').mkdir(parents=True)
             (root / 'scripts/dev/acceptance_source_fingerprint.sh').write_text(
                 (root_repo / 'scripts/dev/acceptance_source_fingerprint.sh').read_text())
@@ -146,6 +149,8 @@ esac
         self.assertNotIn('rm -f', trace)
         self.assertIn('compose -f ', trace)
         self.assertLess(trace.index('rename '), trace.index('compose -f '))
+        self.assertIn('-e SC_ENVIRONMENT=acceptance', trace)
+        self.assertIn('-e SC_DEPLOY_ENV=acceptance', trace)
 
     def test_failed_start_restores_previous_without_starting_stopped_service(self):
         result, trace = self.run_case(healthy=False)

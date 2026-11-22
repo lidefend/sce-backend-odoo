@@ -195,6 +195,27 @@ class FrontendAcceptanceBaselineRebuildContractTest(unittest.TestCase):
         self.assertIn("unable to stop managed writers", result.stdout)
         self.assertNotIn("writers_stopped=true", result.stdout)
 
+    def test_writer_readback_uses_exact_canonical_containers(self) -> None:
+        self.assertIn('name=^/${COMPOSE_PROJECT_NAME}-odoo-1$', SCRIPT)
+        self.assertIn('name=^/${COMPOSE_PROJECT_NAME}-nginx-1$', SCRIPT)
+        self.assertNotIn("compose_dev ps -aq odoo", SCRIPT)
+        result = run_library("""
+            compose_dev() { return 0; }
+            docker() {
+              if [[ "$1" == "inspect" ]]; then
+                printf 'false\\n'
+                return 0
+              fi
+              [[ "$1 $2 $3" == "ps -aq --filter" ]] || return 0
+              case "${4:-}" in
+                name=^/sc-fe-r2-p1-01-odoo-1$) echo canonical-odoo ;;
+                name=^/sc-fe-r2-p1-01-nginx-1$) echo canonical-nginx ;;
+              esac
+            }
+            freeze_writers
+        """)
+        self.assertEqual(result.returncode, 0, result.stdout)
+
     def test_active_database_client_blocks_cold_backup(self) -> None:
         result = run_library("""
             database_scalar() { echo 1; }

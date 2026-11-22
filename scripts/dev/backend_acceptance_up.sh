@@ -12,6 +12,25 @@ PRODUCT_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 SOURCE_REVISION="${SC_ACCEPTANCE_SOURCE_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
 [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo "DENY exact source SHA required" >&2; exit 2; }
 SOURCE_FINGERPRINT="$(printf '%s\n' "$SOURCE_REVISION" | sha256sum | cut -d' ' -f1)"
+RUNTIME_ENVIRONMENT="${SC_ENVIRONMENT:-acceptance}"
+DEPLOY_ENVIRONMENT="${SC_DEPLOY_ENV:-$RUNTIME_ENVIRONMENT}"
+FRONTEND_BUILD_SHA256="${FRONTEND_BUILD_SHA256:-}"
+frontend_dist="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
+if [[ -z "$FRONTEND_BUILD_SHA256" && -f "$frontend_dist/index.html" ]]; then
+  frontend_relative="$(realpath --relative-to="$ROOT_DIR" "$frontend_dist")"
+  FRONTEND_BUILD_SHA256="$(
+    cd "$ROOT_DIR"
+    find "$frontend_relative" -type f -print0 \
+      | sort -z \
+      | xargs -0 sha256sum \
+      | sha256sum \
+      | cut -d' ' -f1
+  )"
+fi
+[[ "$FRONTEND_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "DENY exact frontend build SHA256 required" >&2
+  exit 2
+}
 # Local acceptance consumes a sealed source artifact. CI keeps its isolated
 # checkout lifecycle; daily/product Compose entrypoints are unaffected.
 compose_args=()
@@ -68,6 +87,9 @@ docker compose "${compose_args[@]}" run -d --no-deps --name "$NAME" -p "127.0.0.
   -e SC_PRODUCT_VERSION="$PRODUCT_VERSION" \
   -e SC_SOURCE_REVISION="$SOURCE_REVISION" \
   -e SC_SOURCE_FINGERPRINT="$SOURCE_FINGERPRINT" \
+  -e SC_ENVIRONMENT="$RUNTIME_ENVIRONMENT" \
+  -e SC_DEPLOY_ENV="$DEPLOY_ENVIRONMENT" \
+  -e FRONTEND_BUILD_SHA256="$FRONTEND_BUILD_SHA256" \
   odoo >/dev/null
 for _ in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:${PORT}/web/login" >/dev/null 2>&1; then
