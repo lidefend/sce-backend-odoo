@@ -25,6 +25,7 @@ import PageRenderer from '../components/page/PageRenderer.vue';
 import { useSessionStore } from '../stores/session';
 import { getSceneByKey } from '../app/resolvers/sceneRegistry';
 import type { PageBlockActionEvent, PageOrchestrationBlock, PageOrchestrationContract } from '../app/pageOrchestration';
+import { decodePageOrchestrationContract } from '../app/pageOrchestration';
 import { usePageContract } from '../app/pageContract';
 import { shouldRenderSceneContractFallbackHeading } from '../app/activityPageTitle';
 
@@ -176,8 +177,12 @@ function mergeRuntimeBlock(stub: SceneBlock, payload: Record<string, unknown> | 
 
 const pageContract = computed<PageOrchestrationContract>(() => {
   const contract = rawContract.value?.page_orchestration;
-  if (contract && contract.contract_version === '2.0.0' && contract.schema_version === '2.0.0') {
-    return contract;
+  if (
+    contract
+    && (contract.contract_version === '2.0.0' || contract.contract_version === '2.1.0')
+    && contract.schema_version === contract.contract_version
+  ) {
+    return decodePageOrchestrationContract(contract);
   }
   // Synthesize a v2 page orchestration contract from a scene entry contract
   // (entry response shape: title/summary/blocks + runtime_fetch_hints). This

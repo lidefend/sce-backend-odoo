@@ -915,6 +915,28 @@ RULES = (
         "verify.frontend.page_contract_boundary.guard",
     )),
     Rule((
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
+        "addons/smart_construction_core/handlers/dashboard_company_enter.py",
+        "addons/smart_construction_core/handlers/workspace_home_enter.py",
+        "addons/smart_construction_core/services/dashboard_contract_builder.py",
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/services/workspace_contract_builder.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    ), (
+        "verify.p0_contract_producer.p0a.backend_unit",
+        "verify.p0_contract_producer.p0a.unit",
+    )),
+    Rule((
+        "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+        "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+    ), (
+        "verify.p0_contract_producer.p0a.browser",
+    )),
+    Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",
         "scripts/verify/frontend_contract_route_guard.py",
     ), (

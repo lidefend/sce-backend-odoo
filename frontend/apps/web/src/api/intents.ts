@@ -3,6 +3,7 @@ import type { IntentEnvelope } from '@sc/schema';
 import { useSessionStore } from '../stores/session';
 import { parseIntentEnvelope, type IntentEnvelopeError } from './envelope';
 import { logger } from '../utils/logger';
+import { CONTRACT_V2_CLIENT_CAPABILITIES } from '../app/contracts/v2/clientCapabilities';
 
 export interface IntentPayload {
   intent: string;
@@ -102,6 +103,22 @@ function withCurrentRecordContext(session: ReturnType<typeof useSessionStore>, p
   };
 }
 
+function withClientContractNegotiation(payload: IntentPayload): IntentPayload {
+  const intent = String(payload.intent || '').trim();
+  if (new Set(['login', 'auth.login', 'auth.logout', 'sys.intents']).has(intent)) return payload;
+  const params = payload.params && typeof payload.params === 'object' && !Array.isArray(payload.params)
+    ? { ...(payload.params as Record<string, unknown>) }
+    : {};
+  params.client_type = params.client_type ?? params.clientType ?? 'web_pc';
+  params.accepted_contract_versions = params.accepted_contract_versions
+    ?? params.acceptedContractVersions
+    ?? ['2.0.x', '2.1.x', '2.2.x', '2.3.x', '2.4.x', '2.5.x', '2.6.x'];
+  params.client_contract_capabilities = params.client_contract_capabilities
+    ?? params.clientContractCapabilities
+    ?? [...CONTRACT_V2_CLIENT_CAPABILITIES];
+  return { ...payload, params };
+}
+
 function generateTraceId() {
   if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
     return crypto.randomUUID();
@@ -143,7 +160,7 @@ function throwEnvelopeError(
 export async function intentRequest<T>(payload: IntentPayload, options: { signal?: AbortSignal } = {}) {
   const traceId = generateTraceId();
   const session = useSessionStore();
-  const effectivePayload = withCurrentRecordContext(session, payload);
+  const effectivePayload = withClientContractNegotiation(withCurrentRecordContext(session, payload));
   const startedAt = Date.now();
   enforceStartupChainOrThrow(session, effectivePayload);
   try {
@@ -192,7 +209,7 @@ export async function intentRequestRaw<T>(
 ) {
   const traceId = generateTraceId();
   const session = useSessionStore();
-  const effectivePayload = withCurrentRecordContext(session, payload);
+  const effectivePayload = withClientContractNegotiation(withCurrentRecordContext(session, payload));
   const startedAt = Date.now();
   enforceStartupChainOrThrow(session, effectivePayload);
   const response = await apiRequestRaw<IntentEnvelope<T>>('/api/v1/intent', {

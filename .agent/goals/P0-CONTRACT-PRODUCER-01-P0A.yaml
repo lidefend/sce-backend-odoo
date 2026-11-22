@@ -1,0 +1,60 @@
+schema_version: 1
+
+goal:
+  id: P0-CONTRACT-PRODUCER-01-P0A
+  title: page_block_data_contract_producer_implementation
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Contract V2 2.6 consumer decoding, accepted-version negotiation,
+    Page Orchestration 2.1 carrier capability handling and page-block-data.v1
+    production through existing smart_core and smart_construction_core mechanisms.
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend/apps/web
+    - contracts
+    - .agent
+  standard_vs_user_specific: platform_generic_contract_runtime
+  objective: >-
+    Implement and prove P0-A without changing business execution authorities:
+    strict Contract V2 2.6 and Page Orchestration 2.1 consumption, complete
+    accepted_contract_versions negotiation, one strict Field Descriptor decoder,
+    independent Widget registry-resolution metadata and faithful
+    page-block-data.v1 production.
+  product_result: >-
+    A reviewed P0-A candidate in which old clients receive the complete legacy
+    projection, capability-qualified new clients can receive page-block-data.v1,
+    and Page Block business values preserve raw values, field identity and all
+    applicable semantic context through real backend-to-browser paths.
+  why_here: >-
+    Contract V2, Page Orchestration and semantic registries are P0 platform
+    mechanisms. Their strict consumption and production must be fixed in the
+    owning platform producers rather than compensated for by renderers.
+  why_not_elsewhere:
+    - No P0-B attachment-fact product implementation.
+    - No P0-C page-block-action product implementation.
+    - No FCF-02-2 frontend transport redesign.
+    - No second runtime, Renderer Registry, Bundle or field vocabulary.
+    - No Odoo ACL, record-rule, workflow, file authorization or database-shape change.
+  blast_radius:
+    behavior:
+      - Contract V2 decoder and client capability negotiation
+      - Page Orchestration version/carrier acceptance
+      - Page Block data projection and browser consumption
+      - Field Descriptor semantic and Widget registry resolution
+    exclusions:
+      - no attachment-fact or page-block-action production
+      - no data migration or deployment
+      - no claim of overall FCF READY
+  rollback: >-
+    Revert the P0-A pull request through a protected pull request. No database
+    migration or deployed state requires rollback.
+  completion:
+    implementation: verification_pending
+    independent_review: not_started
+    integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable
+  integration:
+    pull_request: null

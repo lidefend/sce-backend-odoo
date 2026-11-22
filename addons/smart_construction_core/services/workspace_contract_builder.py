@@ -37,7 +37,7 @@ class WorkspaceContractBuilder:
         except Exception:
             return 0
 
-    def build(self):
+    def build(self, *, page_block_data_enabled: bool = False, timezone: str = "UTC"):
         project_total = self._count("project.project", [])
         active_projects = self._count("project.project", [("active", "=", True)])
         payment_pending = self._count("payment.request", [("state", "not in", ["done", "cancel"])])
@@ -113,6 +113,13 @@ class WorkspaceContractBuilder:
                 summary="嵌入原生项目列表摘要，可继续打开完整列表/看板。",
             ),
         ]
-        contract = build_contract(scene_key="workspace.home", title="角色首页", subtitle="今日任务、快捷入口与业务摘要", blocks=blocks)
+        contract = build_contract(
+            scene_key="workspace.home",
+            title="角色首页",
+            subtitle="今日任务、快捷入口与业务摘要",
+            blocks=blocks,
+            page_block_data_enabled=page_block_data_enabled,
+            timezone=timezone,
+        )
         contract["source_authority"] = self.source_authority_contract()
         return contract

@@ -32,7 +32,13 @@
 import ScCard from '../../design-system/ScCard.vue';
 import { computed } from 'vue';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../../utils/fieldSemantics.ts';
-import type { PageBlockActionEvent, PageOrchestrationBlock } from '../../../app/pageOrchestration';
+import type {
+  PageBlockActionEvent,
+  PageBlockDataResolvedRow,
+  PageOrchestrationBlock,
+} from '../../../app/pageOrchestration';
+import { resolvePageBlockCurrencyLabel } from '../../../app/pageOrchestration';
+import { presentDeclaredBusinessValue } from '../../../app/presentation/businessValuePresentation';
 import ScButton from '../../design-system/ScButton.vue';
 import ScEmptyState from '../../design-system/ScEmptyState.vue';
 
@@ -63,10 +69,34 @@ const metrics = computed<MetricItem[]>(() => {
   if (Array.isArray(props.dataset)) {
     return props.dataset.map((item, index) => {
       const row = item && typeof item === 'object' ? item as Record<string, unknown> : {};
+      const pageBlockData = row.__pageBlockData && typeof row.__pageBlockData === 'object'
+        ? row.__pageBlockData as PageBlockDataResolvedRow
+        : null;
+      const valueField = pageBlockData?.fieldDescriptors.value;
+      const rawValue = pageBlockData ? pageBlockData.values.value : row.value;
+      const value = valueField
+        ? presentDeclaredBusinessValue({
+          field: {
+            name: valueField.fieldCode,
+            type: valueField.fieldType,
+            componentKey: valueField.componentKey,
+            widget: valueField.widgetType,
+            digits: valueField.digits,
+            currencyField: valueField.currencyField,
+            currencyLabel: pageBlockData
+              ? resolvePageBlockCurrencyLabel(pageBlockData, valueField.currencyField)
+              : '',
+            selection: valueField.selection,
+            relation: valueField.relation,
+          },
+          value: rawValue,
+          emptyText: FIELD_VALUE_EMPTY_TEXT,
+        }).text
+        : String(rawValue ?? FIELD_VALUE_EMPTY_TEXT);
       return {
         key: String(row.key || `metric-${index + 1}`),
         label: String(row.label || `指标 ${index + 1}`),
-        value: String(row.value ?? FIELD_VALUE_EMPTY_TEXT),
+        value,
         delta: String(row.delta || ''),
         hint: String(row.hint || ''),
         tone: normalizeMetricTone(row.tone),

@@ -26,4 +26,5 @@ export const CONTRACT_V2_CLIENT_CAPABILITIES = [
   'view.gantt.v1',
   'view.activity.v1',
   'view.dashboard.v1',
+  'page_block_data.v1',
 ] as const;

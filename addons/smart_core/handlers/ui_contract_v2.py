@@ -12,6 +12,10 @@ from lxml import etree
 
 from ..core.form_configuration_compiler import FormConfigurationError
 from ..core.contract_lifecycle import source_meta_for_identity
+from ..core.contract_version_negotiation import (
+    ContractNegotiationError,
+    negotiate_client_contract,
+)
 from ..core.base_handler import BaseIntentHandler
 from ..core.intent_execution_result import IntentExecutionResult
 from ..core.unified_page_contract_v2_assembler import (
@@ -99,7 +103,7 @@ REASON_SCENE_ACTION_BINDING_INVALID = _authority.REASON_SCENE_ACTION_BINDING_INV
 # contract on the delivery face.  Every change to the assembly inputs must
 # re-pin this literal, and scripts/verify/unified_page_contract_v2_assembler_guard.py
 # fails closed on a drift instead of letting the cache hide the change.
-ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v100"
+ASSEMBLED_CONTRACT_CACHE_VERSION = "ui-contract-v2-demand-driven-snapshot-v105"
 
 
 def _create_defaults_fingerprint(env, model_name, params, ui_params):
@@ -721,6 +725,28 @@ class UiContractV2Handler(BaseIntentHandler):
         params = self._params(payload)
         client_type = resolve_client_type(self._headers(), params)
         delivery_profile = resolve_delivery_profile(client_type, params)
+        raw_client_type = (
+            self._headers().get("X-SC-Client-Type")
+            or self._headers().get("x-sc-client-type")
+            or params.get("client_type")
+            or params.get("clientType")
+        )
+        try:
+            negotiation = negotiate_client_contract(
+                client_type=raw_client_type,
+                accepted_contract_versions=(
+                    params.get("accepted_contract_versions")
+                    or params.get("acceptedContractVersions")
+                ),
+                client_contract_capabilities=(
+                    params.get("client_contract_capabilities")
+                    or params.get("clientContractCapabilities")
+                ),
+            )
+        except ContractNegotiationError as exc:
+            result = self._err(409, str(exc))
+            result.error.update(reason_code=exc.reason_code)
+            return result
         source_type = str(params.get("source_type") or params.get("sourceType") or "ui.contract").strip()
         if source_type == "scene_contract":
             return self._handle_scene_contract(
@@ -882,9 +908,10 @@ class UiContractV2Handler(BaseIntentHandler):
                     meta={
                         "intent": self.INTENT_TYPE,
                         "version": self.VERSION,
-                        "contract_version": CONTRACT_VERSION,
+                        "contract_version": negotiation["contractVersion"],
                         "client_type": client_type,
                         "delivery_profile": delivery_profile,
+                        "contract_negotiation": negotiation,
                         "source_type": runtime_source_type,
                         "etag": cached_runtime_etag,
                     },
@@ -1154,9 +1181,10 @@ class UiContractV2Handler(BaseIntentHandler):
                 meta={
                     "intent": self.INTENT_TYPE,
                     "version": self.VERSION,
-                    "contract_version": CONTRACT_VERSION,
+                    "contract_version": negotiation["contractVersion"],
                     "client_type": client_type,
                     "delivery_profile": delivery_profile,
+                    "contract_negotiation": negotiation,
                     "source_type": runtime_source_type,
                     "source_intent": ui_meta.get("intent") or "ui.contract",
                     "source_kind": self.SOURCE_KIND,
@@ -1370,6 +1398,7 @@ class UiContractV2Handler(BaseIntentHandler):
             request_id=str(request_id),
             trace_id=trace_id,
             stage_timings=assembler_stages,
+            contract_version=negotiation["contractVersion"],
         )
         if not requested_view_type_matches(contract_v2, requested_view_type):
             raise FormConfigurationError("REQUESTED_VIEW_TYPE_MISMATCH", "pageInfo.viewType")
@@ -1610,9 +1639,10 @@ class UiContractV2Handler(BaseIntentHandler):
             meta={
                 "intent": self.INTENT_TYPE,
                 "version": self.VERSION,
-                "contract_version": CONTRACT_VERSION,
+                "contract_version": negotiation["contractVersion"],
                 "client_type": client_type,
                 "delivery_profile": delivery_profile,
+                "contract_negotiation": negotiation,
                 "source_type": runtime_source_type,
                 "source_intent": ui_meta.get("intent") or "ui.contract",
                 "source_kind": self.SOURCE_KIND,

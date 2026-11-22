@@ -6,6 +6,10 @@ import { decodeContractV2Snapshot } from './schema';
 import { createContractV2Store } from './store';
 import { CONTRACT_V2_CLIENT_CAPABILITIES } from './clientCapabilities';
 import {
+  decodeContractCarrierCapabilities,
+  type ContractCarrierCapabilities,
+} from './carrierCapabilities';
+import {
   permitsContractV2SnapshotReuse,
   requiresContractV2EtagRevalidation,
 } from './runtime';
@@ -32,6 +36,7 @@ export interface ContractV2LoadResult {
   store: ContractV2NormalizedStore;
   traceId: string;
   rawBody?: unknown;
+  carrierCapabilities?: ContractCarrierCapabilities;
 }
 
 type CachedContractV2LoadResult = Omit<ContractV2LoadResult, 'store'>;
@@ -55,6 +60,7 @@ function restoreCachedResult(result: CachedContractV2LoadResult): ContractV2Load
     store: createContractV2Store(snapshot),
     traceId: result.traceId,
     rawBody: cloneJson(result.rawBody),
+    carrierCapabilities: result.carrierCapabilities ? cloneJson(result.carrierCapabilities) : undefined,
   };
 }
 
@@ -102,7 +108,7 @@ function applyCommonOptions(params: ContractV2Dictionary, options: ContractV2Loa
   if (options.previewRoleKey) params.preview_role_key = options.previewRoleKey;
   params.delivery_profile = 'full';
   params.client_type = 'web_pc';
-  params.accepted_contract_versions = ['2.0.x', '2.1.x', '2.2.x', '2.3.x', '2.4.x', '2.5.x'];
+  params.accepted_contract_versions = ['2.0.x', '2.1.x', '2.2.x', '2.3.x', '2.4.x', '2.5.x', '2.6.x'];
   params.client_contract_capabilities = [...CONTRACT_V2_CLIENT_CAPABILITIES];
   return params;
 }
@@ -119,11 +125,16 @@ async function loadContractV2(
   } : {});
   if (response.notModified) return null;
   const snapshot = decodeContractV2Snapshot(response.data);
+  const negotiation = response.meta?.contract_negotiation;
+  const carrierCapabilities = negotiation
+    ? decodeContractCarrierCapabilities(negotiation)
+    : undefined;
   return {
     snapshot,
     store: createContractV2Store(snapshot),
     traceId: response.traceId,
     rawBody: response.rawBody,
+    ...(carrierCapabilities ? { carrierCapabilities } : {}),
   };
 }
 
@@ -142,6 +153,7 @@ function cacheCreateContractResult(
     snapshot: cloneJson(result.snapshot),
     traceId: result.traceId,
     rawBody: cloneJson(result.rawBody),
+    carrierCapabilities: result.carrierCapabilities ? cloneJson(result.carrierCapabilities) : undefined,
   };
   if (permitsContractV2SnapshotReuse(result.snapshot.runtimeContract)) {
     createContractCache.set(key, {

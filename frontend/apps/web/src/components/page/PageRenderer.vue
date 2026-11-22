@@ -37,7 +37,7 @@
         v-for="zone in orderedZones"
         :key="zone.key"
         :zone="zone"
-        :datasets="datasets"
+        :datasets="effectiveDatasets"
         @action="onZoneAction"
       />
     </div>
@@ -53,12 +53,16 @@ import type {
   PageOrchestrationAction,
   PageOrchestrationContract,
   PageOrchestrationZone,
+  PageBlockDataResolvedRow,
 } from '../../app/pageOrchestration';
+import { overlayPageBlockDataRows, resolvePageBlockData } from '../../app/pageOrchestration';
+import type { ContractV2FieldDescriptor } from '../../app/contracts/v2/types';
 
 const props = defineProps<{
   contract: PageOrchestrationContract;
   datasets: Record<string, unknown>;
   primaryHeading?: boolean;
+  widgetFieldDescriptors?: Record<string, ContractV2FieldDescriptor>;
 }>();
 
 const emit = defineEmits<{
@@ -79,6 +83,22 @@ const headerBadges = computed(() => pageBadges.value);
 const orderedZones = computed<PageOrchestrationZone[]>(() => {
   const zones = Array.isArray(props.contract.zones) ? [...props.contract.zones] : [];
   return zones.sort((a, b) => Number(b.priority || 0) - Number(a.priority || 0));
+});
+
+const effectiveDatasets = computed<Record<string, unknown>>(() => {
+  const out = { ...(props.datasets || {}) };
+  Object.keys(props.contract.block_data_contracts || {}).forEach((dataSourceKey) => {
+    const rows: PageBlockDataResolvedRow[] = resolvePageBlockData(
+      props.contract,
+      dataSourceKey,
+      props.widgetFieldDescriptors || {},
+    );
+    const legacyRows = Array.isArray(out[dataSourceKey])
+      ? out[dataSourceKey] as Array<Record<string, unknown>>
+      : [];
+    out[dataSourceKey] = overlayPageBlockDataRows(rows, legacyRows);
+  });
+  return out;
 });
 
 function emitAction(

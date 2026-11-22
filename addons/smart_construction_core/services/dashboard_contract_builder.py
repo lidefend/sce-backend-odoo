@@ -33,7 +33,7 @@ class DashboardContractBuilder:
         except Exception:
             return 0
 
-    def build(self):
+    def build(self, *, page_block_data_enabled: bool = False, timezone: str = "UTC"):
         projects = self._count("project.project", [])
         payments = self._count("payment.request", [])
         cost_plans = self._count("project.cost.plan", [("state", "!=", "archived")])
@@ -102,6 +102,13 @@ class DashboardContractBuilder:
                 summary="可打开原生项目看板作为明细承载，当前页面本身由场景契约渲染。",
             ),
         ]
-        contract = build_contract(scene_key="dashboard.company", title="公司驾驶舱", subtitle="公司级经营、资金与成本摘要", blocks=blocks)
+        contract = build_contract(
+            scene_key="dashboard.company",
+            title="公司驾驶舱",
+            subtitle="公司级经营、资金与成本摘要",
+            blocks=blocks,
+            page_block_data_enabled=page_block_data_enabled,
+            timezone=timezone,
+        )
         contract["source_authority"] = self.source_authority_contract()
         return contract

@@ -19,6 +19,18 @@ assert SPEC and SPEC.loader
 MODULE = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(MODULE)
 
+NEGOTIATION_MODULE_PATH = ROOT / "addons/smart_core/core/contract_version_negotiation.py"
+NEGOTIATION_SPEC = importlib.util.spec_from_file_location("contract_version_negotiation", NEGOTIATION_MODULE_PATH)
+assert NEGOTIATION_SPEC and NEGOTIATION_SPEC.loader
+NEGOTIATION_MODULE = importlib.util.module_from_spec(NEGOTIATION_SPEC)
+NEGOTIATION_SPEC.loader.exec_module(NEGOTIATION_MODULE)
+
+PAGE_BLOCK_DATA_MODULE_PATH = ROOT / "addons/smart_core/core/page_block_data_contract.py"
+PAGE_BLOCK_DATA_SPEC = importlib.util.spec_from_file_location("page_block_data_contract", PAGE_BLOCK_DATA_MODULE_PATH)
+assert PAGE_BLOCK_DATA_SPEC and PAGE_BLOCK_DATA_SPEC.loader
+PAGE_BLOCK_DATA_MODULE = importlib.util.module_from_spec(PAGE_BLOCK_DATA_SPEC)
+PAGE_BLOCK_DATA_SPEC.loader.exec_module(PAGE_BLOCK_DATA_MODULE)
+
 
 class ContractFidelityPlanGuardTest(unittest.TestCase):
     def setUp(self) -> None:
@@ -109,6 +121,169 @@ class ContractFidelityPlanGuardTest(unittest.TestCase):
     def test_semantic_carrier_requirement_is_required(self) -> None:
         self.guard["semantic_carrier_requirements"].pop()
         self.assert_error("semantic carrier requirements must be exactly CARRIER-01..06")
+
+
+class ContractVersionNegotiationTest(unittest.TestCase):
+    def negotiate(self, **overrides):
+        values = {
+            "client_type": "web_pc",
+            "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x", "2.3.x", "2.4.x", "2.5.x"],
+            "client_contract_capabilities": [],
+        }
+        values.update(overrides)
+        return NEGOTIATION_MODULE.negotiate_client_contract(**values)
+
+    def test_known_old_client_without_versions_gets_complete_legacy_projection(self):
+        result = self.negotiate(accepted_contract_versions=[])
+        self.assertEqual(result["contractVersion"], "2.5.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
+        self.assertEqual(result["compatibilityMode"], "known_client_without_versions")
+        self.assertFalse(result["carriers"]["page_block_data.v1"]["enabled"])
+
+    def test_client_that_only_accepts_25_gets_complete_legacy_projection(self):
+        result = self.negotiate(accepted_contract_versions=["2.5"])
+        self.assertEqual(result["contractVersion"], "2.5.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
+
+    def test_26_without_page_block_capability_gets_complete_legacy_projection(self):
+        result = self.negotiate(accepted_contract_versions=["2.0.x", "2.6.x"])
+        self.assertEqual(result["contractVersion"], "2.5.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
+        self.assertEqual(result["compatibilityMode"], "new_version_without_page_block_capability")
+
+    def test_26_with_page_block_capability_enables_only_p0_a(self):
+        result = self.negotiate(
+            accepted_contract_versions=["2.5.x", "2.6.x"],
+            client_contract_capabilities=[
+                "page_block_data.v1",
+                "attachment_fact.v1",
+                "page_block_action.v1",
+            ],
+        )
+        self.assertEqual(result["contractVersion"], "2.6.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
+        self.assertTrue(result["carriers"]["page_block_data.v1"]["enabled"])
+        self.assertFalse(result["carriers"]["attachment_fact.v1"]["enabled"])
+        self.assertFalse(result["carriers"]["page_block_action.v1"]["enabled"])
+
+    def test_unknown_client_with_version_or_capability_declaration_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(
+                client_type="unknown_native",
+                accepted_contract_versions=["2.5"],
+            )
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+
+    def test_missing_client_type_with_negotiation_declaration_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError):
+            self.negotiate(client_type="", accepted_contract_versions=["2.6.x"])
+
+    def test_no_common_version_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(accepted_contract_versions=["1.0.x", "2.99.x"])
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+
+    def test_pre_negotiation_absence_gets_legacy_projection(self):
+        result = NEGOTIATION_MODULE.negotiate_client_contract(
+            client_type="",
+            accepted_contract_versions=None,
+            client_contract_capabilities=None,
+        )
+        self.assertEqual(result["contractVersion"], "2.5.0")
+        self.assertEqual(result["compatibilityMode"], "pre_negotiation_client")
+
+    def test_new_version_never_leaks_unrequested_carriers(self):
+        result = self.negotiate(
+            accepted_contract_versions=["2.6.x"],
+            client_contract_capabilities=["page_block_data.v1"],
+        )
+        self.assertEqual(
+            {key for key, row in result["carriers"].items() if row["enabled"]},
+            {"page_block_data.v1"},
+        )
+
+
+class PageBlockDataContractTest(unittest.TestCase):
+    def test_non_widget_business_value_preserves_raw_type_and_semantics(self):
+        descriptor = PAGE_BLOCK_DATA_MODULE.field_descriptor(
+            field_code="payment.pending_amount",
+            label="待付款金额",
+            field_type="monetary",
+            widget_type="monetary",
+            component_key="sc.value.money",
+            semantic_type="money",
+            digits=[16, 2],
+            currencyField="currency_id",
+        )
+        data = PAGE_BLOCK_DATA_MODULE.build_data_contract(
+            rows=[
+                {"rowKey": "pending", "values": {"value": "0.00"}},
+                {"rowKey": "missing", "values": {}},
+            ],
+            field_refs={
+                "value": PAGE_BLOCK_DATA_MODULE.descriptor_ref(
+                    descriptor_id="payment.pending_amount.value",
+                    raw_value_path="value",
+                )
+            },
+            currencies={"CNY": {"code": "CNY", "symbol": "¥"}},
+            timezone="Asia/Shanghai",
+        )
+        carrier = PAGE_BLOCK_DATA_MODULE.build_page_orchestration_page_block_data(
+            descriptors={"payment.pending_amount.value": descriptor},
+            data_contracts={"ds_pending_amount": data},
+            enabled=True,
+        )
+        self.assertEqual(carrier["contract_version"], "2.1.0")
+        self.assertEqual(carrier["schema_version"], "2.1.0")
+        self.assertEqual(carrier["block_data_contracts"]["ds_pending_amount"]["rows"][0]["values"]["value"], "0.00")
+        self.assertNotIn("value", carrier["block_data_contracts"]["ds_pending_amount"]["rows"][1]["values"])
+        self.assertEqual(carrier["block_field_descriptors"]["payment.pending_amount.value"], descriptor)
+        self.assertEqual(carrier["block_data_contracts"]["ds_pending_amount"]["context"]["timezone"], "Asia/Shanghai")
+
+    def test_legacy_projection_has_no_new_carriers(self):
+        carrier = PAGE_BLOCK_DATA_MODULE.build_page_orchestration_page_block_data(
+            descriptors={},
+            data_contracts={},
+            enabled=False,
+        )
+        self.assertEqual(carrier, {"contract_version": "2.0.0", "schema_version": "2.0.0"})
+
+    def test_distinct_falsy_values_remain_distinct(self):
+        data = PAGE_BLOCK_DATA_MODULE.build_data_contract(
+            rows=[{
+                "rowKey": "combined",
+                "values": {
+                    "zero": 0,
+                    "false_value": False,
+                    "null_value": None,
+                    "empty": "",
+                },
+            }],
+            field_refs={
+                "zero": PAGE_BLOCK_DATA_MODULE.descriptor_ref(descriptor_id="d.zero", raw_value_path="zero"),
+                "false": PAGE_BLOCK_DATA_MODULE.descriptor_ref(descriptor_id="d.false", raw_value_path="false_value"),
+                "null": PAGE_BLOCK_DATA_MODULE.descriptor_ref(descriptor_id="d.null", raw_value_path="null_value"),
+                "empty": PAGE_BLOCK_DATA_MODULE.descriptor_ref(descriptor_id="d.empty", raw_value_path="empty"),
+            },
+            timezone="UTC",
+        )
+        values = data["rows"][0]["values"]
+        self.assertIs(values["zero"], 0)
+        self.assertIs(values["false_value"], False)
+        self.assertIsNone(values["null_value"])
+        self.assertEqual(values["empty"], "")
+
+    def test_missing_raw_value_is_not_invented_at_producer(self):
+        data = PAGE_BLOCK_DATA_MODULE.build_data_contract(
+            rows=[{"rowKey": "r1", "values": {}}],
+            field_refs={"value": PAGE_BLOCK_DATA_MODULE.descriptor_ref(
+                descriptor_id="d.value",
+                raw_value_path="value",
+            )},
+            timezone="UTC",
+        )
+        self.assertNotIn("value", data["rows"][0]["values"])
 
 
 class P0ContractProducerDesignTest(unittest.TestCase):
@@ -245,8 +420,8 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         schema_source = (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8")
         payload_source = (ROOT / "addons/smart_core/app_config_engine/utils/payload.py").read_text(encoding="utf-8")
         workbench_source = (ROOT / "frontend/apps/web/src/views/WorkbenchView.vue").read_text(encoding="utf-8")
-        self.assertNotIn("2.6.x", client_source)
-        self.assertIn(r"/^2\.(0|1|2|3|4|5)\.\d+$/", schema_source)
+        self.assertIn("2.6.x", client_source)
+        self.assertIn(r"/^2\.(0|1|2|3|4|5|6)\.\d+$/", schema_source)
         self.assertNotIn("accepted_contract_versions", payload_source)
         self.assertIn("asText(contract.contract_version) === '2.0.0'", workbench_source)
 

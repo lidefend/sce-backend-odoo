@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 224,
+    "odoo_tags": 225,
     "gated": 5,
     "on_demand": 83,
-    "unwired": 136,
-    "odoo_tag_declarations": 461,
+    "unwired": 137,
+    "odoo_tag_declarations": 462,
     "gated_declarations": 107,
-    "uncovered_declarations": 354,
+    "uncovered_declarations": 355,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -1758,6 +1758,17 @@
       "owner": "construction-product",
       "evidence": [],
       "disposition": "wire-pending"
+    },
+    {
+      "group": "p0_contract_producer_p0a",
+      "status": "unwired",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py"
+      ],
+      "owner": "construction-product",
+      "evidence": []
     },
     {
       "group": "p1_contract_execution_position",

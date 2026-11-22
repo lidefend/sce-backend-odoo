@@ -118,6 +118,7 @@ from . import test_product_message_notification
 from . import test_tax_filing
 from . import test_tax_filing_native_lowcode
 from . import test_product_reports
+from . import test_p0_contract_producer_p0a
 from . import test_payment_settlement_component_profile
 from . import test_p1_finance_projection_authority
 from . import test_project_evidence_summary_service
