@@ -1,0 +1,58 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03A-20261122
+  title: business_value_and_relation_expression_convergence
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend business-value presentation for One2many detail fields,
+    together with contract-driven attachment-count semantics.
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Make One2many monetary, date, datetime, duration, selection, boolean,
+    relation and empty-value presentation consume the existing shared
+    business-value and field-semantics authorities. Remove frontend inference
+    of attachment behavior from Chinese labels and display text. Preserve edit
+    values, row identity, dirtyFields, onchange, persistence and authorization.
+  product_result: >-
+    The same declared business value keeps the same interpretation in normal
+    fields, One2many details and list cells, while presentation density may
+    differ. Attachment behavior is contract-declared or explicitly reported as
+    a backend declaration gap rather than guessed from localized text.
+  why_here: >-
+    The change is limited to how the generic frontend consumes already
+    declared field metadata. It does not change backend business rules.
+  why_not_elsewhere:
+    - Do not modify backend contracts, ACL, workflow, fields or business state.
+    - Do not add a Renderer, Registry, page engine or second value runtime.
+    - Do not special-case model names, Chinese labels or formatted text.
+    - Do not apply display formatting to ORM write values.
+    - Do not mechanically split files or broaden into FE-EXPRESSION-03B.
+  blast_radius:
+    behavior:
+      - One2many monetary display uses declared digits and currency field
+      - One2many date, datetime and float_time use shared temporal semantics
+      - One2many relation labels retain record identity and fail-closed behavior
+      - Editable cell model values remain separate from readonly display text
+      - Attachment preview is not inferred from localized label or count text
+    exclusions:
+      - no database, fixture, module upgrade or customer data mutation
+      - no backend source or contract change
+      - no Calendar, Gantt or Dashboard work
+      - no unrelated component consolidation
+  rollback: >-
+    Revert the frontend source, focused tests, incremental routing and run
+    metadata together. No persisted business data or deployment state changes.
+  completion:
+    diagnosis: in_progress
+    batch: active
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_run
