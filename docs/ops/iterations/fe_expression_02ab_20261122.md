@@ -71,8 +71,22 @@ R09 在当前验收运行身份上已经将问题从推测转为可复现事实�
 - 浏览器仅有两条预期 Console resource error，分别来自注入的 500 和 503；
   page errors 为 0；浏览器加载的 72 个资源均存在于当前 dist-release。
 
-初步浏览器构建绑定 base `cb182c9e9` 和 dirty artifact digest，因此不冒充
-exact-HEAD 结果。提交后必须重建并重跑，最终回执再绑定新 HEAD。
+最终 code HEAD `b9d5db978` 已完成精确构建与浏览器回归：
+
+- build-info source = `b9d5db978`，tree = `636644e0b`；
+- acceptance runtime source revision = `b9d5db978`；
+- runtime frontend build SHA256 =
+  `177560323d737f3a1b590b765657c65dc0bfceeebe7f65724c8e3c44060376d8`；
+- 浏览器 10/10 PASS，0 failure，0 page error，72/72 加载资源存在；
+- 两条 Console error 仅为注入的 500/503 资源错误；
+- browser report SHA256 =
+  `ec28b526a5fa76b1903af37e90a35b333599d1b000d19fcd76e7b9e11cc0ef8a`；
+- `ci.local.iteration` 11 个受影响目标通过，receipt SHA256 =
+  `56e160073165681ca9b489444c5ce5e84abec3d87e2c4113cb87c557a309e83f`。
+
+P2 收尾：RouteErrorView 只保留一个 H1 主标题；没有 `from` 时重试按钮禁用；
+嵌入 SceneContractBlockGridView 在 loading/error 阶段保留隐藏语义 H1，ready 后由
+PageRenderer 接管。
 
 ## 02C / 02D 诊断
 

@@ -198,17 +198,17 @@
     "lint_type_contract": "PASS: lint 0 errors, strict typecheck PASS, contract-basis open defects=0",
     "correction": "First header contract run required explicit registration of RouteErrorView as the seventh ScPageHeader call site; no expected assertion was weakened"
     ,
-    "ci_local_iteration": "PASS on base cb182c9e9 plus declared dirty candidate; 22/22 required targets executed, unmappedPathCount=0, testsRun=true",
-    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T034712Z-1704882-323501823/receipt.json",
-    "ci_local_iteration_receipt_sha256": "8b1b8566d27b40156b00d8f36d36db25c7020934bf693a192b963d3610c2c466",
-    "production_build": "PASS: frontend.acceptance.release.build; build-info source cb182c9e9; dist artifact sha256 643f1f26ce665d05b05f6cf7a2ea509f1a62fe72d32dcd48e0f62b905be774dc",
-    "browser_precheck": "PASS preliminary dirty-candidate run: 10/10 cases, 0 failures, 0 page errors, 72/72 loaded resources present in dist-release; expected injected 500/503 Console resource errors only",
-    "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/run-01/report.json",
-    "browser_evidence_sha256": "b24c9e1b037781881a8b3334c648ac98c6ee9a328707040c6708567ada166587",
+    "ci_local_iteration": "PASS on final code HEAD b9d5db978; 11 affected targets were rechecked/reused into a passed receipt, unmappedPathCount=0, testsRun=true",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T045415Z-2100751-714531062/receipt.json",
+    "ci_local_iteration_receipt_sha256": "56e160073165681ca9b489444c5ce5e84abec3d87e2c4113cb87c557a309e83f",
+    "production_build": "PASS on code HEAD b9d5db978: build-info source b9d5db978, tree 636644e0b; authoritative runtime build sha256 177560323d737f3a1b590b765657c65dc0bfceeebe7f65724c8e3c44060376d8",
+    "browser_precheck": "PASS exact-code-HEAD run: 10/10 cases, 0 failures, 0 page errors, 72/72 loaded resources present in dist-release; expected injected 500/503 Console resource errors only",
+    "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/exact-b9d5db978/report.json",
+    "browser_evidence_sha256": "ec28b526a5fa76b1903af37e90a35b333599d1b000d19fcd76e7b9e11cc0ef8a",
     "browser_results": "project ledger and My Work return one H1; income/payment desktop and mobile have one H1 and zero overflow; payment mobile status/actions are full-width stacked; export failure exposes message+reason+trace with one request; 503 route failure reaches route-error and is not shown as access denial",
-    "final_exact_head_rebuild": "not_run until the implementation commit is frozen; preliminary build-info correctly identifies base cb182c9e9 and the dirty artifact digest, so it is not relabeled as exact-HEAD evidence"
+    "final_exact_head_rebuild": "PASS on b9d5db978: build-info, Git SHA/tree, runtime source revision and runtime frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same code HEAD"
   },
-  "next_exact_step": "Commit the frozen implementation candidate, rebuild and rerun ci.local.iteration plus the focused browser suite at the exact clean HEAD.",
+  "next_exact_step": "Commit this exact-HEAD evidence index, push PR #961, update its evidence body, and rerun all exact-head remote gates plus independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
