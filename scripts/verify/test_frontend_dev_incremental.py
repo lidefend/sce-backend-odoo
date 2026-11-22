@@ -2515,6 +2515,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.native_widget.provenance.unit",
                 "verify.semantic.registry.lint",
+                "verify.unified_page_contract.v2.assembler",
             ],
         )
 
@@ -2528,6 +2529,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.collection_view_semantics.unit",
                 "verify.native_widget.provenance.unit",
                 "verify.semantic.registry.lint",
+                "verify.unified_page_contract.v2.assembler",
             ],
         )
 

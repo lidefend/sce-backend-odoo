@@ -662,6 +662,7 @@ RULES = (
     ), (
         "verify.native_widget.provenance.unit",
         "verify.semantic.registry.lint",
+        "verify.unified_page_contract.v2.assembler",
     )),
     Rule((
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",

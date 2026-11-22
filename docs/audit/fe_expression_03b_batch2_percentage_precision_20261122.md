@@ -64,6 +64,8 @@ read-only numeric presentation while retaining authoritative ORM values unchange
 - The professional percentage control and generic readonly numeric formatter
   consume the declared scale.
 - Editable inputs and ORM write commands keep their existing value shape.
+- The assembled page contract cache is invalidated deliberately: version `v100`
+  and input digest `01581b30d785e2679b134f2a96d6074f97488cdea7fdeab65c7ac4b81aaa836c`.
 
 ## Validation
 
@@ -77,6 +79,7 @@ read-only numeric presentation while retaining authoritative ORM values unchange
 - `verify.frontend.collection_row_cell.unit`: PASS.
 - `verify.frontend.canonical_form_presenter.unit`: PASS.
 - `verify.semantic.registry.lint`: PASS.
+- `verify.unified_page_contract.v2.assembler`: PASS.
 - `verify.frontend.contract_basis.enforce`: PASS, 0 open defects.
 - Lint and strict TypeScript: PASS.
 - `verify.frontend.build`: PASS, 5419 modules.

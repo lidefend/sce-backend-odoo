@@ -39,7 +39,9 @@
     "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
     "make/frontend.mk",
     "scripts/verify/frontend_dev_incremental.py",
-    "scripts/verify/test_frontend_dev_incremental.py"
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "addons/smart_core/handlers/ui_contract_v2.py"
   ],
   "environment": {
     "kind": "offline",
@@ -144,6 +146,18 @@
       ],
       "kind": "offline"
     },
+    "unified_page_contract_assembler": {
+      "target": "verify.unified_page_contract.v2.assembler",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/utils/load_contract_response_cache.py",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+      ],
+      "kind": "offline"
+    },
     "lint": {
       "target": "verify.frontend.lint.src",
       "inputs": [
@@ -211,7 +225,8 @@
     "consumer": "Contract V2 preserves sc.value.percentage, list and Kanban consume the shared presenter, One2many carries component identity without leaking widget semantics across occurrences, and generic decimal/percentage formatting consumes declared digits.",
     "write_boundary": "Only display formatting changed. Input projection and ORM command values retain their prior shape.",
     "validation": "ci.local.iteration executed 17 affected targets including native parser, semantic registry, Contract V2, business semantics, canonical form, One2many and collection row-cell coverage. Lint and strict typecheck passed. The affected component browser verifies percentage and quantity precision across Form, List and Kanban at 34 assertions with zero console errors.",
-    "build": "Production frontend build PASS with 5419 modules; dirty-worktree artifact SHA256 46e8263915421ea4ca96c5eccedc9516d5e9fc301576817fdf07ce04e593ce30."
+    "build": "Production frontend build PASS with 5419 modules; dirty-worktree artifact SHA256 46e8263915421ea4ca96c5eccedc9516d5e9fc301576817fdf07ce04e593ce30.",
+    "cache": "Remote professional_quality_checks exposed the required assembled-contract cache invalidation. The cache version is now v100 and the assembler input digest is pinned to 01581b30d785e2679b134f2a96d6074f97488cdea7fdeab65c7ac4b81aaa836c; the assembler guard and incremental mapping pass."
   },
   "next_exact_step": "Review generated evidence, update the batch record, and commit the clean Batch 2 candidate.",
   "write_replay_authorized": false,
