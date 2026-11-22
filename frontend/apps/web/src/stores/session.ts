@@ -7,7 +7,11 @@ import { optionalDeclaredNumber, requireDeclaredNumber } from '../app/contract/c
 import { intentRequest } from '../api/intents';
 import { navigationProjectionActions, navigationProjectionState, type NavigationProjectionState } from './navigationProjectionActions';
 import { config } from '../config';
-import { getSceneByKey, setSceneRegistry, setSceneRegistryFromSceneReadyContract } from '../app/resolvers/sceneRegistry';
+import {
+  getSceneByKey,
+  mergeSceneRegistryFromSceneReadyContract,
+  setSceneRegistry,
+} from '../app/resolvers/sceneRegistry';
 import type { Scene } from '../app/resolvers/sceneRegistry';
 import { logger } from '../utils/logger';
 import { normalizeLegacyWorkbenchPath } from '../app/routeQuery';
@@ -1596,10 +1600,9 @@ export const useSessionStore = defineStore('session', {
       this.pageContracts = ((result as AppInitResponse & { page_contracts?: { pages?: Record<string, PageContract> } }).page_contracts?.pages ?? {});
       this.sceneReadyContract = ((result as AppInitResponse & { scene_ready_contract?: SceneReadyContract }).scene_ready_contract ?? null);
       this.sceneGovernance = ((result as AppInitResponse & { scene_governance?: SceneGovernancePayload }).scene_governance ?? null);
+      setSceneRegistry(this.scenes);
       if (this.sceneReadyContract?.scenes?.length) {
-        setSceneRegistryFromSceneReadyContract(this.sceneReadyContract);
-      } else {
-        setSceneRegistry(this.scenes);
+        mergeSceneRegistryFromSceneReadyContract(this.sceneReadyContract);
       }
       this.initMeta = {
         ...(result.meta ?? {}),

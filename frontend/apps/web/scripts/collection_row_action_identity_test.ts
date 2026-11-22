@@ -133,7 +133,27 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
   assert.equal(pushes.length, 0, 'form contracts must not resolve a row action');
 }
 
-console.log('[OK] collection row action identity: 6 cases');
+// 5. A row action that explicitly targets a contextual scene carries the
+// declared target query through materialization.
+{
+  const sceneRow = rule({
+    actionId: 'action.open_project_dashboard',
+    sourceWidgetId: ROW_PLACEMENT_WIDGET_ID,
+    intent: 'open_scene',
+    target: {
+      route: '/s/project.management',
+      scene_key: 'project.management',
+      entry_intent: 'project.dashboard.enter',
+      query: { project_id: '${id}' },
+    },
+  });
+  const pushes = drive([sceneRow], { id: 10, model: 'project.project' }, { viewType: 'kanban' });
+  assert.equal(pushes.length, 1, 'scene row target resolves one navigation');
+  assert.equal(pushes[0].path, '/s/project.management', 'scene row target keeps its declared route');
+  assert.equal((pushes[0].query as Dict).project_id, '10', 'scene row query materializes the clicked row id');
+}
+
+console.log('[OK] collection row action identity: 7 cases');
 
 // An existing malformed formal declaration cannot be rescued by either fallback.
 let formalBoundaryCases = 0;

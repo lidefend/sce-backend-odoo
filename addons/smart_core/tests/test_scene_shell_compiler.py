@@ -228,6 +228,33 @@ class SceneShellCompilerTests(unittest.TestCase):
         self.assertEqual(contract["meta"]["scene_shell_count"], 1)
         self.assertEqual(contract["scenes"][0]["target"]["action_id"], 506)
 
+    def test_explicit_admin_surface_is_not_converted_to_a_scene_shell(self):
+        result = self.compiler.compile([{
+            "menu_id": 431,
+            "action_id": 808,
+            "menu_xmlid": "smart_construction_core.menu_sc_business_config_workbench",
+            "route": "/s/entry.smart_construction_core.menu_sc_business_config_workbench",
+            "scene_key": "entry.smart_construction_core.menu_sc_business_config_workbench",
+            "entry_target": {
+                "type": "admin_surface",
+                "surface": "business_config",
+                "route": "/admin/business-config",
+            },
+            "meta": {
+                "menu_id": 431,
+                "action_id": 808,
+                "scene_key": "entry.smart_construction_core.menu_sc_business_config_workbench",
+            },
+        }], designed_scene_keys={
+            "entry.smart_construction_core.menu_sc_business_config_workbench",
+        })
+
+        node = result.nav[0]
+        self.assertEqual(node["route"], "/admin/business-config")
+        self.assertEqual(node["entry_target"]["type"], "admin_surface")
+        self.assertNotIn("scene_key", node)
+        self.assertEqual(result.scene_shell_rows, [])
+
 
 if __name__ == "__main__":
     unittest.main()

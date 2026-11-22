@@ -132,6 +132,69 @@ export function runtimeRoleSceneTarget(roleSurface, row) {
   };
 }
 
+function materializeRowValue(value, row) {
+  if (typeof value === 'string') {
+    return value.replace(/\$\{([A-Za-z_][A-Za-z0-9_]*)\}/g, (_match, key) => String(row[key] ?? ''));
+  }
+  if (Array.isArray(value)) return value.map((item) => materializeRowValue(item, row));
+  if (value && typeof value === 'object') {
+    return Object.fromEntries(Object.entries(value).map(([key, item]) => [key, materializeRowValue(item, row)]));
+  }
+  return value;
+}
+
+export function declaredRowSceneNavigation(contracts, actionId, rowId) {
+  const id = Number(rowId || 0);
+  if (!(id > 0)) return null;
+  const rows = Array.isArray(contracts) ? contracts : [];
+  const contract = [...rows].reverse().find((row) => Number(row?.action_id || 0) === Number(actionId || 0));
+  const rules = Array.isArray(contract?.rowRules) ? contract.rowRules : [];
+  for (const rule of rules) {
+    const target = rule?.target && typeof rule.target === 'object' ? rule.target : {};
+    const explicit = target.entry_target && typeof target.entry_target === 'object'
+      && String(target.entry_target.type || '').trim() === 'scene'
+      ? target.entry_target
+      : String(target.scene_key || target.sceneKey || '').trim()
+        ? {
+            type: 'scene',
+            scene_key: target.scene_key || target.sceneKey,
+            route: target.route,
+          }
+        : null;
+    if (!explicit) continue;
+    const materialized = materializeRowValue({
+      ...explicit,
+      query: {
+        ...(target.query && typeof target.query === 'object' ? target.query : {}),
+        entry_intent: target.entry_intent || target.entryIntent || undefined,
+      },
+    }, { id });
+    return {
+      type: 'scene',
+      scene_key: String(materialized.scene_key || '').trim(),
+      route: String(materialized.route || '').trim(),
+      query: Object.fromEntries(Object.entries(materialized.query || {}).filter(([, value]) => (
+        value !== undefined && value !== null && String(value).trim() !== ''
+      ))),
+    };
+  }
+  return null;
+}
+
+export function sceneNavigationMatchesUrl(navigation, rawUrl) {
+  try {
+    const url = new URL(rawUrl);
+    const expectedPath = String(navigation?.route || '').split('?', 1)[0];
+    if (!expectedPath || url.pathname !== expectedPath) return false;
+    if (navigation.scene_key && url.searchParams.get('scene_key') !== navigation.scene_key) return false;
+    return Object.entries(navigation.query || {}).every(([key, value]) => (
+      url.searchParams.get(key) === String(value)
+    ));
+  } catch {
+    return false;
+  }
+}
+
 export function recordedEntryStatus(record) {
   if (record && record.status) return String(record.status);
   if (record && record.error) return 'exception';

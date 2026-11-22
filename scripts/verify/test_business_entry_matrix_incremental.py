@@ -272,6 +272,15 @@ class RequestedOnlySelectionTests(unittest.TestCase):
         self.assertEqual(selection["execute"], ["menu.b"])
         self.assertEqual(selection["unrequested_affected"], [])
 
+    def test_requested_only_preserves_an_authorized_blocked_retry(self):
+        selection = incremental.restrict_selection_to_requested(
+            {"affected": [], "execute": ["menu.failed"], "reused": []},
+            ["menu.failed"],
+        )
+        self.assertEqual(selection["execute"], ["menu.failed"])
+        self.assertEqual(selection["affected"], [])
+        self.assertEqual(selection["unrequested_affected"], [])
+
 
 class FailedEntryReuseTests(unittest.TestCase):
     def test_a_blocking_form_failure_is_never_reused_as_checked(self) -> None:

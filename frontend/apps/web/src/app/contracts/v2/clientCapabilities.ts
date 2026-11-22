@@ -20,4 +20,10 @@ export const CONTRACT_V2_CLIENT_CAPABILITIES = [
   'view.tree.v1',
   'view.kanban.v1',
   'view.form.v1',
+  'view.pivot.v1',
+  'view.graph.v1',
+  'view.calendar.v1',
+  'view.gantt.v1',
+  'view.activity.v1',
+  'view.dashboard.v1',
 ] as const;

@@ -396,6 +396,23 @@ export function setSceneRegistryFromSceneReadyContract(contract?: { scenes?: unk
   return buildSceneRegistry(source);
 }
 
+/**
+ * Merge the richer scene-ready rows over the system.init scene catalogue.
+ *
+ * ``system.init.scenes`` remains the released-scene inventory; the ready
+ * contract enriches only the scenes it carries. Replacing the inventory with
+ * the subset made valid action-backed scenes such as enterprise.department,
+ * enterprise.post, enterprise.user and portal.notifications disappear from the
+ * client registry even though the server published them.
+ */
+export function mergeSceneRegistryFromSceneReadyContract(contract?: { scenes?: unknown[] } | null) {
+  const byKey = new Map(sceneRegistry.map((scene) => [scene.key, scene]));
+  for (const scene of scenesFromSceneReadyContract(contract)) {
+    byKey.set(scene.key, scene);
+  }
+  return buildSceneRegistry([...byKey.values()]);
+}
+
 export function getSceneByKey(key: string) {
   return sceneRegistry.find((scene) => scene.key === key) || null;
 }

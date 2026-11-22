@@ -93,6 +93,7 @@ LANES: dict[str, list[str]] = {
     "remote.standard_backend": ["test.unit", "test.contract", "test.e2e.preflight"],
     "remote.frontend.standard": ["verify.frontend.pr.unit"],
     "remote.frontend.full": ["verify.frontend.release.audit"],
+    "runtime.acceptance.business_scenes": ["acceptance.frontend.business_scenes.reconcile"],
     "runtime.feedback.acceptance": ["acceptance.feedback.runtime.bundle"],
     "deployment.postverify": ["acceptance.deployment.postverify.bundle"],
 }

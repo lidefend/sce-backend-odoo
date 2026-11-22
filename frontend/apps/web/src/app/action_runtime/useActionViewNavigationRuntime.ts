@@ -125,7 +125,12 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
       record_id: routeQueryValue(target.record_id || target.recordId),
     };
     const formalEntry = decodeFormalRecordEntry(target.record_entry);
-    const hasLegacyRecordCarrier = [
+    const explicitSceneTarget = (
+      (target.entry_target && typeof target.entry_target === 'object'
+        && String((target.entry_target as Dict).type || '').trim() === 'scene')
+      || String(target.scene_key || target.sceneKey || '').trim()
+    );
+    const hasLegacyRecordCarrier = !explicitSceneTarget && [
       target.open_intent, target.openIntent, target.intent, target.entry_intent, target.entryIntent,
       target.model_write_authority, target.modelWriteAuthority, target.model_write,
     ].some((value) => value !== undefined && value !== null && String(value).trim() !== '');

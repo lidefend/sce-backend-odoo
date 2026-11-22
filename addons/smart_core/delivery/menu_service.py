@@ -1207,6 +1207,10 @@ class MenuService:
                 or ""
             ).strip()
             surface = str(entry_target.get("surface") or "").strip()
+            explicit_admin_surface = (
+                str(entry_target.get("type") or "").strip() == "admin_surface"
+                and bool(str(entry_target.get("route") or "").strip())
+            )
             container = (
                 container_authority_by_menu.get(menu_id)
                 if action_id <= 0 and menu_id > 0
@@ -1217,7 +1221,9 @@ class MenuService:
                 if action_id <= 0 and menu_id > 0
                 else None
             )
-            if scene_key:
+            if explicit_admin_surface:
+                route = str(entry_target.get("route") or "").strip()
+            elif scene_key:
                 route = derive_entry_route(scene_key=scene_key)
             elif action_id > 0:
                 route = derive_entry_route(
@@ -1239,7 +1245,12 @@ class MenuService:
                 # owning a navigable target itself. Publishing /m/<id> here
                 # would create a route that the sealed authority never granted.
                 route = ""
-            if scene_key:
+            if explicit_admin_surface:
+                next_target = dict(entry_target)
+                next_target["route"] = route
+                candidate["entry_target"] = next_target
+                meta["entry_target"] = next_target
+            elif scene_key:
                 next_target = build_scene_entry_target(
                     scene_key=scene_key,
                     menu_id=menu_id,

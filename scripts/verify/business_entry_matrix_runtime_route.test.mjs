@@ -4,8 +4,10 @@ import assert from 'node:assert/strict';
 import {
   applyReleasedNavigationTarget,
   findReleasedNavigationTargetByMenuXmlid,
+  findReleasedNavigationTargetBySceneKey,
 } from './released_navigation_target.mjs';
 import {
+  declaredRowSceneNavigation,
   deniedRoleCandidatesFor,
   entryFingerprint,
   loadDeclaredSceneEntries,
@@ -15,6 +17,7 @@ import {
   recordedEntryStatus,
   runtimeRoleSceneTarget,
   sceneBehaviour,
+  sceneNavigationMatchesUrl,
 } from './business_entry_matrix_model.mjs';
 
 let cases = 0;
@@ -83,6 +86,59 @@ check(
   findReleasedNavigationTargetByMenuXmlid(nav, 'smart_construction_core.menu_action_two', 'other.action'),
   null,
   'a menu identity cannot borrow another action identity',
+);
+
+check(
+  findReleasedNavigationTargetBySceneKey([{
+    menu_xmlid: 'scene.contract.workspace_home',
+    menu_id: 42,
+    action_id: 0,
+    route: '/s/workspace.home',
+    scene_key: 'workspace.home',
+  }, ...nav], 'workspace.home')?.menu_xmlid,
+  'scene.contract.workspace_home',
+  'a released actionless scene carrier is resolved by its scene identity when the catalogue XMLID aliases it',
+);
+check(
+  findReleasedNavigationTargetBySceneKey([{
+    menu_xmlid: 'smart_construction_core.menu_action_scene',
+    menu_id: 43,
+    action_id: 201,
+    route: '/s/entry.action_scene',
+    scene_key: 'entry.action_scene',
+  }], 'entry.action_scene'),
+  null,
+  'an action-bearing scene cannot be accepted as the actionless carrier',
+);
+
+const contextualScene = declaredRowSceneNavigation([{
+  action_id: 676,
+  rowRules: [{
+    target: {
+      route: '/s/project.management',
+      scene_key: 'project.management',
+      entry_intent: 'project.dashboard.enter',
+      query: { project_id: '${id}' },
+    },
+  }],
+}], 676, 130);
+check(contextualScene?.scene_key, 'project.management', 'a declared contextual row scene is recognized');
+check(contextualScene?.query.project_id, '130', 'the row identity materializes into declared scene query');
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
+    'http://fixture.invalid/s/project.management?scene_key=project.management&project_id=130&entry_intent=project.dashboard.enter',
+  ),
+  true,
+  'the resulting scene route carries every declared query identity',
+);
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
+    'http://fixture.invalid/s/project.management?scene_key=project.management&entry_intent=project.dashboard.enter',
+  ),
+  false,
+  'a scene route without the selected project is not accepted',
 );
 
 const targets = { entry: {} };

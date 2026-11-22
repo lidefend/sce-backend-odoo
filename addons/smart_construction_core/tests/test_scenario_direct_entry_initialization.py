@@ -11,6 +11,7 @@ from ..models.support.product_scenario import (
     NAVIGATION_ENTRY_SCOPE_MARKER,
 )
 from ..services.scenario_surface_projection import (
+    _apply_scene_target_projection,
     load_maintained_runtime_surface,
     runtime_menu_scope,
 )
@@ -25,6 +26,25 @@ from odoo.addons.smart_construction_scene.services.business_scene_enablement imp
 @tagged('post_install', '-at_install', 'sc_gate', 'scenario_direct_initialization')
 class TestScenarioDirectInitialization(TransactionCase):
     """Run in local.test from a freshly installed module, with no fixture grants."""
+
+    def test_declared_admin_surface_owns_the_entry_route(self):
+        leaf = {
+            "menu_id": 431,
+            "action_id": 808,
+            "route": "/admin/business-config",
+            "entry_target": {
+                "type": "admin_surface",
+                "surface": "business_config",
+                "route": "/admin/business-config",
+            },
+        }
+        _apply_scene_target_projection(
+            leaf,
+            {(431, 808): "entry.smart_construction_core.menu_sc_business_config_workbench"},
+        )
+        self.assertEqual(leaf["route"], "/admin/business-config")
+        self.assertEqual(leaf["entry_target"]["type"], "admin_surface")
+        self.assertEqual(leaf["entry_target"]["surface"], "business_config")
 
     def test_fresh_install_declares_configuration_entries(self):
         # A fresh Odoo admin has no industry configuration roles. Native menu

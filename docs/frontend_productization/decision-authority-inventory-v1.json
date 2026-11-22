@@ -598,7 +598,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1868
+        1873
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -611,7 +611,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1868
+        1873
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -624,11 +624,24 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1868
+        1873
       ],
       "occurrences": 1,
       "classification": "contract-derived",
       "evidence": "addons/smart_core/utils/contract_governance_capabilities.py:131",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|draft|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "draft",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1562
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/models/release_management.py:24",
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
@@ -637,13 +650,40 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1868
+        1873
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
       "reason": "declared UI state-machine value",
       "declaredClass": "ui_state_machine",
       "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|preview|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "preview",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1562
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "declared UI state-machine value",
+      "declaredClass": "ui_state_machine",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|published|frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "published",
+      "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
+      "lines": [
+        1562
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/view_contract_presence.py:60",
+      "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
       "decisionKey": "R4_business_state_literal|READY|frontend/apps/web/src/app/homeActionResolver.ts",
@@ -1839,21 +1879,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 171,
-    "distinctDecisions": 124,
+    "totalFindings": 174,
+    "distinctDecisions": 127,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 17,
-      "R4_business_state_literal": 135
+      "R4_business_state_literal": 138
     },
     "byClassification": {
-      "contract-derived": 69,
-      "excluded-render-interaction": 102
+      "contract-derived": 71,
+      "excluded-render-interaction": 103
     },
     "unclassified": 0,
-    "contractDerived": 69,
+    "contractDerived": 71,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 102
+    "excludedRenderInteraction": 103
   }
 }

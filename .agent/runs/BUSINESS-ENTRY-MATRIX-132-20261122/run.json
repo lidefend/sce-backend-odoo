@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "id": "BUSINESS-ENTRY-MATRIX-132-20261122",
+  "branch": "fix/business-entry-matrix-132-20261122",
+  "baseline_sha": "4be80e9f65e0c1602a5a0765393f435a41b89105",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BUSINESS-ENTRY-MATRIX-132-20261122.yaml",
+  "record": "docs/ops/iterations/business_entry_matrix_132_20261122.md",
+  "scope": [
+    "docs/product/frontend_business_entry_acceptance_v1.csv",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "scripts/verify/business_entry_matrix_universe_guard.py",
+    "scripts/verify/test_business_entry_matrix_universe_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_coverage.py",
+    "scripts/ops/acceptance_business_scene_enablement_reconcile.py",
+    "scripts/verify/test_acceptance_business_scene_enablement_reconcile.py",
+    "scripts/dev/frontend_acceptance_runtime.sh",
+    "make/runtime_ops.mk",
+    "make/frontend.mk",
+    "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/resolvers/sceneRegistry.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/SceneView.vue",
+    "frontend/apps/web/scripts/contract_v2_runtime_policy_test.ts",
+    "frontend/apps/web/scripts/scene_entry_contract_test.ts",
+    "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_core/delivery/menu_service.py",
+    "addons/smart_core/delivery/scene_shell_compiler.py",
+    "addons/smart_core/tests/test_delivery_menu_entry_target.py",
+    "addons/smart_core/tests/test_scene_shell_compiler.py",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_matrix_incremental.py",
+    "scripts/verify/business_entry_matrix_model.mjs",
+    "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+    "scripts/verify/released_navigation_target.mjs",
+    "scripts/verify/test_business_entry_matrix_incremental.py",
+    "docs/ops/iterations/business_entry_matrix_132_20261122.md",
+    ".agent/active-runs.json",
+    ".agent/goals/BUSINESS-ENTRY-MATRIX-132-20261122.yaml",
+    ".agent/runs/BUSINESS-ENTRY-MATRIX-132-20261122/run.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing static declarations plus focused unit tests; runtime browser execution uses the registered sc_frontend_acceptance profile after static checks"
+  },
+  "checks": {
+    "matrix_universe": {
+      "target": "verify.frontend.business_entry.matrix.universe",
+      "inputs": [
+        "config/product_scenario_organization_v1.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "business_scenes_reconcile": {
+      "target": "verify.acceptance.business_scenes.reconcile.unit",
+      "inputs": [
+        "scripts/ops/acceptance_business_scene_enablement_reconcile.py",
+        "scripts/verify/test_acceptance_business_scene_enablement_reconcile.py",
+        "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
+        "make/runtime_ops.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "observations": {
+    "universe_guard": "5 focused tests passed; 132 scenario pages, 131 action rows, 1 scene carrier, 132 declared units.",
+    "role_surface_guard": "10 tests passed; restricted role narrowed set updated to 42 reachable-but-not-delivered identities.",
+    "evidence_scope": "72 Python tests plus matrix route, reuse identity, observation binding and namespace cases passed.",
+    "local_iteration": "ci.local.iteration passed with 8 affected targets.",
+    "runtime_status": "Read-only evidence scope reports 132 units; the 40 newly added action rows remain never_recorded and no pending row was relabeled passed.",
+    "fixture_drift": "Acceptance fixture source declares 46 scenario keys, but sc_frontend_acceptance contains the legacy 17 keys and none of the current published scenario keys.",
+    "coverage_proof": "The legacy 17 scenarios cover 79 pages; the 22 published current scenarios cover 53 pages including all 40 added entries; their union covers all 132 pages. The other 24 fixture scenario keys are not present in the published composition and must not be enabled.",
+    "reconcile_dry_run": "Dry-run passed with 44 planned inserts, no legacy disables, and 39 enabled scenarios expected per fixture company.",
+    "reconcile_apply": "Applied on sc_frontend_acceptance for companies 2 and 3: 44 inserts, 17 legacy scenarios preserved per company, 39 enabled scenarios per company, and zero remaining writes in readback.",
+    "runtime_identity": "Config admin and activity accounting navigation targets increased from 92 to 132 after acceptance backend cache restart.",
+    "matrix_132": "The incremental matrix declared 132 units, reused 1, executed 111, and completed with 100 checked, 18 unreachable, and 12 page/contract problems.",
+    "new_40_acceptance": "All 40 F4 entries were present in the executed matrix and passed.",
+    "targeted_retry": "Exactly 20 previously blocked entries were re-opened after the acceptance mutation; 18 passed and 2 remained, without rerunning the 100 already-checked entries.",
+    "runtime_defect_triage": "Root causes were split into scene-catalogue loss, V2 business-config provenance decoding, missing declared analysis renderer capabilities, actionless-scene XMLID aliasing, a requested-only retry filtering bug, and an admin-surface overwritten by generic scene projection.",
+    "runtime_fixes": "The acceptance frontend was rebuilt in place from the P0 contract/scene/capability fixes. The current ledger has 130 checked units; workspace home, message notification, five form entries, two analysis reports, menu config and nine other previously unresolved entries now pass.",
+    "project_kanban": "The declared row scene remains a scene entry, not a record-form surrogate. Its final route carries project_id=130 and the matrix now verifies the declared contextual scene target.",
+    "business_config": "The exact-head navigation compiler preserves the action's explicit admin_surface. The released leaf now resolves to /admin/business-config with no synthetic scene key.",
+    "final_matrix": "All 132 declared units are checked on the existing acceptance database at backend source revision c7131f0dc961874b2b37a10dd84e8f9442055d7a. No unit is unreachable, pending, or silently inherited from the old 92-unit surface.",
+    "evidence_hashes": {
+      "apply_log_sha256": "2310d9601e0223994c81c179b6198b1e7a1a3e2e5b51dbabdd002a0f30626bcb",
+      "postwrite_readback_sha256": "be27a08aeb584452f8425679c0b391fbbedaf5dd3bb66b2bdecbb416dbf8cd1e",
+      "matrix_log_sha256": "70c9c2e24303b2c6ab25681978aa0b424bd01f17b83f57b9451ea5ae2cae0e39",
+      "matrix_summary_sha256": "770029dab255cf478fd82fc57d84934c561a1c3f83122c30a6eb1ced0e5c7ac6",
+      "final_entry_summary_sha256": "d28944782d798a9d3869204d31afe5ef83b0e8a924a72f179d002c5d370a037e"
+    }
+  },
+  "next_exact_step": "Commit the final evidence record, freeze the clean candidate, rerun affected static checks, update PR #955, and wait for all required CI on the new exact HEAD.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

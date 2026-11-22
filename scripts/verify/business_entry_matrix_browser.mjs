@@ -24,12 +24,16 @@ import fs from 'node:fs';
 import { surface } from './business_entry_matrix_scope.mjs';
 import path from 'node:path';
 import { launchChromium } from './playwright_runtime.mjs';
-import { findReleasedNavigationTargetByMenuXmlid } from './released_navigation_target.mjs';
+import {
+  findReleasedNavigationTargetByMenuXmlid,
+  findReleasedNavigationTargetBySceneKey,
+} from './released_navigation_target.mjs';
 import {
   observationBinding,
   validateObservationBinding,
   candidateStates,
   countReleasedNavigationTargets,
+  declaredRowSceneNavigation,
   deniedRoleCandidatesFor,
   declaredEntryGroups,
   ineligibleCandidates,
@@ -39,6 +43,7 @@ import {
   matrixSucceeded,
   negativePlanByCandidate,
   runtimeRoleSceneTarget,
+  sceneNavigationMatchesUrl,
   sceneBehaviour,
   selectEntries,
   universalCapabilities,
@@ -136,6 +141,7 @@ function attachCapture(page, state) {
     let payload = {};
     try { payload = JSON.parse(request.postData() || '{}'); } catch { return; }
     const intent = String((payload && payload.intent) || '');
+    const params = (payload && payload.params) || {};
     if (response.status() === 401 && intent) {
       // The runtime rejected the acting session. Record the loss so the entry
       // loop can re-authenticate and retry instead of letting the remaining
@@ -144,7 +150,29 @@ function attachCapture(page, state) {
       state.authFailures = (state.authFailures || 0) + 1;
       return;
     }
-    if (response.status() >= 400) return;
+    if (response.status() >= 400) {
+      let error = {};
+      try {
+        const body = await response.json();
+        const data = envelopeData(body);
+        const detail = (data && (data.error || data)) || {};
+        error = {
+          code: detail.code || detail.reason_code || detail.reasonCode || '',
+          message: String(detail.message || detail.reason || '').slice(0, 500),
+        };
+      } catch { /* a non-JSON failure body is still represented by its status */ }
+      state.responseFailures.push({
+        url: response.url(),
+        status: response.status(),
+        intent,
+        op: String(params.op || ''),
+        action_id: Number(params.action_id || 0),
+        menu_id: Number(params.menu_id || 0),
+        model: String(params.model || ''),
+        error,
+      });
+      return;
+    }
     if (intent === 'login') {
       // The runtime declares the acting principal's full capability closure
       // (`principal.role_xmlids`, external ids of every effective group) in the
@@ -207,6 +235,15 @@ function attachCapture(page, state) {
           entitlementEvaluated: createRule.entitlementEvaluated === true,
           target: createRule.target && typeof createRule.target === 'object' ? createRule.target : {},
         } : null,
+        rowRules: actionRules
+          .filter((rule) => String(rule.sourceWidgetId || '') === 'page.row')
+          .slice(0, 8)
+          .map((rule) => ({
+            key: String(rule.actionKey || rule.actionId || ''),
+            trigger: String(rule.triggerType || ''),
+            scope: String(rule.targetScope || ''),
+            target: rule.target && typeof rule.target === 'object' ? rule.target : {},
+          })),
         workflow: (data && data.workflowContract) || null,
         layoutContract: (data && data.layoutContract) || {},
       });
@@ -381,6 +418,66 @@ async function rendererHostDeclaration(page) {
     requested: String((await host.getAttribute('data-requested-renderer')) || ''),
     active: String((await host.getAttribute('data-active-renderer')) || ''),
     status: String((await host.getAttribute('data-renderer-status')) || ''),
+  };
+}
+
+async function visibleSurfaceFailure(page) {
+  const node = page.locator([
+    '[data-semantic-state-surface="page"][data-state="error"]',
+    '[data-semantic-state-surface="page"][data-contract-gap]',
+    '[data-semantic-component="ProductFormErrorSummary"][data-state="error"]',
+  ].join(', ')).first();
+  if (!(await node.count())) return null;
+  const form = page.locator('[data-semantic-component="ContractFormPage"][data-v2-shadow-error]').first();
+  const recovery = node.locator('[data-recovery-action]').first();
+  const vueDiagnostics = await node.evaluate((element) => {
+    let instance = element.__vueParentComponent || element.__vueParent;
+    for (let depth = 0; instance && depth < 12; depth += 1, instance = instance.parent) {
+      const props = instance.props || {};
+      if (!('message' in props) && !('reasonCode' in props) && !('errorCode' in props)) continue;
+      return {
+        component: String(instance.type?.name || instance.type?.__name || ''),
+        title: String(props.title || ''),
+        message: String(props.message || ''),
+        error_code: props.errorCode ?? null,
+        reason_code: String(props.reasonCode || ''),
+        trace_id: String(props.traceId || ''),
+        error_category: String(props.errorCategory || ''),
+        hint: String(props.hint || ''),
+      };
+    }
+    return null;
+  }).catch(() => null);
+  return {
+    text: String((await node.innerText().catch(() => '')) || '').trim().slice(0, 1000),
+    error_kind: await node.getAttribute('data-error-kind'),
+    contract_gap: await node.getAttribute('data-contract-gap'),
+    contract_gap_kind: await node.getAttribute('data-contract-gap-kind'),
+    contract_gap_layer: await node.getAttribute('data-contract-gap-layer'),
+    recovery_action: await recovery.getAttribute('data-recovery-action').catch(() => null),
+    v2_shadow_error: await form.getAttribute('data-v2-shadow-error').catch(() => null),
+    vue: vueDiagnostics,
+  };
+}
+
+function runtimeFailureDiagnostics(state, contractBaseline, responseBaseline) {
+  return {
+    contracts: state.contracts.slice(contractBaseline).slice(-8).map((row) => ({
+      url: row.url,
+      op: row.op,
+      action_id: row.action_id,
+      menu_id: row.menu_id,
+      model: row.model,
+      view_type: row.view_type,
+      render_profile: row.render_profile,
+      main_data_keys: row.mainDataKeys,
+      global_status: row.globalStatus,
+      row_rules: row.rowRules,
+      workflow_action_count: row.workflow && Array.isArray(row.workflow.availableActions)
+        ? row.workflow.availableActions.length
+        : 0,
+    })),
+    response_failures: state.responseFailures.slice(responseBaseline).slice(-8),
   };
 }
 
@@ -570,6 +667,16 @@ async function openFirstRecord(page, state, presentation) {
   const node = page.locator(spec.recordOpenSelector || spec.recordSelector).first();
   if (!(await node.count())) return null;
   const since = state.contracts.length;
+  const rowId = Number(
+    (await node.getAttribute('data-record-key'))
+    || (await node.getAttribute('data-record-id'))
+    || (await node.getAttribute('data-record'))
+    || 0,
+  );
+  const rowActionId = Number(
+    [...state.contracts].reverse().find((row) => Array.isArray(row.rowRules) && row.rowRules.length)?.action_id || 0,
+  );
+  const declaredScene = declaredRowSceneNavigation(state.contracts, rowActionId, rowId);
   const gesture = spec.recordOpenGesture || 'click';
   if (gesture === 'select_then_action') {
     // The worksheet selects a row on a single click and publishes a declared
@@ -585,7 +692,18 @@ async function openFirstRecord(page, state, presentation) {
     await node.click();
   }
   await sleep(1500);
-  return await waitForRecordContract(state, since);
+  if (declaredScene) {
+    const deadline = Date.now() + 15000;
+    while (Date.now() < deadline) {
+      if (sceneNavigationMatchesUrl(declaredScene, page.url())) {
+        const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
+        if (!(await sceneError.count())) return { sceneNavigation: declaredScene };
+      }
+      await sleep(300);
+    }
+  }
+  const contract = await waitForRecordContract(state, since);
+  return contract ? { contract } : null;
 }
 
 // The collection surface's create/edit affordance is not a page decision: the
@@ -655,6 +773,7 @@ function applyRecordContract(record, contract, behaviour, sessionCompany, entryK
 async function runEntry(page, state, row, behaviour, sessionCompany) {
   const entryKey = row.menu_xmlid;
   const navTarget = findReleasedNavigationTargetByMenuXmlid(state.nav, row.menu_xmlid, row.action_xmlid)
+    || (!row.action_xmlid ? findReleasedNavigationTargetBySceneKey(state.nav, row.scene_key) : null)
     || (!row.action_xmlid ? runtimeRoleSceneTarget(state.roleSurface, row) : null);
   if (!navTarget) {
     const declaration = state.exposureDeclared.get(entryKey);
@@ -704,6 +823,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
     direct_access_denial: 'not_run',
   };
   const contractBaseline = state.contracts.length;
+  const responseBaseline = state.responseFailures.length;
   await navigateEntry(page, navTarget);
   const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
   if (await sceneError.count()) {
@@ -714,6 +834,8 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       entry: entryKey, label: row.label, menu_id: navTarget.menu_id, action_id: navTarget.action_id,
       route: navTarget.route, scene_key: navTarget.scene_key,
       entry_target_type: navTarget.entry_target_type, status: 'scene-error', assertions,
+      surface_failure: await visibleSurfaceFailure(page),
+      runtime_diagnostics: runtimeFailureDiagnostics(state, contractBaseline, responseBaseline),
     };
   }
   const detected = await detectPresentation(page);
@@ -725,6 +847,8 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       route: navTarget.route, scene_key: navTarget.scene_key,
       entry_target_type: navTarget.entry_target_type,
       status: 'unknown-presentation', assertions,
+      surface_failure: await visibleSurfaceFailure(page),
+      runtime_diagnostics: runtimeFailureDiagnostics(state, contractBaseline, responseBaseline),
     };
   }
   assertions.presentation = 'passed';
@@ -765,6 +889,8 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       fail(`${entryKey}: the form surface rendered a blocking error state: ${message}`);
       record.status = 'form-error';
       record.list_status = 'error';
+      record.surface_failure = await visibleSurfaceFailure(page);
+      record.runtime_diagnostics = runtimeFailureDiagnostics(state, contractBaseline, responseBaseline);
       observations.push({
         entry: entryKey,
         stage: 'form_error',
@@ -776,6 +902,8 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   if (status === 'error') {
     assertions.collection = 'error';
     record.status = 'surface-error';
+    record.surface_failure = await visibleSurfaceFailure(page);
+    record.runtime_diagnostics = runtimeFailureDiagnostics(state, contractBaseline, responseBaseline);
     fail(`${entryKey}: ${presentation} surface rendered the declared error state`);
     return record;
   }
@@ -914,13 +1042,17 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
         reason: `declared collection state ${status || 'unknown'} rendered ${rendered} record surface(s)`,
       });
     } else {
-      const contract = await openFirstRecord(page, state, presentation);
-      if (!contract) {
+      const opened = await openFirstRecord(page, state, presentation);
+      if (!opened) {
         assertions.detail = 'failed';
+        record.runtime_diagnostics = runtimeFailureDiagnostics(state, contractBaseline, responseBaseline);
         fail(`${entryKey}: record ui.contract.v2 envelope was not observed after opening the first row`);
+      } else if (opened.sceneNavigation) {
+        assertions.detail = 'passed';
+        record.detail_navigation = opened.sceneNavigation;
       } else {
         assertions.detail = 'passed';
-        applyRecordContract(record, contract, behaviour, sessionCompany, entryKey);
+        applyRecordContract(record, opened.contract, behaviour, sessionCompany, entryKey);
       }
     }
   } else {
@@ -1113,7 +1245,7 @@ async function deniedRoleNavigation(deniedRole) {
     ...(VIEWPORT ? { viewport: VIEWPORT } : {}),
   });
   const page = await context.newPage();
-  const state = { user: null, nav: null, contracts: [] };
+  const state = { user: null, nav: null, contracts: [], responseFailures: [] };
   attachCapture(page, state);
   try {
     await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
@@ -1193,7 +1325,7 @@ async function main() {
   });
   const page = await context.newPage();
   const state = {
-    user: null, nav: null, roleSurface: null, contracts: [], roleXmlids: null,
+    user: null, nav: null, roleSurface: null, contracts: [], responseFailures: [], roleXmlids: null,
     exposureDeclared: exposure.declared, exposureSource: exposure.source,
   };
   attachCapture(page, state);
@@ -1262,6 +1394,7 @@ async function main() {
     } else if (entryProblems.length && !record.status) {
       record.status = 'assertion-failed';
     }
+    record.final_url = page.url();
     record.console_errors = consoleErrors.slice(lastConsoleMark);
     summary.push(record);
     completedEntries.add(entryKey);

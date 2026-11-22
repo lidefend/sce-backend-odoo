@@ -1264,6 +1264,13 @@ def _apply_scene_target_projection(
     leaf: dict[str, Any],
     scene_targets: dict[tuple[int, int], str],
 ) -> None:
+    existing_target = leaf.get("entry_target") if isinstance(leaf.get("entry_target"), dict) else {}
+    if _text(existing_target.get("type")) == "admin_surface":
+        # A native action may declare an explicit configuration workspace
+        # (for example sc_web_surface=business_config). That route is the
+        # action's authority and must not be replaced by the generic
+        # menu/action-to-scene compatibility projection.
+        return
     pair = (
         int(leaf.get("menu_id") or 0),
         int(leaf.get("action_id") or 0),

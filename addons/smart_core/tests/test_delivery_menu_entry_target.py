@@ -360,6 +360,61 @@ class TestDeliveryMenuEntryTarget(unittest.TestCase):
         self.assertEqual(product_policy["entries"][0]["route"], "/s/my_work.workspace")
         self.assertEqual(product_policy["entries"][0]["scene_key"], "my_work.workspace")
 
+    def test_final_route_preserves_an_explicit_admin_surface(self):
+        nav = [{
+            "key": "scenario.entry.431.808",
+            "label": "表单配置",
+            "menu_id": 431,
+            "action_id": 808,
+            "route": "/s/entry.smart_construction_core.menu_sc_business_config_workbench",
+            "scene_key": "entry.smart_construction_core.menu_sc_business_config_workbench",
+            "entry_target": {
+                "type": "admin_surface",
+                "surface": "business_config",
+                "route": "/admin/business-config",
+            },
+            "meta": {
+                "menu_id": 431,
+                "action_id": 808,
+                "route": "/s/entry.smart_construction_core.menu_sc_business_config_workbench",
+                "scene_key": "entry.smart_construction_core.menu_sc_business_config_workbench",
+                "entry_target": {
+                    "type": "admin_surface",
+                    "surface": "business_config",
+                    "route": "/admin/business-config",
+                },
+            },
+            "children": [],
+        }]
+        authority = {
+            "primary_actions": [],
+            "role_home_actions": [],
+            "contextual_actions": [],
+            "admin_actions": [{
+                "menu_id": 431,
+                "action_id": 808,
+                "route": "/admin/business-config",
+                "entry_target": {
+                    "type": "admin_surface",
+                    "surface": "business_config",
+                    "route": "/admin/business-config",
+                },
+            }],
+            "menu_containers": [],
+        }
+
+        projected_nav, projected_authority = (
+            menu_service.MenuService.project_final_navigation_routes(nav, authority)
+        )
+
+        node = projected_nav[0]
+        self.assertEqual(node["route"], "/admin/business-config")
+        self.assertEqual(node["entry_target"]["type"], "admin_surface")
+        self.assertEqual(
+            projected_authority["admin_actions"][0]["route"],
+            "/admin/business-config",
+        )
+
     def test_final_routes_do_not_publish_unbacked_directory_routes(self):
         nav = [{
             "key": "group:smart_construction_core.menu_sc_project_center",

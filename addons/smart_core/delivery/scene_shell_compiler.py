@@ -196,6 +196,19 @@ class SceneShellCompiler:
                 return candidate
 
             target = _target(candidate)
+            if (
+                _text(target["entry_target"].get("type")) == "admin_surface"
+                and _text(target["entry_target"].get("route"))
+            ):
+                route = _text(target["entry_target"].get("route"))
+                candidate["route"] = route
+                candidate["entry_target"] = deepcopy(target["entry_target"])
+                candidate.pop("scene_key", None)
+                meta.pop("scene_key", None)
+                meta["route"] = route
+                meta["entry_target"] = deepcopy(target["entry_target"])
+                candidate["meta"] = meta
+                return candidate
             scene_key = target["scene_key"]
             if scene_key:
                 if scene_key not in designed:

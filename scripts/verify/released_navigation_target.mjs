@@ -86,6 +86,25 @@ export function findReleasedNavigationTargetByMenuXmlid(nav, menuXmlid, actionXm
   return null;
 }
 
+export function findReleasedNavigationTargetBySceneKey(nav, sceneKey) {
+  const expectedSceneKey = String(sceneKey || '').trim();
+  if (!expectedSceneKey) return null;
+  const pending = Array.isArray(nav) ? [...nav] : [];
+  while (pending.length) {
+    const node = pending.shift();
+    if (!node || typeof node !== 'object') continue;
+    const target = navigationTarget(node);
+    if (
+      target.action_id === 0
+      && target.menu_id > 0
+      && target.route
+      && target.scene_key === expectedSceneKey
+    ) return target;
+    if (Array.isArray(node.children)) pending.push(...node.children);
+  }
+  return null;
+}
+
 export function captureReleasedNavigation(page) {
   let current = [];
   let currentPayload = {};
