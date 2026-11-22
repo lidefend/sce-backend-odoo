@@ -1,0 +1,57 @@
+schema_version: 1
+
+goal:
+  id: MAINLINE-PERFORMANCE-02
+  title: system_initialization_end_to_end_performance_diagnosis
+  status: completed
+  formal_product_layer: P4
+  layer_target: governed read-only system.init and browser startup diagnosis
+  module:
+    - smart_core
+    - frontend
+  standard_vs_user_specific: repository_performance_diagnosis
+  objective: >-
+    Establish an exact-identity performance profile that decomposes
+    login_to_interactive across browser startup, authentication, system.init,
+    Effective Delivery, route authority, scene work, serialization and
+    post-response UI readiness. Identify measured repeated work and ORM query
+    hotspots before authorizing another implementation change.
+  product_result: >-
+    A reproducible diagnosis binds the main and PR #960 measurements to exact
+    source and runtime identity, attributes the remaining startup cost to
+    concrete stages and call paths, separates confirmed facts from hypotheses,
+    and defines bounded P0 candidates with expected cost contribution.
+  why_here: >-
+    The observed cost crosses the P0 startup projection and frontend startup
+    boundary. A P4 diagnosis is the owning layer for read-only measurement and
+    evidence normalization; it does not change product behavior.
+  why_not_elsewhere:
+    - Do not modify ACL, record rules, publication checks, scenario eligibility or route authority.
+    - Do not add a second navigation engine, global cache or cross-user runtime cache.
+    - Do not change menus, business contracts, product code or performance budgets in this diagnosis.
+    - Do not merge PR #960 or treat its partial improvement as performance acceptance.
+  blast_radius:
+    behavior:
+      - read-only profiling on the registered local.dev runtime
+      - function-level and request-level attribution
+      - browser report decomposition from exact-head evidence
+    exclusions:
+      - no product source change
+      - no database, fixture, scene or credential write
+      - no production or customer environment
+      - no budget or scenario reduction
+  validation:
+    required:
+      - exact main and candidate identities
+      - non-zero probe unit checks
+      - registered local.dev runtime profile
+      - SQL count and function caller attribution
+      - frontend performance artifact decomposition
+  rollback: >-
+    Remove only the diagnosis record and generated local evidence. No product
+    behavior or external runtime state is changed by this batch.
+  completion:
+    batch: completed
+    mainline_integration: not_applicable
+    deployment: not_applicable
+    user_acceptance: not_applicable
