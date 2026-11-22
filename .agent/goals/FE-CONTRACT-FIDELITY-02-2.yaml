@@ -1,0 +1,60 @@
+schema_version: 1
+
+goal:
+  id: FE-CONTRACT-FIDELITY-02-2
+  title: semantic_transport_and_contract_gap_probes
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Contract V2 business-value carrier, readonly collection bridge, Page Block
+    value/action/feedback declarations, attachment identity and role boundaries.
+  module:
+    - frontend/apps/web
+    - frontend/packages/ui
+    - addons/smart_core
+    - addons/smart_construction_core
+    - scripts/audit
+    - scripts/verify
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Complete the mandatory read-only CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05
+    probes before FCF-02-2 product implementation. Determine whether existing
+    declarations carry complete business value, attachment identity/action and
+    Page Block action/feedback semantics. Record any producer-layer gap and keep
+    the dependent frontend batch locked.
+  product_result: >-
+    A reproducible, machine-readable contract-gap decision at an exact mainline
+    baseline. No product source, backend contract or runtime state changes are
+    part of this probe result.
+  why_here: >-
+    The open questions concern the generic Contract V2 and presentation transport
+    boundary. They cannot be settled by page-local formatting or customer rules.
+  why_not_elsewhere:
+    - Do not implement FCF-02-2 product transport while a required probe is unresolved.
+    - Do not add frontend defaults for missing units, precision, currency, role or actions.
+    - Do not modify backend contracts in the probe batch.
+    - Do not start FCF-02-3 My Work or Progress remediation.
+    - Do not add a second Renderer, Registry, Bundle or value runtime.
+  blast_radius:
+    behavior:
+      - readonly collection semantic transport
+      - Page Block metric, summary and table values
+      - Page Block actions and feedback
+      - attachment identity, role and authorized action declarations
+    exclusions:
+      - no product source change
+      - no backend contract, ACL, workflow or ORM change
+      - no database, fixture, service or deployment write
+      - no browser PASS claim without an affected runtime run
+  rollback: >-
+    Remove the probe report, machine matrix and run metadata. No product or
+    persisted runtime state requires rollback.
+  completion:
+    probe_batch: pending_report_commit
+    independent_review: not_started
+    product_batch_fcf_02_2: blocked_on_contract_gap
+    mainline_integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable

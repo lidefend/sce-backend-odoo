@@ -1,0 +1,272 @@
+{
+  "schema": "fe_contract_fidelity_02_2.gap_probes.v1",
+  "status": "complete",
+  "base_sha": "5f032c1729e37ae7ac4642f51a5018ef3f78b02c",
+  "fcf_02_1": {
+    "reviewed_head": "29029ddd339130426b255b55badf1fceacecdd44",
+    "merge_commit": "5f032c1729e37ae7ac4642f51a5018ef3f78b02c",
+    "independent_review": "approved",
+    "mainline_integration": "completed"
+  },
+  "method": {
+    "product_source_modified": false,
+    "backend_contract_modified": false,
+    "database_or_runtime_write": false,
+    "browser_pass_claimed": false,
+    "evidence_kinds": [
+      "producer source declaration",
+      "frontend consumer call chain",
+      "checked-in runtime contract snapshot"
+    ]
+  },
+  "source_evidence": {
+    "addons/smart_construction_core/services/scene_block_schema.py": "17ab6faf664c07855848c85f0f4e7735fab79cc79c838428b9f1637fa3227999",
+    "addons/smart_core/core/page_contracts_builder.py": "b7a2aa0fb9a5a69f52a4c08be7eaf25ca68bc9a6cb3574a049fa0d226baa8dac",
+    "addons/smart_core/core/page_orchestration_data_provider.py": "80438c6489006fb163445a73aa1a7d4597eaf891cafa71d151e6b4957aef0b1e",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py": "481497bc1d2171a78877680ed050fa0b7b3963fd2a1d23e4df2744d9c3534d06",
+    "addons/smart_core/handlers/chatter_timeline.py": "36ca8d7669ad7ba153cfc15822e2a6eaa6a2f9636551ad5c3962ff7d2bf45597",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py": "eed5275e56f39ddcb45618eef32bcf49ea314059d2b85a39f1cb6dcb29625d82",
+    "frontend/apps/web/src/components/page/ZoneRenderer.vue": "98835492430fdf6f3a35ae2911f6d55abbe76493fe4dded30e04e060a666ef34",
+    "frontend/apps/web/src/components/page/PageRenderer.vue": "f6261cbd4f1f0776e3c7e8971e79df77675f935b76c11fd81988495678065b7c",
+    "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue": "4b1ce0a77e2876639f8ebec3d3ca34dd04188cc9d8b236a0da2bf8947c30b109",
+    "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue": "9a4d8a00d8f9b87096329d6be6507cef522693fbd6b1799e5a206645924589e6",
+    "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue": "d88d037e609c423e3da4f5b546b0a9cfaffaf7ab7bd438a13749ecde1b44bf2c",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue": "fe7394d2f9f3adc183c03820bcafc7f1b8bc93b2776cf85e1931fd6281e0e595",
+    "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts": "e140475d89063b4e0976c3189c42a6740cf6c96631e4df49d55fcd27137c4627"
+  },
+  "contract_readbacks": {
+    "docs/contract/snapshots/workspace_home_enter_intent_admin.json": {
+      "sha256": "40dfd917295e79496f92d838cd6297cc7e1b4aec992a5627cf37713c1b0bd070",
+      "page_block_keys": [
+        "actions",
+        "block_type",
+        "data_source",
+        "key",
+        "priority",
+        "subtitle",
+        "title",
+        "tone"
+      ],
+      "block_action_keys": [
+        "key",
+        "label"
+      ],
+      "metric_dataset_row_keys": [
+        "action_key",
+        "hint",
+        "key",
+        "label",
+        "target",
+        "tone",
+        "value"
+      ],
+      "metric_value_types_observed": [
+        "number"
+      ]
+    },
+    "docs/contract/snapshots/native_view/semantic_page_project_form_collab_v1.json": {
+      "sha256": "bccafbd5285329cf6503c9a55024d5eeec936194830a5488dd182447f8d86576",
+      "attachment_zone_block": {
+        "type": "attachment_block",
+        "data": {
+          "enabled": true,
+          "field": "attachment_ids"
+        }
+      }
+    }
+  },
+  "probes": [
+    {
+      "id": "CFG-GAP-02",
+      "semantic": "page_block_business_value_carrier",
+      "result": "contract_gap",
+      "blocks": [
+        "FCF-02-2"
+      ],
+      "required_output": {
+        "field_identity": {
+          "state": "missing",
+          "evidence": "Block and metric dataset rows contain display keys but no field identity or field descriptor."
+        },
+        "raw_value": {
+          "state": "partial",
+          "evidence": "A raw JSON value can reach the component, but its type has no business identity."
+        },
+        "precision": {
+          "state": "missing",
+          "evidence": "No digits or precision declaration exists in the Page Block value carrier."
+        },
+        "currency": {
+          "state": "missing",
+          "evidence": "No currency field or currency identity exists in the block value."
+        },
+        "unit": {
+          "state": "missing",
+          "evidence": "The carrier does not declare money, percent, count or duration units."
+        },
+        "selection": {
+          "state": "missing",
+          "evidence": "No selection identity or option descriptor is carried."
+        },
+        "relation_identity": {
+          "state": "missing",
+          "evidence": "No relation model, record ID and authoritative label tuple is carried."
+        },
+        "temporal_semantics": {
+          "state": "missing",
+          "evidence": "No date/datetime type or timezone authority is carried."
+        },
+        "attachment_role": {
+          "state": "missing",
+          "evidence": "No attachment identity or semantic role is carried."
+        }
+      },
+      "producer": [
+        "addons/smart_construction_core/services/scene_block_schema.py::BLOCK_SCHEMA",
+        "addons/smart_construction_core/services/scene_block_schema.py::_page_block",
+        "addons/smart_construction_core/services/scene_block_schema.py::_dataset",
+        "addons/smart_core/core/page_contracts_builder.py::_build_page_orchestration",
+        "addons/smart_core/core/page_orchestration_data_provider.py::build_section_data_source"
+      ],
+      "consumer_chain": [
+        "frontend/apps/web/src/components/page/ZoneRenderer.vue::resolveDataset",
+        "frontend/apps/web/src/components/page/BlockRenderer.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue"
+      ],
+      "observed_behavior": {
+        "positive": "Raw numeric values and zero can reach the metric component without an unconditional pre-stringification.",
+        "negative": "The same number has no authoritative money/percentage/count/duration identity; object values become JSON text or an empty placeholder depending on the block."
+      },
+      "business_effect": "A value can look present while its business meaning, precision, unit or identity is unavailable.",
+      "responsibility": {
+        "primary": "P0 producer declaration",
+        "secondary": "P1 block assembly consumes the generic carrier without defining a competing schema",
+        "frontend_status": "blocked"
+      }
+    },
+    {
+      "id": "CFG-GAP-04",
+      "semantic": "attachment_identity_and_role",
+      "result": "contract_gap",
+      "blocks": [
+        "FCF-02-2"
+      ],
+      "required_output": {
+        "stable_attachment_identity": {
+          "state": "partial",
+          "evidence": "Chatter and One2many expose an attachment ID, but Page Block and attachment-zone contracts do not carry a common value object."
+        },
+        "record_ownership": {
+          "state": "partial",
+          "evidence": "The backend verifies the source record, but the normalized attachment value does not carry owning model and record identity."
+        },
+        "semantic_role": {
+          "state": "missing",
+          "evidence": "Surface labels and field context exist, but no stable role is declared across bill evidence, collaboration and workflow evidence."
+        },
+        "preview_download_action": {
+          "state": "partial",
+          "evidence": "Chatter can declare can_download/download_intent and form contracts can declare file.download, but Page Blocks and attachment zones do not receive a universal action declaration."
+        },
+        "failure_feedback": {
+          "state": "missing",
+          "evidence": "Attachment failures are component-local text without a declared reason code, message and trace identity."
+        }
+      },
+      "producer": [
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py::_detect_chatter_and_attachments_model_first",
+        "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py::_inject_form_ui_labels",
+        "addons/smart_core/handlers/chatter_timeline.py::_load_attachments",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py::ZONE_ATTACHMENT"
+      ],
+      "consumer_chain": [
+        "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts::openAttachment",
+        "frontend/apps/web/src/pages/contractForm/useNativeAttachmentRuntime.ts::deleteAttachment",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue::downloadAttachment"
+      ],
+      "observed_behavior": {
+        "positive": "An authenticated chatter attachment can carry an ID and an explicit download intent; label and count inference are not used by the FCF-02-1 shared authority.",
+        "negative": "The same attachment fact has different partial shapes across form, chatter, One2many and attachment-zone contracts; role, ownership and failure identity are not universally present."
+      },
+      "business_effect": "A rendered attachment may lack a stable, authorized and actionable business identity.",
+      "responsibility": {
+        "primary": "P0 producer declaration",
+        "secondary": "Existing governed attachment APIs remain execution authority",
+        "frontend_status": "blocked"
+      }
+    },
+    {
+      "id": "CFG-GAP-05",
+      "semantic": "page_block_action_and_feedback",
+      "result": "contract_gap",
+      "blocks": [
+        "FCF-02-2"
+      ],
+      "required_output": {
+        "action_target": {
+          "state": "partial",
+          "evidence": "Targets exist in action_schema and some dataset rows, but block actions usually carry only key and label."
+        },
+        "permission_result": {
+          "state": "missing",
+          "evidence": "Role/capability visibility is not a resolved allowed/enabled permission result."
+        },
+        "disabled_reason": {
+          "state": "missing",
+          "evidence": "No per-action disabled reason is present in blocks or Page Block events."
+        },
+        "error_reason_code": {
+          "state": "missing",
+          "evidence": "Page-level error envelopes exist, but no Page Block action feedback contract associates a failure with the action identity."
+        },
+        "message": {
+          "state": "missing",
+          "evidence": "No per-action failure or denial message is carried through the block contract."
+        },
+        "trace_identity": {
+          "state": "missing",
+          "evidence": "No action/block failure trace identity is carried into the Page Block result."
+        }
+      },
+      "producer": [
+        "addons/smart_core/core/page_contracts_builder.py::_build_page_orchestration",
+        "addons/smart_construction_core/services/scene_block_schema.py::_page_block",
+        "addons/smart_construction_core/services/scene_block_schema.py::_dataset"
+      ],
+      "consumer_chain": [
+        "frontend/apps/web/src/components/page/PageRenderer.vue::emitAction",
+        "frontend/apps/web/src/components/page/blocks/BlockEntryGrid.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockTodoList.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockAlertPanel.vue"
+      ],
+      "observed_behavior": {
+        "positive": "A declared target can be forwarded through the action event.",
+        "negative": "Visible actions have no uniform permission result or disabled reason; some components synthesize open_scene when an action key is absent; no block action result carries reason, message or trace identity."
+      },
+      "business_effect": "A user can be shown a non-executable action or a failure without the authoritative explanation and recovery identity.",
+      "responsibility": {
+        "primary": "P0 producer declaration",
+        "secondary": "Existing action and authorization services remain decision authority",
+        "frontend_status": "blocked"
+      }
+    }
+  ],
+  "summary": {
+    "sufficient": 0,
+    "not_applicable": 0,
+    "contract_gap": 3
+  },
+  "dependency_effect": {
+    "FCF-02-2": "locked",
+    "required_next_batch": "P0 producer remediation for Page Block value, attachment identity/actions and Page Block action/feedback declarations",
+    "frontend_fallback_allowed": false,
+    "probe_reevaluation_required_after": [
+      "owning P0 producer declaration",
+      "consumer contract decoding",
+      "independent review",
+      "registered verification"
+    ]
+  }
+}

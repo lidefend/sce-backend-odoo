@@ -3,7 +3,7 @@
   "id": "FE-CONTRACT-FIDELITY-02-1",
   "branch": "feature/fcf-02-1-semantic-authority-20261123",
   "baseline_sha": "08ce19985aadd7f91b11c42f650b32893638b4c9",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/FE-CONTRACT-FIDELITY-02-1.yaml",
   "record": "docs/audit/fe_contract_fidelity_02_1_semantic_authority_20261123.md",
   "scope": [
@@ -313,7 +313,19 @@
     "known_unrelated_no_new_any_failure": "verify.frontend.no_new_any_guard reports five existing `any` uses in useRecordFormFieldSchemas.ts against a frozen allowance of four. The file is unchanged by this batch; no unrelated type cleanup was mixed into FCF-02-1.",
     "build_environment": "Direct verify.frontend.build stops before compilation because .env.dev is absent in this worktree. The registered frontend.standard.preview.build entry completed the same production frontend build without creating or copying credentials."
   },
-  "next_exact_step": "Prepare generated evidence, commit the clean FCF-02-1 candidate, rebuild that exact HEAD, publish the PR and obtain all exact-head remote gates.",
+  "next_exact_step": "Closed. PR #971 merged as 5f032c1729e37ae7ac4642f51a5018ef3f78b02c from reviewed head 29029ddd339130426b255b55badf1fceacecdd44. Continue only through the separately registered FCF-02-2 contract-gap probe run.",
   "write_replay_authorized": false,
-  "candidate_evidence": false
+  "candidate_evidence": true,
+  "completion": {
+    "batch": "completed",
+    "independent_review": "approved",
+    "mainline_integration": "completed",
+    "deployment": "not_applicable",
+    "user_acceptance": "not_applicable"
+  },
+  "integration": {
+    "pull_request": 971,
+    "reviewed_head": "29029ddd339130426b255b55badf1fceacecdd44",
+    "merge_commit": "5f032c1729e37ae7ac4642f51a5018ef3f78b02c"
+  }
 }

@@ -2,7 +2,7 @@
 
 ## Unified Business Semantic Authority
 
-Status: verification pending.
+Status: completed. Independent review approved; mainline integration completed.
 
 Architecture approval:
 
@@ -28,6 +28,21 @@ Explicit exclusions:
 
 The diagnostic call-chain map, implementation decisions, validation evidence and
 remaining limitations are recorded here as the batch progresses.
+
+## Mainline closure
+
+- Reviewed PR: #971
+- Reviewed candidate head: `29029ddd339130426b255b55badf1fceacecdd44`
+- Required exact-head remote checks: all passed
+- Merge commit / new mainline baseline:
+  `5f032c1729e37ae7ac4642f51a5018ef3f78b02c`
+- Batch acceptance: completed
+- Mainline integration: completed
+- Deployment and user acceptance: not applicable to this P0 presentation batch
+
+The earlier `verification_pending` state is closed. This result does not claim that
+the complete frontend has reached contract-fidelity readiness. FCF-02-2 remains
+gated by the separately recorded CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05 probes.
 
 ## Review R1 · localized relation labels
 
