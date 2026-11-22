@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: MAIN-SCHEDULED-CI-RECOVERY-03
   title: release_candidate_dispatch_requires_full_audit_producers
-  status: active
+  status: completed
   formal_product_layer: P4
   layer_target: governed GitHub Actions release-candidate dependency semantics
   module:
@@ -52,7 +52,7 @@ goal:
     Revert the policy split, workflow flags, tests and run metadata together. The
     previous Push-reuse merge behavior remains independently recoverable.
   completion:
-    batch: verification_pending
-    mainline_integration: not_run
+    batch: completed
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable

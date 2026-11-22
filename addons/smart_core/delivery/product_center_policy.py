@@ -124,7 +124,7 @@ def _sync_capabilities(
         return capabilities
     result = []
     for raw in capabilities:
-        row = copy.deepcopy(raw) if isinstance(raw, dict) else raw
+        row = raw
         if isinstance(row, dict):
             center = menu_centers.get(_menu_identity(row))
             if center:
@@ -183,7 +183,7 @@ def normalize_product_policy(
                 "PRODUCT_CENTER_DEFINITION_CONFLICT",
                 f"center {key!r} has different label or sequence",
             )
-        group = copy.deepcopy(raw_group)
+        group = raw_group
         group.update(
             {
                 "center_key": key,
@@ -204,7 +204,7 @@ def normalize_product_policy(
                         f"center {key!r} contains a non-object menu",
                     )
                 continue
-            menu = copy.deepcopy(raw_menu)
+            menu = raw_menu
             menu_identity = _menu_identity(menu)
             if not menu_identity:
                 raise ProductCenterPolicyError(

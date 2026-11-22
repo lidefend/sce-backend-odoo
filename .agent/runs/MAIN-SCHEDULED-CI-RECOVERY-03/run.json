@@ -3,7 +3,7 @@
   "id": "MAIN-SCHEDULED-CI-RECOVERY-03",
   "branch": "fix/release-candidate-dispatch-evidence-20261122",
   "baseline_sha": "9b0d16f21b0fe3316c3640dada48a7eb307ff499",
-  "status": "verification_pending",
+  "status": "completed",
   "goal": ".agent/goals/MAIN-SCHEDULED-CI-RECOVERY-03.yaml",
   "record": "docs/ops/iterations/release_candidate_dispatch_evidence_20261122.md",
   "scope": [
@@ -83,7 +83,8 @@
     "github_actions_security": "18 tests passed.",
     "frontend_dev_incremental": "207 tests passed.",
     "iteration": "ci.local.iteration exited zero with zero unmapped or blocked paths.",
-    "freeze_prepare": "ci.delivery.freeze.prepare passed; the complexity report reflects the one-line contract-test increase."
+    "freeze_prepare": "ci.delivery.freeze.prepare passed; the complexity report reflects the one-line contract-test increase.",
+    "mainline": "PR #958 merged as cb182c9e94abe515b0d987fc514bc46ca98d1cfb. Complete manual CI showed release_candidate_gate now waits for same-event full producers and fails when they fail."
   },
-  "next_exact_step": "Commit the clean candidate, publish PR, verify exact-head gates and merge before rerunning all five manual workflows on the new main."
+  "next_exact_step": "Closed; follow FRONTEND-DELIVERY-PERFORMANCE-01 for the remaining full-lane performance failure."
 }

@@ -354,6 +354,8 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         self.assertNotIn("filter_route_authority_by_publication", shared)
         self.assertNotIn("_filter_nav_by_release_gate", shared)
         self.assertIn("_native_execution_surface", shared)
+        self.assertIn("return nav, authority", shared)
+        self.assertNotIn("authority = deepcopy(authority)", shared)
         self.assertIn("platform_release_gate", shared)
         self.assertNotIn("load_capabilities", shared)
         published = source.split("def published_route_authority", 1)[1].split(
