@@ -2,8 +2,8 @@
 
 ## Identity
 
-- Base main: `cb182c9e94abe515b0d987fc514bc46ca98d1cfb`
-- Diagnosis commit: `3eed67cee1ff2be5c9336f59687ba387de64b999`
+- Base main after required sync: `d8ce851a7222a07491518749faf9cf7e8f2f53ed`
+- Diagnosis commit after governed replay: `422c4a0cb8bd4d9fd0a7cd6a62123a507c38a519`
 - Branch: `fix/mainline-performance-02-scene-facts-20261122`
 - Formal product layer: P1 construction scene runtime mechanism
 - P0 seam: generic request-scoped fact carrier only
@@ -93,29 +93,30 @@ Backend-only observation on the registered `sc-local-dev/sc_dev_demo` profile:
 
 | Metric | Base median | R1 median | Change |
 | --- | ---: | ---: | ---: |
-| Whole request | 998.08 ms | 843.45 ms | -154.63 ms / -15.5% |
-| Warm request | 994.68 ms | 812.82 ms | -181.86 ms / -18.3% |
-| Process-first request | 2008.11 ms | 1782.24 ms | -225.87 ms / -11.2% |
-| `build_nav` | 670.00 ms | 583.00 ms | -87.00 ms / -13.0% |
-| `execute_scene_runtime` | 57.00 ms | 34.00 ms | -23.00 ms / -40.4% |
-| `finalize_startup_surface` | 144.50 ms | 108.00 ms | -36.50 ms / -25.3% |
+| Whole request | 1001.84 ms | 866.67 ms | -135.17 ms / -13.5% |
+| Warm request | 998.82 ms | 807.41 ms | -191.41 ms / -19.2% |
+| Process-first request | 2155.73 ms | 1957.74 ms | -197.99 ms / -9.2% |
+| `build_nav` | 604.50 ms | 594.50 ms | -10.00 ms / -1.7% |
+| `execute_scene_runtime` | 58.00 ms | 37.00 ms | -21.00 ms / -36.2% |
+| `finalize_startup_surface` | 157.50 ms | 110.50 ms | -47.00 ms / -29.8% |
 
 Five-sample browser login observations, using the same browser version, DB,
 frontend bundle and request sequence. R1 was measured twice against the same
 base result to expose local run-to-run noise:
 
-| Metric | Base median | R1 first run | R1 confirmation run | Change range |
-| --- | ---: | ---: | ---: | ---: |
-| Login to interactive | 2814 ms | 2651 ms | 2780 ms | -34 to -163 ms |
-| `system.init` HTTP | 1328.58 ms | 1215.34 ms | 1230.26 ms | -98 to -113 ms |
-| `build_nav` | 998 ms | 903 ms | 928 ms | -70 to -95 ms |
-| Post-response UI | 892 ms | 886 ms | 901 ms | -6 to +9 ms |
+| Metric | Base median | R1 median | Change |
+| --- | ---: | ---: | ---: |
+| Login to interactive | 2947 ms | 2789 ms | -158 ms / -5.4% |
+| `system.init` HTTP | 1413.47 ms | 1289.42 ms | -124.05 ms / -8.8% |
+| `build_nav` | 990 ms | 1011 ms | +21 ms |
+| Post-response UI | 915 ms | 904 ms | -11 ms |
 
 These are local diagnostic measurements, not release-budget claims. They show
-that both runs improved the backend `system.init` path while post-response UI
-stayed within local noise; there is no evidence that cost was moved into a
-different stage. The exact-head release gate remains the authoritative
-end-to-end measurement.
+that the backend `system.init` path and login-to-interactive both improved
+while post-response UI did not absorb the saved cost. The browser `build_nav`
+delta is not monotonic in this run because it also contains the separate legacy
+mainline navigation path; it is not used as proof of the scene-fact saving. The
+exact-head release gate remains the authoritative end-to-end measurement.
 
 ## Validation
 
@@ -156,14 +157,14 @@ Excluded:
 
 | Evidence | SHA-256 |
 | --- | --- |
-| Base runtime equality matrix | `f06e54bce827014cb880af6f7a7685129462f7f84cc1f4075772a65589745f06` |
-| R1 runtime equality matrix | `cfd0d40d03358b75ad905c678093e828266fc133e65839afc196e73bcdb3101a` |
-| Base backend observation | `7c9fc80640c015586de09193f924dafb6200859d9d2f5019b6fe5d658b5b0b44` |
-| R1 backend observation | `87b46666a1d6b834cf1f8adf8139e7e6c0381e0bffe0155f9ff086ca93ec1ab6` |
-| Base browser observation | `d5acb9a70f1df0782c89cb55d2bd5a5dd51042d1685493f82ea2322e0aa7e536` |
-| R1 browser observation | `4b2ac38a31f8006b943a7daaf29461f64ec50c32022f6430ab105813b093a04b` |
-| R1 performance unit | `c19bdc43dd42aa110a510bb0225b648f88a45051dd3b116f1326cb23b8112680` |
-| R1 navigation unit | `94c747a8d18e0686a3f9b21dcfed63628c2d97f8adabf48dd9343c29fd18bb5d` |
+| Synced base runtime equality matrix | `4e313adaeec0269477483fb46ce840837619c597e38c92ede22550158514d7ec` |
+| Synced R1 runtime equality matrix | `977599dabdcad747ad2e333eb2cc2f9097ad8970e3053e6c43941a9a4062a5e7` |
+| Synced base backend observation | `70601b3189f7e1abd54ca9795507b9250ce2ebc2561db43707a9753926768bfc` |
+| Synced R1 backend observation | `559610a80ece374b61e1d253c3a555e118c07a9da8b2ca68710e4e7f84772dee` |
+| Synced base browser observation | `d34d1f8de4ce8abdbe2685fb769eb5cee3d9a5f2f687841387e55ed815d670ce` |
+| Synced R1 browser observation | `084e20bf6c4942c4eabecef7bd1b0734349dd0fdc0adfb208cfb978904e5c7c8` |
+| Synced R1 performance unit | `0ae41d8a8c6253613b8ceecd74d887699448bb6f18017345197a732266a7b6d8` |
+| Synced R1 navigation unit | `52862e82361b5e3f2c034d9ebce236b9d14a3cf294ce1cdc63f9f73db21d8152` |
 
 ## Rollback
 

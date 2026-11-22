@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "MAINLINE-PERFORMANCE-02-R1",
   "branch": "fix/mainline-performance-02-scene-facts-20261122",
-  "baseline_sha": "3eed67cee1ff2be5c9336f59687ba387de64b999",
+  "baseline_sha": "422c4a0cb8bd4d9fd0a7cd6a62123a507c38a519",
   "status": "verification_pending",
   "goal": ".agent/goals/MAINLINE-PERFORMANCE-02-R1.yaml",
   "record": "docs/ops/iterations/mainline_performance_02_r1_scene_facts_20261122.md",
@@ -83,8 +83,8 @@
     "measured_cost": "Cold `_load_scene_declarations_with_timings` ownership is 284ms across five calls in a warm process and adds the cached capability caller on a cold process.",
     "scope_lock": "R1 changes scene declaration loading only. Menu index, release snapshot, broad deepcopy and frontend optimizations remain excluded.",
     "implementation": "SystemInitRequestContext owns one explicit request fact. SceneDeclarationSnapshot stores ordered declarations, timings and a canonical content fingerprint. All six cold system.init consumers read that fact.",
-    "runtime_equality": "Base and R1 complete response, navigation and route-authority hashes were identical for finance/company1, owner/company2 and project-manager/company1. Scene loads changed 6->1 and declaration fingerprint 8e98be87... stayed identical.",
-    "performance": "Backend median request 998.08ms -> 843.45ms; warm 994.68ms -> 812.82ms; process-first 2008.11ms -> 1782.24ms. Browser login total improved in both runs (2814ms -> 2651ms, then 2780ms), while system.init HTTP improved 1328.58ms -> 1215.34ms, then 1230.26ms.",
+    "runtime_equality": "After syncing to main d8ce851a, base and R1 complete response, navigation and route-authority hashes were identical for finance/company1, owner/company2 and project-manager/company1. Scene loads changed 6->1 and declaration fingerprint 8e98be87... stayed identical.",
+    "performance": "On synced base d8ce851a, backend median request 1001.84ms -> 866.67ms, warm 998.82ms -> 807.41ms, process-first 2155.73ms -> 1957.74ms. Browser login total improved 2947ms -> 2789ms and system.init HTTP improved 1413.47ms -> 1289.42ms without post-response UI absorbing the saving.",
     "validation": "verify.system.performance.baseline.unit passed 78 tests; verify.backend.navigation_delivery.unit passed 176 tests; ORM_RESULT_GUARD passed 81 tests; ci.local.iteration passed all affected targets."
   }
 }
