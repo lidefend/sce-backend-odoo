@@ -2,7 +2,8 @@
 
 ## Identity
 
-- Base main after required sync: `d8ce851a7222a07491518749faf9cf7e8f2f53ed`
+- Current base main after PR #964 sync: `a408177cde91a6435d5e57a63c50dc35c2e5ce14`
+- Historical R1 base before PR #964: `d8ce851a7222a07491518749faf9cf7e8f2f53ed`
 - Diagnosis commit in replacement candidate: `27f9c86a28d8d59aa830a9c38fb11c6e708bd1f3`
 - Branch: `fix/mainline-performance-02-scene-facts-r2-20261122`
 - Formal product layer: P1 construction scene runtime mechanism
