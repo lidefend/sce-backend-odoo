@@ -2518,6 +2518,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_native_field_descriptor_selects_producer_and_registry_checks(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/utils/native_field_descriptor.py",
+                "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+            ]),
+            [
+                "verify.frontend.collection_view_semantics.unit",
+                "verify.native_widget.provenance.unit",
+                "verify.semantic.registry.lint",
+            ],
+        )
+
     def test_semantic_registry_tools_keep_their_generator_and_node_locks(self) -> None:
         self.assertEqual(
             select_targets([

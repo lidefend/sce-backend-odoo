@@ -1993,7 +1993,7 @@ function formatNumericCellValue(field: string, value: unknown, row?: Record<stri
       : '';
     return formatMonetaryDisplayValue(numeric, option?.digits, currencyLabel);
   }
-  return formatNumericFieldValue(raw, type) ?? '';
+  return formatNumericFieldValue(raw, type, { digits: option?.digits }) ?? '';
 }
 
 function formatFooterNumber(
@@ -2013,7 +2013,9 @@ function formatFooterNumber(
     if (!currency) return null;
     return formatMonetaryDisplayValue(value, option?.digits, currency.label);
   }
-  return formatNumericFieldValue(value, type);
+  return formatNumericFieldValue(value, type, {
+    digits: option?.digits,
+  });
 }
 
 const pageFooterStats = computed(() =>

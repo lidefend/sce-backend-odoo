@@ -129,11 +129,18 @@ export function numericFieldValue(value: unknown): number | null {
 export function formatNumericFieldValue(
   value: unknown,
   type: string,
-  options?: { locale?: string },
+  options?: { locale?: string; digits?: [number, number] },
 ): string | null {
   const parsed = numericFieldValue(value);
   if (parsed === null) return null;
-  const fractionDigits = type === 'integer' ? 0 : 2;
+  const declaredScale = Array.isArray(options?.digits) && options.digits.length === 2
+    ? Number(options.digits[1])
+    : null;
+  const fractionDigits = type === 'integer'
+    ? 0
+    : Number.isInteger(declaredScale) && declaredScale >= 0 && declaredScale <= 20
+      ? declaredScale
+      : 2;
   return parsed.toLocaleString(options?.locale || 'zh-CN', {
     maximumFractionDigits: fractionDigits,
     minimumFractionDigits: fractionDigits,

@@ -13,7 +13,7 @@ import {
 import { formatNumericFieldValue } from '../../utils/fieldSemantics.ts';
 import {
   formatMonetaryInputValue,
-  normalizeMonetaryDigits,
+  normalizeDeclaredDigits,
   presentDeclaredBusinessValue,
 } from '../../app/presentation/businessValuePresentation';
 import { fieldType, fromDatetimeInputValue, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
@@ -80,26 +80,43 @@ function one2manySelectionOptions(value: unknown): Array<[string, string]> | und
   return options.length ? options : undefined;
 }
 
-function one2manyNativeWidget(source: Record<string, unknown> | undefined) {
-  if (!source) return {};
-  const attributes = source.attributes && typeof source.attributes === 'object'
-    ? source.attributes as Record<string, unknown> : {};
-  const widget = String(attributes.widget || source.widget || '').trim();
-  if (!widget) return {};
-  const semantics = source.widget_semantics;
-  return { widget, ...(semantics && typeof semantics === 'object' && !Array.isArray(semantics)
-    ? { widgetSemantics: semantics as Record<string, unknown> } : {}) };
+function one2manyNativeWidget(
+  source: Record<string, unknown> | undefined,
+  identityFallback?: Record<string, unknown>,
+) {
+  const current = source || {};
+  const attributes = current.attributes && typeof current.attributes === 'object'
+    ? current.attributes as Record<string, unknown> : {};
+  const widget = String(attributes.widget || current.widget || '').trim();
+  const semantics = current.widget_semantics;
+  const semanticsRecord = semantics && typeof semantics === 'object' && !Array.isArray(semantics)
+    ? semantics as Record<string, unknown>
+    : undefined;
+  const componentKey = String(
+    current.component_key
+    || current.componentKey
+    || semanticsRecord?.component_key
+    || semanticsRecord?.componentKey
+    || identityFallback?.component_key
+    || identityFallback?.componentKey
+    || '',
+  ).trim();
+  return {
+    ...(widget ? { widget } : {}),
+    ...(semanticsRecord ? { widgetSemantics: semanticsRecord } : {}),
+    ...(componentKey ? { componentKey } : {}),
+  };
 }
 
-function one2manyMonetaryMetadata(
+function one2manyNumericMetadata(
   sources: Array<Record<string, unknown> | undefined>,
   descriptor?: FieldDescriptor | null,
 ) {
   const descriptorRecord = descriptor as Record<string, unknown> | undefined;
   const digits = sources
-    .map((source) => normalizeMonetaryDigits(source?.digits))
+    .map((source) => normalizeDeclaredDigits(source?.digits))
     .find(Boolean)
-    || normalizeMonetaryDigits(descriptorRecord?.digits);
+    || normalizeDeclaredDigits(descriptorRecord?.digits);
   const currencyField = sources
     .map((source) => String(source?.currency_field || source?.currencyField || '').trim())
     .find(Boolean)
@@ -157,8 +174,8 @@ export function one2manyColumnsFromSubview(
           ...(businessColumn?.force_save === undefined ? {} : { forceSave: nativeForceSave(businessColumn.force_save) }),
           label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
           ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
-          ...(String(businessColumn?.ttype || businessColumn?.type || ttype).toLowerCase() === 'monetary'
-            ? one2manyMonetaryMetadata([businessColumn], descriptor)
+          ...(['float', 'monetary'].includes(String(businessColumn?.ttype || businessColumn?.type || ttype).toLowerCase())
+            ? one2manyNumericMetadata([businessColumn], descriptor)
             : {}),
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
           readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
@@ -194,15 +211,15 @@ export function one2manyColumnsFromSubview(
       out.push({
         key: locator || `${colName}@@${occurrenceIndex || out.length + 1}`,
         name: colName,
-        ...one2manyNativeWidget(row),
+        ...one2manyNativeWidget(row, businessColumn),
         ...((attributes.force_save ?? row.force_save) === undefined ? {} : { forceSave: nativeForceSave(attributes.force_save ?? row.force_save) }),
         label: one2manyColumnLabel(
           attributes.string || row.label || row.string || businessColumn.label || businessColumn.string || descriptor?.string,
           colName,
         ),
         ttype,
-        ...(ttype.toLowerCase() === 'monetary'
-          ? one2manyMonetaryMetadata([row, attributes, businessColumn], descriptor)
+        ...(['float', 'monetary'].includes(ttype.toLowerCase())
+          ? one2manyNumericMetadata([row, attributes, businessColumn], descriptor)
           : {}),
         required: required ?? Boolean(descriptor?.required),
         readonly: ttype === 'many2one'
@@ -944,13 +961,15 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
     }).filter(Boolean).join('、');
   }
   if ((ttype === 'integer' || ttype === 'float')
-    && String(column.widget || '').trim().toLowerCase() !== 'float_time') {
-    return formatNumericFieldValue(value, ttype) ?? '';
+    && String(column.widget || '').trim().toLowerCase() !== 'float_time'
+    && column.componentKey !== 'sc.value.percentage') {
+    return formatNumericFieldValue(value, ttype, { digits: column.digits }) ?? '';
   }
   return presentDeclaredBusinessValue({
     field: {
       name: column.name,
       type: ttype,
+      componentKey: column.componentKey,
       widget: column.widget,
       digits: column.digits,
       currencyField: column.currencyField,

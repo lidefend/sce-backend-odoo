@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122",
+  "branch": "feature/fe-expression-03b-batch2-percentage-precision-20261122",
+  "baseline_sha": "328ba916ee62215c6234c8b03757cffde18787c0",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122.yaml",
+  "record": "docs/audit/fe_expression_03b_batch2_percentage_precision_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-P1B-BATCH2-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-P1B-BATCH2-20261122/run.json",
+    ".agent/goals/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122/run.json",
+    "docs/audit/fe_expression_03b_batch2_percentage_precision_20261122.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "addons/smart_core/utils/native_field_descriptor.py",
+    "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+    "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+    "frontend/apps/web/src/components/professional-fields/professionalBusinessValueModel.ts",
+    "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/components/template/formSection.mapper.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/apps/web/src/utils/display.ts",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/duration_business_value_browser_test.mjs",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing source tree and governed local static/component tests; no database, service or persistent runtime writes"
+  },
+  "checks": {
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "addons/smart_core/utils/native_field_descriptor.py",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+        "scripts/verify/collection_view_semantics_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_shape_projection": {
+      "target": "verify.frontend.contract_shape_projection.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "professional_business_value": {
+      "target": "verify.frontend.professional_business_value.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/scripts"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/scripts"
+      ],
+      "kind": "offline"
+    },
+    "collection_row_cell": {
+      "target": "verify.frontend.collection_row_cell.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "scripts/verify/frontend_collection_row_cell_guard.py",
+        "scripts/verify/test_frontend_collection_row_cell_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "canonical_form_presenter": {
+      "target": "verify.frontend.canonical_form_presenter.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+        "frontend/apps/web/src/components/template/formSection.mapper.ts",
+        "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "semantic_registry": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry",
+        "scripts/verify/semantic_registry_lint.py",
+        "scripts/verify/test_semantic_registry_lint.py",
+        "scripts/verify/test_node_component_registry.py",
+        "scripts/contract/generate_semantic_registry.py",
+        "addons/smart_core/core/contract_runtime/semantic_resolver.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "addons/smart_core/core/contract_runtime/domain_field_semantics_generated.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "no Odoo model, service, handler, permission, workflow, state or persisted-data behavior changes"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "collection view semantics, contract shape, business semantics, professional business value and detail collection"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "registered frontend unit targets plus native parser tests"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce plus producer/consumer tests"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "verify.frontend.lint.src, verify.frontend.typecheck.strict and verify.frontend.build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "reason": "affected collection, kanban and One2many component browser checks after implementation; full backend business journey remains separate"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "producer": "Native Float fields now project their declared digits through canonical field descriptors and tree/list occurrences. Percentage widget occurrences and list schemas resolve component identity through the semantic registry instead of a parser-private mapping.",
+    "consumer": "Contract V2 preserves sc.value.percentage, list and Kanban consume the shared presenter, One2many carries component identity without leaking widget semantics across occurrences, and generic decimal/percentage formatting consumes declared digits.",
+    "write_boundary": "Only display formatting changed. Input projection and ORM command values retain their prior shape.",
+    "validation": "ci.local.iteration executed 17 affected targets including native parser, semantic registry, Contract V2, business semantics, canonical form, One2many and collection row-cell coverage. Lint and strict typecheck passed. The affected component browser verifies percentage and quantity precision across Form, List and Kanban at 34 assertions with zero console errors.",
+    "build": "Production frontend build PASS with 5419 modules; dirty-worktree artifact SHA256 46e8263915421ea4ca96c5eccedc9516d5e9fc301576817fdf07ce04e593ce30."
+  },
+  "next_exact_step": "Review generated evidence, update the batch record, and commit the clean Batch 2 candidate.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

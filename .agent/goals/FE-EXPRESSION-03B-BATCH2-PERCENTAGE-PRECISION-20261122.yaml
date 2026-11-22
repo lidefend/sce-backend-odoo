@@ -1,0 +1,58 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03B-BATCH2-PERCENTAGE-PRECISION-20261122
+  title: declared_percentage_and_numeric_precision_convergence
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic native field metadata projection and shared frontend business-value
+    interpretation for declared percentages and Float/Quantity precision.
+  module:
+    - addons/smart_core
+    - frontend/apps/web
+    - scripts/verify
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Preserve the declared sc.value.percentage identity through Contract V2 and
+    project already-declared float digits through native field/list descriptors.
+    Consume those declarations in shared presentation for List, Kanban, One2many
+    and readonly form values without changing ORM input or stored values.
+  product_result: >-
+    The same declared business value has one numeric interpretation across
+    collection, detail and related-record surfaces. Percentage fields render as
+    percentages, Float and Quantity values use their contract-declared scale,
+    and no surface invents precision from field names or a fixed two-decimal
+    default.
+  why_here: >-
+    The field type and digits are already Odoo facts. smart_core must project
+    them into the normalized contract, and the generic frontend must consume the
+    resulting declaration through existing shared presentation.
+  why_not_elsewhere:
+    - Do not infer percentage or precision from field names, labels or values.
+    - Do not hardcode construction-industry field scales in shared frontend code.
+    - Do not add a Renderer, Registry, Bundle, page engine or second value runtime.
+    - Do not use display formatting as the value sent through ORM commands.
+    - Do not change ACL, workflow, business state, database schema or stored data.
+  blast_radius:
+    behavior:
+      - Native descriptor and list-column digits projection for Float/Quantity
+      - Percentage component identity through Contract V2 collection projection
+      - One2many percentage identity and readonly numeric precision
+      - Shared decimal/percentage presentation and List/Kanban adapters
+    exclusions:
+      - no backend business model, permission or workflow change
+      - no database migration or fixture write
+      - no date, money, relation, attachment or status policy change
+      - no unrelated page redesign
+  rollback: >-
+    Revert the Batch 2 metadata, frontend consumers and focused tests. No
+    database, service, credential or persisted business value requires rollback.
+  completion:
+    batch: verification_pending
+    independent_review: not_run
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_run

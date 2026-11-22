@@ -7,6 +7,7 @@ import {
   isEmptyFieldValue,
   normalizeFieldType,
   numericFieldValue,
+  formatNumericFieldValue,
 } from '../../utils/fieldSemantics';
 import {
   resolveCollectionStatusPresentation,
@@ -60,7 +61,7 @@ export function statusBadgeSemantic(value: unknown): 'default' | 'info' | 'succe
   return toneToBadgeSemantic(resolveCollectionStatusPresentation({ value }).tone);
 }
 
-export function normalizeMonetaryDigits(value: unknown): [number, number] | undefined {
+export function normalizeDeclaredDigits(value: unknown): [number, number] | undefined {
   if (!Array.isArray(value) || value.length !== 2) return undefined;
   const precision = Number(value[0]);
   const scale = Number(value[1]);
@@ -69,6 +70,8 @@ export function normalizeMonetaryDigits(value: unknown): [number, number] | unde
   }
   return [precision, scale];
 }
+
+export const normalizeMonetaryDigits = normalizeDeclaredDigits;
 
 export function resolveCurrencyDisplayLabel(value: unknown): string {
   if (Array.isArray(value)) return String(value[1] || '').trim();
@@ -143,10 +146,18 @@ export function formatDecimalDisplayValue(
   return new Intl.NumberFormat(locale, { maximumFractionDigits }).format(numeric);
 }
 
-export function formatBusinessPercentage(value: unknown, emptyText = FIELD_VALUE_EMPTY_TEXT): string {
+export function formatBusinessPercentage(
+  value: unknown,
+  emptyText = FIELD_VALUE_EMPTY_TEXT,
+  digits?: [number, number],
+): string {
   const numeric = numericFieldValue(value);
   if (numeric === null) return emptyText;
-  return `${new Intl.NumberFormat('zh-CN', { maximumFractionDigits: 2 }).format(numeric)}%`;
+  const scale = normalizeDeclaredDigits(digits)?.[1];
+  const options = Number.isInteger(scale)
+    ? { minimumFractionDigits: scale, maximumFractionDigits: scale }
+    : { maximumFractionDigits: 2 };
+  return `${new Intl.NumberFormat('zh-CN', options).format(numeric)}%`;
 }
 
 /**
@@ -288,7 +299,7 @@ export function presentDeclaredBusinessValue(input: {
   if (kind === 'percentage') {
     return Object.freeze({
       kind: 'percentage',
-      text: formatBusinessPercentage(input.value, emptyText),
+      text: formatBusinessPercentage(input.value, emptyText, input.field.digits),
       tone: 'neutral',
       badgeSemantic: 'default',
     });
@@ -374,6 +385,16 @@ export function presentDeclaredBusinessValue(input: {
     return Object.freeze({
       kind: text ? 'plain' : 'empty',
       text: text || emptyText,
+      tone: 'neutral',
+      badgeSemantic: 'default',
+    });
+  }
+  const fieldType = normalizeFieldType(input.field);
+  if ((fieldType === 'integer' || fieldType === 'float') && input.field.digits) {
+    const text = formatNumericFieldValue(input.value, fieldType, { digits: input.field.digits });
+    return Object.freeze({
+      kind: text === null ? 'empty' : 'plain',
+      text: text ?? emptyText,
       tone: 'neutral',
       badgeSemantic: 'default',
     });

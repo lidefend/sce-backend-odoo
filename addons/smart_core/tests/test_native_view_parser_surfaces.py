@@ -136,16 +136,37 @@ def _install_odoo_shim():
     )
     native_collection_mod = importlib.util.module_from_spec(native_collection_spec)
     native_collection_spec.loader.exec_module(native_collection_mod)
+    core_mod = types.ModuleType("odoo.addons.smart_core.core")
+    contract_runtime_mod = types.ModuleType("odoo.addons.smart_core.core.contract_runtime")
+    contract_runtime_path = Path(__file__).resolve().parents[1] / "core" / "contract_runtime"
+    generated_modules = {}
+    for name in ("semantic_registry_generated", "domain_field_semantics_generated"):
+        module_name = f"odoo.addons.smart_core.core.contract_runtime.{name}"
+        spec = importlib.util.spec_from_file_location(module_name, contract_runtime_path / f"{name}.py")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        spec.loader.exec_module(module)
+        generated_modules[name] = module
+    semantic_resolver_name = "odoo.addons.smart_core.core.contract_runtime.semantic_resolver"
+    semantic_resolver_spec = importlib.util.spec_from_file_location(
+        semantic_resolver_name,
+        contract_runtime_path / "semantic_resolver.py",
+    )
+    semantic_resolver_mod = importlib.util.module_from_spec(semantic_resolver_spec)
     sys.modules["odoo"] = odoo_mod
     sys.modules["odoo.tools"] = tools_mod
     sys.modules["odoo.tools.safe_eval"] = safe_eval_mod
     sys.modules["odoo.addons"] = addons_mod
     sys.modules["odoo.addons.smart_core"] = smart_core_mod
     sys.modules["odoo.addons.smart_core.utils"] = utils_mod
+    sys.modules["odoo.addons.smart_core.core"] = core_mod
+    sys.modules["odoo.addons.smart_core.core.contract_runtime"] = contract_runtime_mod
     sys.modules[descriptor_module_name] = descriptor_mod
     sys.modules[native_modifier_module_name] = native_modifier_mod
     sys.modules[native_action_scope_module_name] = native_action_scope_mod
     sys.modules[native_collection_module_name] = native_collection_mod
+    sys.modules[semantic_resolver_name] = semantic_resolver_mod
+    semantic_resolver_spec.loader.exec_module(semantic_resolver_mod)
 
 
 def _load_calendar_mixin():
@@ -764,6 +785,31 @@ class TestNativeViewParserSurfaces(unittest.TestCase):
         base_info = self.base_parser._field_info_for_layout("amount_total", fields_info)
         self.assertEqual(base_info["currency_field"], "company_currency_id")
         self.assertEqual(base_info["digits"], [16, 2])
+
+    def test_float_occurrences_preserve_declared_digits_and_percentage_identity(self):
+        fields_info = {
+            "workload_ratio": {
+                "type": "float",
+                "string": "Workload",
+                "widget": "percentage",
+                "digits": (16, 4),
+            }
+        }
+        tree = self.tree_form_parser._parse_tree_view(
+            '<tree><field name="workload_ratio" widget="percentage"/></tree>',
+            fields_info,
+        )
+
+        occurrence = tree["column_occurrences"][0]
+        schema = tree["columns_schema"][0]
+        self.assertEqual(occurrence["digits"], [16, 4])
+        self.assertEqual(occurrence["component_key"], "sc.value.percentage")
+        self.assertEqual(schema["component_key"], "sc.value.percentage")
+        base_info = self.base_parser._field_info_for_layout("ratio_without_widget", {
+            "ratio_without_widget": {"type": "float", "string": "Ratio", "digits": (16, 6)},
+        })
+        self.assertEqual(base_info["digits"], [16, 6])
+        self.assertNotIn("currency_field", base_info)
 
     def test_widget_source_distinguishes_xml_from_type_derivation(self):
         derived = self.base_parser._field_info_for_layout(

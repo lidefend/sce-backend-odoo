@@ -106,7 +106,7 @@ const moneyDisplay = computed(() => formatMonetaryDisplayValue(
 ));
 const displayText = computed(() => {
   const value = props.field.value;
-  if (kind.value === 'sc.value.percentage') return formatPercentage(value);
+  if (kind.value === 'sc.value.percentage') return formatPercentage(value, props.field.digits);
   if (kind.value === 'sc.value.duration' || kind.value === 'sc.display.status') {
     return presentDeclaredBusinessValue({
       field: {

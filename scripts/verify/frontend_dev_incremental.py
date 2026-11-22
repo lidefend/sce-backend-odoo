@@ -410,6 +410,13 @@ RULES = (
         "verify.semantic.registry.lint",
     )),
     Rule((
+        "addons/smart_core/utils/native_field_descriptor.py",
+        "addons/smart_core/tests/test_native_view_parser_surfaces.py",
+    ), (
+        "verify.frontend.collection_view_semantics.unit",
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
         "contracts/generated/contract_structure_fingerprint.json",
     ), (
         "verify.contract.structure_lock",
