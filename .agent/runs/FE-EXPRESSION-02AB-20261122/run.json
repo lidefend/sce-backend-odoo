@@ -189,7 +189,7 @@
     "r09_source": ".runtime/FE-RUNTIME-RESEARCH-01/evidence/r09/observations/five-focus-findings.md",
     "product_acceptance": "R09 remains 2/4 complete journeys PASS; income contract and payment request retain FAIL until backend configuration and this responsive fix are closure-verified",
     "diagnosis_only": "02C One2many/attachment formatting and 02D PM income-contract configuration are not implemented in this batch",
-    "route_failure_unit": "PASS: 503/service, 403/forbidden, network and intent numeric status classification locked",
+    "route_failure_unit": "PASS: 401 authentication return, 403/forbidden, 404, 409, 503/service, network and intent numeric status classification locked; 401 retains trace_id and login redirect",
     "relation_read_unit": "PASS: 22 cases; relation authority errors now cross the guard boundary",
     "selection_feedback_unit": "PASS: backend reason/message/trace retained and concurrent duplicate export blocked",
     "page_header_unit": "PASS: 77 Python tests plus 28 model and adapter contract cases; narrow mobile stacking rule locked",
@@ -198,20 +198,18 @@
     "lint_type_contract": "PASS: lint 0 errors, strict typecheck PASS, contract-basis open defects=0",
     "correction": "First header contract run required explicit registration of RouteErrorView as the seventh ScPageHeader call site; no expected assertion was weakened"
     ,
-    "ci_local_iteration": "PASS on final code HEAD b9d5db978; 11 affected targets were rechecked/reused into a passed receipt, unmappedPathCount=0, testsRun=true",
-    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T045415Z-2100751-714531062/receipt.json",
-    "ci_local_iteration_receipt_sha256": "56e160073165681ca9b489444c5ce5e84abec3d87e2c4113cb87c557a309e83f",
-    "metadata_head_ci_iteration": "PASS after the final code commit on successive clean metadata HEADs; product/runtime inputs are unchanged, unmappedPathCount=0, worktreeClean=true",
-    "metadata_head_ci_receipt_before_final_sync": ".runtime/frontend-dev-validation/executions/20261122T050855Z-2189587-340207416/receipt.json",
-    "metadata_head_ci_receipt_before_final_sync_sha256": "f4d62c474a960539c223f88ac0c471f5a726f47e9cf82afa007d4566cacf508f",
-    "production_build": "PASS on code HEAD b9d5db978: build-info source b9d5db978, tree 636644e0b; authoritative runtime build sha256 177560323d737f3a1b590b765657c65dc0bfceeebe7f65724c8e3c44060376d8",
+    "mainline_sync": "PR #959 merged as 94bfb32465593341a97b16fbac3595f25b152eb6; FE candidate merge commit 81afddb33f8aeb932cd31a94aa917094e1099ff0, then metadata baseline binding 1322cc98dfb3bc42eff6ce7c6c6a67734bcf137c",
+    "ci_local_iteration": "PASS on final evidence HEAD 1322cc98d; 23 affected targets executed, unmappedPathCount=0",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T061250Z-2555571-426428254/receipt.json",
+    "ci_local_iteration_receipt_sha256": "862b67ef3602da0d81c7ffb323a05030284147753f49cd6244a14ee1b158eefe",
+    "production_build": "PASS on evidence HEAD 1322cc98d: build-info source 1322cc98d, tree 169fdc6ee; authoritative runtime build sha256 a9d13ed5af931347c62c2d5f9564c77834366061956fc420c8356aeb6467f63e",
     "browser_precheck": "PASS exact-code-HEAD run: 10/10 cases, 0 failures, 0 page errors, 72/72 loaded resources present in dist-release; expected injected 500/503 Console resource errors only",
-    "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/exact-b9d5db978/report.json",
-    "browser_evidence_sha256": "ec28b526a5fa76b1903af37e90a35b333599d1b000d19fcd76e7b9e11cc0ef8a",
+    "browser_evidence": ".runtime/FE-EXPRESSION-02/evidence/exact-1322cc98d/report.json",
+    "browser_evidence_sha256": "507ff5f4ee99bc6c7977925dcd6b4c5ffcd7c5d6a757c9cce34662072bf5982a",
     "browser_results": "project ledger and My Work return one H1; income/payment desktop and mobile have one H1 and zero overflow; payment mobile status/actions are full-width stacked; export failure exposes message+reason+trace with one request; 503 route failure reaches route-error and is not shown as access denial",
-    "final_exact_head_rebuild": "PASS on b9d5db978: build-info, Git SHA/tree, runtime source revision and runtime frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same code HEAD"
+    "final_exact_head_rebuild": "PASS on 1322cc98d: backend source revision, build-info SHA, database, acceptance runtime environment and frontend build sha256 all agree; browser matrix and ci.local.iteration bind the same evidence HEAD"
   },
-  "next_exact_step": "The product code and browser evidence are frozen at b9d5db978. Run ci.local.iteration on the final clean metadata head, publish it, bind that exact head and receipt in PR #961, require all five exact-head remote gates, then close independent review before the protected merge decision.",
+  "next_exact_step": "Commit the exact evidence record for 1322cc98d, run ci.local.iteration on the resulting clean metadata head, publish PR #961 against main 94bfb3246, bind the final head and receipts, and require all exact-head remote gates before the protected merge decision.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

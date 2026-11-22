@@ -99,3 +99,30 @@ PageRenderer 接管。
 - `.runtime/FE-EXPRESSION-02/02d-pm-income-contract-diagnosis.md`
 
 本轮没有实现 One2many/附件表达改造，也没有修改项目经理收入合同配置。
+
+## 主线同步后的最终精确证据
+
+PR #959 先合入 main，合并提交为
+`94bfb32465593341a97b16fbac3595f25b152eb6`。本专题随后以普通 merge commit
+`81afddb33f8aeb932cd31a94aa917094e1099ff0` 同步新主线，并只更新 run baseline
+形成证据 HEAD `1322cc98dfb3bc42eff6ce7c6c6a67734bcf137c`。
+
+同步后重新执行：
+
+- `ci.local.iteration`：23 个受影响目标全部通过，`unmappedPathCount=0`；
+  receipt SHA256 =
+  `862b67ef3602da0d81c7ffb323a05030284147753f49cd6244a14ee1b158eefe`。
+- production build：build-info source = `1322cc98d`，tree = `169fdc6ee`；
+  authoritative frontend build SHA256 =
+  `a9d13ed5af931347c62c2d5f9564c77834366061956fc420c8356aeb6467f63e`。
+- backend runtime：source revision = `1322cc98d`，database =
+  `sc_frontend_acceptance`，runtime/deploy environment = `acceptance`，
+  frontend build SHA256 与 production build 完全一致。
+- browser matrix：10/10 PASS、0 failure、0 page error、72/72 资源存在；
+  1440/390 四样板均只有一个可见 H1 且无横向溢出；付款申请 390 顶部三层
+  全宽排列；500 导出失败和 503 路由失败均保留 trace 与正确错误分类。
+- browser report SHA256 =
+  `507ff5f4ee99bc6c7977925dcd6b4c5ffcd7c5d6a757c9cce34662072bf5982a`。
+
+同时补齐 401 回跳契约：认证失败继续进入登录页，携带 `trace_id`，并保留登录页
+实际消费的 `redirect`，不会丢失原业务页面返回目标。
