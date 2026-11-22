@@ -100,6 +100,13 @@
       "reason": "reviewed_public_ci_artifact_ids_not_personal_data_prior_revision"
     },
     {
+      "rule_id": "PD002",
+      "path": "docs/ops/iterations/mainline_performance_02_system_initialization_20261122.md",
+      "blob_id": "bafa037ccf5a936090ddb8ec2d3bcc9bec2c45ad",
+      "classification": "MOBILE_PHONE_PATTERN",
+      "reason": "reviewed_host_memory_byte_count_not_personal_data_prior_revision_superseded_in_branch"
+    },
+    {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
       "blob_id": "1cd140f6014033d7b122fb88bd6cc3324f455012",

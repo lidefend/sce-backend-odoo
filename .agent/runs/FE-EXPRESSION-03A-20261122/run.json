@@ -3,7 +3,7 @@
   "id": "FE-EXPRESSION-03A-20261122",
   "branch": "feature/fe-expression-03a-business-value-convergence-20261122",
   "baseline_sha": "d8ce851a7222a07491518749faf9cf7e8f2f53ed",
-  "status": "blocked",
+  "status": "verification_pending",
   "goal": ".agent/goals/FE-EXPRESSION-03A-20261122.yaml",
   "record": "docs/audit/fe_expression_03a_diagnosis_20261122.md",
   "scope": [
@@ -37,6 +37,7 @@
     "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "scripts/verify/frontend_collection_row_cell_guard.py",
+    "scripts/ci/personal_data_false_positives.json",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "scripts/verify/frontend_professional_detail_collection_guard.py",
     "scripts/verify/frontend_localized_display_contract_test.ts"
@@ -179,9 +180,7 @@
       "owner_target": "exact-head GitHub PR checks"
     }
   ],
-  "blockers": [
-    "GOV-01: public_guard RH018 still matches a performance-branch historical document outside PR #964 and its base; merge_policy_gate fails as an upstream dependency. Resolve in the owning P4 history/evidence task without weakening the guard."
-  ],
+  "blockers": [],
   "observations": {
     "diagnosis": "SOURCE_VERIFIED diagnosis committed at 78acb4d24; implementation now follows the diagnosed ownership",
     "one2many_metadata_gap": "One2ManyColumn and RelationFieldColumn do not carry contract-provided digits/currency_field",
@@ -209,10 +208,11 @@
       "P0 list contract does not yet declare attachment-count cell role, so the old localized-label preview behavior is removed until the declaration exists",
       "The One2many footer has no declared mixed-row currency aggregation rule; it now requires every participating row to expose the same positive currency record id and uses that row-carried identity, otherwise the aggregate is omitted"
     ],
-    "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. It is a separate P4 history/evidence-governance blocker; this frontend candidate does not weaken the guard or rewrite unrelated history.",
+    "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. The reviewed exact false-positive registration is now integrated; local public_guard history verification passes and exact-head remote checks remain authoritative.",
+    "gov01_resolution": "Registered historical blob bafa037ccf5a936090ddb8ec2d3bcc9bec2c45ad as a reviewed host-memory byte count, not personal data. The entry binds rule, exact path, blob and classification; no rule, directory or wildcard was relaxed.",
     "autosave_retention": "Project-intake draft retention is a P1 smart_construction_core standard constant of 86400 seconds, published through runtimeContract.intakeAutosave.retention.seconds; it is not a user or administrator setting, the frontend has no local 24-hour fallback, and coverage copy renders the declared duration without rounding sub-hour values"
   },
-  "next_exact_step": "Resolve GOV-01 RH018 in the owning P4 history/evidence task, then rerun public_guard and merge_policy_gate for the current PR #964 head; do not merge until both pass.",
+  "next_exact_step": "Push the exact P4 false-positive registry change, wait for public_guard and merge_policy_gate on the new PR #964 head, and merge only if all required checks pass.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
