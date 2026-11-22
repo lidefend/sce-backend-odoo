@@ -1,0 +1,69 @@
+{
+  "schema_version": 1,
+  "id": "MAIN-SCHEDULED-CI-20261122",
+  "branch": "fix/main-scheduled-ci-recovery-20261122",
+  "baseline_sha": "5a42601a75e85da7ec536f515d4a64c795cc3a43",
+  "status": "verification_pending",
+  "goal": ".agent/goals/MAIN-SCHEDULED-CI-20261122.yaml",
+  "record": "docs/ops/iterations/main_scheduled_ci_20261122.md",
+  "scope": [
+    "make/ci.mk",
+    "scripts/verify/test_coverage_registry.yaml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-SCHEDULED-CI-20261122.yaml",
+    ".agent/runs/MAIN-SCHEDULED-CI-20261122/run.json",
+    "docs/ops/iterations/main_scheduled_ci_20261122.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "offline checks first; the declared runtime check binds its own raw log readback from the registered local.test disposable template-backed lane only, with no persistent development or customer database"
+  },
+  "checks": {
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "Makefile",
+        "make",
+        "scripts",
+        "addons",
+        "demo_addons",
+        ".github/workflows",
+        "scripts/verify/test_coverage_registry.yaml"
+      ],
+      "kind": "offline",
+      "readback": {
+        "artifact": ".runtime/ci-recovery/main-scheduled-coverage-20261122-2.log"
+      }
+    },
+    "enterprise_initialization_journey": {
+      "target": "verify.enterprise.initialization.journey.orm",
+      "inputs": [
+        "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+        "addons/smart_construction_scene",
+        "addons/smart_construction_core",
+        "addons/smart_core",
+        "scripts/dev/local_test_runner.py",
+        "scripts/test",
+        "config/requirements-test.txt",
+        "docker-compose.yml",
+        "docker-compose.test-isolation.yml",
+        "make/ci.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": ".runtime/ci-recovery/main-scheduled-enterprise-initialization-20261122.log"
+      }
+    }
+  },
+  "blockers": [],
+  "observations": {
+    "failed_scheduled_run": "44957831997 at obsolete SHA 4be80e9f65e0c1602a5a0765393f435a41b89105 failed only the test-coverage registry inside the backend quality gate; the other backend shards passed.",
+    "current_main": "5a42601a75e85da7ec536f515d4a64c795cc3a43 includes PR #955, whose public_guard, professional_quality_gate, frontend_release_gate and merge_policy_gate push runs all passed on that exact SHA.",
+    "coverage_registry": "19 tests passed; 224 declared Odoo tag groups reconcile with 83 on-demand and 136 explicitly dispositioned unwired groups.",
+    "enterprise_initialization_journey": "1 ORM test passed with ORM_RESULT_GUARD PASS; the smart_construction_scene template was reused with no template rebuild.",
+    "iteration": "ci.local.iteration exited zero; the frontend incremental receipt executed 3 required targets, and reusable run checks were not repeated.",
+    "freeze_prepare": "ci.delivery.freeze.prepare passed after refreshing generated reports; no product source outside the declared P4 surface changed."
+  },
+  "next_exact_step": "Commit the reviewed P4 candidate, publish it through the protected GitHub PR path, and require all four current exact-head gates before merge."
+}

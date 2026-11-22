@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 224,
     "gated": 5,
-    "on_demand": 82,
-    "unwired": 137,
+    "on_demand": 83,
+    "unwired": 136,
     "odoo_tag_declarations": 461,
     "gated_declarations": 107,
     "uncovered_declarations": 354,
@@ -1286,14 +1286,17 @@
     },
     {
       "group": "enterprise_initialization_journey",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [
+        "make:verify.enterprise.initialization.journey.orm :: /TestEnterpriseInitializationJourney (class selection)"
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "equipment_usage_product",
@@ -1366,7 +1369,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.extension.hook_authority.orm :: /TestHookAuthorityConsumer (class selection)"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "extension_lifecycle",
@@ -1379,7 +1383,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:verify.extension.lifecycle.orm :: /TestExtensionRegistryLifecycle (class selection)"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "extension_runtime_context",
@@ -1392,7 +1397,8 @@
       "owner": "platform-team",
       "evidence": [
         "make:verify.extension.runtime_context.orm :: /TestExtensionRuntimeContext (class selection)"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "feedback_evaluation_rt_http",

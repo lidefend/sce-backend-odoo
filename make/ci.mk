@@ -435,7 +435,12 @@ verify.smart_construction_core.module_baseline: guard.prod.forbid
 
 EXTENSION_NATIVE_ALIGNMENT_TAGS = /smart_core:TestOdooNativeAlignmentBoundaries.test_extension_hook_compat_preserves_empty_result_and_keyword_capability,/smart_core:TestOdooNativeAlignmentBoundaries.test_extension_hook_provider_internal_type_error_fails_explicitly,/smart_core:TestOdooNativeAlignmentBoundaries.test_capability_timing_hook_compat_preserves_old_provider_result,/smart_core:TestOdooNativeAlignmentBoundaries.test_capability_group_hook_remains_available_with_compatible_dispatch
 
-.PHONY: verify.extension.runtime_context.orm verify.extension.native_alignment.orm verify.extension.hook_authority.orm verify.extension.lifecycle.orm
+.PHONY: verify.enterprise.initialization.journey.orm verify.extension.runtime_context.orm verify.extension.native_alignment.orm verify.extension.hook_authority.orm verify.extension.lifecycle.orm
+verify.enterprise.initialization.journey.orm: guard.prod.forbid
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_scene \
+	  $(MAKE) --no-print-directory local.test.test \
+	  MODULE=smart_construction_scene TEST_TAGS=/smart_construction_scene:TestEnterpriseInitializationJourney
+
 verify.extension.runtime_context.orm: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
 	  $(MAKE) --no-print-directory local.test.test \
