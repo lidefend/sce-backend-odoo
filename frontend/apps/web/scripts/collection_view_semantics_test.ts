@@ -1,11 +1,14 @@
 import assert from 'node:assert/strict';
 import {
   collectOne2manyDraftValidationFromRows,
+  createOne2manyDraftRow,
   initOne2manyRowsFromRelationSource,
   isOne2manyEmptyValue,
   mergeOne2manyHydratedRecords,
   one2manyColumnDisplayValue,
+  one2manyColumnInputValue,
   one2manyColumnsFromSubview,
+  one2manyDataFieldNames,
   one2manyRowCollectionIdentity,
   one2manyRowLabelFromPrimary,
   one2manyRowActionsFromSubview,
@@ -220,7 +223,11 @@ assert.equal(
   '已中标',
   'relation-card identity must use the authoritative selection label instead of leaking its storage key',
 );
-assert.equal(one2manyColumnDisplayValue(selectionColumn, 'unknown'), 'unknown');
+assert.throws(
+  () => one2manyColumnDisplayValue(selectionColumn, 'unknown'),
+  { name: 'ContractGapError' },
+  'an unknown selection value must fail closed instead of leaking its storage key',
+);
 const many2oneColumn = { name: 'partner_id', label: '往来单位', ttype: 'many2one', required: false };
 assert.deepEqual(
   detailCollectionColumnPresentation(many2oneColumn, 7, true),
@@ -285,16 +292,69 @@ assert.deepEqual(schemaSelectionColumns[0], {
 });
 assert.equal(one2manyColumnDisplayValue(schemaSelectionColumns[0], 'submitted'), '已提交');
 assert.equal(one2manyColumnDisplayValue({ name: 'amount', label: '金额', ttype: 'monetary', required: false }, 3260000), '3,260,000');
-assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.5');
+assert.equal(one2manyColumnDisplayValue({ name: 'quantity', label: '数量', ttype: 'float', required: false }, 1280.5), '1,280.50');
+const monetaryColumns = one2manyColumnsFromSubview({ tree: {
+  columns: [{ name: 'amount', label: '金额', type: 'monetary' }],
+  column_occurrences: [{
+    name: 'amount', field_type: 'monetary', currency_field: 'currency_id', digits: [16, 2],
+    attributes: {}, modifiers: {},
+  }],
+} }, () => null);
+assert.deepEqual(monetaryColumns[0]?.digits, [16, 2]);
+assert.equal(monetaryColumns[0]?.currencyField, 'currency_id');
+assert.deepEqual(one2manyDataFieldNames(monetaryColumns), ['amount', 'currency_id']);
+const amountColumn = { ...monetaryColumns[0]!, currencyLabel: 'CNY' };
+assert.equal(one2manyColumnDisplayValue(amountColumn, 1234.5), '¥1,234.50');
+assert.equal(one2manyColumnDisplayValue(amountColumn, 0), '¥0.00');
+assert.equal(one2manyColumnDisplayValue(amountColumn, -1234.5), '-¥1,234.50');
+assert.equal(one2manyColumnDisplayValue(amountColumn, null), '');
+assert.equal(one2manyColumnInputValue(amountColumn, 1234.5), '1234.50');
+assert.equal(one2manyColumnInputValue(amountColumn, null), '');
+const monetaryDraft = createOne2manyDraftRow({
+  key: 'draft-money',
+  primary: 'amount',
+  columns: monetaryColumns,
+  defaults: { amount: 1, currency_id: [1, 'CNY'] },
+});
+assert.deepEqual(monetaryDraft.values.currency_id, [1, 'CNY']);
+assert.deepEqual(monetaryDraft.dirtyFields, ['amount'], 'currency dependency remains readable without becoming a write field');
+const monetaryHydratedRow = {
+  key: 'id:9', id: 9, isNew: false, removed: false, dirty: false, dirtyFields: [],
+  values: { id: 9, amount: '', currency_id: '' },
+};
+mergeOne2manyHydratedRecords({
+  rows: [monetaryHydratedRow],
+  columns: monetaryColumns,
+  records: [{ id: 9, amount: 12.5, currency_id: [1, 'CNY'] }],
+});
+assert.deepEqual(monetaryHydratedRow.values.currency_id, [1, 'CNY']);
+assert.equal(
+  one2manyColumnDisplayValue({ name: 'business_date', label: '日期', ttype: 'date', required: false }, '2025-06-10T09:00:00'),
+  '2025-06-10',
+);
+assert.equal(
+  one2manyColumnDisplayValue({ name: 'business_time', label: '时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:30'),
+  '2025-06-10 09:00',
+);
+assert.equal(
+  one2manyColumnDisplayValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),
+  '1 小时 30 分钟',
+);
+assert.equal(
+  one2manyColumnInputValue({ name: 'duration', label: '工时', ttype: 'float', widget: 'float_time', required: false }, 1.5),
+  1.5,
+);
 const integerColumn = { name: 'count', label: '数量', ttype: 'integer', required: false };
-assert.equal(one2manyColumnDisplayValue(integerColumn, 2.7), '2');
-assert.equal(one2manyColumnDisplayValue(integerColumn, -2.7), '-2');
+assert.equal(one2manyColumnDisplayValue(integerColumn, 2.7), '3');
+assert.equal(one2manyColumnDisplayValue(integerColumn, -2.7), '-3');
 assert.equal(one2manyColumnDisplayValue(integerColumn, null), '');
 assert.equal(one2manyColumnDisplayValue(integerColumn, false), '');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, true), '是');
 assert.equal(one2manyColumnDisplayValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), '否');
-const readableDatetime = one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00');
-assert.ok(readableDatetime.includes('2025') && readableDatetime.includes('09:00') && !readableDatetime.includes('T'));
+assert.equal(
+  one2manyColumnDisplayValue({ name: 'opened_at', label: '开启时间', ttype: 'datetime', required: false }, '2025-06-10T09:00:00'),
+  '2025-06-10 09:00',
+);
 assert.equal(isOne2manyEmptyValue({ name: 'active', label: '启用', ttype: 'boolean', required: false }, false), false, 'false is a readable business fact');
 const dynamicColumn = {
   name: 'note', label: '说明', ttype: 'char', required: false,

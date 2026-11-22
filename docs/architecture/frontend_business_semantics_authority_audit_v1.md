@@ -131,10 +131,17 @@ Contract V2
 | 空值口径分裂 | 已修复 | 普通字段统一 `--`；合同声明的 `readonly_empty_text` 优先；原生表单、明细集合、关系搜索、BOQ 预览与结算组件不再本地使用 `-`、`—`、`未填写` |
 | 日期展示入口分裂 | 部分完成 | 表单/列表/详情/Kanban/审批统一消费 `fieldSemantics` 时间适配；时区转换仍待契约声明 |
 | 金额工具归属不清 | 已修复 | 金额、百分比、状态和声明值入口移至 `app/presentation/businessValuePresentation.ts` |
+| One2many 展示与输入共用格式化 | 已修复 | 只读展示消费 `presentDeclaredBusinessValue`、声明 `digits` 和逐行 `currency_field`；可编辑单元格单独消费 `one2manyColumnInputValue`，写入值形状不变 |
+| One2many 关系容器身份 | 保持并加固 | `one2many` 仍是关系容器；Many2one/Many2many 继续使用记录身份和显示名，不以数值格式替代关系语义 |
+| 附件数量行为依赖中文标签 | 已移除非契约推断 | 只接受显式 `cellRole=attachment-count`；当前列表契约尚未声明该角色，作为后端声明缺口记录 |
 
 ### 保持为明确缺口的项
 
 - Contract V2 未声明用户时区、日期格式和 locale，因此本轮不执行 UTC→用户时区换算。
 - BOQ 导入预检 payload 只有 `amount`，没有币种和精度；本轮只统一空值，不推断其金额语义。
-- `one2manyUtils.ts` 的内联编辑 model-value 仍与只读展示共用格式化路径，未在本批拆分；
-  该文件已有登记例外，避免改变输入值形状。
+- 当前列表契约 `cell_role` 白名单没有 `attachment-count`，且生成快照没有等价的附件数量语义；
+  在 P0 契约补齐前，前端不根据字段名、中文标签或 `附件(n)` 文本恢复该操作。
+- One2many 的 `currency_field` 可以证明逐行业务币种，但当前页脚汇总契约没有声明
+  “跨行币种是否必须一致”或汇总币种来源。现有业务样本的子行币种均继承主表；
+  通用前端不得把首行币种自动冒充为混合币种合计的权威币种。若后续出现混合行币种，
+  必须先补汇总语义，不以前端推断解决。

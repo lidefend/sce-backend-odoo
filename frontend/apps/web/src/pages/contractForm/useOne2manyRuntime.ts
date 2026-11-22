@@ -1,6 +1,7 @@
 import { replayOne2manyOnchange } from './one2manyOnchange';
 import { computed, reactive } from 'vue';
 import { createOne2manyRelationRequestAuthority } from '../../components/template/one2manyRelationQuery';
+import { resolveCurrencyDisplayLabel } from '../../app/presentation/businessValuePresentation';
 import type {
   One2ManyColumn,
   One2ManyInlineRow,
@@ -238,6 +239,9 @@ export function useOne2manyRuntime(params: {
     );
     return {
       ...column,
+      currencyLabel: column.currencyField
+        ? resolveCurrencyDisplayLabel(row.values?.[column.currencyField]) || column.currencyLabel
+        : column.currencyLabel,
       invisible: behavior.invisible,
       columnInvisible: behavior.columnInvisible,
       readonly: behavior.readonly,

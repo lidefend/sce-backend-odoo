@@ -10,8 +10,12 @@ import {
   createBusinessFieldError,
   type BusinessFieldError,
 } from '../../app/businessValidationError';
-import { FIELD_VALUE_FALSE_TEXT, FIELD_VALUE_TRUE_TEXT } from '../../utils/fieldSemantics.ts';
-import { formatDecimalDisplayValue } from '../../app/presentation/businessValuePresentation';
+import { formatNumericFieldValue } from '../../utils/fieldSemantics.ts';
+import {
+  formatMonetaryInputValue,
+  normalizeMonetaryDigits,
+  presentDeclaredBusinessValue,
+} from '../../app/presentation/businessValuePresentation';
 import { fieldType, fromDatetimeInputValue, toDateInputValue, toDatetimeInputValue } from './fieldUtils';
 import type { One2ManyColumn, One2ManyInlineRow } from './types';
 import type { FieldDescriptor } from '@sc/schema';
@@ -87,6 +91,25 @@ function one2manyNativeWidget(source: Record<string, unknown> | undefined) {
     ? { widgetSemantics: semantics as Record<string, unknown> } : {}) };
 }
 
+function one2manyMonetaryMetadata(
+  sources: Array<Record<string, unknown> | undefined>,
+  descriptor?: FieldDescriptor | null,
+) {
+  const descriptorRecord = descriptor as Record<string, unknown> | undefined;
+  const digits = sources
+    .map((source) => normalizeMonetaryDigits(source?.digits))
+    .find(Boolean)
+    || normalizeMonetaryDigits(descriptorRecord?.digits);
+  const currencyField = sources
+    .map((source) => String(source?.currency_field || source?.currencyField || '').trim())
+    .find(Boolean)
+    || String(descriptorRecord?.currency_field || '').trim();
+  return {
+    ...(digits ? { digits } : {}),
+    ...(currencyField ? { currencyField } : {}),
+  };
+}
+
 export function one2manyColumnsFromSubview(
   subview: unknown,
   resolveDescriptor: (column: string) => FieldDescriptor | null | undefined,
@@ -134,6 +157,9 @@ export function one2manyColumnsFromSubview(
           ...(businessColumn?.force_save === undefined ? {} : { forceSave: nativeForceSave(businessColumn.force_save) }),
           label: one2manyColumnLabel(businessColumn?.label || businessColumn?.string || descriptor?.string, normalized),
           ttype: String(businessColumn?.ttype || businessColumn?.type || ttype),
+          ...(String(businessColumn?.ttype || businessColumn?.type || ttype).toLowerCase() === 'monetary'
+            ? one2manyMonetaryMetadata([businessColumn], descriptor)
+            : {}),
           required: businessColumn?.required === undefined ? descriptorSemantics.required : Boolean(businessColumn.required),
           readonly: businessColumn?.readonly === undefined ? descriptorSemantics.readonly : Boolean(businessColumn.readonly),
           selection: one2manySelectionOptions(businessColumn?.selection) || descriptorSemantics.selection,
@@ -175,6 +201,9 @@ export function one2manyColumnsFromSubview(
           colName,
         ),
         ttype,
+        ...(ttype.toLowerCase() === 'monetary'
+          ? one2manyMonetaryMetadata([row, attributes, businessColumn], descriptor)
+          : {}),
         required: required ?? Boolean(descriptor?.required),
         readonly: ttype === 'many2one'
           ? Boolean(explicitReadonly || !relationReadable)
@@ -288,6 +317,17 @@ export function one2manyDataColumnsFromSubview(
   };
   walk(form.layout);
   return columns;
+}
+
+export function one2manyDataFieldNames(columns: One2ManyColumn[]): string[] {
+  const names = new Set<string>();
+  for (const column of columns) {
+    const name = String(column.name || '').trim();
+    if (name && name !== 'id') names.add(name);
+    const currencyField = String(column.currencyField || '').trim();
+    if (currencyField) names.add(currencyField);
+  }
+  return [...names];
 }
 
 export function resolveOne2manyRowColumnBehavior(
@@ -499,6 +539,11 @@ export function createOne2manyDraftRow(params: {
     acc[column.name] = Object.hasOwn(params.defaults || {}, column.name) ? params.defaults![column.name] : column.ttype === 'boolean' ? false : '';
     return acc;
   }, {});
+  for (const currencyField of new Set(
+    params.columns.map((column) => String(column.currencyField || '').trim()).filter(Boolean),
+  )) {
+    if (Object.hasOwn(params.defaults || {}, currencyField)) values[currencyField] = params.defaults![currencyField];
+  }
   return {
     key: params.key,
     id: null,
@@ -614,7 +659,7 @@ export function mergeOne2manyHydratedRecords(params: {
     if (!row.id || row.dirty) return;
     const record = byId.get(Number(row.id));
     if (!record) return;
-    row.values = params.columns.reduce<Record<string, unknown>>((acc, column) => {
+    const values = params.columns.reduce<Record<string, unknown>>((acc, column) => {
       acc[column.name] = record[column.name] ?? '';
       return acc;
     }, {
@@ -622,6 +667,12 @@ export function mergeOne2manyHydratedRecords(params: {
       display_name: record.display_name,
       name: authoritativeOne2manyRelationLabel(record.name ?? record.display_name ?? row.values?.name),
     });
+    for (const currencyField of new Set(
+      params.columns.map((column) => String(column.currencyField || '').trim()).filter(Boolean),
+    )) {
+      values[currencyField] = record[currencyField] ?? row.values?.[currencyField] ?? '';
+    }
+    row.values = values;
   });
 }
 
@@ -856,6 +907,16 @@ export function one2manyColumnInputType(column: One2ManyColumn): 'text' | 'numbe
   return 'text';
 }
 
+export function one2manyColumnInputValue(column: One2ManyColumn, value: unknown): string | number {
+  const ttype = String(column.ttype || '').trim().toLowerCase();
+  if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
+  if (ttype === 'monetary') return formatMonetaryInputValue(value, column.digits, column.currencyLabel || '');
+  if (ttype === 'date') return toDateInputValue(value);
+  if (ttype === 'datetime') return toDatetimeInputValue(value);
+  if (typeof value === 'number' || typeof value === 'string') return value;
+  return String(value);
+}
+
 export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknown) {
   const ttype = String(column.ttype || '').trim().toLowerCase();
   if (value === null || value === undefined || (value === false && ttype !== 'boolean')) return '';
@@ -882,30 +943,25 @@ export function one2manyColumnDisplayValue(column: One2ManyColumn, value: unknow
       return [];
     }).filter(Boolean).join('、');
   }
-  if (ttype === 'date') return toDateInputValue(value);
-  if (ttype === 'datetime') {
-    const normalized = toDatetimeInputValue(value);
-    if (!normalized) return '';
-    const parsed = new Date(normalized);
-    if (Number.isNaN(parsed.getTime())) return normalized;
-    return new Intl.DateTimeFormat('zh-CN', {
-      year: 'numeric', month: '2-digit', day: '2-digit',
-      hour: '2-digit', minute: '2-digit', hour12: false,
-    }).format(parsed);
+  if ((ttype === 'integer' || ttype === 'float')
+    && String(column.widget || '').trim().toLowerCase() !== 'float_time') {
+    return formatNumericFieldValue(value, ttype) ?? '';
   }
-  if (ttype === 'integer') {
-    if (value === null || value === undefined || value === false || value === '') return '';
-    const numeric = Number(value);
-    if (!Number.isFinite(numeric)) return '';
-    return formatDecimalDisplayValue(Math.trunc(numeric), 0, '', 'zh-CN');
-  }
-  if (ttype === 'float' || ttype === 'monetary') return formatDecimalDisplayValue(value, 6, '', 'zh-CN');
-  if (ttype === 'boolean') return value ? FIELD_VALUE_TRUE_TEXT : FIELD_VALUE_FALSE_TEXT;
-  if (ttype === 'selection') {
-    const option = (column.selection || []).find(([key]) => String(key) === String(value));
-    if (option) return String(option[1]);
-  }
-  return String(value ?? '');
+  return presentDeclaredBusinessValue({
+    field: {
+      name: column.name,
+      type: ttype,
+      widget: column.widget,
+      digits: column.digits,
+      currencyField: column.currencyField,
+      currencyLabel: column.currencyLabel,
+      selection: column.selection,
+    },
+    value,
+    currencyLabel: column.currencyLabel,
+    emptyText: '',
+    temporalProfile: 'compact',
+  }).text;
 }
 
 export function isOne2manyEmptyValue(column: One2ManyColumn, value: unknown) {

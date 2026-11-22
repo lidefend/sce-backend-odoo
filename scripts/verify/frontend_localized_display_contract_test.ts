@@ -286,14 +286,7 @@ const AUTHORITY_CONSUMERS = [
   'components/template/X2ManyRelationRenderer.vue',
 ];
 const LOCAL_FORMATTER_PATTERNS = [/toISOString\(/, /Intl\.DateTimeFormat\(/, /toLocaleString\(/, /new Date\(/];
-const REGISTERED_LOCAL_FORMATTERS: Record<string, Array<{ pattern: RegExp; reason: string }>> = {
-  // one2manyColumnDisplayValue 同时充当内联单元格输入框的 model-value，并入权威记录／表单档位会改变
-  // 可编辑行取值显示（且其 datetime 分支产出并非 datetime-local 输入可接受格式），需单独决策后另批处理。
-  'pages/contractForm/one2manyUtils.ts': LOCAL_FORMATTER_PATTERNS.map((pattern) => ({
-    pattern,
-    reason: 'registered: inline cell input model-value shares one function; needs its own batch decision',
-  })),
-};
+const REGISTERED_LOCAL_FORMATTERS: Record<string, Array<{ pattern: RegExp; reason: string }>> = {};
 let registeredFormatterAllowances = 0;
 for (const relativePath of AUTHORITY_CONSUMERS) {
   const text = sourceText(relativePath);
@@ -331,7 +324,7 @@ assert.equal(resolveReadonlyEmptyText({ readonlyEmptyText: '   ' }, '-'), '-');
 
 // 权威消费方与例外规模必须可被读取者核对，避免「登记」退化为隐藏白名单。
 assert.equal(AUTHORITY_CONSUMERS.length, 18);
-assert.ok(registeredFormatterAllowances > 0, '登记例外必须非空且逐条对应真实文件，否则应删除登记');
+assert.equal(registeredFormatterAllowances, 0, 'One2many display now consumes shared formatters; stale allowances must be removed');
 
 console.log(`FRONTEND_FIELD_SEMANTICS_AUTHORITY=PASS sources=${presentationSources.length} consumers=${AUTHORITY_CONSUMERS.length} registered_formatter_allowances=${registeredFormatterAllowances}`);
 console.log('FRONTEND_LOCALIZED_DISPLAY_CONTRACT=PASS');

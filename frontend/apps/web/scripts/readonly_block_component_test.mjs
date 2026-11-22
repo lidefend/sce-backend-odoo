@@ -307,6 +307,8 @@ async function runMounted({ useRecordFormLayout, createContractV2Store, Componen
     const collectionAdapter = {
       prepareOne2manyColumns: name => { preparedFields.push(name); return []; }, visibleOne2manyRows: () => rows,
       one2manyColumns: () => columns, one2manyCanOpenRow: () => false,
+      one2manyEffectiveColumn: (_name, _row, column) => column,
+      one2manyColumnInputValue: (_column, value) => value ?? '',
       one2manyColumnDisplayValue: (_column, value) => value ?? '',
       one2manyRowStateLabel: () => '', one2manyRowHints: () => [],
       isOne2manyHydrating: () => false,

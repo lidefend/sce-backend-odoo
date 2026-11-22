@@ -65,6 +65,10 @@ export function isListBusinessIdentifierColumn(input: ColumnSemanticInput) {
   return role === 'identity';
 }
 
+export function isListAttachmentCountColumn(input: ColumnSemanticInput) {
+  return normalized(input.cellRole).toLowerCase() === 'attachment-count';
+}
+
 export function presentListCell(input: CellPresentationInput) {
   const {
     raw,

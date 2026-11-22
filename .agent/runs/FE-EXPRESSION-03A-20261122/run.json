@@ -1,0 +1,220 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03A-20261122",
+  "branch": "feature/fe-expression-03a-business-value-convergence-20261122",
+  "baseline_sha": "d8ce851a7222a07491518749faf9cf7e8f2f53ed",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03A-20261122.yaml",
+  "record": "docs/audit/fe_expression_03a_diagnosis_20261122.md",
+  "scope": [
+    ".agent/goals/FE-EXPRESSION-03A-20261122.yaml",
+    ".agent/runs/FE-EXPRESSION-03A-20261122/run.json",
+    ".agent/active-runs.json",
+    "docs/audit/fe_expression_03a_diagnosis_20261122.md",
+    "docs/architecture/frontend_business_semantics_authority_audit_v1.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/p4_p0_03_contract_form_split_evidence.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+    "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+    "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+    "frontend/apps/web/scripts/native_tab_text_component_test.mjs",
+    "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+    "frontend/apps/web/scripts/relation_heading_component_test.mjs",
+    "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+    "frontend/apps/web/src/components/template/relationField.types.ts",
+    "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
+    "frontend/apps/web/src/pages/ContractFormPage.vue",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
+    "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+    "frontend/apps/web/src/pages/contractForm/types.ts",
+    "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "scripts/verify/frontend_collection_row_cell_guard.py",
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+    "scripts/verify/frontend_professional_detail_collection_guard.py",
+    "scripts/verify/frontend_localized_display_contract_test.ts"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing frontend source, registered local test targets and the managed acceptance carrier; no database rebuild, fixture reset or business write"
+  },
+  "checks": {
+    "collection_view_semantics": {
+      "target": "verify.frontend.collection_view_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/collection_view_semantics_test.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/pages/contractForm/types.ts",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/scripts/readonly_block_component_test.mjs",
+        "scripts/verify/collection_view_semantics_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "business_semantics": {
+      "target": "verify.frontend.business_semantics.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/business_semantics_consistency_test.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts"
+      ],
+      "kind": "offline"
+    },
+    "localized_display": {
+      "target": "verify.frontend.localized_display.unit",
+      "inputs": [
+        "scripts/verify/frontend_localized_display_contract_test.ts",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts"
+      ],
+      "kind": "offline"
+    },
+    "collection_row_cell": {
+      "target": "verify.frontend.collection_row_cell.unit",
+      "inputs": [
+        "frontend/apps/web/src/pages/ListPage.vue",
+        "frontend/apps/web/src/components/product-list/CollectionRowCell.vue",
+        "scripts/verify/frontend_collection_row_cell_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        "frontend/apps/web/src/components/template/One2ManyCellEditor.vue",
+        "frontend/apps/web/src/components/template/relationField.types.ts",
+        "frontend/apps/web/src/pages/contractForm/useOne2manyRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordRelationshipFields.ts",
+        "frontend/apps/web/src/pages/ContractFormPage.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordActionPresentation.ts",
+        "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
+        "frontend/apps/web/src/components/professional-fields/professionalDetailCollectionModel.ts",
+        "scripts/verify/frontend_professional_detail_collection_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "intake_autosave": {
+      "target": "verify.frontend.intake_autosave.unit",
+      "inputs": [
+        "frontend/apps/web/scripts/intake_autosave_runtime_test.ts",
+        "frontend/apps/web/src/pages/contractForm/intakeAutosave.ts",
+        "frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "generic frontend-only source change; no Odoo module behavior changed"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "collection semantics, business semantics, localized display, collection row cell and detail collection targets"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "One2many money/date/time/duration/relation and contract-declared attachment boundaries"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "lint, strict typecheck and production build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "owner_target": "project ledger, income contract and payment request at 1440/390 after implementation"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "diagnosis": "SOURCE_VERIFIED diagnosis committed at 78acb4d24; implementation now follows the diagnosed ownership",
+    "one2many_metadata_gap": "One2ManyColumn and RelationFieldColumn do not carry contract-provided digits/currency_field",
+    "display_input_bypass": "one2manyColumnDisplayValue is also used as editable input model-value",
+    "attachment_contract_gap": "No stable attachment-count cellRole/componentKey exists in the current list contract",
+    "baseline_test_correction": "intake autosave fixture now derives its initial timestamp from Date.now(); the existing >1 day expiry counterexample remains enforced",
+    "ci_local_iteration": "PASS on clean 7f307464b: five required targets resolved, one executed and four content-identical targets reused; unmappedPathCount=0",
+    "ci_local_iteration_receipt": ".runtime/frontend-dev-validation/executions/20261122T080628Z-3248212-52624125/receipt.json",
+    "ci_local_iteration_receipt_sha256": "b07361d2d422a458450e38a7a2ad3a982327c12c78efbcfca017c0445339f1df",
+    "evidence_heads": {
+      "product_code_head": "7f307464b9273db050b705cbb8bac9cb0cff972d",
+      "evidence_metadata_head": "7f307464b9273db050b705cbb8bac9cb0cff972d",
+      "product_path_delta": "zero",
+      "final_publication_head": "current PR head; metadata-only tip after the recorded evidence heads"
+    },
+    "contract_basis": "verify.frontend.contract_basis.enforce PASS with open_defects=0",
+    "localized_display": "verify.frontend.localized_display.unit PASS with registered_formatter_allowances=0",
+    "production_build": "PASS on 7f307464b: build-info source and runtime source match; authoritative frontend build sha256 2461d6f594c2a1c6f6b2dc7cb214a74239c1c46fcc42b1312c72e73aa34c3e97 matches /api/runtime-version",
+    "browser_evidence": ".runtime/FE-EXPRESSION-03A/evidence/browser-exact-7f307464b/report.json",
+    "browser_evidence_sha256": "f031faf35378372319a3b504ceb98710b29d00fb163cf845fc2a5c0de0fca3d0",
+    "browser_results": "8/8 cases PASS at 1440 and 390; project ledger, income contract, payment request and My Work each have one visible H1 and zero document overflow; payment One2many desktop currency display and mobile raw input values both match declared semantics",
+    "browser_errors": "0 console errors, 0 page errors and 0 persistence-intent requests",
+    "browser_reuse_boundary": "The exact-head browser probe is a one-time read-only observation, not a reusable test entry; record/action/menu identities came from the managed resolution envelope and no database id is a stable batch input",
+    "remaining_contract_gaps": [
+      "P0 list contract does not yet declare attachment-count cell role, so the old localized-label preview behavior is removed until the declaration exists",
+      "The One2many footer has no declared mixed-row currency aggregation rule; it now requires every participating row to expose the same positive currency record id and uses that row-carried identity, otherwise the aggregate is omitted"
+    ],
+    "external_gate_blocker": "The first PR #964 public_guard run found RH018 in a performance-branch historical document that is not present in this PR or its base. The reviewed exact false-positive registration is now integrated; local public_guard history verification passes and exact-head remote checks remain authoritative.",
+    "gov01_resolution": "Registered historical blob bafa037ccf5a936090ddb8ec2d3bcc9bec2c45ad as a reviewed host-memory byte count, not personal data. The entry binds rule, exact path, blob and classification; no rule, directory or wildcard was relaxed.",
+    "autosave_retention": "Project-intake draft retention is a P1 smart_construction_core standard constant of 86400 seconds, published through runtimeContract.intakeAutosave.retention.seconds; it is not a user or administrator setting, the frontend has no local 24-hour fallback, and coverage copy renders the declared duration without rounding sub-hour values"
+  },
+  "next_exact_step": "Push the exact P4 false-positive registry change, wait for public_guard and merge_policy_gate on the new PR #964 head, and merge only if all required checks pass.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

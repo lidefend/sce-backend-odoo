@@ -149,12 +149,12 @@
               class="o2m-readonly-fact"
             >
               <dt>{{ column.label }}</dt>
-              <dd :title="adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT">
+              <dd :title="readonlyOne2manyValue(row, column) || FIELD_VALUE_EMPTY_TEXT">
                 <NativeWeightedRelationDisplay
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
                 />
-                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT }}</template>
+                <template v-else>{{ readonlyOne2manyValue(row, column) || FIELD_VALUE_EMPTY_TEXT }}</template>
               </dd>
             </div>
           </dl>
@@ -170,12 +170,12 @@
                 class="o2m-readonly-fact"
               >
                 <dt>{{ column.label }}</dt>
-                <dd :title="adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT">
+                <dd :title="readonlyOne2manyValue(row, column) || FIELD_VALUE_EMPTY_TEXT">
                 <NativeWeightedRelationDisplay
                   v-if="column.widget === 'analytic_distribution' || column.widgetSemantics?.kind === 'weighted_relation'"
                   :declaration="column.widgetSemantics" :value="row.values[column.name]" :context="adapter.readContext"
                 />
-                <template v-else>{{ adapter.one2manyColumnDisplayValue(column, row.values[column.name]) || FIELD_VALUE_EMPTY_TEXT }}</template>
+                <template v-else>{{ readonlyOne2manyValue(row, column) || FIELD_VALUE_EMPTY_TEXT }}</template>
               </dd>
               </div>
             </dl>
@@ -460,6 +460,7 @@ import { mergeUploadedAttachmentIds } from './attachmentRelationMerge';
 import { readRecord } from '../../api/data';
 import type { RelationFieldColumn, RelationFieldRow, X2ManyRelationRendererProps } from './relationField.types';
 import {
+  detailCollectionAggregateColumn,
   detailCollectionColumnPresentation,
   detailCollectionMobileColumnSplit,
 } from '../professional-fields/professionalDetailCollectionModel';
@@ -571,10 +572,20 @@ const o2mTableData = computed(() => paginatedOne2manyRows.value.map((row) => {
   // 展开字段值到行对象，供 TDesign Table 普通列渲染
   const columns = displayOne2manyColumns.value;
   columns.forEach((column) => {
-    rowData[column.name] = props.adapter.one2manyColumnDisplayValue(column, row.values[column.name]);
+    rowData[column.name] = props.adapter.one2manyColumnDisplayValue(
+      props.adapter.one2manyEffectiveColumn(props.field.name, row, column),
+      row.values[column.name],
+    );
   });
   return rowData;
 }));
+
+function readonlyOne2manyValue(row: RelationFieldRow, column: RelationFieldColumn) {
+  return props.adapter.one2manyColumnDisplayValue(
+    props.adapter.one2manyEffectiveColumn(props.field.name, row, column),
+    row.values[column.name],
+  );
+}
 
 const o2mRelationOptionMap = ref<Record<string, Array<{ value: number; label: string }>>>({});
 const o2mRelationLoading = ref<Record<string, boolean>>({});
@@ -887,7 +898,13 @@ const o2mTableFootData = computed(() => {
   const amountColumns = aggregateAmountColumns.value;
   if (!amountColumns.length || !one2manyRows.value.length) return [];
   amountColumns.forEach((column) => {
-    footRow[column.name] = props.adapter.one2manyColumnDisplayValue(column, o2mAmountTotal(column));
+    const effectiveColumn = detailCollectionAggregateColumn(
+      column,
+      one2manyRows.value,
+      (row, current) => props.adapter.one2manyEffectiveColumn(props.field.name, row, current),
+    );
+    if (!effectiveColumn) return;
+    footRow[column.name] = props.adapter.one2manyColumnDisplayValue(effectiveColumn, o2mAmountTotal(column));
   });
   return [footRow];
 });
