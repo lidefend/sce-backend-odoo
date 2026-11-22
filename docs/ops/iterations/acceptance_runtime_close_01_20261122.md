@@ -15,6 +15,12 @@ R09 的最终业务结论保持为 2/4 完整流程 PASS、2/4 FAIL；本批只�
   `frontend/apps/web/src/` 相对产品基线为零
 - 验收环境：`local/sc-fe-r2-p1-01/sc_frontend_acceptance`
 
+主线在首次发布尝试前前进到 `cb182c9e94abe515b0d987fc514bc46ca98d1cfb`。
+候选已通过 `workspace.branch.sync-main` 重放到该精确 main，重建生成报告后的新
+HEAD 为 `638f9a9599b9c299148dd34b0ca745c2b7d81b34`。旧
+`873a8091ef0560b360efd0fa3efe2c4fc1f566b3` 仅保留为被同步取代的本地身份，
+不能用于复审或发布。
+
 ## 层与范围声明
 
 - `Formal Product Layer`: P4 ops delivery tool
@@ -81,8 +87,8 @@ R09 的最终业务结论保持为 2/4 完整流程 PASS、2/4 FAIL；本批只�
 - 最终 `ci.local.iteration`：8/8 required targets 通过，`unmappedPathCount=0`，
   `testsRun=true`，trusted scans 完成，验证面处于冻结基线内。
   原始 receipt：
-  `.runtime/frontend-dev-validation/executions/20261122T031341Z-1502087-553630310/receipt.json`
-  （SHA256 `1149c7893c8e75fdb6ed6a2710b50ecb482ac8e00e5e81ce9a3b9622725af150`）。
+  `.runtime/frontend-dev-validation/executions/20261122T033231Z-1619625-646681715/receipt.json`
+  （SHA256 `c6d796774ef1b495052822fad0df2f7292e4ff8a6fbe39cc3c0487657633f48e`）。
   执行目标测试数为 10、129、18、67、19、40、63、208。
 - `ci.delivery.freeze.prepare` 连续两轮 PASS；generated reports current，
   frontend contract basis open defects=0，list-surface evidence bindings valid。
