@@ -81,6 +81,7 @@ class SceneRuntimeOrchestrator:
                 data.get("scenes"),
                 scene_diagnostics["normalize_warnings"],
                 published_authority=runtime_ctx.published_authority,
+                request_context=runtime_ctx.request_context,
             )
             return
 
@@ -89,6 +90,7 @@ class SceneRuntimeOrchestrator:
             env,
             drift=scene_diagnostics["drift"],
             logger=self._logger,
+            request_context=runtime_ctx.request_context,
         )
         scene_diagnostics["loaded_from"] = scene_source.get("loaded_from") or "fallback"
         scene_diagnostics["timings"]["load_ms"] = int((time.time() - t_load_start) * 1000)

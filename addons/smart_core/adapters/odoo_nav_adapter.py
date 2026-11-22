@@ -34,11 +34,16 @@ class OdooNavAdapter:
         self.model_view_scene_map = dict(self.MODEL_VIEW_SCENE_MAP)
         self._extension_loaded = False
 
-    def _load_extension_scene_maps(self, env):
+    def _load_extension_scene_maps(self, env, *, request_context=None):
         if self._extension_loaded:
             return
         self._extension_loaded = True
-        payload = call_extension_hook_first(env, "smart_core_nav_scene_maps", env)
+        payload = call_extension_hook_first(
+            env,
+            "smart_core_nav_scene_maps",
+            env,
+            request_context=request_context,
+        )
         if not isinstance(payload, dict):
             return
         menu_scene_map = payload.get("menu_scene_map")
@@ -63,8 +68,8 @@ class OdooNavAdapter:
                 normalized[(model_name, view_mode)] = scene_key
             self.model_view_scene_map.update(normalized)
 
-    def enrich(self, env, nav_tree):
-        self._load_extension_scene_maps(env)
+    def enrich(self, env, nav_tree, *, request_context=None):
+        self._load_extension_scene_maps(env, request_context=request_context)
         self._normalize_nav_groups(env, nav_tree)
         self._apply_scene_keys(env, nav_tree)
         return nav_tree

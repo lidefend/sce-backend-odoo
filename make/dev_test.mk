@@ -2833,6 +2833,7 @@ verify.capability.provider.guard: guard.prod.forbid
 .PHONY: verify.smart_core.ui_base_asset_refresh.unit
 verify.smart_core.ui_base_asset_refresh.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_ui_base_contract_asset_repository.py
+	@python3 addons/smart_core/tests/test_ui_base_contract_asset_producer.py
 
 verify.capability.registry.smoke: guard.prod.forbid check-compose-project check-compose-env
 	@$(RUN_ENV) python3 scripts/verify/capability_registry_smoke.py

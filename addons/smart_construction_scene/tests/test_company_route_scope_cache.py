@@ -121,13 +121,13 @@ class TestCompanyRouteScopeCache(TransactionCase):
                 "id": menu.id, "name": "Imported", "meta": dict(main), "children": []}],
                 "route_authority": {"primary_actions": [main]}}
         real_hook = delivery.call_extension_hook_first
-        def hook(env, name, *args):
+        def hook(env, name, *args, **kwargs):
             if name == "smart_core_navigation_authority_filter":
                 return filter_business_authority(args[1], surface_index={menu_xmlid: {
                     "location": "scenario", "scenario_key": "effective", "scenario_active": True}},
                     enabled={"effective": True}, entries=[original], menu_xmlids_by_id={menu.id: menu_xmlid},
                     company_id=env.company.id)
-            return real_hook(env, name, *args)
+            return real_hook(env, name, *args, **kwargs)
         with patch.object(scene_registry, "_load_scene_registry_content_entries_with_timings", side_effect=lambda: ([deepcopy(original)], {})), \
                 patch.object(delivery.DeliveryEngine, "build", side_effect=lambda **kwargs: deepcopy(seed)), \
                 patch.object(delivery, "_load_platform_release_gate", return_value={}), \
@@ -174,6 +174,74 @@ class TestCompanyRouteScopeCache(TransactionCase):
             self.assertIn((0, new_action.id), cached_pairs)
             self.assertNotIn((0, old_action.id), cached_pairs)
             self.assertEqual(cached_pairs, published_pairs(delivery.EffectiveDeliveryService(self.env).resolve().route_authority))
+
+    def test_scene_runtime_consumes_an_isolated_projection_of_the_request_snapshot(self):
+        from odoo.addons.smart_construction_scene import scene_registry
+        from odoo.addons.smart_core.core.scene_runtime_orchestrator import SceneRuntimeOrchestrator
+        from odoo.addons.smart_core.core.scene_provider import load_scenes_from_db_or_fallback
+        from odoo.addons.smart_core.core.system_init_request_context import SystemInitRequestContext
+        from odoo.addons.smart_core.core.system_init_runtime_context import SystemInitRuntimeContext
+        from odoo.addons.smart_core.governance.scene_normalizer import SceneNormalizer
+
+        request_context = SystemInitRequestContext(self.env)
+        scene_diagnostics = {
+            "timings": {},
+            "drift": [],
+            "normalize_warnings": [],
+            "resolve_errors": [],
+        }
+        runtime_ctx = SystemInitRuntimeContext(
+            env=self.env,
+            user=self.env.user,
+            params={},
+            data={"scenes": [], "capabilities": [], "nav": []},
+            nav_tree=[],
+            scene_channel="stable",
+            rollback_active=False,
+            trace_id="scene-snapshot-immutability",
+            diagnostics_collector=None,
+            scene_diagnostics=scene_diagnostics,
+            load_scene_contract_fn=lambda env, channel, pinned: (None, "test/no-contract"),
+            load_scenes_fallback_fn=load_scenes_from_db_or_fallback,
+            merge_missing_scenes_fn=lambda *args, **kwargs: args[1],
+            append_resolve_error_fn=lambda bucket, **kwargs: bucket.append(kwargs),
+            request_context=request_context,
+            published_authority={},
+        )
+
+        class NoopDriftEngine:
+            @staticmethod
+            def evaluate(scenes, diagnostics):
+                del scenes, diagnostics
+
+        class NoopAutoDegradeEngine:
+            @staticmethod
+            def evaluate(*args, **kwargs):
+                del args, kwargs
+                return {"triggered": False}
+
+        SceneRuntimeOrchestrator(logger=None).execute(
+            runtime_ctx=runtime_ctx,
+            scene_normalizer=SceneNormalizer(),
+            scene_drift_engine=NoopDriftEngine(),
+            auto_degrade_engine=NoopAutoDegradeEngine(),
+        )
+
+        fact = request_context.fact(scene_registry.EFFECTIVE_SCENE_DECLARATIONS_FACT)
+        self.assertIsNotNone(fact)
+        snapshot = fact.value
+        self.assertGreater(len(runtime_ctx.data["scenes"]), 0)
+        self.assertEqual(
+            scene_registry.scene_declaration_fingerprint(snapshot.declarations),
+            snapshot.content_fingerprint,
+        )
+        declared = next(
+            scene
+            for scene in snapshot.declarations
+            if isinstance(scene.get("target"), dict) and scene["target"]
+        )
+        with self.assertRaisesRegex(TypeError, "read-only"):
+            declared["target"]["route"] = "/s/mutated"
 
     def test_imported_target_refreshes_navigation_identity_map(self):
         from odoo.addons.smart_construction_scene import core_extension, scene_registry
@@ -285,12 +353,12 @@ class TestCompanyRouteScopeCache(TransactionCase):
         with patch.object(MenuService, "_action_is_runtime_allowed", return_value=False):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
         real_hook = delivery.call_extension_hook_first
-        def selection_denies(env, name, *args):
+        def selection_denies(env, name, *args, **kwargs):
             if name == "smart_core_navigation_authority_filter":
                 # A final selection result with no admitted scenes must win
                 # over the role's earlier, otherwise valid landing preference.
                 return {"primary_actions": [], "role_home_actions": [], "contextual_actions": [], "admin_actions": []}
-            return real_hook(env, name, *args)
+            return real_hook(env, name, *args, **kwargs)
         with patch.object(delivery, "call_extension_hook_first", side_effect=selection_denies):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
 

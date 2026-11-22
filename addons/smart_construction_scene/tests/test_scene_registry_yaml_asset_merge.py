@@ -20,6 +20,166 @@ def _load_module():
 
 
 class TestSceneRegistryYamlAssetMerge(unittest.TestCase):
+    def test_request_scope_loads_declarations_once_for_all_consumers(self):
+        registry = _load_module()
+        calls = []
+
+        class RequestContext:
+            def __init__(self):
+                self.values = {}
+
+            def resolve(self, key, loader):
+                if key in self.values:
+                    return self.values[key], False
+                value = loader()
+                self.values[key] = value
+                return value, True
+
+        context = RequestContext()
+
+        def load(env, drift=None):
+            del env, drift
+            calls.append(1)
+            return [
+                {
+                    "code": "projects.list",
+                    "name": "项目台账",
+                    "target": {"route": "/s/projects.list"},
+                }
+            ], {"load_from_db": 1}
+
+        with patch.object(registry, "_load_scene_declarations_with_timings", side_effect=load):
+            first = registry.load_effective_scene_declarations_for_request(
+                None,
+                request_context=context,
+            )
+            second, second_timings = (
+                registry.load_effective_scene_declarations_with_timings_for_request(
+                    None,
+                    request_context=context,
+                )
+            )
+            configured, configure_timings = (
+                registry.load_scene_configs_with_timings_for_request(
+                    None,
+                    request_context=context,
+                )
+            )
+
+        self.assertEqual(calls, [1])
+        self.assertEqual(first, second)
+        self.assertEqual(first, configured)
+        self.assertIsNot(first, configured)
+        self.assertEqual(second_timings, {})
+        self.assertEqual(configure_timings, {})
+        snapshot = context.values[registry.EFFECTIVE_SCENE_DECLARATIONS_FACT]
+        self.assertEqual(
+            snapshot.content_fingerprint,
+            registry.scene_declaration_fingerprint(first),
+        )
+
+    def test_request_scoped_declarations_do_not_cross_contexts(self):
+        registry = _load_module()
+        calls = []
+
+        class RequestContext:
+            def __init__(self):
+                self.values = {}
+
+            def resolve(self, key, loader):
+                if key in self.values:
+                    return self.values[key], False
+                self.values[key] = loader()
+                return self.values[key], True
+
+        def load(env, drift=None):
+            del env, drift
+            calls.append(1)
+            return [{"code": f"scene.{len(calls)}", "target": {}}], {}
+
+        with patch.object(registry, "_load_scene_declarations_with_timings", side_effect=load):
+            first = registry.load_effective_scene_declarations_for_request(
+                None,
+                request_context=RequestContext(),
+            )
+            second = registry.load_effective_scene_declarations_for_request(
+                None,
+                request_context=RequestContext(),
+            )
+
+        self.assertEqual(calls, [1, 1])
+        self.assertNotEqual(first, second)
+
+    def test_request_snapshot_is_deeply_read_only_and_runtime_projection_is_isolated(self):
+        registry = _load_module()
+
+        class RequestContext:
+            def __init__(self):
+                self.values = {}
+
+            def resolve(self, key, loader):
+                if key in self.values:
+                    return self.values[key], False
+                value = loader()
+                self.values[key] = value
+                return value, True
+
+        declaration = {
+            "code": "projects.list",
+            "target": {"route": "/s/projects.list", "model": "project.project"},
+            "tiles": [{"key": "project.read", "status": "ga"}],
+            "handling_entry_catalog": {
+                "groups": [{"key": "operations", "items": [{"key": "open"}]}],
+            },
+        }
+        context = RequestContext()
+        with patch.object(
+            registry,
+            "_load_scene_declarations_with_timings",
+            return_value=([deepcopy(declaration)], {"load_from_db": 1}),
+        ):
+            effective = registry.load_effective_scene_declarations_for_request(
+                None,
+                request_context=context,
+            )
+            snapshot = context.values[registry.EFFECTIVE_SCENE_DECLARATIONS_FACT]
+            initial_fingerprint = snapshot.content_fingerprint
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["target"]["route"] = "/s/changed"
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["tiles"].append({"key": "changed"})
+            with self.assertRaisesRegex(TypeError, "read-only"):
+                effective[0]["handling_entry_catalog"]["groups"][0]["items"][0]["key"] = "changed"
+
+            projected = registry.load_scene_configs_for_request(
+                None,
+                request_context=context,
+            )
+            projected[0]["target"]["route"] = "/s/runtime"
+            projected[0]["tiles"].append({"key": "runtime"})
+            projected[0]["access"] = {"allowed": False}
+
+        self.assertEqual(
+            registry.scene_declaration_fingerprint(snapshot.declarations),
+            initial_fingerprint,
+        )
+        self.assertEqual(effective[0]["target"]["route"], "/s/projects.list")
+        self.assertEqual(len(effective[0]["tiles"]), 1)
+        self.assertEqual(
+            effective[0]["handling_entry_catalog"]["groups"][0]["items"][0]["key"],
+            "open",
+        )
+
+    def test_scene_fingerprint_detects_content_mutation(self):
+        registry = _load_module()
+        declarations = [{"code": "projects.list", "target": {"route": "/s/projects.list"}}]
+        fingerprint = registry.scene_declaration_fingerprint(declarations)
+        declarations[0]["target"]["route"] = "/s/changed"
+        self.assertNotEqual(
+            fingerprint,
+            registry.scene_declaration_fingerprint(declarations),
+        )
+
     def test_imported_handling_target_is_shared_with_data_only_declarations(self):
         registry = _load_module()
         original = {"code": "effective.imported", "name": "Imported handling", "target": {"route": "/s/effective.imported"},

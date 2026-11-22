@@ -52,3 +52,4 @@ class SystemInitSceneRuntimeSurfaceContext:
     build_scene_ready_contract_fn: Callable
     build_scene_nav_contract_fn: Callable
     effective_scene_internal_actions: dict | None = None
+    request_context: Any = None

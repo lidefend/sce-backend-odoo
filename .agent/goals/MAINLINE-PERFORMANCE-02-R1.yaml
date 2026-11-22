@@ -1,0 +1,61 @@
+schema_version: 1
+
+goal:
+  id: MAINLINE-PERFORMANCE-02-R1
+  title: request_scoped_effective_scene_declaration_reuse
+  status: active
+  formal_product_layer: P1
+  layer_target: system.init effective scene declaration fact reuse
+  module:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_scene
+  standard_vs_user_specific: construction_runtime_mechanism
+  objective: >-
+    Load effective scene declarations once for one system.init request and
+    explicitly pass that request-scoped fact to every scene consumer. Keep the
+    fact isolated by request, database, user, company and product, and preserve
+    every scene, navigation and route-authority result.
+  product_result: >-
+    system.init performs one effective scene declaration load instead of six
+    cold-load calls, without introducing a global cache, env.context transport,
+    consumer mutation or cross-request reuse.
+  why_here: >-
+    smart_construction_scene owns effective scene declarations. smart_core owns
+    the generic request carrier and orchestration seam. Consumers remain in
+    their existing P0/P1 modules and only read the supplied fact.
+  why_not_elsewhere:
+    - Do not add a module-level or registry-wide scene declaration cache.
+    - Do not encode scene semantics in frontend, customer modules or runtime configuration.
+    - Do not change ACL, publication, route authority or scene enablement semantics.
+    - Do not combine menu-index, release-snapshot, deepcopy or frontend optimizations in R1.
+  blast_radius:
+    behavior:
+      - system.init request-scoped scene declaration loading
+      - effective delivery scene consumers
+      - capability scene target resolution
+      - scene runtime fallback and merge consumers
+      - navigation authority and scenario projection
+    exclusions:
+      - no menu-index sharing
+      - no XMLID batching
+      - no release snapshot sharing
+      - no broad deepcopy removal
+      - no schema, data, fixture or product-policy migration
+  validation:
+    required:
+      - request-context isolation and one-load unit tests
+      - scene registry and consumer contract tests
+      - non-zero targeted backend tests
+      - exact runtime load-count and content-fingerprint readback
+      - navigation and route-authority result equality
+      - affected local validation and remote exact-head gates
+  rollback: >-
+    Revert the request context, scene declaration snapshot helpers and consumer
+    argument plumbing together. All consumers then return to their independent
+    load behavior without changing stored data.
+  completion:
+    batch: active
+    mainline_integration: not_run
+    deployment: not_applicable
+    user_acceptance: not_applicable

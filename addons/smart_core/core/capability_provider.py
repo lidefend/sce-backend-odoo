@@ -116,12 +116,13 @@ def load_capabilities_for_user(
     user,
     *,
     published_authority: dict | None = None,
+    request_context=None,
 ) -> List[dict]:
-    optional_kwargs = (
-        {"published_authority": published_authority}
-        if published_authority is not None
-        else {}
-    )
+    optional_kwargs = {}
+    if published_authority is not None:
+        optional_kwargs["published_authority"] = published_authority
+    if request_context is not None:
+        optional_kwargs["request_context"] = request_context
     extension_caps = call_extension_hook_first_compatible(
         env,
         "smart_core_list_capabilities_for_user",
@@ -179,13 +180,14 @@ def load_capabilities_for_user_with_timings(
     user,
     *,
     published_authority: dict | None = None,
+    request_context=None,
 ) -> tuple[List[dict], dict[str, int]]:
     started_at = time.perf_counter()
-    optional_kwargs = (
-        {"published_authority": published_authority}
-        if published_authority is not None
-        else {}
-    )
+    optional_kwargs = {}
+    if published_authority is not None:
+        optional_kwargs["published_authority"] = published_authority
+    if request_context is not None:
+        optional_kwargs["request_context"] = request_context
     extension_result = call_extension_hook_first_compatible(
         env,
         "smart_core_list_capabilities_for_user_with_timings",
@@ -212,6 +214,7 @@ def load_capabilities_for_user_with_timings(
         env,
         user,
         published_authority=published_authority,
+        request_context=request_context,
     )
     return capabilities, {
         "load_capabilities_for_user_total": int((time.perf_counter() - started_at) * 1000),

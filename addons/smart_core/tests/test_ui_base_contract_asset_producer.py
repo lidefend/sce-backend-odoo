@@ -4,6 +4,7 @@ import sys
 import types
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 CORE_DIR = Path(__file__).resolve().parents[1] / "core"
@@ -76,23 +77,28 @@ class TestUiBaseContractAssetProducer(unittest.TestCase):
         captured_upserts.clear()
 
     def test_refresh_uses_runtime_rows_when_registry_empty(self):
-        result = target.refresh_ui_base_contract_assets(
-            env=object(),
-            scene_keys=["projects.list"],
-            scene_rows=[
-                {
-                    "code": "projects.list",
-                    "target": {
-                        "route": "/s/projects.list",
-                        "model": "project.project",
+        with patch.object(
+            scene_registry_provider,
+            "load_scene_configs",
+            side_effect=AssertionError("runtime rows must not reload the registry"),
+        ):
+            result = target.refresh_ui_base_contract_assets(
+                env=object(),
+                scene_keys=["projects.list"],
+                scene_rows=[
+                    {
+                        "code": "projects.list",
+                        "target": {
+                            "route": "/s/projects.list",
+                            "model": "project.project",
+                        },
                     },
-                }
-            ],
-            role_code="owner",
-            company_id=1,
-            source_type="runtime_intent",
-            code_version="unit-test",
-        )
+                ],
+                role_code="owner",
+                company_id=1,
+                source_type="runtime_intent",
+                code_version="unit-test",
+            )
 
         self.assertEqual(result["scene_source"], "runtime_rows")
         self.assertEqual(result["produced_count"], 1)

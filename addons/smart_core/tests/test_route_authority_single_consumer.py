@@ -16,6 +16,7 @@ real consumer bodies with the published authority injected, so going back to a
 local derivation fails instead of silently drifting.
 """
 import ast
+import importlib.util
 import sys
 import types
 import unittest
@@ -346,6 +347,7 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         source = (ROOT / "delivery" / "runtime_route_authority.py").read_text(encoding="utf-8")
         builder = source.split("def _build_runtime_route_authority", 1)[1]
         self.assertIn("EffectiveDeliveryService(env).resolve", builder)
+        self.assertIn("request_context=request_context", builder)
         self.assertNotIn("handlers.system_init", builder)
         shared = (ROOT / "delivery" / "effective_delivery_service.py").read_text(encoding="utf-8")
         engine = (ROOT / "delivery" / "delivery_engine.py").read_text(encoding="utf-8")
@@ -359,8 +361,31 @@ class RouteAuthoritySingleConsumerTest(unittest.TestCase):
         published = source.split("def published_route_authority", 1)[1].split(
             "def build_runtime_route_authority", 1
         )[0]
-        self.assertIn("published_route_authority", published)
-        self.assertIn("_build_runtime_route_authority(env)", published)
+        self.assertIn("EFFECTIVE_ROUTE_AUTHORITY_FACT", published)
+        self.assertIn("request_context.fact", published)
+        self.assertIn("request_context=request_context", published)
+
+    def test_plain_dict_request_context_keeps_the_legacy_authority_path(self):
+        module_path = ROOT / "delivery" / "runtime_route_authority.py"
+        spec = importlib.util.spec_from_file_location(
+            "runtime_route_authority_legacy_context_under_test",
+            module_path,
+        )
+        module = importlib.util.module_from_spec(spec)
+        assert spec and spec.loader
+        sys.modules[spec.name] = module
+        spec.loader.exec_module(module)
+        expected = {"primary_actions": [{"menu_id": 1, "action_id": 2}]}
+        policy = SimpleNamespace(published_route_authority=lambda: expected)
+        env = {"sc.product.policy": policy}
+
+        self.assertIs(
+            module.published_route_authority(
+                env,
+                request_context={"legacy_context_payload": True},
+            ),
+            expected,
+        )
 
 
 if __name__ == "__main__":
