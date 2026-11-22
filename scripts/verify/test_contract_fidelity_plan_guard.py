@@ -9,6 +9,9 @@ import tempfile
 import unittest
 from pathlib import Path
 
+import yaml
+from jsonschema import Draft202012Validator
+
 ROOT = Path(__file__).resolve().parents[2]
 MODULE_PATH = ROOT / "scripts/verify/contract_fidelity_plan_guard.py"
 SPEC = importlib.util.spec_from_file_location("contract_fidelity_plan_guard", MODULE_PATH)
@@ -112,13 +115,47 @@ class P0ContractProducerDesignTest(unittest.TestCase):
     DESIGN_PATH = Path("docs/architecture/p0_contract_producer_01/remediation_design.json")
     MATRIX_PATH = Path("docs/architecture/p0_contract_producer_01/compatibility_matrix.json")
     REPORT_PATH = Path("docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md")
+    DESCRIPTOR_SCHEMA_PATH = Path("docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json")
+    DESCRIPTOR_CASES_PATH = Path("docs/architecture/p0_contract_producer_01/descriptor_cases.json")
+    SEMANTIC_REGISTRY_PATH = Path("contracts/registry/semantic.yaml")
+    COMPONENT_REGISTRY_PATH = Path("contracts/registry/component.yaml")
 
     @classmethod
     def setUpClass(cls) -> None:
         cls.design = json.loads((ROOT / cls.DESIGN_PATH).read_text(encoding="utf-8"))
         cls.matrix = json.loads((ROOT / cls.MATRIX_PATH).read_text(encoding="utf-8"))
         cls.report = (ROOT / cls.REPORT_PATH).read_text(encoding="utf-8")
+        cls.descriptor_schema = json.loads((ROOT / cls.DESCRIPTOR_SCHEMA_PATH).read_text(encoding="utf-8"))
+        cls.descriptor_cases = json.loads((ROOT / cls.DESCRIPTOR_CASES_PATH).read_text(encoding="utf-8"))
+        cls.semantic_registry = yaml.safe_load((ROOT / cls.SEMANTIC_REGISTRY_PATH).read_text(encoding="utf-8"))
+        cls.component_registry = yaml.safe_load((ROOT / cls.COMPONENT_REGISTRY_PATH).read_text(encoding="utf-8"))
         cls.packages = {item["id"]: item for item in cls.design["work_packages"]}
+
+    def descriptor_registry_errors(self, descriptor: dict) -> list[str]:
+        errors: list[str] = []
+        semantic_type = descriptor.get("semanticType")
+        component_key = descriptor.get("componentKey")
+        field_type = descriptor.get("fieldType")
+        semantics = self.semantic_registry["semantics"]
+        components = self.component_registry["components"]
+        component = components.get(component_key)
+        if semantic_type not in semantics:
+            errors.append(f"semanticType {semantic_type!r} is not declared")
+        elif semantics[semantic_type].get("component") != component_key:
+            errors.append(f"semanticType {semantic_type!r} does not resolve to {component_key!r}")
+        if not isinstance(component, dict) or component.get("kind"):
+            errors.append(f"componentKey {component_key!r} is not a registered field component")
+        elif component.get("semantic") != semantic_type:
+            errors.append(f"componentKey {component_key!r} does not declare semanticType {semantic_type!r}")
+        else:
+            supported = component.get("field_types", [])
+            if "*" not in supported and field_type not in supported:
+                errors.append(f"componentKey {component_key!r} does not support fieldType {field_type!r}")
+        digits = descriptor.get("digits")
+        if isinstance(digits, list) and len(digits) == 2 and all(isinstance(item, int) for item in digits):
+            if digits[0] < 1 or digits[1] < 0 or digits[1] > digits[0]:
+                errors.append(f"digits {digits!r} do not satisfy total > 0, scale >= 0 and scale <= total")
+        return errors
 
     def test_product_implementation_remains_unauthorized(self) -> None:
         self.assertFalse(self.design["product_implementation_authorized"])
@@ -181,7 +218,10 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             row["id"] for row in self.matrix["cases"]
             if row["evidence"] == "executed_design_assertion"
         }
-        self.assertEqual(design_asserted, {"SEC-01", "SEC-02", "FIELD-01", "FIELD-02"})
+        self.assertEqual(
+            design_asserted,
+            {"SEC-01", "SEC-02", "FIELD-01", "FIELD-02", "FIELD-03", "FIELD-04", "FIELD-05"},
+        )
 
     def test_p0_a_reuses_contract_v2_field_descriptor(self) -> None:
         contract = self.packages["P0-A"]["schema_contract"]
@@ -201,6 +241,73 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         self.assertIn("descriptorId", contract["fieldRefs"]["<slot-key>"])
         self.assertIn("block_field_descriptors", contract)
         self.assertIn("does not define a parallel field descriptor", " ".join(self.packages["P0-A"]["rules"]))
+        schema_contract = contract["descriptor_schema"]
+        self.assertEqual(schema_contract["decoder_id"], "decodeContractV2FieldDescriptor")
+        self.assertIn("same normalized ContractV2FieldDescriptor", schema_contract["decode_equivalence"])
+        self.assertEqual(
+            set(schema_contract["shared_by"]),
+            {
+                "decodeContractV2Widget.fieldDescriptor",
+                "decodePageOrchestration.block_field_descriptors",
+            },
+        )
+        self.assertEqual(schema_contract["unknown_keys"], "reject")
+        self.assertIn("FIELD_DESCRIPTOR_UNKNOWN_KEY", schema_contract["error_codes"])
+        self.assertEqual(
+            set(schema_contract["validation_layers"]),
+            {"structural_schema", "semantic_registry"},
+        )
+        self.assertEqual(
+            schema_contract["semantic_registry_source"]["semantic_declaration"],
+            "contracts/registry/semantic.yaml",
+        )
+        self.assertEqual(
+            schema_contract["semantic_registry_source"]["component_declaration"],
+            "contracts/registry/component.yaml",
+        )
+        self.assertIn("validated projection", schema_contract["semantic_registry_source"]["schema_enum_role"])
+        self.assertIn(
+            "const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor'",
+            (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8"),
+        )
+
+    def test_descriptor_schema_is_strict_and_cases_match(self) -> None:
+        Draft202012Validator.check_schema(self.descriptor_schema)
+        validator = Draft202012Validator(self.descriptor_schema)
+        self.assertFalse(self.descriptor_schema["additionalProperties"])
+        self.assertEqual(
+            set(self.descriptor_schema["properties"]["semanticType"]["enum"]),
+            set(self.semantic_registry["semantics"]),
+        )
+        self.assertEqual(
+            set(self.descriptor_schema["required"]),
+            {"schemaVersion", "fieldCode", "label", "fieldType", "widgetType", "componentKey", "semanticType"},
+        )
+        seen = set()
+        expected: dict[str, str] = {}
+        for case in self.descriptor_cases["cases"]:
+            self.assertNotIn(case["id"], seen)
+            seen.add(case["id"])
+            errors = list(validator.iter_errors(case["descriptor"]))
+            registry_errors = self.descriptor_registry_errors(case["descriptor"])
+            failed_by = case.get("failed_by", ["structural_schema"] if errors else [])
+            if "structural_schema" in failed_by:
+                self.assertTrue(errors, case["id"])
+            if "semantic_registry" in failed_by:
+                self.assertTrue(registry_errors, case["id"])
+                self.assertEqual(errors, [], case["id"])
+            if case["expect"] == "valid":
+                self.assertEqual(registry_errors, [], case["id"])
+            actual = "invalid" if errors or registry_errors else "valid"
+            self.assertEqual(actual, case["expect"], f"{case['id']}: {errors[:1]}")
+            expected[case["id"]] = case["expect"]
+        schema_matrix = {
+            row["id"]: row["expectation"]
+            for row in self.matrix["cases"]
+            if row["evidence"] == "executed_schema_validation"
+        }
+        self.assertEqual(len(expected), 18)
+        self.assertEqual(schema_matrix, expected)
 
     def test_p0_b_keeps_attachment_identities_separate(self) -> None:
         contract = self.packages["P0-B"]["schema_contract"]

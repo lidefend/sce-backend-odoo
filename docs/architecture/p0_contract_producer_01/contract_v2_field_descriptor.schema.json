@@ -1,0 +1,644 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://sce.local/contracts/p0/contract-v2-field-descriptor.v1.schema.json",
+  "title": "ContractV2FieldDescriptor v1",
+  "description": "Strict semantic descriptor shared by widget-backed and non-widget-backed Page Block business values.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schemaVersion",
+    "fieldCode",
+    "label",
+    "fieldType",
+    "widgetType",
+    "componentKey",
+    "semanticType"
+  ],
+  "properties": {
+    "schemaVersion": {
+      "const": "1.0.0"
+    },
+    "fieldCode": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[A-Za-z][A-Za-z0-9_.:-]*$"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fieldType": {
+      "enum": [
+        "char",
+        "text",
+        "html",
+        "integer",
+        "float",
+        "monetary",
+        "boolean",
+        "date",
+        "datetime",
+        "selection",
+        "many2one",
+        "one2many",
+        "many2many",
+        "binary",
+        "json",
+        "many2one_reference",
+        "reference"
+      ]
+    },
+    "widgetType": {
+      "type": "string",
+      "minLength": 1
+    },
+    "componentKey": {
+      "type": "string",
+      "minLength": 1
+    },
+    "semanticType": {
+      "enum": [
+        "action",
+        "binary",
+        "boolean",
+        "challenge_status",
+        "choice",
+        "credential_entry",
+        "date",
+        "datetime",
+        "detail_collection",
+        "detail_table",
+        "duration",
+        "hierarchical_collection",
+        "long_text",
+        "money",
+        "number",
+        "one_time_secret",
+        "percentage",
+        "readable_value",
+        "reference",
+        "relation",
+        "relation_collection",
+        "secret_confirmation",
+        "status",
+        "support_action",
+        "tag_collection",
+        "text",
+        "unsupported_native_widget",
+        "payment_settlement_detail_collection"
+      ]
+    },
+    "required": {
+      "type": "boolean"
+    },
+    "readonly": {
+      "type": "boolean"
+    },
+    "invisible": {
+      "type": "boolean"
+    },
+    "relation": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relationField": {
+      "type": "string",
+      "minLength": 1
+    },
+    "selection": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "array",
+        "prefixItems": [
+          {
+            "type": "string",
+            "minLength": 1
+          },
+          {
+            "type": "string",
+            "minLength": 1
+          }
+        ],
+        "items": false,
+        "minItems": 2,
+        "maxItems": 2
+      }
+    },
+    "domain": true,
+    "domainExpression": true,
+    "context": true,
+    "relationEntry": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "widgetOptions": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "subview": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "filename": {
+      "type": "string",
+      "minLength": 1
+    },
+    "surfaceRole": {
+      "type": "string",
+      "minLength": 1
+    },
+    "technical": {
+      "type": "boolean"
+    },
+    "formStructureRole": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "role",
+        "slot",
+        "group"
+      ],
+      "properties": {
+        "role": {
+          "enum": [
+            "summary",
+            "task",
+            "context",
+            "risk",
+            "relation",
+            "activity",
+            "audit"
+          ]
+        },
+        "slot": {
+          "type": "string",
+          "minLength": 1
+        },
+        "group": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "digits": {
+      "type": "array",
+      "prefixItems": [
+        {
+          "type": "integer",
+          "minimum": 1
+        },
+        {
+          "type": "integer",
+          "minimum": 0
+        }
+      ],
+      "items": false,
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "currencyField": {
+      "type": "string",
+      "minLength": 1
+    },
+    "unit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "code",
+        "label"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "percent",
+            "duration",
+            "count",
+            "quantity"
+          ]
+        },
+        "code": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kind",
+        "timezoneAuthority"
+      ],
+      "properties": {
+        "kind": {
+          "enum": [
+            "date",
+            "datetime"
+          ]
+        },
+        "timezoneAuthority": {
+          "enum": [
+            "user",
+            "record",
+            "not_applicable"
+          ]
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "datetime"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "timezoneAuthority": {
+                "enum": [
+                  "user",
+                  "record"
+                ]
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "date"
+              }
+            },
+            "required": [
+              "kind"
+            ]
+          },
+          "then": {
+            "properties": {
+              "timezoneAuthority": {
+                "const": "not_applicable"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "attachmentRole": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "const": "monetary"
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "digits",
+          "currencyField"
+        ],
+        "properties": {
+          "semanticType": {
+            "const": "money"
+          },
+          "unit": false,
+          "temporal": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semanticType": {
+            "const": "percentage"
+          }
+        },
+        "required": [
+          "semanticType"
+        ]
+      },
+      "then": {
+        "required": [
+          "digits",
+          "unit"
+        ],
+        "properties": {
+          "fieldType": {
+            "enum": [
+              "float",
+              "integer"
+            ]
+          },
+          "unit": {
+            "required": [
+              "kind",
+              "code",
+              "label"
+            ],
+            "properties": {
+              "kind": {
+                "const": "percent"
+              },
+              "code": {
+                "const": "percent"
+              }
+            }
+          },
+          "currencyField": false,
+          "temporal": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semanticType": {
+            "const": "duration"
+          }
+        },
+        "required": [
+          "semanticType"
+        ]
+      },
+      "then": {
+        "required": [
+          "digits",
+          "unit"
+        ],
+        "properties": {
+          "fieldType": {
+            "enum": [
+              "float",
+              "integer"
+            ]
+          },
+          "unit": {
+            "required": [
+              "kind",
+              "code",
+              "label"
+            ],
+            "properties": {
+              "kind": {
+                "const": "duration"
+              }
+            }
+          },
+          "currencyField": false,
+          "temporal": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semanticType": {
+            "const": "money"
+          }
+        },
+        "required": [
+          "semanticType"
+        ]
+      },
+      "then": {
+        "required": [
+          "digits",
+          "currencyField"
+        ],
+        "properties": {
+          "fieldType": {
+            "const": "monetary"
+          },
+          "unit": false,
+          "temporal": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "const": "date"
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "temporal"
+        ],
+        "properties": {
+          "temporal": {
+            "properties": {
+              "kind": {
+                "const": "date"
+              }
+            }
+          },
+          "digits": false,
+          "currencyField": false,
+          "unit": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semanticType": {
+            "const": "date"
+          }
+        },
+        "required": [
+          "semanticType"
+        ]
+      },
+      "then": {
+        "required": [
+          "temporal"
+        ],
+        "properties": {
+          "fieldType": {
+            "const": "date"
+          },
+          "temporal": {
+            "properties": {
+              "kind": {
+                "const": "date"
+              },
+              "timezoneAuthority": {
+                "const": "not_applicable"
+              }
+            }
+          },
+          "digits": false,
+          "currencyField": false,
+          "unit": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "const": "datetime"
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "temporal"
+        ],
+        "properties": {
+          "temporal": {
+            "properties": {
+              "kind": {
+                "const": "datetime"
+              }
+            }
+          },
+          "digits": false,
+          "currencyField": false,
+          "unit": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "semanticType": {
+            "const": "datetime"
+          }
+        },
+        "required": [
+          "semanticType"
+        ]
+      },
+      "then": {
+        "required": [
+          "temporal"
+        ],
+        "properties": {
+          "fieldType": {
+            "const": "datetime"
+          },
+          "temporal": {
+            "properties": {
+              "kind": {
+                "const": "datetime"
+              },
+              "timezoneAuthority": {
+                "enum": [
+                  "user",
+                  "record"
+                ]
+              }
+            }
+          },
+          "digits": false,
+          "currencyField": false,
+          "unit": false,
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "enum": [
+              "many2one",
+              "one2many",
+              "many2many",
+              "many2one_reference",
+              "reference"
+            ]
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "relation"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "relation": {
+            "const": "ir.attachment"
+          }
+        },
+        "required": [
+          "relation"
+        ]
+      },
+      "then": {
+        "required": [
+          "attachmentRole"
+        ],
+        "properties": {
+          "attachmentRole": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "else": {
+        "properties": {
+          "attachmentRole": false
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "fieldType": {
+            "const": "selection"
+          }
+        },
+        "required": [
+          "fieldType"
+        ]
+      },
+      "then": {
+        "required": [
+          "selection"
+        ]
+      }
+    }
+  ]
+}

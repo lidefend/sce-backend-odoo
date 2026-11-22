@@ -30,6 +30,8 @@
     "addons/smart_core/handlers/file_upload.py": "15548fd80797c836bbc8c2bf94adc9016162e8bbb13cd817888529c1f1a6aa3e",
     "addons/smart_core/handlers/chatter_attachment_delete.py": "e2df0ea6733931959965ad0f6e63cbd3f4751ed9b71ff7e1cd62f39394414dd8",
     "addons/smart_construction_core/services/scene_block_schema.py": "17ab6faf664c07855848c85f0f4e7735fab79cc79c838428b9f1637fa3227999",
+    "contracts/registry/semantic.yaml": "a2bf2f999415083c08db028e8c1702b12dbc994560b209f517c90b4974638bff",
+    "contracts/registry/component.yaml": "7dc7e4bc79207c7c3b7b120a4df72fcfc3bc4a9031835a484f6b64ffee0f385a",
     "frontend/apps/web/src/app/contracts/v2/types.ts": "3c9ea1ebb3d51a00a629486d4fbc379895592e3a429e22abab665acb4911eaf8",
     "frontend/apps/web/src/app/contracts/v2/client.ts": "493f180cac7810906921ca88ac95cf87017a2ea4aad8a8218653bb269ae83dae",
     "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts": "61feb091a7fb2b1d69cd0ba6b563387b986a79097680ca752be5bd38a68867c8",
@@ -223,6 +225,12 @@
         "smart_core",
         "smart_construction_core"
       ],
+      "current_state": {
+        "declared_type": "ContractV2FieldDescriptor",
+        "widget_decoder": "decodeWidget uses optionalRecord for fieldDescriptor",
+        "strict_descriptor_decoder": "not implemented",
+        "known_risk": "unknown descriptor properties can currently pass as an untyped ContractV2Dictionary"
+      },
       "schema_contract": {
         "location": "page_orchestration.block_data_contracts[dataSourceKey]",
         "required": [
@@ -248,6 +256,107 @@
           },
           "single_descriptor_type": true,
           "no_parallel_descriptor_map": true
+        },
+        "descriptor_schema": {
+          "schema_file": "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+          "schema_version": "1.0.0",
+          "decoder_id": "decodeContractV2FieldDescriptor",
+          "decode_equivalence": "the same descriptor input through either reference must return the same normalized ContractV2FieldDescriptor",
+          "validation_layers": {
+            "structural_schema": "validate the strict descriptor shape, required fields and cross-field conditional rules",
+            "semantic_registry": "resolve semanticType and componentKey against the existing contract registry and validate supported field types and digits"
+          },
+          "semantic_registry_source": {
+            "semantic_declaration": "contracts/registry/semantic.yaml",
+            "component_declaration": "contracts/registry/component.yaml",
+            "authority": "the registry remains the sole semantic and component vocabulary authority",
+            "schema_enum_role": "the schema enum is a validated projection of semantic.yaml, not an independent vocabulary"
+          },
+          "shared_by": [
+            "decodeContractV2Widget.fieldDescriptor",
+            "decodePageOrchestration.block_field_descriptors"
+          ],
+          "required": [
+            "schemaVersion",
+            "fieldCode",
+            "label",
+            "fieldType",
+            "widgetType",
+            "componentKey",
+            "semanticType"
+          ],
+          "optional": [
+            "required",
+            "readonly",
+            "invisible",
+            "relation",
+            "relationField",
+            "selection",
+            "domain",
+            "domainExpression",
+            "context",
+            "relationEntry",
+            "widgetOptions",
+            "subview",
+            "filename",
+            "surfaceRole",
+            "technical",
+            "formStructureRole",
+            "digits",
+            "currencyField",
+            "unit",
+            "temporal",
+            "attachmentRole"
+          ],
+          "conditional_required": {
+            "monetary": [
+              "digits",
+              "currencyField"
+            ],
+            "percentage": [
+              "digits",
+              "unit.kind=percent"
+            ],
+            "duration": [
+              "digits",
+              "unit.kind=duration"
+            ],
+            "date": [
+              "temporal.kind=date",
+              "temporal.timezoneAuthority=not_applicable"
+            ],
+            "datetime": [
+              "temporal.kind=datetime",
+              "temporal.timezoneAuthority=user|record"
+            ],
+            "relation_field_types": [
+              "relation"
+            ],
+            "relation=ir.attachment": [
+              "attachmentRole"
+            ],
+            "selection": [
+              "selection"
+            ]
+          },
+          "unknown_keys": "reject",
+          "unknown_semantic_type": "reject through the schema projection and semantic-registry resolution",
+          "component_semantic_consistency": "componentKey, semanticType and fieldType must resolve consistently through the existing semantic and component registries",
+          "error_codes": [
+            "FIELD_DESCRIPTOR_VERSION_UNSUPPORTED",
+            "FIELD_DESCRIPTOR_REQUIRED",
+            "FIELD_DESCRIPTOR_UNKNOWN_KEY",
+            "FIELD_DESCRIPTOR_TYPE_INVALID",
+            "FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED",
+            "FIELD_DESCRIPTOR_SEMANTIC_MISMATCH"
+          ],
+          "digit_rules": [
+            "exactly two integers",
+            "total positive",
+            "scale non-negative",
+            "scale <= total"
+          ],
+          "legacy_policy": "The strict descriptor decoder is required in Contract V2 2.6 and all new Page Block carriers. Contract V2 2.5 legacy widget descriptors retain their existing compatibility decoder and cannot be referenced by new carriers."
         },
         "fieldRefs": {
           "<slot-key>": {

@@ -18,6 +18,10 @@ Baseline:
   `docs/architecture/p0_contract_producer_01/remediation_design.json`
 - Compatibility matrix:
   `docs/architecture/p0_contract_producer_01/compatibility_matrix.json`
+- Strict descriptor schema:
+  `docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json`
+- Descriptor positive/negative fixtures:
+  `docs/architecture/p0_contract_producer_01/descriptor_cases.json`
 
 Formal product layer and scope:
 
@@ -280,6 +284,73 @@ Both branches return the same `ContractV2FieldDescriptor` shape. Non-widget
 business facts such as `project.total`, `payment.pending_amount` and
 `project.completion_rate` therefore do not require a fake UI Widget. They also
 do not create a second field-descriptor schema.
+
+The current `decodeWidget()` only reads `fieldDescriptor` as an optional
+untyped `ContractV2Dictionary`. That is the implementation gap this schema
+closes; the existing TypeScript declaration alone is not validation evidence.
+
+Implementation must add one strict decoder,
+`decodeContractV2FieldDescriptor()`, and call it from both paths:
+
+```text
+decodeWidget()
+  -> decodeContractV2FieldDescriptor(widget.fieldDescriptor)
+
+decodePageBlockDataContract()
+  -> decodeContractV2FieldDescriptor(block_field_descriptors[descriptorId])
+```
+
+The strict schema file is
+`docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json`.
+The existing TypeScript interface is extended in place; no parallel descriptor
+type is permitted.
+
+Descriptor validity has two layers. The JSON Schema validates shape, required
+fields and conditional rules. The same decoder then resolves `semanticType`,
+`componentKey` and `fieldType` against the existing
+`contracts/registry/semantic.yaml` and `contracts/registry/component.yaml`
+declarations. The schema's `semanticType` enum is a test-checked projection of
+`semantic.yaml`; the registry remains the sole vocabulary authority. Adding an
+industry or customer semantic therefore updates the contract registry and its
+validated projection rather than creating a second semantic list.
+
+Required descriptor fields:
+
+```text
+schemaVersion
+fieldCode
+label
+fieldType
+widgetType
+componentKey
+semanticType
+```
+
+Conditional declaration rules:
+
+| Semantic case | Required declaration | Forbidden declaration |
+| --- | --- | --- |
+| money | `digits`, `currencyField`, `semanticType=money` | `unit`, `temporal`, `attachmentRole` |
+| percentage | `digits`, `unit.kind=percent`, `unit.code=percent` | `currencyField`, `temporal`, `attachmentRole` |
+| duration | `digits`, `unit.kind=duration` with explicit code/label | `currencyField`, `temporal`, `attachmentRole` |
+| date | `temporal.kind=date`, `timezoneAuthority=not_applicable` | digits, currency, unit, attachment role |
+| datetime | `temporal.kind=datetime`, `timezoneAuthority=user|record` | digits, currency, unit, attachment role |
+| relation types | `relation` | unrelated monetary/unit/temporal semantics |
+| `ir.attachment` relation | `attachmentRole` | attachment behavior without a role |
+| selection | non-empty `selection` key/label pairs | unknown option semantics |
+
+The strict decoder must also reject:
+
+- unknown properties;
+- unknown `semanticType` values;
+- component/semantic registry mismatches;
+- malformed `digits`;
+- unsupported descriptor schema versions;
+- conditional-field inconsistencies.
+
+Contract V2 `2.5` keeps its legacy descriptor decoder for compatibility. A
+`2.6` Widget or Page Block carrier must use the strict decoder. New carriers
+cannot reference a legacy descriptor.
 
 For widget-backed values, the existing `componentConfig` remains a compatibility
 transport projection. For semantic decisions, the canonical
@@ -686,7 +757,11 @@ Rollback:
 
 Read-only design verification passed:
 
-- Contract Fidelity plan plus P0 design consistency: 20 Python tests.
+- Contract Fidelity plan plus P0 design consistency: 21 Python tests.
+- Strict Descriptor structural and registry validation: 18 positive/negative
+  fixture cases.
+- Semantic registry lint: PASS; 28 semantics and 33 components remain
+  consistent with their generated frontend and backend projections.
 - Page Contract orchestration: 19 pages.
 - Page Contract action semantics: 19 pages.
 - Page Contract data-source semantics: 19 pages.
@@ -696,7 +771,7 @@ Read-only design verification passed:
 - Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
   two undeclared carriers rejected.
 - Machine design reconciliation: 3 packages, 56 planned positive/negative
-  cases, 17 compatibility rows and 25 current-source hashes.
+  cases, 38 compatibility rows and 27 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 

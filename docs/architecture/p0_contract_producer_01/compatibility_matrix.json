@@ -175,6 +175,174 @@
       "expectation": "resolve block_field_descriptors without creating a fake widget",
       "evidence": "executed_design_assertion",
       "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-03",
+      "consumer": "Contract V2 2.6 descriptor decode",
+      "payload": "same descriptor through widget-backed and descriptor-backed references",
+      "expectation": "both use decodeContractV2FieldDescriptor and produce the same semantic result",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-04",
+      "consumer": "strict descriptor decoder",
+      "payload": "unknown descriptor property or semantic type",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-05",
+      "consumer": "strict descriptor decoder",
+      "payload": "missing or inconsistent conditional semantic property",
+      "expectation": "fail closed for money, percentage, duration, datetime or attachment",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid money descriptor with digits and currencyField",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-MISSING-DIGITS",
+      "consumer": "strict descriptor schema",
+      "payload": "money descriptor missing digits",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-MISSING-CURRENCY",
+      "consumer": "strict descriptor schema",
+      "payload": "money descriptor missing currencyField",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-PERCENT-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid percentage descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-PERCENT-MISSING-UNIT",
+      "consumer": "strict descriptor schema",
+      "payload": "percentage descriptor missing unit",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DURATION-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid duration descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DURATION-INVALID-UNIT",
+      "consumer": "strict descriptor schema",
+      "payload": "duration descriptor with percentage unit",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATETIME-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid datetime descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATETIME-MISSING-TEMPORAL",
+      "consumer": "strict descriptor schema",
+      "payload": "datetime descriptor missing temporal",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ATTACHMENT-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid attachment descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ATTACHMENT-MISSING-ROLE",
+      "consumer": "strict descriptor schema",
+      "payload": "attachment descriptor missing attachmentRole",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-SEMANTIC",
+      "consumer": "strict descriptor schema",
+      "payload": "unknown semanticType",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-KEY",
+      "consumer": "strict descriptor schema",
+      "payload": "unknown descriptor property",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-INVALID-FIELDTYPE",
+      "consumer": "strict descriptor schema",
+      "payload": "money semantic with a non-monetary field type",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATE-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid date descriptor with not-applicable timezone authority",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATE-INVALID-TIMEZONE",
+      "consumer": "strict descriptor schema",
+      "payload": "date descriptor with a user timezone authority",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DIGITS-INVALID-SCALE",
+      "consumer": "strict descriptor decoder semantic-registry layer",
+      "payload": "money descriptor whose scale exceeds total digits",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-SEMANTIC-COMPONENT-MISMATCH",
+      "consumer": "strict descriptor decoder semantic-registry layer",
+      "payload": "money descriptor that names the percentage component",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
     }
   ]
 }
