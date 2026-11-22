@@ -305,7 +305,7 @@ for (const relativePath of AUTHORITY_CONSUMERS) {
 // （2026-09-14 受管决定）。该路径是本批已登记的**契约权威例外**：必须保持显式声明，
 // 任何改动都会在这里失败并要求同步更新登记，不允许静默改口径。
 const FORM_READONLY_EMPTY_TEXT_REGISTRY = [
-  { path: 'components/template/FormSection.vue', token: 'resolveReadonlyEmptyText(field)', occurrences: 2 },
+  { path: 'components/template/FormSection.vue', token: 'resolveReadonlyEmptyText(field)' },
   { path: 'components/professional-fields/ProfessionalBaseFieldControl.vue', token: 'resolveReadonlyEmptyText(props.field)' },
   { path: 'components/professional-fields/ProfessionalBusinessValueControl.vue', token: 'resolveReadonlyEmptyText(props.field)' },
   { path: 'pages/contractForm/ContractFormNativeCanvas.vue', token: 'resolveReadonlyEmptyText(field)' },

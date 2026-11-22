@@ -29,6 +29,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     for marker in (
         "function formatMonetaryDisplayValue(",
         "function presentDeclaredBusinessValue(",
+        "function presentDeclaredRelation(",
+        "function presentDeclaredRelationCollection(",
         "function statusBadgeSemantic(",
         "FIELD_VALUE_EMPTY_TEXT",
     ):
@@ -66,6 +68,21 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     if "presentDeclaredBusinessValue" not in kanban_adapter:
         failures.append("Kanban adapter does not consume declared business-value semantics")
 
+    display = _read("utils/display.ts", read_text)
+    if "presentDeclaredBusinessValue({" not in display:
+        failures.append("[CFG-001] generic display does not delegate declared business values to the shared authority")
+    for forbidden in (
+        "isSelectionFieldType",
+        "isScalarRelationFieldType",
+        "formatNumericFieldValue",
+        "formatTemporalFieldValue",
+        "match ? String(item[1]) : String(value)",
+    ):
+        if forbidden in display:
+            failures.append(
+                f"[CFG-009] generic display retains an independent declared-value semantic branch: {forbidden}"
+            )
+
     money_consumers = (
         "components/FieldValue.vue",
         "components/template/FormSection.vue",
@@ -101,12 +118,20 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         failures.append("ListPage still renders missing numeric values as zero")
 
     list_cells = _read("pages/listPage/listCellPresentation.ts", read_text)
+    if "presentDeclaredBusinessValue" not in list_cells:
+        failures.append("[CFG-002] List cells bypass the shared declared business-value authority")
+    for forbidden in ("selectionText", "String(displayRaw)", "String(raw)"):
+        if forbidden in list_cells:
+            failures.append(f"[CFG-002] List cells retain a raw-value fallback: {forbidden}")
     if (
         "COLLECTION_NUMERIC_EMPTY_TEXT" in list_cells
         or "numeric ? '0'" in list_cells
         or re.search(r"missing\)\s+text\s*=\s*['\"]0['\"]", list_cells)
     ):
         failures.append("list cells still turn missing numeric facts into zero")
+
+    if "function selectionLabel(" in list_page:
+        failures.append("[CFG-002] ListPage computes selection labels outside the shared authority")
 
     professional_status = _read(
         "components/professional-fields/professionalBusinessValueModel.ts",
@@ -141,6 +166,50 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
     if "FIELD_VALUE_EMPTY_TEXT" not in professional_base:
         failures.append("Professional fields do not consume the platform empty-value rule")
 
+    field_value = _read("components/FieldValue.vue", read_text)
+    for marker in (
+        "return presentDeclaredBusinessValue({",
+        "componentKey: props.componentKey",
+        "widget: props.widget",
+        "cellRole: props.cellRole",
+        "dataType: props.dataType",
+        "currencyField: props.currencyField",
+    ):
+        if marker not in field_value:
+            failures.append(f"[CFG-004] FieldValue drops declared semantic marker {marker}")
+
+    base_control = _read(
+        "components/professional-fields/ProfessionalBaseFieldControl.vue",
+        read_text,
+    )
+    for marker in (
+        "presentDeclaredBusinessValue({",
+        "componentKey: props.field.componentKey",
+        "widget: props.field.widget",
+        "currencyField: props.field.currencyField",
+    ):
+        if marker not in base_control:
+            failures.append(
+                f"[CFG-004] ProfessionalBaseFieldControl drops declared semantic marker {marker}"
+            )
+
+    form_section = _read("components/template/FormSection.vue", read_text)
+    for marker in (
+        "presentDeclaredBusinessValue({",
+        "componentKey: field.componentKey",
+        "widget: field.widget",
+        "digits: field.digits",
+        "currencyField: field.currencyField",
+    ):
+        if marker not in form_section:
+            failures.append(f"[CFG-004] FormSection drops declared semantic marker {marker}")
+
+    kanban = _read("pages/KanbanPage.vue", read_text)
+    if "function formatValue(value: unknown, field?: string)" not in kanban:
+        failures.append("[CFG-004] Kanban title formatting does not accept a field descriptor key")
+    if "(props.columnOptions || []).find((candidate) => candidate.name === field)" not in kanban:
+        failures.append("[CFG-004] Kanban title fallback does not resolve its declared column option")
+
     native_canvas = _read("pages/contractForm/ContractFormNativeCanvas.vue", read_text)
     if "resolveReadonlyEmptyText(field, '未填写')" in native_canvas:
         failures.append("Native form canvas uses a local unfilled text instead of the platform empty-value rule")
@@ -169,7 +238,10 @@ def main() -> int:
         for failure in failures:
             print(f"- {failure}")
         return 1
-    print("[frontend_business_semantics_guard] PASS authority=shared consumers=declared")
+    print(
+        "[frontend_business_semantics_guard] PASS "
+        "authority=shared consumers=declared rules=CFG-001,CFG-002,CFG-004,CFG-009"
+    )
     return 0
 
 

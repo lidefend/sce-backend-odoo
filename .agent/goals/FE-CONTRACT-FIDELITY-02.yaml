@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: FE-CONTRACT-FIDELITY-02
   title: frontend_contract_fidelity_systemic_remediation_planning
-  status: verification_pending
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Generic frontend contract interpretation, semantic transport and shared
@@ -53,9 +53,9 @@ goal:
     No product or runtime state requires rollback.
   completion:
     planning: completed
-    plan_review: pending
+    plan_review: approved_by_architecture_owner
     planning_guard: implemented_local
-    product_remediation: blocked_by_plan_approval
-    mainline_integration: not_started
+    product_remediation: in_progress_FE_CONTRACT_FIDELITY_02_1
+    mainline_integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable

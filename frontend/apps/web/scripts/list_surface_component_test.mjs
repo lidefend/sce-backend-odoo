@@ -21,15 +21,66 @@ const server = await createServer({
       return `
         import { createApp, h, reactive, nextTick } from 'vue';
         import ListPage from '/src/pages/ListPage.vue';
+        import KanbanPage from '/src/pages/KanbanPage.vue';
         import Toolbar from '/src/components/action/ActionSurfaceToolbar.vue';
         import '/src/styles/design-system.css';
-        const probe = reactive({ state: 'normal', queryMode: 'fallback' });
+        const probe = reactive({ state: 'normal', queryMode: 'fallback', surface: 'list' });
         window.setListProbe = async (value) => { Object.assign(probe, value); await nextTick(); };
+        const semanticColumns = ['name', 'state', 'project_id', 'ratio', 'amount', 'hours', 'active'];
+        const semanticColumnOptions = [
+          { name: 'name', label: '名称', type: 'char' },
+          { name: 'state', label: '状态', type: 'selection', cellRole: 'status', selection: [{ value: 'pending', label: '待处理' }] },
+          { name: 'project_id', label: '项目', type: 'many2one' },
+          { name: 'ratio', label: '比例', type: 'float', componentKey: 'sc.value.percentage', digits: [16, 4] },
+          { name: 'amount', label: '金额', type: 'monetary', componentKey: 'sc.value.money', digits: [20, 2], currencyField: 'currency_id' },
+          { name: 'hours', label: '工时', type: 'float', widget: 'float_time', componentKey: 'sc.value.duration' },
+          { name: 'active', label: '启用', type: 'boolean' },
+        ];
+        const semanticRecords = [{
+          id: 1,
+          name: '语义样例',
+          state: 'pending',
+          project_id: [7, '项目甲'],
+          ratio: 12.5,
+          amount: 1234.5,
+          currency_id: [1, 'CNY'],
+          hours: 1.5,
+          active: false,
+        }];
         createApp({ render() {
-          const { state, queryMode } = probe;
+          const { state, queryMode, surface } = probe;
+          const semantic = state === 'semantic';
+          const records = state === 'empty' ? [] : semantic ? semanticRecords : [{ id: 1, name: 'Record' }];
+          const columns = semantic ? semanticColumns : ['name'];
+          const columnOptions = semantic ? semanticColumnOptions : [];
+          if (surface === 'kanban') {
+            return h(KanbanPage, {
+              key: 'kanban:' + state,
+              title: 'Semantic kanban',
+              status: 'ok',
+              loading: false,
+              records,
+              fields: columns,
+              primaryFields: semantic ? ['project_id', 'ratio'] : ['name'],
+              secondaryFields: semantic ? ['amount', 'hours', 'active'] : [],
+              statusFields: semantic ? ['state'] : [],
+              fieldLabels: Object.fromEntries(columnOptions.map((option) => [option.name, option.label])),
+              fieldSelections: Object.fromEntries(columnOptions.filter((option) => option.selection).map((option) => [option.name, option.selection])),
+              columnOptions,
+              titleField: semantic ? 'state' : 'name',
+              onReload() {},
+              onCardClick() {},
+              subtitle: '',
+              statusLabel: '',
+              listTotalCount: records.length,
+              listOffset: 0,
+              listLimit: 20,
+            });
+          }
           return h(ListPage, {
       key: queryMode + ':' + state, title: 'Authorized collection', model: 'x.fixture', status: state === 'empty' ? 'empty' : 'ok', loading: false,
-      columns: ['name'], records: state === 'empty' ? [] : [{ id: 1, name: 'Record' }],
+      columns, records, columnOptions: semantic ? columnOptions : undefined,
+      fieldLabels: semantic ? Object.fromEntries(columnOptions.map((option) => [option.name, option.label])) : {},
       subtitle: '', statusLabel: '', columnLabels: { name: 'Name' },
       selectedIds: state === 'selected' ? [1] : [],
       selectionActions: [{ key: 'batch:read', label: 'Batch probe', enabled: false }],
@@ -102,6 +153,33 @@ try {
       check(action.includes('disabled'), true, `${queryMode}: denied batch action remains disabled`);
     }
     check(html.includes('data-semantic-component="CollectionActionToolbar"'), queryMode === 'declared', `${state}: declared query uses actual toolbar`);
+  }
+  const semanticLabels = ['待处理', '项目甲', '12.5000%', '¥1,234.50', '1 小时 30 分钟', '否'];
+  for (const width of [1440, 390]) {
+    await page.setViewportSize({ width, height: width === 390 ? 844 : 900 });
+    for (const surface of ['list', 'kanban']) {
+      await page.evaluate((value) => window.setListProbe(value), {
+        state: 'semantic',
+        queryMode: 'fallback',
+        surface,
+      });
+      if (surface === 'list') await page.locator('[data-list-query-action-bar]').waitFor();
+      else await page.locator('[data-semantic-component="KanbanPage"]').waitFor();
+      const text = String(await page.locator('#app').innerText()).replace(/\s+/g, ' ');
+      const visibleLabels = semanticLabels.filter((label) => text.includes(label));
+      if (width === 1440) {
+        for (const label of semanticLabels) {
+          check(text.includes(label), true, `${surface}@1440: shared semantic label ${label}`);
+        }
+      } else {
+        check(visibleLabels.length >= 1, true, `${surface}@390: retains semantic labels without overflow`);
+      }
+      check(
+        await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+        true,
+        `${surface}@${width}: no document horizontal overflow`,
+      );
+    }
   }
   check(forbiddenRequests, [], 'fixture performs no backend or external requests');
   check(errors, [], 'real components produce no console or page errors');

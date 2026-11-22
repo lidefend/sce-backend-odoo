@@ -19,10 +19,13 @@ export type BusinessValueSemantic =
   | 'percentage'
   | 'duration'
   | 'status'
+  | 'selection'
+  | 'relation'
+  | 'relation_collection'
   | 'date'
   | 'datetime'
-  | 'selection'
   | 'boolean'
+  | 'json'
   | 'empty'
   | 'plain';
 
@@ -41,7 +44,9 @@ export type DeclaredBusinessField = {
   selection?: BusinessValueSelection;
   digits?: [number, number];
   currencyField?: string;
+  currency_field?: string;
   currencyLabel?: string;
+  relation?: string;
 };
 
 export type DeclaredBusinessValuePresentation = {
@@ -218,6 +223,117 @@ function selectionValue(value: unknown): string {
   return String(value ?? '').trim();
 }
 
+function relationIdentity(value: unknown): string {
+  if (Array.isArray(value)) return String(value[0] ?? '').trim();
+  if (value && typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    return String(row.id ?? '').trim();
+  }
+  return '';
+}
+
+function textRelationLabel(value: unknown): string {
+  if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
+  return '';
+}
+
+function relationLabel(value: unknown): string {
+  if (Array.isArray(value)) {
+    return value.length > 1 ? textRelationLabel(value[1]) : '';
+  }
+  if (value && typeof value === 'object') {
+    const row = value as Record<string, unknown>;
+    return textRelationLabel(row.displayName || row.display_name || row.label || row.name);
+  }
+  return '';
+}
+
+function relationContractGap(
+  field: DeclaredBusinessField,
+  missing: string,
+  message: string,
+): never {
+  throw contractGapError({
+    kind: 'contract_defect',
+    missing: `field.${field.name || '(unknown)'}.${missing}`,
+    requiredDeclarationLayer: 'P0:smart_core:relation_display_projection',
+  }, message);
+}
+
+function presentDeclaredRelation(
+  field: DeclaredBusinessField,
+  value: unknown,
+  emptyText: string,
+): DeclaredBusinessValuePresentation {
+  if (value === false) {
+    return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+  }
+  const identity = relationIdentity(value);
+  if (!identity || identity === '0') {
+    relationContractGap(
+      field,
+      'relation_identity',
+      `字段 ${field.name || '(unknown)'} 的关系值缺少可验证记录身份`,
+    );
+  }
+  const label = relationLabel(value);
+  if (!label) {
+    relationContractGap(
+      field,
+      'relation_label',
+      `字段 ${field.name || '(unknown)'} 的关系值缺少权威显示名称`,
+    );
+  }
+  return Object.freeze({
+    kind: 'relation',
+    text: label,
+    tone: 'neutral',
+    badgeSemantic: 'default',
+  });
+}
+
+function presentDeclaredRelationCollection(
+  field: DeclaredBusinessField,
+  value: unknown,
+  emptyText: string,
+): DeclaredBusinessValuePresentation {
+  if (!Array.isArray(value)) {
+    relationContractGap(
+      field,
+      'relation_collection',
+      `字段 ${field.name || '(unknown)'} 的关系集合值不是数组`,
+    );
+  }
+  if (!value.length) {
+    return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+  }
+  const labels = value.map((item) => {
+    const identity = relationIdentity(item);
+    const label = relationLabel(item);
+    if (!identity || identity === '0') {
+      relationContractGap(
+        field,
+        'relation_identity',
+        `字段 ${field.name || '(unknown)'} 的关系集合成员缺少可验证记录身份`,
+      );
+    }
+    if (!label) {
+      relationContractGap(
+        field,
+        'relation_label',
+        `字段 ${field.name || '(unknown)'} 的关系集合成员缺少权威显示名称`,
+      );
+    }
+    return label;
+  });
+  return Object.freeze({
+    kind: 'relation_collection',
+    text: labels.join('、'),
+    tone: 'neutral',
+    badgeSemantic: 'default',
+  });
+}
+
 function resolveDeclaredStatusContract(field: DeclaredBusinessField): {
   statusType: 'selection' | 'char';
   selection: Array<{ value: string; label: string }>;
@@ -258,10 +374,13 @@ export function declaredBusinessValueKind(
   if (componentKey === 'sc.value.percentage') return 'percentage';
   if (componentKey === 'sc.value.duration' || String(field.widget || '').trim().toLowerCase() === 'float_time') return 'duration';
   if (status || componentKey === 'sc.display.status' || cellRole === 'status') return 'status';
+  if (type === 'many2one') return 'relation';
+  if (type === 'many2many' || type === 'one2many') return 'relation_collection';
   if (type === 'date') return 'date';
   if (type === 'datetime') return 'datetime';
   if (type === 'selection' || normalizedSelection(field).length) return 'selection';
   if (type === 'boolean') return 'boolean';
+  if (type === 'json') return 'json';
   return 'plain';
 }
 
@@ -312,6 +431,12 @@ export function presentDeclaredBusinessValue(input: {
       tone: 'neutral',
       badgeSemantic: 'default',
     });
+  }
+  if (kind === 'relation') {
+    return presentDeclaredRelation(input.field, input.value, emptyText);
+  }
+  if (kind === 'relation_collection') {
+    return presentDeclaredRelationCollection(input.field, input.value, emptyText);
   }
   if (kind === 'status') {
     const key = selectionValue(input.value);
@@ -368,13 +493,52 @@ export function presentDeclaredBusinessValue(input: {
       badgeSemantic: 'default',
     });
   }
-  if (Array.isArray(input.value)) {
-    if (input.value.length > 1 && input.value[1] !== null && input.value[1] !== undefined) {
-      return Object.freeze({ kind: 'plain', text: String(input.value[1]), tone: 'neutral', badgeSemantic: 'default' });
+  if (kind === 'json') {
+    if (input.value === false) {
+      return Object.freeze({
+        kind: 'empty',
+        text: emptyText,
+        tone: 'neutral',
+        badgeSemantic: 'default',
+      });
+    }
+    if (typeof input.value === 'string') {
+      const text = input.value.trim();
+      return Object.freeze({
+        kind: text ? 'json' : 'empty',
+        text: text || emptyText,
+        tone: 'neutral',
+        badgeSemantic: 'default',
+      });
+    }
+    if (Array.isArray(input.value)) {
+      return Object.freeze({
+        kind: input.value.length ? 'json' : 'empty',
+        text: input.value.length ? JSON.stringify(input.value) : emptyText,
+        tone: 'neutral',
+        badgeSemantic: 'default',
+      });
+    }
+    if (typeof input.value === 'object') {
+      const record = input.value as Record<string, unknown>;
+      return Object.freeze({
+        kind: Object.keys(record).length ? 'json' : 'empty',
+        text: Object.keys(record).length ? JSON.stringify(record) : emptyText,
+        tone: 'neutral',
+        badgeSemantic: 'default',
+      });
     }
     return Object.freeze({
+      kind: 'json',
+      text: String(input.value),
+      tone: 'neutral',
+      badgeSemantic: 'default',
+    });
+  }
+  if (Array.isArray(input.value)) {
+    return Object.freeze({
       kind: input.value.length ? 'plain' : 'empty',
-      text: input.value.length ? String(input.value[0] ?? emptyText) : emptyText,
+      text: input.value.length ? input.value.map((item) => String(item ?? '')).join(', ') : emptyText,
       tone: 'neutral',
       badgeSemantic: 'default',
     });
@@ -390,7 +554,7 @@ export function presentDeclaredBusinessValue(input: {
     });
   }
   const fieldType = normalizeFieldType(input.field);
-  if ((fieldType === 'integer' || fieldType === 'float') && input.field.digits) {
+  if (fieldType === 'integer' || fieldType === 'float') {
     const text = formatNumericFieldValue(input.value, fieldType, { digits: input.field.digits });
     return Object.freeze({
       kind: text === null ? 'empty' : 'plain',

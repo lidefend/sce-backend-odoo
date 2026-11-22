@@ -1,0 +1,56 @@
+schema_version: 1
+
+goal:
+  id: FE-CONTRACT-FIDELITY-02-1
+  title: unified_business_semantic_authority
+  status: verification_pending
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend business-value semantic authority and its Form, List,
+    Kanban, readonly and Hierarchy consumers.
+  module:
+    - frontend/apps/web
+    - scripts/verify
+    - .agent
+    - docs/audit
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Make the existing contract-aware business-value presentation path the sole
+    semantic decision authority for FCF-01, FCF-06, FCF-07 and FCF-08. Preserve
+    field descriptors and componentKey, fail closed on unknown selection and
+    unidentifiable relation values, and remove duplicate generic semantic decisions.
+  product_result: >-
+    Form, List, Kanban and readonly/Hierarchy consumers interpret the same declared
+    business field consistently. formatDisplayValue remains a low-level display
+    adapter and delegates declared business semantics to the shared authority.
+  why_here: >-
+    These are generic Contract V2 consumption and presentation defects, not
+    construction-industry, customer-specific, backend or workflow defects.
+  why_not_elsewhere:
+    - Do not modify backend contracts, ACL, workflow, persisted values or ORM commands.
+    - Do not implement FCF-02-2 semantic transport or Page Block/Readonly Collection bridges.
+    - Do not implement FCF-02-3 My Work or Progress rule removal.
+    - Do not add a second value runtime, Renderer, Registry, Bundle or page engine.
+    - Do not perform visual redesign or interaction polish.
+  blast_radius:
+    behavior:
+      - shared declared business-value presentation
+      - generic display adapter delegation
+      - FormSection and ProfessionalBaseFieldControl readonly values
+      - List selection, relation and declared numeric/status cells
+      - Kanban primary title fallback with contract descriptor
+      - Hierarchy generic display consumers
+      - focus-only browser evidence for FieldValue, ProfessionalBaseFieldControl, ListPage and KanbanPage
+    exclusions:
+      - One2many write, onchange, row identity and command semantics remain unchanged
+      - no database, service, credential, fixture, deployment or backend write
+      - no Page Block, Readonly Collection bridge, My Work or Progress changes
+  rollback: >-
+    Revert the shared semantic authority, consumer delegation and focused tests.
+    No database or persisted business value requires rollback.
+  completion:
+    batch: verification_pending
+    independent_review: not_started
+    mainline_integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_started

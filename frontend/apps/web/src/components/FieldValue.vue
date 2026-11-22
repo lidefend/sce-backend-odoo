@@ -21,17 +21,25 @@ import { computed, ref } from 'vue';
 import type { FieldDescriptor } from '@sc/schema';
 import AttachmentViewer from './attachment/AttachmentViewer.vue';
 import ScInlineState from './design-system/ScInlineState.vue';
-import { formatDisplayValue, parseAttachmentReferenceLinks } from '../utils/display';
+import { parseAttachmentReferenceLinks } from '../utils/display';
 import {
-  formatMonetaryDisplayValue,
+  presentDeclaredBusinessValue,
   resolveCurrencyDisplayLabel,
+  type DeclaredBusinessField,
 } from '../app/presentation/businessValuePresentation';
-import { FIELD_VALUE_EMPTY_TEXT, normalizeFieldType } from '../utils/fieldSemantics';
+import { FIELD_VALUE_EMPTY_TEXT } from '../utils/fieldSemantics';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
+
+type FieldValueDescriptor = FieldDescriptor & Partial<DeclaredBusinessField>;
 
 const props = defineProps<{
   value: unknown;
-  field?: FieldDescriptor;
+  field?: FieldValueDescriptor;
+  componentKey?: string;
+  widget?: string;
+  cellRole?: string;
+  dataType?: string;
+  currencyField?: string;
   currencyValue?: unknown;
   currencyLabel?: string;
   digits?: [number, number];
@@ -39,16 +47,20 @@ const props = defineProps<{
 const attachmentViewerRef = ref<InstanceType<typeof AttachmentViewer> | null>(null);
 
 const display = computed(() => {
-  if (normalizeFieldType(props.field) === 'monetary') {
-    return formatMonetaryDisplayValue(
-      props.value,
-      props.digits || props.field?.digits,
-      props.currencyLabel || resolveCurrencyDisplayLabel(props.currencyValue),
-      'zh-CN',
-      FIELD_VALUE_EMPTY_TEXT,
-    );
-  }
-  return formatDisplayValue(props.value, props.field, { emptyText: FIELD_VALUE_EMPTY_TEXT });
+  return presentDeclaredBusinessValue({
+    field: {
+      ...(props.field || {}),
+      componentKey: props.componentKey || props.field?.componentKey,
+      widget: props.widget || props.field?.widget,
+      cellRole: props.cellRole || props.field?.cellRole,
+      dataType: props.dataType || props.field?.dataType,
+      currencyField: props.currencyField || props.field?.currencyField || props.field?.currency_field,
+      digits: props.digits || props.field?.digits,
+    },
+    value: props.value,
+    currencyLabel: props.currencyLabel || resolveCurrencyDisplayLabel(props.currencyValue),
+    emptyText: FIELD_VALUE_EMPTY_TEXT,
+  }).text;
 });
 
 const attachmentLinks = computed(() => parseAttachmentReferenceLinks(props.value));

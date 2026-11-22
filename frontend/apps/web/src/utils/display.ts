@@ -1,4 +1,3 @@
-import type { FieldDescriptor } from '@sc/schema';
 import {
   ATTACHMENT_REFERENCE_URL_SOURCE,
   FIELD_VALUE_EMPTY_TEXT,
@@ -6,17 +5,13 @@ import {
   FIELD_VALUE_TRUE_TEXT,
   containsAttachmentReference,
   containsAttachmentReferenceIn,
-  formatNumericFieldValue,
-  formatTemporalFieldValue,
   isEmptyFieldValue,
-  isBooleanFieldType,
-  isJsonFieldType,
-  isNumericFieldType,
-  isScalarRelationFieldType,
-  isSelectionFieldType,
-  isTemporalFieldType,
   normalizeFieldType,
 } from './fieldSemantics.ts';
+import {
+  presentDeclaredBusinessValue,
+  type DeclaredBusinessField,
+} from '../app/presentation/businessValuePresentation.ts';
 
 export type DisplayFormatOptions = {
   emptyText?: string;
@@ -24,6 +19,7 @@ export type DisplayFormatOptions = {
   booleanFalseText?: string;
   locale?: string;
   fallbackLocales?: string[];
+  currencyLabel?: string;
 };
 
 const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
@@ -32,6 +28,7 @@ const DEFAULT_OPTIONS: Required<DisplayFormatOptions> = {
   booleanFalseText: FIELD_VALUE_FALSE_TEXT,
   locale: '',
   fallbackLocales: ['zh_CN', 'en_US'],
+  currencyLabel: '',
 };
 
 function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayFormatOptions> {
@@ -41,6 +38,7 @@ function normalizeOptions(options?: DisplayFormatOptions): Required<DisplayForma
     booleanFalseText: options?.booleanFalseText ?? DEFAULT_OPTIONS.booleanFalseText,
     locale: options?.locale ?? DEFAULT_OPTIONS.locale,
     fallbackLocales: options?.fallbackLocales ?? DEFAULT_OPTIONS.fallbackLocales,
+    currencyLabel: options?.currencyLabel ?? DEFAULT_OPTIONS.currencyLabel,
   };
 }
 
@@ -194,104 +192,95 @@ export function parseAttachmentReferenceLinks(value: unknown): Array<{ name: str
   return links;
 }
 
-/**
- * JSON 字段没有编辑控件，只读展示必须反映契约里的真实值：对象与数组输出其 JSON
- * 文本，空对象、空数组与空值走既有空值口径。它必须早于本地化归一，否则对象会被
- * 当成多语言映射而退化为空文本。
- */
-function formatJsonDisplayValue(value: unknown, emptyText: string): string {
-  if (value === null || value === undefined || value === false) return emptyText;
-  if (typeof value === 'string') return value.trim() ? value : emptyText;
-  if (Array.isArray(value)) return value.length ? JSON.stringify(value) : emptyText;
-  if (typeof value === 'object') {
-    const record = value as Record<string, unknown>;
-    return Object.keys(record).length ? JSON.stringify(record) : emptyText;
+type DeclaredDisplayField = DeclaredBusinessField;
+
+function normalizeDeclaredValue(
+  value: unknown,
+  field: DeclaredDisplayField,
+  options: Required<DisplayFormatOptions>,
+): unknown {
+  const fieldType = normalizeFieldType(field);
+  if (fieldType === 'json') return value;
+  if (fieldType === 'many2one' && Array.isArray(value) && value.length === 2) {
+    return [value[0], resolveLocalizedDisplayValue(value[1], options)];
   }
-  return String(value);
+  if (fieldType === 'many2many' || fieldType === 'one2many') {
+    if (!Array.isArray(value)) return value;
+    return value.map((item) => {
+      if (Array.isArray(item) && item.length === 2) {
+        return [item[0], resolveLocalizedDisplayValue(item[1], options)];
+      }
+      return item;
+    });
+  }
+  return resolveLocalizedDisplayValue(value, options);
 }
 
-export function formatDisplayValue(
+function formatDeclaredDisplayValue(
   value: unknown,
-  field?: Pick<FieldDescriptor, 'ttype' | 'type' | 'selection' | 'digits'>,
-  options?: DisplayFormatOptions,
+  field: DeclaredDisplayField,
+  options: Required<DisplayFormatOptions>,
 ): string {
-  const normalized = normalizeOptions(options);
-  const fieldType = normalizeFieldType(field);
-  if (isJsonFieldType(fieldType)) {
-    return formatJsonDisplayValue(value, normalized.emptyText);
+  const normalizedValue = normalizeDeclaredValue(value, field, options);
+  const presentation = presentDeclaredBusinessValue({
+    field: {
+      name: field.name,
+      type: field.type,
+      ttype: field.ttype,
+      dataType: field.dataType,
+      componentKey: field.componentKey,
+      widget: field.widget,
+      cellRole: field.cellRole,
+      selection: field.selection,
+      digits: field.digits,
+      currencyField: field.currencyField || field.currency_field,
+      currencyLabel: field.currencyLabel,
+      relation: field.relation,
+    },
+    value: normalizedValue,
+    currencyLabel: options.currencyLabel,
+    emptyText: options.emptyText,
+    temporalProfile: 'full',
+  });
+  if (presentation.kind === 'plain') {
+    const text = stripInternalMigrationMetadata(presentation.text);
+    if (containsAttachmentReference(text)) return formatAttachmentReferenceValue(text) || text;
+    return text || options.emptyText;
   }
-  value = resolveLocalizedDisplayValue(value, normalized);
+  return presentation.text;
+}
 
-  if (isEmptyFieldValue(value)) {
-    return normalized.emptyText;
-  }
-
-  if (isBooleanFieldType(fieldType)) {
-    return value ? normalized.booleanTrueText : normalized.booleanFalseText;
-  }
-
-  if (typeof value === 'boolean') {
-    return value ? String(value) : normalized.emptyText;
-  }
-
-  if (isTemporalFieldType(fieldType)) {
-    if (value === false) return normalized.emptyText;
-    const temporal = formatTemporalFieldValue(value, 'full');
-    if (temporal) return temporal;
-  }
-
-  if (isSelectionFieldType(fieldType) && Array.isArray(field?.selection)) {
-    const match = field.selection.find((item) => item[0] === value);
-    return match ? String(match[1]) : String(value);
-  }
-
-  if (isNumericFieldType(fieldType)) {
-    const formatted = formatNumericFieldValue(value, fieldType, {
-      digits: normalizeDigits(field?.digits),
-    });
-    if (formatted !== null) return formatted;
-  }
-
-  if (isScalarRelationFieldType(fieldType) && Array.isArray(value)) {
-    const relationalLabel = relationalTupleDisplayValue(value, normalized);
-    if (relationalLabel !== null) return relationalLabel;
-    if (value[0] != null) {
-      return String(value[0]);
-    }
-    return normalized.emptyText;
-  }
-
+function formatUndeclaredDisplayValue(
+  value: unknown,
+  options: Required<DisplayFormatOptions>,
+): string {
+  value = resolveLocalizedDisplayValue(value, options);
+  if (isEmptyFieldValue(value)) return options.emptyText;
+  if (typeof value === 'boolean') return value ? String(value) : options.emptyText;
   if (Array.isArray(value)) {
-    if (!value.length) {
-      return normalized.emptyText;
-    }
-    const relationalLabel = relationalTupleDisplayValue(value, normalized);
+    if (!value.length) return options.emptyText;
+    const relationalLabel = relationalTupleDisplayValue(value, options);
     if (relationalLabel !== null) return relationalLabel;
     const attachmentText = formatAttachmentReferenceValue(value);
-    if (attachmentText && containsAttachmentReferenceIn(value)) {
-      return attachmentText;
-    }
+    if (attachmentText && containsAttachmentReferenceIn(value)) return attachmentText;
     return value.map((item) => String(item)).join(', ');
   }
-
-  if (typeof value === 'object') {
-    return normalized.emptyText;
-  }
-
+  if (typeof value === 'object') return options.emptyText;
   const rawText = stripInternalMigrationMetadata(String(value));
-  if (!rawText) return normalized.emptyText;
+  if (!rawText) return options.emptyText;
   if (containsAttachmentReference(rawText)) {
     return formatAttachmentReferenceValue(rawText) || rawText;
   }
   return rawText;
 }
 
-function normalizeDigits(value: unknown): [number, number] | undefined {
-  if (!Array.isArray(value) || value.length !== 2) return undefined;
-  const precision = Number(value[0]);
-  const scale = Number(value[1]);
-  return Number.isInteger(precision) && precision > 0
-    && Number.isInteger(scale) && scale >= 0 && scale <= 20 && scale <= precision
-    ? [precision, scale]
-    : undefined;
+export function formatDisplayValue(
+  value: unknown,
+  field?: DeclaredDisplayField,
+  options?: DisplayFormatOptions,
+): string {
+  const normalized = normalizeOptions(options);
+  return field
+    ? formatDeclaredDisplayValue(value, field, normalized)
+    : formatUndeclaredDisplayValue(value, normalized);
 }

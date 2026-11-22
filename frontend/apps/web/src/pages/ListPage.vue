@@ -344,12 +344,9 @@ import type { SceneListProfile } from '../app/resolvers/sceneRegistry';
 import { formatAttachmentReferenceValue, parseAttachmentReferenceLinks } from '../utils/display';
 import {
   FIELD_VALUE_EMPTY_TEXT,
-  FIELD_VALUE_FALSE_TEXT,
-  FIELD_VALUE_TRUE_TEXT,
   containsAttachmentReference,
   formatNumericFieldValue,
   isNumericFieldType,
-  numericFieldValue,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
 import { isListAttachmentCountColumn, isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
@@ -734,31 +731,27 @@ function scalarTexts(value: unknown): string[] {
   const text = String(value ?? '').trim();
   return text ? [text] : [];
 }
-function selectionLabel(option: ColumnOption | null, value: unknown) {
-  const raw = normalizeCellRawValue(value);
-  const key = String(raw ?? '').trim();
-  if (!key || !Array.isArray(option?.selection)) return '';
-  return option.selection.find((item) => item.value === key)?.label || '';
-}
 function semanticCell(field: string, value: unknown, relationItems: Array<{ id: number; label: string }> = [], row?: Record<string, unknown>) {
   const option = columnOption(field);
-  if (option?.widget === 'many2many_tags') {
-    return { text: relationItems.map((item) => item.label).join('、') || FIELD_VALUE_EMPTY_TEXT, tone: 'neutral' };
-  }
-  const raw = normalizeCellRawValue(value);
-  const rawText = typeof raw === 'string' ? raw : '';
+  const type = String(option?.dataType || option?.type || '').trim().toLowerCase();
+  const displayField = String(option?.displayField || '').trim();
+  const valueField = String(option?.valueField || '').trim();
+  const relationValue = displayField && valueField && value !== null && value !== undefined
+    ? [row?.[valueField], value]
+    : value;
+  const rawText = typeof value === 'string' ? value : '';
   const attachmentText = rawText && containsAttachmentReference(rawText)
     ? formatAttachmentReferenceValue(rawText)
     : '';
+  const currencyLabel = option?.currencyField && row
+    ? resolveCurrencyDisplayLabel(row[option.currencyField])
+    : '';
   return presentListCell({
-    raw,
+    raw: ['many2one', 'many2many', 'one2many'].includes(type) ? relationValue : value,
     column: columnSemanticInput(field),
-    selectionText: selectionLabel(option, value),
-    numericText: formatNumericCellValue(field, raw, row),
+    relationItems,
+    currencyLabel,
     attachmentText,
-    trueText: uiLabel('boolean_true', FIELD_VALUE_TRUE_TEXT),
-    falseText: uiLabel('boolean_false', FIELD_VALUE_FALSE_TEXT),
-    numeric: isNumericDisplayColumn(field),
   });
 }
 function statusSemantic(tone: string): 'default' | 'info' | 'success' | 'warning' | 'danger' {
@@ -1929,6 +1922,9 @@ function columnSemanticInput(field: string) {
     componentKey: option?.componentKey,
     widget: option?.widget,
     cellRole: option?.cellRole,
+    selection: option?.selection,
+    digits: option?.digits,
+    currencyField: option?.currencyField,
   };
 }
 
@@ -1974,26 +1970,6 @@ function isMoneyDisplayColumn(field: string) {
 
 function isAggregateColumn(field: string) {
   return isNumericColumn(field) && String(columnOption(field)?.aggregate || '').trim() === 'sum';
-}
-
-function isNumericDisplayColumn(field: string) {
-  return isNumericColumn(field);
-}
-
-function formatNumericCellValue(field: string, value: unknown, row?: Record<string, unknown>) {
-  if (!isNumericColumn(field)) return '';
-  const raw = normalizeCellRawValue(value);
-  const numeric = numericFieldValue(raw);
-  if (numeric === null) return '';
-  const option = columnOption(field);
-  const type = String(option?.dataType || option?.type || '').trim();
-  if (type === 'monetary') {
-    const currencyLabel = option?.currencyField && row
-      ? resolveCurrencyDisplayLabel(row[option.currencyField])
-      : '';
-    return formatMonetaryDisplayValue(numeric, option?.digits, currencyLabel);
-  }
-  return formatNumericFieldValue(raw, type, { digits: option?.digits }) ?? '';
 }
 
 function formatFooterNumber(
