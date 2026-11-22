@@ -44,7 +44,7 @@
     "frontend/apps/web/src/app/contracts/v2/store.ts": "eef9ec7aef22b556c1b98457293a31900c82660fc48c4ef7dd218fbeb8e10304",
     "frontend/apps/web/src/app/pageContract.ts": "0631b16d5ae8d2826fc58eff868e65883841a4463482f57ec1a40ae31644202d",
     "frontend/apps/web/src/app/pageOrchestration.ts": "40202b91687121394fc7d200d2c9895dc1a540a94c68250e4f2f61817face491",
-    "frontend/apps/web/src/api/intents.ts": "f52f1a2845b3e721216b36671174de4ce8808b931fdb18d17c874237f8ebaaaa",
+    "frontend/apps/web/src/api/intents.ts": "c6b26102364fff51ecaf4db4d3a7f6b5a04120e6b0a62b35e031ba69e6fc2ba6",
     "frontend/apps/web/src/components/page/PageRenderer.vue": "c63863737770ae26da2a7e3967cce867016c5695279fd5e7007203cb91400a98",
     "frontend/apps/web/src/components/page/ZoneRenderer.vue": "98835492430fdf6f3a35ae2911f6d55abbe76493fe4dded30e04e060a666ef34"
   },

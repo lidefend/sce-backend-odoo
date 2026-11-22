@@ -108,3 +108,12 @@ No ACL, Record Rule, workflow, file-service authorization, database schema or
 business data change is included. P0-B `attachment_fact.v1` and P0-C
 `page-block-action.v1` remain unproduced. Rollback is a protected revert of the
 P0-A pull request; no database migration is required.
+
+## Remote review remediation
+
+The first exact-head `frontend_release_gate` run failed because client contract
+negotiation was injected into every intent, including non-contract scenario
+mutation intents whose request body is identity-bound. Negotiation is now scoped
+to `system.init`, contract load intents and declared `.enter` entries. The
+previously failing `verify.frontend.workspace_scenario_lifecycle.unit` now
+passes 11 lifecycle cases, and the P0-A browser/decoder acceptance still passes.

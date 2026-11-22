@@ -103,9 +103,16 @@ function withCurrentRecordContext(session: ReturnType<typeof useSessionStore>, p
   };
 }
 
+const CONTRACT_NEGOTIATION_INTENTS = new Set([
+  'system.init',
+  'ui.contract',
+  'ui.contract.v2',
+  'load_contract',
+]);
+
 function withClientContractNegotiation(payload: IntentPayload): IntentPayload {
   const intent = String(payload.intent || '').trim();
-  if (new Set(['login', 'auth.login', 'auth.logout', 'sys.intents']).has(intent)) return payload;
+  if (!CONTRACT_NEGOTIATION_INTENTS.has(intent) && !intent.endsWith('.enter')) return payload;
   const params = payload.params && typeof payload.params === 'object' && !Array.isArray(payload.params)
     ? { ...(payload.params as Record<string, unknown>) }
     : {};
