@@ -140,15 +140,15 @@ the 60-second boundary, and missing-retention fail-closed behavior.
 
 Source and test candidate:
 
-- HEAD: `9acc0c2c82828ced37b7d771171e5824cd9f9527`
-- tree: `2a22c8d412c9f09c1fd728c7a492c1f616d4aa6c`
-- `ci.local.iteration`: PASS; 22 required targets resolved, one executed and
-  21 content-identical targets reused through the registered local evidence
+- HEAD: `ec0ac73f05b9370fdad7bece856b966080f05a5c`
+- tree: `82c70fb1e70d3d2a4788ad79208cf9319464aeb9`
+- `ci.local.iteration`: PASS; 13 required targets resolved, one executed and
+  12 content-identical targets reused through the registered local evidence
   authority.
 - Receipt:
-  `.runtime/frontend-dev-validation/executions/20261122T072014Z-2986497-291281420/receipt.json`
+  `.runtime/frontend-dev-validation/executions/20261122T074640Z-3130925-157950073/receipt.json`
 - Receipt SHA256:
-  `6eca7d46170aa823884c81f78ae97a11e1fbdbb2908be978b9c263e915df6f6f`
+  `9212a6d572fed910a6d820b4f3d3f55e4068f734110d2e816317698f27402a53`
 
 Focused outcomes:
 
@@ -170,12 +170,12 @@ Focused outcomes:
 
 Exact runtime identity:
 
-- Production frontend build source: `9acc0c2c8`
-- Served `build-info.sha`: `9acc0c2c8`
-- Runtime source/database: `9acc0c2c8` /
+- Production frontend build source: `ec0ac73f0`
+- Served `build-info.sha`: `ec0ac73f0`
+- Runtime source/database: `ec0ac73f0` /
   `sc_frontend_acceptance`
 - Authoritative frontend artifact fingerprint:
-  `d11035630664d775f81ee7816610a2dea1e6abeb8b132ebcc7dcf1ac11b35a71`
+  `b93c589e3cec3a8c2e015d6deabb0b942b69815bfc99bac5e6953e9912f369e0`
 - `/api/runtime-version` returned the same source, database and frontend
   fingerprint.
 
@@ -198,9 +198,9 @@ Browser result:
 - Console errors, page errors and persistence intents were all zero. The probe
   did not save or execute any business action.
 - Report:
-  `.runtime/FE-EXPRESSION-03A/evidence/browser-exact-9acc0c2c8/report.json`
+  `.runtime/FE-EXPRESSION-03A/evidence/browser-exact-ec0ac73f0/report.json`
 - Report SHA256:
-  `10b7124d8ab6c63ff5dd4a3d6f1be568db3985049330d91bd0d9a58c99b59e64`
+  `d6d12cf2d6893a6010b177cd245ba58001909f995ae94bf9f89441852ce3da03`
 
 These one-time browser artifacts are evidence for this candidate only. They are
 not a cross-environment replay mechanism; future environments must resolve
