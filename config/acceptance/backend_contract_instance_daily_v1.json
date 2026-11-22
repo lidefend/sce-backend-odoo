@@ -43,7 +43,13 @@
       "form.display.ribbon.v1",
       "view.tree.v1",
       "view.kanban.v1",
-      "view.form.v1"
+      "view.form.v1",
+      "view.pivot.v1",
+      "view.graph.v1",
+      "view.calendar.v1",
+      "view.gantt.v1",
+      "view.activity.v1",
+      "view.dashboard.v1"
     ]
   },
   "schema_asset": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",

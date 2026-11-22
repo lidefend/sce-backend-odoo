@@ -21,10 +21,10 @@ Generated from repository source files. This report is informational during the 
 | 5026 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4811 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4056 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4077 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 3769 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3753 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
@@ -249,7 +249,7 @@ Generated from repository source files. This report is informational during the 
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 594 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
-| 491 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
+| 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |
 | 381 | Shell script | `scripts/demo/verify.sh` |
@@ -277,10 +277,10 @@ Generated from repository source files. This report is informational during the 
 | 5026 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4811 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4056 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4077 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
+| 3769 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3753 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |

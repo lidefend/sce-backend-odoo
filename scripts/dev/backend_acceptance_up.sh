@@ -12,6 +12,57 @@ PRODUCT_VERSION="$(tr -d '[:space:]' < "$ROOT_DIR/VERSION")"
 SOURCE_REVISION="${SC_ACCEPTANCE_SOURCE_SHA:-$(git -C "$ROOT_DIR" rev-parse HEAD)}"
 [[ "$SOURCE_REVISION" =~ ^[0-9a-f]{40}$ ]] || { echo "DENY exact source SHA required" >&2; exit 2; }
 SOURCE_FINGERPRINT="$(printf '%s\n' "$SOURCE_REVISION" | sha256sum | cut -d' ' -f1)"
+RUNTIME_ENVIRONMENT="${SC_ENVIRONMENT:-acceptance}"
+DEPLOY_ENVIRONMENT="${SC_DEPLOY_ENV:-$RUNTIME_ENVIRONMENT}"
+FRONTEND_BUILD_SHA256_SUPPLIED="${FRONTEND_BUILD_SHA256:-}"
+FRONTEND_BUILD_SHA256=""
+frontend_dist="${FRONTEND_ACCEPTANCE_STATIC_DIST:-$ROOT_DIR/frontend/apps/web/dist-release}"
+[[ "${FRONTEND_ACCEPTANCE_MODE:-production}" == "production" ]] || {
+  echo "DENY exact frontend build identity requires production mode" >&2
+  exit 2
+}
+frontend_dist="$(realpath -e "$frontend_dist" 2>/dev/null)" || {
+  echo "DENY production frontend dist is missing" >&2
+  exit 2
+}
+observed_frontend_build_sha256="$(
+  ROOT_DIR="$ROOT_DIR" bash "$ROOT_DIR/scripts/verify/frontend_build_fingerprint.sh" "$frontend_dist" \
+    | sed -nE 's/.*sha256=([0-9a-f]{64})$/\1/p' | tail -n 1
+)"
+[[ "$observed_frontend_build_sha256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "DENY authoritative frontend build fingerprint unavailable" >&2
+  exit 2
+}
+[[ -z "$FRONTEND_BUILD_SHA256_SUPPLIED" \
+  || "$FRONTEND_BUILD_SHA256_SUPPLIED" == "$observed_frontend_build_sha256" ]] || {
+  echo "DENY supplied frontend build SHA256 does not match dist release" >&2
+  exit 2
+}
+FRONTEND_BUILD_SHA256="$observed_frontend_build_sha256"
+frontend_pidfile="${FRONTEND_ACCEPTANCE_PIDFILE:-}"
+if [[ -f "$frontend_pidfile" && ! -L "$frontend_pidfile" ]]; then
+  frontend_pid="$(<"$frontend_pidfile")"
+  if [[ "$frontend_pid" =~ ^[0-9]+$ ]] && kill -0 "$frontend_pid" 2>/dev/null; then
+    frontend_cmd="$(tr '\0' ' ' < "/proc/$frontend_pid/cmdline")"
+    [[ "$frontend_cmd" == *"scripts/release/release_static_server.mjs"* ]] || {
+      echo "DENY live acceptance frontend is not the production static server" >&2
+      exit 2
+    }
+    served_frontend_dist="$(
+      tr '\0' '\n' < "/proc/$frontend_pid/environ" \
+        | sed -n 's/^STATIC_ROOT=//p' | tail -n 1
+    )"
+    [[ -n "$served_frontend_dist" \
+      && "$(realpath -e "$served_frontend_dist" 2>/dev/null)" == "$frontend_dist" ]] || {
+      echo "DENY served frontend STATIC_ROOT does not match the fingerprinted dist" >&2
+      exit 2
+    }
+  fi
+fi
+[[ "$FRONTEND_BUILD_SHA256" =~ ^[0-9a-f]{64}$ ]] || {
+  echo "DENY exact frontend build SHA256 required" >&2
+  exit 2
+}
 # Local acceptance consumes a sealed source artifact. CI keeps its isolated
 # checkout lifecycle; daily/product Compose entrypoints are unaffected.
 compose_args=()
@@ -68,6 +119,9 @@ docker compose "${compose_args[@]}" run -d --no-deps --name "$NAME" -p "127.0.0.
   -e SC_PRODUCT_VERSION="$PRODUCT_VERSION" \
   -e SC_SOURCE_REVISION="$SOURCE_REVISION" \
   -e SC_SOURCE_FINGERPRINT="$SOURCE_FINGERPRINT" \
+  -e SC_ENVIRONMENT="$RUNTIME_ENVIRONMENT" \
+  -e SC_DEPLOY_ENV="$DEPLOY_ENVIRONMENT" \
+  -e FRONTEND_BUILD_SHA256="$FRONTEND_BUILD_SHA256" \
   odoo >/dev/null
 for _ in $(seq 1 60); do
   if curl -fsS "http://127.0.0.1:${PORT}/web/login" >/dev/null 2>&1; then

@@ -4,7 +4,7 @@ ROOT_DIR="${ROOT_DIR:-$(cd "$(dirname "$0")/../.." && pwd)}"
 PIDFILE="${FRONTEND_ACCEPTANCE_PIDFILE:-/tmp/sc-frontend-acceptance.pid}"
 LOGFILE="${FRONTEND_ACCEPTANCE_LOGFILE:-/tmp/sc-frontend-acceptance.log}"
 PORT="${FRONTEND_ACCEPTANCE_PORT:-5175}"
-MODE="${FRONTEND_ACCEPTANCE_MODE:-development}"
+MODE="${FRONTEND_ACCEPTANCE_MODE:-production}"
 DATABASE="${FRONTEND_ACCEPTANCE_DB:-sc_frontend_acceptance}"
 if [[ ! "$DATABASE" =~ ^[a-zA-Z0-9_]+$ ]]; then
   echo "[frontend.acceptance.up] invalid database identifier" >&2

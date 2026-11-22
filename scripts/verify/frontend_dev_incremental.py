@@ -451,6 +451,22 @@ RULES = (
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
+    # Acceptance runtime rebuild, startup, artifact and carrier-discard inputs
+    # form one P4 behavior lock. Leaving their tests unmapped forces a manual
+    # L2 choice and can silently omit the exact runtime/tooling suite.
+    Rule((
+        "scripts/dev/backend_acceptance_up.sh",
+        "scripts/verify/test_acceptance_artifact.py",
+    ), (
+        "verify.acceptance.artifact.unit",
+    )),
+    Rule((
+        "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+        "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+        "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+    ), (
+        "verify.acceptance.runtime.tooling.unit",
+    )),
     Rule((
         "scripts/ops/validation_delivery_plan.py",
         "scripts/verify/test_validation_delivery_plan.py",

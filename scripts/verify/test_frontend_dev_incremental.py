@@ -313,6 +313,27 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             },
         )
 
+    def test_acceptance_runtime_tooling_routes_to_its_owning_unit(self) -> None:
+        for path in (
+            "scripts/dev/backend_acceptance_up.sh",
+            "scripts/verify/test_acceptance_artifact.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.acceptance.artifact.unit"],
+                )
+        for path in (
+            "scripts/dev/frontend_acceptance_baseline_rebuild.sh",
+            "scripts/verify/test_frontend_acceptance_baseline_rebuild.py",
+            "scripts/verify/test_frontend_acceptance_carrier_discard.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.acceptance.runtime.tooling.unit"],
+                )
+
     def test_candidate_runtime_identity_tools_select_their_unit(self) -> None:
         for path in (
             "scripts/dev/candidate_runtime_identity.py",

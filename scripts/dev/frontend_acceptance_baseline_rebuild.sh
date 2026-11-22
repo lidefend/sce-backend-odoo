@@ -152,6 +152,11 @@ require_volume_mount_scope() {
       deny "volume=$volume mount owner mismatch project=$project service=$service"
       return
     }
+    if [[ "$expected_service" == "odoo" && "$oneoff" == "True" && "$name" == "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}-rollback-"* && "${name##*-rollback-}" =~ ^[0-9a-f]{12}$ ]]; then
+      [[ "$(docker inspect "$container_id" --format '{{.State.Running}}')" == "false" ]] || {
+        deny "volume=$volume rollback custody container is running name=$name"; return; }
+      continue
+    fi
     if [[ "$expected_service" == "odoo" ]]; then
       if [[ "$oneoff" == "True" ]]; then
         [[ "$name" == "${BACKEND_ACCEPTANCE_NAME:-sc-backend-odoo-acceptance}" ]] || {
@@ -307,8 +312,11 @@ freeze_writers() {
     echo "[acceptance.baseline.backup] FAIL unable to stop managed writers" >&2
     return 1
   }
-  odoo_cid="$(compose_dev ps -aq odoo)"
-  nginx_cid="$(compose_dev ps -aq nginx)"
+  # Replaced acceptance backends remain as stopped rollback containers with the
+  # same Compose project/service labels. Select the canonical carrier by exact
+  # name so custody history cannot make the live writer ambiguous.
+  odoo_cid="$(docker ps -aq --filter "name=^/${COMPOSE_PROJECT_NAME}-odoo-1$")"
+  nginx_cid="$(docker ps -aq --filter "name=^/${COMPOSE_PROJECT_NAME}-nginx-1$")"
   [[ -n "$odoo_cid" && "$(docker inspect "$odoo_cid" --format '{{.State.Running}}')" == "false" ]] || {
     echo "[acceptance.baseline.backup] FAIL Odoo writer is not confirmed stopped" >&2
     return 1
