@@ -73,7 +73,10 @@ function failureQuery(failure: RouteFailure, from: string): Record<string, strin
 export function routeFailureRedirect(error: unknown, from: string): RouteLocationRaw {
   const failure = classifyRouteFailure(error);
   if (failure.kind === 'authentication') {
-    return { name: 'login', query: failureQuery(failure, from) };
+    return {
+      name: 'login',
+      query: { ...failureQuery(failure, from), redirect: from },
+    };
   }
   if (failure.kind === 'forbidden') {
     return { name: 'access-denied', query: failureQuery(failure, from) };

@@ -306,7 +306,14 @@ assert.deepEqual(routeFailureRedirect({ status: 403, reasonCode: 'PERMISSION_DEN
 });
 assert.deepEqual(routeFailureRedirect({ status: 401, reasonCode: 'AUTH_401', traceId: 'trace-401' }, '/a/42'), {
   name: 'login',
-  query: { from: '/a/42', kind: 'authentication', reason: 'AUTH_401', status: '401', trace_id: 'trace-401' },
+  query: {
+    from: '/a/42',
+    kind: 'authentication',
+    reason: 'AUTH_401',
+    status: '401',
+    trace_id: 'trace-401',
+    redirect: '/a/42',
+  },
 });
 assert.deepEqual(routeFailureRedirect({ status: 404, reasonCode: 'NOT_FOUND', traceId: 'trace-404' }, '/a/42'), {
   name: 'not-found',
