@@ -38,6 +38,8 @@
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "scripts/verify/frontend_collection_row_cell_guard.py",
     "scripts/ci/personal_data_false_positives.json",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "frontend/apps/web/scripts/professional_detail_collection_model_test.ts",
     "scripts/verify/frontend_professional_detail_collection_guard.py",
     "scripts/verify/frontend_localized_display_contract_test.ts"
