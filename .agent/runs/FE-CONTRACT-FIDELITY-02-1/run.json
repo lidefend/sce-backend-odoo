@@ -13,11 +13,13 @@
     ".agent/runs/FE-CONTRACT-FIDELITY-02/run.json",
     ".agent/runs/FE-CONTRACT-FIDELITY-02-1/run.json",
     "docs/audit/fe_contract_fidelity_02_1_semantic_authority_20261123.md",
+    "docs/architecture/split_usage_allowlist.json",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
     "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
     "frontend/apps/web/src/utils/display.ts",
+    "frontend/apps/web/src/utils/localizedDisplay.ts",
     "frontend/apps/web/src/components/FieldValue.vue",
     "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
@@ -98,6 +100,7 @@
         "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
         "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
         "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts",
         "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
         "frontend/apps/web/src/pages/ListPage.vue",
         "frontend/apps/web/src/pages/KanbanPage.vue",
@@ -111,6 +114,7 @@
       "inputs": [
         "scripts/verify/frontend_localized_display_contract_test.ts",
         "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts",
         "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
       ],
       "kind": "offline"
@@ -158,7 +162,8 @@
         "frontend/apps/web/src/components/FieldValue.vue",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue",
         "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
-        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts"
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/localizedDisplay.ts"
       ],
       "kind": "offline"
     },
@@ -300,8 +305,9 @@
     "implementation": "presentDeclaredBusinessValue is the declared-field semantic authority for selection, status, relation, money, percentage, duration, temporal, boolean, JSON and numeric values. formatDisplayValue delegates declared fields and retains only undeclared text/localization/attachment fallback.",
     "consumers": "FieldValue, ProfessionalBaseFieldControl, FormSection, ContractFormNativeCanvas descriptor transport, ListPage/listCellPresentation, Kanban title formatting and Hierarchy descriptor types now share the authority.",
     "guard": "The existing business semantics guard now enforces CFG-001, CFG-002, CFG-004 and CFG-009 with positive repository checks and mutation negatives.",
-    "browser": "Actual FieldValue, ProfessionalBaseFieldControl, ListPage and KanbanPage components passed shared selection, relation, money, percentage, duration and boolean scenarios at 1440 and 390 with no console/page errors or document horizontal overflow.",
-    "validation": "All 19 registered checks are reusable from current worktree inputs. The Planner executed 13 affected targets; additional focused targets covered authority delegation, relation/member identity, component-key transport and full List/Kanban/readonly component behavior.",
+    "review_r1": "The independent review found relation label localization existed only in formatDisplayValue. Locale resolution moved to utils/localizedDisplay.ts and relation tuple/object labels are now resolved inside presentDeclaredBusinessValue. Raw relation identity and selection keys remain unchanged.",
+    "browser": "Actual FieldValue, ProfessionalBaseFieldControl, FormSection, ListPage and KanbanPage components passed shared selection, relation, money, percentage, duration and boolean scenarios at 1440 and 390. Relation tuple/object cases passed in both zh_CN and en_US with no console/page errors or document horizontal overflow.",
+    "validation": "All declared checks were revalidated after the review fix. The Planner executed 12 affected targets; additional focused targets covered locale normalization, authority delegation, relation/member identity, component-key transport and full List/Kanban/readonly component behavior.",
     "build": "The registered frontend.standard.preview.build completed with 5,419 modules and no build error.",
     "known_unrelated_failure": "verify.frontend.onchange_line_patch.guard fails at the approved main baseline because its text marker expects `context.onchangeLinePatches.value=linePatches`; useRecordFormState.ts is unchanged by this batch and was not edited to satisfy the stale marker.",
     "known_unrelated_no_new_any_failure": "verify.frontend.no_new_any_guard reports five existing `any` uses in useRecordFormFieldSchemas.ts against a frozen allowance of four. The file is unchanged by this batch; no unrelated type cleanup was mixed into FCF-02-1.",

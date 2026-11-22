@@ -29,6 +29,35 @@ Explicit exclusions:
 The diagnostic call-chain map, implementation decisions, validation evidence and
 remaining limitations are recorded here as the batch progresses.
 
+## Review R1 · localized relation labels
+
+The independent review found that `formatDisplayValue()` localized relation
+labels while direct readonly consumers called `presentDeclaredBusinessValue()`
+without the same transport.
+
+Resolution:
+
+- locale normalization moved from `utils/display.ts` into
+  `utils/localizedDisplay.ts`;
+- relation tuple and object labels are resolved inside the shared semantic
+  authority through `relationLabel(..., locale)`;
+- `formatDisplayValue()` no longer pre-localizes relation values;
+- `FieldValue`, `ProfessionalBaseFieldControl` and `FormSection` therefore use
+  the same relation-label path as the generic adapter;
+- raw relation IDs remain the source of record identity and are never replaced
+  by a label;
+- selection storage keys are not localized or otherwise rewritten.
+
+Browser evidence now covers both `zh_CN` and `en_US` for:
+
+- `[id, localizedLabel]`;
+- `{id, display_name: localizedLabel}`;
+- actual `FieldValue`;
+- actual `ProfessionalBaseFieldControl`;
+- actual `FormSection`;
+- List and Kanban duration/percentage consumers;
+- 1440 and 390 viewports.
+
 ## Call-chain diagnosis
 
 | Finding | Confirmed bypass | Resolution |
@@ -87,7 +116,7 @@ All of the following passed with non-zero execution and are recorded through
 `agent.run.record`:
 
 - planning consistency guard: 12 tests;
-- business semantics plus CFG guard: 15 tests;
+- business semantics plus CFG guard: 16 tests;
 - localized display and field semantics authority;
 - professional base field: 16 tests;
 - List row cell: 9 tests;
@@ -109,6 +138,11 @@ Real Chromium evidence covers actual `FieldValue`,
 and 390. It verifies Chinese selection labels, relation labels, money,
 percentage, duration and boolean values, with zero console/page errors and no
 document horizontal overflow.
+
+The locale-specific authority run also covers actual `FormSection`; it executes
+94 browser assertions across `zh_CN` and `en_US`, both viewports, tuple and
+object relation transport. Form and readonly components now produce the same
+relation label for the same contract value.
 
 The registered `frontend.standard.preview.build` completed successfully with
 5,419 modules. Direct `verify.frontend.build` stops before compilation because

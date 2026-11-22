@@ -145,6 +145,18 @@ class FrontendBusinessSemanticsGuardTest(unittest.TestCase):
             for failure in failures
         ))
 
+    def test_relation_locale_resolution_drop_fails(self):
+        failures = guard.validate(lambda path: source(
+            path,
+            (
+                "value = resolveLocalizedDisplayValue(value, locale);",
+                "value = String(value);",
+            )
+            if path == guard.AUTHORITY
+            else None,
+        ))
+        self.assertTrue(any("resolveLocalizedDisplayValue(" in failure for failure in failures))
+
     def test_local_empty_text_fails(self):
         failures = guard.validate(lambda path: source(
             path,

@@ -977,6 +977,7 @@ RULES = (
         "/app/presentation/collectionKanbanPresentation.ts",
         "/utils/fieldSemantics.ts",
         "/utils/display.ts",
+        "/utils/localizedDisplay.ts",
         "/components/FieldValue.vue",
         "/pages/KanbanPage.vue",
         "/pages/listPage/listCellPresentation.ts",

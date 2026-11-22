@@ -9,6 +9,7 @@ const root = process.cwd();
 const controlFile = `${root}/frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue`;
 const baseControlFile = `${root}/frontend/apps/web/src/components/professional-fields/ProfessionalBaseFieldControl.vue`;
 const fieldValueFile = `${root}/frontend/apps/web/src/components/FieldValue.vue`;
+const formSectionFile = `${root}/frontend/apps/web/src/components/template/FormSection.vue`;
 const presentationFile = `${root}/frontend/apps/web/src/app/presentation/businessValuePresentation.ts`;
 const listFile = `${root}/frontend/apps/web/src/pages/listPage/listCellPresentation.ts`;
 const kanbanFile = `${root}/frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts`;
@@ -20,6 +21,7 @@ import { createApp, h } from 'vue';
 import BusinessValue from ${JSON.stringify(controlFile)};
 import BaseField from ${JSON.stringify(baseControlFile)};
 import FieldValue from ${JSON.stringify(fieldValueFile)};
+import FormSection from ${JSON.stringify(formSectionFile)};
 import { presentDeclaredBusinessValue } from ${JSON.stringify(presentationFile)};
 import { presentListCell } from ${JSON.stringify(listFile)};
 import { presentCollectionKanbanCell } from ${JSON.stringify(kanbanFile)};
@@ -52,6 +54,7 @@ const field = (value, readonly = true, inputValue = value) => ({
   presentationMode: 'workspace',
   renderProfile: 'readonly',
 });
+const localizedRelationLabel = { zh_CN: '项目甲', en_US: 'Project A' };
 const Host = {
   setup() {
     const durationNodes = cases.flatMap(([key, value]) => [
@@ -184,7 +187,13 @@ const Host = {
         ]),
         h('div', { 'data-authority-case': 'field-relation' }, [
           h(FieldValue, {
-            value: [7, '项目甲'],
+            value: [7, localizedRelationLabel],
+            field: { type: 'many2one' },
+          }),
+        ]),
+        h('div', { 'data-authority-case': 'field-relation-object' }, [
+          h(FieldValue, {
+            value: { id: 7, display_name: localizedRelationLabel },
             field: { type: 'many2one' },
           }),
         ]),
@@ -225,6 +234,28 @@ const Host = {
             },
             controlId: 'base-ratio',
             placeholder: '请输入',
+          }),
+        ]),
+        h('div', { 'data-authority-case': 'form-section-relation' }, [
+          h(FormSection, {
+            title: '关系',
+            columns: 1,
+            fields: [{
+              key: 'project_id',
+              name: 'project_id',
+              label: '项目',
+              type: 'many2one',
+              componentKey: 'sc.relation.many2one',
+              componentRenderer: 'ProfessionalRelationFieldControl',
+              span: 24,
+              value: { id: 7, display_name: localizedRelationLabel },
+              inputValue: 7,
+              readonly: true,
+              required: false,
+              descriptor: { type: 'many2one' },
+            }],
+            preferReadonlyFacts: true,
+            fillOrphanRows: false,
           }),
         ]),
       ]),
@@ -271,13 +302,15 @@ createApp(Host).mount('#app');
 
 const { launchChromium } = await import('../../../../scripts/verify/playwright_runtime.mjs');
 const server = createServer((request, response) => {
-  if (request.url === '/bundle.js') {
+  const requestUrl = new URL(request.url || '/', 'http://127.0.0.1');
+  if (requestUrl.pathname === '/bundle.js') {
     response.setHeader('content-type', 'text/javascript; charset=utf-8');
     response.end(output.outputFiles[0].text);
     return;
   }
+  const locale = requestUrl.searchParams.get('lang') === 'en_US' ? 'en_US' : 'zh_CN';
   response.setHeader('content-type', 'text/html; charset=utf-8');
-  response.end('<!doctype html><html><head><link rel="icon" href="data:,"></head><body><div id="app"></div><script type="module" src="/bundle.js"></script></body></html>');
+  response.end(`<!doctype html><html lang="${locale}"><head><link rel="icon" href="data:,"></head><body><div id="app"></div><script type="module" src="/bundle.js"></script></body></html>`);
 });
 await new Promise((resolve, reject) => {
   server.once('error', reject);
@@ -293,75 +326,98 @@ try {
   page.on('console', (message) => {
     if (message.type() === 'error') errors.push(message.text());
   });
-  await page.goto(`http://127.0.0.1:${address.port}/`);
-  await page.setViewportSize({ width: 1440, height: 900 });
-  const booted = await page.evaluate(() => Array.isArray(window.durationCases));
-  assert.equal(booted, true, `browser fixture failed to boot: ${errors.join(' | ')}`);
-  const cases = await page.evaluate(() => window.durationCases);
-  for (const [key, , expected] of cases) {
-    const form = page.locator(`[data-duration-case="${key}"]`);
-    await form.waitFor({ state: 'visible' });
-    assert.equal(String(await form.innerText()).trim(), expected, `Form duration ${key}`);
-    assert.equal(await page.locator(`[data-list-duration="${key}"]`).innerText(), expected, `List duration ${key}`);
-    assert.equal(await page.locator(`[data-kanban-duration="${key}"]`).innerText(), expected, `Kanban duration ${key}`);
-  }
-  const falseEdit = page.locator('[data-edit-duration="false"]');
-  assert.equal(await falseEdit.locator('input').inputValue(), '', 'false input is empty, not false or zero');
-  assert.equal(await falseEdit.getByText('小时', { exact: true }).count(), 1, 'duration suffix remains declared');
-  assert.equal(await page.locator('[data-edit-duration="one-half"] input').inputValue(), '1.5', 'editable duration keeps decimal-hours mutation shape');
-  for (const consumer of ['form', 'list', 'kanban']) {
+  let caseCount = 0;
+  let authorityCaseCount = 0;
+  let assertionCount = 0;
+  for (const [locale, expectedRelation] of [['zh_CN', '项目甲'], ['en_US', 'Project A']]) {
+    await page.goto(`http://127.0.0.1:${address.port}/?lang=${locale}`);
+    await page.setViewportSize({ width: 1440, height: 900 });
+    const booted = await page.evaluate(() => Array.isArray(window.durationCases));
+    assert.equal(booted, true, `${locale}: browser fixture failed to boot: ${errors.join(' | ')}`);
+    const cases = await page.evaluate(() => window.durationCases);
+    caseCount = cases.length;
+    for (const [key, , expected] of cases) {
+      const form = page.locator(`[data-duration-case="${key}"]`);
+      await form.waitFor({ state: 'visible' });
+      assert.equal(String(await form.innerText()).trim(), expected, `${locale}: Form duration ${key}`);
+      assert.equal(await page.locator(`[data-list-duration="${key}"]`).innerText(), expected, `${locale}: List duration ${key}`);
+      assert.equal(await page.locator(`[data-kanban-duration="${key}"]`).innerText(), expected, `${locale}: Kanban duration ${key}`);
+      assertionCount += 3;
+    }
+    const falseEdit = page.locator('[data-edit-duration="false"]');
+    assert.equal(await falseEdit.locator('input').inputValue(), '', `${locale}: false input is empty, not false or zero`);
+    assert.equal(await falseEdit.getByText('小时', { exact: true }).count(), 1, `${locale}: duration suffix remains declared`);
+    assert.equal(await page.locator('[data-edit-duration="one-half"] input').inputValue(), '1.5', `${locale}: editable duration keeps decimal-hours mutation shape`);
+    assertionCount += 3;
+    for (const consumer of ['form', 'list', 'kanban']) {
+      assert.equal(
+        String(await page.locator(`[data-percentage-value="${consumer}"]`).innerText()).trim(),
+        '12.5000%',
+        `${locale}: percentage ${consumer} consumes declared identity and precision`,
+      );
+      assert.equal(
+        String(await page.locator(`[data-precision-value="${consumer}"]`).innerText()).trim(),
+        '12.500000',
+        `${locale}: plain float ${consumer} consumes declared precision`,
+      );
+      assertionCount += 2;
+    }
+    const authorityExpected = {
+      'field-status': '待处理',
+      'field-relation': expectedRelation,
+      'field-relation-object': expectedRelation,
+      'base-status': '待处理',
+      'base-percentage': '12.5000%',
+      'form-section-relation': expectedRelation,
+    };
+    authorityCaseCount = Object.keys(authorityExpected).length;
+    for (const [key, expected] of Object.entries(authorityExpected)) {
+      const target = key === 'form-section-relation'
+        ? page.locator('[data-authority-case="form-section-relation"] .readonly-value')
+        : page.locator(`[data-authority-case="${key}"]`);
+      assert.equal(
+        String(await target.innerText()).trim(),
+        expected,
+        `${locale}: ${key} consumes the shared authority`,
+      );
+      assertionCount += 1;
+    }
     assert.equal(
-      String(await page.locator(`[data-percentage-value="${consumer}"]`).innerText()).trim(),
-      '12.5000%',
-      `percentage ${consumer} consumes declared identity and precision`,
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      true,
+      `${locale}: desktop authority surface has no horizontal overflow`,
     );
-    assert.equal(
-      String(await page.locator(`[data-precision-value="${consumer}"]`).innerText()).trim(),
-      '12.500000',
-      `plain float ${consumer} consumes declared precision`,
-    );
-  }
-  const authorityExpected = {
-    'field-status': '待处理',
-    'field-relation': '项目甲',
-    'base-status': '待处理',
-    'base-percentage': '12.5000%',
-  };
-  for (const [key, expected] of Object.entries(authorityExpected)) {
-    assert.equal(
-      String(await page.locator(`[data-authority-case="${key}"]`).innerText()).trim(),
-      expected,
-      `${key} consumes the shared authority`,
-    );
-  }
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    true,
-    'desktop authority surface has no horizontal overflow',
-  );
+    assertionCount += 1;
 
-  await page.setViewportSize({ width: 390, height: 844 });
-  for (const [key, expected] of Object.entries(authorityExpected)) {
+    await page.setViewportSize({ width: 390, height: 844 });
+    for (const [key, expected] of Object.entries(authorityExpected)) {
+      const target = key === 'form-section-relation'
+        ? page.locator('[data-authority-case="form-section-relation"] .readonly-value')
+        : page.locator(`[data-authority-case="${key}"]`);
+      assert.equal(
+        String(await target.innerText()).trim(),
+        expected,
+        `${locale}: mobile ${key} preserves the shared semantic authority`,
+      );
+      assertionCount += 1;
+    }
     assert.equal(
-      String(await page.locator(`[data-authority-case="${key}"]`).innerText()).trim(),
-      expected,
-      `mobile ${key} preserves the shared semantic authority`,
+      await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
+      true,
+      `${locale}: mobile authority surface has no horizontal overflow`,
     );
+    assertionCount += 1;
   }
-  assert.equal(
-    await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth),
-    true,
-    'mobile authority surface has no horizontal overflow',
-  );
   assert.deepEqual(errors, []);
   console.log(JSON.stringify({
     browser: browser.version(),
-    cases: cases.length,
+    cases: caseCount,
     consumers: 3,
     declaredValueCases: 2,
-    readonlyAuthorityCases: Object.keys(authorityExpected).length,
+    readonlyAuthorityCases: authorityCaseCount,
+    locales: ['zh_CN', 'en_US'],
     viewports: [1440, 390],
-    assertions: cases.length * 3 + 10 + Object.keys(authorityExpected).length * 2 + 2,
+    assertions: assertionCount,
     consoleErrors: 0,
     editInputs: 'PASS',
     pass: true,

@@ -413,6 +413,25 @@ assert.equal(presentDeclaredBusinessValue({
   field: relationField,
   value: { id: 7, displayName: '项目甲' },
 }).text, '项目甲');
+const localizedRelationLabel = {
+  zh_CN: '项目甲',
+  en_US: 'Project A',
+};
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, localizedRelationLabel],
+  locale: 'zh-CN',
+}).text, '项目甲');
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: [7, localizedRelationLabel],
+  locale: 'en-US',
+}).text, 'Project A');
+assert.equal(presentDeclaredBusinessValue({
+  field: relationField,
+  value: { id: 7, display_name: localizedRelationLabel },
+  locale: 'en-US',
+}).text, 'Project A');
 assert.equal(presentDeclaredBusinessValue({
   field: relationField,
   value: false,
@@ -426,6 +445,8 @@ assert.throws(() => presentDeclaredBusinessValue({
   value: [7, ''],
 }), { name: 'ContractGapError' }, 'relation identity without a declared label fails closed');
 assert.equal(formatDisplayValue([7, '项目甲'], relationField), '项目甲');
+assert.equal(formatDisplayValue([7, localizedRelationLabel], relationField, { locale: 'zh_CN' }), '项目甲');
+assert.equal(formatDisplayValue([7, localizedRelationLabel], relationField, { locale: 'en_US' }), 'Project A');
 assert.throws(() => formatDisplayValue(7, relationField), { name: 'ContractGapError' });
 assert.equal(presentDeclaredBusinessValue({
   field: { name: 'tag_ids', type: 'many2many' },

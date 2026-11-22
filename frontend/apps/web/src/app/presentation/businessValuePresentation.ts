@@ -13,6 +13,10 @@ import {
   resolveCollectionStatusPresentation,
   type CollectionStatusTone,
 } from './collectionStatusPresentation';
+import {
+  resolveLocalizedDisplayValue,
+  type LocalizedDisplayOptions,
+} from '../../utils/localizedDisplay.ts';
 
 export type BusinessValueSemantic =
   | 'money'
@@ -232,18 +236,22 @@ function relationIdentity(value: unknown): string {
   return '';
 }
 
-function textRelationLabel(value: unknown): string {
+function textRelationLabel(value: unknown, locale?: LocalizedDisplayOptions): string {
+  value = resolveLocalizedDisplayValue(value, locale);
   if (typeof value === 'string' || typeof value === 'number') return String(value).trim();
   return '';
 }
 
-function relationLabel(value: unknown): string {
+function relationLabel(value: unknown, locale?: LocalizedDisplayOptions): string {
   if (Array.isArray(value)) {
-    return value.length > 1 ? textRelationLabel(value[1]) : '';
+    return value.length > 1 ? textRelationLabel(value[1], locale) : '';
   }
   if (value && typeof value === 'object') {
     const row = value as Record<string, unknown>;
-    return textRelationLabel(row.displayName || row.display_name || row.label || row.name);
+    return textRelationLabel(
+      row.displayName || row.display_name || row.label || row.name,
+      locale,
+    );
   }
   return '';
 }
@@ -264,6 +272,7 @@ function presentDeclaredRelation(
   field: DeclaredBusinessField,
   value: unknown,
   emptyText: string,
+  locale?: LocalizedDisplayOptions,
 ): DeclaredBusinessValuePresentation {
   if (value === false) {
     return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
@@ -276,7 +285,7 @@ function presentDeclaredRelation(
       `字段 ${field.name || '(unknown)'} 的关系值缺少可验证记录身份`,
     );
   }
-  const label = relationLabel(value);
+  const label = relationLabel(value, locale);
   if (!label) {
     relationContractGap(
       field,
@@ -296,6 +305,7 @@ function presentDeclaredRelationCollection(
   field: DeclaredBusinessField,
   value: unknown,
   emptyText: string,
+  locale?: LocalizedDisplayOptions,
 ): DeclaredBusinessValuePresentation {
   if (!Array.isArray(value)) {
     relationContractGap(
@@ -309,7 +319,7 @@ function presentDeclaredRelationCollection(
   }
   const labels = value.map((item) => {
     const identity = relationIdentity(item);
-    const label = relationLabel(item);
+    const label = relationLabel(item, locale);
     if (!identity || identity === '0') {
       relationContractGap(
         field,
@@ -391,6 +401,8 @@ export function presentDeclaredBusinessValue(input: {
   emptyText?: string;
   status?: boolean;
   temporalProfile?: 'compact' | 'full';
+  locale?: string;
+  fallbackLocales?: string[];
 }): DeclaredBusinessValuePresentation {
   const emptyText = input.emptyText ?? FIELD_VALUE_EMPTY_TEXT;
   const kind = declaredBusinessValueKind(input.field, input.status);
@@ -433,10 +445,18 @@ export function presentDeclaredBusinessValue(input: {
     });
   }
   if (kind === 'relation') {
-    return presentDeclaredRelation(input.field, input.value, emptyText);
+    return presentDeclaredRelation(input.field, input.value, emptyText, {
+      emptyText,
+      locale: input.locale,
+      fallbackLocales: input.fallbackLocales,
+    });
   }
   if (kind === 'relation_collection') {
-    return presentDeclaredRelationCollection(input.field, input.value, emptyText);
+    return presentDeclaredRelationCollection(input.field, input.value, emptyText, {
+      emptyText,
+      locale: input.locale,
+      fallbackLocales: input.fallbackLocales,
+    });
   }
   if (kind === 'status') {
     const key = selectionValue(input.value);

@@ -31,6 +31,8 @@ def validate(read_text: Callable[[str], str] | None = None) -> list[str]:
         "function presentDeclaredBusinessValue(",
         "function presentDeclaredRelation(",
         "function presentDeclaredRelationCollection(",
+        "function relationLabel(value: unknown, locale?: LocalizedDisplayOptions)",
+        "resolveLocalizedDisplayValue(",
         "function statusBadgeSemantic(",
         "FIELD_VALUE_EMPTY_TEXT",
     ):
