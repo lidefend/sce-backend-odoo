@@ -1,0 +1,199 @@
+{
+  "schema_version": 1,
+  "id": "FE-EXPRESSION-03B-P1A-P1B-20261122",
+  "branch": "feature/fe-expression-03b-p1a-p1b-20261122",
+  "baseline_sha": "a408177cde91a6435d5e57a63c50dc35c2e5ce14",
+  "status": "verification_pending",
+  "goal": ".agent/goals/FE-EXPRESSION-03B-P1A-P1B-20261122.yaml",
+  "record": "docs/ops/iterations/fe_expression_03b_p1a_p1b_20261122.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-EXPRESSION-03B-P1A-P1B-20261122.yaml",
+    ".agent/goals/MAINLINE-PERFORMANCE-02-R1.yaml",
+    ".agent/goals/MAINLINE-PERFORMANCE-02.yaml",
+    ".agent/runs/FE-EXPRESSION-03B-P1A-P1B-20261122/run.json",
+    ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json",
+    ".agent/runs/MAINLINE-PERFORMANCE-02/run.json",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/services/capability_registry.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_capability_registry_service.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_scene/scene_registry.py",
+    "addons/smart_construction_scene/services/capability_scene_targets.py",
+    "addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_construction_scene/tests/test_hook_authority_consumer.py",
+    "addons/smart_construction_scene/tests/test_scene_registry_yaml_asset_merge.py",
+    "addons/smart_core/adapters/odoo_nav_adapter.py",
+    "addons/smart_core/app_config_engine/services/assemblers/page_assembler.py",
+    "addons/smart_core/app_config_engine/services/dispatchers/action_dispatcher.py",
+    "addons/smart_core/core/capability_provider.py",
+    "addons/smart_core/core/scene_provider.py",
+    "addons/smart_core/core/scene_registry_provider.py",
+    "addons/smart_core/core/scene_runtime_orchestrator.py",
+    "addons/smart_core/core/system_init_request_context.py",
+    "addons/smart_core/core/system_init_runtime_context.py",
+    "addons/smart_core/core/system_init_scene_runtime_surface_builder.py",
+    "addons/smart_core/core/system_init_scene_runtime_surface_context.py",
+    "addons/smart_core/core/ui_base_contract_asset_producer.py",
+    "addons/smart_core/core/ui_base_contract_asset_repository.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
+    "addons/smart_core/delivery/runtime_route_authority.py",
+    "addons/smart_core/governance/scene_normalizer.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_action_dispatcher_server_mapping.py",
+    "addons/smart_core/tests/test_route_authority_single_consumer.py",
+    "addons/smart_core/tests/test_scene_provider_target_identity_merge.py",
+    "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
+    "addons/smart_core/tests/test_system_init_request_context.py",
+    "addons/smart_core/tests/test_system_init_scene_runtime_surface_builder.py",
+    "addons/smart_core/tests/test_ui_base_contract_asset_producer.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/fe_expression_03b_p1a_p1b_20261122.md",
+    "docs/ops/iterations/mainline_performance_02_r1_scene_facts_20261122.md",
+    "docs/ops/iterations/mainline_performance_02_system_initialization_20261122.md",
+    "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+    "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
+    "make/dev.mk",
+    "make/dev_test.mk",
+    "make/frontend.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/scenario_surface_projection_guard.py",
+    "scripts/verify/test_extension_hook_resolver.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing frontend source, registered local test targets and the repository-managed local Chromium runtime; no network dependency, database, fixture reset or business write"
+  },
+  "checks": {
+    "payment_settlement_amount": {
+      "target": "verify.frontend.payment_settlement_introduce.amount.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_amount_test.mjs",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows",
+        "frontend/apps/web/package.json",
+        "make/frontend.mk",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_release_candidate_gate.py"
+      ],
+      "kind": "offline"
+    },
+    "professional_detail_collection": {
+      "target": "verify.frontend.professional_detail_collection.unit",
+      "inputs": [
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+        "frontend/apps/web/src/components/professional-fields/paymentSettlementIntroduceDialogModel.ts",
+        "frontend/apps/web/scripts/payment_settlement_introduce_dialog_contract_test.ts",
+        "scripts/verify/frontend_professional_detail_collection_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "contract_basis": {
+      "target": "verify.frontend.contract_basis.enforce",
+      "inputs": [
+        "frontend/apps/web/src",
+        "docs/architecture/frontend_contract_basis_ledger.json",
+        "scripts/verify/frontend_contract_basis_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "exact base/head identity",
+      "state": "required",
+      "owner_target": "git identity preflight"
+    },
+    {
+      "gate": "owning module baseline coverage",
+      "state": "excluded",
+      "reason": "generic frontend-only presentation change; no Odoo module behavior changed"
+    },
+    {
+      "gate": "existing affected test families",
+      "state": "required",
+      "owner_target": "verify.frontend.professional_detail_collection.unit"
+    },
+    {
+      "gate": "focused changed tests",
+      "state": "required",
+      "owner_target": "verify.frontend.payment_settlement_introduce.amount.unit"
+    },
+    {
+      "gate": "contract/schema/consumer",
+      "state": "required",
+      "owner_target": "verify.frontend.contract_basis.enforce"
+    },
+    {
+      "gate": "frontend lint/type/build",
+      "state": "required",
+      "owner_target": "lint, strict typecheck and frontend.acceptance.release.build"
+    },
+    {
+      "gate": "runtime/browser journey",
+      "state": "required",
+      "owner_target": "mounted real dialog component with governed intent stubs, then affected payment-request browser readback"
+    },
+    {
+      "gate": "remote required gates",
+      "state": "required_after_publication",
+      "owner_target": "exact-head GitHub PR checks"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "diagnosis": "User-approved FE-EXPRESSION-03B review establishes P1-A as the first implementation and P1-B as a separate read-only diagnosis.",
+    "p1a_contract": "SettleRelatedPaymentRequest.applied_to_settlement is required; zero is valid and must not fall back to amount.",
+    "p1a_result": "The pre-fix real Vue component test failed because a legal zero settlement amount was hidden. The fixed component preserves zero and absent values, positive and negative values, and issues no introduction write request at 1440 or 390.",
+    "p1b_constraint": "The current page cannot establish currency identity for aggregate scope that may extend beyond displayed records.",
+    "p1b_result": "Read-only source verification shows api_data.py already computes sum over the complete filtered domain, page_sum over the page, validates currency across the complete monetary aggregate scope, returns currency_field/currency_id, and fails closed for mixed or unverifiable currency scope. The remaining P1 defect is frontend consumption in ListPage.vue, not a missing backend aggregate authority.",
+    "p1b_diagnostic": "python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py passed 38/38 stubbed pure tests without a database write.",
+    "p1b_p0_gap": "No P0 correctness gap is proven. A P0 payload enhancement to include a currency relation label would remove the frontend's need to match currency_id against page rows, but correctness can fail closed without it.",
+    "local_validation": "Focused real Vue component test PASS with seven history amount cases; affected professional detail family PASS; contract basis PASS; lint 0 errors; strict typecheck PASS; acceptance release build PASS.",
+    "ci_local_iteration": "PASS with five reusable registered run checks, lane coverage PASS and no mapped path excluded.",
+    "freeze_prepare": "ci.delivery.freeze.prepare PASS on the unfrozen candidate; generated evidence reviewed before commit.",
+    "pr966_r1_ci_root_cause": "public_guard failed because a new early verify.frontend.pr.unit declaration displaced the canonical lane line parsed by test_frontend_lane_commands_are_explicit; merge_policy_gate then failed on that upstream fact. Classified validation_tool_defect.",
+    "pr966_r1_fix": "Removed the duplicate lane declarations, added the focused amount target to the canonical PR and release lane lines, and added empty-string and non-finite amount cases to the real Vue component browser test.",
+    "pr966_r1_product_scope": "The payment component implementation is unchanged in R1; no backend, contract, payload, permission, currency, precision or write chain changed.",
+    "integration_main": "Published PR #966 was append-only synchronized with reviewed main 17babbc48dda4de0a35c8c2fd2a0f6ae2bca58da, producing merge HEAD 8ec42cadbefd3653d1553c93056ba9d535ccfea9. Recovery bundle SHA256 is 7c5f686f7b8d331795549c299dee15f6bb5a8fa8ccede6b9e3de57d2f9a0e53d."
+  },
+  "next_exact_step": "Commit the integration-scope reconciliation, rerun exact-head validation, push PR #966, and merge only after every required check passes on the merged-head candidate.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

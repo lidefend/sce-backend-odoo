@@ -44,7 +44,7 @@
           <span class="settle-option-name">{{ s.display_name || s.name }}</span>
           <span class="settle-option-meta">
             <span v-if="s.contract_name">{{ contract.resultContractLabel }}：{{ s.contract_name }}</span>
-            <span v-if="s.amount_total">{{ contract.resultAmountLabel }}：{{ fmtMoney(s.amount_total, s.currency) }}</span>
+            <span>{{ contract.resultAmountLabel }}：{{ fmtMoney(s.amount_total, s.currency) }}</span>
             <span>{{ contract.resultLineCountLabel }} {{ s.line_count }} {{ contract.resultLineCountSuffix }}</span>
           </span>
         </div>
@@ -119,7 +119,7 @@
             <div v-for="req in relatedPaymentRequests" :key="req.id" class="settle-history-row">
               <span class="settle-history-name" :title="req.name">{{ req.name }}</span>
               <span class="settle-history-state" :class="'is-' + req.state">{{ req.state_label }}</span>
-              <span class="settle-history-amount">{{ fmtMoney(req.applied_to_settlement || req.amount) }}</span>
+              <span class="settle-history-amount">{{ fmtMoney(req.applied_to_settlement) }}</span>
               <span class="settle-history-date">{{ formatTemporalFieldValue(req.date_request, 'compact') || FIELD_VALUE_EMPTY_TEXT }}</span>
             </div>
           </div>
@@ -270,11 +270,20 @@ const introduceBusy = ref(false);
 const introduceError = ref('');
 
 function fmtMoney(
-  value: number | string | undefined | null,
+  value: unknown,
   currency: SettleCurrencyIdentity | undefined = previewData.value?.currency,
 ) {
+  if (
+    value === null
+    || value === undefined
+    || value === false
+    || (typeof value === 'string' && value.trim() === '')
+    || (typeof value === 'number' && !Number.isFinite(value))
+  ) {
+    return FIELD_VALUE_EMPTY_TEXT;
+  }
   return formatMonetaryDisplayValue(
-    Number(value || 0),
+    value,
     currency ? [20, currency.decimal_places] as [number, number] : undefined,
     currency?.name || currency?.symbol || '',
   );

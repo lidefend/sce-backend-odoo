@@ -240,13 +240,13 @@ Generated from repository source files. This report is informational during the 
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
+| 812 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
 | 811 | Python source | `addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py` |
 | 810 | Python source | `addons/smart_core/app_config_engine/services/dispatchers/nav_dispatcher.py` |
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 807 | Python source | `scripts/verify/test_frontend_acceptance_runtime_profile.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
-| 803 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 594 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
