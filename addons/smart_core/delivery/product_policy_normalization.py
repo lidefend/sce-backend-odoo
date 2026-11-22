@@ -25,9 +25,12 @@ def normalize_product_policy_for_env(
     construction ten-center aliases. An extension may return a structured
     error, which remains fail-closed instead of being mistaken for a pass.
     """
-    payload = copy.deepcopy(policy) if isinstance(policy, dict) else {}
     if env is None:
-        return payload
+        return copy.deepcopy(policy) if isinstance(policy, dict) else {}
+    # The extension normalization owns a single deep copy at its entrypoint.
+    # Copying again here doubles the largest nested startup structure without
+    # adding isolation from the caller.
+    payload = policy if isinstance(policy, dict) else {}
     result = call_extension_hook_first_compatible(
         env,
         HOOK_NAME,

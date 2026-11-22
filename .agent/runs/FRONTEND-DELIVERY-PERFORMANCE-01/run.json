@@ -13,13 +13,19 @@
     ".agent/runs/FRONTEND-DELIVERY-PERFORMANCE-01/run.json",
     ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-03/run.json",
     "addons/smart_core/core/system_init_payload_builder.py",
+    "addons/smart_core/delivery/effective_delivery_service.py",
+    "addons/smart_core/delivery/product_center_policy.py",
+    "addons/smart_core/delivery/product_policy_normalization.py",
+    "addons/smart_core/delivery/product_policy_service.py",
     "addons/smart_core/handlers/system_init.py",
     "addons/smart_core/tests/test_system_init_final_route_authority_static.py",
     "addons/smart_core/tests/test_system_init_payload_builder_semantics.py",
+    "addons/smart_core/tests/test_route_authority_single_consumer.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/frontend_delivery_performance_20261122.md"
     ,
+    "scripts/verify/local_dev_runtime_performance.py",
     "scripts/verify/test_local_dev_runtime_performance.py"
   ],
   "environment": {
@@ -65,11 +71,13 @@
     "startup_profile": "system.init build_nav consumed 1322-1676ms while total startup was 1830-2166ms; other stages were materially smaller.",
     "duplicate_source": "EffectiveDeliveryService already builds and qualifies navigation, but SystemInitHandler then calls NavDispatcher.build_nav and immediately replaces that independently built nav with effective_delivery.payload.nav.",
     "local_observation": "After the change, compatibility_navigation=0ms and build_nav is 481-551ms across warm local samples, with identical navigation_sha256 6f78c0a147c33545c1407366d7e2bf74d32ea4bfafe90ec98ba4c300c03c2ddf.",
+    "remote_candidate_iteration": "PR #960 full run 44985395085 reduced my_work, form_open and company_switch into budget; only login_to_interactive remained high at 3152ms vs 3000ms. effective delivery was 1014-1326ms and compatibility navigation was 0ms. The failed frontend producer then caused managed-ORM coverage discovery, merge_policy_gate and release_candidate_gate to fail as dependents.",
+    "deepcopy_profile": "Profiler attribution found repeated full product-policy/navigation deep copies. Removing redundant copies reduced profiled deepcopy cost from about 754ms to 465ms and product-center normalization from about 265ms to 95ms while preserving navigation SHA.",
     "performance_units": "verify.system.performance.baseline.unit 72 tests, verify.local.dev.runtime.performance.unit 34 tests and verify.backend.navigation_delivery.unit 177 tests passed.",
     "orm": "Targeted smart_core ORM TestIntentSmoke + TestCanonicalNavigationProjection passed 16 tests with ORM_RESULT_GUARD=PASS.",
     "iteration": "ci.local.iteration exited zero with no unmapped or blocked paths.",
     "freeze_prepare": "ci.delivery.freeze.prepare passed; generated complexity and split-plan reports were refreshed for the source changes.",
     "local_release_attempt": "verify.frontend.release.local passed broad static, contract and production-build stages but stopped before browser measurement because sc_frontend_acceptance has no initialized product baseline. The failure is an environment prerequisite, not a performance result."
   },
-  "next_exact_step": "Publish the clean candidate and use the exact-head remote full frontend gate as the authoritative performance measurement."
+  "next_exact_step": "Refresh generated evidence, commit and push the copy-elimination follow-up, then rerun the exact-head candidate full gate."
 }

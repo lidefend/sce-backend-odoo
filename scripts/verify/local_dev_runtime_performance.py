@@ -1209,10 +1209,32 @@ try:
                     profiler.disable()
                 assert profiled_reply.ok, 'profiled system.init failed'
             stats = pstats.Stats(profiler)
+            caller_names = {
+                name for name in os.environ.get('PRODUCT_PERFORMANCE_PROFILE_CALLERS', '').split(',') if name
+            }
             for (filename, line, function), (primitive, calls, self_time, cumulative, callers) in stats.stats.items():
-                functions.append({'file': Path(filename).name, 'line': line, 'function': function,
-                                  'calls': calls, 'self_ms': round(self_time * 1000, 2),
-                                  'cumulative_ms': round(cumulative * 1000, 2)})
+                row = {'file': Path(filename).name, 'line': line, 'function': function,
+                       'calls': calls, 'self_ms': round(self_time * 1000, 2),
+                       'cumulative_ms': round(cumulative * 1000, 2)}
+                if function in caller_names:
+                    row['top_callers'] = sorted(
+                        (
+                            {
+                                'caller': '%s:%s:%s' % (
+                                    Path(caller_file).name,
+                                    caller_function,
+                                    caller_line,
+                                ),
+                                'nc': caller_nc,
+                                'ct_ms': round(caller_ct * 1000, 2),
+                            }
+                            for (caller_file, caller_line, caller_function),
+                                (_, caller_nc, _, caller_ct) in (callers or {}).items()
+                        ),
+                        key=lambda item: item['ct_ms'],
+                        reverse=True,
+                    )[:12]
+                functions.append(row)
             functions.sort(key=lambda row: row['cumulative_ms'], reverse=True)
         candidate_strip = system_init._strip_ui_base_contract_for_frontend
         paired = []

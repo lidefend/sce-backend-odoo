@@ -61,7 +61,11 @@ class EffectiveDeliveryService:
             if isinstance(source.get("route_authority"), dict)
             else {}
         )
-        return deepcopy(nav), deepcopy(authority)
+        # DeliveryEngine just materialized this payload for this resolution.
+        # Its nav and authority are not shared caches and are not reused after
+        # the effective projection below, so copying them again only duplicates
+        # thousands of nested menu/action dictionaries on every startup.
+        return nav, authority
 
     def _internal_actions(self, nav, authority, menu_service, role):
         sources = call_extension_hook_first(self.env, "smart_core_delivery_scene_declarations", self.env)
@@ -129,7 +133,6 @@ class EffectiveDeliveryService:
         finalized = call_extension_hook_first(env, "smart_core_navigation_authority_filter", env, authority)
         if isinstance(finalized, dict):
             authority = finalized
-        authority = deepcopy(authority)
         authority.setdefault("principal_scope", {})["company_id"] = int(env.company.id)
         nav = engine.menu_service.filter_nav_by_route_authority(nav, authority)
         nav, authority = merge_authenticated_safe_landing(

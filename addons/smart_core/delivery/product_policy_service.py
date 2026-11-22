@@ -217,7 +217,9 @@ class ProductPolicyService:
                                                 separators=(",", ":")).encode("utf-8")).hexdigest()
             if digest != payload.get("policy_sha256"):
                 raise ValueError("PUBLISHED_PRODUCT_POLICY_DIGEST_MISMATCH")
-            return self._normalize_policy(copy.deepcopy(policy))
+            # ORM JSON fields return request-local deserialized values. The
+            # extension normalization below owns the isolated mutable copy.
+            return self._normalize_policy(policy)
         registry_models = getattr(getattr(self.env, "registry", None), "models", {})
         if "sc.edition.release.snapshot" not in registry_models:
             return None

@@ -58,6 +58,22 @@ an acceptance-environment prerequisite failure; it does not provide a new
 performance result. The exact-head remote frontend release gate remains the
 authoritative end-to-end measurement.
 
+The first remote candidate measured only `login_to_interactive` above budget
+(3152ms vs 3000ms); the other six scenarios passed. Profiling then identified
+repeated full product-policy and navigation copies. Delivery payloads that were
+materialized for the current request are now mutated by their owning projection
+instead of copied again, and product-policy normalization performs one
+isolation copy rather than nested copies of every group, menu and capability.
+That candidate's `professional_quality_gate` coverage step then waited for the
+failed frontend producer's managed ORM evidence and failed when the producer
+finished; `merge_policy_gate` and `release_candidate_gate` followed the same
+upstream result. These are consequences of the performance failure, not
+additional product defects.
+
+The profiled deepcopy cost fell from about 754ms to 465ms, while navigation SHA
+remained
+`6f78c0a147c33545c1407366d7e2bf74d32ea4bfafe90ec98ba4c300c03c2ddf`.
+
 ## Boundary
 
 - Preserve the exact effective navigation, route authority, default route,
