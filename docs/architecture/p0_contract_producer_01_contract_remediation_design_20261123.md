@@ -4,6 +4,8 @@
 
 Status: design candidate; no product implementation authorized.
 
+Review candidate: PR #973.
+
 Baseline:
 
 - PR #972 reviewed head:

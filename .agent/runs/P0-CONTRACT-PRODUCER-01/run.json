@@ -140,7 +140,11 @@
     "validation": "Contract Fidelity 12 tests; Page Contract orchestration/action/data-source guards 19 pages each; Page Block renderer and registry guards PASS; compatibility core 31 tests; agent ledger 18 tests; ci.local.iteration and ci.delivery.freeze.prepare PASS.",
     "source_boundary": "No product source, backend contract, database, fixture or runtime change."
   },
-  "next_exact_step": "Publish the committed P0-CONTRACT-PRODUCER-01 design candidate and obtain independent architecture review. Do not implement any P0 carrier or FCF-02-2 consumer before that review.",
+  "next_exact_step": "Await independent architecture review of PR #973 at its final exact metadata head. Do not implement any P0 carrier or FCF-02-2 consumer before that review.",
   "write_replay_authorized": false,
-  "candidate_evidence": false
+  "candidate_evidence": false,
+  "integration": {
+    "pull_request": 973,
+    "initial_candidate_head": "7f0cc58147f38db0b7af8b71bb8b60aaac93193a"
+  }
 }
