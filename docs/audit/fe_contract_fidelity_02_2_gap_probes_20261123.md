@@ -7,6 +7,15 @@ remains locked pending P0 producer remediation and independent review.
 
 Review candidate: PR #972.
 
+Mainline closure:
+
+- Reviewed head: `5e3805932dbf04b251193bc5e6b4e65b8cc03271`
+- Merge commit / design baseline:
+  `dec7e985d3985e248c8b5c4903e8f77739bb807d`
+- Independent review: approved
+- Mainline integration: completed
+- Deployment and user acceptance: not applicable to this read-only batch
+
 Baseline:
 
 - Mainline after FCF-02-1:

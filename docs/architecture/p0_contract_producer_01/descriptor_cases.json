@@ -1,0 +1,393 @@
+{
+  "schema": "p0_contract_producer_01.field_descriptor_cases.v1",
+  "validation_layers": [
+    "structural_schema",
+    "field_semantic_scope",
+    "native_widget_vocabulary",
+    "semantic_registry"
+  ],
+  "cases": [
+    {
+      "id": "DESC-MONEY-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "monetary",
+        "widgetType": "number",
+        "componentKey": "sc.value.money",
+        "semanticType": "money",
+        "digits": [16, 2],
+        "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-MONEY-MISSING-DIGITS",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "monetary",
+        "widgetType": "number",
+        "componentKey": "sc.value.money",
+        "semanticType": "money",
+        "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-MONEY-MISSING-CURRENCY",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "monetary",
+        "widgetType": "number",
+        "componentKey": "sc.value.money",
+        "semanticType": "money",
+        "digits": [16, 2]
+      }
+    },
+    {
+      "id": "DESC-PERCENT-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.completion_rate",
+        "label": "项目完成率",
+        "fieldType": "float",
+        "widgetType": "percentage",
+        "componentKey": "sc.value.percentage",
+        "semanticType": "percentage",
+        "digits": [16, 2],
+        "unit": {
+          "kind": "percent",
+          "code": "percent",
+          "label": "%"
+        }
+      }
+    },
+    {
+      "id": "DESC-PERCENT-MISSING-UNIT",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.completion_rate",
+        "label": "项目完成率",
+        "fieldType": "float",
+        "widgetType": "percentage",
+        "componentKey": "sc.value.percentage",
+        "semanticType": "percentage",
+        "digits": [16, 2]
+      }
+    },
+    {
+      "id": "DESC-DURATION-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "labor.work_hours",
+        "label": "工时",
+        "fieldType": "float",
+        "widgetType": "float_time",
+        "componentKey": "sc.value.duration",
+        "semanticType": "duration",
+        "digits": [16, 2],
+        "unit": {
+          "kind": "duration",
+          "code": "hour",
+          "label": "小时"
+        }
+      }
+    },
+    {
+      "id": "DESC-DURATION-INVALID-UNIT",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "labor.work_hours",
+        "label": "工时",
+        "fieldType": "float",
+        "widgetType": "float_time",
+        "componentKey": "sc.value.duration",
+        "semanticType": "duration",
+        "digits": [16, 2],
+        "unit": {
+          "kind": "percent",
+          "code": "percent",
+          "label": "%"
+        }
+      }
+    },
+    {
+      "id": "DESC-DATETIME-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.last_updated_at",
+        "label": "最近更新时间",
+        "fieldType": "datetime",
+        "widgetType": "datetime",
+        "componentKey": "sc.input.datetime",
+        "semanticType": "datetime",
+        "temporal": {
+          "kind": "datetime",
+          "timezoneAuthority": "user"
+        }
+      }
+    },
+    {
+      "id": "DESC-DATETIME-MISSING-TEMPORAL",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.last_updated_at",
+        "label": "最近更新时间",
+        "fieldType": "datetime",
+        "widgetType": "datetime",
+        "componentKey": "sc.input.datetime",
+        "semanticType": "datetime"
+      }
+    },
+    {
+      "id": "DESC-ATTACHMENT-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.attachment_ids",
+        "label": "项目附件",
+        "fieldType": "many2many",
+        "widgetType": "many2many",
+        "componentKey": "sc.relation.many2many",
+        "semanticType": "relation_collection",
+        "relation": "ir.attachment",
+        "attachmentRole": "project_evidence"
+      }
+    },
+    {
+      "id": "DESC-ATTACHMENT-MISSING-ROLE",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.attachment_ids",
+        "label": "项目附件",
+        "fieldType": "many2many",
+        "widgetType": "many2many",
+        "componentKey": "sc.relation.many2many",
+        "semanticType": "relation_collection",
+        "relation": "ir.attachment"
+      }
+    },
+    {
+      "id": "DESC-UNKNOWN-SEMANTIC",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.mystery_value",
+        "label": "未知值",
+        "fieldType": "float",
+        "widgetType": "number",
+        "componentKey": "sc.value.mystery",
+        "semanticType": "mystery_semantic"
+      }
+    },
+    {
+      "id": "DESC-UNKNOWN-KEY",
+      "expect": "invalid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.total",
+        "label": "项目总数",
+        "fieldType": "integer",
+        "widgetType": "number",
+        "componentKey": "sc.input.number",
+        "semanticType": "number",
+        "mysteryScale": 9
+      }
+    },
+    {
+      "id": "DESC-MONEY-INVALID-FIELDTYPE",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "float",
+        "widgetType": "number",
+        "componentKey": "sc.value.money",
+        "semanticType": "money",
+        "digits": [16, 2],
+        "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-DATE-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.planned_start_date",
+        "label": "计划开始日期",
+        "fieldType": "date",
+        "widgetType": "date",
+        "componentKey": "sc.input.date",
+        "semanticType": "date",
+        "temporal": {
+          "kind": "date",
+          "timezoneAuthority": "not_applicable"
+        }
+      }
+    },
+    {
+      "id": "DESC-DATE-INVALID-TIMEZONE",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.planned_start_date",
+        "label": "计划开始日期",
+        "fieldType": "date",
+        "widgetType": "date",
+        "componentKey": "sc.input.date",
+        "semanticType": "date",
+        "temporal": {
+          "kind": "date",
+          "timezoneAuthority": "user"
+        }
+      }
+    },
+    {
+      "id": "DESC-DIGITS-INVALID-SCALE",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "monetary",
+        "widgetType": "number",
+        "componentKey": "sc.value.money",
+        "semanticType": "money",
+        "digits": [2, 3],
+        "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-SEMANTIC-COMPONENT-MISMATCH",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "payment.pending_amount",
+        "label": "待付款金额",
+        "fieldType": "monetary",
+        "widgetType": "number",
+        "componentKey": "sc.value.percentage",
+        "semanticType": "money",
+        "digits": [16, 2],
+        "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-REFERENCE-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.partner_reference",
+        "label": "合作方引用",
+        "fieldType": "many2one_reference",
+        "widgetType": "display",
+        "componentKey": "sc.display.text",
+        "semanticType": "reference",
+        "relation": "res.partner"
+      }
+    },
+    {
+      "id": "DESC-FALLBACK-WIDGET-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.is_favorite",
+        "label": "收藏",
+        "fieldType": "boolean",
+        "widgetType": "boolean_toggle",
+        "componentKey": "sc.input.boolean",
+        "semanticType": "boolean"
+      }
+    },
+    {
+      "id": "DESC-ACTION-SEMANTIC-EXCLUDED",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.submit_action",
+        "label": "提交",
+        "fieldType": "action",
+        "widgetType": "button",
+        "componentKey": "sc.button.action",
+        "semanticType": "action"
+      }
+    },
+    {
+      "id": "DESC-UNKNOWN-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.total",
+        "label": "项目总数",
+        "fieldType": "integer",
+        "widgetType": "mystery_widget",
+        "componentKey": "sc.input.number",
+        "semanticType": "number"
+      }
+    },
+    {
+      "id": "DESC-UNSUPPORTED-DOMAIN-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.advanced_domain",
+        "label": "高级筛选",
+        "fieldType": "text",
+        "widgetType": "domain",
+        "componentKey": "sc.input.textarea",
+        "semanticType": "long_text"
+      }
+    },
+    {
+      "id": "DESC-UNSUPPORTED-TIER-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "semantic_registry"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.approval_tier",
+        "label": "审批层级",
+        "fieldType": "char",
+        "widgetType": "tier_validation",
+        "componentKey": "sc.input.text",
+        "semanticType": "text"
+      }
+    }
+  ]
+}

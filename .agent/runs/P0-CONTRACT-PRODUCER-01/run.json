@@ -1,0 +1,172 @@
+{
+  "schema_version": 1,
+  "id": "P0-CONTRACT-PRODUCER-01",
+  "branch": "feature/p0-contract-producer-01-design-20261123",
+  "baseline_sha": "dec7e985d3985e248c8b5c4903e8f77739bb807d",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P0-CONTRACT-PRODUCER-01.yaml",
+  "record": "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02.yaml",
+    ".agent/goals/FE-CONTRACT-FIDELITY-02-2.yaml",
+    ".agent/goals/P0-CONTRACT-PRODUCER-01.yaml",
+    ".agent/runs/FE-CONTRACT-FIDELITY-02-2/run.json",
+    ".agent/runs/P0-CONTRACT-PRODUCER-01/run.json",
+    "docs/audit/fe_contract_fidelity_02_2_gap_probes_20261123.md",
+    "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
+    "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+    "docs/architecture/p0_contract_producer_01/descriptor_cases.json",
+    "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+    "make/frontend.mk",
+    "scripts/verify/test_contract_fidelity_plan_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only source, schema, contract snapshot and compatibility-design analysis; no database, service or runtime write"
+  },
+  "checks": {
+    "contract_fidelity_plan": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "p0_contract_producer_design": {
+      "target": "verify.p0_contract_producer.design.unit",
+      "inputs": [
+        "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
+        "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+        "docs/architecture/p0_contract_producer_01/descriptor_cases.json",
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_orchestration": {
+      "target": "verify.page_contract.orchestration_schema.guard",
+      "inputs": [
+        "scripts/verify/page_contract_orchestration_schema_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py"
+      ],
+      "kind": "offline"
+    },
+    "page_action_semantics": {
+      "target": "verify.page_contract.action_schema_semantics.guard",
+      "inputs": [
+        "scripts/verify/page_contract_action_schema_semantics_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py"
+      ],
+      "kind": "offline"
+    },
+    "page_data_source_semantics": {
+      "target": "verify.page_contract.data_source_semantics.guard",
+      "inputs": [
+        "scripts/verify/page_contract_data_source_semantics_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py"
+      ],
+      "kind": "offline"
+    },
+    "page_block_renderer": {
+      "target": "verify.frontend.page_block_renderer_smoke",
+      "inputs": [
+        "scripts/verify/frontend_page_block_renderer_smoke_guard.py",
+        "frontend/apps/web/src/components/page",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "page_block_registry": {
+      "target": "verify.frontend.page_block_registry_guard",
+      "inputs": [
+        "scripts/verify/frontend_page_block_registry_guard.py",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "contract_compatibility": {
+      "target": "verify.backend.contract_supply_chain.compatibility.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_compatibility.py",
+        "scripts/verify/test_contract_version_compatibility.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "design schema and producer ownership",
+      "state": "required",
+      "owner_target": "remediation_design.json and architecture report"
+    },
+    {
+      "gate": "existing contract and action semantics",
+      "state": "required",
+      "owner_target": "Page Contract orchestration, action and data-source guards"
+    },
+    {
+      "gate": "version compatibility model",
+      "state": "required",
+      "owner_target": "verify.backend.contract_supply_chain.compatibility.unit"
+    },
+    {
+      "gate": "frontend product implementation",
+      "state": "not_authorized",
+      "reason": "design must be reviewed and P0 producer declarations implemented first"
+    },
+    {
+      "gate": "backend contract implementation",
+      "state": "not_authorized",
+      "reason": "this batch is design-only"
+    },
+    {
+      "gate": "database, fixture, deployment and user acceptance",
+      "state": "excluded",
+      "reason": "design has no persisted or runtime state change"
+    }
+  ],
+  "blockers": [],
+  "observations": {
+    "design_input": "PR #972 contract-gap audit merged at dec7e985d3985e248c8b5c4903e8f77739bb807d.",
+    "architecture_boundary": "Extend existing Contract V2/Page Orchestration; no second protocol runtime.",
+    "authority_boundary": "Odoo ACL, record rules, action services and file services remain execution authorities.",
+    "product_implementation": "Not started. FCF-02-2 and FCF-02-3 remain locked.",
+    "design_matrix": "3 packages, 56 planned compatibility/positive/negative cases, 49 compatibility rows and 27 current-source hashes.",
+    "validation": "Contract Fidelity plus P0 design consistency 23 Python tests; strict ContractV2FieldDescriptor structural, field-semantic scope, native-widget name/status policy, decode-result metadata and semantic-registry validation covered 24 positive/negative fixtures; semantic registry lint PASS semantics=28 components=33; current decoder 4 checks accepts the legacy projection and rejects the 2.6.0 marker plus undeclared carriers; Page Contract orchestration/action/data-source guards 19 pages each; Page Block renderer and registry guards PASS; compatibility core 31 tests; agent ledger 18 tests; verification lane coverage 74 tests; ci.local.iteration and ci.delivery.freeze.prepare PASS.",
+    "source_boundary": "No product source, backend contract, database, fixture or runtime change."
+  },
+  "next_exact_step": "Await independent architecture review of PR #973 at its final exact metadata head. Do not implement any P0 carrier or FCF-02-2 consumer before that review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false,
+  "integration": {
+    "pull_request": 973,
+    "initial_candidate_head": "7f0cc58147f38db0b7af8b71bb8b60aaac93193a"
+  }
+}

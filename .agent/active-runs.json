@@ -3,7 +3,7 @@
   "branches": {
     "audit/daily-dev-mainline-product-acceptance-closeout-20261009": ".agent/runs/DAILY-DEV-MAINLINE-PRODUCT-ACCEPTANCE-CLOSEOUT/run.json",
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
-    "audit/fcf-02-1-closeout-fcf-02-2-probes-20261123": ".agent/runs/FE-CONTRACT-FIDELITY-02-2/run.json",
+    "feature/p0-contract-producer-01-design-20261123": ".agent/runs/P0-CONTRACT-PRODUCER-01/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",
     "audit/FE-RUNTIME-RESEARCH-01-R09-20261122": ".agent/runs/ACCEPTANCE-RUNTIME-CLOSE-01-20261122/run.json",
     "audit/fepc-07r-home-metric-decisions": ".agent/runs/FEPC-07R/run.json",

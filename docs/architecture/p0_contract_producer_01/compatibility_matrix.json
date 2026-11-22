@@ -1,0 +1,436 @@
+{
+  "schema": "p0_contract_producer_01.compatibility_matrix.v1",
+  "base_sha": "dec7e985d3985e248c8b5c4903e8f77739bb807d",
+  "accepted_contract_versions": {
+    "current_client": [
+      "2.0.x",
+      "2.1.x",
+      "2.2.x",
+      "2.3.x",
+      "2.4.x",
+      "2.5.x"
+    ],
+    "target_client": [
+      "2.0.x",
+      "2.1.x",
+      "2.2.x",
+      "2.3.x",
+      "2.4.x",
+      "2.5.x",
+      "2.6.x"
+    ],
+    "current_backend_selection": "not_implemented",
+    "required_backend_selection": "highest_common_accepted_version"
+  },
+  "capabilities": [
+    "page_block_data.v1",
+    "attachment_fact.v1",
+    "page_block_action.v1"
+  ],
+  "projections": {
+    "legacy": {
+      "contract_v2": "2.5.0",
+      "page_orchestration": "2.0.0",
+      "new_carriers": "absent"
+    },
+    "new": {
+      "contract_v2": "2.6.0",
+      "page_orchestration": "2.1.0",
+      "new_carriers": "present"
+    }
+  },
+  "cases": [
+    {
+      "id": "DEC-01",
+      "consumer": "current/base frontend decoder",
+      "payload": "legacy projection",
+      "expectation": "accept",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-02",
+      "consumer": "current/base frontend decoder",
+      "payload": "contract V2 2.6.0 marker",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-03",
+      "consumer": "current/base frontend decoder",
+      "payload": "unknown attachmentFacts carrier",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-04",
+      "consumer": "current/base frontend decoder",
+      "payload": "unknown actionFeedback carrier",
+      "expectation": "reject",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DEC-05",
+      "consumer": "implementation frontend decoder",
+      "payload": "legacy projection",
+      "expectation": "accept",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "DEC-06",
+      "consumer": "implementation frontend decoder",
+      "payload": "new projection",
+      "expectation": "accept",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-01",
+      "consumer": "server negotiation",
+      "payload": "client omits page_block_data.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-02",
+      "consumer": "server negotiation",
+      "payload": "client omits attachment_fact.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-03",
+      "consumer": "server negotiation",
+      "payload": "client omits page_block_action.v1",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-04",
+      "consumer": "server negotiation",
+      "payload": "no common accepted contract version",
+      "expectation": "fail closed with unsupported-version error",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "NEG-05",
+      "consumer": "server negotiation",
+      "payload": "client advertises 2.6.x but decoder test is old",
+      "expectation": "must reject the declaration test and never ship",
+      "evidence": "executed",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "VER-05",
+      "consumer": "server negotiation",
+      "payload": "known stable client type omits accepted_contract_versions",
+      "expectation": "complete legacy projection",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "VER-06",
+      "consumer": "server negotiation",
+      "payload": "unknown or missing client type omits accepted_contract_versions",
+      "expectation": "CONTRACT_VERSION_UNSUPPORTED",
+      "evidence": "not_run_pending_implementation",
+      "owner": "P0 implementation"
+    },
+    {
+      "id": "SEC-01",
+      "consumer": "server request boundary",
+      "payload": "client supplies or overrides authorizationSubject",
+      "expectation": "request value is not accepted as authorization authority",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "SEC-02",
+      "consumer": "public attachment/action carrier",
+      "payload": "serialize the carrier",
+      "expectation": "authorizationSubject is absent",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-01",
+      "consumer": "widget-backed field reference",
+      "payload": "kind=widget",
+      "expectation": "resolve the existing widget fieldDescriptor",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-02",
+      "consumer": "non-widget business fact",
+      "payload": "kind=descriptor",
+      "expectation": "resolve block_field_descriptors without creating a fake widget",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-03",
+      "consumer": "Contract V2 2.6 descriptor decode",
+      "payload": "same descriptor through widget-backed and descriptor-backed references",
+      "expectation": "both use decodeContractV2FieldDescriptor and produce the same semantic result",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-04",
+      "consumer": "strict descriptor decoder",
+      "payload": "unknown descriptor property or semantic type",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "FIELD-05",
+      "consumer": "strict descriptor decoder",
+      "payload": "missing or inconsistent conditional semantic property",
+      "expectation": "fail closed for money, percentage, duration, datetime or attachment",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid money descriptor with digits and currencyField",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-MISSING-DIGITS",
+      "consumer": "strict descriptor schema",
+      "payload": "money descriptor missing digits",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-MISSING-CURRENCY",
+      "consumer": "strict descriptor schema",
+      "payload": "money descriptor missing currencyField",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-PERCENT-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid percentage descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-PERCENT-MISSING-UNIT",
+      "consumer": "strict descriptor schema",
+      "payload": "percentage descriptor missing unit",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DURATION-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid duration descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DURATION-INVALID-UNIT",
+      "consumer": "strict descriptor schema",
+      "payload": "duration descriptor with percentage unit",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATETIME-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid datetime descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATETIME-MISSING-TEMPORAL",
+      "consumer": "strict descriptor schema",
+      "payload": "datetime descriptor missing temporal",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ATTACHMENT-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid attachment descriptor",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ATTACHMENT-MISSING-ROLE",
+      "consumer": "strict descriptor schema",
+      "payload": "attachment descriptor missing attachmentRole",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-SEMANTIC",
+      "consumer": "strict descriptor schema",
+      "payload": "unknown semanticType",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-KEY",
+      "consumer": "strict descriptor schema",
+      "payload": "unknown descriptor property",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-MONEY-INVALID-FIELDTYPE",
+      "consumer": "strict descriptor schema",
+      "payload": "money semantic with a non-monetary field type",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATE-VALID",
+      "consumer": "strict descriptor schema",
+      "payload": "valid date descriptor with not-applicable timezone authority",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DATE-INVALID-TIMEZONE",
+      "consumer": "strict descriptor schema",
+      "payload": "date descriptor with a user timezone authority",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-DIGITS-INVALID-SCALE",
+      "consumer": "strict descriptor decoder semantic-registry layer",
+      "payload": "money descriptor whose scale exceeds total digits",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-SEMANTIC-COMPONENT-MISMATCH",
+      "consumer": "strict descriptor decoder semantic-registry layer",
+      "payload": "money descriptor that names the percentage component",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-REFERENCE-VALID",
+      "consumer": "strict descriptor schema and semantic-registry layer",
+      "payload": "reference semantic sharing the registered readable display component",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-FALLBACK-WIDGET-VALID",
+      "consumer": "strict descriptor widget-vocabulary projection",
+      "payload": "declared fallback native widget",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ACTION-SEMANTIC-EXCLUDED",
+      "consumer": "strict descriptor field-semantic scope",
+      "payload": "action semantic and action field type inside a field descriptor",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-WIDGET",
+      "consumer": "strict descriptor widget-vocabulary projection",
+      "payload": "widget type absent from semantic.yaml.native_widgets",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNSUPPORTED-DOMAIN-WIDGET",
+      "consumer": "strict descriptor widget-status registry layer",
+      "payload": "semantic.yaml.native_widgets domain entry with unsupported status",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNSUPPORTED-TIER-WIDGET",
+      "consumer": "strict descriptor widget-status registry layer",
+      "payload": "semantic.yaml.native_widgets tier_validation entry with unsupported status",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-READY",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "ready Widget",
+      "expectation": "widgetStatus=ready and fallbackReasonCode=null outside the descriptor",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "boolean_toggle fallback Widget",
+      "expectation": "widgetStatus=fallback and exact registry reason_code returned",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK-MISSING",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "fallback Widget with no registry reason_code",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-FALLBACK-EMPTY",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "fallback Widget with an empty registry reason_code",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "RES-WIDGET-STATUS-INVALID",
+      "consumer": "descriptor decode result registry metadata",
+      "payload": "native Widget row with an unknown status",
+      "expectation": "fail closed",
+      "evidence": "executed_design_assertion",
+      "owner": "P4 design validation"
+    }
+  ]
+}
