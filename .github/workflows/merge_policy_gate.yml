@@ -95,17 +95,34 @@ jobs:
       - name: Wait for exact-head fact workflows
         run: |
           set -euo pipefail
+          if [ "${GITHUB_EVENT_NAME}" = pull_request ]; then
+            expected_head_branch="${GITHUB_HEAD_REF:?pull request head ref is required}"
+          else
+            expected_head_branch=main
+          fi
+          case "${GITHUB_EVENT_NAME}" in
+            schedule|push|pull_request) producer_event="${GITHUB_EVENT_NAME}" ;;
+            workflow_dispatch) producer_event=push ;;
+            *) echo "unsupported aggregate event: ${GITHUB_EVENT_NAME}" >&2; exit 1 ;;
+          esac
+          echo "EXPECTED_HEAD_BRANCH=${expected_head_branch}" >> "$GITHUB_ENV"
+          echo "PRODUCER_EVENT=${producer_event}" >> "$GITHUB_ENV"
           required=(public_guard.yml professional_quality_gate.yml frontend_release_gate.yml)
+          missing_grace_attempts="${MISSING_DEPENDENCY_GRACE_ATTEMPTS:-90}"
+          missing_streak=0
           for attempt in $(seq 1 1020); do
             pending=0
+            missing=()
             for workflow in "${required[@]}"; do
               runs="$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/${workflow}/runs?head_sha=${HEAD_SHA}&per_page=100")"
               latest="$(python3 scripts/ci/select_authoritative_workflow_run.py \
                 --repository "$GITHUB_REPOSITORY" \
                 --workflow-path ".github/workflows/${workflow}" \
                 --head "$HEAD_SHA" \
-                --event "$GITHUB_EVENT_NAME" <<<"$runs")"
-              test -n "$latest" || { pending=1; continue; }
+                --aggregate-event "$GITHUB_EVENT_NAME" \
+                --head-branch "$expected_head_branch" \
+                --head-repository "$GITHUB_REPOSITORY" <<<"$runs")"
+              test -n "$latest" || { pending=1; missing+=("$workflow"); continue; }
               status="$(jq -r '.status' <<<"$latest")"
               conclusion="$(jq -r '.conclusion // empty' <<<"$latest")"
               test "$status" = completed || { pending=1; continue; }
@@ -115,6 +132,27 @@ jobs:
               }
             done
             test "$pending" = 0 && exit 0
+            if [ "${#missing[@]}" -gt 0 ]; then
+              missing_streak=$((missing_streak + 1))
+            else
+              missing_streak=0
+            fi
+            if [ "$missing_streak" -ge "$missing_grace_attempts" ]; then
+              missing_csv="$(IFS=,; echo "${missing[*]}")"
+              echo "::error::required dependency workflows unavailable head=${HEAD_SHA} aggregate_event=${GITHUB_EVENT_NAME} producer_event=${producer_event} branch=${expected_head_branch} workflows=${missing_csv}"
+              {
+                echo "## Missing Merge Fact Dependencies"
+                echo ""
+                echo "| Field | Value |"
+                echo "| --- | --- |"
+                echo "| Head SHA | ${HEAD_SHA} |"
+                echo "| Aggregate event | ${GITHUB_EVENT_NAME} |"
+                echo "| Required producer event | ${producer_event} |"
+                echo "| Required source branch | ${expected_head_branch} |"
+                echo "| Missing workflows | ${missing_csv} |"
+              } >> "${GITHUB_STEP_SUMMARY}"
+              exit 1
+            fi
             sleep 20
           done
           echo "timed out waiting for exact-head fact workflows" >&2
@@ -130,7 +168,9 @@ jobs:
             echo "| Field | Value |"
             echo "| --- | --- |"
             echo "| Head SHA | ${HEAD_SHA} |"
-            echo "| Event | ${GITHUB_EVENT_NAME} |"
+            echo "| Aggregate event | ${GITHUB_EVENT_NAME} |"
+            echo "| Producer event | ${PRODUCER_EVENT} |"
+            echo "| Source branch | ${EXPECTED_HEAD_BRANCH} |"
             echo "| Workflows | public_guard, professional_quality_gate, frontend_release_gate |"
           } >> "${GITHUB_STEP_SUMMARY}"
 

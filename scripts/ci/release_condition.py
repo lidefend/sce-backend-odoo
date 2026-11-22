@@ -10,8 +10,10 @@ from typing import Any
 
 try:
     from scripts.ci.scheduled_validation import scheduled_slot
+    from scripts.ci.select_authoritative_workflow_run import resolve_producer_identity
 except ModuleNotFoundError:
     from scheduled_validation import scheduled_slot
+    from select_authoritative_workflow_run import resolve_producer_identity
 
 
 REQUIRED_WORKFLOWS = {
@@ -50,10 +52,12 @@ def build_condition(
     head_sha: str,
     tree: str,
     event: str,
+    head_branch: str,
     schedule_slot: str | None,
 ) -> dict[str, Any]:
     head_sha = _full_sha(head_sha, "head")
     tree = _full_sha(tree, "tree")
+    producer_event, head_branch = resolve_producer_identity(event, head_branch)
     by_workflow: dict[str, dict[str, Any]] = {}
     for run in runs:
         path = str(run.get("path") or "")
@@ -63,17 +67,21 @@ def build_condition(
             raise ValueError(f"duplicate workflow: {path}")
         if (run.get("repository") or {}).get("full_name") != repository:
             raise ValueError(f"repository mismatch: {path}")
+        if (run.get("head_repository") or {}).get("full_name") != repository:
+            raise ValueError(f"head repository mismatch: {path}")
         if run.get("head_sha") != head_sha:
             raise ValueError(f"head mismatch: {path}")
-        if run.get("event") != event:
+        if run.get("event") != producer_event:
             raise ValueError(f"event mismatch: {path}")
+        if run.get("head_branch") != head_branch:
+            raise ValueError(f"branch mismatch: {path}")
         if run.get("status") != "completed" or run.get("conclusion") != "success":
             raise ValueError(f"workflow is not successful: {path}")
         if type(run.get("id")) is not int or run["id"] <= 0:
             raise ValueError(f"invalid run id: {path}")
         if type(run.get("run_attempt")) is not int or run["run_attempt"] <= 0:
             raise ValueError(f"invalid run attempt: {path}")
-        if event == "schedule":
+        if producer_event == "schedule":
             if not schedule_slot:
                 raise ValueError("scheduled condition requires the observed slot")
             try:
@@ -101,6 +109,8 @@ def build_condition(
         "exact_head": head_sha,
         "exact_tree": tree,
         "event": event,
+        "producer_event": producer_event,
+        "head_branch": head_branch,
         "scheduled_slot_utc": schedule_slot,
         "required_workflows": [
             {
@@ -133,6 +143,7 @@ def main() -> int:
     parser.add_argument("--head-sha", required=True)
     parser.add_argument("--tree", required=True)
     parser.add_argument("--event", required=True)
+    parser.add_argument("--head-branch", required=True)
     parser.add_argument("--scheduled-slot")
     args = parser.parse_args()
     try:
@@ -142,6 +153,7 @@ def main() -> int:
             head_sha=args.head_sha,
             tree=args.tree,
             event=args.event,
+            head_branch=args.head_branch,
             schedule_slot=args.scheduled_slot,
         )
     except (OSError, ValueError) as exc:

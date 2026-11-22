@@ -57,6 +57,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )[0]
         self.assertIn("select_authoritative_workflow_run.py", wait_job)
         self.assertIn("actions/workflows/${workflow}/runs", wait_job)
+        self.assertIn('--aggregate-event "$GITHUB_EVENT_NAME"', wait_job)
+        self.assertIn('--head-branch "$expected_head_branch"', wait_job)
+        self.assertIn('--head-repository "$GITHUB_REPOSITORY"', wait_job)
+        self.assertIn("MISSING_DEPENDENCY_GRACE_ATTEMPTS", wait_job)
         self.assertNotIn('test "$count" = 1', aggregate)
         self.assertNotIn("continue-on-error:", aggregate)
 

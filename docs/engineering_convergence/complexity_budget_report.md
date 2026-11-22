@@ -21,11 +21,11 @@ Generated from repository source files. This report is informational during the 
 | 5026 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4811 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4013 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4014 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3726 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3727 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3615 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
@@ -193,8 +193,8 @@ Generated from repository source files. This report is informational during the 
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 989 | Python source | `scripts/ops/agent_run_context.py` |
 | 984 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
+| 983 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
-| 979 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
@@ -277,11 +277,11 @@ Generated from repository source files. This report is informational during the 
 | 5026 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 4811 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4013 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4014 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3726 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 3727 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3615 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |

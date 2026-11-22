@@ -14,6 +14,27 @@ except ModuleNotFoundError:
 from typing import Any
 
 
+PRODUCER_EVENT_BY_AGGREGATE = {
+    "schedule": "schedule",
+    "push": "push",
+    "pull_request": "pull_request",
+    "workflow_dispatch": "push",
+}
+
+
+def resolve_producer_identity(aggregate_event: str, head_branch: str | None) -> tuple[str, str]:
+    """Resolve the only producer event/branch approved for an aggregate run."""
+    try:
+        producer_event = PRODUCER_EVENT_BY_AGGREGATE[aggregate_event]
+    except KeyError as exc:
+        raise ValueError(f"unsupported aggregate event: {aggregate_event}") from exc
+    if not head_branch:
+        raise ValueError("aggregate selection requires the source branch")
+    if aggregate_event in {"schedule", "push", "workflow_dispatch"} and head_branch != "main":
+        raise ValueError(f"{aggregate_event} dependency must come from main")
+    return producer_event, head_branch
+
+
 def select_latest_run(
     payload: dict[str, Any],
     *,
@@ -22,6 +43,8 @@ def select_latest_run(
     head_sha: str,
     event: str,
     schedule_slot: str | None = None,
+    head_branch: str | None = None,
+    head_repository: str | None = None,
 ) -> dict[str, Any] | None:
     matches = []
     for run in payload.get("workflow_runs") or []:
@@ -36,6 +59,12 @@ def select_latest_run(
             continue
         if str(run.get("event") or "") != event:
             continue
+        if head_branch is not None and str(run.get("head_branch") or "") != head_branch:
+            continue
+        if head_repository is not None:
+            run_head_repository = run.get("head_repository") or {}
+            if str(run_head_repository.get("full_name") or "") != head_repository:
+                continue
         if schedule_slot:
             try:
                 if scheduled_slot(run.get('created_at', '')) != schedule_slot:
@@ -54,27 +83,49 @@ def main() -> int:
     parser.add_argument("--repository", required=True)
     parser.add_argument("--workflow-path", required=True)
     parser.add_argument("--head")
-    parser.add_argument("--event", required=True)
+    event_source = parser.add_mutually_exclusive_group(required=True)
+    event_source.add_argument("--event", help="Exact producer event to select")
+    event_source.add_argument(
+        "--aggregate-event",
+        help="Aggregate event whose approved producer identity should be selected",
+    )
+    parser.add_argument("--head-branch")
+    parser.add_argument("--head-repository")
     parser.add_argument("--history", action="store_true", help="Return successful producer history across candidates; not reuse authorization")
     args = parser.parse_args()
     payload = json.load(sys.stdin)
     if args.history:
+        if args.aggregate_event:
+            parser.error('--history requires an exact --event')
         json.dump(select_successful_history(payload, repository=args.repository,
             workflow_path=args.workflow_path, event=args.event, head_sha=args.head), sys.stdout,
             separators=(",", ":"), sort_keys=True)
         return 0
     if not args.head:
         parser.error('--head is required unless --history is selected')
-    slot = os.environ.get('SCHEDULED_SLOT') if args.event == 'schedule' else None
-    if args.event == 'schedule' and not slot:
+    if args.aggregate_event:
+        if not args.head_repository:
+            parser.error('--head-repository is required with --aggregate-event')
+        if args.head_repository != args.repository:
+            parser.error('--head-repository must match --repository')
+        try:
+            event, head_branch = resolve_producer_identity(args.aggregate_event, args.head_branch)
+        except ValueError as exc:
+            parser.error(str(exc))
+    else:
+        event, head_branch = args.event, args.head_branch
+    slot = os.environ.get('SCHEDULED_SLOT') if event == 'schedule' else None
+    if event == 'schedule' and not slot:
         parser.error('scheduled selection requires the observed SCHEDULED_SLOT')
     selected = select_latest_run(
         payload,
         repository=args.repository,
         workflow_path=args.workflow_path,
         head_sha=args.head,
-        event=args.event,
+        event=event,
         schedule_slot=slot,
+        head_branch=head_branch,
+        head_repository=args.head_repository,
     )
     if selected is not None:
         json.dump(selected, sys.stdout, separators=(",", ":"), sort_keys=True)

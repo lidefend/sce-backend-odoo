@@ -1,26 +1,41 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
+import subprocess
+import sys
 import unittest
+from pathlib import Path
 
 try:
-    from scripts.ci.select_authoritative_workflow_run import select_latest_run, select_successful_history
+    from scripts.ci.select_authoritative_workflow_run import (
+        resolve_producer_identity,
+        select_latest_run,
+        select_successful_history,
+    )
 except ModuleNotFoundError:  # direct `python scripts/ci/...` execution
-    from select_authoritative_workflow_run import select_latest_run, select_successful_history
+    from select_authoritative_workflow_run import (
+        resolve_producer_identity,
+        select_latest_run,
+        select_successful_history,
+    )
 
 
 REPOSITORY = "lidefend/sce-backend-odoo"
 WORKFLOW = ".github/workflows/public_guard.yml"
 HEAD = "a" * 40
+SCRIPT = Path(__file__).with_name("select_authoritative_workflow_run.py")
 
 
 def run(run_id: int, *, status: str, conclusion: str | None, **overrides):
     row = {
         "id": run_id,
         "repository": {"full_name": REPOSITORY},
+        "head_repository": {"full_name": REPOSITORY},
         "path": WORKFLOW,
         "head_sha": HEAD,
         "event": "pull_request",
+        "head_branch": "feature/candidate",
         "status": status,
         "conclusion": conclusion,
     }
@@ -29,6 +44,19 @@ def run(run_id: int, *, status: str, conclusion: str | None, **overrides):
 
 
 class AuthoritativeWorkflowRunTests(unittest.TestCase):
+    def test_aggregate_events_resolve_only_authorized_producer_identity(self):
+        self.assertEqual(("schedule", "main"), resolve_producer_identity("schedule", "main"))
+        self.assertEqual(("push", "main"), resolve_producer_identity("push", "main"))
+        self.assertEqual(("pull_request", "feature/candidate"),
+                         resolve_producer_identity("pull_request", "feature/candidate"))
+        self.assertEqual(("push", "main"), resolve_producer_identity("workflow_dispatch", "main"))
+        for aggregate, branch in (("push", "feature/candidate"),
+                                  ("workflow_dispatch", "feature/candidate"),
+                                  ("pull_request", None),
+                                  ("workflow_run", "main")):
+            with self.subTest(aggregate=aggregate, branch=branch), self.assertRaises(ValueError):
+                resolve_producer_identity(aggregate, branch)
+
     def test_scheduled_gate_never_accepts_previous_day_same_head(self):
         try:
             from scripts.ci.scheduled_validation import scheduled_slot, observation
@@ -58,6 +86,69 @@ class AuthoritativeWorkflowRunTests(unittest.TestCase):
             head_sha=HEAD,
             event="pull_request",
         )
+
+    def test_workflow_dispatch_reuses_exact_mainline_push_evidence(self):
+        selected = select_latest_run(
+            {"workflow_runs": [
+                run(1, status="completed", conclusion="success",
+                    event="workflow_dispatch", head_branch="main"),
+                run(2, status="completed", conclusion="success",
+                    event="push", head_branch="main"),
+            ]},
+            repository=REPOSITORY,
+            workflow_path=WORKFLOW,
+            head_sha=HEAD,
+            event="push",
+            head_branch="main",
+            head_repository=REPOSITORY,
+        )
+        self.assertEqual(2, selected["id"])
+        self.assertEqual("push", selected["event"])
+        self.assertEqual("main", selected["head_branch"])
+
+    def test_cli_aggregate_dispatch_selects_exact_mainline_push(self):
+        payload = {"workflow_runs": [
+            run(1, status="completed", conclusion="success",
+                event="workflow_dispatch", head_branch="main"),
+            run(2, status="completed", conclusion="success",
+                event="push", head_branch="main"),
+        ]}
+        proc = subprocess.run(
+            [
+                sys.executable,
+                str(SCRIPT),
+                "--repository", REPOSITORY,
+                "--workflow-path", WORKFLOW,
+                "--head", HEAD,
+                "--aggregate-event", "workflow_dispatch",
+                "--head-branch", "main",
+                "--head-repository", REPOSITORY,
+            ],
+            input=json.dumps(payload),
+            text=True,
+            capture_output=True,
+        )
+        self.assertEqual(0, proc.returncode, proc.stderr)
+        selected = json.loads(proc.stdout)
+        self.assertEqual(2, selected["id"])
+        self.assertEqual("push", selected["event"])
+
+    def test_cross_branch_and_cross_repository_runs_are_rejected(self):
+        rows = [
+            run(1, status="completed", conclusion="success",
+                event="pull_request", head_branch="feature/other"),
+            run(2, status="completed", conclusion="success",
+                event="pull_request", head_repository={"full_name": "other/repo"}),
+        ]
+        self.assertIsNone(select_latest_run(
+            {"workflow_runs": rows},
+            repository=REPOSITORY,
+            workflow_path=WORKFLOW,
+            head_sha=HEAD,
+            event="pull_request",
+            head_branch="feature/candidate",
+            head_repository=REPOSITORY,
+        ))
 
     def test_same_producer_old_cancelled_then_new_success_selects_success(self):
         selected = self.select(

@@ -492,6 +492,7 @@ RULES = (
         ".github/workflows/public_guard.yml",
         ".github/workflows/release_candidate_gate.yml",
         "scripts/ci/scheduled_validation.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
         "scripts/ci/test_select_authoritative_workflow_run.py",
     ), (
         "verify.ci.workflow.contract",
