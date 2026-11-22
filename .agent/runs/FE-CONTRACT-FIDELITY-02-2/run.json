@@ -130,7 +130,11 @@
     "scope_boundary": "No product source or backend contract file is modified in this batch.",
     "baseline_guard_exclusion": "verify.page_orchestration.target_completion.guard fails on unchanged main because it requires removed legacy tokens in workspace_home_contract_builder.py and WorkbenchView.vue. Classified as validation_tool_defect and excluded from this probe evidence."
   },
-  "next_exact_step": "Run the registered read-only guards, commit the probe report and machine matrix, publish the exact candidate for independent contract-boundary review, and do not start FCF-02-2 product implementation.",
+  "next_exact_step": "Await independent review of PR #972 at its final exact metadata head. Do not start FCF-02-2 product implementation while CFG-GAP-02, CFG-GAP-04 and CFG-GAP-05 remain contract gaps.",
   "write_replay_authorized": false,
-  "candidate_evidence": false
+  "candidate_evidence": false,
+  "integration": {
+    "pull_request": 972,
+    "initial_candidate_head": "1e4d3e4a45ab0e2baf10b7120199d47b6896ea74"
+  }
 }

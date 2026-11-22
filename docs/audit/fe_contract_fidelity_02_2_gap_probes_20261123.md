@@ -5,6 +5,8 @@
 Status: probe complete; contract gaps confirmed; FCF-02-2 product implementation
 remains locked pending P0 producer remediation and independent review.
 
+Review candidate: PR #972.
+
 Baseline:
 
 - Mainline after FCF-02-1:

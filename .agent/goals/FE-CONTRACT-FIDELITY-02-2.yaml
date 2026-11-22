@@ -52,9 +52,11 @@ goal:
     Remove the probe report, machine matrix and run metadata. No product or
     persisted runtime state requires rollback.
   completion:
-    probe_batch: pending_report_commit
+    probe_batch: verification_pending
     independent_review: not_started
     product_batch_fcf_02_2: blocked_on_contract_gap
     mainline_integration: not_started
     deployment: not_applicable
     user_acceptance: not_applicable
+  integration:
+    pull_request: 972
