@@ -343,6 +343,38 @@
       "expectation": "invalid",
       "evidence": "executed_schema_validation",
       "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-REFERENCE-VALID",
+      "consumer": "strict descriptor schema and semantic-registry layer",
+      "payload": "reference semantic sharing the registered readable display component",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-FALLBACK-WIDGET-VALID",
+      "consumer": "strict descriptor widget-vocabulary projection",
+      "payload": "declared fallback native widget",
+      "expectation": "valid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-ACTION-SEMANTIC-EXCLUDED",
+      "consumer": "strict descriptor field-semantic scope",
+      "payload": "action semantic and action field type inside a field descriptor",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
+    },
+    {
+      "id": "DESC-UNKNOWN-WIDGET",
+      "consumer": "strict descriptor widget-vocabulary projection",
+      "payload": "widget type absent from semantic.yaml.native_widgets",
+      "expectation": "invalid",
+      "evidence": "executed_schema_validation",
+      "owner": "P4 design validation"
     }
   ]
 }

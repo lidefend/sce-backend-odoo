@@ -2,6 +2,8 @@
   "schema": "p0_contract_producer_01.field_descriptor_cases.v1",
   "validation_layers": [
     "structural_schema",
+    "field_semantic_scope",
+    "native_widget_vocabulary",
     "semantic_registry"
   ],
   "cases": [
@@ -294,6 +296,65 @@
         "semanticType": "money",
         "digits": [16, 2],
         "currencyField": "currency_id"
+      }
+    },
+    {
+      "id": "DESC-REFERENCE-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.partner_reference",
+        "label": "合作方引用",
+        "fieldType": "many2one_reference",
+        "widgetType": "display",
+        "componentKey": "sc.display.text",
+        "semanticType": "reference",
+        "relation": "res.partner"
+      }
+    },
+    {
+      "id": "DESC-FALLBACK-WIDGET-VALID",
+      "expect": "valid",
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.is_favorite",
+        "label": "收藏",
+        "fieldType": "boolean",
+        "widgetType": "boolean_toggle",
+        "componentKey": "sc.input.boolean",
+        "semanticType": "boolean"
+      }
+    },
+    {
+      "id": "DESC-ACTION-SEMANTIC-EXCLUDED",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.submit_action",
+        "label": "提交",
+        "fieldType": "action",
+        "widgetType": "button",
+        "componentKey": "sc.button.action",
+        "semanticType": "action"
+      }
+    },
+    {
+      "id": "DESC-UNKNOWN-WIDGET",
+      "expect": "invalid",
+      "failed_by": [
+        "structural_schema"
+      ],
+      "descriptor": {
+        "schemaVersion": "1.0.0",
+        "fieldCode": "project.total",
+        "label": "项目总数",
+        "fieldType": "integer",
+        "widgetType": "mystery_widget",
+        "componentKey": "sc.input.number",
+        "semanticType": "number"
       }
     }
   ]

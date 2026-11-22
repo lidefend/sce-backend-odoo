@@ -305,14 +305,36 @@ The strict schema file is
 The existing TypeScript interface is extended in place; no parallel descriptor
 type is permitted.
 
-Descriptor validity has two layers. The JSON Schema validates shape, required
-fields and conditional rules. The same decoder then resolves `semanticType`,
-`componentKey` and `fieldType` against the existing
-`contracts/registry/semantic.yaml` and `contracts/registry/component.yaml`
-declarations. The schema's `semanticType` enum is a test-checked projection of
-`semantic.yaml`; the registry remains the sole vocabulary authority. Adding an
-industry or customer semantic therefore updates the contract registry and its
-validated projection rather than creating a second semantic list.
+Descriptor validity has four checks. The JSON Schema validates shape, required
+fields and conditional rules. Two test-checked projections constrain the
+applicable field semantics and the complete native Widget vocabulary. The same
+decoder then resolves `semanticType`, `componentKey` and `fieldType` against
+the existing `contracts/registry/semantic.yaml` and
+`contracts/registry/component.yaml` declarations. The schema enums are
+projections of those registries, which remain the sole vocabulary authority.
+Adding an industry or customer semantic therefore updates the contract
+registry and its validated projection rather than creating a second semantic
+list.
+
+The semantic registry also declares action-only semantics. `action` and
+`support_action` are not field semantics: they belong to the P0-C action and
+feedback contract. The Field Descriptor schema therefore projects only
+semantics whose canonical component supports at least one non-action field
+type. `fieldType=action` is not a valid field-descriptor type. This is an
+explicit responsibility boundary, not a missing semantic declaration.
+
+`widgetType` uses the existing `semantic.yaml.native_widgets` vocabulary as its
+sole authority. The schema enum is a test-checked projection of every declared
+widget token; no second widget-name list exists. The declared `ready`,
+`fallback` or `unsupported` status remains separate semantic data. An
+`unsupported` token is not reinterpreted as supported; its consumer continues
+to fail closed. Unknown widget names are rejected by the strict decoder.
+
+Component consistency is resolved through the explicit
+`semantic.yaml.semantics[semanticType].component` mapping, with
+`component.yaml.components[componentKey].field_types` validating the field
+type. Shared components are legitimate when the semantic registry declares
+multiple semantics for them, as with `reference` and `readable_value`.
 
 Required descriptor fields:
 
@@ -343,7 +365,9 @@ The strict decoder must also reject:
 
 - unknown properties;
 - unknown `semanticType` values;
+- action-only semantics in a field descriptor;
 - component/semantic registry mismatches;
+- unknown `widgetType` values outside `native_widgets`;
 - malformed `digits`;
 - unsupported descriptor schema versions;
 - conditional-field inconsistencies.
@@ -758,7 +782,7 @@ Rollback:
 Read-only design verification passed:
 
 - Contract Fidelity plan plus P0 design consistency: 21 Python tests.
-- Strict Descriptor structural and registry validation: 18 positive/negative
+- Strict Descriptor structural and registry validation: 22 positive/negative
   fixture cases.
 - Semantic registry lint: PASS; 28 semantics and 33 components remain
   consistent with their generated frontend and backend projections.
@@ -771,7 +795,7 @@ Read-only design verification passed:
 - Real current Decoder checks: 4 checks; old projection accepted, `2.6.0` and
   two undeclared carriers rejected.
 - Machine design reconciliation: 3 packages, 56 planned positive/negative
-  cases, 38 compatibility rows and 27 current-source hashes.
+  cases, 42 compatibility rows and 27 current-source hashes.
 - `ci.local.iteration`: PASS.
 - `ci.delivery.freeze.prepare`: PASS.
 

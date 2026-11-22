@@ -131,6 +131,29 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         cls.component_registry = yaml.safe_load((ROOT / cls.COMPONENT_REGISTRY_PATH).read_text(encoding="utf-8"))
         cls.packages = {item["id"]: item for item in cls.design["work_packages"]}
 
+    def descriptor_field_semantics(self) -> dict[str, dict]:
+        semantics = self.semantic_registry["semantics"]
+        components = self.component_registry["components"]
+        field_semantics: dict[str, dict] = {}
+        for semantic_type, declaration in semantics.items():
+            component_key = declaration.get("component")
+            component = components.get(component_key)
+            if not isinstance(component, dict) or component.get("kind"):
+                continue
+            supported = component.get("field_types", [])
+            if "*" in supported or any(field_type != "action" for field_type in supported):
+                field_semantics[semantic_type] = {
+                    "component": component_key,
+                    "supported_field_types": supported,
+                }
+        return field_semantics
+
+    def descriptor_widget_statuses(self) -> dict[str, str]:
+        return {
+            widget_type: str(declaration["status"])
+            for widget_type, declaration in self.semantic_registry["native_widgets"].items()
+        }
+
     def descriptor_registry_errors(self, descriptor: dict) -> list[str]:
         errors: list[str] = []
         semantic_type = descriptor.get("semanticType")
@@ -138,19 +161,23 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         field_type = descriptor.get("fieldType")
         semantics = self.semantic_registry["semantics"]
         components = self.component_registry["components"]
+        field_semantics = self.descriptor_field_semantics()
         component = components.get(component_key)
-        if semantic_type not in semantics:
+        if semantic_type in semantics and semantic_type not in field_semantics:
+            errors.append(f"semanticType {semantic_type!r} is an action-only semantic owned by P0-C")
+        elif semantic_type not in field_semantics:
             errors.append(f"semanticType {semantic_type!r} is not declared")
-        elif semantics[semantic_type].get("component") != component_key:
+        elif field_semantics[semantic_type]["component"] != component_key:
             errors.append(f"semanticType {semantic_type!r} does not resolve to {component_key!r}")
         if not isinstance(component, dict) or component.get("kind"):
             errors.append(f"componentKey {component_key!r} is not a registered field component")
-        elif component.get("semantic") != semantic_type:
-            errors.append(f"componentKey {component_key!r} does not declare semanticType {semantic_type!r}")
         else:
             supported = component.get("field_types", [])
             if "*" not in supported and field_type not in supported:
                 errors.append(f"componentKey {component_key!r} does not support fieldType {field_type!r}")
+        widget_type = descriptor.get("widgetType")
+        if widget_type not in self.descriptor_widget_statuses():
+            errors.append(f"widgetType {widget_type!r} is not declared by semantic.yaml.native_widgets")
         digits = descriptor.get("digits")
         if isinstance(digits, list) and len(digits) == 2 and all(isinstance(item, int) for item in digits):
             if digits[0] < 1 or digits[1] < 0 or digits[1] > digits[0]:
@@ -255,7 +282,12 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         self.assertIn("FIELD_DESCRIPTOR_UNKNOWN_KEY", schema_contract["error_codes"])
         self.assertEqual(
             set(schema_contract["validation_layers"]),
-            {"structural_schema", "semantic_registry"},
+            {
+                "structural_schema",
+                "field_semantic_scope",
+                "native_widget_vocabulary",
+                "semantic_registry",
+            },
         )
         self.assertEqual(
             schema_contract["semantic_registry_source"]["semantic_declaration"],
@@ -266,6 +298,18 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             "contracts/registry/component.yaml",
         )
         self.assertIn("validated projection", schema_contract["semantic_registry_source"]["schema_enum_role"])
+        self.assertEqual(
+            set(schema_contract["field_semantic_scope"]["action_only_semantics"]),
+            {"action", "support_action"},
+        )
+        self.assertTrue(schema_contract["field_semantic_scope"]["field_descriptor_cannot_define_actions"])
+        self.assertEqual(
+            schema_contract["widget_type_authority"]["property"],
+            "native_widgets",
+        )
+        self.assertIn("every key", schema_contract["widget_type_authority"]["admissible_vocabulary"])
+        self.assertEqual(schema_contract["widget_type_authority"]["unknown_widget_type"], "reject")
+        self.assertIn("FIELD_DESCRIPTOR_WIDGET_UNKNOWN", schema_contract["error_codes"])
         self.assertIn(
             "const fieldDescriptor = optionalRecord(raw, 'fieldDescriptor'",
             (ROOT / "frontend/apps/web/src/app/contracts/v2/schema.ts").read_text(encoding="utf-8"),
@@ -275,9 +319,32 @@ class P0ContractProducerDesignTest(unittest.TestCase):
         Draft202012Validator.check_schema(self.descriptor_schema)
         validator = Draft202012Validator(self.descriptor_schema)
         self.assertFalse(self.descriptor_schema["additionalProperties"])
+        field_semantics = self.descriptor_field_semantics()
+        action_only_semantics = set(self.semantic_registry["semantics"]) - set(field_semantics)
+        self.assertEqual(action_only_semantics, {"action", "support_action"})
+        schema_field_types = set(self.descriptor_schema["properties"]["fieldType"]["enum"])
+        self.assertNotIn("action", schema_field_types)
         self.assertEqual(
             set(self.descriptor_schema["properties"]["semanticType"]["enum"]),
-            set(self.semantic_registry["semantics"]),
+            set(field_semantics),
+        )
+        registry_field_types = {
+            field_type
+            for component in self.component_registry["components"].values()
+            if isinstance(component, dict) and not component.get("kind")
+            for field_type in component.get("field_types", [])
+            if field_type not in {"action", "*"}
+        }
+        for semantic_type, declaration in field_semantics.items():
+            supported = set(declaration["supported_field_types"])
+            if "*" not in supported:
+                self.assertTrue(supported & schema_field_types, semantic_type)
+        self.assertTrue(
+            registry_field_types.issubset(schema_field_types),
+        )
+        self.assertEqual(
+            set(self.descriptor_schema["properties"]["widgetType"]["enum"]),
+            set(self.descriptor_widget_statuses()),
         )
         self.assertEqual(
             set(self.descriptor_schema["required"]),
@@ -306,7 +373,7 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             for row in self.matrix["cases"]
             if row["evidence"] == "executed_schema_validation"
         }
-        self.assertEqual(len(expected), 18)
+        self.assertEqual(len(expected), 22)
         self.assertEqual(schema_matrix, expected)
 
     def test_p0_b_keeps_attachment_identities_separate(self) -> None:

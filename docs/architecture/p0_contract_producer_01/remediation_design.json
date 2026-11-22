@@ -264,6 +264,8 @@
           "decode_equivalence": "the same descriptor input through either reference must return the same normalized ContractV2FieldDescriptor",
           "validation_layers": {
             "structural_schema": "validate the strict descriptor shape, required fields and cross-field conditional rules",
+            "field_semantic_scope": "project only non-action field semantics from the semantic registry into the descriptor",
+            "native_widget_vocabulary": "project the complete semantic.yaml.native_widgets vocabulary into the descriptor",
             "semantic_registry": "resolve semanticType and componentKey against the existing contract registry and validate supported field types and digits"
           },
           "semantic_registry_source": {
@@ -271,6 +273,23 @@
             "component_declaration": "contracts/registry/component.yaml",
             "authority": "the registry remains the sole semantic and component vocabulary authority",
             "schema_enum_role": "the schema enum is a validated projection of semantic.yaml, not an independent vocabulary"
+          },
+          "field_semantic_scope": {
+            "rule": "include only semantics whose canonical component supports at least one non-action field type",
+            "schema_enum_role": "validated projection of the applicable field-semantic subset",
+            "action_only_semantics": {
+              "action": "P0-C action and feedback contract",
+              "support_action": "P0-C support action contract"
+            },
+            "field_descriptor_cannot_define_actions": true
+          },
+          "widget_type_authority": {
+            "declaration": "contracts/registry/semantic.yaml",
+            "property": "native_widgets",
+            "admissible_vocabulary": "every key declared by native_widgets",
+            "schema_enum_role": "validated projection of native_widgets, not a second widget-name list",
+            "status_authority": "the declared ready, fallback or unsupported status remains runtime semantic data; an unsupported status is fail-closed by its consumer and is not reinterpreted as a supported component",
+            "unknown_widget_type": "reject"
           },
           "shared_by": [
             "decodeContractV2Widget.fieldDescriptor",
@@ -348,7 +367,8 @@
             "FIELD_DESCRIPTOR_UNKNOWN_KEY",
             "FIELD_DESCRIPTOR_TYPE_INVALID",
             "FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED",
-            "FIELD_DESCRIPTOR_SEMANTIC_MISMATCH"
+            "FIELD_DESCRIPTOR_SEMANTIC_MISMATCH",
+            "FIELD_DESCRIPTOR_WIDGET_UNKNOWN"
           ],
           "digit_rules": [
             "exactly two integers",
