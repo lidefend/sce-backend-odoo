@@ -1,0 +1,275 @@
+{
+  "schema": "fe_expression_03b.cross_page_semantic_audit.v1",
+  "baseline_sha": "a408177cde91a6435d5e57a63c50dc35c2e5ce14",
+  "evidence_level": "SOURCE_VERIFIED_STATIC_VERIFIED",
+  "product_source_modified": false,
+  "browser_acceptance_claimed": false,
+  "authorities": [
+    "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/utils/display.ts"
+  ],
+  "consumers": [
+    {
+      "path": "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+      "semantics": ["duration", "status-tone", "temporal", "boolean", "numeric"],
+      "status": "partial"
+    },
+    {
+      "path": "frontend/apps/web/src/app/presentation/collectionKanbanPresentation.ts",
+      "semantics": ["money", "status", "selection", "temporal", "duration", "boolean"],
+      "status": "declared-presenter"
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts",
+      "semantics": ["money", "temporal", "duration", "selection", "boolean", "relation"],
+      "status": "partial"
+    },
+    {
+      "path": "frontend/apps/web/src/components/professional-fields/ProfessionalBusinessValueControl.vue",
+      "semantics": ["money", "percentage", "duration", "status"],
+      "status": "declared-presenter"
+    },
+    {
+      "path": "frontend/apps/web/src/components/FieldValue.vue",
+      "semantics": ["money", "generic"],
+      "status": "two-interpreter-boundary"
+    },
+    {
+      "path": "frontend/apps/web/src/components/template/FormSection.vue",
+      "semantics": ["money", "generic"],
+      "status": "two-interpreter-boundary"
+    },
+    {
+      "path": "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts",
+      "semantics": ["money", "datetime", "text"],
+      "status": "local-fallback"
+    },
+    {
+      "path": "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+      "semantics": ["raw-value", "unit"],
+      "status": "bypass"
+    },
+    {
+      "path": "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue",
+      "semantics": ["money", "empty-zero"],
+      "status": "local-override"
+    },
+    {
+      "path": "frontend/apps/web/src/pages/contractForm/professionalAuditModel.ts",
+      "semantics": ["datetime"],
+      "status": "local-formatter"
+    }
+  ],
+  "matrix": {
+    "money": {
+      "form": "declared",
+      "list": "cell-declared-footer-risk",
+      "kanban": "declared",
+      "one2many": "declared-fail-closed",
+      "detail_workbench": "mixed"
+    },
+    "percentage": {
+      "form": "declared",
+      "list": "identity-dropped",
+      "kanban": "identity-dropped",
+      "one2many": "ordinary-number",
+      "detail_workbench": "local-format"
+    },
+    "float_precision": {
+      "form": "fixed-two-decimals",
+      "list": "fixed-two-decimals",
+      "kanban": "fixed-two-decimals",
+      "one2many": "fixed-two-decimals",
+      "detail_workbench": "fixed-two-decimals"
+    },
+    "duration": {
+      "form": "declared",
+      "list": "declared",
+      "kanban": "declared",
+      "one2many": "declared",
+      "detail_workbench": "mixed"
+    },
+    "status": {
+      "form": "declared-fail-closed",
+      "list": "label-local-tone-partial-fail-closed",
+      "kanban": "declared-fail-closed",
+      "one2many": "declared-label",
+      "my_work": "backend-label-shared-tone"
+    },
+    "temporal": {
+      "form": "full",
+      "list": "compact",
+      "kanban": "compact",
+      "one2many": "compact",
+      "detail": "full",
+      "audit_collaboration": "browser-local-time"
+    },
+    "selection_boolean": {
+      "form": "mixed",
+      "list": "partial-fail-closed",
+      "kanban": "declared-fail-closed",
+      "one2many": "declared",
+      "detail": "raw-selection-fallback"
+    },
+    "empty_zero": {
+      "form": "shared-empty",
+      "list": "zero-preserved",
+      "kanban": "shared-empty",
+      "one2many": "shared-empty",
+      "payment_introduction": "missing-becomes-zero-and-zero-fallback"
+    },
+    "relations": {
+      "form": "record-identity",
+      "list": "display-values-or-tuple-label",
+      "kanban": "tuple-label",
+      "one2many": "dedicated-fail-closed",
+      "generic_detail": "bare-id-difference"
+    }
+  },
+  "findings": [
+    {
+      "id": "F01",
+      "priority": "P1",
+      "title": "collection projection drops declared percentage identity",
+      "owner": "frontend",
+      "evidence": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts:278-294",
+        "frontend/apps/web/scripts/contract_shape_projection_test.ts:139-164",
+        "addons/smart_construction_core/views/core/cost_domain_views.xml:600"
+      ],
+      "impact": "Form uses % while List, Kanban and One2many do not"
+    },
+    {
+      "id": "F02",
+      "priority": "P1",
+      "title": "float and quantity precision is fixed at two decimals",
+      "owner": "backend_projection_and_frontend",
+      "evidence": [
+        "frontend/apps/web/src/utils/fieldSemantics.ts:129-140",
+        "addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py:584-590",
+        "addons/smart_construction_core/models/core/general_contract.py:119",
+        "addons/smart_construction_core/models/core/cost_plan.py:582-595"
+      ],
+      "impact": "rates and quantities lose declared precision"
+    },
+    {
+      "id": "F03",
+      "priority": "P1",
+      "title": "generic and contract-aware value interpreters diverge",
+      "owner": "frontend",
+      "evidence": [
+        "frontend/apps/web/src/utils/display.ts:243-272",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts:339-350",
+        "frontend/apps/web/src/components/FieldValue.vue:41-51"
+      ],
+      "impact": "unknown selections and bare relations expose different values"
+    },
+    {
+      "id": "F04",
+      "priority": "P1",
+      "title": "page metric rows discard declared units",
+      "owner": "frontend",
+      "evidence": [
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue:62-75",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_metrics_builder.py:67-80"
+      ],
+      "impact": "money and percentages render as bare numbers"
+    },
+    {
+      "id": "F05",
+      "priority": "P1",
+      "title": "payment introduction confuses empty zero and fallback amount",
+      "owner": "frontend",
+      "evidence": [
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue:47",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue:122",
+        "frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue:272-280"
+      ],
+      "impact": "missing and zero financial amounts display incorrectly"
+    },
+    {
+      "id": "F06",
+      "priority": "P1",
+      "title": "list aggregate footer uses one row currency",
+      "owner": "frontend_and_contract",
+      "evidence": [
+        "frontend/apps/web/src/pages/ListPage.vue:1999-2011"
+      ],
+      "impact": "mixed-currency list totals can be mislabelled"
+    },
+    {
+      "id": "F07",
+      "priority": "P2",
+      "title": "audit and collaboration timestamps use browser-local formatting",
+      "owner": "frontend_and_contract",
+      "evidence": [
+        "frontend/apps/web/src/pages/contractForm/professionalAuditModel.ts:28-35",
+        "frontend/apps/web/src/pages/contractForm/professionalCollaborationModel.ts:106-118"
+      ],
+      "impact": "the same timestamp can show different times by surface"
+    },
+    {
+      "id": "F08",
+      "priority": "P2",
+      "title": "My Work silently defaults money precision",
+      "owner": "frontend_and_contract",
+      "evidence": [
+        "frontend/apps/web/src/app/presentation/productMyWorkPresentation.ts:11-26",
+        "frontend/apps/web/src/api/myWork.ts:110-115"
+      ],
+      "impact": "missing digits become two decimals"
+    },
+    {
+      "id": "F09",
+      "priority": "P2",
+      "title": "bare relation IDs have inconsistent product rendering",
+      "owner": "contract_and_frontend",
+      "evidence": [
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts:924-932",
+        "frontend/apps/web/src/utils/display.ts:253-272"
+      ],
+      "impact": "internal IDs can appear or arrays can be misread"
+    },
+    {
+      "id": "F10",
+      "priority": "P2",
+      "title": "page-block and analysis surfaces stringify raw values",
+      "owner": "frontend_and_page_contract",
+      "evidence": [
+        "frontend/apps/web/src/components/page/blocks/BlockRecordSummary.vue:51-62",
+        "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue:60-72",
+        "frontend/apps/web/src/app/contracts/actionViewAnalysisContract.ts:56-64"
+      ],
+      "impact": "typed values lose units dates status labels and relation identity"
+    }
+  ],
+  "contract_gaps": [
+    "attachment-count cellRole/componentKey",
+    "mixed-currency aggregate semantics",
+    "float digits and precision projection",
+    "relation display carrier requiring identity and label",
+    "user timezone and display profile",
+    "page-block value type currency and relation declarations"
+  ],
+  "legitimate_differences": [
+    "compact versus full temporal profile",
+    "readonly versus editable input shape",
+    "status badge versus plain text",
+    "relation tags versus scalar relation label",
+    "summary emphasis versus list density"
+  ],
+  "recommended_batches": [
+    "Collection semantic identity and precision",
+    "Empty zero and relation fail-closed behavior",
+    "Page block units and aggregate authority",
+    "Temporal presentation contract"
+  ],
+  "verification": [
+    "verify.frontend.contract_shape_projection.unit",
+    "verify.frontend.business_semantics.unit",
+    "verify.frontend.state_dashboard.unit",
+    "verify.frontend.localized_display.unit"
+  ]
+}

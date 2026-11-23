@@ -1,0 +1,34 @@
+schema_version: 1
+
+goal:
+  id: FE-EXPRESSION-03B-20261122
+  title: cross_page_business_semantic_consistency_audit
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Generic frontend business-value, collection, form, relation, status and
+    page-block consumption of declared runtime contracts.
+  module:
+    - frontend/apps/web
+    - docs/audit
+    - .agent
+  standard_vs_user_specific: platform_generic_frontend_runtime
+  objective: >-
+    Establish a source-verified cross-page matrix proving whether one business
+    semantic has one authoritative interpretation across Form, List, Kanban,
+    One2many, readonly detail and My Work, and classify every bypass as product
+    defect, contract gap, legitimate presentation difference or no defect.
+  exclusions:
+    - no product source modification in phase 1
+    - no backend contract or business-rule change
+    - no new Renderer, Registry, Runtime, Bundle or page engine
+    - no browser PASS claim without exact runtime evidence
+    - no implementation of FE-EXPRESSION-03C
+  rollback: >-
+    Remove this audit branch. No product, database, deployment or runtime state
+    is changed by the audit.
+  completion:
+    diagnosis: completed
+    independent_review: pending
+    implementation: not_started
+    mainline_integration: not_started

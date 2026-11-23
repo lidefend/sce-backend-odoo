@@ -5,6 +5,7 @@
     "audit/fe-contract-runtime-00-20261012": ".agent/runs/FE-CONTRACT-RUNTIME-00/run.json",
     "feature/p0-contract-producer-01-design-20261123": ".agent/runs/P0-CONTRACT-PRODUCER-01/run.json",
     "audit/fe-renderer-02c-02a-thin-adapter-adr-20261108": ".agent/runs/FE-RENDERER-02C-02A/run.json",
+    "audit/fe-expression-03b-cross-page-20261122": ".agent/runs/FE-EXPRESSION-03B-20261122/run.json",
     "audit/FE-RUNTIME-RESEARCH-01-R09-20261122": ".agent/runs/ACCEPTANCE-RUNTIME-CLOSE-01-20261122/run.json",
     "feature/p0-contract-producer-01-p0c-action-feedback-20261123": ".agent/runs/P0-CONTRACT-PRODUCER-01-P0C/run.json",
     "feature/p0-c-fix-01-action-id-chain-20261123": ".agent/runs/P0-C-FIX-01-ACTION-ID-CHAIN/run.json",
