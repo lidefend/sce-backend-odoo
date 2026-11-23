@@ -1,0 +1,81 @@
+{
+  "schema_version": 2,
+  "id": "VERIFICATION-LANE-ROUTING-20261124",
+  "branch": "feature/verification-lane-routing-20261124",
+  "baseline_sha": "8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9",
+  "status": "active",
+  "goal": ".agent/goals/VERIFICATION-LANE-ROUTING-20261124.yaml",
+  "record": "docs/ops/iterations/verification_lane_routing_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/VERIFICATION-LANE-ROUTING-20261124.yaml",
+    ".agent/runs/VERIFICATION-LANE-ROUTING-20261124/run.json",
+    "docs/ops/iterations/verification_lane_routing_20261124.md",
+    "make/ci.mk",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository checks and run receipts; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate impact routing, policy failure cases and local iteration completeness."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P4 candidate must pass against the current target base before merge."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Release qualification remains separate from local routing verification."
+    }
+  },
+  "checks": {
+    "planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/ci.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "policy_unit": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "AGENTS.md",
+        "docs/ops/iteration_validation_responsibility_v1.md"
+      ],
+      "kind": "offline"
+    },
+    "lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the P4 routing candidate, publish the exact HEAD and wait for required remote CI.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

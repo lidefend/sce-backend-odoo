@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import json
+import re
 import tempfile
 import unittest
 from pathlib import Path
@@ -159,6 +160,35 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                 self.assertTrue(any(
                     target in error
                     and "verify.frontend.systemic.convergence.static" in error
+                    for error in guard.validate(root)
+                ))
+
+    def test_lane_coverage_must_be_planner_routed(self) -> None:
+        command = guard.PLANNER_ROUTED_COMMANDS[0]
+        for target in (
+            "ci.local.iteration",
+            "ci.local.backend.iteration",
+            "ci.local.frontend.iteration",
+        ):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                path = root / "make/ci.mk"
+                text = path.read_text()
+                header = re.search(
+                    rf"(?m)^{re.escape(target)}:[^\n]*\n",
+                    text,
+                )
+                self.assertIsNotNone(header)
+                text = (
+                    text[:header.end()]
+                    + "\t@" + command + "\n"
+                    + text[header.end():]
+                )
+                path.write_text(text)
+                self.assertTrue(any(
+                    target in error
+                    and "through the impact planner" in error
                     for error in guard.validate(root)
                 ))
 

@@ -30,6 +30,8 @@ from scripts.verify.frontend_dev_incremental import (
     print_plan,
     remote_integration_targets,
     remote_scope_projection,
+    reusable_execution_results,
+    reusable_execution_targets,
     select_targets,
     select_channel_targets,
     select_iteration_targets,
@@ -115,6 +117,33 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertTrue(partition["sharedContract"])
         self.assertTrue(set(partition["sharedContract"]) <= set(partition["frontend"]))
 
+    def test_lane_coverage_is_selected_only_for_verification_surface_changes(self):
+        demo_paths = [
+            "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+            "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+        ]
+        for path in demo_paths:
+            with self.subTest(path=path):
+                self.assertNotIn(
+                    "audit.verification.lane_coverage.check",
+                    select_iteration_targets([path]),
+                )
+
+        for path in (
+            "make/ci.mk",
+            ".github/workflows/professional_quality_gate.yml",
+            "scripts/audit/verification_lane_dispositions.json",
+            "scripts/verify/registry.yaml",
+            "scripts/verify/frontend_dev_incremental.py",
+            "scripts/ops/local_quick_evidence.py",
+            "docs/audit/guard_registry/guard_registry.json",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "audit.verification.lane_coverage.check",
+                    select_iteration_targets([path]),
+                )
+
     def test_backend_and_frontend_channels_keep_deferred_module_baseline(self):
         targets = select_iteration_targets([
             "addons/smart_core/handlers/business_config_change_set.py",
@@ -197,6 +226,62 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             ["unexpected/runtime/loader.py"],
             unknown["unknownPaths"],
+        )
+
+    def test_covering_reusable_check_satisfies_its_selected_subcheck(self):
+        checks = {
+            "lane_coverage": {
+                "target": "verify.verification.lane_coverage",
+                "status": "reusable",
+                "source_receipt": ".runtime/EXAMPLE/lane_coverage.json",
+                "source_log": ".runtime/lane_coverage.log",
+                "source_log_sha256": "a" * 64,
+            },
+        }
+        required = {"audit.verification.lane_coverage.check"}
+        reusable, covered_by = reusable_execution_targets(required, checks)
+        self.assertEqual(required, reusable)
+        self.assertEqual(
+            {
+                "audit.verification.lane_coverage.check":
+                    "verify.verification.lane_coverage",
+            },
+            covered_by,
+        )
+        row = reusable_execution_results(
+            checks,
+            reusable,
+            covered_by,
+        )["audit.verification.lane_coverage.check"]
+        self.assertEqual(
+            "audit.verification.lane_coverage.check",
+            row["target"],
+        )
+        self.assertIn(
+            "verify.verification.lane_coverage",
+            row["reuseReason"],
+        )
+
+    def test_plan_does_not_execute_a_subcheck_covered_by_a_reusable_check(self):
+        output = io.StringIO()
+        with redirect_stdout(output):
+            print_plan(
+                ["make/ci.mk"],
+                checks={
+                    "lane_coverage": {
+                        "target": "verify.verification.lane_coverage",
+                        "status": "reusable",
+                    },
+                },
+            )
+        payload = json.loads(output.getvalue().split("] ", 1)[1])
+        subcheck = "audit.verification.lane_coverage.check"
+        self.assertIn(subcheck, payload["reusedTargets"])
+        self.assertNotIn(subcheck, payload["targets"])
+        self.assertNotIn(subcheck, payload["registrationMissingTargets"])
+        self.assertEqual(
+            "verify.verification.lane_coverage",
+            payload["reusedTargetCoverage"][subcheck],
         )
 
     def test_local_channels_and_remote_exact_scope_use_the_same_path_facts(self):
@@ -304,9 +389,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
             control_remote["tool_checks"],
         )
+        self.assertNotIn("verify.ci.workflow.contract", control_targets)
         self.assertEqual(
             set(control_targets),
-            set(control_partition["shared"]),
+            set(control_partition["backend"]) | set(control_partition["frontend"]),
         )
 
     def test_remote_entries_preserve_exact_head_scope_and_owner_execution(self):
@@ -2509,10 +2595,19 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    [
-                        "verify.agent.resume.unit",
-                        "verify.frontend.dev.incremental.unit",
-                    ],
+                    ["verify.frontend.dev.incremental.unit"],
+                )
+
+    def test_agent_run_context_change_routes_to_its_own_unit(self) -> None:
+        for path in (
+            "scripts/ops/agent_run_context.py",
+            "scripts/verify/test_agent_run_context.py",
+            "scripts/ops/generated_evidence_paths.py",
+        ):
+            with self.subTest(path=path):
+                self.assertIn(
+                    "verify.agent.resume.unit",
+                    select_targets([path]),
                 )
 
     def test_scenario_composition_paths_keep_their_responsibility_targets(self) -> None:
@@ -2727,8 +2822,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["make/ci.mk"]),
             [
                 "verify.baseline.iteration.execution.policy",
-                "verify.ci.workflow.contract",
+                "verify.frontend.dev.incremental.unit",
             ],
+        )
+        self.assertEqual(
+            select_targets(["scripts/verify/frontend_static_release_audit.py"]),
+            ["verify.ci.workflow.contract"],
         )
 
     def test_published_face_target_projection_routes_to_its_daily_guard(self) -> None:
@@ -3247,10 +3346,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             with self.subTest(path=path):
                 self.assertEqual(
                     select_targets([path]),
-                    [
-                        "verify.agent.resume.unit",
-                        "verify.frontend.dev.incremental.unit",
-                    ],
+                    ["verify.frontend.dev.incremental.unit"],
                 )
 
     def test_generated_evidence_registry_routes_to_both_consumers(self) -> None:
@@ -3258,7 +3354,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["scripts/ops/generated_evidence_paths.py"]),
             [
                 "verify.agent.resume.unit",
-                "verify.frontend.dev.incremental.unit",
                 "verify.workspace.branch.sync-main",
             ],
         )

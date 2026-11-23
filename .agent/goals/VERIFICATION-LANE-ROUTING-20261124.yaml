@@ -1,0 +1,51 @@
+schema_version: 1
+
+goal:
+  id: VERIFICATION-LANE-ROUTING-20261124
+  title: Route expensive verification lane coverage checks by impact
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: existing cross-layer incremental planner and local iteration entries
+  module:
+    - make
+    - scripts/verify
+    - .agent run metadata
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Stop running the full verification-lane coverage audit unconditionally.
+    Select it only when a change can alter the Make/workflow/guard execution
+    surface, while keeping demo and other product-data iterations on their
+    affected checks.
+  why_here: >-
+    The defect is in local verification routing and its policy guard. It does
+    not change product contracts, demo data, Odoo behavior or remote gates.
+  why_not_elsewhere:
+    - Do not modify demo configuration or demo seed data.
+    - Do not remove the lane coverage audit itself.
+    - Do not create a second planner or evidence ledger.
+    - Do not weaken unknown-path, failed-receipt or remote integration rules.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/VERIFICATION-LANE-ROUTING-20261124.yaml
+      - .agent/runs/VERIFICATION-LANE-ROUTING-20261124/run.json
+      - docs/ops/iterations/verification_lane_routing_20261124.md
+      - make/ci.mk
+      - scripts/verify/baseline_iteration_execution_policy_guard.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_baseline_iteration_execution_policy_guard.py
+      - scripts/verify/test_frontend_dev_incremental.py
+    product_behavior: no product behavior change
+  acceptance:
+    - demo configuration paths do not select audit.verification.lane_coverage.check
+    - make, workflow and verification-registry paths select the audit
+    - the three local iteration entries no longer run it unconditionally
+    - reintroducing the unconditional command fails the policy guard
+    - focused planner and policy tests pass with non-zero counts
+  exclusions:
+    - product_contract_change
+    - demo_data_change
+    - database_or_fixture_write
+    - ci_required_gate_change
+    - deployment
+  rollback: Revert this branch; no persistent data or deployed state changes.

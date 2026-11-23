@@ -115,7 +115,6 @@ MAKE_TARGET_REQUIREMENTS = {
 
 EARLY_INTEGRATION_COMMANDS = (
     "python3 scripts/ops/local_quick_evidence.py preflight",
-    "$(MAKE) --no-print-directory audit.verification.lane_coverage.check",
     "python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py",
     "python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only",
 )
@@ -134,6 +133,9 @@ FAST_LANE_FORBIDDEN_DEPENDENCIES = {
 }
 ITERATION_FORBIDDEN_DEPENDENCIES = (
     "verify.frontend.systemic.convergence.static",
+)
+PLANNER_ROUTED_COMMANDS = (
+    "$(MAKE) --no-print-directory audit.verification.lane_coverage.check",
 )
 ITERATION_REQUIRED = (
     "guard.prod.forbid",
@@ -328,6 +330,16 @@ def validate(root: Path) -> list[str]:
                     errors.append(
                         f"make/ci.mk: {target} has unrelated prerequisite "
                         f"{fragment!r}"
+                    )
+        for target in (ITERATION_TARGET, *FAST_LANE_TARGETS):
+            block = _target_block(ci_text, target)
+            if not block:
+                continue
+            for command in PLANNER_ROUTED_COMMANDS:
+                if "\t@" + command in block:
+                    errors.append(
+                        f"make/ci.mk: {target} must route {command!r} "
+                        "through the impact planner"
                     )
         quick_block = _target_block(ci_text, QUICK_TARGET)
         if not quick_block:
