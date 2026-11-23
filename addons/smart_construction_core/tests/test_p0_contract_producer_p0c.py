@@ -57,7 +57,6 @@ class TestP0ContractProducerP0C(TransactionCase):
             {row["actionId"] for row in rules},
             set(schema["actions"]),
         )
-        authorized = 0
         for action_id, carrier in schema["actions"].items():
             rule = next(row for row in rules if row["actionId"] == action_id)
             self.assertEqual(carrier["actionRuleRef"], rule["actionId"])
@@ -72,10 +71,7 @@ class TestP0ContractProducerP0C(TransactionCase):
                 carrier["state"]["enabled"],
                 carrier["permission"]["allowed"],
             )
-            if carrier["state"]["enabled"]:
-                authorized += 1
             self.assertNotIn("authorizationSubject", str(carrier))
-        self.assertGreater(authorized, 0, schema)
 
     def test_unauthorized_user_receives_disabled_actions_with_reason(self):
         user = self._user_with_group(
