@@ -1208,6 +1208,7 @@ class RealisticCoreChainSeed(unittest.TestCase):
         for relative in (
             "data/scenario/s20_settlement_clearing/30_settlement.xml",
             "data/scenario/s30_settlement_workflow/10_settlement_seed.xml",
+            "data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
         ):
             for record in self._records(relative, model="sc.settlement.order"):
                 self.assertIsNone(self._field(record, "amount_total"), "amount_total is computed")
@@ -1217,9 +1218,21 @@ class RealisticCoreChainSeed(unittest.TestCase):
         for relative in (
             "data/scenario/s20_settlement_clearing/20_clearing.xml",
             "data/scenario/s30_settlement_workflow/20_settlement_actions.xml",
+            "data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
         ):
             for record in self._records(relative, model="sc.settlement.order.line"):
                 self.assertIsNone(self._field(record, "amount"), "line amount is computed from qty x price_unit")
+
+    def test_scenario_seed_never_creates_readonly_legacy_settlement(self):
+        legacy_models = {"project.settlement", "project.settlement.line"}
+        for path in (ROOT / "data/scenario").rglob("*.xml"):
+            for record in self._records(path):
+                self.assertNotIn(
+                    record.get("model"),
+                    legacy_models,
+                    "scenario seed must use sc.settlement.order, not %s: %s"
+                    % (record.get("model"), record.get("id")),
+                )
 
     def test_settlement_amount_matches_line_quantity_times_price(self):
         settlement_amount = float(

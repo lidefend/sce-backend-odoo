@@ -36,29 +36,32 @@
       <field name="note">风险项目兼容结算合同明细</field>
     </record>
 
-    <record id="sc_demo_project_settlement_073_risk" model="project.settlement">
+    <record id="sc_demo_project_settlement_073_risk" model="sc.settlement.order">
       <field name="name">JS-2025-002</field>
+      <field name="title">风险项目支出结算</field>
       <field name="project_id" ref="smart_construction_demo.sc_demo_project_073_risk"/>
-      <field name="type">pay</field>
+      <field name="settlement_type">out</field>
       <field name="contract_id" ref="smart_construction_demo.sc_demo_contract_in_073_risk"/>
       <field name="partner_id" ref="smart_construction_demo.sc_demo_partner_vendor_concrete"/>
       <field name="currency_id" ref="base.CNY"/>
-      <field name="amount">360000.0</field>
-      <field name="date_settle">2025-08-27</field>
+      <field name="settlement_amount">360000.0</field>
+      <field name="date_settlement">2025-08-27</field>
+      <field name="document_date">2025-08-27</field>
+      <field name="settlement_description">风险治理项目的支出结算依据，保留草稿供风险处置和后续审批办理。</field>
     </record>
 
-    <record id="sc_demo_project_settlement_line_073_material" model="project.settlement.line">
+    <record id="sc_demo_project_settlement_line_073_material" model="sc.settlement.order.line">
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_project_settlement_073_risk"/>
-      <field name="sequence">10</field>
       <field name="name">混凝土超耗结算</field>
-      <field name="amount">260000.0</field>
+      <field name="qty">1.0</field>
+      <field name="price_unit">260000.0</field>
     </record>
 
-    <record id="sc_demo_project_settlement_line_073_delay" model="project.settlement.line">
+    <record id="sc_demo_project_settlement_line_073_delay" model="sc.settlement.order.line">
       <field name="settlement_id" ref="smart_construction_demo.sc_demo_project_settlement_073_risk"/>
-      <field name="sequence">20</field>
       <field name="name">赶工资源补偿</field>
-      <field name="amount">100000.0</field>
+      <field name="qty">1.0</field>
+      <field name="price_unit">100000.0</field>
     </record>
 
     <record id="sc_demo_project_risk_action_073_cost" model="project.risk.action">

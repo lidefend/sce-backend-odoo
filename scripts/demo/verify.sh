@@ -186,9 +186,9 @@ run_check "project risk projection exists" "s73_risk_settlement_surface" \
 run_check "risk actions exist" "s73_risk_settlement_surface" \
   "select case when (select count(*) from project_risk_action where project_id in (select res_id from ir_model_data where module='smart_construction_demo' and name='sc_demo_project_073_risk') and state in ('claimed','escalated')) = 2 then 'ok' else 'risk actions missing' end;" \
   "select id, name, project_id, state, risk_level, owner_id from project_risk_action where project_id in (select res_id from ir_model_data where module='smart_construction_demo' and name='sc_demo_project_073_risk') order by id;"
-run_check "compatible settlement records exist" "s73_risk_settlement_surface" \
-  "select case when (select count(*) from project_settlement where name='JS-2025-002' and state='confirmed' and amount=360000.0) = 1 and (select count(*) from project_settlement_line where settlement_id in (select id from project_settlement where name='JS-2025-002')) = 2 then 'ok' else 'compatible settlement missing' end;" \
-  "select s.id, s.name, s.state, s.amount, count(l.id) as line_count from project_settlement s left join project_settlement_line l on l.settlement_id=s.id where s.name='JS-2025-002' group by s.id, s.name, s.state, s.amount;"
+run_check "risk settlement order exists" "s73_risk_settlement_surface" \
+  "select case when (select count(*) from sc_settlement_order where name='JS-2025-002' and state='draft' and amount_total=360000.0) = 1 and (select count(*) from sc_settlement_order_line where settlement_id in (select id from sc_settlement_order where name='JS-2025-002')) = 2 then 'ok' else 'risk settlement order missing' end;" \
+  "select s.id, s.name, s.state, s.amount_total, count(l.id) as line_count from sc_settlement_order s left join sc_settlement_order_line l on l.settlement_id=s.id where s.name='JS-2025-002' group by s.id, s.name, s.state, s.amount_total;"
 run_check "supplier type and partner records exist" "s74_partner_supplier_surface" \
   "select case when (select count(*) from sc_supplier_type where code in ('service','equipment') and active is true) = 2 and (select count(*) from res_partner where name='四川智建咨询服务有限公司' and supplier_rank > 0 and customer_rank > 0 and sc_supplier_type='service') = 1 then 'ok' else 'supplier partner records missing' end;" \
   "select p.id, p.name, p.supplier_rank, p.customer_rank, p.sc_supplier_type, p.sc_supplier_type_label, p.sc_region from res_partner p where p.name='四川智建咨询服务有限公司';"
