@@ -94,6 +94,12 @@ wave:
 - `test_feedback_evaluation_rt_http.py`
 - `test_native_advisory_draft.py`
 
+The final local affected set also exercised
+`smart_core/tests/test_node_component_validation.py`; its shared handler helper
+declared capabilities without `client_type` and produced eight structural test
+failures. The helper now declares the explicit `web_pc` caller identity. This
+was a test evidence omission, not a product negotiation regression.
+
 ## Implemented remediation
 
 This branch implements the bounded remediation:
@@ -108,12 +114,27 @@ This branch implements the bounded remediation:
    preview/publish/rollback into the unified Contract V2 handler.
 6. Keep strict negotiation unchanged.
 7. Replace the shared local-test identity with a worktree-scoped Compose
-   project, volume set and lock. Database name inside each isolated carrier
-   remains the governed `sc_test`.
+   project, volume set and non-blocking lock.
+8. Reuse the validated module template by default and clone every attempt into
+   a distinct `sc_test_<worktree-key>_<attempt-key>` database. The template is
+   never a test result and is rebuilt only when its schema/profile/image
+   identity or requested-module coverage changes.
+9. Make the layered validation responsibility executable: schema v2 run records
+   must declare `local_targeted`, `remote_integration` and
+   `scheduled_release`; `make agent.run.resume` rejects absent, incomplete,
+   unexplained or entrypoint-less required declarations before a check starts.
+10. Defer every affected `*.module_baseline` to the exact-head remote
+    integration lane and keep it in `completeAffectedTargets`; do not rerun the
+    full module locally after a small product change.
+11. Select test-only changes by changed test class, remove overlapping focused
+    ORM targets when the exact class set already covers them, and reuse a
+    passed local.test receipt only when the test-specific input fingerprint,
+    HEAD, module, tag set and log bytes are unchanged.
 
-The local-test runner now derives `sc-local-test-<worktree-key>` and unique
-volumes from the absolute worktree root. Different worktrees no longer contend
-for one database lock.
+The local-test runner derives `sc-local-test-<worktree-key>`, unique volumes
+and a worktree-local lock from the absolute worktree root. Each attempt clones
+the selected module template into a distinct database, so repeated attempts and
+different worktrees do not share one database identity.
 
 This is not "fabricating" a client identity: these tests directly model Web
 contract requests and must declare the caller identity required by the current
@@ -121,12 +142,21 @@ contract-entry rule. The values are explicit test facts, not product defaults.
 
 ## Validation
 
-- `scripts.verify.test_local_test_runner`: PASS, 23 tests.
+- `scripts.verify.test_local_test_runner`: PASS, 24 tests.
 - `make local.test.prepare`: PASS with the worktree-scoped identity.
 - Representative formerly failing browser-independent ORM case
   `TestContextWorkspaceNativeLowcode.test_one_workbench_closes_the_authorized_form_configuration_loop`:
   PASS, 1 test, independent project
   `sc-local-test-16e96c2dcade/sc_test`.
+- Changed `smart_construction_core` test classes: PASS, 281 tests, cloned from
+  the reusable module template into
+  `sc_test_16e96c2dcade_84d685118af6`.
+- Changed `smart_construction_acceptance_fixture` class: PASS, 14 tests, cloned
+  from its reusable module template into
+  `sc_test_16e96c2dcade_da241143cce2`.
+- `make verify.node_component_validation.unit`: PASS, 39 + 180 + 56 tests.
+- `make verify.changed.odoo.tests.unit`: PASS, 7 tests.
+- `make verify.frontend.dev.incremental.unit`: PASS, 219 tests.
 - Full affected-class collection is intentionally delegated to exact-head
   remote CI instead of rebuilding the whole local module template again.
 

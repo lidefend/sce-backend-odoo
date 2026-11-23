@@ -67,7 +67,10 @@ def approve_in_order(request, policy, state, expected_groups):
 
 
 def run(env):
-    if (env.cr.dbname != 'sc_test' or os.environ.get('SC_ENVIRONMENT') != 'test'
+    expected_database = os.environ.get('SC_TEST_DB_NAME', '')
+    if (not expected_database.startswith('sc_test_')
+            or env.cr.dbname != expected_database
+            or os.environ.get('SC_ENVIRONMENT') != 'test'
             or os.environ.get('SC_TEST_UPGRADE_REHEARSAL') != 'payment_approval_order'):
         raise RuntimeError('Only the governed fresh local.test upgrade attempt may run this fixture')
     phase = os.environ.get('SC_APPROVAL_UPGRADE_PHASE')

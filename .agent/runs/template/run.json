@@ -1,5 +1,5 @@
 {
-  "schema_version": 1,
+  "schema_version": 2,
   "baseline_sha": "REPLACE_FULL_BASELINE_SHA",
   "scope": [
     "REPLACE_OWNED_PATH"
@@ -7,6 +7,23 @@
   "environment": {
     "kind": "offline",
     "authority": "existing local Make tools; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "REPLACE_AFFECTED_STATIC_CONTRACT_AND_NONZERO_TARGETED_CHECKS"
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "REPLACE_INTEGRATION_SCOPE_AGAINST_CURRENT_TARGET_BASE"
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Release qualification is evaluated after mainline integration; it does not substitute for exact-head PR CI."
+    }
   },
   "checks": {
     "focused": {

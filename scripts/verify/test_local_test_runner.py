@@ -22,28 +22,32 @@ class LocalTestRunnerTest(unittest.TestCase):
                 command.assert_not_called()
 
     def test_upgrade_scenario_is_bounded_to_fresh_test_module(self):
-        self.assertEqual(runner.upgrade_rehearsal_script('', 'smart_core'), '')
+        database = runner.attempt_database_name('1795425004279808499')
+        self.assertEqual(runner.upgrade_rehearsal_script('', 'smart_core', database), '')
         with self.assertRaises(ValueError):
-            runner.upgrade_rehearsal_script('payment_approval_order', 'smart_core')
+            runner.upgrade_rehearsal_script('payment_approval_order', 'smart_core', database)
         with patch.object(runner, 'profile') as profile:
             self.assertEqual(runner.main(['prepare', '--upgrade-scenario', 'payment_approval_order']), 2)
             profile.assert_not_called()
-        script = runner.upgrade_rehearsal_script('payment_approval_order', 'smart_construction_core')
+        script = runner.upgrade_rehearsal_script('payment_approval_order', 'smart_construction_core', database)
+        self.assertIn(f'-d {database}', script)
+        self.assertIn(f"--db-filter='^{database}$'", script)
         self.assertIn('-u smart_construction_core --stop-after-init', script)
         self.assertNotIn('dropdb', script)
         self.assertNotIn('sc_dev_demo', script)
 
     def test_upgrade_evidence_requires_all_three_successful_phases(self):
+        database = runner.attempt_database_name('1795425004279808499')
         phases = ['prepare', 'after_upgrade_1', 'after_upgrade_2']
-        rows = [dict(phase=phase, status='passed', database='sc_test') for phase in phases]
+        rows = [dict(phase=phase, status='passed', database=database) for phase in phases]
         log = '\n'.join('APPROVAL_UPGRADE_EVIDENCE=' + json.dumps(row) for row in rows)
         log += '\nLOCAL_TEST_REAL_UPGRADE=after_upgrade_1\nLOCAL_TEST_REAL_UPGRADE=after_upgrade_2\n'
-        self.assertEqual(len(runner.upgrade_rehearsal_outcome(log, 'payment_approval_order')), 3)
+        self.assertEqual(len(runner.upgrade_rehearsal_outcome(log, 'payment_approval_order', database)), 3)
         for invalid in (log.replace('after_upgrade_2', 'after_upgrade_1'),
-                        log.replace('"passed"', '"failed"'), log.replace('sc_test', 'sc_dev_demo'),
+                        log.replace('"passed"', '"failed"'), log.replace(database, 'sc_dev_demo'),
                         log.replace('LOCAL_TEST_REAL_UPGRADE=after_upgrade_1', 'missing')):
             with self.subTest(invalid=invalid), self.assertRaises(ValueError):
-                runner.upgrade_rehearsal_outcome(invalid, 'payment_approval_order')
+                runner.upgrade_rehearsal_outcome(invalid, 'payment_approval_order', database)
 
     def test_actual_template_initializer_does_not_write_in_installed_or_upgrade_state(self):
         import ast
@@ -113,10 +117,11 @@ class LocalTestRunnerTest(unittest.TestCase):
         self.assertEqual(runner.selection('smart_core',''),('smart_core','/smart_core'))
 
     def test_nonzero_unique_case_identities_and_module_are_required(self):
-        line='2026-10-26 00:00:00,000 1 INFO sc_test odoo.addons.smart_core.tests.test_example: Starting Example.test_one ...\n'
-        self.assertEqual(runner.outcome(line,'smart_core'),['smart_core.tests.test_example:Example.test_one'])
-        for text in ('',line+line,line.replace('sc_test','sc_dev_demo'),line.replace('smart_core','other')):
-            with self.assertRaises(ValueError): runner.outcome(text,'smart_core')
+        database = runner.attempt_database_name('1795425004279808499')
+        line=f'2026-10-26 00:00:00,000 1 INFO {database} odoo.addons.smart_core.tests.test_example: Starting Example.test_one ...\n'
+        self.assertEqual(runner.outcome(line,'smart_core',database),['smart_core.tests.test_example:Example.test_one'])
+        for text in ('',line+line,line.replace(database,'sc_dev_demo'),line.replace('smart_core','other')):
+            with self.assertRaises(ValueError): runner.outcome(text,'smart_core',database)
 
     def test_make_and_environment_overrides_do_not_reach_compose(self):
         with tempfile.TemporaryDirectory() as root:
@@ -440,5 +445,19 @@ class LocalTestRunnerTest(unittest.TestCase):
                 runner.worktree_key(Path(first)),
                 runner.worktree_key(Path(second)),
             )
+
+    def test_attempt_uses_unique_database_cloned_into_worktree_carrier(self):
+        one = runner.attempt_database_name("1795425004279808499")
+        two = runner.attempt_database_name("1795425004279808500")
+        self.assertNotEqual(one, two)
+        self.assertRegex(one, r'^sc_test_[a-f0-9]{12}_[a-f0-9]{12}$')
+        self.assertEqual(runner.attempt_identity(one)["DB_NAME"], one)
+        self.assertEqual(runner.attempt_identity(one)["ODOO_DBFILTER"], f"^{one}$")
+        self.assertEqual(
+            runner.attempt_identity(one)["COMPOSE_PROJECT_NAME"],
+            runner.IDENTITY["COMPOSE_PROJECT_NAME"],
+        )
+        with self.assertRaises(ValueError):
+            runner.attempt_database_name("not-an-attempt")
 
 if __name__=='__main__': unittest.main()

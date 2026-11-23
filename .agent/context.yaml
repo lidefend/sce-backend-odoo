@@ -149,6 +149,9 @@ execution:
 
 verification_responsibility:
   declaration_before_action: required
+  run_schema: 2
+  enforcement_entrypoint: make agent.run.resume
+  missing_or_invalid_declaration: fail_closed
   lanes:
     local_targeted:
       responsibility: affected_static_contract_and_targeted_tests_only
@@ -159,8 +162,16 @@ verification_responsibility:
     scheduled_release:
       responsibility: current_remote_main_release_eligibility
       may_satisfy: release_qualification_only
-  shared_test_lock_policy: record_not_run_environment_defect_and_continue_to_remote_ci
+  local_test_identity:
+    compose_project: worktree_scoped
+    volumes: worktree_scoped
+    lock: worktree_scoped
+    template_reuse_default: true
+    attempt_database: sc_test_<worktree-key>_<attempt-key>
+  occupied_worktree_lock_policy: record_not_run_environment_defect_and_continue_to_remote_ci
   default_local_full_module_suite: forbidden_as_inner_loop
+  module_baseline_execution_lane: remote_integration
+  test_only_selection: changed_test_classes_with_valid_receipt_reuse
   ordinary_pr_requires_local_quick: false
 
 run_statuses:

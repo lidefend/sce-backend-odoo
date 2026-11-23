@@ -45,14 +45,20 @@ dry-run 计划及回读断言”，并由所有者明确确认后才能执行。
 必须声明 `local_targeted`、`remote_integration`、`scheduled_release` 的目标入口、
 身份和状态。不适用必须写 `excluded + reason`；环境不可用只能写
 `not_run + environment_defect`，不得记 PASS。
+新建 `run.json` 使用 schema v2；`make agent.run.resume` 在检查开始前 fail-closed
+校验三层责任声明，历史 schema v1 只保留读取兼容，不能作为新任务模板。
 
 - 小迭代只跑受影响表面。`smart_construction_core` 全模块套件、完整浏览器矩阵和
-  本地 Quick 不是本地内循环默认门禁；适用集成覆盖由远端精确 HEAD CI 执行。
+  本地 Quick 不是本地内循环默认门禁。计划中的 `*.module_baseline` 必须记录为
+  `deferred_remote`，由远端精确 HEAD CI 执行；本地不得重复跑全模块冒充及时性。
 - test-only 或局部契约修补优先运行对应非零单元/契约测试、语法/静态检查和 diff 身份检查。
-- 共享 `local-test.lock` 被占用时不得等待、抢占或终止其他 worktree。记录
-  `not_run + environment_defect`，完成不依赖共享数据库的精准检查后立即提交并创建 PR。
-- 一次性测试必须提供每次 attempt 的独立数据库身份。当前跨 worktree 共用
-  `sc-local-test/sc_test` 和锁不满足该语义，登记为独立 P4 工具缺陷；不得让它阻塞普通 PR。
+- test-only 模块使用 `verify.changed_tests.orm`，按变更文件选择测试类并复用未变化
+  的非零通过回执；同一模块存在生产源码变更时才保留 owning-module 覆盖，且该全模块
+  覆盖仍下沉到远端集成。
+- local.test 使用 worktree 作用域的 Compose project、volume、锁和模板。默认复用
+  已校验的模块模板，并把每次 attempt 克隆到独立的 `sc_test_<worktree>_<attempt>`
+  数据库；不得在两个 worktree 之间共用数据库或等待对方的锁。当前工作树锁被占用时，
+  记录 `not_run + environment_defect`，完成不依赖数据库的精准检查后立即提交并创建 PR。
 - 普通 PR 的最低本地门槛是 clean 精确 HEAD、无越界 diff、相关精准测试非零通过，
   或已如实记录环境不允许执行的 `not_run`。
 - 合并只以当前 PR HEAD 的必需远端检查全部成功为准。定时 CI 只决定发布资格，

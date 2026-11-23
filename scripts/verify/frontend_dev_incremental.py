@@ -13,6 +13,7 @@ import argparse
 import hashlib
 import json
 import os
+import re
 import subprocess
 import time
 import sys
@@ -353,10 +354,13 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/tests/test_extension_registry_lifecycle.py",
+    ), (
+        "verify.extension.lifecycle.orm",
+    )),
+    Rule((
         "scripts/ci/orm_result_guard.sh",
         "scripts/dev/local_test_runner.py",
     ), (
-        "verify.extension.lifecycle.orm",
         "verify.orm.guard.self_test",
     )),
     Rule((
@@ -1168,10 +1172,23 @@ RULES = (
         "verify.local.dev.static_proxy_target.unit",
     )),
     Rule((
+        "scripts/dev/changed_odoo_tests.py",
+        "scripts/dev/local_test_inputs.py",
+        "scripts/dev/run_changed_odoo_tests.py",
+        "scripts/verify/test_changed_odoo_tests.py",
+        "scripts/verify/test_local_test_inputs.py",
+        "scripts/verify/test_run_changed_odoo_tests.py",
+    ), (
+        "verify.changed.odoo.tests.unit",
+    )),
+    Rule((
         "scripts/dev/local_test_runner.py",
+        "scripts/dev/changed_odoo_tests.py",
+        "scripts/verify/test_changed_odoo_tests.py",
         "docker-compose.test-isolation.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
+        "scripts/test/payment_approval_upgrade_rehearsal.py",
         "scripts/dev/local_dev_product_release_prepare.py",
         "scripts/dev/local_platform_control.py",
         "scripts/dev/local_platform_release_apply.py",
@@ -2692,6 +2709,27 @@ DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
 # (.agent/decisions/evidence-reuse-identity.yaml) states does not invalidate a unit.
 NON_SOURCE_PATH_PREFIXES = (".agent/", "docs/")
 NON_SOURCE_PATHS = ("AGENTS.md",)
+MODULE_BASELINE_TARGETS = {
+    "smart_core": {"verify.smart_core.close_02.module_baseline"},
+    "smart_construction_core": {"verify.smart_construction_core.module_baseline"},
+    "smart_construction_scene": {"verify.smart_construction_scene.module_baseline"},
+}
+TEST_AUXILIARY_PREFIXES = {
+    ("smart_construction_acceptance_fixture", "tools/"),
+}
+
+
+def changed_test_target(module: str) -> str:
+    return "verify.changed_tests.orm"
+
+
+def remote_integration_targets(targets: set[str] | list[str]) -> set[str]:
+    """Full module baselines belong to exact-head remote PR integration."""
+    return {
+        target
+        for target in targets
+        if target.endswith(".module_baseline")
+    }
 
 
 def select_targets(paths: list[str]) -> list[str]:
@@ -2725,6 +2763,55 @@ def select_targets(paths: list[str]) -> list[str]:
     ):
         raise RuntimeError("development validation selected a candidate-only target")
     return targets
+
+
+def select_iteration_targets(paths: list[str]) -> list[str]:
+    """Select affected checks for a local iteration.
+
+    Tests with a focused ORM owner keep that owner. Bare test files otherwise
+    run only their changed classes. A production change in the same module
+    retains the owning-module baseline.
+    """
+    selected = set(select_targets(paths))
+    changed_test_modules: set[str] = set()
+    test_only_focused_orm: dict[str, set[str]] = {}
+    production_modules: set[str] = set()
+    for path in paths:
+        normalized = path.replace("\\", "/")
+        match = re.match(r"addons/([a-z][a-z0-9_]*)/(.+)$", normalized)
+        if not match:
+            continue
+        module, relative = match.groups()
+        if (
+            not relative.startswith("tests/")
+            and not any(
+                module == owner and relative.startswith(prefix)
+                for owner, prefix in TEST_AUXILIARY_PREFIXES
+            )
+        ):
+            production_modules.add(module)
+            continue
+        if not (
+            Path(relative).name.startswith("test_")
+            and relative.endswith(".py")
+        ):
+            continue
+        module_targets = set(select_targets([normalized]))
+        module_baselines = MODULE_BASELINE_TARGETS.get(module, set())
+        focused_orm = {
+            target
+            for target in module_targets
+            if target.endswith(".orm") and target not in module_baselines
+        }
+        if focused_orm:
+            test_only_focused_orm.setdefault(module, set()).update(focused_orm)
+        else:
+            changed_test_modules.add(module)
+    for module in sorted(changed_test_modules - production_modules):
+        selected.difference_update(MODULE_BASELINE_TARGETS.get(module, set()))
+        selected.difference_update(test_only_focused_orm.get(module, set()))
+        selected.add(changed_test_target(module))
+    return sorted(selected)
 
 
 def target_layers(targets: set[str] | list[str]) -> list[str]:
@@ -3226,7 +3313,7 @@ def iteration_plan(root: Path = ROOT) -> int:
     checks = check_states(root, run)
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     excluded = validation_exclusion_targets(run)
-    required = set(select_targets(paths)) - excluded
+    required = set(select_iteration_targets(paths)) - excluded
     registered = declared_check_targets(run) | implicitly_registered_offline_targets(
         required
     )
@@ -3252,7 +3339,9 @@ def print_plan(
     excluded_targets: set[str] | None = None,
 ) -> int:
     excluded_targets = excluded_targets or set()
-    required_targets = set(select_targets(paths)) - excluded_targets
+    complete_targets = set(select_iteration_targets(paths)) - excluded_targets
+    deferred_remote = remote_integration_targets(complete_targets)
+    required_targets = complete_targets - deferred_remote
     reusable = reusable_check_targets(checks or {})
     blocked = blocked_check_targets(checks or {})
     targets = required_targets | {
@@ -3263,7 +3352,7 @@ def print_plan(
     unmapped_paths = [
         path
         for path in paths
-        if not select_targets([path])
+        if not select_iteration_targets([path])
         and not path.replace("\\", "/").startswith(NON_SOURCE_PATH_PREFIXES)
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
@@ -3283,6 +3372,8 @@ def print_plan(
         "registrationMode": "planner_managed",
         "changedPathCount": len(paths),
         "requiredTargets": sorted(required_targets),
+        "deferredRemoteTargets": sorted(deferred_remote),
+        "completeAffectedTargets": sorted(complete_targets),
         "targets": sorted(targets),
         "requiredLayers": target_layers(required_targets),
         "executionLayers": target_layers(targets),
@@ -3541,9 +3632,14 @@ def execute_targets(
 ) -> int:
     paths = sorted(set(paths))
     excluded_targets = excluded_targets or set()
-    required_targets = [
-        target for target in select_targets(paths)
+    complete_targets = [
+        target for target in select_iteration_targets(paths)
         if target not in excluded_targets
+    ]
+    deferred_remote = remote_integration_targets(complete_targets)
+    required_targets = [
+        target for target in complete_targets
+        if target not in deferred_remote
     ]
     blocked = sorted(set(required_targets) & (blocked_targets or set()))
     reusable = sorted(
@@ -3560,7 +3656,7 @@ def execute_targets(
     unmapped_paths = [
         path
         for path in paths
-        if not select_targets([path])
+        if not select_iteration_targets([path])
         and not path.replace("\\", "/").startswith(NON_SOURCE_PATH_PREFIXES)
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
@@ -3580,6 +3676,8 @@ def execute_targets(
         "identity": identity,
         "changedPaths": paths,
         "requiredTargets": required_targets,
+        "deferredRemoteTargets": sorted(deferred_remote),
+        "completeAffectedTargets": complete_targets,
         "requiredLayers": target_layers(required_targets),
         "executionLayers": target_layers(targets),
         "targetOrder": required_targets,
@@ -3836,7 +3934,7 @@ def execute_worktree(root: Path = ROOT) -> int:
         raise RunError("selected run is closed; register/select the next task")
     checkpoint, checkpoint_kind, paths = iteration_scope(root, run)
     excluded = validation_exclusion_targets(run)
-    required = set(select_targets(paths)) - excluded
+    required = set(select_iteration_targets(paths)) - excluded
     checks = check_states(root, run)
     registered = declared_check_targets(run) | implicitly_registered_offline_targets(
         required

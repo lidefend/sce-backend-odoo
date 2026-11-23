@@ -11,6 +11,12 @@ goal:
     client_type. Product contract negotiation remains authoritative.
   module:
     - smart_construction_core/tests
+    - smart_core/tests
+    - smart_construction_acceptance_fixture/tests
+    - scripts/dev
+    - scripts/ops
+    - scripts/test
+    - scripts/verify
     - .agent
     - docs/audit
     - docs/ops/iterations
@@ -51,7 +57,12 @@ goal:
     root_cause: completed
     remediation_design: completed
     full_clean_base_rerun: pending_environment_lock
-    implementation: completed_local_pending_remote_ci
+    implementation: completed_local_targeted
+    layered_validation_rule: enforced_by_schema_v2_run_records
+    local_test_identity: worktree_scoped_template_with_unique_attempt_database
+    changed_test_execution: passed_281_plus_14
+    remote_full_module_baseline: deferred_remote
   next_exact_step: >-
-    Commit and push the bounded fix, create the exact-head PR, and wait for all
-    required remote checks.
+    Run the final ci.local.iteration, commit and push the bounded fix, create
+    the exact-head PR, and wait for all required remote checks including the
+    deferred smart_core module baseline.

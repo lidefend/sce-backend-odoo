@@ -865,12 +865,19 @@ local.clean.upgrade: guard.prod.forbid local.clean.prepare $(if $(filter 1,$(LOC
 	  CODEX_MODE=fast CODEX_NEED_UPGRADE=1 MODULE="$(MODULE)" mod.upgrade
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_CLEAN_ENV_FILE)" restart
 
-.PHONY: local.test.prepare local.test.up local.test.down local.test.test verify.local.test.template.bundle.orm verify.local.test.template.fixture.orm
+.PHONY: local.test.prepare local.test.up local.test.down local.test.test verify.local.test.template.bundle.orm verify.local.test.template.fixture.orm verify.changed.odoo.tests.unit verify.changed_tests.orm
 local.test.prepare local.test.up local.test.down: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py $(patsubst local.test.%,%,$@) --env-file "$(LOCAL_TEST_ENV_FILE)"
 
 local.test.test: guard.prod.forbid
 	@python3 scripts/dev/local_test_runner.py test --env-file "$(LOCAL_TEST_ENV_FILE)" --module "$(MODULE)" --tags "$(TEST_TAGS)" --order "$(or $(LOCAL_TEST_ORDER),forward)" $(if $(filter 1,$(LOCAL_TEST_REUSE_DATABASE)),--reuse-database,)
+
+verify.changed.odoo.tests.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/dev/changed_odoo_tests.py scripts/dev/local_test_inputs.py scripts/dev/run_changed_odoo_tests.py scripts/verify/test_changed_odoo_tests.py scripts/verify/test_local_test_inputs.py scripts/verify/test_run_changed_odoo_tests.py
+	@python3 -m unittest scripts.verify.test_changed_odoo_tests scripts.verify.test_local_test_inputs scripts.verify.test_run_changed_odoo_tests
+
+verify.changed_tests.orm: guard.prod.forbid
+	@python3 scripts/dev/run_changed_odoo_tests.py
 
 verify.local.test.template.bundle.orm: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_bundle \
@@ -1887,7 +1894,8 @@ verify.local.dev.cost.feedback.orm: guard.prod.forbid
 
 .PHONY: verify.local.dev.conditioned.feedback.orm
 verify.local.dev.conditioned.feedback.orm: guard.prod.forbid
-	@$(MAKE) --no-print-directory local.dev.test MODULE=smart_construction_core \
+	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_core \
+	  $(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core \
 	  TEST_TAGS=conditioned_processing_feedback,cost_processing_feedback,workspace_processing_feedback,company_project_refund_feedback_orm
 
 .PHONY: verify.local.dev.conditioned.feedback
