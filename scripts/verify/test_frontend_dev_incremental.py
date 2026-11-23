@@ -23,6 +23,7 @@ from scripts.verify.frontend_dev_incremental import (
     iteration_plan,
     print_plan,
     select_targets,
+    target_layers,
     validation_exclusion_targets,
     worktree_changed_paths,
 )
@@ -4185,6 +4186,39 @@ class RunScopedPlannerTest(unittest.TestCase):
                 "scripts/verify/identity_architecture_audit_guard.py"
             ]),
             ["verify.identity.architecture.audit.unit"],
+        )
+
+    def test_mixed_targets_report_backend_frontend_and_governance_layers(self):
+        self.assertEqual(
+            target_layers([
+                "verify.frontend.typecheck.strict",
+                "verify.daily.permission_truth.capability.orm",
+                "verify.identity.architecture.audit.unit",
+            ]),
+            ["frontend", "backend", "governance"],
+        )
+
+    def test_plan_reports_execution_layers_and_neutral_entrypoint(self) -> None:
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(
+                print_plan([
+                    "frontend/apps/web/src/NewSurface.tsx",
+                    "addons/smart_construction_scene/__manifest__.py",
+                    "scripts/verify/identity_architecture_audit_guard.py",
+                ]),
+                0,
+            )
+        label, raw_payload = output.getvalue().split("] ", 1)
+        payload = json.loads(raw_payload)
+        self.assertEqual(label, "[local.incremental.plan")
+        self.assertEqual(
+            payload["requiredLayers"],
+            ["frontend", "backend", "governance"],
+        )
+        self.assertEqual(
+            payload["executionLayers"],
+            ["frontend", "backend", "governance"],
         )
 
 

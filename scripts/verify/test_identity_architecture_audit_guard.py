@@ -76,7 +76,18 @@ class IdentityArchitectureAuditGuardTest(unittest.TestCase):
     def test_graph_edge_kind_mismatch_is_rejected(self):
         graph = self.graph.replace('RECORD -->|instantiates| MODEL', 'RECORD -->|references| MODEL')
         errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
-        self.assertTrue(any("graph edge kind mismatch" in item for item in errors))
+        self.assertTrue(
+            any(
+                "missing graph edge: odoo.record->odoo.model:instantiates" in item
+                for item in errors
+            )
+        )
+        self.assertTrue(
+            any(
+                "unregistered graph edge: odoo.record->odoo.model:references" in item
+                for item in errors
+            )
+        )
 
     def test_graph_extra_edge_is_rejected(self):
         graph = self.graph.replace(
@@ -85,6 +96,62 @@ class IdentityArchitectureAuditGuardTest(unittest.TestCase):
         )
         errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
         self.assertTrue(any("unregistered graph edge: odoo.model->contract.action_rule" in item for item in errors))
+
+    def test_deleting_business_owner_parallel_edge_is_rejected(self):
+        graph = self.graph.replace("  ATTACHMENT -->|business_owner| RECORD\n", "")
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(
+            any(
+                "missing graph edge: attachment.record->odoo.record:business_owner" in item
+                for item in errors
+            )
+        )
+
+    def test_deleting_storage_owner_parallel_edge_is_rejected(self):
+        graph = self.graph.replace("  ATTACHMENT -->|storage_owner| RECORD\n", "")
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(
+            any(
+                "missing graph edge: attachment.record->odoo.record:storage_owner" in item
+                for item in errors
+            )
+        )
+
+    def test_modifying_attachment_authorization_kind_is_rejected(self):
+        graph = self.graph.replace(
+            "ATTACHMENT -->|authorized_through| AUTH_SUBJECT",
+            "ATTACHMENT -->|authorizes| AUTH_SUBJECT",
+        )
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(
+            any(
+                "missing graph edge: "
+                "attachment.record->security.authorization_subject:authorized_through" in item
+                for item in errors
+            )
+        )
+        self.assertTrue(
+            any(
+                "unregistered graph edge: "
+                "attachment.record->security.authorization_subject:authorizes" in item
+                for item in errors
+            )
+        )
+
+    def test_unregistered_parallel_attachment_edge_is_rejected(self):
+        graph = self.graph.replace(
+            "  ATTACHMENT -->|authorized_through| AUTH_SUBJECT\n",
+            "  ATTACHMENT -->|authorized_through| AUTH_SUBJECT\n"
+            "  ATTACHMENT -->|delegated_owner| RECORD\n",
+        )
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(
+            any(
+                "unregistered graph edge: "
+                "attachment.record->odoo.record:delegated_owner" in item
+                for item in errors
+            )
+        )
 
     def test_baseline_identity_is_fixed(self):
         self.assertEqual(BASELINE, "2a99f01c55af1c1cee01bc29d280fa5cc777b12f")

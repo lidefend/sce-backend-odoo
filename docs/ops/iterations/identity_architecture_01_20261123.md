@@ -75,13 +75,21 @@ Findings:
 
 ## Validation
 
-- `verify.identity.architecture.audit.unit`: PASS, 14 tests and matrix/graph
-  validation for 16 domains, 23 edges and 8 findings.
+- `verify.identity.architecture.audit.unit`: PASS, 18 tests and matrix/graph
+  validation for 16 domains, 23 edges and 8 findings. Edge admission compares
+  exact `(source, target, relation kind)` triples, including negative cases for
+  each attachment relation, changed relation kinds and unregistered parallel
+  edges.
 - `verify.docs.contract_sync`: PASS and consumes the identity guard.
 - `verify.docs.links`: PASS.
 - `verify.guard.registry`: PASS.
 - `verify.agent.ledger.unit`: PASS.
-- `verify.frontend.dev.incremental.unit`: PASS.
+- `verify.frontend.dev.incremental.unit`: PASS, 216 tests. The legacy target
+  emits neutral `local.incremental` status with explicit `requiredLayers` and
+  `executionLayers`; mixed changes report frontend, backend and governance
+  instead of implying a frontend-only plan.
+- `verify.daily.permission_truth.capability.orm`: PASS, 82 ORM tests selected by
+  the planner-managed cross-layer route.
 - `make ci.local.iteration`: PASS.
 - `make ci.delivery.freeze.prepare`: PASS.
 

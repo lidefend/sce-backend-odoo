@@ -238,6 +238,8 @@ Neither may be synthesized from a role label, company name, URL or client field.
 ## 8. Current status
 
 - Identity matrix and graph: 16 domains, 23 relations, complete audit draft.
+- Matrix/graph admission uses the exact `(source, target, relation kind)` set;
+  parallel relations cannot mask a missing or substituted edge.
 - Product source changes: none.
 - Database/ACL/workflow changes: none.
 - P0-B: blocked pending identity baseline approval. P0-C-FIX-01 closure is

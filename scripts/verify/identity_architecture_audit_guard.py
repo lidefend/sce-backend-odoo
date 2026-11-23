@@ -278,22 +278,10 @@ def validate_matrix(
         if isinstance(edge, dict)
     }
     actual_edges = set(graph_edges)
-    expected_by_pair = {(source, target): kind for source, target, kind in expected_edges}
-    actual_by_pair = {(source, target): kind for source, target, kind in actual_edges}
-    for pair in sorted(set(expected_by_pair) & set(actual_by_pair)):
-        expected_kind = expected_by_pair[pair]
-        actual_kind = actual_by_pair[pair]
-        if expected_kind != actual_kind:
-            errors.append(
-                f"graph edge kind mismatch: {pair[0]}->{pair[1]} "
-                f"expected {expected_kind}, got {actual_kind}"
-            )
     for source, target, kind in sorted(expected_edges - actual_edges):
-        if (source, target) not in actual_by_pair:
-            errors.append(f"missing graph edge: {source}->{target}:{kind}")
+        errors.append(f"missing graph edge: {source}->{target}:{kind}")
     for source, target, kind in sorted(actual_edges - expected_edges):
-        if (source, target) not in expected_by_pair:
-            errors.append(f"unregistered graph edge: {source}->{target}:{kind}")
+        errors.append(f"unregistered graph edge: {source}->{target}:{kind}")
     return errors
 
 
