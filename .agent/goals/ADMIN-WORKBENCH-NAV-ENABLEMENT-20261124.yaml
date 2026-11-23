@@ -1,0 +1,44 @@
+schema_version: 1
+
+goal:
+  id: ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124
+  title: business_center_navigation_follows_scenario_enablement
+  status: active
+  formal_product_layer: P1
+  layer_target: construction scenario navigation eligibility
+  module:
+    - smart_construction_core
+    - smart_construction_scene
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Prevent navigation from presenting a business center merely because a
+    scenario-exempt initialization or workbench page is authorized.
+  product_result: >-
+    Workbench and administration centers appear only when their owning business
+    scenario is enabled. Direct exemptions continue to authorize internal
+    initialization actions without manufacturing a disabled center entry.
+    Configuration pages remain available independently.
+  why_here: >-
+    smart_construction_core owns the product-center composition and
+    smart_construction_scene owns the tenant business-scenario enablement facts.
+  why_not_elsewhere:
+    - The frontend must not infer or suppress centers from a second enablement state.
+    - Native menu authority must remain intact for enterprise initialization.
+    - P0 generic navigation must not absorb construction business-center semantics.
+  blast_radius:
+    - system.init navigation under business centers
+    - workbench and administration center visibility before activation
+    - configuration and initialization direct-entry behavior
+  acceptance:
+    - With all business scenes disabled, workbench and administration centers are absent from navigation.
+    - Configuration direct pages remain visible.
+    - Enabling a owning scenario restores its center and entries.
+    - Internal enterprise initialization authority remains available.
+  exclusions:
+    - frontend source changes
+    - database schema or data migration
+    - native ACL or route-authority widening
+    - production deployment
+  rollback: >-
+    Revert the P1 projection and focused test changes together. No persistent
+    schema or tenant selection changes are introduced.

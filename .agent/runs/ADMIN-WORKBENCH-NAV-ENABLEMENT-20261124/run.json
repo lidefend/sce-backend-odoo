@@ -1,0 +1,70 @@
+{
+  "schema_version": 2,
+  "id": "ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124",
+  "branch": "fix/admin-workbench-navigation-enablement-20261124",
+  "status": "verification_pending",
+  "baseline_sha": "7a41b86b073e0f062a1ee7f38aa628d375587954",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124.yaml",
+    ".agent/runs/ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124/run.json",
+    "addons/smart_core/tests/test_intent_smoke.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+    "addons/smart_construction_scene/services/business_scene_enablement.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "docs/ops/iterations/admin_workbench_navigation_enablement_20261124.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed local.test targeted ORM and local.dev read-only runtime readback"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.admin_close_01.backend.unit",
+      "reason": "Run the affected static and non-zero targeted tests for the changed P1 projection."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the exact candidate against current main, including the owning module baseline."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release qualification follows protected integration."
+    }
+  },
+  "checks": {
+    "local_iteration": {
+      "target": "verify.admin_close_01.backend.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "make/ci.mk",
+        "scripts/verify/frontend_dev_incremental.py"
+      ]
+    },
+    "scenario_navigation_orm": {
+      "target": "verify.smart_construction_core.migration_compatibility.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
+        "addons/smart_construction_scene/services/business_scene_enablement.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "addons/smart_core/tests/test_intent_smoke.py",
+        "make/guards.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified P1 candidate, publish the exact-head PR, and wait for required current-base CI.",
+  "goal": ".agent/goals/ADMIN-WORKBENCH-NAV-ENABLEMENT-20261124.yaml",
+  "record": "docs/ops/iterations/admin_workbench_navigation_enablement_20261124.md"
+}

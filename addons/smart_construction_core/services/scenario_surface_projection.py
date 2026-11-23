@@ -871,13 +871,13 @@ def runtime_menu_scope(env, surface=None):
     The index and ID/action maps share the same current native identities.
     """
     surface = load_runtime_surface(env) if surface is None else surface
-    direct_platform_keys = {
-        _text(row.get("menu_xmlid"))
+    direct_platform_kinds = {
+        _text(row.get("menu_xmlid")): _text(row.get("kind"))
         for row in DIRECT_PLATFORM_DECLARATIONS
         if _text(row.get("menu_xmlid"))
     }
-    direct_platform_keys.update({
-        _text(row.get("menu_xmlid"))
+    direct_platform_kinds.update({
+        _text(row.get("menu_xmlid")): _text(row.get("kind"))
         for row in surface.get("direct_platform_pages") or []
         if isinstance(row, dict) and _text(row.get("menu_xmlid"))
     })
@@ -908,7 +908,7 @@ def runtime_menu_scope(env, surface=None):
         )
         if not declared_keys:
             direct_platform_exempt = bool(
-                menu.sc_scenario_exempt and key in direct_platform_keys
+                menu.sc_scenario_exempt and key in direct_platform_kinds
             )
             index[key] = {
                 "location": (
@@ -923,13 +923,23 @@ def runtime_menu_scope(env, surface=None):
                 "scenario_locations": [],
                 "menu_id": menu.id,
                 "direct_platform_exempt": direct_platform_exempt,
+                "direct_platform_kind": (
+                    direct_platform_kinds.get(key, "")
+                    if direct_platform_exempt
+                    else ""
+                ),
             }
             continue
         for declared_key in declared_keys:
             location = index.pop(declared_key)
             location["menu_id"] = menu.id
             location["direct_platform_exempt"] = bool(
-                menu.sc_scenario_exempt and xmlid in direct_platform_keys
+                menu.sc_scenario_exempt and xmlid in direct_platform_kinds
+            )
+            location["direct_platform_kind"] = (
+                direct_platform_kinds.get(xmlid, "")
+                if location["direct_platform_exempt"]
+                else ""
             )
             for scenario_location in location.get("scenario_locations") or []:
                 scenario_location["menu_id"] = menu.id
@@ -1047,6 +1057,20 @@ def _selected_scenario_binding(
                 return {**candidate, "scenario_active": bool(candidate.get("scenario_active", True))}
             return None
     return next((binding for binding in bindings if binding.get("scenario_active")), None)
+
+
+def _scenario_navigation_eligible(binding: dict[str, Any] | None) -> bool:
+    """Keep route authority separate from business-center navigation.
+
+    A direct exemption keeps an already-authorized internal route usable while
+    enterprise initialization is in progress. It must not materialize a
+    disabled business center in navigation. Configuration surfaces remain
+    independently navigable because they configure the product rather than
+    represent enabled business work.
+    """
+    if not isinstance(binding, dict) or not binding.get("direct_exempt"):
+        return True
+    return binding.get("direct_platform_kind") == "configuration"
 
 
 def is_workspace_home_leaf(leaf: dict[str, Any]) -> bool:
@@ -1452,7 +1476,11 @@ def project_authorized_nav_with_env(
             continue
         bindings = scenario_by_menu.get(menu_id) or []
         binding = _selected_scenario_binding(bindings, route_authority, menu_id)
-        if not binding or not binding.get("scenario_active"):
+        if (
+            not binding
+            or not binding.get("scenario_active")
+            or not _scenario_navigation_eligible(binding)
+        ):
             continue
         if len(candidates) == 1:
             action_id, row = next(iter(candidates.items()))
@@ -1489,6 +1517,11 @@ def project_authorized_nav_with_env(
         if isinstance(composition.get("shared_by_menu"), dict)
         else {}
     )
+    center_enablement = (
+        composition.get("center_enablement")
+        if isinstance(composition.get("center_enablement"), dict)
+        else {}
+    )
     centers: dict[str, dict[str, Any]] = {}
     for leaf in leaves:
         menu_id = int(leaf.get("menu_id") or 0)
@@ -1499,6 +1532,18 @@ def project_authorized_nav_with_env(
             continue
         bindings = scenario_by_menu.get(menu_id) or []
         binding = _selected_scenario_binding(bindings, route_authority, menu_id)
+        if not _scenario_navigation_eligible(binding):
+            continue
+        policy_center_key = (
+            stable_published_center_key(_text(leaf.get("policy_center_key")))
+            or stable_center_key(_text(leaf.get("policy_center_key")))
+        )
+        if (
+            not binding
+            and policy_center_key in center_enablement
+            and center_enablement.get(policy_center_key) is not True
+        ):
+            continue
         center_binding = binding or (bindings[0] if bindings else None)
         center = composition_center_for_leaf(
             leaf,
