@@ -1,0 +1,44 @@
+schema_version: 1
+
+goal:
+  id: SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124
+  title: system_product_release_bootstrap
+  status: active
+  formal_product_layer: P1
+  layer_target: smart_construction_bundle product release finalization
+  module:
+    - smart_construction_core
+    - smart_construction_bundle
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Materialize the shipped construction product release during fresh install,
+    upgrade and demo rebuild without requiring an administrator to publish it.
+  product_result: >-
+    A newly installed or rebuilt construction database has exactly one active
+    released construction.standard snapshot, a nonempty shipped business scene
+    composition and an actionable scenario catalog.
+  why_here: >-
+    Core owns the locked construction policy and composition; the P1 bundle is
+    the complete product assembly point after every scene dependency is loaded.
+  why_not_elsewhere:
+    - P0 already owns snapshot freezing, promotion and integrity checks.
+    - P4 deployment tools may verify the release but must not define it.
+    - The frontend and tenant administrator must not create or repair the shipped product.
+  blast_radius:
+    - smart_construction_core release projection
+    - smart_construction_bundle install and upgrade
+    - construction.standard and construction.preview active snapshots
+    - published business scene composition
+    - scenario activation catalog availability
+  acceptance:
+    - Fresh product-bundle installation creates active released snapshots for both shipped product keys.
+    - Every snapshot contains the shipped 46-scene composition and passes frozen-integrity checks.
+    - Re-running initialization reuses the same active snapshots.
+  exclusions:
+    - P0 snapshot algorithm changes
+    - frontend changes
+    - customer-specific product policy edits
+    - production deployment
+  rollback: >-
+    Revert the module hook, migration and verification method; existing valid
+    snapshots are left untouched by initialization and remain rollback targets.

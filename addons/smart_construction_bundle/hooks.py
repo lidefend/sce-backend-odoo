@@ -19,6 +19,9 @@ def merge_construction_product_base_keys(env):
 
 def post_init_hook(env):
     merge_construction_product_base_keys(env)
+    policy = env["sc.product.policy"].sudo()
+    policy.sync_construction_menu_product_policies()
+    policy.ensure_system_product_release_snapshots()
 
 
 def uninstall_hook(env):

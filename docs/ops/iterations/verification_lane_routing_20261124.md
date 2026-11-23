@@ -2,7 +2,8 @@
 
 ## Identity
 
-- Base: `8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9`
+- Previous integration base: `8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9`
+- Current base after mainline sync: `9365a773d5541ac9fb9923a84536bafb396ba22d`
 - Branch: `feature/verification-lane-routing-20261124`
 - Formal product layer: P4 verification tooling
 

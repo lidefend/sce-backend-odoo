@@ -842,6 +842,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     ["verify.demo.usage_foundation_role_scope.unit"],
                 )
 
+    def test_bundle_system_product_release_inputs_select_their_owner(self) -> None:
+        for path in (
+            "addons/smart_construction_bundle/migrations/0.1.2/post-migrate.py",
+            "addons/smart_construction_bundle/tests/__init__.py",
+            "addons/smart_construction_bundle/tests/test_system_product_release.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    [
+                        "verify.extension.lifecycle.orm",
+                        "verify.smart_construction_bundle.system_product_baseline.orm",
+                    ],
+                )
+
     def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
         self.assertEqual(
             select_targets([

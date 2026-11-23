@@ -536,6 +536,129 @@ class ScProductPolicy(models.Model):
         return True
 
     @api.model
+    def ensure_system_product_release_snapshots(self):
+        """Materialize the shipped product release on a new or reset database.
+
+        Installation loads product policies, but a policy is a maintained
+        source and is not itself the runtime release. Fresh installs do not run
+        upgrade migrations, so they must explicitly freeze the shipped policy
+        into the active release snapshot consumed by navigation and business
+        scene activation. An already valid active system release is reused.
+        """
+        from odoo.addons.smart_core.delivery.edition_release_snapshot_service import (
+            EditionReleaseSnapshotService,
+        )
+        from odoo.addons.smart_core.delivery.product_scene_composition import (
+            compose_product_policy,
+        )
+
+        Snapshot = self.env["sc.edition.release.snapshot"].sudo()
+        service = EditionReleaseSnapshotService(self.env)
+        results = []
+        for product_key in ("construction.standard", "construction.preview"):
+            policy = self.sudo().with_context(active_test=False).search([
+                ("product_key", "=", product_key),
+                ("active", "=", True),
+            ], limit=1)
+            if not policy:
+                raise LockedMenuPolicyContractError(
+                    "SYSTEM_PRODUCT_RELEASE_POLICY_MISSING", product_key
+                )
+            active = Snapshot.search([
+                ("product_key", "=", product_key),
+                ("state", "=", "released"),
+                ("is_active", "=", True),
+                ("active", "=", True),
+            ], order="released_at desc, activated_at desc, id desc", limit=1)
+            valid = False
+            if active:
+                try:
+                    integrity = service.assert_frozen_release_integrity(active)
+                    payload = active.snapshot_json if isinstance(active.snapshot_json, dict) else {}
+                    frozen_policy = payload.get("policy") if isinstance(payload.get("policy"), dict) else {}
+                    composition = frozen_policy.get("business_scene_composition")
+                    scenarios = composition.get("scenarios") if isinstance(composition, dict) else None
+                    valid = bool(
+                        payload.get("policy_snapshot_schema") == "maintained_product_policy.v1"
+                        and active.source_policy_id == policy
+                        and integrity.get("exact_match")
+                        and isinstance(scenarios, list)
+                        and scenarios
+                    )
+                except Exception:
+                    valid = False
+            if valid:
+                results.append({
+                    "product_key": product_key,
+                    "snapshot_id": int(active.id),
+                    "version": str(active.version or ""),
+                    "reused": True,
+                    "business_scenario_count": len(scenarios),
+                    "released_page_count": int(integrity.get("released_count") or 0),
+                })
+                continue
+            source_policy = compose_product_policy(
+                self.env,
+                policy.to_runtime_dict(),
+            )
+            draft = service.build_policy_draft_contract(
+                product_key=product_key,
+                policy_override=source_policy,
+            )
+            if int(draft.get("blocking_issue_count") or 0):
+                blocking = [
+                    "%s[%s]" % (
+                        _text(row.get("key")),
+                        ",".join(
+                            _text(issue.get("code"))
+                            for issue in (row.get("issues") or [])
+                            if isinstance(issue, dict) and _text(issue.get("code"))
+                        ),
+                    )
+                    for row in (draft.get("preflight_checks") or [])
+                    if isinstance(row, dict) and row.get("blocking")
+                ]
+                raise LockedMenuPolicyContractError(
+                    "SYSTEM_PRODUCT_RELEASE_PREFLIGHT_BLOCKED",
+                    "%s:%s" % (product_key, ",".join(blocking)),
+                )
+            fingerprint = _text(draft.get("fingerprint"))
+            if not fingerprint:
+                raise LockedMenuPolicyContractError(
+                    "SYSTEM_PRODUCT_RELEASE_FINGERPRINT_MISSING", product_key
+                )
+            frozen = service.freeze_release_surface(
+                product_key=product_key,
+                version="system-baseline-%s" % fingerprint[:12],
+                note="system product baseline materialized from the shipped industry contract",
+                replace_active=True,
+                policy_override=source_policy,
+            )
+            active = Snapshot.browse(int(frozen.get("id") or 0)).exists()
+            if not active:
+                raise LockedMenuPolicyContractError(
+                    "SYSTEM_PRODUCT_RELEASE_SNAPSHOT_MISSING", product_key
+                )
+            integrity = service.assert_frozen_release_integrity(active)
+            payload = active.snapshot_json if isinstance(active.snapshot_json, dict) else {}
+            composition = (payload.get("policy") or {}).get("business_scene_composition") or {}
+            scenarios = composition.get("scenarios") if isinstance(composition, dict) else []
+            if not isinstance(scenarios, list) or not scenarios:
+                raise LockedMenuPolicyContractError(
+                    "SYSTEM_PRODUCT_RELEASE_SCENARIOS_MISSING", product_key
+                )
+            results.append({
+                "product_key": product_key,
+                "snapshot_id": int(active.id),
+                "version": str(active.version or ""),
+                "reused": False,
+                "business_scenario_count": len(scenarios),
+                "released_page_count": int(integrity.get("released_count") or 0),
+            })
+        self.env.registry.clear_cache()
+        return {"products": results}
+
+    @api.model
     def promote_preview_entries_to_standard_release(self):
         """Converge persisted policies after the 2026-11-19 preview promotion.
 

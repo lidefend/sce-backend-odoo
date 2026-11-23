@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "VERIFICATION-LANE-ROUTING-20261124",
   "branch": "feature/verification-lane-routing-20261124",
-  "baseline_sha": "8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9",
+  "baseline_sha": "9365a773d5541ac9fb9923a84536bafb396ba22d",
   "status": "active",
   "goal": ".agent/goals/VERIFICATION-LANE-ROUTING-20261124.yaml",
   "record": "docs/ops/iterations/verification_lane_routing_20261124.md",

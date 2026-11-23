@@ -135,6 +135,11 @@ RULES = (
         "addons/smart_construction_bundle/hooks.py",
     ), ("verify.smart_construction_bundle.extension_module_baseline", "verify.extension.lifecycle.orm")),
     Rule((
+        "addons/smart_construction_bundle/migrations/0.1.2/",
+        "addons/smart_construction_bundle/tests/__init__.py",
+        "addons/smart_construction_bundle/tests/test_system_product_release.py",
+    ), ("verify.smart_construction_bundle.system_product_baseline.orm", "verify.extension.lifecycle.orm")),
+    Rule((
         "addons/smart_construction_portal/__manifest__.py",
         "addons/smart_construction_portal/__init__.py",
         "addons/smart_construction_portal/hooks.py",

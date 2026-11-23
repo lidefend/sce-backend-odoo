@@ -161,6 +161,7 @@
     "fix/demo-wutao-business-config-admin-20261124": ".agent/runs/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124/run.json",
     "fix/demo-wutao-company-scope-20261124": ".agent/runs/DEMO-WUTAO-COMPANY-SCOPE-20261124/run.json",
     "feature/enterprise-center-onboarding-20261123": ".agent/runs/ENTERPRISE-CENTER-ONBOARDING-20261123/run.json",
-    "feature/industry-business-model-02-20261123": ".agent/runs/INDUSTRY-BUSINESS-MODEL-02/run.json"
+    "feature/industry-business-model-02-20261123": ".agent/runs/INDUSTRY-BUSINESS-MODEL-02/run.json",
+    "feature/system-product-release-bootstrap-20261124": ".agent/runs/SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124/run.json"
   }
 }
