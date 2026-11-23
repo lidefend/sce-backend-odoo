@@ -277,6 +277,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_page_block_action_inputs_select_p0c_owners(self) -> None:
         self.assertEqual(
             select_targets([
+                "addons/smart_core/core/action_target_schema.py"
+            ]),
+            [
+                "verify.frontend.page_contract_boundary.guard",
+                "verify.p0_contract_producer.p0c.unit",
+                "verify.page_contract.action_schema_semantics.guard",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
                 "addons/smart_core/core/page_block_action_contract.py"
             ]),
             [
@@ -815,6 +825,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["addons/smart_core/core/page_contracts_builder.py"]),
             [
                 "verify.frontend.page_contract_boundary.guard",
+                "verify.p0_contract_producer.p0c.unit",
+                "verify.page_contract.action_schema_semantics.guard",
             ],
         )
         self.assertEqual(

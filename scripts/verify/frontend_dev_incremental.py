@@ -937,8 +937,11 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
+        "verify.page_contract.action_schema_semantics.guard",
+        "verify.p0_contract_producer.p0c.unit",
     )),
     Rule((
         "addons/smart_core/core/contract_version_negotiation.py",
