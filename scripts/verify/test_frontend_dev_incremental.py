@@ -52,6 +52,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
             "addons/smart_construction_core/views/core/plan_management_views.xml",
             "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
+            "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
             "scripts/verify/industry_business_model_02_data_audit.py",
         )
         for path in paths:

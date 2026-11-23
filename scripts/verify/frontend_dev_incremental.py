@@ -2733,6 +2733,7 @@ RULES = (
         "addons/smart_construction_core/services/project_task_state_support.py",
         "addons/smart_construction_core/views/core/plan_management_views.xml",
         "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
+        "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
         "scripts/verify/industry_business_model_02_data_audit.py",
     ), (
         "verify.industry_business_model_02.orm",
