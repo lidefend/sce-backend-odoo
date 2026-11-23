@@ -1234,6 +1234,15 @@ class RealisticCoreChainSeed(unittest.TestCase):
                     % (record.get("model"), record.get("id")),
                 )
 
+    def test_terminal_stage_projects_complete_their_settlement(self):
+        source = (
+            ROOT / "seed/steps/step_40_contracts_demo.py"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            'complete=declared_stage(project) in ("warranty", "closed")',
+            source,
+        )
+
     def test_settlement_amount_matches_line_quantity_times_price(self):
         settlement_amount = float(
             next(r for r in self._records("data/scenario/s20_settlement_clearing/30_settlement.xml")
