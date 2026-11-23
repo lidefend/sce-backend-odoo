@@ -1,0 +1,62 @@
+{
+  "schema_version": 2,
+  "id": "SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124",
+  "branch": "feature/system-product-release-bootstrap-20261124",
+  "status": "active",
+  "baseline_sha": "8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124.yaml",
+    ".agent/runs/SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124/run.json",
+    "addons/smart_construction_core/__manifest__.py",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_bundle/__manifest__.py",
+    "addons/smart_construction_bundle/hooks.py",
+    "addons/smart_construction_bundle/migrations/0.1.2/post-migrate.py",
+    "addons/smart_construction_bundle/tests/__init__.py",
+    "addons/smart_construction_bundle/tests/test_system_product_release.py",
+    "make/ci.mk",
+    "docs/ops/iterations/system_product_release_bootstrap_20261124.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "governed local.test fresh bundle installation plus exact-head remote CI"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.smart_construction_bundle.system_product_release.orm",
+      "reason": "Prove fresh-install system release materialization and idempotency in a disposable local test database."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Run the owning module baseline against the current target main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release eligibility follows protected integration."
+    }
+  },
+  "checks": {
+    "product_release_initialization": {
+      "target": "verify.smart_construction_bundle.system_product_release.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_core/__manifest__.py",
+        "addons/smart_construction_bundle/__manifest__.py",
+        "addons/smart_construction_bundle/hooks.py",
+        "addons/smart_construction_bundle/migrations/0.1.2/post-migrate.py",
+        "addons/smart_construction_bundle/tests/test_system_product_release.py",
+        "make/ci.mk",
+        "make/dev.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the targeted fresh-install ORM test, publish the exact candidate, merge after required CI, then rebuild local and daily demo.",
+  "goal": ".agent/goals/SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124.yaml",
+  "record": "docs/ops/iterations/system_product_release_bootstrap_20261124.md"
+}

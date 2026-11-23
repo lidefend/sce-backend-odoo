@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5360`
+- Scanned files: `5362`
 - Files requiring split plan: `88`
 - Files above warning threshold: `161`
 
@@ -166,6 +166,7 @@ Generated from repository source files. This report is informational during the 
 | 1126 | Python source | `addons/smart_construction_core/models/support/approval_policy.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
+| 1107 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
@@ -195,7 +196,6 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 987 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
-| 984 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 984 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
