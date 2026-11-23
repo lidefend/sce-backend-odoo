@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124",
   "branch": "feature/system-product-release-bootstrap-20261124",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "8a22a9cc8142d98bbf3813d3e6d85eaa77c58df9",
   "scope": [
     ".agent/active-runs.json",
@@ -67,7 +67,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the targeted fresh-install ORM test, publish the exact candidate, merge after required CI, then rebuild local and daily demo.",
+  "next_exact_step": "Publish the exact candidate, merge it after required CI, then rebuild local and daily demo.",
   "goal": ".agent/goals/SYSTEM-PRODUCT-RELEASE-BOOTSTRAP-20261124.yaml",
   "record": "docs/ops/iterations/system_product_release_bootstrap_20261124.md"
 }

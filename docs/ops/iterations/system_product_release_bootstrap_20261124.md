@@ -49,6 +49,8 @@ product itself.
   3 tests passed on a fresh disposable bundle installation.
 - Verified standard and preview active snapshots, 46-scene composition,
   frozen integrity, runtime publication scope, idempotency and upgrade repair.
+- `make ci.local.iteration`: PASS at `4ae586fee`; 11 affected targets executed,
+  including the bundle module baseline and incremental planner.
 
 ## Boundaries
 
