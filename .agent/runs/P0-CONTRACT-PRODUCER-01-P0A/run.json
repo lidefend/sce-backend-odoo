@@ -75,6 +75,7 @@
     "scripts/verify/test_contract_fidelity_plan_guard.py",
     "scripts/verify/test_dev_acceptance_release_identity.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_dev_runtime_performance.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
   ],
