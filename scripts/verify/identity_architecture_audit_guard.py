@@ -66,6 +66,18 @@ FINDING_STATUSES = {
     "accepted_local_identity",
 }
 SEVERITIES = {"P0", "P1", "P2", "P3"}
+WORK_PACKAGE_STATUSES = {
+    "blocked_by_identity_baseline_and_p0_c",
+    "completed",
+    "merged",
+    "proposed",
+}
+COMPLETED_WORK_PACKAGE_STATUSES = {"completed", "merged"}
+TERMINAL_FINDING_STATUSES = {
+    "accepted_local_identity",
+    "fixed",
+    "frozen",
+}
 
 
 def _unique(values: list[str]) -> bool:
@@ -209,6 +221,11 @@ def validate_matrix(
         for row in findings
         if isinstance(row, dict)
     ]
+    finding_by_id = {
+        str(row.get("id") or "").strip(): row
+        for row in findings
+        if isinstance(row, dict)
+    }
     if not _unique(finding_ids):
         errors.append("finding ids must be unique")
     missing_findings = sorted(REQUIRED_FINDINGS - set(finding_ids))
@@ -241,6 +258,7 @@ def validate_matrix(
             errors.append(f"audit document does not mention {finding_id}")
 
     work_packages = matrix.get("workPackages")
+    completed_package_domains: dict[str, set[str]] = {}
     if not isinstance(work_packages, list) or not work_packages:
         errors.append("workPackages must be a non-empty array")
     else:
@@ -251,6 +269,9 @@ def validate_matrix(
             package_id = str(package.get("id") or "").strip()
             if not package_id:
                 errors.append("work package id is required")
+            package_status = str(package.get("status") or "").strip()
+            if package_status not in WORK_PACKAGE_STATUSES:
+                errors.append(f"{package_id}.status is invalid")
             ids = package.get("findingIds")
             if not isinstance(ids, list) or not ids:
                 errors.append(f"{package_id}.findingIds must be non-empty")
@@ -258,6 +279,47 @@ def validate_matrix(
                 for finding_id in ids:
                     if finding_id not in finding_ids:
                         errors.append(f"{package_id} references unknown finding {finding_id}")
+                        continue
+                    if (
+                        package_status in COMPLETED_WORK_PACKAGE_STATUSES
+                        and finding_by_id[finding_id].get("status") != "fixed"
+                    ):
+                        errors.append(
+                            f"{package_id} is {package_status} but finding "
+                            f"{finding_id} is not fixed"
+                        )
+                    if package_status in COMPLETED_WORK_PACKAGE_STATUSES:
+                        domain_id = str(
+                            finding_by_id[finding_id].get("baselineDomain") or ""
+                        ).strip()
+                        if domain_id in domain_by_id:
+                            completed_package_domains.setdefault(domain_id, set()).add(
+                                package_id
+                            )
+
+    for domain_id, row in sorted(domain_by_id.items()):
+        domain_findings = [
+            finding
+            for finding in finding_by_id.values()
+            if str(finding.get("baselineDomain") or "").strip() == domain_id
+        ]
+        unresolved = [
+            finding
+            for finding in domain_findings
+            if finding.get("status") not in TERMINAL_FINDING_STATUSES
+        ]
+        completed_packages = completed_package_domains.get(domain_id, set())
+        if completed_packages and not unresolved and row.get("status") != "frozen":
+            package_ids = ", ".join(sorted(completed_packages))
+            errors.append(
+                f"{domain_id}.status must be frozen after completed work "
+                f"package(s) {package_ids} resolve all associated findings"
+            )
+        elif row.get("status") == "remediation_pending" and not unresolved:
+            errors.append(
+                f"{domain_id}.status cannot be remediation_pending without an "
+                "open finding"
+            )
 
     graph_nodes, graph_edges, graph_errors = parse_mermaid_graph(graph_text)
     errors.extend(graph_errors)

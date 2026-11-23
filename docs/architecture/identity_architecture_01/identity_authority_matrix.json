@@ -283,13 +283,13 @@
       ],
       "missingPolicy": "contract_gap",
       "duplicatePolicy": "action_id_unique_in_contract",
-      "duplicateAuthority": "name_overlap_only",
+      "duplicateAuthority": "none_detected",
       "evidence": [
         "frontend/apps/web/src/app/contracts/v2/types.ts::ContractV2ActionRule",
         "addons/smart_core/handlers/execute_button.py::_authorize_contract_action",
         "addons/smart_core/core/action_target_schema.py::validate_action_target"
       ],
-      "status": "remediation_pending"
+      "status": "frozen"
     },
     {
       "id": "runtime.collection_row",

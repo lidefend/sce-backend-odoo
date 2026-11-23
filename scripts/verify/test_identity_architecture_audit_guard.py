@@ -63,6 +63,54 @@ class IdentityArchitectureAuditGuardTest(unittest.TestCase):
         matrix["workPackages"][0]["findingIds"].append("ID-F-999")
         self.assertTrue(any("unknown finding ID-F-999" in item for item in self.validate(matrix)))
 
+    def test_merged_work_package_cannot_leave_resolved_domain_pending(self):
+        matrix = deepcopy(self.matrix)
+        domain = next(
+            row
+            for row in matrix["domains"]
+            if row["id"] == "contract.action_rule"
+        )
+        domain["status"] = "remediation_pending"
+        self.assertTrue(
+            any(
+                "contract.action_rule.status must be frozen after completed work package(s) "
+                "P0-C-FIX-01 resolve all associated findings" in item
+                for item in self.validate(matrix)
+            )
+        )
+
+    def test_merged_work_package_requires_fixed_findings(self):
+        matrix = deepcopy(self.matrix)
+        finding = next(
+            row for row in matrix["findings"] if row["id"] == "ID-F-001"
+        )
+        finding["status"] = "open"
+        self.assertTrue(
+            any(
+                "P0-C-FIX-01 is merged but finding ID-F-001 is not fixed" in item
+                for item in self.validate(matrix)
+            )
+        )
+
+    def test_other_open_finding_allows_domain_to_remain_pending(self):
+        matrix = deepcopy(self.matrix)
+        finding = next(
+            row for row in matrix["findings"] if row["id"] == "ID-F-002"
+        )
+        finding["baselineDomain"] = "contract.action_rule"
+        domain = next(
+            row
+            for row in matrix["domains"]
+            if row["id"] == "contract.action_rule"
+        )
+        domain["status"] = "remediation_pending"
+        self.assertFalse(
+            any(
+                "contract.action_rule.status must be frozen" in item
+                for item in self.validate(matrix)
+            )
+        )
+
     def test_graph_missing_domain_is_rejected(self):
         graph = self.graph.replace('"odoo.record"', '"odoo.record.missing"')
         errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)

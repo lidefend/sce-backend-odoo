@@ -56,6 +56,9 @@ Architecture decisions:
 - `scene_key` remains a product organization identity and never substitutes for
   menu/action identity;
 - ContractV2ActionRule remains the only action authority;
+- `contract.action_rule` is frozen with no duplicate authority after the merged
+  P0-C-FIX-01 remediation; the historical findings retain PR #976 and merge
+  `2a99f01c` evidence;
 - `rowKey` never substitutes for persisted `record_id`;
 - authorization subject remains server-only;
 - request/trace identity never becomes business or authorization identity.
@@ -75,11 +78,12 @@ Findings:
 
 ## Validation
 
-- `verify.identity.architecture.audit.unit`: PASS, 18 tests and matrix/graph
+- `verify.identity.architecture.audit.unit`: PASS, 21 tests and matrix/graph
   validation for 16 domains, 23 edges and 8 findings. Edge admission compares
   exact `(source, target, relation kind)` triples, including negative cases for
   each attachment relation, changed relation kinds and unregistered parallel
-  edges.
+  edges. Completed remediation work packages require fixed findings and a
+  frozen domain unless another open finding remains.
 - `verify.docs.contract_sync`: PASS and consumes the identity guard.
 - `verify.docs.links`: PASS.
 - `verify.guard.registry`: PASS.
