@@ -1286,7 +1286,6 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@git diff --check
 	@python3 scripts/ops/local_quick_evidence.py preflight
-	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
 	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree
@@ -1298,7 +1297,6 @@ ci.local.backend.iteration: guard.prod.forbid verify.baseline.iteration.executio
 	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@git diff --check
 	@python3 scripts/ops/local_quick_evidence.py preflight
-	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
 	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree --channel backend
@@ -1309,7 +1307,6 @@ ci.local.frontend.iteration: guard.prod.forbid verify.baseline.iteration.executi
 	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@git diff --check
 	@python3 scripts/ops/local_quick_evidence.py preflight
-	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
 	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree --channel frontend

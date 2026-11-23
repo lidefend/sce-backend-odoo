@@ -73,6 +73,9 @@ FRONTEND_SOURCE_TARGETS = tuple(sorted((
     *BASE_FRONTEND_TARGETS,
     FRONTEND_SOURCE_SCAN_TARGET,
 )))
+COVERING_CHECK_TARGETS = {
+    "audit.verification.lane_coverage.check": ("verify.verification.lane_coverage",),
+}
 NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.lint.src": "eslint",
     "verify.frontend.typecheck.strict": "vue-tsc",
@@ -618,10 +621,14 @@ RULES = (
         "verify.ci.scheduled_gates",
     )),
     Rule((
-        "make/ci.mk",
         "scripts/verify/frontend_static_release_audit.py",
     ), (
         "verify.ci.workflow.contract",
+    )),
+    Rule((
+        "make/ci.mk",
+    ), (
+        "verify.frontend.dev.incremental.unit",
     )),
     Rule((
         "make/contract.mk",
@@ -1692,12 +1699,15 @@ RULES = (
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py",
         "scripts/ops/incremental_execution.py",
-        "scripts/ops/agent_run_context.py",
-        "scripts/ops/generated_evidence_paths.py",
-        "scripts/verify/test_agent_run_context.py",
         "make/frontend.mk",
     ), (
         "verify.frontend.dev.incremental.unit",
+    )),
+    Rule((
+        "scripts/ops/agent_run_context.py",
+        "scripts/ops/generated_evidence_paths.py",
+        "scripts/verify/test_agent_run_context.py",
+    ), (
         "verify.agent.resume.unit",
     )),
     Rule((
@@ -2772,6 +2782,20 @@ RULES = (
     Rule(('config/frontend/acceptance_environments_v1.json', 'scripts/dev/frontend_acceptance_carrier_common.sh', 'scripts/dev/frontend_acceptance_runtime_profile.py', 'scripts/dev/frontend_release_disposable.py', 'scripts/verify/g1_acceptance_baseline_guard.py', 'scripts/verify/test_frontend_release_disposable.py', 'scripts/verify/test_g1_acceptance_baseline_guard.py'), ("verify.acceptance.disposable.unit",)),
 )
 FALLBACK_TARGET = "verify.frontend.typecheck.strict"
+LANE_COVERAGE_TARGET = "audit.verification.lane_coverage.check"
+VERIFICATION_SURFACE_PREFIXES = (
+    "make/",
+    ".github/workflows/",
+    "scripts/audit/verification_lane_",
+    "scripts/verify/registry.yaml",
+    "scripts/verify/guard_registry_audit.py",
+    "scripts/verify/test_guard_registry_audit.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ops/local_quick_evidence.py",
+    "scripts/ops/test_local_quick_evidence.py",
+    "docs/audit/guard_registry/",
+)
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
 DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
     "verify.quick.input_scope.unit",
@@ -3042,6 +3066,11 @@ def select_iteration_targets(paths: list[str]) -> list[str]:
     retains the owning-module baseline.
     """
     selected = set(select_targets(paths))
+    if any(
+        path.replace("\\", "/").startswith(VERIFICATION_SURFACE_PREFIXES)
+        for path in paths
+    ):
+        selected.add(LANE_COVERAGE_TARGET)
     changed_test_modules: set[str] = set()
     test_only_focused_orm: dict[str, set[str]] = {}
     production_modules: set[str] = set()
@@ -3660,8 +3689,13 @@ def print_plan(
     shared_contract_targets = (
         set(partition["sharedContract"]) - deferred_remote
     )
-    reusable = reusable_check_targets(checks or {})
     blocked = blocked_check_targets(checks or {})
+    reusable, covered_by = reusable_execution_targets(
+        required_targets,
+        checks or {},
+        blocked=blocked,
+        include_all_exact=True,
+    )
     targets = required_targets | {
         check["target"] for check in (checks or {}).values()
     }
@@ -3675,7 +3709,7 @@ def print_plan(
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
     registration_missing = (
-        sorted(required_targets - registered_targets)
+        sorted((required_targets - reusable) - registered_targets)
         if registered_targets is not None
         else []
     )
@@ -3706,6 +3740,7 @@ def print_plan(
         "requiredLayers": target_layers(required_targets),
         "executionLayers": target_layers(targets),
         "reusedTargets": sorted(reusable),
+        "reusedTargetCoverage": covered_by,
         "blockedTargets": sorted(blocked),
         "registrationMissingTargets": registration_missing,
         "excludedTargets": sorted(excluded_targets),
@@ -3732,6 +3767,32 @@ def reusable_check_targets(checks: dict) -> set[str]:
         for target, states in grouped.items()
         if all(state == "reusable" for state in states)
     }
+
+
+def reusable_execution_targets(
+    required: set[str] | list[str],
+    checks: dict,
+    *,
+    blocked: set[str] | None = None,
+    include_all_exact: bool = False,
+) -> tuple[set[str], dict[str, str]]:
+    """Resolve exact and covering reusable targets for one execution scope."""
+    required_set = set(required) - set(blocked or ())
+    exact = reusable_check_targets(checks)
+    reusable = set(exact) if include_all_exact else exact & required_set
+    reusable -= set(blocked or ())
+    covered_by: dict[str, str] = {}
+    for target, covering_targets in COVERING_CHECK_TARGETS.items():
+        if target not in required_set or target in reusable:
+            continue
+        source = next(
+            (candidate for candidate in covering_targets if candidate in exact),
+            None,
+        )
+        if source is not None:
+            reusable.add(target)
+            covered_by[target] = source
+    return reusable, covered_by
 
 
 def reusable_check_results(checks: dict) -> dict[str, dict]:
@@ -3764,6 +3825,29 @@ def reusable_check_results(checks: dict) -> dict[str, dict]:
             "reuseReason": "declared check reused from unchanged receipt",
             "testCount": source.get("test_count", 0),
         }
+    return results
+
+
+def reusable_execution_results(
+    checks: dict,
+    reusable: set[str],
+    covered_by: dict[str, str],
+) -> dict[str, dict]:
+    """Materialize exact and covering reusable result rows."""
+    exact = reusable_check_results(checks)
+    results = {
+        target: dict(row)
+        for target, row in exact.items()
+        if target in reusable and target not in covered_by
+    }
+    for target, source_target in covered_by.items():
+        source = exact.get(source_target)
+        if source is None:
+            continue
+        row = dict(source)
+        row["target"] = target
+        row["reuseReason"] = f"covered by reusable {source_target}"
+        results[target] = row
     return results
 
 
@@ -4035,7 +4119,7 @@ def execute_targets(
         and path.replace("\\", "/") not in NON_SOURCE_PATHS
     ]
     registration_missing = (
-        sorted(set(required_targets) - registered_targets)
+        sorted((set(required_targets) - set(reusable)) - registered_targets)
         if registered_targets is not None
         else []
     )
@@ -4376,13 +4460,13 @@ def execute_worktree(
     registered = declared_check_targets(run) | implicitly_registered_offline_targets(
         required
     )
-    reusable = reusable_check_targets(checks) & required
-    reusable_results = {
-        target: row
-        for target, row in reusable_check_results(checks).items()
-        if target in reusable
-    }
     blocked = blocked_check_targets(checks) & required
+    reusable, covered_by = reusable_execution_targets(
+        required,
+        checks,
+        blocked=blocked,
+    )
+    reusable_results = reusable_execution_results(checks, reusable, covered_by)
     return execute_targets(
         paths,
         root=root,
