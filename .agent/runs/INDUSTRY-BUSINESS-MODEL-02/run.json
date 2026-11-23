@@ -43,6 +43,7 @@
     "make/dev_test.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
+    "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/industry_business_model_02_data_audit.py",
     "scripts/verify/test_payment_approval_state_machine.py",

@@ -17,8 +17,7 @@ CHECKS = [
             "project.task",
             "boq_generated",
             "boq_group_key",
-            "boq_quantity_total",
-            "boq_amount_total",
+            '"task_id": task.id',
         ],
     },
     {
@@ -56,6 +55,8 @@ CHECKS = [
         "path": "addons/smart_construction_core/models/support/task_extend.py",
         "needles": [
             "boq_line_ids",
+            "legacy_boq_line_ids",
+            "_compute_boq_line_ids",
             "boq_quantity_total",
             "boq_amount_total",
             "boq_uom_id",
@@ -82,7 +83,7 @@ def main() -> int:
         "acceptance_points": [
             "Wizard can derive execution tasks from published project.boq.line rows.",
             "Project entrypoints open user-owned WBS planning without deriving WBS nodes from BOQ.",
-            "Generated tasks keep BOQ group, quantity, amount, and linked line evidence.",
+            "Generated tasks keep BOQ group and linked line evidence; quantity and amount are computed from the effective BOQ lines.",
             "WBS/work breakdown views are loaded for user verification.",
         ],
         "results": results,
