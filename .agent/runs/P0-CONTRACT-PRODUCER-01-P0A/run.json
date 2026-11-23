@@ -25,6 +25,7 @@
     "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
     "docs/ops/iterations/p0_contract_producer_01_p0a_implementation_20261123.md",
     "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
     "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",

@@ -145,8 +145,8 @@ correctness gaps:
 
 Evidence:
 
-- P0-A Python tests: 37 PASS.
-- P0-A ORM tag: 8 PASS.
+- P0-A Python tests: 40 PASS.
+- P0-A ORM tag: 9 PASS.
 - Real ORM money evidence target: 1 PASS; produced value and `USD` identity were
   decoded and presented as `US$0.00`.
 - Browser/decoder target: PASS at 1440/390; missing client identity remained
@@ -166,3 +166,14 @@ Final independent-review closure:
 - Monetary rows require exactly one matching `res.currency` Descriptor. Zero
   matches and multiple matches both fail closed; neither the first nor the last
   match is accepted implicitly.
+
+Final version-boundary closure:
+
+- Legacy projection now requires the client to explicitly accept `2.5.x`;
+  `2.4.x`-only and `2.4.x` + `2.6.x` declarations fail with
+  `CONTRACT_VERSION_UNSUPPORTED`.
+- `2.5.x` alone returns the legacy projection; `2.5.x + 2.6.x` without the
+  P0-A capability returns legacy; `2.6.x` with `page_block_data.v1` returns the
+  current projection.
+- Known clients with no version declaration retain the approved legacy exception,
+  and unknown clients remain fail-closed.

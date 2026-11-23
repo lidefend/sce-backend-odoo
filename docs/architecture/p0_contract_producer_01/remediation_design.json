@@ -14,7 +14,7 @@
     ]
   },
   "source_evidence": {
-    "addons/smart_core/core/contract_version_negotiation.py": "6f00b4d3bf0eca7ba236f56ad2c758d352edfee3be70d08fe79a00357df28e65",
+    "addons/smart_core/core/contract_version_negotiation.py": "67e0fbc6ede9e5ad2c0216835c542d2f0abdb66a2e3e43cbc01b4e94a9794b32",
     "addons/smart_core/core/page_block_data_contract.py": "8af76b96dbeb44f27090cc049449517b5ab1ece446fffe9b3e9c82e02f0cece1",
     "addons/smart_core/core/page_contracts_builder.py": "fbb4e8f5bd7a94252a28351728cdc16178359c477c80fe8e83e2d05f561b99f9",
     "addons/smart_core/core/page_orchestration_data_provider.py": "80438c6489006fb163445a73aa1a7d4597eaf891cafa71d151e6b4957aef0b1e",

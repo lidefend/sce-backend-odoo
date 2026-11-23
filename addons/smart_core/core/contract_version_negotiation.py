@@ -144,35 +144,37 @@ def negotiate_client_contract(
             REASON_CONTRACT_VERSION_UNSUPPORTED,
             "no common Contract V2 version",
         )
-    if minors[0] <= 5:
+    if 6 in minors and PAGE_BLOCK_DATA_CAPABILITY in capabilities:
+        return {
+            "negotiationVersion": NEGOTIATION_VERSION,
+            "status": "current",
+            "clientType": resolved_client,
+            "compatibilityMode": "page_block_data_v1",
+            "acceptedContractVersions": versions,
+            "clientContractCapabilities": capabilities,
+            "contractVersion": CURRENT_CONTRACT_VERSION,
+            "pageOrchestrationVersion": CURRENT_PAGE_ORCHESTRATION_VERSION,
+            "carriers": {
+                PAGE_BLOCK_DATA_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": True},
+                ATTACHMENT_FACT_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
+                PAGE_BLOCK_ACTION_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
+            },
+        }
+    if 5 in minors:
         return _legacy_result(
             client_type=resolved_client,
             accepted_versions=versions,
             capabilities=capabilities,
-            compatibility_mode="legacy_common_version",
+            compatibility_mode=(
+                "new_version_without_page_block_capability"
+                if 6 in minors
+                else "legacy_common_version"
+            ),
         )
-    if PAGE_BLOCK_DATA_CAPABILITY not in capabilities:
-        return _legacy_result(
-            client_type=resolved_client,
-            accepted_versions=versions,
-            capabilities=capabilities,
-            compatibility_mode="new_version_without_page_block_capability",
-        )
-    return {
-        "negotiationVersion": NEGOTIATION_VERSION,
-        "status": "current",
-        "clientType": resolved_client,
-        "compatibilityMode": "page_block_data_v1",
-        "acceptedContractVersions": versions,
-        "clientContractCapabilities": capabilities,
-        "contractVersion": CURRENT_CONTRACT_VERSION,
-        "pageOrchestrationVersion": CURRENT_PAGE_ORCHESTRATION_VERSION,
-        "carriers": {
-            PAGE_BLOCK_DATA_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": True},
-            ATTACHMENT_FACT_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-            PAGE_BLOCK_ACTION_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-        },
-    }
+    raise ContractNegotiationError(
+        REASON_CONTRACT_VERSION_UNSUPPORTED,
+        "no common supported Contract V2 version",
+    )
 
 
 def carrier_enabled(negotiation: dict[str, Any], carrier: str) -> bool:

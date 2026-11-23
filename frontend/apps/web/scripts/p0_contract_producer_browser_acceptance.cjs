@@ -69,6 +69,10 @@ async function validateCompatMatrix(page) {
       client_type: 'web_pc',
     },
     pre_negotiation_without_identity: {},
+    only_24: {
+      ...base,
+      accepted_contract_versions: ['2.4.x'],
+    },
     legacy_25: base,
     legacy_26_without_capability: {
       ...base,
@@ -218,6 +222,15 @@ async function main() {
         throw new Error(`${viewport.name}: missing client identity was implicitly assigned`);
       }
       assertLegacyPayload(`${viewport.name}.legacy_25`, run.matrix.legacy_25);
+      if (run.matrix.only_24.status === 200 && run.matrix.only_24.body?.ok !== false) {
+        throw new Error(`${viewport.name}: 2.4-only client was upgraded to a supported version`);
+      }
+      if (
+        (run.matrix.only_24.body?.error?.reason_code || run.matrix.only_24.body?.error?.reasonCode)
+        !== 'CONTRACT_VERSION_UNSUPPORTED'
+      ) {
+        throw new Error(`${viewport.name}: 2.4-only client did not fail with CONTRACT_VERSION_UNSUPPORTED`);
+      }
       assertLegacyPayload(`${viewport.name}.legacy_26_without_capability`, run.matrix.legacy_26_without_capability);
       if (run.matrix.no_common_version.status === 200 && run.matrix.no_common_version.body?.ok !== false) {
         throw new Error(`${viewport.name}: no common version did not fail closed`);

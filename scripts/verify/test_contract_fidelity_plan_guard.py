@@ -145,11 +145,26 @@ class ContractVersionNegotiationTest(unittest.TestCase):
         self.assertEqual(result["contractVersion"], "2.5.0")
         self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
 
+    def test_client_that_only_accepts_24_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(accepted_contract_versions=["2.4.x"])
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+
+    def test_mixed_versions_without_25_have_no_common_legacy_version(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(accepted_contract_versions=["2.4.x", "2.6.x"])
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+
     def test_26_without_page_block_capability_gets_complete_legacy_projection(self):
-        result = self.negotiate(accepted_contract_versions=["2.0.x", "2.6.x"])
+        result = self.negotiate(accepted_contract_versions=["2.5.x", "2.6.x"])
         self.assertEqual(result["contractVersion"], "2.5.0")
         self.assertEqual(result["pageOrchestrationVersion"], "2.0.0")
         self.assertEqual(result["compatibilityMode"], "new_version_without_page_block_capability")
+
+    def test_26_only_without_page_block_capability_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(accepted_contract_versions=["2.6.x"])
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
     def test_26_with_page_block_capability_enables_only_p0_a(self):
         result = self.negotiate(
@@ -461,7 +476,7 @@ class P0ContractProducerDesignTest(unittest.TestCase):
             "required_not_run_pending_implementation",
         )
         executed = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "executed"}
-        self.assertEqual(executed, {"DEC-01", "DEC-02", "DEC-03", "DEC-04", "NEG-05"})
+        self.assertEqual(executed, {"DEC-01", "DEC-02", "DEC-03", "DEC-04", "NEG-05", "VER-07"})
         pending = {row["id"] for row in self.matrix["cases"] if row["evidence"] == "not_run_pending_implementation"}
         self.assertEqual(
             pending,
