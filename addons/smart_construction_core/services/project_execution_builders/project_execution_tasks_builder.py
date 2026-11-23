@@ -4,9 +4,6 @@ from __future__ import annotations
 from odoo import fields
 
 from odoo.addons.smart_construction_core.services.project_dashboard_builders.base import BaseProjectBlockBuilder
-from odoo.addons.smart_construction_core.services.project_execution_item_projection_service import (
-    ProjectExecutionItemProjectionService,
-)
 from odoo.addons.smart_construction_core.services.project_task_state_support import (
     ProjectTaskStateSupport,
 )
@@ -20,7 +17,6 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
 
     def build(self, project=None, context=None):
         visibility = self._visibility()
-        projection_service = ProjectExecutionItemProjectionService(self.env)
         empty_data = {
             "items": [],
             "summary": {
@@ -29,11 +25,13 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
                 "blocked_count": 0,
                 "overdue_count": 0,
                 "in_progress_count": 0,
+                "done_count": 0,
+                "cancelled_count": 0,
+                "task_completion_percent": 0.0,
                 "explicit_count": 0,
-                "derived_count": 0,
-                "source_model": "project.task+derived",
-                "state_field": "sc_state",
-                "empty_hint": "当前项目还没有执行事项，系统会自动纳入合同、付款、结算等事项，也支持补充显性任务。",
+                "source_model": "project.task",
+                "state_field": "state",
+                "empty_hint": "当前项目还没有施工执行任务。合同、付款和结算属于业务待办，不在此处以任务呈现。",
             },
         }
         if not visibility.get("allowed"):
@@ -53,24 +51,22 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
             rows = []
 
         items = []
-        open_count = 0
-        blocked_count = 0
+        metrics = ProjectTaskStateSupport.native_metrics(rows, model)
+        open_states = set(ProjectTaskStateSupport.native_open_states(model))
         overdue_count = 0
-        in_progress_count = 0
         explicit_count = 0
+        today = fields.Date.today()
+        state_selection = dict(
+            (model.fields_get(["state"]).get("state") or {}).get("selection") or []
+        )
         for task in rows:
             explicit_count += 1
-            task_state = ProjectTaskStateSupport.normalize(getattr(task, "sc_state", "draft"))
-            if not ProjectTaskStateSupport.is_done(task_state):
-                open_count += 1
-            if task_state == "in_progress":
-                in_progress_count += 1
+            task_state = str(getattr(task, "state", "") or "")
+            is_open = task_state in open_states
             deadline_value = getattr(task, "date_deadline", False)
             deadline = str(deadline_value or "")
-            if deadline_value and deadline_value < fields.Date.today():
+            if is_open and deadline_value and deadline_value < today:
                 overdue_count += 1
-            if task_state == "draft" and getattr(task, "readiness_status", "") == "blocked":
-                blocked_count += 1
             items.append(
                 {
                     "task_id": int(task.id),
@@ -82,17 +78,9 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
                     "stage_name": str(getattr(getattr(task, "stage_id", None), "display_name", "") or ""),
                     "deadline": deadline,
                     "state": task_state,
+                    "state_label": str(state_selection.get(task_state) or task_state),
                 }
             )
-
-        derived_items = projection_service.project_items(project, limit=max(0, 6 - len(items)))
-        derived_summary = projection_service.project_summary(project)
-        items.extend(derived_items)
-        open_count += int(derived_summary.get("open_count") or 0)
-        blocked_count += int(derived_summary.get("blocked_count") or 0)
-        overdue_count += int(derived_summary.get("overdue_count") or 0)
-        in_progress_count += int(derived_summary.get("in_progress_count") or 0)
-        derived_count = int(derived_summary.get("count") or 0)
 
         return self._envelope(
             state="ready" if items else "empty",
@@ -101,15 +89,17 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
                 "items": items,
                 "summary": {
                     "count": len(items),
-                    "open_count": open_count,
-                    "blocked_count": blocked_count,
-                    "in_progress_count": in_progress_count,
+                    "open_count": metrics["task_open_count"],
+                    "blocked_count": metrics["task_waiting_count"],
+                    "in_progress_count": metrics["task_in_progress_count"],
                     "overdue_count": overdue_count,
+                    "done_count": metrics["task_done_count"],
+                    "cancelled_count": metrics["task_cancelled_count"],
+                    "task_completion_percent": metrics["task_completion_percent"],
                     "explicit_count": explicit_count,
-                    "derived_count": derived_count,
-                    "source_model": "project.task+derived",
-                    "state_field": "sc_state",
-                    "empty_hint": "当前项目还没有执行事项，系统会自动纳入合同、付款、结算等事项，也支持补充显性任务。",
+                    "source_model": "project.task",
+                    "state_field": "state",
+                    "empty_hint": "当前项目还没有施工执行任务。合同、付款和结算属于业务待办，不在此处以任务呈现。",
                 },
             },
         )

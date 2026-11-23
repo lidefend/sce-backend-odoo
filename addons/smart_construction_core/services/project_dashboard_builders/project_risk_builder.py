@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from odoo import fields
 
+from odoo.addons.smart_construction_core.services.project_task_state_support import (
+    ProjectTaskStateSupport,
+)
+
 from .base import BaseProjectBlockBuilder
 
 
@@ -27,22 +31,31 @@ class ProjectRiskBuilder(BaseProjectBlockBuilder):
         }
 
         task_domain = self._project_domain("project.task", project)
+        task_model = self._model("project.task")
+        open_task_domain = (
+            task_domain + ProjectTaskStateSupport.native_open_domain(task_model)
+            if task_model is not None
+            else task_domain
+        )
         if self._model_has_fields("project.task", ["date_deadline"]):
             progress_signals["task_overdue"] = self._safe_count(
                 "project.task",
-                task_domain + [("date_deadline", "<", fields.Date.today())],
+                open_task_domain + [("date_deadline", "<", fields.Date.today())],
             )
-        if self._model_has_fields("project.task", ["kanban_state"]):
+        if task_model is not None:
             progress_signals["task_blocked"] = self._safe_count(
                 "project.task",
-                task_domain + [("kanban_state", "=", "blocked")],
+                task_domain + ProjectTaskStateSupport.native_waiting_domain(),
             )
 
         milestone_domain = self._project_domain("project.milestone", project)
-        if self._model_has_fields("project.milestone", ["status"]):
+        if self._model_has_fields("project.milestone", ["is_reached", "deadline"]):
             progress_signals["milestone_delay"] = self._safe_count(
                 "project.milestone",
-                milestone_domain + [("status", "in", ["delay", "overdue", "blocked"])],
+                milestone_domain + [
+                    ("is_reached", "=", False),
+                    ("deadline", "<", fields.Date.today()),
+                ],
             )
 
         if progress_signals["task_overdue"] > 0:

@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from odoo.addons.smart_construction_core.services.project_task_state_support import (
+    ProjectTaskStateSupport,
+)
+
 from .base import BaseProjectBlockBuilder
 
 
@@ -18,11 +22,14 @@ class ProjectMetricsBuilder(BaseProjectBlockBuilder):
             return self._envelope(state="empty", visibility=visibility, data={"items": []})
 
         task_domain = self._project_domain("project.task", project)
+        task_model = self._model("project.task")
         contract_domain = self._project_domain("construction.contract", project)
         cost_domain = self._project_domain("project.cost.ledger", project)
         payment_domain = self._project_domain("payment.request", project)
 
-        task_total = self._safe_count("project.task", task_domain)
+        tasks = task_model.search(task_domain) if task_model is not None else []
+        task_metrics = ProjectTaskStateSupport.native_metrics(tasks, task_model)
+        task_total = task_metrics["task_total"]
         contract_total = self._safe_count("construction.contract", contract_domain)
         cost_rows = self._safe_count("project.cost.ledger", cost_domain)
         payment_total = self._safe_count("payment.request", payment_domain)
@@ -39,18 +46,11 @@ class ProjectMetricsBuilder(BaseProjectBlockBuilder):
             cost_spent = self._safe_read_group_sum_any("project.cost.ledger", cost_domain, ["amount", "actual_amount"])
         progress_rate = float(getattr(project, "actual_percent", 0.0) or 0.0)
         if not progress_rate:
-            progress_rate = float(getattr(project, "progress_rate_latest", 0.0) or 0.0)
-        if not progress_rate and task_total > 0:
-            done = self._safe_count("project.task", task_domain + [("kanban_state", "=", "done")]) if self._model_has_fields("project.task", ["kanban_state"]) else 0
-            progress_rate = self._safe_rate(done, task_total)
-        contract_executed_amount = self._safe_read_group_sum_any(
-            "construction.contract",
-            contract_domain + [("state", "in", ["running", "in_progress", "done", "approved", "effective"])],
-            ["amount_total", "amount"],
-        )
-        contract_execution_rate = self._safe_rate(contract_executed_amount, contract_amount_total)
-        if not progress_rate and contract_execution_rate:
-            progress_rate = contract_execution_rate
+            progress_rate = float(
+                getattr(project, "dashboard_progress_rate", 0.0)
+                or getattr(project, "progress_rate_latest", 0.0)
+                or 0.0
+            )
         received_amount = self._safe_read_group_sum_any(
             "payment.request",
             payment_domain + [("type", "=", "receive"), ("state", "in", ["done", "approved", "approve"])],
@@ -68,7 +68,8 @@ class ProjectMetricsBuilder(BaseProjectBlockBuilder):
             "items": [
                 {"key": "contract_amount", "label": "合同金额", "value": contract_amount_total, "unit": "元"},
                 {"key": "output_value", "label": "已完成产值", "value": output_value, "unit": "元"},
-                {"key": "progress_rate", "label": "完成率", "value": round(progress_rate, 2), "unit": "%"},
+                {"key": "progress_rate", "label": "工程进度", "value": round(progress_rate, 2), "unit": "%"},
+                {"key": "task_completion_rate", "label": "任务完成率", "value": task_metrics["task_completion_percent"], "unit": "%"},
                 {"key": "cost_spent", "label": "成本支出", "value": cost_spent, "unit": "元"},
                 {"key": "profit_estimate", "label": "利润估算", "value": round(profit_estimate, 2), "unit": "元"},
                 {"key": "payment_received", "label": "回款金额", "value": received_amount, "unit": "元"},
@@ -83,6 +84,7 @@ class ProjectMetricsBuilder(BaseProjectBlockBuilder):
                 "contract_amount": contract_amount_total,
                 "output_value": output_value,
                 "progress_rate": round(progress_rate, 2),
+                "task_completion_rate": task_metrics["task_completion_percent"],
                 "cost_spent": cost_spent,
                 "profit_estimate": round(profit_estimate, 2),
                 "payment_received": received_amount,

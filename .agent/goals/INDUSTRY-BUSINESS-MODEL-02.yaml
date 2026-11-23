@@ -1,0 +1,75 @@
+schema_version: 1
+
+goal:
+  id: INDUSTRY-BUSINESS-MODEL-02
+  title: construction_business_object_boundary_minimal_convergence
+  status: active
+  formal_product_layer: P1
+  supporting_layers:
+    - P4
+  layer_target: >-
+    smart_construction_core project creation, project execution projection,
+    business-pending aggregation and task boundary semantics
+  module:
+    - smart_construction_core
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Remove task-centered assumptions from construction project orchestration,
+    separate business pending work from project.task, and produce a read-only
+    data/value audit for plan-task and settlement/BOQ relationship decisions
+    before any schema or migration change.
+  product_result: >-
+    Projects can exist and be managed without automatic task creation; projects
+    can contain multiple open tasks; project milestones no longer alias the
+    compatibility execution state; project engineering progress is distinct from
+    native task completion; analytics-account fields no longer claim to be
+    contract relations; and contract/payment/settlement records no longer appear
+    as project tasks.
+  why_here: >-
+    These are construction-industry object-boundary and declaration rules. They
+    belong to smart_construction_core, not to the generic smart_core contract
+    producer or the Vue renderer.
+  why_not_elsewhere:
+    - The frontend must not infer which business records are tasks.
+    - No second task, pending-work or business-status infrastructure is introduced.
+    - Plan-task cardinality, old settlement retirement and BOQ relationship
+      selection require data evidence and are excluded until that evidence exists.
+  blast_radius:
+    behavior:
+      - project initiation no longer creates a project root task
+      - project execution compatibility no longer enforces one open task
+      - project milestone context uses Odoo project.milestone facts
+      - project dashboard engineering progress is separate from native task completion
+      - task risk, waiting and completion metrics use native project.task.state
+      - analytic-account compatibility fields use truthful labels
+      - project execution task block contains only project.task records
+      - construction business pending records retain their source model and identity
+    contracts:
+      - project creation bootstrap summary
+      - project execution readiness and next-action summaries
+      - project context milestone fields
+      - project dashboard progress, metrics, header and risk summaries
+      - project execution task block
+  acceptance:
+    - Project creation succeeds with zero project.task records and without a task user_id write.
+    - A project can have multiple open project.task records.
+    - Project context and state explanation do not present sc_execution_state as a milestone.
+    - Contract, payment and settlement records are not emitted as system tasks.
+    - Business pending sources remain identifiable and are not merged into project.task.
+    - My Work excludes native closed tasks from open todo queries.
+    - Historical sc.workflow.workitem rows are not active todos while legacy workflow runtime is disabled.
+    - Project engineering progress does not fall back to task completion rate.
+    - Canceled tasks are excluded from the task-completion denominator.
+    - Project dashboard task waiting, completion and milestone delay use native facts.
+    - Analytics-account compatibility fields declare their actual model and label.
+    - Read-only data evidence records plan/task/WBS, settlement, BOQ relation and contract-field counts before schema decisions.
+  exclusions:
+    - direct removal of project.settlement
+    - schema changes to sc.plan.line, project.task, project.boq.line or contract fields
+    - data migration or repair
+    - T0 native state bridge implementation
+    - frontend source changes
+    - P0 smart_core changes
+  rollback: >-
+    Revert the P1 behavior changes and the focused tests/tooling; no data
+    migration is introduced, so rollback does not require record restoration.

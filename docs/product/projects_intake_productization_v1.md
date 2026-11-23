@@ -19,7 +19,7 @@
 
 ## 4. 创建后初始化语义
 - 立项成功后由 `ProjectInitializationService` 执行轻量骨架初始化：
-  - `project_task_root`：创建“项目根任务（Project Root Task）”（若无任务）。
+  - `project_tasks`：`optional`（项目可以没有任何任务；施工任务按真实工作分解创建）。
   - `project_cost_ledger`：`deferred`（按业务事件驱动生成，不做伪造台账）。
   - `project_finance_ledger`：`deferred`（按资金业务事件驱动）。
   - `project_risk_profile`：`derived`（由风险模型/计算视图承载）。
@@ -66,14 +66,16 @@
 执行流程：
 - `ProjectCreationService`
 - `ProjectInitializationService`
-- 创建 `root task`
+- 初始化项目自身的管理骨架；不得自动创建项目根任务或施工任务
 
 ## 10. 初始化数据最小原则
 初始化仅创建最小结构：
 
 - 允许：
-  - `root task`
+  - 项目主体及其最小管理配置
 - 禁止：
+  - 自动根任务
+  - 将合同、付款或结算记录伪装成任务
   - 虚假成本
   - 虚假资金
   - 虚假风险

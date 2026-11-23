@@ -42,11 +42,31 @@ class ProjectExecutionNextActionsBuilder(BaseProjectBlockBuilder):
         consistency_reason_code = "EXECUTION_TASK_MISSING"
         if task_model is not None:
             try:
+                open_states = ProjectTaskStateSupport.native_open_states(task_model)
+                active_states = tuple(
+                    state for state in open_states if state != "04_waiting_normal"
+                )
                 task_total = int(task_model.search_count(task_domain))
-                active_count = int(task_model.search_count(task_domain + ProjectTaskStateSupport.active_domain()))
-                done_count = int(task_model.search_count(task_domain + ProjectTaskStateSupport.done_domain()))
-                open_count = int(task_model.search_count(task_domain + ProjectTaskStateSupport.open_domain()))
-                in_progress_count = int(task_model.search_count(task_domain + [("sc_state", "=", "in_progress")]))
+                active_count = int(
+                    task_model.search_count(
+                        task_domain + [("state", "in", list(active_states))]
+                    )
+                )
+                done_count = int(
+                    task_model.search_count(
+                        task_domain + ProjectTaskStateSupport.native_done_domain()
+                    )
+                )
+                open_count = int(
+                    task_model.search_count(
+                        task_domain + ProjectTaskStateSupport.native_open_domain(task_model)
+                    )
+                )
+                in_progress_count = int(
+                    task_model.search_count(
+                        task_domain + ProjectTaskStateSupport.native_in_progress_domain()
+                    )
+                )
             except Exception:
                 task_total = 0
                 active_count = 0
@@ -76,7 +96,7 @@ class ProjectExecutionNextActionsBuilder(BaseProjectBlockBuilder):
             elif not scope_ok:
                 action["state"] = "blocked"
                 action["reason_code"] = scope_reason_code
-                action["hint"] = "当前超出 execution.advance 受控范围：仅支持单个开放任务推进。"
+                action["hint"] = "当前缺少可推进的施工任务，请先创建或选择任务。"
             elif not alignment_ok and current_state != "ready":
                 action["state"] = "blocked"
                 action["reason_code"] = alignment_reason_code
@@ -92,7 +112,7 @@ class ProjectExecutionNextActionsBuilder(BaseProjectBlockBuilder):
             readiness_state = "blocked"
             readiness_failed_count = 1
             readiness_primary_reason_code = "EXECUTION_TASK_MISSING"
-            readiness_primary_message = "请先创建项目根任务，并确保仅保留一个开放任务。"
+            readiness_primary_message = "项目可以暂时没有任务；进入施工执行前请先创建实际施工任务。"
         actions = [
             self._next_action(
                 project=project,

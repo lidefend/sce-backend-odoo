@@ -16,6 +16,9 @@ from odoo.addons.smart_construction_core.services.project_state_explain_service 
     ProjectStateExplainService,
     lifecycle_state_label,
 )
+from odoo.addons.smart_construction_core.services.project_context_contract import (
+    select_project_milestone,
+)
 from odoo.addons.smart_construction_core.services.project_task_state_support import (
     ProjectTaskStateSupport,
 )
@@ -340,25 +343,29 @@ class ProjectDashboardService:
                 "milestone": "",
                 "state": "empty",
                 "progress_percent": "0",
+                "task_completion_percent": "0",
                 "cost_total": "0",
                 "payment_total": "0",
                 "status": "",
                 "date": str(fields.Date.today()),
             }
-        progress_percent = 0.0
+        task_completion_percent = 0.0
         try:
             task_model = self._model("project.task")
             if task_model is not None:
-                total = int(task_model.search_count([("project_id", "=", int(project.id))]))
-                done = int(
-                    task_model.search_count(
-                        [("project_id", "=", int(project.id))] + ProjectTaskStateSupport.done_domain()
-                    )
+                tasks = task_model.search([("project_id", "=", int(project.id))])
+                task_completion_percent = float(
+                    ProjectTaskStateSupport.native_metrics(tasks, task_model)[
+                        "task_completion_percent"
+                    ]
                 )
-                if total > 0:
-                    progress_percent = round((done / float(total)) * 100.0, 2)
         except Exception:
-            progress_percent = 0.0
+            task_completion_percent = 0.0
+        progress_percent = float(
+            getattr(project, "dashboard_progress_rate", 0.0)
+            or getattr(project, "progress_rate_latest", 0.0)
+            or 0.0
+        )
         if self._evidence_summary_service is None:
             raise RuntimeError("project evidence summary service is not registered")
         evidence_summary = self._evidence_summary_service.summary_for_project(project)
@@ -453,9 +460,10 @@ class ProjectDashboardService:
             "stage_name": lifecycle_state_label(project),
             "health_state": _safe_text(_safe_field(project, "health_state")),
             "lifecycle_state": _safe_text(_safe_field(project, "lifecycle_state")),
-            "milestone": _safe_text(_safe_field(project, "sc_execution_state")),
+            "milestone": _safe_text(getattr(select_project_milestone(project), "display_name", "")),
             "state": "ready",
             "progress_percent": str(progress_percent),
+            "task_completion_percent": str(task_completion_percent),
             "cost_total": str(evidence_summary.get("cost_total") or 0.0),
             "payment_total": str(evidence_summary.get("pay_total") or 0.0),
             "payment_executed_total": str(evidence_summary.get("pay_done_total") or 0.0),
@@ -495,18 +503,25 @@ class ProjectDashboardService:
                 "project_condition_explain": state_explain.get("project_condition_explain") or state_explain.get("status_explain") or "请先选择项目或创建项目。",
                 "status_explain": state_explain.get("status_explain") or state_explain.get("project_condition_explain") or "请先选择项目或创建项目。",
             }
-        milestone = str(getattr(project, "sc_execution_state", "") or "").strip().lower()
-        milestone_explain_map = {
-            "ready": "当前执行准备已完成，可以进入执行推进。",
-            "in_progress": "当前执行正在推进，建议优先补齐成本与付款事实。",
-            "done": "当前执行动作已完成，可继续检查成本、付款与结算结果。",
-        }
+        milestone = select_project_milestone(project)
+        if not milestone:
+            milestone_explain = "当前项目尚未设置里程碑。"
+        elif getattr(milestone, "is_reached", False):
+            milestone_explain = "当前里程碑“%s”已于 %s 达成。" % (
+                milestone.display_name,
+                milestone.reached_date or "",
+            )
+        else:
+            milestone_explain = "下一里程碑“%s”，计划日期 %s。" % (
+                milestone.display_name,
+                milestone.deadline or "未设置",
+            )
         return {
             "execution_stage_label": state_explain.get("execution_stage_label") or state_explain.get("stage_label") or "未设置阶段",
             "stage_label": state_explain.get("stage_label") or "未设置阶段",
             "execution_stage_explain": state_explain.get("execution_stage_explain") or state_explain.get("stage_explain") or "当前项目处于已发布主线中，请按下一步动作推进。",
             "stage_explain": state_explain.get("stage_explain") or state_explain.get("execution_stage_explain") or "当前项目处于已发布主线中，请按下一步动作推进。",
-            "milestone_explain": milestone_explain_map.get(milestone, "当前里程碑尚未进入显式执行状态。"),
+            "milestone_explain": milestone_explain,
             "project_condition_explain": state_explain.get("project_condition_explain") or state_explain.get("status_explain") or "当前项目整体正常。",
             "status_explain": state_explain.get("status_explain") or state_explain.get("project_condition_explain") or "当前项目整体正常。",
         }

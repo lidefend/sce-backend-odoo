@@ -467,6 +467,9 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         Workitem = self._get_model("sc.workflow.workitem", sudo=True)
         if Workitem is None:
             return None
+        Instance = self._get_model("sc.workflow.instance", sudo=True)
+        if Instance is None or not Instance._legacy_runtime_enabled():
+            return None
         required = ("status", "assignee_group_id", "assignee_id")
         if not all(field in Workitem._fields for field in required):
             return None
@@ -515,11 +518,17 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         if Task is None:
             return None
         fields_map = Task._fields
+        domain = []
         if "user_ids" in fields_map:
-            return [("user_ids", "in", user.id)]
-        if "user_id" in fields_map:
-            return [("user_id", "=", user.id)]
-        return None
+            domain = [("user_ids", "in", user.id)]
+        elif "user_id" in fields_map:
+            domain = [("user_id", "=", user.id)]
+        else:
+            return None
+        open_states = list(getattr(Task, "OPEN_STATES", []) or [])
+        if "state" in fields_map and open_states:
+            domain.append(("state", "in", open_states))
+        return domain
 
     def _load_task_items(self, user, limit):
         Task = self._get_model("project.task", sudo=True)
@@ -809,16 +818,7 @@ class MyWorkSummaryHandler(BaseIntentHandler):
         self._append_items(items, "owned", self._load_owned_items(user, limit_each))
         self._append_items(items, "mentions", self._load_mention_items(partner, limit_each))
         self._append_items(items, "following", self._load_following_items(partner, limit_each))
-        if self._current_project_id():
-            section_counts_actual = {}
-            for item in items:
-                section_key = str(item.get("section") or "").strip()
-                if section_key:
-                    section_counts_actual[section_key] = int(section_counts_actual.get(section_key, 0)) + 1
-            todo_count = int(section_counts_actual.get("todo", 0))
-            responsible_count = int(section_counts_actual.get("owned", 0))
-            mentioned_count = int(section_counts_actual.get("mentions", 0))
-            following_count = int(section_counts_actual.get("following", 0))
+        items = WorkItemAggregateService.aggregate_items(items)
         total_before_filter = len(items)
         facets = self._build_facets(items)
         section_scope_items = self._apply_filters(
