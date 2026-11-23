@@ -209,6 +209,15 @@ def _gap(evidence: str, gap: str) -> dict:
 
 # R4 literals that look like business states but are pure UI/edit-session state.
 _EXCLUDED = {
+    "R4_business_state_literal|current|frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts": {
+        "classification": "excluded-render-interaction",
+        "reason": (
+            "Contract carrier negotiation status discriminator. The server supplies "
+            "the status and complete carrier verdict; the client only verifies that "
+            "the transport projection is internally consistent."
+        ),
+        "declaredClass": "protocol_state",
+    },
     "R4_business_state_literal|recoverable|frontend/apps/web/src/pages/contractForm/useIntakeAutosaveRuntime.ts": {
         "classification": "excluded-render-interaction",
         "reason": (

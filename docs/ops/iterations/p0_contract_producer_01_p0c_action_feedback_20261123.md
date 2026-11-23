@@ -55,12 +55,17 @@ Produce Page Block action facts from existing authoritative structures:
 - Each browser viewport produced 10 `page-block-action.v1` entries: 9 authorized and
   enabled, 1 authoritatively disabled with `ACTION_NOT_AUTHORIZED`.
 - Chrome reported no Console/Page errors and no horizontal overflow.
+- `make ci.local.iteration`: PASS on the implementation candidate; 10 required
+  targets executed, 0 failed or not-run.
+- `make verify.test.baseline`: PASS, 366 cases x 3 independent orders, quarantine 0.
+- `make local.test.baseline`: PASS, 6 cases x 3 fresh orders.
+- Frontend lint: PASS, 0 errors and 3 pre-existing warnings outside scope.
+- Strict typecheck and production-mode Vite build: PASS.
+- `make ci.delivery.freeze.prepare`: PASS; decision-authority inventory now records
+  carrier negotiation `status=current` as protocol state, not business state.
 
-## Remaining validation
+## Finalization
 
-- affected `ci.local.iteration`
-- owning-module ORM baseline
-- deterministic offline baseline
-- lint, strict typecheck and production build
-- generated evidence preparation
-- exact-head independent review and remote required checks
+- Exact-head independent review: pending.
+- Exact-head remote required checks: pending.
+- Merge, deployment and FCF-02-2 remain unauthorized.

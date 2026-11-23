@@ -39,6 +39,7 @@
     "make/ci.mk",
     "make/guards.mk",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_decision_authority.py",
     "scripts/verify/test_contract_fidelity_plan_guard.py",
     "scripts/verify/test_frontend_dev_incremental.py"
   ],
@@ -243,7 +244,7 @@
     }
   ],
   "blockers": [],
-  "next_exact_step": "Finish P0-C targeted and browser validation, then prepare the clean review candidate.",
+  "next_exact_step": "Commit and publish the clean P0-C candidate, then wait for exact-head required checks and independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

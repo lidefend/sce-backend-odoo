@@ -643,9 +643,10 @@
         123
       ],
       "occurrences": 1,
-      "classification": "unclassified",
-      "remediation": "register this decision in scripts/verify/frontend_decision_authority.py with a classification and an authority pointer, or make it render/interaction by declaring the class explicitly",
-      "ownerLayer": "unresolved"
+      "classification": "excluded-render-interaction",
+      "reason": "Contract carrier negotiation status discriminator. The server supplies the status and complete carrier verdict; the client only verifies that the transport projection is internally consistent.",
+      "declaredClass": "protocol_state",
+      "ownerLayer": "P0_frontend_renderer"
     },
     {
       "decisionKey": "R4_business_state_literal|legacy|frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
@@ -1983,13 +1984,12 @@
     },
     "byClassification": {
       "contract-derived": 75,
-      "excluded-render-interaction": 106,
-      "unclassified": 1
+      "excluded-render-interaction": 107
     },
-    "unclassified": 1,
+    "unclassified": 0,
     "contractDerived": 75,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 106
+    "excludedRenderInteraction": 107
   }
 }
