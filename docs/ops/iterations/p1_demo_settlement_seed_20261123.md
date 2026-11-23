@@ -34,6 +34,9 @@ The failure occurred after the governed recovery point was captured at:
   16-digit account-like value. This preserves the demo's business appearance and
   removes the repeated personal-data scanner hit without adding another
   blob-specific exemption.
+- Projects that are declared for warranty or closed display stages complete
+  their formal settlement before the final lifecycle transition, satisfying the
+  real project-terminal guard instead of bypassing it.
 
 ## Validation
 

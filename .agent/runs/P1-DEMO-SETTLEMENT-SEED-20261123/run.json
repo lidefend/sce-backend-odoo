@@ -1,15 +1,16 @@
 {
   "schema_version": 2,
   "id": "P1-DEMO-SETTLEMENT-SEED-20261123",
-  "branch": "fix/p1-demo-settlement-seed-clean-20261123",
+  "branch": "fix/p1-demo-terminal-settlement-20261123",
   "status": "active",
-  "baseline_sha": "0e66c45c172fe04df81a6890195b0a88d83b60de",
+  "baseline_sha": "5f936b9f150575be1ec10b94588c42b969a230d6",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/P1-DEMO-SETTLEMENT-SEED-20261123.yaml",
     ".agent/runs/P1-DEMO-SETTLEMENT-SEED-20261123/run.json",
     "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
     "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+    "demo_addons/smart_construction_demo/seed/steps/step_40_contracts_demo.py",
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
     "demo_addons/smart_construction_demo/tools/scenario_loader.py",
     "docs/ops/iterations/p1_demo_settlement_seed_20261123.md",
@@ -61,7 +62,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Run the declared local checks, commit the clean candidate, and publish it through the governed PR entry.",
+  "next_exact_step": "Run the declared local checks for the terminal-settlement ordering fix and publish the exact candidate through the governed PR entry.",
   "goal": ".agent/goals/P1-DEMO-SETTLEMENT-SEED-20261123.yaml",
   "record": "docs/ops/iterations/p1_demo_settlement_seed_20261123.md"
 }

@@ -168,8 +168,12 @@ def _ensure_settlement(env, project, contract):
     return settlement
 
 
-def _approve_settlement(env, settlement):
-    return advance_settlement(settlement, submitter_xmlid=_DEMO_DOCUMENT_SUBMITTER)
+def _approve_settlement(env, settlement, *, complete=False):
+    return advance_settlement(
+        settlement,
+        complete=complete,
+        submitter_xmlid=_DEMO_DOCUMENT_SUBMITTER,
+    )
 
 
 def _ensure_purchase_order(env, settlement, split_first_line=False, product=None):
@@ -989,7 +993,11 @@ def run(env):
         else:
             ratio = DEMO_INVOICE_RATIO_BY_STATE.get(declared_stage(project), 1.0)
         _ensure_invoice_info(env, settlement, ratio)
-        _approve_settlement(env, settlement)
+        _approve_settlement(
+            env,
+            settlement,
+            complete=declared_stage(project) in ("warranty", "closed"),
+        )
         _ensure_payments(env, project, in_contract, out_contract, settlement)
 
 
