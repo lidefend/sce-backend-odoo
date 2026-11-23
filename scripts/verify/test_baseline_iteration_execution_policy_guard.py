@@ -63,6 +63,12 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                     text += f"\n\t@$(MAKE) --no-print-directory {step}"
                 for owner, dependency in guard.TYPECHECK_CHAIN:
                     text += f"\n{owner}: {dependency}"
+                for target, channel in guard.FAST_LANE_TARGETS.items():
+                    text += (
+                        f"\n{target}:"
+                        f"\n\t@python3 scripts/verify/frontend_dev_incremental.py "
+                        f"--execute-worktree {channel}"
+                    )
             path.write_text(text, encoding="utf-8")
         frontend_make = root / "make/frontend.mk"
         frontend_make.parent.mkdir(parents=True, exist_ok=True)
@@ -132,6 +138,29 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
                         text = text.replace(marker, marker + "\n" + line, 1)
                     path.write_text(text)
                     self.assertTrue(any("early integration check" in error for error in guard.validate(root)))
+
+    def test_lanes_reject_unconditional_frontend_toolchain(self) -> None:
+        for target in (
+            "ci.local.iteration",
+            "ci.local.backend.iteration",
+            "ci.local.frontend.iteration",
+        ):
+            with self.subTest(target=target), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory)
+                self.fixture(root)
+                path = root / "make/ci.mk"
+                text = path.read_text()
+                text = text.replace(
+                    target + ":",
+                    target + ": verify.frontend.systemic.convergence.static",
+                    1,
+                )
+                path.write_text(text)
+                self.assertTrue(any(
+                    target in error
+                    and "verify.frontend.systemic.convergence.static" in error
+                    for error in guard.validate(root)
+                ))
 
     def test_handler_import_stub_drift_is_explicit(self) -> None:
         module, names = next(iter(handler_guard.HANDLER_MODULES.items()))
