@@ -1,0 +1,67 @@
+{
+  "schema_version": 2,
+  "id": "P1-DEMO-SETTLEMENT-SEED-20261123",
+  "branch": "fix/p1-demo-settlement-seed-20261123",
+  "status": "active",
+  "baseline_sha": "0e66c45c172fe04df81a6890195b0a88d83b60de",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P1-DEMO-SETTLEMENT-SEED-20261123.yaml",
+    ".agent/runs/P1-DEMO-SETTLEMENT-SEED-20261123/run.json",
+    "demo_addons/smart_construction_demo/data/scenario/demo_scenario_manifest.json",
+    "demo_addons/smart_construction_demo/data/scenario/s73_risk_settlement_surface/10_risk_settlement_records.xml",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "demo_addons/smart_construction_demo/tools/scenario_loader.py",
+    "docs/ops/iterations/p1_demo_settlement_seed_20261123.md",
+    "scripts/demo/verify.sh",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_demo_scenario_step.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository fixtures and existing local Make entrypoints; no database writes"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.demo.lifecycle.unit verify.demo.scenario_step.unit",
+      "reason": "Validate changed demo seed declarations and scenario manifest semantics without a database write."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the demo seed correction against current main before integration."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled qualification follows integration and does not substitute for exact-head PR CI."
+    }
+  },
+  "checks": {
+    "demo_lifecycle": {
+      "target": "verify.demo.lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "demo_addons/smart_construction_demo/tests/test_demo_organization_baseline.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_funding_baseline_lifecycle.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_boq_import_batch.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "scenario_step": {
+      "target": "verify.demo.scenario_step.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+        "make/dev_test.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the declared local checks, commit the clean candidate, and publish it through the governed PR entry.",
+  "goal": ".agent/goals/P1-DEMO-SETTLEMENT-SEED-20261123.yaml",
+  "record": "docs/ops/iterations/p1_demo_settlement_seed_20261123.md"
+}

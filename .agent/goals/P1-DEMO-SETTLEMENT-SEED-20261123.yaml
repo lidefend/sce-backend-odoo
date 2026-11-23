@@ -1,0 +1,44 @@
+schema_version: 1
+
+goal:
+  id: P1-DEMO-SETTLEMENT-SEED-20261123
+  title: p1_demo_settlement_seed_readonly_alignment
+  status: active
+  formal_product_layer: P1
+  supporting_layers:
+    - P4
+  layer_target: >-
+    smart_construction_demo scenario seed and verification use the formal
+    sc.settlement.order fact model.
+  module:
+    - smart_construction_demo
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Restore a clean-installable demo seed after project.settlement became a
+    read-only historical compatibility model.
+  product_result: >-
+    Fresh demo rebuilds create the S73 risk settlement through
+    sc.settlement.order, while no scenario fixture writes project.settlement.
+  why_here: >-
+    The failure is in the P1 standard demo carrier, which must seed the current
+    formal settlement model rather than a retired compatibility carrier.
+  why_not_elsewhere:
+    - The historical settlement model remains read-only compatibility.
+    - No new settlement model or demo-only bypass is introduced.
+    - The frontend and P0 contract producer are unchanged.
+  blast_radius:
+    contracts:
+      - demo scenario S73 risk settlement data
+      - demo scenario manifest settlement intent
+      - demo verification
+  acceptance:
+    - Fresh demo seed does not create project.settlement or project.settlement.line.
+    - S73 risk settlement creates one sc.settlement.order with two lines and total 360000.
+    - Existing settlement flow and scenario-step tests remain non-zero and pass.
+  exclusions:
+    - Runtime deployment changes
+    - project.settlement deletion or schema changes
+    - frontend changes
+  rollback: >-
+    Revert the demo seed, verification, manifest, and tests; the existing daily
+    demo recovery point remains available.
