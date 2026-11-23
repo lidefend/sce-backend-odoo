@@ -79,6 +79,10 @@ from odoo.addons.smart_core.core.platform_minimum_nav_contract import (
     resolve_industry_extension_modules as resolve_shared_industry_extension_modules,
 )
 from odoo.addons.smart_core.core.request_params import parse_bool
+from odoo.addons.smart_core.core.contract_version_negotiation import (
+    ContractNegotiationError,
+    negotiate_payload,
+)
 from odoo.addons.smart_core.core.scene_delivery_policy import (
     filter_delivery_scenes,
     resolve_delivery_policy_runtime,
@@ -1234,6 +1238,18 @@ class SystemInitHandler(BaseIntentHandler):
         params = payload.get("params") if isinstance(payload, dict) else None
         if not isinstance(params, dict):
             params = payload if isinstance(payload, dict) else {}
+        try:
+            contract_negotiation = negotiate_payload(payload)
+        except ContractNegotiationError as exc:
+            return {
+                "ok": False,
+                "error": {
+                    "code": 409,
+                    "message": str(exc),
+                    "reason_code": exc.reason_code,
+                },
+                "meta": {"intent": "system.init"},
+            }
         build_mode = SystemInitPayloadBuilder.resolve_build_mode(params)
         with_tokens = _parse_with_tokens(params.get("with"))
         include_workspace_home = parse_bool(params.get("with_preload"), False) or "workspace_home" in with_tokens
@@ -1580,6 +1596,7 @@ class SystemInitHandler(BaseIntentHandler):
         else:
             data.pop("workspace_home", None)
         data["page_contracts"] = build_page_contracts(data)
+        data["contract_negotiation"] = contract_negotiation
         mirror_workspace_home_role_context(data)
         stage_ts = _mark("build_workspace_home", stage_ts)
         role_surface = data.get("role_surface") if isinstance(data, dict) else {}

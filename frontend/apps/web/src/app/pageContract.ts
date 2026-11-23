@@ -1,5 +1,6 @@
 import { computed } from 'vue';
 import { useSessionStore, type PageContract } from '../stores/session';
+import { decodePageOrchestrationContract } from './pageOrchestration';
 
 function asText(value: unknown): string {
   return typeof value === 'string' ? value : '';
@@ -21,7 +22,14 @@ type GlobalActionConfig = {
 };
 export function usePageContract(pageKey: string) {
   const session = useSessionStore();
-  const contract = computed<PageContract>(() => session.pageContracts?.[pageKey] || {});
+  const contract = computed<PageContract>(() => {
+    const raw = session.pageContracts?.[pageKey] || {};
+    if (!raw.page_orchestration) return raw;
+    return {
+      ...raw,
+      page_orchestration: decodePageOrchestrationContract(raw.page_orchestration),
+    } as unknown as PageContract;
+  });
   const texts = computed<Record<string, unknown>>(() => {
     const raw = contract.value?.texts;
     return raw && typeof raw === 'object' ? raw : {};

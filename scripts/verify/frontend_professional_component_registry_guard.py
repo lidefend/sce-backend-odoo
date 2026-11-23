@@ -1871,7 +1871,16 @@ def validate(read_text=lambda path: (ROOT / path).read_text(encoding="utf-8")) -
         if isinstance(component_declaration.get("capability_providers"), dict)
         else {}
     )
-    generated_capability_providers = dict(GENERATED_PROVIDER_RE.findall(generated_registry))
+    provider_block = re.search(
+        r"export const RENDERER_CAPABILITY_PROVIDERS[^{]*\{\n(.*?)\n\}\);",
+        generated_registry,
+        re.S,
+    )
+    generated_capability_providers = (
+        dict(GENERATED_PROVIDER_RE.findall(provider_block.group(1)))
+        if provider_block
+        else {}
+    )
     if generated_capability_providers != {
         str(capability): str(provider)
         for capability, provider in declared_capability_providers.items()

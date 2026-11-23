@@ -476,6 +476,32 @@ RULES = (
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
+    Rule((
+        "addons/smart_construction_core/tests/test_tender_award_fact.py",
+    ), (
+        "verify.tender_award_fact.orm",
+    )),
+    Rule((
+        "addons/smart_core/handlers/route_authority_validate.py",
+    ), (
+        "verify.execute_button.authority.unit",
+        "verify.product.entry_publication.unit",
+    )),
+    Rule((
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+    ), (
+        "verify.frontend.list_surface_search_contract.unit",
+    )),
+    Rule((
+        "scripts/verify/daily_demo_contract_api_acceptance.py",
+    ), (
+        "verify.daily.demo.contract.api.unit",
+    )),
+    Rule((
+        "scripts/verify/daily_demo_runtime_performance.py",
+    ), (
+        "verify.local.dev.runtime.performance.unit",
+    )),
     # Acceptance runtime rebuild, startup, artifact and carrier-discard inputs
     # form one P4 behavior lock. Leaving their tests unmapped forces a manual
     # L2 choice and can silently omit the exact runtime/tooling suite.
@@ -913,6 +939,29 @@ RULES = (
         "addons/smart_core/core/page_contracts_builder.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
+    )),
+    Rule((
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
+        "addons/smart_construction_core/handlers/dashboard_company_enter.py",
+        "addons/smart_construction_core/handlers/workspace_home_enter.py",
+        "addons/smart_construction_core/services/dashboard_contract_builder.py",
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/services/workspace_contract_builder.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    ), (
+        "verify.p0_contract_producer.p0a.backend_unit",
+        "verify.p0_contract_producer.p0a.money",
+        "verify.p0_contract_producer.p0a.unit",
+    )),
+    Rule((
+        "scripts/verify/p0_contract_producer_money_evidence.py",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+    ), (
+        "verify.p0_contract_producer.p0a.money",
     )),
     Rule((
         "scripts/verify/frontend_page_contract_boundary_guard.py",

@@ -80,6 +80,10 @@ import type {
 } from './types';
 import { CONTRACT_V2_FORM_STRUCTURE_ROLES } from './formStructureRoles';
 import { normalizeLegacyContractV2Snapshot } from './legacyLayoutNormalizer';
+import {
+  FieldDescriptorDecodeError,
+  decodeContractV2FieldDescriptor,
+} from './fieldDescriptor';
 
 type DecodeIssue = {
   path: string;
@@ -608,8 +612,8 @@ function decodePageInfo(source: ContractV2Dictionary, issues: DecodeIssue[]): Co
     'pageId', 'sceneKey', 'pageName', 'model', 'viewType', 'layoutType', 'renderMode', 'contractVersion', 'clientType', 'deliveryProfile',
   ], 'pageInfo', issues);
   const contractVersion = requiredString(source, 'contractVersion', 'pageInfo', issues);
-  if (!/^2\.(0|1|2|3|4|5)\.\d+$/.test(contractVersion)) {
-    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0 through 2.5 version' });
+  if (!/^2\.(0|1|2|3|4|5|6)\.\d+$/.test(contractVersion)) {
+    issues.push({ path: 'pageInfo.contractVersion', message: 'must be a negotiated 2.0 through 2.6 version' });
   }
   return {
     pageId: requiredString(source, 'pageId', 'pageInfo', issues),
@@ -3582,6 +3586,9 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const fieldOwnership = decodeFieldOwnership(root.fieldOwnership, issues);
   const pageComposition = decodePageComposition(root.pageComposition, issues);
   const noticeContract = decodeNoticeContract(root.noticeContract, issues);
+  if (pageInfo.contractVersion.startsWith('2.6.')) {
+    validateStrictFieldDescriptors(layoutContract, issues);
+  }
   validateFormOccurrenceAuthority(layoutContract, statusContract, issues);
   validateNativeOccurrenceAuthority(
     layoutContract,
@@ -3612,4 +3619,31 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
     ...(pageComposition ? { pageComposition } : {}),
     ...(noticeContract ? { noticeContract } : {}),
   };
+}
+
+function validateStrictFieldDescriptors(
+  layoutContract: ContractV2LayoutContract,
+  issues: DecodeIssue[],
+): void {
+  const walk = (rows: ContractV2Container[]) => {
+    rows.forEach((container) => {
+      container.widgetList.forEach((widget) => {
+        if (widget.fieldDescriptor === undefined) return;
+        try {
+          widget.fieldDescriptor = decodeContractV2FieldDescriptor(
+            widget.fieldDescriptor,
+            `layoutContract.${widget.widgetId}.fieldDescriptor`,
+          ).descriptor;
+        } catch (error) {
+          if (error instanceof FieldDescriptorDecodeError) {
+            issues.push(...error.issues.map((item) => ({ path: item.path, message: item.code })));
+            return;
+          }
+          throw error;
+        }
+      });
+      walk(container.children);
+    });
+  };
+  walk(layoutContract.containerTree);
 }

@@ -36,7 +36,7 @@ function genuineReceipt(overrides = {}) {
     resolution: { model: 'payment.request', record_id: 1813, action_id: 775, menu_id: 545, stable_identifier: 'smart_construction_acceptance_fixture.fe_delivery_hardening_payment_request_a', company_id: 8 },
     request: { intent: 'ui.contract.v2', database: 'sc_frontend_acceptance', http_status: 200,
       context: { lang: 'zh_CN', tz: 'Asia/Shanghai' },
-      params: { op: 'model', model: 'payment.request', view_type: 'form', record_id: 1813, action_id: 775, menu_id: 545, delivery_profile: 'full', client_type: 'web_pc', accepted_contract_versions: ['2.0.x', '2.1.x', '2.2.x'], client_contract_capabilities: ['container_tree.v2'] } },
+      params: { op: 'model', model: 'payment.request', view_type: 'form', record_id: 1813, action_id: 775, menu_id: 545, delivery_profile: 'full', client_type: 'web_pc', accepted_contract_versions: ['2.5.x'], client_contract_capabilities: ['container_tree.v2'] } },
     snapshot: { meta: { lifecycle: { integrity: { contractSha256: SEMANTIC },
       definition: { schemaId: 'smart_core.unified_page_contract_v2', schemaVersion: '2.2.0', schemaSha256: SCHEMA },
       authority: { kind: 'unified_page_contract_v2', authorities: AUTHORITIES } } } },

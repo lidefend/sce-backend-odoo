@@ -10,14 +10,50 @@ const legacy = clone(formProject as Record<string, unknown>);
 delete (legacy.runtimeContract as Record<string, unknown>).deliveryProfile;
 decodeContractV2Snapshot(legacy);
 
-const futureOuterVersion = clone(legacy);
-const futurePageInfo = futureOuterVersion.pageInfo as Record<string, unknown>;
-futurePageInfo.contractVersion = '2.6.0';
-assert.throws(
-  () => decodeContractV2Snapshot(futureOuterVersion),
-  /must be a negotiated 2\.0 through 2\.5 version/,
-  'the current decoder must reject a future outer contract version',
-);
+const currentOuterVersion = clone(legacy);
+const currentPageInfo = currentOuterVersion.pageInfo as Record<string, unknown>;
+currentPageInfo.contractVersion = '2.6.0';
+function stripLegacyDescriptors(rows: unknown): void {
+  if (!Array.isArray(rows)) return;
+  rows.forEach((row) => {
+    if (!row || typeof row !== 'object') return;
+    const record = row as Record<string, unknown>;
+    const widgets = Array.isArray(record.widgetList) ? record.widgetList : [];
+    widgets.forEach((widget) => {
+      if (widget && typeof widget === 'object') delete (widget as Record<string, unknown>).fieldDescriptor;
+    });
+    stripLegacyDescriptors(record.children);
+  });
+}
+stripLegacyDescriptors((currentOuterVersion.layoutContract as Record<string, unknown>).containerTree);
+decodeContractV2Snapshot(currentOuterVersion);
+
+function firstWidget(rows: unknown): Record<string, unknown> | null {
+  if (!Array.isArray(rows)) return null;
+  for (const row of rows) {
+    if (!row || typeof row !== 'object') continue;
+    const record = row as Record<string, unknown>;
+    const widgets = Array.isArray(record.widgetList) ? record.widgetList : [];
+    if (widgets[0] && typeof widgets[0] === 'object') return widgets[0] as Record<string, unknown>;
+    const child = firstWidget(record.children);
+    if (child) return child;
+  }
+  return null;
+}
+
+const strictDescriptor = {
+  schemaVersion: '1.0.0',
+  fieldCode: 'project.name',
+  label: '项目名称',
+  fieldType: 'char',
+  widgetType: 'input',
+  componentKey: 'sc.input.text',
+  semanticType: 'text',
+};
+const strictWidget = firstWidget((currentOuterVersion.layoutContract as Record<string, unknown>).containerTree);
+assert.ok(strictWidget);
+strictWidget.fieldDescriptor = strictDescriptor;
+decodeContractV2Snapshot(currentOuterVersion);
 
 const attachmentCarrier = clone(legacy);
 const attachmentRuntime = attachmentCarrier.runtimeContract as Record<string, unknown>;
@@ -37,4 +73,4 @@ assert.throws(
   'the current strict decoder must reject an undeclared action-feedback carrier',
 );
 
-console.log('P0_DESIGN_DECODER=PASS old_projection=accepted new_version=rejected undeclared_carriers=rejected');
+console.log('P0_DESIGN_DECODER=PASS old_projection=accepted current_version=accepted undeclared_carriers=rejected');

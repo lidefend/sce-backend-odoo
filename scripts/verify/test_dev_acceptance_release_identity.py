@@ -72,7 +72,7 @@ def declaration(required=None):
             "delivery_profile": "full",
             "client_type": "web_pc",
             "context": {"lang": "zh_CN", "tz": "Asia/Shanghai"},
-            "accepted_contract_versions": ["2.2.x"],
+            "accepted_contract_versions": ["2.5.x"],
             "client_contract_capabilities": ["status_contract.v2"],
         },
         "schema_asset": SCHEMA_ASSET,

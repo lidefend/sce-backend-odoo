@@ -394,7 +394,7 @@ class IntentControllerTimingTests(unittest.TestCase):
         ns = dict(time=SimpleNamespace(perf_counter=lambda:clock[0]),
             request=SimpleNamespace(env=env), HANDLER_REGISTRY={},
             load_extensions=lambda *a:step('extensions',.001,None),
-            resolve_handler=lambda i:step('resolve',.002,Handler),
+            resolve_handler=lambda i, env=None:step('resolve',.002,Handler),
             _build_envs=lambda *a,**kw:step('environment',.004,(env,env,None)),
             preview_write_error=lambda *a,**kw:None, result_is_success=lambda r:True,
             Optional=__import__('typing').Optional, Dict=dict, Any=object)
@@ -402,10 +402,10 @@ class IntentControllerTimingTests(unittest.TestCase):
         durations = {}
         actual = ns['route_intent_payload']({'intent':'user.view.preference.get'},None,observe=lambda name,duration:durations.update({name:duration}))
         self.assertIs(actual,result)
-        self.assertEqual(calls,['extensions','resolve','environment','construct','run'])
+        self.assertEqual(calls,['environment','resolve','construct','run'])
         self.assertAlmostEqual(durations['environment'],4)
         self.assertAlmostEqual(durations['handler_run'],100)
-        self.assertAlmostEqual(sum(durations.values()),110)
+        self.assertAlmostEqual(sum(durations.values()),109)
 
     def test_real_controller_separates_auth_permission_dispatch_and_serialization(self):
         source = SCRIPT.parents[2] / 'addons/smart_core/controllers/intent_dispatcher.py'

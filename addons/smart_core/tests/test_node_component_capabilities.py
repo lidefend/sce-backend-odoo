@@ -25,7 +25,7 @@ class CapabilityTests(unittest.TestCase):
         for keys in ([], ['sc.feedback.message'], ['sc.navigation.anchor'], list(NODE_CAPABILITIES)):
             for supplied in (None, [], CAPS[:1], CAPS[1:], CAPS, True, CAPS[0], {'x': True}, [None]):
                 with self.subTest(keys=keys, supplied=supplied):
-                    p = {'accepted_contract_versions': ['2.2.x']}
+                    p = {'accepted_contract_versions': ['2.5.x']}
                     if supplied is not None: p['client_contract_capabilities'] = supplied
                     expected = isinstance(supplied, list) and all(NODE_CAPABILITIES[k] in supplied for k in keys)
                     if not keys or expected:
@@ -146,7 +146,11 @@ class DeliveryTests(unittest.TestCase):
             module, handler = self.handler()
             handler._scene_contract_source = lambda key: {}
             for caps in ([], CAPS, [], CAPS):
-                params = {'client_contract_capabilities': caps, 'accepted_contract_versions': ['2.2.x']}
+                params = {
+                    'client_type': 'web_pc',
+                    'client_contract_capabilities': caps,
+                    'accepted_contract_versions': ['2.5.x'],
+                }
                 params.update({'source_type': 'scene_contract', 'scene_key': 'fixture'} if scene else {'model': 'res.partner'})
                 with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c) as trim:
                     result = handler.handle(payload={'params': params})
@@ -168,7 +172,12 @@ class DeliveryTests(unittest.TestCase):
                 module, handler = self.handler()
                 handler._scene_contract_source = lambda key: {}
                 for caps in ([], CAPS[1:], CAPS):
-                    params = {'model': 'res.partner', 'client_contract_capabilities': caps}
+                    params = {
+                        'model': 'res.partner',
+                        'client_type': 'web_pc',
+                        'client_contract_capabilities': caps,
+                        'accepted_contract_versions': ['2.5.x'],
+                    }
                     if scene: params.update(source_type='scene_contract', scene_key='fixture')
                     with patch.object(module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c):
                         result = handler.handle({'params': params})
@@ -246,7 +255,12 @@ class DeliveryTests(unittest.TestCase):
                     module, 'build_projection_source_token', return_value='source'), patch.object(
                     module, 'CONTRACT_PROJECTION_HOT_CACHE', cache), patch.object(
                     module, 'trim_unified_page_contract_v2', side_effect=lambda c, **kw: c):
-                result = handler.handle({'params': {'model': 'res.partner', 'client_contract_capabilities': caps}})
+                result = handler.handle({'params': {
+                    'model': 'res.partner',
+                    'client_type': 'web_pc',
+                    'client_contract_capabilities': caps,
+                    'accepted_contract_versions': ['2.5.x'],
+                }})
             self.assertEqual(result.ok, bool(caps), result)
             if not caps: self.assertEqual(result.error['reason_code'], 'COMPONENT_CAPABILITY_REQUIRED')
 

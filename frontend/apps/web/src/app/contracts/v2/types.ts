@@ -388,7 +388,8 @@ export interface ContractV2NativeWidgetProvenance {
   reasonCode: string;
 }
 
-export interface ContractV2FieldDescriptor {
+export interface ContractV2FieldDescriptor extends ContractV2Dictionary {
+  schemaVersion?: '1.0.0';
   fieldCode: string;
   label: string;
   fieldType: string;
@@ -411,9 +412,66 @@ export interface ContractV2FieldDescriptor {
   surfaceRole?: string;
   technical?: boolean;
   formStructureRole?: ContractV2FormStructureRole;
+  digits?: [number, number];
+  currencyField?: string;
+  unit?: {
+    kind: 'percent' | 'duration' | 'count' | 'quantity';
+    code: string;
+    label: string;
+  };
+  temporal?: {
+    kind: 'date' | 'datetime';
+    timezoneAuthority: 'user' | 'record' | 'not_applicable';
+  };
+  attachmentRole?: string;
 }
 
 export type ContractV2FieldDescriptorMap = Record<string, ContractV2FieldDescriptor>;
+
+export interface ContractV2RegistryWidgetResolution {
+  widgetType: string;
+  widgetStatus: 'ready' | 'fallback';
+  fallbackReasonCode: string | null;
+}
+
+export interface ContractV2FieldDescriptorDecodeResult {
+  descriptor: ContractV2FieldDescriptor;
+  registryResolution: {
+    widget: ContractV2RegistryWidgetResolution;
+  };
+}
+
+export interface ContractV2PageBlockFieldRefWidget {
+  kind: 'widget';
+  widgetId: string;
+  rawValuePath: string;
+}
+
+export interface ContractV2PageBlockFieldRefDescriptor {
+  kind: 'descriptor';
+  descriptorId: string;
+  rawValuePath: string;
+}
+
+export type ContractV2PageBlockFieldRef =
+  | ContractV2PageBlockFieldRefWidget
+  | ContractV2PageBlockFieldRefDescriptor;
+
+export interface ContractV2PageBlockDataRow {
+  rowKey: string;
+  values: ContractV2Dictionary;
+}
+
+export interface ContractV2PageBlockDataContract {
+  schemaVersion: '1.0.0';
+  fieldRefs: Record<string, ContractV2PageBlockFieldRef>;
+  rows: ContractV2PageBlockDataRow[];
+  context: {
+    currencies: Record<string, ContractV2Dictionary>;
+    timezone: string;
+  };
+  sourceAuthority: ContractV2Dictionary;
+}
 
 export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
   name: string;

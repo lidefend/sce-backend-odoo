@@ -103,7 +103,7 @@
       "literal": "ui.contract.v2",
       "path": "frontend/apps/web/src/app/contracts/v2/client.ts",
       "lines": [
-        115
+        121
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -635,12 +635,52 @@
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
+      "decisionKey": "R4_business_state_literal|legacy|frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "legacy",
+      "path": "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+      "lines": [
+        110
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "addons/smart_core/core/contract_version_negotiation.py:84",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|fallback|frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "fallback",
+      "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "lines": [
+        159,
+        175
+      ],
+      "occurrences": 2,
+      "classification": "contract-derived",
+      "evidence": "contracts/registry/semantic.yaml:51",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
+      "decisionKey": "R4_business_state_literal|unsupported|frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "unsupported",
+      "path": "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+      "lines": [
+        155
+      ],
+      "occurrences": 1,
+      "classification": "contract-derived",
+      "evidence": "contracts/registry/semantic.yaml:82",
+      "ownerLayer": "P0_frontend_renderer_consumer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|allow|frontend/apps/web/src/app/contracts/v2/schema.ts",
       "rule": "R4_business_state_literal",
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1873
+        1877
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -653,7 +693,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1873
+        1877
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -666,7 +706,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1873
+        1877
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -679,7 +719,7 @@
       "literal": "draft",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1562
+        1566
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -692,7 +732,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1873
+        1877
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -706,7 +746,7 @@
       "literal": "preview",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1562
+        1566
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -720,7 +760,7 @@
       "literal": "published",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1562
+        1566
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1921,19 +1961,19 @@
     }
   ],
   "summary": {
-    "totalFindings": 177,
-    "distinctDecisions": 130,
+    "totalFindings": 181,
+    "distinctDecisions": 133,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 18,
-      "R4_business_state_literal": 140
+      "R4_business_state_literal": 144
     },
     "byClassification": {
-      "contract-derived": 71,
+      "contract-derived": 75,
       "excluded-render-interaction": 106
     },
     "unclassified": 0,
-    "contractDerived": 71,
+    "contractDerived": 75,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
     "excludedRenderInteraction": 106

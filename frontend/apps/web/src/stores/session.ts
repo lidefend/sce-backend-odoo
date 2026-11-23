@@ -210,6 +210,8 @@ export interface WorkspaceHomeContract {
     action_schema?: Record<string, unknown>;
     render_hints?: Record<string, unknown>;
     meta?: Record<string, unknown>;
+    block_field_descriptors?: Record<string, unknown>;
+    block_data_contracts?: Record<string, unknown>;
   };
   role_variant?: {
     role_code?: string;
@@ -266,6 +268,8 @@ export interface PageContract {
     action_schema?: Record<string, unknown>;
     render_hints?: Record<string, unknown>;
     meta?: Record<string, unknown>;
+    block_field_descriptors?: Record<string, unknown>;
+    block_data_contracts?: Record<string, unknown>;
   };
   actions?: Record<string, unknown>;
 }

@@ -1,0 +1,440 @@
+{
+  "schema_version": 1,
+  "id": "P0-CONTRACT-PRODUCER-01-P0A",
+  "branch": "feature/p0-contract-producer-01-p0a-implementation-20261123",
+  "baseline_sha": "dbee64518ba9b35099408c91758c1c85d6d3a62f",
+  "status": "active",
+  "goal": ".agent/goals/P0-CONTRACT-PRODUCER-01-P0A.yaml",
+  "record": "docs/ops/iterations/p0_contract_producer_01_p0a_implementation_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-CONTRACT-PRODUCER-01-P0A.yaml",
+    ".agent/runs/P0-CONTRACT-PRODUCER-01-P0A/run.json",
+    "addons/smart_construction_core/handlers/dashboard_company_enter.py",
+    "addons/smart_construction_core/handlers/workspace_home_enter.py",
+    "addons/smart_construction_core/services/dashboard_contract_builder.py",
+    "addons/smart_construction_core/services/scene_block_schema.py",
+    "addons/smart_construction_core/services/workspace_contract_builder.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    "addons/smart_construction_core/tests/test_p1_payment_request_capability.py",
+    "addons/smart_construction_core/tests/test_tender_award_fact.py",
+    "addons/smart_core/core/contract_version_negotiation.py",
+    "addons/smart_core/core/page_block_data_contract.py",
+    "addons/smart_core/core/page_contracts_builder.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_core/handlers/route_authority_validate.py",
+    "addons/smart_core/handlers/system_init.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/tests/test_node_component_capabilities.py",
+    "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
+    "config/acceptance/backend_contract_instance_daily_v1.json",
+    "config/acceptance/backend_contract_instance_v1.json",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
+    "docs/ops/iterations/p0_contract_producer_01_p0a_implementation_20261123.md",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs",
+    "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+    "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+    "frontend/apps/web/src/api/intents.ts",
+    "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+    "frontend/apps/web/src/app/contracts/v2/client.ts",
+    "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+    "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/pageContract.ts",
+    "frontend/apps/web/src/app/pageOrchestration.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/components/page/PageRenderer.vue",
+    "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+    "frontend/apps/web/src/stores/session.ts",
+    "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+    "make/dev.mk",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "scripts/contract/snapshot_export.py",
+    "scripts/contract/generate_semantic_registry.py",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/verify/frontend_decision_authority.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_professional_component_registry_guard.py",
+    "scripts/verify/acceptance_contract_receipt_test.mjs",
+    "scripts/verify/daily_demo_contract_api_acceptance.py",
+    "scripts/verify/daily_demo_runtime_performance.py",
+    "scripts/verify/p0_contract_producer_money_evidence.py",
+    "scripts/verify/test_contract_fidelity_plan_guard.py",
+    "scripts/verify/test_dev_acceptance_release_identity.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_dev_runtime_performance.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered local static/unit entries and governed local runtime entries resolved after source implementation"
+  },
+  "checks": {
+    "contract_fidelity_plan": {
+      "target": "verify.frontend.contract_fidelity.plan.unit",
+      "inputs": [
+        "docs/audit/fe_contract_fidelity_01/matrix.json",
+        "docs/architecture/fe_contract_fidelity_02_remediation_plan.md",
+        "docs/architecture/fe_contract_fidelity_02/remediation_plan.json",
+        "docs/architecture/fe_contract_fidelity_02/guard_catalog.json",
+        "scripts/verify/contract_fidelity_plan_guard.py",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "p0_contract_producer_design": {
+      "target": "verify.p0_contract_producer.design.unit",
+      "inputs": [
+        "docs/architecture/p0_contract_producer_01_contract_remediation_design_20261123.md",
+        "docs/architecture/p0_contract_producer_01/remediation_design.json",
+        "docs/architecture/p0_contract_producer_01/compatibility_matrix.json",
+        "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
+        "docs/architecture/p0_contract_producer_01/descriptor_cases.json",
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0a_contract_unit": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+        "frontend/apps/web/src/app/contracts/v2/client.ts",
+        "frontend/apps/web/src/app/contracts/v2/clientCapabilities.ts",
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/src/app/pageContract.ts",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "frontend/apps/web/src/views/SceneContractBlockGridView.vue",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "scripts/verify/test_contract_fidelity_plan_guard.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0a_backend_unit": {
+      "target": "verify.p0_contract_producer.p0a.backend_unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/handlers/system_init.py",
+        "addons/smart_core/handlers/ui_contract_v2.py",
+        "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
+        "addons/smart_construction_core/handlers/dashboard_company_enter.py",
+        "addons/smart_construction_core/handlers/workspace_home_enter.py",
+        "addons/smart_construction_core/services/dashboard_contract_builder.py",
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/services/workspace_contract_builder.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0a_browser_acceptance": {
+      "target": "verify.p0_contract_producer.p0a.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+        "frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+        "frontend/apps/web/src/app/contracts/v2",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/src/components/page/PageRenderer.vue",
+        "frontend/apps/web/src/components/page/blocks/BlockMetricRow.vue",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/p0_contract_producer_01/p0a_browser_acceptance.json"
+      }
+    },
+    "p0a_money_chain": {
+      "target": "verify.p0_contract_producer.p0a.money",
+      "inputs": [
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
+        "scripts/verify/p0_contract_producer_money_evidence.py",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/p0_contract_producer_01/real-money-page-block-contract.json"
+      }
+    },
+    "execute_button_authority": {
+      "target": "verify.execute_button.authority.unit",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/handlers/route_authority_validate.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py"
+      ],
+      "kind": "offline"
+    },
+    "tender_award_fact_orm": {
+      "target": "verify.tender_award_fact.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_tender_award_fact.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "approval_contract_closure_orm": {
+      "target": "verify.approval.contract_closure.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "runtime"
+    },
+    "page_finalize_authority_orm": {
+      "target": "verify.page.finalize.authority.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "runtime"
+    },
+    "page_project_finalize_authority_orm": {
+      "target": "verify.page.project_finalize.authority.orm",
+      "inputs": [
+        "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
+        "addons/smart_core/handlers/ui_contract_v2.py"
+      ],
+      "kind": "runtime"
+    },
+    "acceptance_contract_receipt": {
+      "target": "verify.frontend.list_surface_search_contract.unit",
+      "inputs": [
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+        "frontend/apps/web/scripts/business_form_user_perspective_acceptance.mjs"
+      ],
+      "kind": "offline"
+    },
+    "daily_demo_contract_consumers": {
+      "target": "verify.daily.demo.contract.api.unit",
+      "inputs": [
+        "scripts/verify/daily_demo_contract_api_acceptance.py",
+        "scripts/verify/daily_demo_runtime_performance.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_decision_authority": {
+      "target": "verify.frontend.decision_authority.unit",
+      "inputs": [
+        "scripts/verify/frontend_decision_authority.py",
+        "scripts/verify/frontend_decision_authority_guard.py",
+        "scripts/verify/test_frontend_decision_authority_guard.py",
+        "docs/frontend_productization/decision-authority-inventory-v1.json",
+        "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts",
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "contracts/registry/semantic.yaml"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/test_verification_lane_coverage.py",
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_exemptions.json",
+        "scripts/ops/pre-commit_refresh_generated.sh",
+        "scripts/verify/frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint_src": {
+      "target": "verify.frontend.lint.src",
+      "inputs": ["frontend/apps/web/src", "frontend/apps/web/.eslintrc.cjs"],
+      "kind": "offline"
+    },
+    "frontend_typecheck_strict": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": ["frontend/apps/web/src", "frontend/apps/web/tsconfig.json", "frontend/apps/web/tsconfig.strict.json"],
+      "kind": "offline"
+    },
+    "semantic_registry_lint": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "contracts/registry/semantic.yaml",
+        "contracts/registry/component.yaml",
+        "scripts/contract/generate_semantic_registry.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_action": {
+      "target": "verify.unified_page_contract.v2.action",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "scripts/verify/unified_page_contract_v2_action_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_runtime": {
+      "target": "verify.unified_page_contract.v2.runtime",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_runtime.py",
+        "scripts/verify/unified_page_contract_v2_runtime_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_status": {
+      "target": "verify.unified_page_contract.v2.status",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_status.py",
+        "scripts/verify/unified_page_contract_v2_status_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "unified_page_web_architecture": {
+      "target": "verify.unified_page_contract.v2.web_architecture",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2",
+        "scripts/verify/web_contract_v2_frontend_architecture_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_orchestration": {
+      "target": "verify.page_contract.orchestration_schema.guard",
+      "inputs": [
+        "scripts/verify/page_contract_orchestration_schema_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py"
+      ],
+      "kind": "offline"
+    },
+    "page_action_semantics": {
+      "target": "verify.page_contract.action_schema_semantics.guard",
+      "inputs": [
+        "scripts/verify/page_contract_action_schema_semantics_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py"
+      ],
+      "kind": "offline"
+    },
+    "page_data_source_semantics": {
+      "target": "verify.page_contract.data_source_semantics.guard",
+      "inputs": [
+        "scripts/verify/page_contract_data_source_semantics_guard.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/page_orchestration_data_provider.py"
+      ],
+      "kind": "offline"
+    },
+    "page_block_renderer": {
+      "target": "verify.frontend.page_block_renderer_smoke",
+      "inputs": [
+        "scripts/verify/frontend_page_block_renderer_smoke_guard.py",
+        "frontend/apps/web/src/components/page",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "page_block_registry": {
+      "target": "verify.frontend.page_block_registry_guard",
+      "inputs": [
+        "scripts/verify/frontend_page_block_registry_guard.py",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts"
+      ],
+      "kind": "offline"
+    },
+    "contract_compatibility": {
+      "target": "verify.backend.contract_supply_chain.compatibility.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_compatibility.py",
+        "scripts/verify/test_contract_version_compatibility.py"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs",
+        "scripts/verify/agent_ledger_consistency_guard.py",
+        "scripts/verify/test_agent_ledger_consistency_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "consumer strict decoding and registry resolution",
+      "state": "required",
+      "owner_target": "focused frontend contract Decoder tests"
+    },
+    {
+      "gate": "version negotiation and old-client projection",
+      "state": "required",
+      "owner_target": "focused backend/frontend negotiation tests plus contract compatibility"
+    },
+    {
+      "gate": "Page Block producer projection",
+      "state": "required",
+      "owner_target": "smart_core producer and smart_construction_core block projection tests"
+    },
+    {
+      "gate": "owning module ORM baseline",
+      "state": "required",
+      "owner_target": "registered smart_core baseline after changed dependency map is frozen"
+    },
+    {
+      "gate": "frontend lint, strict typecheck, unit and build",
+      "state": "required",
+      "owner_target": "registered frontend validation entries"
+    },
+    {
+      "gate": "real browser 1440 and 390 acceptance",
+      "state": "required",
+      "owner_target": "registered governed frontend runtime lane selected after implementation"
+    },
+    {
+      "gate": "P0-B attachment-fact implementation",
+      "state": "not_authorized",
+      "reason": "separate follow-on batch"
+    },
+    {
+      "gate": "P0-C action-feedback implementation",
+      "state": "not_authorized",
+      "reason": "separate follow-on batch"
+    }
+  ],
+  "blockers": [],
+  "next_exact_step": "Commit and publish the clean exact-head candidate, then wait for all five required remote checks and independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

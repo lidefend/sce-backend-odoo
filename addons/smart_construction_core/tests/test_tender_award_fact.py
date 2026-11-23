@@ -336,7 +336,7 @@ class TestTenderAwardFact(TransactionCase):
                 "contract_surface": "user",
                 "source_mode": "governance_pipeline",
                 "delivery_profile": "full",
-                "accepted_contract_versions": ["2.0.x", "2.1.x", "2.2.x"],
+                "accepted_contract_versions": ["2.5.x"],
                 "client_contract_capabilities": [
                     "container_tree.v2",
                     "data_source.v2",

@@ -867,9 +867,49 @@ verify.p0_contract_producer.design.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_design_decoder_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-design-decoder-test.mjs >/dev/null
 	@node /tmp/p0-contract-producer-design-decoder-test.mjs
 
-verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit
-verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit
-verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit
+.PHONY: verify.p0_contract_producer.p0a.unit
+verify.p0_contract_producer.p0a.unit: guard.prod.forbid verify.p0_contract_producer.design.unit verify.p0_contract_producer.p0a.backend_unit
+	@python3 -m py_compile \
+		scripts/verify/test_contract_fidelity_plan_guard.py
+	@python3 -m unittest scripts.verify.test_contract_fidelity_plan_guard
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-p0a-test.mjs >/dev/null
+	@node /tmp/p0-contract-producer-p0a-test.mjs
+
+.PHONY: verify.p0_contract_producer.p0a.backend_unit
+verify.p0_contract_producer.p0a.backend_unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/contract_version_negotiation.py \
+		addons/smart_core/core/page_block_data_contract.py \
+		addons/smart_core/core/page_contracts_builder.py \
+		addons/smart_core/core/unified_page_contract_v2_assembler.py \
+		addons/smart_core/handlers/system_init.py \
+		addons/smart_core/handlers/ui_contract_v2.py \
+		addons/smart_construction_core/handlers/dashboard_company_enter.py \
+		addons/smart_construction_core/handlers/workspace_home_enter.py \
+		addons/smart_construction_core/services/dashboard_contract_builder.py \
+		addons/smart_construction_core/services/scene_block_schema.py \
+		addons/smart_construction_core/services/workspace_contract_builder.py \
+		addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py \
+		addons/smart_core/tests/test_page_contracts_builder_boundaries.py
+	@python3 addons/smart_core/tests/test_page_contracts_builder_boundaries.py
+	@python3 addons/smart_construction_core/tests/test_scene_block_schema_contract.py
+
+.PHONY: verify.p0_contract_producer.p0a.money verify.p0_contract_producer.p0a.browser
+verify.p0_contract_producer.p0a.money: guard.prod.forbid
+	@python3 scripts/verify/p0_contract_producer_money_evidence.py \
+		--output artifacts/p0_contract_producer_01/real-money-page-block-contract.json
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-money-decode-test.mjs >/dev/null
+	@P0A_MONEY_CONTRACT_PATH=artifacts/p0_contract_producer_01/real-money-page-block-contract.json node /tmp/p0-contract-producer-real-money-decode-test.mjs
+
+verify.p0_contract_producer.p0a.browser: guard.prod.forbid local.dev.ready local.dev.health
+	@$(MAKE) --no-print-directory verify.p0_contract_producer.p0a.money
+	@node frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-contract-decode-test.mjs >/dev/null
+	@node /tmp/p0-contract-producer-real-contract-decode-test.mjs
+
+verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
+verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
+verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
 
 verify.frontend.ui.lint: guard.prod.forbid
 	@cd frontend/apps/web && node_modules/.bin/eslint --no-eslintrc --config .eslintrc.cjs ../../packages/ui/src --ext .ts,.tsx,.vue

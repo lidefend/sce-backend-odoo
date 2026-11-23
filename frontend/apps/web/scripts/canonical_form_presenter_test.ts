@@ -1032,10 +1032,10 @@ assert.throws(
   'legacy compatibility must not erase a malformed child carrier before strict decoding',
 );
 const unsupportedFutureVersion = snapshot();
-unsupportedFutureVersion.pageInfo.contractVersion = '2.6.0';
+unsupportedFutureVersion.pageInfo.contractVersion = '2.7.0';
 assert.throws(
   () => decodeContractV2Snapshot(unsupportedFutureVersion),
-  /must be a negotiated 2\.0 through 2\.5 version/,
+  /must be a negotiated 2\.0 through 2\.6 version/,
   'an unadvertised future minor must fail closed instead of using the 2.5 decoder',
 );
 assert.deepEqual(

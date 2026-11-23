@@ -467,6 +467,21 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         for provider, owner in sorted(capability_providers.items())
     )
     semantic = load(root / SEMANTIC_REL)
+    semantic_component_lines = "\n".join(
+        f"  {semantic_type!r}: {str((entry or {}).get('component') or '')!r},"
+        for semantic_type, entry in sorted((semantic.get("semantics") or {}).items())
+        if isinstance(entry, dict)
+    )
+    native_widgets = semantic.get("native_widgets") or {}
+    native_widget_lines = "\n".join(
+        "  {name!r}: {{status: {status!r}, reasonCode: {reason!r}}},"
+        .format(
+            name=name,
+            status=str((entry or {}).get("status") or ""),
+            reason=str((entry or {}).get("reason_code") or ""),
+        )
+        for name, entry in sorted(native_widgets.items())
+    )
     native_view_widgets = semantic.get("native_view_widgets") or {}
     native_view_widget_default = semantic.get("native_view_widget_default") or {}
     native_view_widget_lines = "\n".join(
@@ -486,6 +501,14 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         ).replace("__CAPABILITY_PROVIDERS__", provider_lines)
         + render_frontend_rows(platform_rows)
         + "\n];\n"
+        + "\nexport const SEMANTIC_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Object.freeze({\n"
+        + semantic_component_lines
+        + "\n});\n"
+        + "\nexport type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';\n"
+        + "\nexport const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, "
+        + "{status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({\n"
+        + native_widget_lines
+        + "\n});\n"
         + "\nexport const NODE_COMPONENT_REGISTRATIONS: Readonly<Record<string, {kind: 'node'; version: string}>> = Object.freeze({\n"
         + "\n".join(
             f"  {key!r}: {{kind: 'node', version: {entry['version']!r}}},"

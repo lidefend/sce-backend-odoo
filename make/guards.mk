@@ -143,6 +143,10 @@ verify.page.project_finalize.authority.orm: guard.prod.forbid
 verify.approval.contract_closure.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=approval_contract_closure
 
+.PHONY: verify.tender_award_fact.orm
+verify.tender_award_fact.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=tender_award_fact
+
 .PHONY: verify.smart_core.intent_smoke.orm
 verify.smart_core.intent_smoke.orm: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_core \

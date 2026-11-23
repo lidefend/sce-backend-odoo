@@ -51,7 +51,10 @@ class TestPageContractsBuilderBoundaries(unittest.TestCase):
         self.assertEqual(set(public["pages"]), {"login", "account_activation", "password_recovery"})
         for key, page in public["pages"].items():
             self.assertEqual(set(page), {"schema_version", "texts", "sections", "page_orchestration"})
-            self.assertEqual(set(page["page_orchestration"]), {"page", "action_schema", "zones", "data_sources"})
+            self.assertEqual(
+                set(page["page_orchestration"]),
+                {"contract_version", "schema_version", "page", "action_schema", "zones", "data_sources"},
+            )
             for name, action in page["page_orchestration"]["action_schema"]["actions"].items():
                 self.assertEqual(action["target"], target._action_target(name, key))
                 self.assertEqual(action["target"]["kind"], "route.path")

@@ -4,23 +4,23 @@ Generated from `test_inventory.csv`.
 
 ## Totals
 
-- Total assets: `1752`
+- Total assets: `1754`
 - Review queue: `4`
 - Unknown runtime: `3`
-- Long-running assets: `247`
+- Long-running assets: `248`
 - Manual gate review: `4`
 - Aggregate-covered assets: `225`
-- PR dedupe candidates: `1280`
+- PR dedupe candidates: `1281`
 
 ## By Layer
 
 | Layer | Count |
 | --- | ---: |
 | governance | 644 |
-| contract | 432 |
+| contract | 433 |
 | unit | 350 |
 | odoo_integration | 161 |
-| e2e | 57 |
+| e2e | 58 |
 | security | 54 |
 | frontend_acceptance | 50 |
 | gate | 2 |
@@ -30,9 +30,9 @@ Generated from `test_inventory.csv`.
 
 | Decision Gate | Count |
 | --- | ---: |
-| pr_candidate | 1499 |
+| pr_candidate | 1500 |
 | integration_candidate | 189 |
-| release_candidate | 55 |
+| release_candidate | 56 |
 | manual_review | 4 |
 | release_required | 2 |
 | local_iteration | 1 |
@@ -43,10 +43,10 @@ Generated from `test_inventory.csv`.
 
 | Disposition | Count |
 | --- | ---: |
-| deduplicate_before_required | 1280 |
+| deduplicate_before_required | 1281 |
 | covered_by_aggregate | 220 |
 | keep_integration_or_release_only | 188 |
-| keep_release_only | 55 |
+| keep_release_only | 56 |
 | canonical_entry | 5 |
 | review_or_archive | 4 |
 
@@ -142,9 +142,9 @@ Generated from `test_inventory.csv`.
 
 | Runtime | Count |
 | --- | ---: |
-| <5m | 1501 |
+| <5m | 1502 |
 | 10-30m | 190 |
-| 30-60m | 57 |
+| 30-60m | 58 |
 | unknown | 3 |
 | 10-15m | 1 |
 
@@ -153,10 +153,10 @@ Generated from `test_inventory.csv`.
 | Owner | Count |
 | --- | ---: |
 | architecture owner | 644 |
-| platform owner | 432 |
+| platform owner | 433 |
 | test owner | 351 |
 | backend owner | 161 |
-| qa owner | 57 |
+| qa owner | 58 |
 | security owner | 54 |
 | frontend owner | 51 |
 | data owner | 2 |
@@ -165,9 +165,9 @@ Generated from `test_inventory.csv`.
 
 | Directory | Count |
 | --- | ---: |
-| scripts/verify | 1498 |
+| scripts/verify | 1499 |
 | scripts/ops | 122 |
-| frontend/apps/web/scripts | 62 |
+| frontend/apps/web/scripts | 63 |
 | scripts/ci | 41 |
 | scripts/audit | 13 |
 | make | 5 |
@@ -276,7 +276,7 @@ Generated from `test_inventory.csv`.
 | T-ASSET-a09b0856 | unit | `scripts/ci/test_ci_path_ownership.py` | test owner |
 | T-ASSET-a827439b | unit | `scripts/ci/test_ci_risk_classifier.py` | test owner |
 | T-ASSET-a49b9b15 | contract | `scripts/ci/test_ci_risk_workflow_contract.py` | platform owner |
-| ... | ... | 1200 more | ... |
+| ... | ... | 1201 more | ... |
 
 ## Dedupe Hotspots
 

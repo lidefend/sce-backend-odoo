@@ -1855,6 +1855,8 @@ def build_public_auth_page_contracts() -> Dict[str, Any]:
             "texts": page["texts"],
             "sections": page["sections"],
             "page_orchestration": {
+                "contract_version": "2.0.0",
+                "schema_version": "2.0.0",
                 "page": {"global_actions": actions},
                 "action_schema": {"actions": safe_actions},
                 "zones": zones,

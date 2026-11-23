@@ -172,7 +172,7 @@ def _load_contract_v2_for_intent_authority(env, su_env, *, record, action, menu,
                 "menu_id": int(menu.id),
                 "delivery_profile": "full",
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.0.x"],
+                "accepted_contract_versions": ["2.5.x"],
                 "client_contract_capabilities": list(_CONTRACT_V2_CAPABILITIES),
             }
         },

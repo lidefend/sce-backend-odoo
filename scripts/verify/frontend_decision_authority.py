@@ -293,6 +293,9 @@ AUTHORITY: dict[str, dict] = {
     "R4_business_state_literal|fail": _derived(
         "addons/smart_core/delivery/release_operator_read_model_service.py:533"
     ),
+    "R4_business_state_literal|fallback": _derived(
+        "contracts/registry/semantic.yaml:51"
+    ),
     "R4_business_state_literal|hidden": {
         "classification": "contract-derived",
         "evidence": "addons/smart_core/handlers/menu_configuration.py:349",
@@ -301,6 +304,9 @@ AUTHORITY: dict[str, dict] = {
     },
     "R4_business_state_literal|LOCKED": _derived(
         "addons/smart_core/governance/scene_normalizer.py:385"
+    ),
+    "R4_business_state_literal|legacy": _derived(
+        "addons/smart_core/core/contract_version_negotiation.py:84"
     ),
     "R4_business_state_literal|overdue": _derived(
         "addons/smart_core/handlers/chatter_activity_update.py:39"
@@ -331,6 +337,9 @@ AUTHORITY: dict[str, dict] = {
     ),
     "R4_business_state_literal|superseded": _derived(
         "addons/smart_core/model/ui_business_config_change_set.py:64"
+    ),
+    "R4_business_state_literal|unsupported": _derived(
+        "contracts/registry/semantic.yaml:82"
     ),
     "R4_business_state_literal|visible": {
         "classification": "contract-derived",

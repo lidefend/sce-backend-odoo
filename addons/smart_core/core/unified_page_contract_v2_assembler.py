@@ -33,6 +33,7 @@ from .contract_runtime.semantic_resolver import (
     component_key_for_semantic as _component_key_for_semantic,
     legacy_component_key as _legacy_component_key,
     resolve_native_view_widget as _resolve_native_view_widget,
+    semantic_of as _field_semantic_of,
     semantic_widget_type as _semantic_widget_type,
 )
 from .contract_runtime.semantic_resolver import FALLBACK_SEMANTIC as _DISPLAY_SEMANTIC
@@ -1223,6 +1224,130 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
     }
 
 
+def _strict_field_descriptor(widget: dict[str, Any]) -> dict[str, Any] | None:
+    legacy = _dict(widget.get("fieldDescriptor"))
+    config = _dict(widget.get("componentConfig"))
+    if not legacy:
+        return None
+    field_type = _text(config.get("fieldType") or legacy.get("type") or legacy.get("ttype"))
+    # ``legacy.widget`` may be a compatibility default such as ``char`` or
+    # ``float``. Only the occurrence-level nativeWidget marker is authoritative;
+    # otherwise project the field type to a token in native_widgets.
+    widget_type = _text(config.get("nativeWidget"))
+    if not widget_type:
+        widget_type = {
+            "char": "input",
+            "text": "textarea",
+            "html": "html",
+            "integer": "number",
+            "float": "number",
+            "monetary": "monetary",
+            "boolean": "boolean",
+            "date": "date",
+            "datetime": "datetime",
+            "selection": "select",
+            "many2one": "many2one",
+            "one2many": "one2many",
+            "many2many": "many2many",
+            "binary": "binary",
+            "json": "json",
+            "many2one_reference": "many2one",
+            "reference": "many2one",
+        }.get(field_type, _text(widget.get("widgetType")))
+    semantic_type = _text(
+        config.get("semanticType")
+        or legacy.get("semantic")
+        or _field_semantic_of(widget_type, legacy)
+        or _DISPLAY_SEMANTIC
+    )
+    component_key = _component_key_for_semantic(semantic_type) or _resolve_component_key(
+        widget_type,
+        legacy,
+    )
+    descriptor = {
+        "schemaVersion": "1.0.0",
+        "fieldCode": _text(widget.get("fieldCode") or legacy.get("name")),
+        "label": _text(widget.get("label") or legacy.get("string") or legacy.get("label")),
+        "fieldType": field_type,
+        "widgetType": widget_type,
+        "componentKey": component_key,
+        "semanticType": semantic_type,
+    }
+    for key in ("required", "readonly", "invisible", "technical"):
+        if isinstance(config.get(key), bool):
+            descriptor[key] = config[key]
+        elif isinstance(legacy.get(key), bool):
+            descriptor[key] = legacy[key]
+    relation = _text(config.get("relation") or legacy.get("relation"))
+    relation_field = _text(config.get("relationField") or legacy.get("relation_field"))
+    selection = (
+        config.get("selection")
+        if isinstance(config.get("selection"), list) and config.get("selection")
+        else legacy.get("selection")
+    )
+    digits = config.get("digits") if isinstance(config.get("digits"), list) else legacy.get("digits")
+    currency_field = _text(config.get("currencyField") or legacy.get("currency_field"))
+    attachment_role = _text(config.get("attachmentRole") or legacy.get("attachmentRole"))
+    if relation:
+        descriptor["relation"] = relation
+    if relation_field:
+        descriptor["relationField"] = relation_field
+    if isinstance(selection, list) and selection:
+        pairs: list[list[str]] = []
+        for item in selection:
+            if isinstance(item, (list, tuple)) and len(item) == 2:
+                key, label = item
+            elif isinstance(item, dict):
+                key = item.get("value", item.get("key"))
+                label = item.get("label")
+            else:
+                continue
+            if _text(key) and _text(label):
+                pairs.append([_text(key), _text(label)])
+        if pairs:
+            descriptor["selection"] = pairs
+    if isinstance(digits, list) and len(digits) == 2:
+        descriptor["digits"] = digits
+    if currency_field:
+        descriptor["currencyField"] = currency_field
+    if semantic_type == "percentage":
+        descriptor["unit"] = {"kind": "percent", "code": "percent", "label": "%"}
+    elif semantic_type == "duration":
+        descriptor["unit"] = {"kind": "duration", "code": "hour", "label": "小时"}
+    if field_type == "date":
+        descriptor["temporal"] = {"kind": "date", "timezoneAuthority": "not_applicable"}
+    elif field_type == "datetime":
+        descriptor["temporal"] = {"kind": "datetime", "timezoneAuthority": "user"}
+    if relation == "ir.attachment" and attachment_role:
+        descriptor["attachmentRole"] = attachment_role
+    if field_type == "monetary" and not descriptor.get("digits"):
+        return None
+    return descriptor
+
+
+def _upgrade_contract_v2_field_descriptors(contract: dict[str, Any]) -> dict[str, Any]:
+    out = dict(contract)
+    layout = _dict(out.get("layoutContract"))
+    out["layoutContract"] = layout
+
+    def walk(rows: list[Any]) -> None:
+        for row in rows:
+            node = _dict(row)
+            widgets = _list(node.get("widgetList"))
+            for widget in widgets:
+                if not isinstance(widget, dict):
+                    continue
+                strict = _strict_field_descriptor(widget)
+                if strict:
+                    widget["fieldDescriptor"] = strict
+                elif _text(_dict(widget.get("fieldDescriptor")).get("type") or _dict(widget.get("fieldDescriptor")).get("ttype")) == "monetary":
+                    widget.pop("fieldDescriptor", None)
+            walk(_list(node.get("children")))
+
+    walk(_list(layout.get("containerTree")))
+    return out
+
+
 def _assemble_unified_page_contract_v2(
     source_contract: dict[str, Any],
     *,
@@ -1232,6 +1357,7 @@ def _assemble_unified_page_contract_v2(
     trace_id: str = "",
     stage_timings: dict[str, int] | None = None,
     node_actor_env=None,
+    contract_version: str = CONTRACT_VERSION,
 ) -> dict[str, Any]:
     started_at = time.monotonic()
     source = _dict(source_contract)
@@ -1272,7 +1398,19 @@ def _assemble_unified_page_contract_v2(
     if resolved in {"ui.contract", "native_form_projection"}:
         _page_composition_contract(contract, source)
     sealed = seal_unified_page_contract(
-        contract,
+        _upgrade_contract_v2_field_descriptors({
+            **contract,
+            "pageInfo": {
+                **(_dict(contract.get("pageInfo"))),
+                "contractVersion": contract_version,
+            },
+        }) if contract_version.startswith("2.6.") else {
+            **contract,
+            "pageInfo": {
+                **(_dict(contract.get("pageInfo"))),
+                "contractVersion": contract_version,
+            },
+        },
         source_payload=payload if resolved not in {"ui.contract", "native_form_projection"} else source,
         source_type=resolved,
         request_id=request_id,
