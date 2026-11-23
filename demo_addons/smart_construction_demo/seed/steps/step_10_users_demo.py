@@ -88,6 +88,7 @@ def run(env):
         groups_xmlids=[
             base_group,
             "smart_construction_core.group_sc_business_full",
+            "smart_construction_core.group_sc_cap_business_config_admin",
         ],
         password=password,
         lang=lang,
@@ -157,7 +158,7 @@ def run(env):
 register(
     SeedStep(
         name="demo_10_users",
-        description="Create the wutao full-product principal and representative demo role users.",
+        description="Create the wutao business configuration administrator and representative demo role users.",
         run=run,
     )
 )

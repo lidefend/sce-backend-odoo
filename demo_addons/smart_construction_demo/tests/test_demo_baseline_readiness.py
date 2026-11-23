@@ -67,6 +67,10 @@ class TestDemoBaselineReadiness(TransactionCase):
         full_group = self.env.ref(
             "smart_construction_core.group_sc_business_full", raise_if_not_found=False
         )
+        config_group = self.env.ref(
+            "smart_construction_core.group_sc_cap_business_config_admin",
+            raise_if_not_found=False,
+        )
         principal = (
             self.env["res.users"].sudo().search([("login", "=", "wutao")], limit=1)
         )
@@ -76,6 +80,8 @@ class TestDemoBaselineReadiness(TransactionCase):
             and admin.id != principal.id
             and full_group
             and full_group in principal.groups_id
+            and config_group
+            and config_group in principal.groups_id
         )
 
     def _probes(self) -> dict[str, bool]:

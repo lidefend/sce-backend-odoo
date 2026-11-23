@@ -1,0 +1,68 @@
+{
+  "schema_version": 2,
+  "id": "DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124",
+  "branch": "fix/demo-wutao-business-config-admin-20261124",
+  "status": "active",
+  "baseline_sha": "32fda4ce4666236295f60c985211ab703dbf4ddf",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124.yaml",
+    ".agent/runs/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124/run.json",
+    "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+    "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
+    "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets; the ORM check binds its governed local.dev readback artifact"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.demo.supplemental.unit verify.local.dev.baseline_readiness.orm",
+      "reason": "Validate the demo declaration and the actual local demo principal role."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the P1 demo declaration against current main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release eligibility follows protected integration."
+    }
+  },
+  "checks": {
+    "demo_supplemental": {
+      "target": "verify.demo.supplemental.unit",
+      "kind": "offline",
+      "inputs": [
+        "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+        "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "demo_baseline_readiness": {
+      "target": "verify.local.dev.baseline_readiness.orm",
+      "kind": "runtime",
+      "inputs": [
+        "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+        "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
+        "make/dev.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124/local_demo_baseline_readiness.log"
+      }
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and integrate the P1 demo identity declaration, then apply it to local and daily demos and read back wutao's business_config_admin identity.",
+  "goal": ".agent/goals/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124.yaml",
+  "record": "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
+}
