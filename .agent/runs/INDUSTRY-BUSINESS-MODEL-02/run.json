@@ -109,6 +109,34 @@
         "addons/smart_construction_core/handlers/my_work_summary.py",
         "make/ci.mk"
       ]
+    },
+    "permission_truth_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "workflow_contract_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "make/ci.mk"
+      ]
+    },
+    "workflow_contract_samples": {
+      "target": "verify.workflow_contract.be_close_01.samples",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/test_be_close_01_workflow_contract_http_probe.py"
+      ]
     }
   },
   "blockers": [],
