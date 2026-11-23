@@ -1,0 +1,7 @@
+{
+  "name": "toggle_active",
+  "type": "object",
+  "action_id": "action.partner_toggle_active",
+  "backend_identity": "contract_action:toggle_active",
+  "source_widget_id": "field.active"
+}

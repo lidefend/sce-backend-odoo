@@ -19,6 +19,9 @@ type ContractActionButton = {
   visibleProfiles?: string[];
   kind?: string;
   actionId?: number | null;
+  contractActionId?: string;
+  backendIdentity?: string;
+  sourceWidgetId?: string;
   methodName?: string;
   model?: string;
   target?: string;
@@ -73,7 +76,7 @@ function resolveV2RefreshPolicy(refreshMode: string): Dict | undefined {
   };
 }
 
-function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): Array<Record<string, unknown>> {
+export function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): Array<Record<string, unknown>> {
   const rows = resolveContractV2ActionRules(store);
   const normalized: Array<Record<string, unknown>> = [];
   for (const action of rows) {
@@ -112,6 +115,7 @@ function normalizeV2ActionRows(store: ContractV2NormalizedStore | null): Array<R
       target_model: String(target.model || '').trim(),
       selection: 'none',
       unified_page_contract_v2_action_id: action.actionId,
+      unified_page_contract_v2_backend_identity: action.backendIdentity,
       unified_page_contract_v2_source_widget_id: action.sourceWidgetId,
       unified_page_contract_v2_refresh_mode: action.refreshMode,
     });

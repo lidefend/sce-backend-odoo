@@ -26,6 +26,9 @@ type ContractActionButtonLike = {
   enabled?: boolean;
   kind?: string;
   actionId?: number;
+  contractActionId?: string;
+  backendIdentity?: string;
+  sourceWidgetId?: string;
   url?: string;
   target?: string;
   mutation?: MutationPayload;
@@ -55,7 +58,13 @@ type SceneMutationInput = {
 type ExecuteButtonInput = {
   model: string;
   res_id: number;
-  button: { name: string; type: string };
+  button: {
+    name: string;
+    type: string;
+    action_id?: string;
+    backend_identity?: string;
+    source_widget_id?: string;
+  };
   context?: Dict;
 };
 
@@ -95,6 +104,9 @@ type UseActionViewActionRuntimeOptions = {
     recordId: number;
     methodName?: string;
     actionKey: string;
+    contractActionId?: string;
+    backendIdentity?: string;
+    sourceWidgetId?: string;
     kind: string;
     context?: Dict;
   }) => ExecuteButtonInput;
@@ -245,6 +257,9 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
             recordId: id,
             methodName: action.methodName,
             actionKey: action.key,
+            contractActionId: action.contractActionId,
+            backendIdentity: action.backendIdentity,
+            sourceWidgetId: action.sourceWidgetId,
             kind,
             context: action.context,
           }));

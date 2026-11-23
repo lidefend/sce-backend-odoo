@@ -21,11 +21,11 @@ Generated from repository source files. This report is informational during the 
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4841 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4164 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 3885 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4184 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3905 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3743 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3746 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3653 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
@@ -178,8 +178,8 @@ Generated from repository source files. This report is informational during the 
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
+| 1038 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
-| 1034 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1029 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
@@ -279,11 +279,11 @@ Generated from repository source files. This report is informational during the 
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4841 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4590 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4164 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 3885 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4184 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 3905 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
-| 3743 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
+| 3746 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
 | 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3653 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |

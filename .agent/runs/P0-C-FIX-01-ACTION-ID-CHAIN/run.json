@@ -1,0 +1,224 @@
+{
+  "schema_version": 1,
+  "id": "P0-C-FIX-01-ACTION-ID-CHAIN",
+  "branch": "feature/p0-c-fix-01-action-id-chain-20261123",
+  "baseline_sha": "8b46984d2b896eb104c26348788883993d260beb",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P0-C-FIX-01-ACTION-ID-CHAIN.yaml",
+  "record": "docs/ops/iterations/p0_c_fix_01_action_id_chain_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-C-FIX-01-ACTION-ID-CHAIN.yaml",
+    ".agent/runs/P0-C-FIX-01-ACTION-ID-CHAIN/run.json",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_construction_core/tests/fixtures/p0_c_fix01_action_button.json",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
+    "docs/ops/iterations/p0_c_fix_01_action_id_chain_20261123.md",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractActionButtonRuntime.ts",
+    "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/scripts/p0_c_fix01_action_id_chain_test.ts",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/action_view_contract_action_runtime_smoke.js",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.test and local.dev profiles with offline contract tests"
+  },
+  "checks": {
+    "p0c_fix_action_id_unit": {
+      "target": "verify.p0_c_fix01.action_id.unit",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractActionButtonRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+        "frontend/apps/web/scripts/p0_c_fix01_action_id_chain_test.ts",
+        "addons/smart_construction_core/tests/fixtures/p0_c_fix01_action_button.json",
+        "addons/smart_core/handlers/execute_button.py",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0c_fix_action_id_orm": {
+      "target": "verify.p0_c_fix01.action_id.orm",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_construction_core/tests/fixtures/p0_c_fix01_action_button.json",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "p0c_existing_unit": {
+      "target": "verify.p0_contract_producer.p0c.unit",
+      "inputs": [
+        "addons/smart_core/core/page_block_action_contract.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0c_existing_orm": {
+      "target": "verify.p0_contract_producer.p0c.orm",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "execute_button_authority": {
+      "target": "verify.execute_button.authority.unit",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/tests/test_execute_button_server_action_boundaries.py",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "action_view_runtime": {
+      "target": "verify.action_view_runtime_smoke.behavior",
+      "inputs": [
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+        "scripts/verify/action_view_contract_action_runtime_smoke.js",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "approval_contract_closure": {
+      "target": "verify.approval.contract_closure.orm",
+      "inputs": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "addons/smart_core/handlers/execute_button.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "addons/smart_core/handlers/execute_button.py",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "p0a_backend_unit": {
+      "target": "verify.p0_contract_producer.p0a.backend_unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_construction_core/services/scene_block_schema.py"
+      ],
+      "kind": "offline"
+    },
+    "p0a_money_chain": {
+      "target": "verify.p0_contract_producer.p0a.money",
+      "inputs": [
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts"
+      ],
+      "kind": "runtime"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/.eslintrc.cjs"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/vite.config.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "real frontend contract action request identity",
+      "state": "required",
+      "owner_target": "verify.p0_c_fix01.action_id.unit"
+    },
+    {
+      "gate": "real Odoo identity revalidation and feedback",
+      "state": "required",
+      "owner_target": "verify.p0_c_fix01.action_id.orm"
+    },
+    {
+      "gate": "P0-C carrier and feedback regression",
+      "state": "required",
+      "owner_target": "verify.p0_contract_producer.p0c.unit"
+    },
+    {
+      "gate": "existing execute_button authority regression",
+      "state": "required",
+      "owner_target": "verify.execute_button.authority.unit"
+    },
+    {
+      "gate": "Action View runtime smoke",
+      "state": "required",
+      "owner_target": "verify.action_view_runtime_smoke.behavior"
+    },
+    {
+      "gate": "frontend lint, strict typecheck and build",
+      "state": "required",
+      "owner_target": "registered frontend entries"
+    },
+    {
+      "gate": "P0-B, FCF-02-2 and FCF-02-3",
+      "state": "not_authorized",
+      "reason": "separate follow-on batches"
+    }
+  ],
+  "blockers": [],
+  "next_exact_step": "Commit the clean P0-C-FIX-01 candidate, publish an independent PR and wait for exact-head required checks and independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

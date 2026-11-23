@@ -202,14 +202,6 @@ class ExecuteButtonHandler(BaseIntentHandler):
         expected_type = _normalized_button_type(rule_button.get("type") or rule_button.get("buttonType"))
         if expected_name != method_name or expected_type != _normalized_button_type(button_type):
             raise AccessError("ACTION_CONTRACT_BUTTON_MISMATCH")
-        if not (
-            rule.get("allowed") is True
-            and rule.get("enabled") is True
-            and rule.get("disabled") is False
-            and rule.get("entitlementEvaluated") is True
-        ):
-            raise AccessError(str(rule.get("reasonCode") or "ACTION_CONTRACT_NOT_AUTHORIZED"))
-
         if expected_type == "server":
             expected_server_id = _positive_int(
                 rule_button.get("server_action_id") or rule_button.get("serverActionId")
@@ -233,6 +225,19 @@ class ExecuteButtonHandler(BaseIntentHandler):
             ).strip()
             if not expected_target or expected_target != method_name:
                 raise AccessError("ACTION_CONTRACT_WINDOW_ACTION_MISMATCH")
+
+        validated_action_id = str(rule.get("actionId") or "").strip()
+        if validated_action_id != authority_action_id:
+            raise AccessError("ACTION_CONTRACT_ID_MISMATCH")
+        self._validated_action_id = validated_action_id
+
+        if not (
+            rule.get("allowed") is True
+            and rule.get("enabled") is True
+            and rule.get("disabled") is False
+            and rule.get("entitlementEvaluated") is True
+        ):
+            raise AccessError(str(rule.get("reasonCode") or "ACTION_CONTRACT_NOT_AUTHORIZED"))
 
         status_contract = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
         statuses = status_contract.get("buttonStatus") if isinstance(status_contract.get("buttonStatus"), list) else []
@@ -258,10 +263,9 @@ class ExecuteButtonHandler(BaseIntentHandler):
         return {**rule, "_validated_work_item_access_mode": work_access_mode}
 
     def handle(self, payload=None, ctx=None):
+        self._validated_action_id = ""
         result = self._handle(payload=payload, ctx=ctx)
-        params = self.params if isinstance(self.params, dict) else {}
-        button = params.get("button") if isinstance(params.get("button"), dict) else {}
-        action_id = str(button.get("action_id") or button.get("actionId") or "").strip()
+        action_id = self._validated_action_id
         if not action_id or not isinstance(result, dict):
             return result
         meta = result.get("meta") if isinstance(result.get("meta"), dict) else {}

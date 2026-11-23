@@ -1,4 +1,7 @@
 # -*- coding: utf-8 -*-
+import json
+from pathlib import Path
+
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.unified_page_contract_v2_action import (
@@ -47,6 +50,7 @@ class TestP0ContractProducerP0C(TransactionCase):
         method_name,
         allowed=True,
         trace_id,
+        button_request=None,
     ):
         partner = self.env["res.partner"].create({
             "name": f"P0-C action {trace_id}",
@@ -82,6 +86,15 @@ class TestP0ContractProducerP0C(TransactionCase):
                 }],
             },
         }
+        button = {
+            "type": "object",
+            "name": method_name,
+            "action_id": action_id,
+            "backend_identity": backend_identity,
+            "source_widget_id": "field.active",
+        }
+        if button_request is not None:
+            button = dict(button_request)
         handler = ExecuteButtonHandler(
             self.env,
             context={"trace_id": trace_id},
@@ -89,19 +102,21 @@ class TestP0ContractProducerP0C(TransactionCase):
                 "params": {
                     "model": "res.partner",
                     "record_id": partner.id,
-                    "button": {
-                        "type": "object",
-                        "name": method_name,
-                        "action_id": action_id,
-                        "backend_identity": backend_identity,
-                        "source_widget_id": "field.active",
-                    },
+                    "button": button,
                 },
                 "meta": {"action_id": 1, "menu_id": 1},
             },
         )
         handler._load_current_action_contract = lambda **_kwargs: contract
         return handler
+
+    def _frontend_request_fixture(self):
+        path = (
+            Path(__file__).resolve().parent
+            / "fixtures"
+            / "p0_c_fix01_action_button.json"
+        )
+        return json.loads(path.read_text(encoding="utf-8"))
 
     def test_workspace_page_block_action_uses_published_action_authority(self):
         user = self._user_with_group(
@@ -293,6 +308,92 @@ class TestP0ContractProducerP0C(TransactionCase):
         self.assertEqual(feedback[0]["actionId"], action_id)
         self.assertEqual(feedback[0]["status"], "failed")
         self.assertEqual(feedback[0]["traceId"], "trace-execute-p0c-failed")
+
+    def test_frontend_builder_fixture_is_the_backend_request(self):
+        button = self._frontend_request_fixture()
+        handler = self._button_handler(
+            action_id=button["action_id"],
+            method_name=button["name"],
+            trace_id="trace-p0c-fix01-frontend-chain",
+            button_request=button,
+        )
+        self.assertEqual(handler.params["button"], button)
+
+        result = handler.handle()
+
+        self.assertTrue(result["ok"], result)
+        feedback = result["data"]["runtimePatch"]["actionFeedback"]
+        self.assertEqual(feedback[0]["actionId"], button["action_id"])
+        self.assertEqual(feedback[0]["traceId"], "trace-p0c-fix01-frontend-chain")
+
+    def test_missing_action_id_fails_without_feedback(self):
+        button = self._frontend_request_fixture()
+        button.pop("action_id")
+        handler = self._button_handler(
+            action_id="action.partner_toggle_active",
+            method_name="toggle_active",
+            trace_id="trace-p0c-fix01-missing",
+            button_request=button,
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        self.assertNotIn("runtimePatch", result.get("data", {}))
+        self.assertNotIn(
+            "runtimePatch",
+            (result.get("error", {}).get("details") or {}),
+        )
+
+    def test_action_id_mismatch_fails_without_feedback(self):
+        button = self._frontend_request_fixture()
+        button["action_id"] = "action.other"
+        handler = self._button_handler(
+            action_id="action.partner_toggle_active",
+            method_name="toggle_active",
+            trace_id="trace-p0c-fix01-action-mismatch",
+            button_request=button,
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        self.assertNotIn("runtimePatch", result.get("data", {}))
+
+    def test_backend_identity_mismatch_fails_without_feedback(self):
+        button = self._frontend_request_fixture()
+        button["backend_identity"] = "contract_action:other"
+        handler = self._button_handler(
+            action_id=button["action_id"],
+            method_name="toggle_active",
+            trace_id="trace-p0c-fix01-backend-mismatch",
+            button_request=button,
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        self.assertNotIn("runtimePatch", result.get("data", {}))
+
+    def test_source_widget_mismatch_fails_without_feedback(self):
+        button = self._frontend_request_fixture()
+        button["source_widget_id"] = "field.other"
+        handler = self._button_handler(
+            action_id=button["action_id"],
+            method_name="toggle_active",
+            trace_id="trace-p0c-fix01-source-mismatch",
+            button_request=button,
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        self.assertNotIn("runtimePatch", result.get("data", {}))
+
+    def test_button_identity_mismatch_fails_without_feedback(self):
+        button = self._frontend_request_fixture()
+        button["name"] = "other_method"
+        handler = self._button_handler(
+            action_id=button["action_id"],
+            method_name="toggle_active",
+            trace_id="trace-p0c-fix01-button-mismatch",
+            button_request=button,
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        self.assertNotIn("runtimePatch", result.get("data", {}))
 
 
 if __name__ == "__main__":

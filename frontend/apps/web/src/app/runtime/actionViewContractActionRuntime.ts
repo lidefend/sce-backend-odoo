@@ -1,6 +1,7 @@
 import { buildEntryTargetRouteTarget } from '../routeQuery';
 import { contractActionCarryQuery, entryTargetMenuId, entryTargetModel } from '../navigationContext';
 import type { UnifiedPageContractV2ButtonStatus } from '../contracts/unifiedPageContractV2';
+import { contractGapError } from '../contract/contractGap';
 
 export type ContractActionSelection = 'none' | 'single' | 'multi';
 
@@ -117,20 +118,45 @@ export function buildContractActionButtonRequest(options: {
   recordId: number;
   methodName?: string | null;
   actionKey: string;
+  contractActionId?: string | null;
+  backendIdentity?: string | null;
+  sourceWidgetId?: string | null;
   kind?: string | null;
   context?: Record<string, unknown>;
 }): {
   model: string;
   res_id: number;
-  button: { name: string; type: string };
+  button: {
+    name: string;
+    type: string;
+    action_id: string;
+    backend_identity: string;
+    source_widget_id: string;
+  };
   context?: Record<string, unknown>;
 } {
+  const declared = (value: unknown, missing: string): string => {
+    const text = typeof value === 'string' ? value.trim() : '';
+    if (!text) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing,
+        requiredDeclarationLayer: 'P0: ContractV2ActionRule execute-button identity',
+      }, `Contract action request is missing ${missing}`);
+    }
+    return text;
+  };
+  const name = declared(options.methodName || options.actionKey, 'action.button.name');
+  const type = declared(options.kind || 'object', 'action.button.type');
   return {
     model: options.model,
     res_id: options.recordId,
     button: {
-      name: String(options.methodName || options.actionKey || '').trim(),
-      type: String(options.kind || 'object').trim() || 'object',
+      name,
+      type,
+      action_id: declared(options.contractActionId, 'action.actionId'),
+      backend_identity: declared(options.backendIdentity, 'action.backendIdentity'),
+      source_widget_id: declared(options.sourceWidgetId, 'action.sourceWidgetId'),
     },
     context: options.context,
   };
