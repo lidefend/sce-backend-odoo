@@ -41,3 +41,24 @@ A normal PR requires a clean committed HEAD, bounded diff, and accurate local
 targeted evidence. Merge requires current exact-head required remote checks.
 Scheduled CI separately determines whether the resulting mainline is eligible
 for release.
+
+## Impact-routed verification surface
+
+Verification-tool checks follow their actual execution surface:
+
+- `audit.verification.lane_coverage.check` is selected only when Make, workflow,
+  guard-registry, verification-lane or planner inputs change.
+- A passed `verify.verification.lane_coverage` receipt covers its internal audit
+  subcheck for the same run and source identity. The plan records this through
+  `reusedTargetCoverage`; covered targets are not executed twice.
+- Planner changes route to `verify.frontend.dev.incremental.unit`. Run-context
+  and generated-evidence-registry changes route to `verify.agent.resume.unit`;
+  these are separate contracts.
+- Local `make/ci.mk` changes run the lane policy and planner tests. The full CI
+  workflow contract remains the exact-head remote control-plane responsibility.
+- Unknown or invalid paths remain fail-closed. Shared-contract channel handoff
+  and deferred remote module baselines are unchanged.
+
+When target main advances, merge the current main into the PR branch, update the
+active run baseline to that exact main SHA, and rerun the affected local set.
+Previously recorded exact-head remote checks do not carry across the new base.

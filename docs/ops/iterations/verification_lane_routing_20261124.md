@@ -59,3 +59,13 @@ passes. It remains fully enforced when the verification surface changes.
 - `verify.baseline.iteration.execution.policy`: 22 tests PASS.
 - `verify.agent.resume.unit`: 70 tests PASS.
 - `verify.verification.lane_coverage`: 74 tests PASS.
+
+## Documentation sync
+
+The same routing contract is recorded in:
+
+- `iteration_validation_responsibility_v1.md` for local/remote/release duties;
+- `dual_lane_fast_iteration_v1.md` for daily operation;
+- `validation_delivery_protocol.md` and
+  `codex_delivery_collaboration_protocol_v1.md` for protected integration;
+- `codex_workspace_execution_rules.md` for the local execution hard lock.

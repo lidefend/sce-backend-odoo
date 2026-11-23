@@ -29,6 +29,22 @@ remaining targets.
 
 Frontend changes without shared contract targets can execute directly.
 
+## Execution-path ownership
+
+The planner owns target selection; Make entries only provide the fixed local
+preflight and invoke that planner.
+
+| Surface | Local owner | Remote owner |
+| --- | --- | --- |
+| Demo/product data | Only mapped demo or product targets | Exact affected module/frontend integration |
+| Verification-lane audit | Selected only for Make/workflow/registry/planner changes | Required workflow/control-plane gates |
+| `make/ci.mk` | Lane policy + planner tests | Full workflow-contract control-plane check |
+| Planner-only changes | Planner unit; no unrelated run-context test | Exact-head workflow contract |
+| Full lane-coverage receipt | Covers its internal audit subcheck | No local re-execution |
+
+Unknown paths and invalid paths remain fail-closed. A covering receipt is valid
+only for the same run and exact source identity.
+
 ## Remote precision
 
 The plan and execution receipt include `remoteIntegrationScope`, derived from
@@ -55,6 +71,20 @@ the planner. It is no longer an unconditional prerequisite of every lane, so a
 backend-only iteration does not require an installed frontend toolchain.
 Missing `eslint`, `vue-tsc` or `esbuild` blocks only a change set that actually
 selects the corresponding frontend targets.
+
+## Measured inner loop
+
+On the P4 routing candidate:
+
+| Entry | Measured wall time |
+| --- | ---: |
+| `make ci.local.iteration` | 4.89-5.03s |
+| `make ci.local.backend.iteration` | 5.05s |
+| `make ci.local.frontend.iteration` | 4.94s |
+| Demo-only fixed prelude | 3.07s |
+
+These measurements are observations, not fixed SLAs. Re-run only the target
+whose declared inputs changed.
 
 ## Daily order
 

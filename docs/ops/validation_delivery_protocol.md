@@ -19,6 +19,8 @@
 5. `make ci.delivery.freeze.prepare` 在生成报告前再次输出影响计划。dirty 阶段不要求伪造冻结证据；缺失的正式证据是明确待办，不能称为收口完成。
 6. 清洁候选、审查、正式验收登记、Quick 与远端检查按所选车道执行。普通 Gitee 发布仍遵循 AGENTS 最新分工；本批未改变其授权与必需 CI。
 
+验证工具自身也按影响面运行。`audit.verification.lane_coverage.check` 仅在 Make、workflow、guard registry、verification lane 或规划器输入变化时执行；已通过的完整 lane-coverage 回执可覆盖其内部子检查，但必须绑定同一 run 和同一源身份。规划器与 run-context 分别由自己的非零测试负责；本地 `make/ci.mk` 改动运行 lane policy 和 planner 测试，完整 workflow contract 仍由精确 HEAD 远端 CI 负责。
+
 ## 开发检查依赖
 
 run 中的每项检查可以声明 `depends_on: ["another_check_id"]`。引用必须存在且无环。
@@ -45,6 +47,8 @@ run 中的每项检查可以声明 `depends_on: ["another_check_id"]`。引用�
 2. 直接以实际 source/base 计算全部影响套件，并验证其中 merge 阶段必需证据。`BASE_SHA`、`HEAD_SHA` 或调用者选择的基线不能缩减合并范围。缺本地目标提交时拒绝，先通过现有允许的同步入口恢复。
 3. 前提通过后，才复用有效 Quick 或执行原有 Quick 后备路径。Make recipe 保证 `-j` 也不能并发越过前提。
 4. Quick 后重新读取 source/base 并验证证据，漂移或证据改变即拒绝；随后沿用受保护 PR 合并及 head 绑定。
+
+目标 main 前进后，先把最新 main 合入 PR 分支，并把当前 run 基线更新到该 main 的完整 SHA，再重跑受影响本地集合。旧基线的 PR 检查不能承接为新基线的集成证据。
 
 合并入口不再暗中记录证据；新证据先显式执行 `acceptance.evolution.record`。所有原始记录、哈希、套件适配器和时效检查保持。
 此流程仍不是 source/base 原子锁：GitHub head 绑定和目标保护继续生效，最后回读与平台实际合并之间仍存在目标变化窗口，不能宣称原子自动合并。

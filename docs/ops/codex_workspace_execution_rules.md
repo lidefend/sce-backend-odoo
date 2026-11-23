@@ -215,6 +215,11 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      `make ci.local.quick.diagnostic`：它只报告结果，不签发回执、不满足任何门禁，只能用于定位。
      回执目录由 `make ci.local.quick.gc` 按 `QUICK_RECEIPT_KEEP`（默认 50）回收，并始终保留当前 head
      与窗口外最近的祖先回执，避免增量扫描因失去可用 base 而退化为全量。
+   - **验证工具按执行面路由。** Lane coverage 不自证、不无条件运行：只有 Make、workflow、
+     guard registry、verification lane 或规划器变化才选择；完整 lane-coverage 回执可按同一 run/source
+     身份覆盖内部 audit subcheck。规划器和 run-context 分开选测；本地 `make/ci.mk` 选 lane policy
+     与 planner 测试，远端仍保留完整 workflow contract。目标 main 更新后必须同步分支、更新 run
+     baseline 并重跑受影响本地集合，旧 base 的远端结果失效。
    - **车道遥测只陈述事实。** 声明车道的真实耗时、成功率、降级率和失败归因落在
      `.git/codex/evidence/lane_telemetry/`，车道名与覆盖审计仪器
      `scripts/audit/verification_lane_coverage.py` 的 `LANES` 同源，不得新造。

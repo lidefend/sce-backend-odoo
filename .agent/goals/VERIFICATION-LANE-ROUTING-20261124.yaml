@@ -30,6 +30,11 @@ goal:
       - .agent/goals/VERIFICATION-LANE-ROUTING-20261124.yaml
       - .agent/runs/VERIFICATION-LANE-ROUTING-20261124/run.json
       - docs/ops/iterations/verification_lane_routing_20261124.md
+      - docs/ops/iteration_validation_responsibility_v1.md
+      - docs/ops/dual_lane_fast_iteration_v1.md
+      - docs/ops/validation_delivery_protocol.md
+      - docs/ops/codex_workspace_execution_rules.md
+      - docs/ops/codex_delivery_collaboration_protocol_v1.md
       - make/ci.mk
       - scripts/verify/baseline_iteration_execution_policy_guard.py
       - scripts/verify/frontend_dev_incremental.py
