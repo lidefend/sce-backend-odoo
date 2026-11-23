@@ -251,10 +251,17 @@ def _guard_acceptance_scope(env):
             "frontend fixture requires %s in %s (got %s)"
             % (FIXTURE_SCOPE_ENV, ",".join(sorted(FIXTURE_SCOPES)), scope_name)
         )
-    if env.cr.dbname != scope["database"]:
+    expected_database = scope["database"]
+    if scope_name == "local_test":
+        expected_database = str(os.environ.get("SC_TEST_DB_NAME") or "")
+        if not expected_database.startswith("sc_test_"):
+            raise RuntimeError(
+                "frontend fixture requires the current isolated local.test attempt"
+            )
+    if env.cr.dbname != expected_database:
         raise RuntimeError(
             "frontend fixture requires database %s (got %s)"
-            % (scope["database"], env.cr.dbname)
+            % (expected_database, env.cr.dbname)
         )
     if os.environ.get("SC_ENVIRONMENT") != scope["environment"]:
         raise RuntimeError(

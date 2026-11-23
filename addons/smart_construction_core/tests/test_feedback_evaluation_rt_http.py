@@ -140,7 +140,7 @@ class TestFeedbackEvaluationRtHttp(HttpCase):
                 "allowed_company_ids": [self.env.company.id],
                 "lang": "en_US",
             },
-            "client_contract_capabilities": capabilities if capabilities is not None else [
+            "client_type": "web_pc", "client_contract_capabilities": capabilities if capabilities is not None else [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],

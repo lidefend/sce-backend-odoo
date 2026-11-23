@@ -1,0 +1,1850 @@
+{
+  "schema": "baseline_evidence_01.failure_inventory.v1",
+  "candidate_source_identity": {
+    "head": "b02abe355c09b2b1b17fba69dd14436a35df1010",
+    "runtime_product": "9f0903099e2f751bb81d32c13e028d224478b77d",
+    "base": "b0c08392679b9f305c9b6e6819c86e254b9e7d61"
+  },
+  "candidate_failure_log": {
+    "path": "/home/lidefend/workspace/sce-backend-odoo-ci-recovery-20261120-p0b-attachment-20261123/.runtime/test-baseline/1795418028785810533/odoo.log",
+    "sha256": "8e023f3a148441a1368ef0e7deb37f78437c64924619e3bf1930bc928b0e2431",
+    "failure_count": 80
+  },
+  "clean_base_reproduction": {
+    "receipt": "/home/lidefend/workspace/sce-backend-odoo-task-model-03-20261123-industry-business-model-02-20261123/.runtime/test-baseline/1795419027831832794/receipt.json",
+    "receipt_sha256": "f6a5de3827513a0ad75956f0c3764590b71010f3c3ca61c14342900202114b0f",
+    "log": "/home/lidefend/workspace/sce-backend-odoo-task-model-03-20261123-industry-business-model-02-20261123/.runtime/test-baseline/1795419027831832794/odoo.log",
+    "log_sha256": "406c8a4134735ee41316f8ef70e0c8d9f8687b4d05f736b974659ec32095b664",
+    "head": "b0c08392679b9f305c9b6e6819c86e254b9e7d61",
+    "result": "1 failed"
+  },
+  "summary": {
+    "failure_count": 80,
+    "by_file": {
+      "addons/smart_construction_core/tests/test_company_project_refund_feedback.py": 1,
+      "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py": 11,
+      "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py": 7,
+      "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py": 9,
+      "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py": 5,
+      "addons/smart_construction_core/tests/test_invoice_native_lowcode.py": 4,
+      "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py": 12,
+      "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py": 5,
+      "addons/smart_construction_core/tests/test_policy_document_capability.py": 3,
+      "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py": 3,
+      "addons/smart_construction_core/tests/test_system_permission_accounting.py": 3,
+      "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py": 11,
+      "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py": 5,
+      "addons/smart_construction_core/tests/test_user_feedback_business_views.py": 1
+    },
+    "by_module": {
+      "smart_construction_core.tests.test_company_project_refund_feedback": 1,
+      "smart_construction_core.tests.test_context_workspace_native_lowcode": 11,
+      "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode": 7,
+      "smart_construction_core.tests.test_expense_claim_native_lowcode": 9,
+      "smart_construction_core.tests.test_hr_payroll_native_lowcode": 5,
+      "smart_construction_core.tests.test_invoice_native_lowcode": 4,
+      "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode": 12,
+      "smart_construction_core.tests.test_payment_execution_native_lowcode": 5,
+      "smart_construction_core.tests.test_policy_document_capability": 3,
+      "smart_construction_core.tests.test_receipt_income_native_lowcode": 3,
+      "smart_construction_core.tests.test_system_permission_accounting": 3,
+      "smart_construction_core.tests.test_tax_deduction_native_lowcode": 11,
+      "smart_construction_core.tests.test_usage_performance_native_lowcode": 5,
+      "smart_construction_core.tests.test_user_feedback_business_views": 1
+    },
+    "missing_client_type_call_sites": 34,
+    "selected_failed_files": 14
+  },
+  "failures": [
+    {
+      "log_line": 533,
+      "module": "smart_construction_core.tests.test_company_project_refund_feedback",
+      "test": "TestCompanyProjectRefundFeedback.test_create_ui_contract_uses_request_local_feedback_proof",
+      "source_file": "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+        "line": 251
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 646,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_a_retired_body_no_longer_re_projects_over_the_native_authority",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 485
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 660,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_each_entry_keeps_its_own_native_authority",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 509
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 672,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_entries_consume_their_own_release_on_the_native_authority",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 377
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 690,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_native_arch_declares_every_business_section_identity",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 404
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 701,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_one_workbench_closes_the_authorized_form_configuration_loop",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 1478
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 735,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_configuration_path_refuses_to_relax_a_workbench_constraint",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 1591
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 745,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_design_authority_is_bounded_by_the_entry_surface",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 1686
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: 'unavailable' not found in \"False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}\" : the entry surface must be resolved for the principal, never assumed"
+    },
+    {
+      "log_line": 772,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_native_authority_contract_carries_the_declared_governance",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 904
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 786,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_prompt_is_feedback_not_a_section",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 593
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 804,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_runtime_governance_merge_keeps_one_structure_owner",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 1707
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 814,
+      "module": "smart_construction_core.tests.test_context_workspace_native_lowcode",
+      "test": "TestContextWorkspaceNativeLowcode.test_the_workbench_keeps_collaboration_on_the_formal_document",
+      "source_file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+        "line": 1056
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1084,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractNativeLowcode.test_the_rendered_field_set_is_pinned",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 229
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1094,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractNativeLowcode.test_the_rendered_surface_is_the_native_container_tree",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 220
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1105,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractSettlementNativeLowcode.test_the_declared_sections_never_reach_the_page",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 531
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1119,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractSettlementNativeLowcode.test_the_rendered_field_set_is_pinned",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 525
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1129,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractSettlementNativeLowcode.test_the_rendered_surface_is_the_native_container_tree",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 517
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1139,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractSettlementNativeLowcode.test_the_retired_readonly_policy_survives_on_the_native_surface",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 539
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1150,
+      "module": "smart_construction_core.tests.test_daily_contract_settlement_native_lowcode",
+      "test": "TestDailyContractSettlementNativeLowcode.test_the_sparse_override_does_not_become_a_second_structure_owner",
+      "source_file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+        "line": 559
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1219,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_deduction_detail_collection_keeps_its_own_presenter",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 497
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1229,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_entry_contracts_spend_one_native_structure",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 275
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1239,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_every_declared_fact_still_renders_exactly_once",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 362
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1249,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_native_anchors_wrappers_and_conditional_sections",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 478
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1259,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_native_entries_have_no_legacy_structure_dependency",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 322
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1269,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_recovered_facts_keep_their_declared_readonly_behaviour",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 391
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1279,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 543
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1289,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_sibling_entries_keep_their_own_configuration_structure",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 343
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1301,
+      "module": "smart_construction_core.tests.test_expense_claim_native_lowcode",
+      "test": "TestExpenseClaimNativeLowcode.test_tab_owned_anchors_do_not_claim_the_page_level",
+      "source_file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+        "line": 516
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1461,
+      "module": "smart_construction_core.tests.test_hr_payroll_native_lowcode",
+      "test": "TestHrPayrollNativeLowcode.test_a_retired_body_no_longer_re_projects_over_the_native_authority",
+      "source_file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "line": 507
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1480,
+      "module": "smart_construction_core.tests.test_hr_payroll_native_lowcode",
+      "test": "TestHrPayrollNativeLowcode.test_entries_consume_their_own_release_on_the_native_authority",
+      "source_file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "line": 260
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1522,
+      "module": "smart_construction_core.tests.test_hr_payroll_native_lowcode",
+      "test": "TestHrPayrollNativeLowcode.test_mixed_payroll_native_collection_keeps_sibling_entries",
+      "source_file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "line": 594
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 1537,
+      "module": "smart_construction_core.tests.test_hr_payroll_native_lowcode",
+      "test": "TestHrPayrollNativeLowcode.test_native_arch_declares_every_business_section_identity",
+      "source_file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "line": 317
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1578,
+      "module": "smart_construction_core.tests.test_hr_payroll_native_lowcode",
+      "test": "TestHrPayrollNativeLowcode.test_the_entry_that_had_no_release_renders_the_sibling_business_surface",
+      "source_file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+        "line": 290
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1635,
+      "module": "smart_construction_core.tests.test_invoice_native_lowcode",
+      "test": "TestInvoiceNativeLowcode.test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+      "source_file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "line": 208
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 1645,
+      "module": "smart_construction_core.tests.test_invoice_native_lowcode",
+      "test": "TestInvoiceNativeLowcode.test_shared_form_effective_field_rules",
+      "source_file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "line": 105
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 1655,
+      "module": "smart_construction_core.tests.test_invoice_native_lowcode",
+      "test": "TestInvoiceNativeLowcode.test_shared_native_form_anchors_and_bypass_actions",
+      "source_file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "line": 185
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 1665,
+      "module": "smart_construction_core.tests.test_invoice_native_lowcode",
+      "test": "TestInvoiceNativeLowcode.test_single_presentation_of_each_business_fact",
+      "source_file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+        "line": 167
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 1690,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_delivered_readonly_and_hidden_structure_is_pinned (contract='business_config_contract_project_cost_ledger_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 422
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1699,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_delivered_readonly_and_hidden_structure_is_pinned (contract='business_config_contract_project_profit_compare_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 422
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1708,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_delivered_readonly_and_hidden_structure_is_pinned (contract='business_config_contract_project_funding_baseline_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 422
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1717,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_delivered_readonly_and_hidden_structure_is_pinned (contract='business_config_contract_tender_guarantee_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 422
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1730,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_field_set_is_pinned (contract='business_config_contract_project_cost_ledger_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 414
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1739,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_field_set_is_pinned (contract='business_config_contract_project_profit_compare_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 414
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1748,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_field_set_is_pinned (contract='business_config_contract_project_funding_baseline_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 414
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1757,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_field_set_is_pinned (contract='business_config_contract_tender_guarantee_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 414
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1767,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_surface_is_the_native_container_tree (contract='business_config_contract_project_cost_ledger_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 402
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1776,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_surface_is_the_native_container_tree (contract='business_config_contract_project_profit_compare_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 402
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1785,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_surface_is_the_native_container_tree (contract='business_config_contract_project_funding_baseline_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 402
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 1794,
+      "module": "smart_construction_core.tests.test_ledger_summary_guarantee_native_lowcode",
+      "test": "Subtest TestLedgerSummaryGuaranteeNativeLowcode.test_the_rendered_surface_is_the_native_container_tree (contract='business_config_contract_tender_guarantee_form_native_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+        "line": 402
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 2845,
+      "module": "smart_construction_core.tests.test_payment_execution_native_lowcode",
+      "test": "TestPaymentExecutionNativeLowcode.test_body_presents_each_fact_once_and_projection_duplicates_are_gone",
+      "source_file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "line": 154
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 2855,
+      "module": "smart_construction_core.tests.test_payment_execution_native_lowcode",
+      "test": "TestPaymentExecutionNativeLowcode.test_each_entry_applies_only_its_own_released_contract",
+      "source_file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "line": 257
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 2865,
+      "module": "smart_construction_core.tests.test_payment_execution_native_lowcode",
+      "test": "TestPaymentExecutionNativeLowcode.test_native_anchors_buttons_and_conditional_section_survive",
+      "source_file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "line": 196
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 2875,
+      "module": "smart_construction_core.tests.test_payment_execution_native_lowcode",
+      "test": "TestPaymentExecutionNativeLowcode.test_retired_projections_keep_their_storage_and_list_duty",
+      "source_file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "line": 217
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 2885,
+      "module": "smart_construction_core.tests.test_payment_execution_native_lowcode",
+      "test": "TestPaymentExecutionNativeLowcode.test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+      "source_file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+        "line": 279
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 2993,
+      "module": "smart_construction_core.tests.test_policy_document_capability",
+      "test": "TestDocumentNativeLowcode.test_certificate_collection_declares_factual_fields_and_keeps_policy_isolation",
+      "source_file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+        "line": 95
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3002,
+      "module": "smart_construction_core.tests.test_policy_document_capability",
+      "test": "TestDocumentNativeLowcode.test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+      "source_file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+        "line": 139
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3013,
+      "module": "smart_construction_core.tests.test_policy_document_capability",
+      "test": "TestDocumentNativeLowcode.test_shared_archive_borrow_keep_capabilities_and_classification",
+      "source_file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+        "line": 116
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3212,
+      "module": "smart_construction_core.tests.test_receipt_income_native_lowcode",
+      "test": "TestReceiptIncomeNativeLowcode.test_bypass_entry_807_shares_the_same_form_and_keeps_its_domain",
+      "source_file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+        "line": 220
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3223,
+      "module": "smart_construction_core.tests.test_receipt_income_native_lowcode",
+      "test": "TestReceiptIncomeNativeLowcode.test_recovered_facts_have_one_presentation_and_real_rules",
+      "source_file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+        "line": 132
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3233,
+      "module": "smart_construction_core.tests.test_receipt_income_native_lowcode",
+      "test": "TestReceiptIncomeNativeLowcode.test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+      "source_file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+        "line": 237
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3494,
+      "module": "smart_construction_core.tests.test_system_permission_accounting",
+      "test": "TestSystemPermissionAccounting.test_accounting_user_posts_entry_reader_and_revoked_user_cannot_create",
+      "source_file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "line": 95
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3554,
+      "module": "smart_construction_core.tests.test_system_permission_accounting",
+      "test": "TestSystemPermissionAccounting.test_native_saved_journal_feedback_contract",
+      "source_file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "line": 419
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3564,
+      "module": "smart_construction_core.tests.test_system_permission_accounting",
+      "test": "TestSystemPermissionAccounting.test_native_saved_journal_reader_contract_and_write_denials",
+      "source_file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+        "line": 441
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 3892,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_attachment_expressions_keep_their_own_scenario",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 371
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3902,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "Subtest TestTaxDeductionNativeLowcode.test_auxiliary_derived_fact_is_presented_only_when_a_value_is_returned (action='action_sc_tax_deduction_registration_user')",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 686
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3911,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "Subtest TestTaxDeductionNativeLowcode.test_auxiliary_derived_fact_is_presented_only_when_a_value_is_returned (action='action_sc_product_project_tax_deduction_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 686
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3922,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_declared_facts_keep_a_visible_business_label",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 469
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3932,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "Subtest TestTaxDeductionNativeLowcode.test_entry_candidate_scope_is_the_entry_category (action='action_sc_tax_deduction_registration_user')",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 762
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3941,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "Subtest TestTaxDeductionNativeLowcode.test_entry_candidate_scope_is_the_entry_category (action='action_sc_product_project_tax_deduction_v1')",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 762
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3952,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_entry_contracts_spend_one_native_structure",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 272
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3962,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_every_declared_fact_still_renders_exactly_once",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 314
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3972,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_native_anchors_wrappers_and_conditional_sections",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 520
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3982,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_native_entries_only_suppress_the_retained_section_contract",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 292
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 3993,
+      "module": "smart_construction_core.tests.test_tax_deduction_native_lowcode",
+      "test": "TestTaxDeductionNativeLowcode.test_recovered_facts_keep_their_declared_readonly_behaviour",
+      "source_file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+        "line": 410
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}"
+    },
+    {
+      "log_line": 4343,
+      "module": "smart_construction_core.tests.test_usage_performance_native_lowcode",
+      "test": "TestUsagePerformanceNativeLowcode.test_every_required_create_fact_is_obtainable_by_a_legal_path",
+      "source_file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "line": 744
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 4369,
+      "module": "smart_construction_core.tests.test_usage_performance_native_lowcode",
+      "test": "Subtest TestUsagePerformanceNativeLowcode.test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered (model='sc.labor.usage')",
+      "source_file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "line": 849
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 4380,
+      "module": "smart_construction_core.tests.test_usage_performance_native_lowcode",
+      "test": "Subtest TestUsagePerformanceNativeLowcode.test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered (model='sc.equipment.usage')",
+      "source_file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "line": 849
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 4391,
+      "module": "smart_construction_core.tests.test_usage_performance_native_lowcode",
+      "test": "Subtest TestUsagePerformanceNativeLowcode.test_the_policy_never_locks_a_fact_the_model_treats_as_user_entered (model='sc.subcontract.register')",
+      "source_file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "line": 849
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 4404,
+      "module": "smart_construction_core.tests.test_usage_performance_native_lowcode",
+      "test": "TestUsagePerformanceNativeLowcode.test_the_readonly_policy_keeps_only_facts_with_a_legal_carrier",
+      "source_file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+        "line": 699
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'data': {}, 'meta': {'intent': 'ui.contract.v2', 'version': '2.5.0', 'contract_version': '2.5.0', 'source_authority': {'kind': 'unified_page_contract_v2', 'authorities': ['ui.contract', 'ir.ui.view', 'ir.actions.act_window', 'ir.ui.menu', 'ir.model.fields', 'ir.model.access', 'ir.rule'], 'projection_only': True, 'rebuildable': True, 'no_business_fact_authority': True, 'runtime_carrier': 'ui.contract.v2'}}, 'error': {'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}, 'code': 409}"
+    },
+    {
+      "log_line": 4421,
+      "module": "smart_construction_core.tests.test_user_feedback_business_views",
+      "test": "TestFormalFormLowcode.test_material_form_configuration_publish_preview_rollback",
+      "source_file": "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+      "first_traceback": {
+        "file": "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+        "line": 2809
+      },
+      "category": "client_type_missing",
+      "message": "AssertionError: False is not true : {'ok': False, 'code': 422, 'error': {'code': 'FINAL_CONTRACT_VALIDATION_FAILED', 'reason_code': 'FINAL_CONTRACT_VALIDATION_FAILED', 'message': '预览契约校验失败。', 'details': {'message': \"最终表单契约合成失败：{'code': 409, 'message': 'client_type is required when contract versions or capabilities are declared', 'reason_code': 'CONTRACT_VERSION_UNSUPPORTED'}\"}}}"
+    }
+  ],
+  "missing_client_type_call_sites": [
+    {
+      "file": "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+      "line": 547,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "feedback_params",
+          "line": 546
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestCompanyProjectRefundFeedbackHttp",
+          "line": 487
+        }
+      ],
+      "keys": [
+        "model",
+        "values",
+        "changed_fields",
+        "context",
+        "client_contract_capabilities",
+        "feedback_evaluation"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_company_project_refund_feedback.py",
+      "line": 238,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_create_ui_contract_uses_request_local_feedback_proof",
+          "line": 231
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestCompanyProjectRefundFeedback",
+          "line": 167
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "line": 317,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 312
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestContextWorkspaceNativeLowcode",
+          "line": 21
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "line": 1351,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "entry_contract",
+          "line": 1348
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestContextWorkspaceNativeLowcode",
+          "line": 21
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "line": 1452,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "preview_form_configuration",
+          "line": 1437
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestContextWorkspaceNativeLowcode",
+          "line": 21
+        }
+      ],
+      "keys": [
+        "change_set_token",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "line": 1544,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_one_workbench_closes_the_authorized_form_configuration_loop",
+          "line": 1461
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestContextWorkspaceNativeLowcode",
+          "line": 21
+        }
+      ],
+      "keys": [
+        "change_set_token",
+        "request_id",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+      "line": 1565,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_one_workbench_closes_the_authorized_form_configuration_loop",
+          "line": 1461
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestContextWorkspaceNativeLowcode",
+          "line": 21
+        }
+      ],
+      "keys": [
+        "change_set_token",
+        "request_id",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "line": 102,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_native_contract",
+          "line": 96
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDailyContractNativeLowcode",
+          "line": 15
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "line": 137,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_source_field_order",
+          "line": 131
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDailyContractNativeLowcode",
+          "line": 15
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "line": 366,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_native_contract",
+          "line": 359
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDailyContractSettlementNativeLowcode",
+          "line": 235
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_daily_contract_settlement_native_lowcode.py",
+      "line": 400,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_source_field_order",
+          "line": 394
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDailyContractSettlementNativeLowcode",
+          "line": 235
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "line": 189,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 186
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestExpenseClaimNativeLowcode",
+          "line": 9
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_expense_claim_native_lowcode.py",
+      "line": 554,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "call",
+          "line": 553
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+          "line": 532
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestExpenseClaimNativeLowcode",
+          "line": 9
+        }
+      ],
+      "keys": [
+        "role_key",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_feedback_evaluation_rt_http.py",
+      "line": 135,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_feedback_params",
+          "line": 134
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestFeedbackEvaluationRtHttp",
+          "line": 22
+        }
+      ],
+      "keys": [
+        "model",
+        "values",
+        "changed_fields",
+        "context",
+        "client_contract_capabilities",
+        "feedback_evaluation"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "line": 185,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 182
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestHrPayrollNativeLowcode",
+          "line": 9
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_hr_payroll_native_lowcode.py",
+      "line": 590,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_mixed_payroll_native_collection_keeps_sibling_entries",
+          "line": 580
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestHrPayrollNativeLowcode",
+          "line": 9
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "action_id",
+        "view_type",
+        "contract_surface"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "line": 58,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 55
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestInvoiceNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_invoice_native_lowcode.py",
+      "line": 217,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "call",
+          "line": 216
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+          "line": 199
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestInvoiceNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "role_key",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "line": 226,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_native_contract",
+          "line": 220
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestLedgerSummaryGuaranteeNativeLowcode",
+          "line": 15
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_ledger_summary_guarantee_native_lowcode.py",
+      "line": 262,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_source_field_order",
+          "line": 255
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestLedgerSummaryGuaranteeNativeLowcode",
+          "line": 15
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_native_advisory_draft.py",
+      "line": 157,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_onchange_handler_exposes_only_strict_feedback_result",
+          "line": 155
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestNativeAdvisoryDraft",
+          "line": 34
+        }
+      ],
+      "keys": [
+        "model",
+        "values",
+        "changed_fields",
+        "client_contract_capabilities",
+        "feedback_evaluation"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "line": 75,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 72
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestPaymentExecutionNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_payment_execution_native_lowcode.py",
+      "line": 290,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "call",
+          "line": 289
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+          "line": 270
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestPaymentExecutionNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "role_key",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+      "line": 63,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 60
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDocumentNativeLowcode",
+          "line": 49
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_policy_document_capability.py",
+      "line": 91,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_certificate_collection_declares_factual_fields_and_keeps_policy_isolation",
+          "line": 78
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestDocumentNativeLowcode",
+          "line": 49
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "action_id",
+        "view_type",
+        "contract_surface"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+      "line": 89,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 86
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestReceiptIncomeNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_receipt_income_native_lowcode.py",
+      "line": 248,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "call",
+          "line": 247
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_scoped_lowcode_preview_publish_and_rollback_after_migration",
+          "line": 228
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestReceiptIncomeNativeLowcode",
+          "line": 7
+        }
+      ],
+      "keys": [
+        "role_key",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "line": 401,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_assert_journal_save_label",
+          "line": 398
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestSystemPermissionAccounting",
+          "line": 10
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "view_type",
+        "render_profile",
+        "record_id",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "line": 420,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_native_saved_journal_feedback_contract",
+          "line": 414
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestSystemPermissionAccounting",
+          "line": 10
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "record_id",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_system_permission_accounting.py",
+      "line": 435,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "test_native_saved_journal_reader_contract_and_write_denials",
+          "line": 428
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestSystemPermissionAccounting",
+          "line": 10
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "record_id",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_tax_deduction_native_lowcode.py",
+      "line": 166,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 163
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestTaxDeductionNativeLowcode",
+          "line": 10
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_usage_performance_native_lowcode.py",
+      "line": 634,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "_policy_fields",
+          "line": 627
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestUsagePerformanceNativeLowcode",
+          "line": 17
+        }
+      ],
+      "keys": [
+        "client_contract_capabilities",
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+      "line": 2783,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "contract",
+          "line": 2782
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_material_form_configuration_publish_preview_rollback",
+          "line": 2742
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestFormalFormLowcode",
+          "line": 2739
+        }
+      ],
+      "keys": [
+        "op",
+        "model",
+        "action_id",
+        "view_id",
+        "view_type",
+        "render_profile",
+        "client_contract_capabilities"
+      ]
+    },
+    {
+      "file": "addons/smart_construction_core/tests/test_user_feedback_business_views.py",
+      "line": 2777,
+      "ancestors": [
+        {
+          "kind": "FunctionDef",
+          "name": "invoke",
+          "line": 2776
+        },
+        {
+          "kind": "FunctionDef",
+          "name": "test_material_form_configuration_publish_preview_rollback",
+          "line": 2742
+        },
+        {
+          "kind": "ClassDef",
+          "name": "TestFormalFormLowcode",
+          "line": 2739
+        }
+      ],
+      "keys": [
+        "role_key",
+        "client_contract_capabilities"
+      ]
+    }
+  ],
+  "conclusion": "all 80 failures share the strict negotiation refusal caused by capability declarations without client_type"
+}

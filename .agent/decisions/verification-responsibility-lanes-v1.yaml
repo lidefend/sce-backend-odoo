@@ -1,0 +1,46 @@
+schema_version: 1
+id: VERIFICATION-RESPONSIBILITY-LANES-V1
+title: Separate local targeted validation, remote PR CI and scheduled release CI
+status: active
+date: 2026-11-23
+authority: AGENTS.md
+
+decision:
+  local_targeted:
+    purpose: prove only the affected diff, contract and targeted tests
+    must_not_substitute: [remote_integration, scheduled_release]
+    default_full_module_suite: forbidden_as_inner_loop
+    full_module_baseline: deferred_remote
+    test_only_selection: changed_test_classes
+  remote_integration:
+    purpose: prove the exact PR head against the current target base
+    required_before_merge: true
+    must_not_substitute: [scheduled_release]
+  scheduled_release:
+    purpose: prove current main is eligible for release
+    required_before_release: true
+
+pre_action_declaration:
+  required_fields: [local_targeted, remote_integration, scheduled_release]
+  allowed_states: [required, excluded, not_run]
+  exclusions_require_reason: true
+  environment_failure_state: not_run_environment_defect
+  run_schema: 2
+  enforcement: >-
+    make agent.run.resume rejects a schema v2 run whose lane declaration is
+    absent, incomplete, out of order, unexplained or missing a required
+    entrypoint.
+
+local_test_isolation:
+  wait_or_steal: forbidden
+  response: continue_without_shared_database_and_publish_remote_ci
+  compose_project: sc-local-test-<worktree-key>
+  volumes: worktree_scoped
+  lock: worktree_scoped_non_blocking
+  template_reuse_default: true
+  attempt_database: sc_test_<worktree-key>_<attempt-key>
+  statement: >-
+    Each worktree owns its Compose project, volumes and non-blocking lock.
+    Each attempt clones a fresh database from that worktree's validated module
+    template, so concurrent worktrees do not contend for one sc_test database.
+  owner_layer: P4

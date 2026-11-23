@@ -22,7 +22,9 @@ from scripts.verify.frontend_dev_incremental import (
     iteration_scope,
     iteration_plan,
     print_plan,
+    remote_integration_targets,
     select_targets,
+    select_iteration_targets,
     target_layers,
     validation_exclusion_targets,
     worktree_changed_paths,
@@ -50,7 +52,61 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path, target in cases.items():
             with self.subTest(path=path):
                 self.assertIn(target, select_targets([path]))
-        self.assertEqual(select_targets(["addons/smart_core/tests/test_unknown_new_family.py"]), [])
+        self.assertEqual(
+            select_targets(["addons/smart_core/tests/test_unknown_new_family.py"]),
+            [],
+        )
+
+    def test_test_only_module_changes_select_changed_classes_not_full_baseline(self):
+        targets = select_iteration_targets([
+            "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+            "addons/smart_construction_core/tests/test_native_advisory_draft.py",
+        ])
+        self.assertIn(
+            "verify.changed_tests.orm",
+            targets,
+        )
+        self.assertNotIn(
+            "verify.smart_construction_core.module_baseline",
+            targets,
+        )
+        overlapping = select_iteration_targets([
+            "addons/smart_construction_core/tests/test_context_workspace_native_lowcode.py",
+            "addons/smart_construction_core/tests/test_tender_award_fact.py",
+        ])
+        self.assertIn("verify.changed_tests.orm", overlapping)
+        self.assertNotIn("verify.tender_award_fact.orm", overlapping)
+        self.assertEqual(
+            select_iteration_targets([
+                "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py"
+            ]),
+            [
+                "verify.changed_tests.orm",
+                "verify.daily_dev.acceptance_fixture.unit",
+            ],
+        )
+
+    def test_production_change_keeps_owning_module_baseline(self):
+        targets = select_iteration_targets([
+            "addons/smart_core/handlers/business_config_change_set.py",
+            "addons/smart_core/tests/test_business_config_change_set.py",
+        ])
+        self.assertIn("verify.smart_core.close_02.module_baseline", targets)
+        self.assertNotIn("verify.changed_tests.orm", targets)
+
+    def test_full_module_baselines_are_deferred_to_remote_integration(self):
+        self.assertEqual(
+            remote_integration_targets({
+                "verify.smart_core.close_02.module_baseline",
+                "verify.smart_construction_core.module_baseline",
+                "verify.changed_tests.orm",
+                "verify.changed.odoo.tests.unit",
+            }),
+            {
+                "verify.smart_core.close_02.module_baseline",
+                "verify.smart_construction_core.module_baseline",
+            },
+        )
 
     def test_implicit_registration_is_limited_to_pure_target_families(self):
         targets = {
@@ -2655,7 +2711,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets(["scripts/dev/local_test_runner.py"]),
             [
-                "verify.extension.lifecycle.orm",
                 "verify.local.development_lifecycle.unit",
                 "verify.orm.guard.self_test",
             ],

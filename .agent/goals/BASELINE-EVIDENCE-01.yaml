@@ -1,0 +1,68 @@
+schema_version: 1
+
+goal:
+  id: BASELINE-EVIDENCE-01
+  title: contract_baseline_test_caller_reconciliation
+  status: verification_pending
+  formal_product_layer: P4
+  layer_target: >-
+    Test-only reconciliation for stale smart_construction_core contract
+    fixture callers that declare client_contract_capabilities without a
+    client_type. Product contract negotiation remains authoritative.
+  module:
+    - smart_construction_core/tests
+    - smart_core/tests
+    - smart_construction_acceptance_fixture/tests
+    - scripts/dev
+    - scripts/ops
+    - scripts/test
+    - scripts/verify
+    - .agent
+    - docs/audit
+    - docs/ops/iterations
+  standard_vs_user_specific: delivery_evidence_governance
+  objective: >-
+    Determine whether the 80 failures in the broader owning-module suite are
+    a product regression, a failure of the formal stable baseline, or stale
+    test request construction, and define the minimum compliant remediation.
+  why_here: >-
+    The failures are in test callers and evidence governance. Changing the
+    strict product negotiation or contract producer would hide the defect and
+    weaken fact-to-contract authority.
+  why_not_elsewhere:
+    - Do not weaken client_type/CONTRACT_VERSION_UNSUPPORTED behavior.
+    - Do not modify business source, ACL, workflows, schema or runtime data.
+    - Do not treat the broader module suite as the formal PR735 baseline.
+    - Do not mix this with INDUSTRY-BUSINESS-MODEL-02.
+  stable_baseline:
+    anchor_sha: 5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f
+    scope: scripts/verify/test_baseline_manifest.json plus its declared ORM groups
+    broader_suite: verify.smart_construction_core.module_baseline
+  product_evidence_boundary: >-
+    The relevant product baseline is the fact-to-contract chain: real Odoo
+    attachment facts, Contract V2 producer output, strict consumer decoding and
+    the affected browser journey. Odoo framework internals remain governed by
+    Odoo tests and are not redefined as platform contract baselines here.
+  findings:
+    failed_cases: 80
+    failed_test_files: 14
+    missing_client_type_call_sites: 34
+    all_failures_share_reason_code: CONTRACT_VERSION_UNSUPPORTED
+    root_cause: stale_test_calls_plus_change_set_client_type_drop
+  evidence:
+    inventory: docs/audit/baseline_evidence_01/failure_inventory.json
+    report: docs/ops/iterations/baseline_evidence_01_20261123.md
+  completion:
+    inventory: completed
+    root_cause: completed
+    remediation_design: completed
+    full_clean_base_rerun: pending_environment_lock
+    implementation: completed_local_targeted
+    layered_validation_rule: enforced_by_schema_v2_run_records
+    local_test_identity: worktree_scoped_template_with_unique_attempt_database
+    changed_test_execution: passed_281_plus_14
+    remote_full_module_baseline: deferred_remote
+  next_exact_step: >-
+    Run the final ci.local.iteration, commit and push the bounded fix, create
+    the exact-head PR, and wait for all required remote checks including the
+    deferred smart_core module baseline.

@@ -92,6 +92,8 @@ DELIVERY_GATE_FIELDS = frozenset({
     'deployed_source_sha',
     'deployment_target',
 })
+VERIFICATION_LANES = ('local_targeted', 'remote_integration', 'scheduled_release')
+VERIFICATION_LANE_STATES = frozenset({'required', 'excluded', 'not_run'})
 
 
 def defined_make_targets(root: Path) -> set[str]:
@@ -388,7 +390,7 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
     if not isinstance(relative, str) or not relative.startswith('.agent/runs/'):
         raise RunError('run must be under .agent/runs')
     run = read_json(local_path(root, relative))
-    if run.get('schema_version') != 1 or run.get('branch') != branch:
+    if run.get('schema_version') not in (1, 2) or run.get('branch') != branch:
         raise RunError('run schema or branch mismatch')
     if not re.fullmatch(r'[A-Za-z0-9_-]+', run.get('id', '')):
         raise RunError('invalid run id')
@@ -435,8 +437,45 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
     check_order(run['checks'])
     if run.get('status') not in RUN_STATUSES:
         raise RunError('invalid run status')
+    if run.get('schema_version') == 2:
+        validate_verification_responsibility(run)
     validate_delivery_lifecycle(root, run)
     return relative, run
+
+
+def validate_verification_responsibility(run: dict) -> None:
+    """Require the three non-substitutable verification lane declarations.
+
+    Schema v1 records remain readable for historical branches. New runs use
+    schema v2 so every executor must state local targeted, remote integration
+    and scheduled release responsibility before a check can begin.
+    """
+    responsibility = run.get('verification_responsibility')
+    if not isinstance(responsibility, dict) or tuple(responsibility) != VERIFICATION_LANES:
+        raise RunError(
+            'schema v2 requires verification_responsibility in lane order: '
+            + ', '.join(VERIFICATION_LANES)
+        )
+    for lane in VERIFICATION_LANES:
+        declaration = responsibility[lane]
+        if not isinstance(declaration, dict):
+            raise RunError(f'verification_responsibility.{lane} must be an object')
+        state = declaration.get('status')
+        if state not in VERIFICATION_LANE_STATES:
+            raise RunError(
+                f'verification_responsibility.{lane}.status must be one of '
+                + ', '.join(sorted(VERIFICATION_LANE_STATES))
+            )
+        reason = declaration.get('reason')
+        if not isinstance(reason, str) or not reason.strip():
+            raise RunError(f'verification_responsibility.{lane} requires a reason')
+        entrypoint = declaration.get('entrypoint')
+        if state == 'required' and (
+            not isinstance(entrypoint, str) or not entrypoint.strip()
+        ):
+            raise RunError(
+                f'verification_responsibility.{lane} requires an entrypoint when required'
+            )
 
 
 def validate_delivery_lifecycle(root: Path, run: dict) -> None:
@@ -875,6 +914,7 @@ def summary(root: Path) -> dict:
             'changed_paths': paths, 'derived_scope': derived_scope,
             'outside_scope': outside, 'checks': checks,
             'registered_check_targets': sorted(declared_check_targets(run)),
+            'verification_responsibility': run.get('verification_responsibility'),
             'blockers': run.get('blockers', []), 'next_exact_step': run['next_exact_step'],
             'write_replay_authorized': False,
             'candidate_evidence': run.get('candidate_evidence', False)}

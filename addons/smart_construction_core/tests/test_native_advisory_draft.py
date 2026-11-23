@@ -158,7 +158,7 @@ class TestNativeAdvisoryDraft(TransactionCase):
                 'model': MODEL,
                 'values': {},
                 'changed_fields': [],
-                'client_contract_capabilities': [
+                'client_type': 'web_pc', 'client_contract_capabilities': [
                     'form.feedback.message.v1',
                     draft_feedback.CAPABILITY,
                 ],

@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import re
 import sys
 from pathlib import Path
@@ -33,6 +34,8 @@ DOCUMENT_REQUIREMENTS = {
         "the full required matrix runs once at the frozen delivery head",
         "make ci.local.iteration",
         "executes every required mapped target",
+        "deferred_remote",
+        "verify.changed_tests.orm",
         "A plan, a zero-target run or an unexecuted target never counts as a validation PASS",
         "make ci.local.quick` is reserved for a clean frozen delivery HEAD",
         "Diagnosis Before Delivery (Hard Lock)",
@@ -81,11 +84,17 @@ DOCUMENT_REQUIREMENTS = {
         "收敛后一次整理，冻结后不补跟踪材料",
         "一次是成功复用，不是禁止修复后重验",
     ),
+    Path("docs/ops/iteration_validation_responsibility_v1.md"): (
+        "deferredRemoteTargets",
+        "verify.changed_tests.orm",
+        "complete source fingerprint",
+    ),
 }
 
 MAKE_TARGET_REQUIREMENTS = {
     Path("make/codex.mk"): (
         "workspace.worktree.create",
+        "verify.agent.resume.unit",
         "pr.push",
         "verify.pr.push.unit",
     ),
@@ -97,6 +106,7 @@ MAKE_TARGET_REQUIREMENTS = {
     Path("make/dev.mk"): (
         "backend.acceptance.up",
         "frontend.acceptance.up",
+        "verify.changed_tests.orm",
     ),
     Path("make/ci.mk"): (
         "ci.generated_reports.guard",
@@ -182,6 +192,42 @@ def _target_dependencies(text: str, target: str) -> tuple[str, ...]:
     return tuple(match.group(1).split()) if match else ()
 
 
+def validate_run_template(root: Path) -> list[str]:
+    path = root / ".agent/runs/template/run.json"
+    if not path.is_file():
+        return [".agent/runs/template/run.json: missing run authority"]
+    try:
+        template = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as exc:
+        return [f".agent/runs/template/run.json: unreadable: {exc}"]
+    errors = []
+    if template.get("schema_version") != 2:
+        errors.append(".agent/runs/template/run.json: new runs must use schema_version 2")
+    responsibility = template.get("verification_responsibility")
+    expected = ("local_targeted", "remote_integration", "scheduled_release")
+    if not isinstance(responsibility, dict) or tuple(responsibility) != expected:
+        errors.append(
+            ".agent/runs/template/run.json: verification_responsibility must declare "
+            "local_targeted, remote_integration and scheduled_release in order"
+        )
+        return errors
+    for lane in expected:
+        declaration = responsibility[lane]
+        if not isinstance(declaration, dict):
+            errors.append(f".agent/runs/template/run.json: {lane} must be an object")
+            continue
+        if declaration.get("status") not in ("required", "excluded", "not_run"):
+            errors.append(f".agent/runs/template/run.json: {lane} has an invalid status")
+        if not isinstance(declaration.get("reason"), str) or not declaration["reason"].strip():
+            errors.append(f".agent/runs/template/run.json: {lane} requires a reason")
+        if declaration.get("status") == "required" and (
+            not isinstance(declaration.get("entrypoint"), str)
+            or not declaration["entrypoint"].strip()
+        ):
+            errors.append(f".agent/runs/template/run.json: required {lane} needs an entrypoint")
+    return errors
+
+
 def validate(root: Path) -> list[str]:
     errors: list[str] = []
     for relative, required_fragments in DOCUMENT_REQUIREMENTS.items():
@@ -195,6 +241,8 @@ def validate(root: Path) -> list[str]:
         for fragment in required_fragments:
             if fragment not in text:
                 errors.append(f"{relative}: missing locked rule {fragment!r}")
+
+    errors.extend(validate_run_template(root))
 
     for relative, targets in MAKE_TARGET_REQUIREMENTS.items():
         path = root / relative

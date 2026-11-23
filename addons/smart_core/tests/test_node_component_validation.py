@@ -413,7 +413,7 @@ class NodeValidationTests(unittest.TestCase):
         # Existing structural tests use a capable caller; negotiation negatives
         # explicitly override/remove this in the capability-specific suite.
         original_params = handler._params
-        handler._params = lambda payload: {'client_contract_capabilities': [
+        handler._params = lambda payload: {'client_type': 'web_pc', 'client_contract_capabilities': [
             'form.feedback.message.v1', 'form.navigation.anchor.v1'], **original_params(payload)}
         # Keep the real handler return paths, substituting only upstream source
         # construction and sealing transport. Assembler behavior is tested above.

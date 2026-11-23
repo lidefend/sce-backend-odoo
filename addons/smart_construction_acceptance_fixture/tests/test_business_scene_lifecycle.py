@@ -47,8 +47,14 @@ def ensure_acceptance_fixture_for_local_test(env):
         raise_if_not_found=False,
     ):
         return
-    if env.cr.dbname != "sc_test":
-        raise RuntimeError("local fixture seeding is restricted to sc_test")
+    expected_database = os.environ.get("SC_TEST_DB_NAME", "")
+    if (
+        not expected_database.startswith("sc_test_")
+        or env.cr.dbname != expected_database
+    ):
+        raise RuntimeError(
+            "local fixture seeding is restricted to the current isolated test attempt"
+        )
     snapshot = env["sc.edition.release.snapshot"].sudo().search([
         ("product_key", "=", "construction.standard"),
         ("state", "=", "released"),

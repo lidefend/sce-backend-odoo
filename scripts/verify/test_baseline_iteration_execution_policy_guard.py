@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import tempfile
 import unittest
 from pathlib import Path
@@ -14,6 +15,27 @@ import sys
 
 class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
     def fixture(self, root: Path) -> None:
+        template = root / ".agent/runs/template/run.json"
+        template.parent.mkdir(parents=True, exist_ok=True)
+        template.write_text(json.dumps({
+            "schema_version": 2,
+            "verification_responsibility": {
+                "local_targeted": {
+                    "status": "required",
+                    "entrypoint": "make ci.local.iteration",
+                    "reason": "affected checks",
+                },
+                "remote_integration": {
+                    "status": "required",
+                    "entrypoint": "exact-head required PR CI",
+                    "reason": "current PR head against current base",
+                },
+                "scheduled_release": {
+                    "status": "excluded",
+                    "reason": "evaluated after mainline integration",
+                },
+            },
+        }), encoding="utf-8")
         for relative, fragments in guard.DOCUMENT_REQUIREMENTS.items():
             path = root / relative
             path.parent.mkdir(parents=True, exist_ok=True)
@@ -61,6 +83,36 @@ class BaselineIterationExecutionPolicyGuardTests(unittest.TestCase):
             root = Path(directory)
             self.fixture(root)
             self.assertEqual(guard.validate(root), [])
+
+    def test_run_template_requires_three_lane_declaration(self) -> None:
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            self.fixture(root)
+            path = root / ".agent/runs/template/run.json"
+            template = json.loads(path.read_text())
+            template["verification_responsibility"].pop("remote_integration")
+            path.write_text(json.dumps(template))
+            self.assertTrue(any(
+                "verification_responsibility" in error
+                for error in guard.validate(root)
+            ))
+            template["verification_responsibility"] = {
+                "local_targeted": {"status": "required", "reason": "affected checks"},
+                "remote_integration": {
+                    "status": "required",
+                    "entrypoint": "exact-head required PR CI",
+                    "reason": "current PR head against current base",
+                },
+                "scheduled_release": {
+                    "status": "excluded",
+                    "reason": "evaluated after mainline integration",
+                },
+            }
+            path.write_text(json.dumps(template))
+            self.assertIn(
+                ".agent/runs/template/run.json: required local_targeted needs an entrypoint",
+                guard.validate(root),
+            )
 
     def test_early_checks_cannot_be_missing_commented_ignored_or_delayed(self) -> None:
         for command in guard.EARLY_INTEGRATION_COMMANDS:

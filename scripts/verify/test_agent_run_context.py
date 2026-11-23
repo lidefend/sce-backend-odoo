@@ -104,6 +104,68 @@ class RunContextTest(unittest.TestCase):
             ['verify.test'],
         )
 
+    def test_schema_v2_requires_all_verification_lanes(self):
+        self.run['schema_version'] = 2
+        self.save()
+        with self.assertRaisesRegex(RunError, 'verification_responsibility'):
+            resolve_run(self.root)
+        self.run['verification_responsibility'] = {
+            'local_targeted': {
+                'status': 'required',
+                'entrypoint': 'ci.local.iteration',
+                'reason': 'the current diff needs affected checks',
+            },
+            'remote_integration': {
+                'status': 'required',
+                'entrypoint': 'exact-head required PR CI',
+                'reason': 'merge requires the current PR head against the current base',
+            },
+            'scheduled_release': {
+                'status': 'excluded',
+                'entrypoint': 'scheduled mainline CI',
+                'reason': 'release qualification is evaluated after mainline integration',
+            },
+        }
+        self.save()
+        payload = summary(self.root)
+        self.assertEqual(payload['verification_responsibility'], self.run['verification_responsibility'])
+
+    def test_schema_v2_rejects_substitution_incomplete_or_unexplained_lanes(self):
+        self.run['schema_version'] = 2
+        self.run['verification_responsibility'] = {
+            'local_targeted': {
+                'status': 'required',
+                'entrypoint': 'ci.local.iteration',
+                'reason': 'affected checks',
+            },
+            'remote_integration': {
+                'status': 'excluded',
+                'reason': 'local checks are sufficient',
+            },
+            'scheduled_release': {
+                'status': 'not_run',
+                'reason': 'not evaluated in this stage',
+            },
+        }
+        self.save()
+        self.assertEqual(resolve_run(self.root)[1]['schema_version'], 2)
+        self.run['verification_responsibility']['local_targeted'].pop('entrypoint')
+        self.save()
+        with self.assertRaisesRegex(RunError, 'requires an entrypoint'):
+            resolve_run(self.root)
+        self.run['verification_responsibility']['local_targeted']['entrypoint'] = 'ci.local.iteration'
+        self.run['verification_responsibility']['remote_integration']['reason'] = ''
+        self.save()
+        with self.assertRaisesRegex(RunError, 'requires a reason'):
+            resolve_run(self.root)
+        self.run['verification_responsibility'] = {
+            key: value for key, value in self.run['verification_responsibility'].items()
+            if key != 'scheduled_release'
+        }
+        self.save()
+        with self.assertRaisesRegex(RunError, 'lane order'):
+            resolve_run(self.root)
+
     def test_reuse_summary_reports_unreusable_checks(self):
         self.assertEqual(summary(self.root)['check_reuse_summary'], {'not_run': 1})
 
