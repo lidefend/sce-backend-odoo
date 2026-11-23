@@ -307,6 +307,26 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.p0_contract_producer.p0c.unit",
             ],
         )
+        self.assertEqual(
+            select_targets([
+                "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts"
+            ]),
+            [
+                "verify.execute_button.authority.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+                "verify.p0_c_fix01.action_id.orm",
+                "verify.p0_c_fix01.action_id.unit",
+                "verify.p0_contract_producer.p0c.orm",
+                "verify.p0_contract_producer.p0c.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/action_view_contract_action_runtime_smoke.js"
+            ]),
+            ["verify.action_view_runtime_smoke.behavior"],
+        )
     def test_contract_consumer_declaration_changes_select_their_owners(self) -> None:
         cases = {
             "addons/smart_construction_core/tests/test_tender_award_fact.py": [

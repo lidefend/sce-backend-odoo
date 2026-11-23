@@ -1,0 +1,54 @@
+schema_version: 1
+
+goal:
+  id: P0-C-FIX-01-ACTION-ID-CHAIN
+  title: real_action_identity_transport_closure
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Preserve the canonical ContractV2ActionRule identity through the real
+    Action View execute_button request and the authoritative backend feedback
+    response.
+  module:
+    - smart_core
+    - frontend/apps/web
+    - .agent
+  standard_vs_user_specific: platform_generic_contract_runtime
+  objective: >-
+    Close the remaining P0-C action identity gap so runContractAction,
+    buildContractActionButtonRequest and ExecuteButtonHandler all use one
+    server-revalidated canonical actionId, backendIdentity, sourceWidgetId and
+    button identity without echoing an unvalidated client value.
+  product_result: >-
+    A P0-C-FIX-01 candidate in which a user-triggered contract action reaches
+    execute_button with the complete contract identity, and success, denied or
+    failed feedback is correlated to that revalidated identity and the real
+    request trace.
+  why_here: >-
+    Action identity is a P0 contract-runtime fact and its executable authority is
+    the existing smart_core action contract and Odoo execution chain.
+  why_not_elsewhere:
+    - No ACL, Record Rule or workflow change.
+    - No database or migration change.
+    - No Action Target Schema change.
+    - No P0-A, P0-B, FCF-02-2 or FCF-02-3 implementation.
+    - No deployment.
+  blast_radius:
+    behavior:
+      - Action View contract action request construction
+      - execute_button canonical identity validation and action feedback
+      - focused frontend and real ORM tests
+    exclusions:
+      - legacy non-contract actions remain outside this repair
+      - no UI visual or interaction redesign
+  rollback: >-
+    Revert this independent P0-C-FIX-01 pull request through the protected
+    pull-request flow. No migration or deployed state requires rollback.
+  completion:
+    implementation: verification_pending
+    independent_review: not_started
+    integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable
+  integration:
+    pull_request: null

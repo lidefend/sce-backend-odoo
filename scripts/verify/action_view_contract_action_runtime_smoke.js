@@ -36,6 +36,14 @@ function loadRuntime() {
           entryTargetModel: () => '',
         };
       }
+      if (name.endsWith('contractGap')) {
+        return {
+          contractGapError: (defect, message) => Object.assign(new Error(message), {
+            name: 'ContractGapError',
+            defect,
+          }),
+        };
+      }
       throw new Error(`unexpected require: ${name}`);
     },
   };
