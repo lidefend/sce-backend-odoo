@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 228,
+    "odoo_tags": 229,
     "gated": 5,
-    "on_demand": 87,
+    "on_demand": 88,
     "unwired": 136,
-    "odoo_tag_declarations": 465,
+    "odoo_tag_declarations": 466,
     "gated_declarations": 107,
-    "uncovered_declarations": 358,
+    "uncovered_declarations": 359,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -2874,6 +2874,19 @@
         "make:verify.local.dev.system_permission.separation.orm :: system_permission_separation local.dev.test"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "system_product_release",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_bundle/tests/test_system_product_release.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.smart_construction_bundle.system_product_baseline.orm :: /TestSystemProductRelease (class selection)"
+      ]
     },
     {
       "group": "tax_filing",

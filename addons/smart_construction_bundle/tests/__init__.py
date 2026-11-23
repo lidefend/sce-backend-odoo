@@ -8,3 +8,4 @@ from . import test_workspace_role_routes
 
 from . import test_missing_record_contract
 from . import test_startup_performance_contract
+from . import test_system_product_release
