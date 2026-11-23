@@ -324,7 +324,6 @@ _DEMO_LIFECYCLE_BEYOND_TARGET = {
 # (scenario, xmlid-without-module) -> intended terminal state.
 _DEMO_LIFECYCLE_TARGETS = {
     "s73_risk_settlement_surface": {
-        "sc_demo_project_settlement_073_risk": "confirmed",
         "sc_demo_project_risk_action_073_cost": "claimed",
         "sc_demo_project_risk_action_073_schedule": "escalated",
     },
@@ -489,7 +488,6 @@ _DEMO_LIFECYCLE_CHAINS = {
     ('sc.fund.account.operation', 'confirmed'): ('action_confirm',),
     ('tender.bid', 'submitted'): ('action_to_submitted',),
     ('tender.bid', 'won'): ('action_to_submitted', 'action_mark_won'),
-    ('project.settlement', 'confirmed'): ('action_confirm',),
     ('project.risk.action', 'claimed'): ('action_claim',),
     ('project.risk.action', 'escalated'): ('action_escalate',),
     ('sc.dashboard.cockpit.fact', 'in_progress'): ('action_submit',),
@@ -762,7 +760,6 @@ _DEMO_LIFECYCLE_ACTION_ACTORS = {
     ('sc.fund.account.operation', 'action_done'): 'user_sc_fin_01',
     ('tender.bid', 'action_to_submitted'): 'user_sc_project_user',
     ('tender.bid', 'action_mark_won'): 'user_sc_project_user',
-    ('project.settlement', 'action_confirm'): 'user_sc_fin_01',
     ('project.risk.action', 'action_claim'): 'user_sc_project_user',
     ('project.risk.action', 'action_escalate'): 'user_sc_project_user',
     ('sc.dashboard.cockpit.fact', 'action_submit'): 'user_sc_project_user',
@@ -1311,7 +1308,7 @@ def _ensure_s86_rental_settlement_payment(env) -> None:
                     "actual_payee_unit": "德阳恒通周转材料租赁有限公司",
                     "payment_account_name": "德阳恒通周转材料租赁有限公司",
                     "payment_bank_name": "中国银行德阳分行",
-                    "payment_account_no": "6222021000000090",
+                    "payment_account_no": "6222 **** **** 0090",
                     "note": "周转材料租赁费支付申请。",
                 }
             )

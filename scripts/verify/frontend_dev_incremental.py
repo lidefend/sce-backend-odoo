@@ -445,6 +445,17 @@ RULES = (
         "verify.demo.scenario_step.unit",
     )),
     Rule((
+        "scripts/demo/verify.sh",
+    ), (
+        "verify.demo.lifecycle.unit",
+    )),
+    Rule((
+        "scripts/verify/demo_scenario_step.py",
+        "scripts/verify/test_demo_scenario_step.py",
+    ), (
+        "verify.demo.scenario_step.unit",
+    )),
+    Rule((
         "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
     ), (
         "verify.demo.lifecycle.unit",
