@@ -177,3 +177,38 @@ Final version-boundary closure:
   current projection.
 - Known clients with no version declaration retain the approved legacy exception,
   and unknown clients remain fail-closed.
+
+Final compatibility-closure review remediation:
+
+- Internal readers that consume the complete 2.5/2.0 projection now declare
+  `2.5.x` explicitly: action authority, route authority, snapshot export,
+  payment/approval contract tests, acceptance probes and current-contract
+  producer tests. Their client identity is declared where negotiation is active.
+- A client declaring only `2.0.x`, only `2.4.x`, or `2.4.x` plus `2.6.x` without
+  `2.5.x` receives `CONTRACT_VERSION_UNSUPPORTED`. Internal fixture updates do
+  not make an external old declaration compatible.
+- The shipped acceptance declarations now register the canonical
+  `page_block_data.v1` capability while still accepting only through `2.5.x`;
+  the resulting projection remains complete legacy 2.5/2.0.
+- The P0-A browser probe obtains its bearer only from the declared login response
+  and no longer guesses an `sc_auth_token:*` storage key. The acceptance
+  environment source guard passes, and the real 1440/390 browser matrix still
+  passes.
+- Version-boundary regressions gained explicit `2.0.x`-only rejection coverage at
+  both the pure negotiation and handler layers.
+
+Final closure evidence bound to `1466623c24629325999f4259c7400c977d8d7a24`:
+
+- `make ci.local.iteration`: PASS; 26 affected targets, 12 executed, 14 reused
+  from dependency-equal receipts, 0 failed, 0 not-run, 0 blocked.
+- Payment read-only contract regression: PASS, 1 test.
+- Approval contract closure ORM: PASS, 3 tests.
+- Tender award fact ORM: PASS, 13 tests.
+- Core extension finalize ORM: PASS, 29 tests.
+- P0-A producer ORM: PASS, 10 tests.
+- Real ORM money chain and Chromium 1440/390 acceptance: PASS.
+- `make verify.test.baseline`: PASS, 366 cases x 3 orders, quarantine 0.
+- `make local.test.baseline`: PASS, 6 cases x 3 fresh orders.
+- Frontend lint: PASS, 0 errors and 3 pre-existing warnings outside this scope.
+- Strict typecheck and production-mode Vite build: PASS.
+- `make ci.delivery.freeze.prepare`: PASS.

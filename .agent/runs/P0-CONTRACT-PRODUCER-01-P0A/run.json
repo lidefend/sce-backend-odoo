@@ -434,7 +434,7 @@
     }
   ],
   "blockers": [],
-  "next_exact_step": "Record the final verification evidence, prepare generated delivery evidence, then commit and publish the clean exact-head P0-A candidate.",
+  "next_exact_step": "Commit and publish the clean exact-head candidate, then wait for all five required remote checks and independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
