@@ -17,6 +17,12 @@
 This is an unreleased dirty-tree iteration. It is not a frozen candidate,
 mainline integration, deployment or user acceptance result.
 
+Integration sync: the original baseline `b0c08392679b9f305c9b6e6819c86e254b9e7d61`
+was replayed through the governed `workspace.branch.sync-main` entry onto
+`origin/main@6f4d37255ca717e6ccde69b3f91059ba4dc1bbb9`. The replay produced
+current head `7a945e8761bbf55de8a0d693bfd6a5c52cc8917f`, with no semantic
+conflict; only generated evidence reports were rebuilt.
+
 ## 2. Pre-implementation gate responsibility
 
 | Gate | State | Owner target | Reason |

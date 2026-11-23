@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "INDUSTRY-BUSINESS-MODEL-02",
   "branch": "feature/industry-business-model-02-20261123",
-  "baseline_sha": "b0c08392679b9f305c9b6e6819c86e254b9e7d61",
+  "baseline_sha": "6f4d37255ca717e6ccde69b3f91059ba4dc1bbb9",
   "status": "active",
   "goal": ".agent/goals/INDUSTRY-BUSINESS-MODEL-02.yaml",
   "record": "docs/ops/iterations/industry_business_model_02_20261123.md",
@@ -112,5 +112,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the 02-B/02-D completion follow-up locally; do not push, create a PR or upgrade the persistent database."
+  "next_exact_step": "Commit the main-sync metadata refresh, run current-head integration validation and publish the exact candidate through the governed PR entry."
 }
