@@ -238,17 +238,48 @@ def focused_scope(plan: dict, rows: list[dict]) -> tuple[list[str], dict[str, li
     return modules, selectors, ('focused' if modules else 'full_fallback_no_changed_tests')
 
 
-def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
-    """Retain full impacted modules until baseline/family reuse is certified.
+def module_changes_are_test_only(module: str, paths: list[str]) -> bool:
+    """Return true only for direct changed test modules under module/tests."""
+    prefixes = (f'addons/{module}/', f'demo_addons/{module}/')
+    relevant = [path for path in paths if path.startswith(prefixes)]
+    if not relevant:
+        return False
+    for path in relevant:
+        prefix = next(value for value in prefixes if path.startswith(value))
+        relative = path[len(prefix):]
+        if not re.fullmatch(r'tests/test[A-Za-z0-9_.-]*\.py', relative):
+            return False
+    return True
 
-    Changed-test selectors supplement existing families, never replace them.
-    Returning the unchanged complete plan also makes plan/worker/collector
-    recomputation identical when the resolved scope_mode is full.
+
+def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
+    """Use exact selectors only when every changed module path is test-only.
+
+    Production code, helpers, deleted tests and incomplete selector coverage
+    retain the complete impacted-module plan. This keeps owning-module coverage
+    for runtime changes while allowing remote test-only PRs to run the exact
+    changed test classes.
     """
     if not base:
         raise ValueError('focused backend plan requires an integration base')
     complete = build_plan(base, head, include_inputs=include_inputs)
-    focused_scope(complete, complete.get('changed_test_coverage') or [])
+    modules, selectors, mode = focused_scope(
+        complete,
+        complete.get('changed_test_coverage') or [],
+    )
+    changed_paths = complete.get('changed_paths') or []
+    if (
+        mode == 'focused'
+        and set(modules) == set(complete['modules'])
+        and all(module_changes_are_test_only(module, changed_paths)
+                for module in modules)
+    ):
+        complete.update(
+            scope_mode='focused',
+            focused_modules=modules,
+            focused_selectors=selectors,
+            focused_reason='test_only_changed_tests',
+        )
     return complete
 
 
@@ -589,7 +620,7 @@ def main() -> None:
     parser.add_argument('--github-output', type=Path)
     parser.add_argument('--shard', type=int)
     parser.add_argument('--input-inventory', action='store_true')
-    parser.add_argument('--focused', action='store_true', help='Request focused scope; retain full modules until baseline reuse is certified')
+    parser.add_argument('--focused', action='store_true', help='Use exact selectors for test-only modules; retain full modules otherwise')
     parser.add_argument('--selectors', action='store_true', help='Print exact selectors for one focused module')
     parser.add_argument('--module')
     parser.add_argument('--previous-candidate', action='append', help='Repeat for exact historical candidates, including same-SHA retry; source comparison only')

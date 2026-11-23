@@ -220,6 +220,11 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      身份覆盖内部 audit subcheck。规划器和 run-context 分开选测；本地 `make/ci.mk` 选 lane policy
      与 planner 测试，远端仍保留完整 workflow contract。目标 main 更新后必须同步分支、更新 run
      baseline 并重跑受影响本地集合，旧 base 的远端结果失效。
+   - **远端前后端按真实 runtime 选测。** 前端 tooling-only 变更保留工具 owner checks，但不运行
+     完整前端 runtime；只有实际 `frontend/**` 变更进入 standard/full。`make/ci.mk` 只有在 exact Git
+     tree 证明变化仅限三个 `ci.local.*iteration` 目标块时才跳过远端前端 runtime。后端 focused
+     模式仅在全部受影响模块均为直接 `tests/test*.py` 变更且 selectors 完整时生效；production、
+     helper、删除测试和 mixed 变更仍保留完整受影响模块覆盖。
    - **车道遥测只陈述事实。** 声明车道的真实耗时、成功率、降级率和失败归因落在
      `.git/codex/evidence/lane_telemetry/`，车道名与覆盖审计仪器
      `scripts/audit/verification_lane_coverage.py` 的 `LANES` 同源，不得新造。

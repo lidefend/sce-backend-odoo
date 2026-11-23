@@ -1,0 +1,76 @@
+{
+  "schema_version": 2,
+  "id": "REMOTE-CI-PRECISION-20261124",
+  "branch": "feature/remote-ci-precision-20261124",
+  "baseline_sha": "7a41b86b073e0f062a1ee7f38aa628d375587954",
+  "status": "active",
+  "goal": ".agent/goals/REMOTE-CI-PRECISION-20261124.yaml",
+  "record": "docs/ops/iterations/remote_ci_precision_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/REMOTE-CI-PRECISION-20261124.yaml",
+    ".agent/runs/REMOTE-CI-PRECISION-20261124/run.json",
+    "docs/ops/iterations/remote_ci_precision_20261124.md",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "docs/ops/dual_lane_fast_iteration_v1.md",
+    "docs/ops/validation_delivery_protocol.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "config/ci/path_ownership_v1.json",
+    "scripts/ci/ci_path_ownership.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/gitee_gate_plan.py",
+    "scripts/ci/test_ci_path_ownership.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/verify/test_gitee_gate_plan.py",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    ".github/workflows/professional_quality_gate.yml",
+    ".github/workflows/frontend_release_gate.yml"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository CI tests and exact Git-tree planners; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate remote path classification, frontend lane selection and backend focused planning."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P4 candidate must pass the current exact-head integration gates."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Release qualification remains separate from PR routing validation."
+    }
+  },
+  "checks": {
+    "ci_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/gitee_gate_plan.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/verify/test_gitee_gate_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/frontend_release_gate.yml"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the P4 remote precision candidate, publish the exact HEAD and wait for required remote CI.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

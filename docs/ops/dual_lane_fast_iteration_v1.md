@@ -72,6 +72,20 @@ backend-only iteration does not require an installed frontend toolchain.
 Missing `eslint`, `vue-tsc` or `esbuild` blocks only a change set that actually
 selects the corresponding frontend targets.
 
+Remote frontend ownership now distinguishes runtime from tooling:
+
+- `frontend_runtime_changed=true` retains standard/full frontend runtime checks;
+- tooling-only changes keep `frontend_changed=true` for owner tool checks but
+  use `frontend_mode=skip` for the frontend runtime lane;
+- a `make/ci.mk` diff may use skip only when all changed bytes are proven to be
+  inside `ci.local.iteration`, `ci.local.backend.iteration` and
+  `ci.local.frontend.iteration` target blocks.
+
+For backend test-only changes, remote `scope_mode=focused` is now effective:
+the plan carries exact changed-test selectors. Production code, test helpers,
+deleted tests, mixed changes and missing selector coverage still use the full
+impacted-module plan.
+
 ## Measured inner loop
 
 On the P4 routing candidate:

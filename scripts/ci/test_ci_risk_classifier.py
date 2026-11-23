@@ -82,6 +82,7 @@ class CIRiskClassifierTests(unittest.TestCase):
         )
         self.assertEqual(result.lane, "STANDARD")
         self.assertEqual(result.frontend_mode, "standard")
+        self.assertTrue(result.frontend_runtime_changed)
 
     def test_professional_frontend_delivery_batch_avoids_release_and_backend_lanes(self) -> None:
         result = classify(
@@ -250,6 +251,7 @@ class CIRiskClassifierTests(unittest.TestCase):
         )
         self.assertEqual(result.lane, "HIGH_RISK")
         self.assertEqual(result.frontend_mode, "skip")
+        self.assertFalse(result.frontend_runtime_changed)
 
     def test_frontend_gate_workflow_requires_full_frontend_release(self) -> None:
         result = classify(
@@ -372,6 +374,18 @@ class BackendRecipeScopeTests(unittest.TestCase):
     after = before.replace('\t@python3 scripts/ci/test_a.py\n',
                            '\t@python3 scripts/ci/test_a.py\n'
                            '\t@python3 -m unittest scripts.verify.test_backend_probe\n')
+    local_before = (
+        'ci.local.iteration: guard\n\t@old-all\n'
+        'ci.local.backend.iteration: guard\n\t@old-backend\n'
+        'ci.local.frontend.iteration: guard\n\t@old-frontend\n'
+        'frontend.release:\n\t@pnpm test\n'
+    )
+    local_after = (
+        'ci.local.iteration: guard\n\t@new-all\n'
+        'ci.local.backend.iteration: guard\n\t@new-backend\n'
+        'ci.local.frontend.iteration: guard\n\t@new-frontend\n'
+        'frontend.release:\n\t@pnpm test\n'
+    )
 
     def test_literal_backend_recipe_change_is_recognized(self):
         self.assertTrue(ci_risk_classifier.backend_recipe_only(self.before, self.after))
@@ -393,6 +407,52 @@ class BackendRecipeScopeTests(unittest.TestCase):
         ):
             with self.subTest(changed=changed):
                 self.assertFalse(ci_risk_classifier.backend_recipe_only(self.before, changed))
+
+    def test_local_iteration_recipe_scope_is_exact(self):
+        self.assertTrue(
+            ci_risk_classifier.local_iteration_recipe_only(
+                self.local_before,
+                self.local_after,
+            )
+        )
+        self.assertFalse(
+            ci_risk_classifier.local_iteration_recipe_only(
+                self.local_before,
+                self.local_before,
+            )
+        )
+        for changed in (
+            self.local_after.replace('@pnpm test', '@pnpm lint'),
+            self.local_after + 'ci.local.iteration:\n\t@duplicate\n',
+            self.local_after.replace(
+                'ci.local.frontend.iteration: guard\n',
+                '',
+            ),
+        ):
+            with self.subTest(changed=changed):
+                self.assertFalse(
+                    ci_risk_classifier.local_iteration_recipe_only(
+                        self.local_before,
+                        changed,
+                    )
+                )
+        with patch.object(
+            ci_risk_classifier,
+            "git_local_iteration_recipe_only",
+            return_value=True,
+        ):
+            result = classify(
+                ["make/ci.mk"],
+                event_name="pull_request",
+                base="a" * 40,
+                head="b" * 40,
+            )
+        self.assertEqual("skip", result.frontend_mode)
+        self.assertFalse(result.frontend_runtime_changed)
+        self.assertIn(
+            "make_ci_local_iteration_only_exact_git_scope",
+            result.reasons,
+        )
 
     def test_path_only_and_missing_identity_keep_full(self):
         self.assertEqual(classify(['make/ci.mk'], event_name='pull_request').frontend_mode, 'full')

@@ -262,16 +262,18 @@ class FiveCiScenarioTest(unittest.TestCase):
         self.assertEqual(backend["tool_checks"], [])
         self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
 
-    def test_pure_frontend_quality_tooling_stays_frontend_standard(self):
+    def test_pure_frontend_quality_tooling_skips_runtime_suite(self):
         path = "scripts/verify/frontend_contract_basis_guard.py"
         risk = self.classify(path)
         backend = self.plan(path)
         self.assertEqual(risk.lane, "STANDARD")
         self.assertTrue(risk.frontend_changed)
+        self.assertFalse(risk.frontend_runtime_changed)
         self.assertFalse(risk.backend_changed)
         self.assertFalse(risk.backend_runtime_changed)
         self.assertFalse(risk.control_plane_changed)
-        self.assertEqual(risk.professional_mode, "standard_frontend")
+        self.assertEqual(risk.frontend_mode, "skip")
+        self.assertEqual(risk.professional_mode, "fast")
         self.assertEqual(backend["modules"], [])
         self.assertIn("verify.frontend.dev.incremental.unit", backend["tool_checks"])
         self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")

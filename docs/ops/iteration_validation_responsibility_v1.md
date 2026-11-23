@@ -62,3 +62,18 @@ Verification-tool checks follow their actual execution surface:
 When target main advances, merge the current main into the PR branch, update the
 active run baseline to that exact main SHA, and rerun the affected local set.
 Previously recorded exact-head remote checks do not carry across the new base.
+
+## Remote exact-set rules
+
+- Frontend runtime and frontend tooling ownership are separate. Tooling-only
+  changes still run their registered tool checks, but skip frontend
+  lint/typecheck/test/build. Actual `frontend/**` runtime changes retain the
+  standard or full frontend lane.
+- A `make/ci.mk` edit may skip the remote frontend runtime lane only when an
+  exact Git-tree proof shows every changed byte belongs to the three
+  `ci.local.*iteration` target blocks. Any other Make change remains
+  conservatively full.
+- Backend focused planning uses exact changed-test selectors only when every
+  impacted module path is a direct `tests/test*.py` change and selector
+  coverage is complete. Production code, test helpers, deleted tests, mixed
+  changes and incomplete selectors retain full impacted-module coverage.

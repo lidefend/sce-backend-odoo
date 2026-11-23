@@ -209,6 +209,10 @@ class ShardPlanTest(unittest.TestCase):
             'scope_mode': 'full',
             'reasons': [],
             'modules': ['core', 'scene'],
+            'changed_paths': [
+                'addons/core/tests/test_flow.py',
+                'addons/scene/tests/test_scene.py',
+            ],
             'preparation_groups': [],
             'changed_test_coverage': [
                 {
@@ -236,6 +240,75 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual('full', planned['scope_mode'])
         self.assertEqual(['core', 'scene'], planned['modules'])
         self.assertNotIn('focused_selectors', planned)
+
+    def test_focused_plan_uses_exact_selectors_for_test_only_modules(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core'],
+            'changed_paths': ['addons/core/tests/test_flow.py'],
+            'preparation_groups': [],
+            'shards': [{'index': 0, 'modules': ['core']}],
+            'changed_test_coverage': [
+                {
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'execution_selector': '*/core:TestFlow.test_one',
+                },
+                {
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'execution_selector': '*/core:TestFlow.test_two',
+                },
+            ],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual('focused', planned['scope_mode'])
+        self.assertEqual('test_only_changed_tests', planned['focused_reason'])
+        self.assertEqual(['core'], planned['focused_modules'])
+        self.assertEqual(
+            ['*/core:TestFlow.test_one', '*/core:TestFlow.test_two'],
+            planned['focused_selectors']['core'],
+        )
+
+    def test_focused_plan_retains_full_scope_for_production_or_helper_changes(self):
+        rows = [{
+            'module': 'core',
+            'owner': 'backend_suite',
+            'execution_selector': '*/core:TestFlow.test_one',
+        }]
+        for path in (
+            'addons/core/models/record.py',
+            'addons/core/tests/perm_matrix.py',
+            'addons/core/tests/test_flow.py',
+        ):
+            complete = {
+                'base': 'b' * 40,
+                'head': 'a' * 40,
+                'mode': 'incremental',
+                'scope_mode': 'full',
+                'reasons': [],
+                'modules': ['core'],
+                'changed_paths': [path],
+                'preparation_groups': [],
+                'changed_test_coverage': rows,
+            }
+            with self.subTest(path=path), patch.object(
+                planner,
+                'build_plan',
+                return_value=complete,
+            ):
+                planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+                expected = (
+                    'focused'
+                    if path.endswith('/tests/test_flow.py')
+                    else 'full'
+                )
+                self.assertEqual(expected, planned['scope_mode'])
 
     def test_focused_plan_falls_back_to_complete_modules_without_changed_tests(self):
         complete = {

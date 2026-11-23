@@ -231,6 +231,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def test_professional_lane_commands_are_explicit(self) -> None:
         text = self.text("professional_quality_gate.yml")
         self.assertIn("frontend_changed: ${{ steps.risk.outputs.frontend_changed }}", text)
+        self.assertIn(
+            "frontend_runtime_changed: ${{ steps.risk.outputs.frontend_runtime_changed }}",
+            text,
+        )
         self.assertIn("backend_changed: ${{ steps.risk.outputs.backend_changed }}", text)
         self.assertIn("backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}", text)
         self.assertIn("control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}", text)
@@ -240,6 +244,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", text)
         self.assertIn(
             "FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}",
+            text,
+        )
+        self.assertIn(
+            "FRONTEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_runtime_changed }}",
             text,
         )
         self.assertIn(
@@ -264,7 +272,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         self.assertIn("needs.professional_authorization.outputs.professional_mode", professional_mode)
         self.assertIn("outputs.backend_runtime_changed == 'true'", professional_mode)
-        self.assertIn("outputs.frontend_changed == 'true'", professional_mode)
+        self.assertIn("outputs.frontend_runtime_changed == 'true'", professional_mode)
+        self.assertNotIn("outputs.frontend_changed == 'true'", professional_mode)
         self.assertNotIn("outputs.backend_changed == 'true'", professional_mode)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
@@ -931,6 +940,10 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         )
         self.assertIn(
             '[ "${CANDIDATE_REQUESTED}" != true ]',
+            full_gate['run'],
+        )
+        self.assertIn(
+            '[ "${FRONTEND_RUNTIME_CHANGED}" = "false" ]',
             full_gate['run'],
         )
         for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',
