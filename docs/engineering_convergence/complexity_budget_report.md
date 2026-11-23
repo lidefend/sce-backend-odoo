@@ -21,8 +21,8 @@ Generated from repository source files. This report is informational during the 
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4841 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4597 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4300 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 4079 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4313 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4088 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -280,8 +280,8 @@ Generated from repository source files. This report is informational during the 
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
 | 4841 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4597 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4300 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
-| 4079 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4313 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4088 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
