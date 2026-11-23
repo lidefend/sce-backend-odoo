@@ -537,6 +537,7 @@ console.log('[workspace_scenario_lifecycle_test] PASS cases=11 transport=control
 // Actual business management consumer: server-declared actions, explicit company
 // scope, refresh after commit and stale transport completion rejection.
 const {
+  requireScenarioCenterReadback,
   requireScenarioReadback,
   useScenarioActivation,
 } = await import('../src/composables/useScenarioActivation.ts');
@@ -597,7 +598,7 @@ session.recordContext = { ...session.recordContext, company_id: 1 } as NonNullab
 const managementScope = effectScope();
 const management = managementScope.run(() => useScenarioActivation())!;
 const catalogResponse = (company = 1, actions = true) => ({
-  contract_version: 'scenario_activation_catalog.v2',
+  contract_version: 'scenario_activation_catalog.v3',
   published_page_count: 132,
   published_snapshot: {
     snapshot_id: 9,
@@ -608,8 +609,8 @@ const catalogResponse = (company = 1, actions = true) => ({
   catalog_status: 'ready',
   catalog_blockers: [],
   catalog_presentation: {
-    title: '企业业务场景管理',
-    summary: '已发布产品页面 132 项 · 产品中心 11 个 · 页面均已纳入办理场景',
+    title: '企业业务中心启用',
+    summary: '已发布产品页面 132 项 · 可选业务中心 10 个 · 页面均已纳入办理场景',
     empty_label: '当前没有可启停业务场景。',
   },
   catalog_cardinality: {
@@ -658,6 +659,30 @@ const catalogResponse = (company = 1, actions = true) => ({
       { key: 'disable', label: '停用', enabled: false },
     ] : [],
   }],
+  business_centers: [{
+    key: 'construction.center.project',
+    name: '项目中心',
+    sequence: 2,
+    scene_keys: ['project.management'],
+    scene_count: 1,
+    enabled_scene_count: 0,
+    status: 'not_enabled',
+    status_label: '未启用',
+    default_selected: true,
+    enable_allowed: true,
+  }],
+  center_activation: {
+    contract_version: 'scenario_center_activation.v1',
+    title: '最后一步：选择企业业务中心',
+    description: '请先完成企业信息、部门、岗位、人员与账号、业务角色与允许公司。推荐选中不代表已经启用。',
+    selection_label: '已选择业务中心',
+    selection_count_label: '个业务中心',
+    scene_count_label: '个业务场景',
+    apply_label: '启用所选业务中心',
+    advanced_label: '高级：单独选择业务场景',
+    intent: 'scenario.activation.centers.set',
+    recommended_center_keys: ['construction.center.project'],
+  },
 });
 const flush = () => new Promise(resolve => setTimeout(resolve, 0));
 pending.at(-1)!.settle(catalogResponse());
@@ -668,6 +693,63 @@ assert.equal(management.targetScope.value?.company_id, 1);
 assert.equal(management.rows.value[0].product_qualification.status, 'qualified');
 assert.equal(management.catalogCardinality.value?.published_page_count, 132);
 assert.equal(management.catalogCardinality.value?.business_scenario_count, 1);
+assert.deepEqual(management.selectedCenterKeys.value, ['construction.center.project']);
+assert.equal(management.businessCenters.value[0].status, 'not_enabled');
+
+const validCenterReadback = (centerKeys: string[], sceneKeys: string[]) => ({
+  contract_version: 'scenario_center_activation.v1',
+  company_id: 1,
+  center_keys: centerKeys,
+  scene_keys: sceneKeys,
+  enabled_scene_count: sceneKeys.length,
+  readback: {
+    company_id: 1,
+    center_keys: centerKeys,
+    scene_keys: sceneKeys,
+    source: 'ir.config_parameter',
+    write_committed: true,
+    access_granted: false,
+  },
+});
+assert.equal(
+  requireScenarioCenterReadback(
+    validCenterReadback(['construction.center.project'], ['project.management']),
+    { companyId: 1, centerKeys: ['construction.center.project'], sceneKeys: ['project.management'] },
+  ).enabled_scene_count,
+  1,
+);
+assert.throws(
+  () => requireScenarioCenterReadback(
+    validCenterReadback(['construction.center.project'], ['wrong.scene']),
+    { companyId: 1, centerKeys: ['construction.center.project'], sceneKeys: ['project.management'] },
+  ),
+  /回读.*不一致/,
+);
+
+const originalCenterBootstrap = session.loadAppInit;
+let centerBootstraps = 0;
+session.loadAppInit = async () => {
+  centerBootstraps += 1;
+  session.initStatus = 'loading';
+  await nextTick();
+  session.initStatus = 'ready';
+  await nextTick();
+};
+const centerApplyRequest = await nextRequest(() => management.applyCenters());
+assert.equal(centerApplyRequest.request.intent, 'scenario.activation.centers.set');
+assert.deepEqual(centerApplyRequest.request.params, {
+  company_id: 1,
+  center_keys: ['construction.center.project'],
+});
+centerApplyRequest.request.settle(
+  validCenterReadback(['construction.center.project'], ['project.management']),
+);
+await flush();
+assert.equal(management.centerReadback.value?.enabled_scene_count, 1);
+assert.equal(centerBootstraps, 1);
+pending.at(-1)!.settle(catalogResponse());
+await centerApplyRequest.result;
+session.loadAppInit = originalCenterBootstrap;
 
 // The client never constructs an action absent from the server contract.
 const beforeInvented = pending.length;
@@ -867,7 +949,7 @@ pending.at(-1)!.settle({
   catalog_status: 'blocked',
   catalog_blockers: ['ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND'],
   catalog_presentation: {
-    title: '企业业务场景管理',
+    title: '企业业务中心启用',
     summary: '当前没有已发布的正式产品页面',
     empty_label: '当前没有已发布的正式产品页面，ACTIVE_RELEASE_SNAPSHOT_NOT_FOUND。',
   },
@@ -880,6 +962,22 @@ pending.at(-1)!.settle({
     actionable_business_scenario_count: 0,
   },
   business_scenarios: [],
+  business_centers: [{
+    key: 'construction.center.project',
+    name: '项目中心',
+    sequence: 2,
+    scene_keys: [],
+    scene_count: 0,
+    enabled_scene_count: 0,
+    status: 'blocked',
+    status_label: '产品未就绪',
+    default_selected: true,
+    enable_allowed: false,
+  }],
+  center_activation: {
+    ...catalogResponse().center_activation,
+    recommended_center_keys: [],
+  },
 });
 await flush();
 assert.equal(diagnostics.state.value, 'ready', diagnostics.errorMessage.value);
@@ -907,7 +1005,7 @@ const unavailableScope = effectScope();
 const unavailable = unavailableScope.run(() => useScenarioActivation())!;
 await flush();
 const unavailableCatalog = (disabled: boolean) => ({
-  contract_version: 'scenario_activation_catalog.v2',
+  contract_version: 'scenario_activation_catalog.v3',
   published_page_count: 1,
   published_snapshot: {
     snapshot_id: 9,
@@ -918,8 +1016,8 @@ const unavailableCatalog = (disabled: boolean) => ({
   catalog_status: 'blocked',
   catalog_blockers: ['PRODUCT_NOT_RELEASED'],
   catalog_presentation: {
-    title: '企业业务场景管理',
-    summary: '已发布产品页面 1 项 · 产品中心 1 个 · 页面均已纳入办理场景',
+    title: '企业业务中心启用',
+    summary: '已发布产品页面 1 项 · 可选业务中心 1 个 · 页面均已纳入办理场景',
     empty_label: '当前没有可启停业务场景。',
   },
   catalog_cardinality: {
@@ -970,6 +1068,30 @@ const unavailableCatalog = (disabled: boolean) => ({
     enable_allowed: false,
     actions: disabled ? [] : [{ key: 'disable', label: '停用', enabled: false }],
   }],
+  business_centers: [{
+    key: 'construction.center.project',
+    name: '项目中心',
+    sequence: 2,
+    scene_keys: ['project.management'],
+    scene_count: 1,
+    enabled_scene_count: disabled ? 0 : 1,
+    status: 'blocked',
+    status_label: disabled ? '未启用' : '部分启用',
+    default_selected: true,
+    enable_allowed: false,
+  }],
+  center_activation: {
+    contract_version: 'scenario_center_activation.v1',
+    title: '最后一步：选择企业业务中心',
+    description: '请先完成企业信息、部门、岗位、人员与账号、业务角色与允许公司。推荐选中不代表已经启用。',
+    selection_label: '已选择业务中心',
+    selection_count_label: '个业务中心',
+    scene_count_label: '个业务场景',
+    apply_label: '启用所选业务中心',
+    advanced_label: '高级：单独选择业务场景',
+    intent: 'scenario.activation.centers.set',
+    recommended_center_keys: ['construction.center.project'],
+  },
 });
 pending.at(-1)!.settle(unavailableCatalog(false));
 await flush();

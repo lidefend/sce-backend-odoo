@@ -1,0 +1,100 @@
+{
+  "schema_version": 2,
+  "id": "ENTERPRISE-CENTER-ONBOARDING-20261123",
+  "branch": "feature/enterprise-center-onboarding-20261123",
+  "status": "active",
+  "baseline_sha": "0f1930cfcd7f111051a6ef7b02a217964d785df8",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/ENTERPRISE-CENTER-ONBOARDING-20261123.yaml",
+    ".agent/runs/ENTERPRISE-CENTER-ONBOARDING-20261123/run.json",
+    "addons/smart_construction_scene/handlers/scenario_activation.py",
+    "addons/smart_construction_scene/core_extension.py",
+    "addons/smart_construction_core/services/scenario_surface_projection.py",
+    "addons/smart_construction_core/services/scenario_product_declarations.py",
+    "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+    "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "addons/smart_construction_core/data/scenario_product_surface.json",
+    "docs/ops/iterations/enterprise_center_onboarding_20261123.md",
+    "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+    "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+    "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "scripts/audit/build_scenario_product_organization.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "registered local Make targets; the ORM check binds its governed disposable local.test receipt as an explicit runtime readback"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.enterprise.initialization.journey.orm verify.navigation.publication_consumers.unit verify.frontend.workspace_scenario_lifecycle.unit",
+      "reason": "Validate center mapping, bulk activation, readiness projection and frontend contract consumption."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the P1/frontend candidate against current main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release eligibility follows protected integration and does not replace exact-head PR checks."
+    }
+  },
+  "checks": {
+    "enterprise_initialization_orm": {
+      "target": "verify.enterprise.initialization.journey.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_scene/tests/test_enterprise_initialization_journey.py",
+        "make/ci.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/ENTERPRISE-CENTER-ONBOARDING-20261123/enterprise_initialization_orm_readback.json"
+      }
+    },
+    "navigation_consumers": {
+      "target": "verify.navigation.publication_consumers.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_scene/handlers/scenario_activation.py",
+        "addons/smart_construction_core/services/scenario_product_declarations.py",
+        "addons/smart_construction_core/data/scenario_product_surface.json",
+        "addons/smart_construction_core/services/scenario_surface_projection.py",
+        "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_workspace": {
+      "target": "verify.frontend.workspace_scenario_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/composables/useScenarioActivation.ts",
+        "frontend/apps/web/src/components/design-system/ScCheckbox.vue",
+        "make/frontend.mk"
+      ]
+    },
+    "component_driver_takeover": {
+      "target": "verify.frontend.component_driver_takeover.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
+        "frontend/apps/web/src/components/design-system/ScDisclosure.vue",
+        "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+        "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
+        "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Amend the clean candidate with the governed disclosure fix, then publish through the GitHub PR lane and require all checks on the exact head and current target.",
+  "goal": ".agent/goals/ENTERPRISE-CENTER-ONBOARDING-20261123.yaml",
+  "record": "docs/ops/iterations/enterprise_center_onboarding_20261123.md"
+}

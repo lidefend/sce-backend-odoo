@@ -95,6 +95,8 @@
     {
       "key": "work.my_queue",
       "name": "处理我的工作与消息",
+      "owner_center": "workspace.home.workbench",
+      "owner_center_name": "工作台",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 1,
@@ -144,6 +146,8 @@
     {
       "key": "project.initiation",
       "name": "项目立项与启用",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 2,
@@ -206,6 +210,8 @@
     {
       "key": "project.tender",
       "name": "投标准备、开标与中标确认",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 3,
@@ -282,6 +288,8 @@
     {
       "key": "project.planning",
       "name": "计划编制与汇报",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 4,
@@ -313,6 +321,8 @@
     {
       "key": "project.delivery_record",
       "name": "施工过程记录与工程签证",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 5,
@@ -362,6 +372,8 @@
     {
       "key": "project.quality",
       "name": "质量检查、整改与复验",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 6,
@@ -429,6 +441,8 @@
     {
       "key": "project.safety",
       "name": "安全方案、交底、巡检与整改",
+      "owner_center": "construction.center.project",
+      "owner_center_name": "项目中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 7,
@@ -514,6 +528,8 @@
     {
       "key": "contract.registration",
       "name": "合同登记",
+      "owner_center": "construction.center.contract",
+      "owner_center_name": "合同中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 8,
@@ -554,6 +570,8 @@
     {
       "key": "contract.change",
       "name": "合同变更",
+      "owner_center": "construction.center.contract",
+      "owner_center_name": "合同中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 9,
@@ -576,6 +594,8 @@
     {
       "key": "contract.settlement",
       "name": "合同结算",
+      "owner_center": "construction.center.contract",
+      "owner_center_name": "合同中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 10,
@@ -627,6 +647,8 @@
     {
       "key": "cost.budgeting",
       "name": "目标成本与成本计划",
+      "owner_center": "construction.center.cost",
+      "owner_center_name": "成本中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 11,
@@ -658,6 +680,8 @@
     {
       "key": "cost.collection",
       "name": "实际成本归集",
+      "owner_center": "construction.center.cost",
+      "owner_center_name": "成本中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 12,
@@ -680,6 +704,8 @@
     {
       "key": "cost.analysis",
       "name": "项目盈亏分析",
+      "owner_center": "construction.center.cost",
+      "owner_center_name": "成本中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 13,
@@ -702,6 +728,8 @@
     {
       "key": "supply.supplier_management",
       "name": "供应商准入与停用",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 14,
@@ -733,6 +761,8 @@
     {
       "key": "supply.procurement",
       "name": "材料需求、采购申请与询比价",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 15,
@@ -782,6 +812,8 @@
     {
       "key": "supply.inventory",
       "name": "材料入库、出库与库存移动",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 16,
@@ -840,6 +872,8 @@
     {
       "key": "material.settlement",
       "name": "材料结算",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 17,
@@ -862,6 +896,8 @@
     {
       "key": "resource.labor",
       "name": "劳务资源使用与结算",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 18,
@@ -929,6 +965,8 @@
     {
       "key": "resource.equipment",
       "name": "机械设备使用与结算",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 19,
@@ -978,6 +1016,8 @@
     {
       "key": "resource.rental",
       "name": "周转材料租赁与结算",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 20,
@@ -1018,6 +1058,8 @@
     {
       "key": "resource.subcontract",
       "name": "专业分包履约与结算",
+      "owner_center": "construction.center.supply_chain",
+      "owner_center_name": "供应链与资源中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 21,
@@ -1076,6 +1118,8 @@
     {
       "key": "finance.receipt",
       "name": "收款确认与登记",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 22,
@@ -1116,6 +1160,8 @@
     {
       "key": "finance.payment_approval",
       "name": "付款申请与审批",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 23,
@@ -1138,6 +1184,8 @@
     {
       "key": "finance.payment_execution",
       "name": "实付登记",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 24,
@@ -1169,6 +1217,8 @@
     {
       "key": "finance.expense_advance",
       "name": "费用报销与备用金",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 25,
@@ -1200,6 +1250,8 @@
     {
       "key": "finance.deduction",
       "name": "公司项目扣款",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 26,
@@ -1222,6 +1274,8 @@
     {
       "key": "finance.intercompany",
       "name": "公司项目往来与借还款",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 27,
@@ -1262,6 +1316,8 @@
     {
       "key": "finance.cash_ledger",
       "name": "资金计划与收支台账",
+      "owner_center": "construction.center.finance",
+      "owner_center_name": "财务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 28,
@@ -1302,6 +1358,8 @@
     {
       "key": "tax.external_certificate",
       "name": "外经证办理",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 29,
@@ -1324,6 +1382,8 @@
     {
       "key": "tax.prepayment",
       "name": "税款预缴",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 30,
@@ -1346,6 +1406,8 @@
     {
       "key": "tax.output_invoice",
       "name": "销项开票与红冲",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 31,
@@ -1386,6 +1448,8 @@
     {
       "key": "tax.input_invoice",
       "name": "进项发票登记",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 32,
@@ -1408,6 +1472,8 @@
     {
       "key": "tax.deduction",
       "name": "税额抵扣",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 33,
@@ -1439,6 +1505,8 @@
     {
       "key": "tax.filing",
       "name": "税务申报",
+      "owner_center": "construction.center.tax",
+      "owner_center_name": "税务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 34,
@@ -1461,6 +1529,8 @@
     {
       "key": "accounting.foundation",
       "name": "会计基础配置",
+      "owner_center": "construction.center.accounting",
+      "owner_center_name": "会计账务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 35,
@@ -1510,6 +1580,8 @@
     {
       "key": "accounting.entry_posting",
       "name": "凭证编制与记账",
+      "owner_center": "construction.center.accounting",
+      "owner_center_name": "会计账务中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 36,
@@ -1543,6 +1615,8 @@
     {
       "key": "reporting.project_portfolio",
       "name": "项目经营态势查看",
+      "owner_center": "construction.center.reporting",
+      "owner_center_name": "报表中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 37,
@@ -1574,6 +1648,8 @@
     {
       "key": "reporting.operating_review",
       "name": "跨业务经营分析",
+      "owner_center": "construction.center.reporting",
+      "owner_center_name": "报表中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 38,
@@ -1632,6 +1708,8 @@
     {
       "key": "admin.organization",
       "name": "组织、岗位与人员",
+      "owner_center": "construction.center.administration",
+      "owner_center_name": "行政中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 39,
@@ -1672,6 +1750,8 @@
     {
       "key": "admin.payroll",
       "name": "薪酬社保办理",
+      "owner_center": "construction.center.administration",
+      "owner_center_name": "行政中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 40,
@@ -1721,6 +1801,8 @@
     {
       "key": "admin.documents",
       "name": "证照与制度文件",
+      "owner_center": "construction.center.administration",
+      "owner_center_name": "行政中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 41,
@@ -1752,6 +1834,8 @@
     {
       "key": "admin.assets",
       "name": "行政资产管理",
+      "owner_center": "construction.center.administration",
+      "owner_center_name": "行政中心",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 42,
@@ -1774,6 +1858,8 @@
     {
       "key": "config.enterprise_access",
       "name": "企业人员权限配置",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 43,
@@ -1796,6 +1882,8 @@
     {
       "key": "config.approval",
       "name": "审批策略配置",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 44,
@@ -1818,6 +1906,8 @@
     {
       "key": "config.presentation",
       "name": "表单、字段与菜单配置",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 45,
@@ -1858,6 +1948,8 @@
     {
       "key": "config.system_governance",
       "name": "系统参数与编码规则",
+      "owner_center": "construction.center.product_configuration",
+      "owner_center_name": "产品配置",
       "type": "COMPOSITE",
       "active": true,
       "sequence": 46,
