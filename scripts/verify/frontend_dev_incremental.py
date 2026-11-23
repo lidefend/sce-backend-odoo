@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Run the smallest registered frontend checks affected by live source changes.
+"""Run the smallest registered checks affected by cross-layer source changes.
 
 This is a development feedback tool.  It deliberately never builds a candidate,
 captures browser evidence, refreshes generated reports, or computes a candidate
@@ -98,6 +98,7 @@ IMPLICIT_OFFLINE_TARGET_SUFFIXES = (
     ".policy",
     ".unit",
 )
+TARGET_LAYER_ORDER = ("frontend", "backend", "contract", "docs", "governance")
 
 
 @dataclass(frozen=True)
@@ -1411,6 +1412,12 @@ RULES = (
     # 契约基础台账与它的守卫是 contract_basis 行为锁的直接输入。改台账/守卫
     # 却落到「未映射」会让这份完整性缺口只能靠人工挑目标，甚至漏跑到交付冻结。
     Rule((
+        "scripts/verify/identity_architecture_audit_guard.py",
+        "scripts/verify/test_identity_architecture_audit_guard.py",
+    ), (
+        "verify.identity.architecture.audit.unit",
+    )),
+    Rule((
         "docs/architecture/frontend_contract_basis_ledger.json",
         "scripts/verify/frontend_contract_basis_guard.py",
         "scripts/verify/test_frontend_contract_basis_guard.py",
@@ -2720,6 +2727,34 @@ def select_targets(paths: list[str]) -> list[str]:
     return targets
 
 
+def target_layers(targets: set[str] | list[str]) -> list[str]:
+    """Describe the product layers represented by selected verification targets."""
+    layers: set[str] = set()
+    for target in targets:
+        if target.startswith("verify.frontend."):
+            layers.add("frontend")
+        elif (
+            target.startswith(
+                (
+                    "verify.backend.",
+                    "verify.smart_core.",
+                    "verify.smart_construction_",
+                )
+            )
+            or target.endswith(".orm")
+            or ".module_baseline" in target
+            or ".extension_module_baseline" in target
+        ):
+            layers.add("backend")
+        elif target.startswith(("verify.docs.", "docs.")):
+            layers.add("docs")
+        elif target.startswith(("verify.contract.", "contract.")):
+            layers.add("contract")
+        else:
+            layers.add("governance")
+    return [layer for layer in TARGET_LAYER_ORDER if layer in layers]
+
+
 def implicitly_registered_offline_targets(targets: set[str]) -> set[str]:
     """Treat pure target families as registered without widening runtime reuse."""
     return {
@@ -3249,6 +3284,8 @@ def print_plan(
         "changedPathCount": len(paths),
         "requiredTargets": sorted(required_targets),
         "targets": sorted(targets),
+        "requiredLayers": target_layers(required_targets),
+        "executionLayers": target_layers(targets),
         "reusedTargets": sorted(reusable),
         "blockedTargets": sorted(blocked),
         "registrationMissingTargets": registration_missing,
@@ -3262,7 +3299,7 @@ def print_plan(
         "testsRun": False,
         "manualNonZeroL2Required": bool(unmapped_paths),
     }
-    print(f"[frontend.dev.incremental.plan] {json.dumps(payload, sort_keys=True)}")
+    print(f"[local.incremental.plan] {json.dumps(payload, sort_keys=True)}")
     return 0
 
 
@@ -3543,6 +3580,8 @@ def execute_targets(
         "identity": identity,
         "changedPaths": paths,
         "requiredTargets": required_targets,
+        "requiredLayers": target_layers(required_targets),
+        "executionLayers": target_layers(targets),
         "targetOrder": required_targets,
         "executionTargetOrder": targets,
         "reusedTargets": reusable,
@@ -3598,7 +3637,7 @@ def execute_targets(
             target_results=payload["targetResults"],
         )
         print(
-            "[frontend.dev.incremental] BLOCKED "
+            "[local.incremental] BLOCKED "
             f"reason={payload['reason']} receipt={_json_path(receipt, root)}"
         )
         return 2
@@ -3637,11 +3676,11 @@ def execute_targets(
         )
         if reusable:
             print(
-                "[frontend.dev.incremental] PASS "
+                "[local.incremental] PASS "
                 f"reused_targets={len(reusable)} receipt={_json_path(receipt, root)}"
             )
         else:
-            print(f"[frontend.dev.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
+            print(f"[local.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
         return 0
 
     # A content-identical aggregate cannot override a declared stale dependency
@@ -3705,13 +3744,14 @@ def execute_targets(
             target_results=[],
         )
         print(
-            "[frontend.dev.incremental] PASS "
+            "[local.incremental] PASS "
             f"reused={_json_path(source_receipt, root)} receipt={_json_path(receipt, root)}"
         )
         return 0
 
     print(
-        f"[frontend.dev.incremental] EXECUTE paths={len(paths)} "
+        f"[local.incremental] EXECUTE paths={len(paths)} "
+        f"layers={','.join(target_layers(targets))} "
         f"targets={','.join(target for target in targets if target not in carried_results)}"
         + (
             f" resumed={len(carried_results)} source={_json_path(resume_receipt, root)}"
@@ -3779,7 +3819,8 @@ def execute_targets(
     if payload["status"] == "passed":
         write_incremental_index(root, paths, required_targets, identity, receipt)
     print(
-        f"[frontend.dev.incremental] {payload['status'].upper()} "
+        f"[local.incremental] {payload['status'].upper()} "
+        f"layers={','.join(payload['requiredLayers'])} "
         f"executed={payload['executedTargetCount']} "
         f"reason={payload['reason']} receipt={_json_path(receipt, root)}"
     )
@@ -3832,7 +3873,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--plan-worktree",
         action="store_true",
-        help="recommend affected frontend L2 targets without running them",
+        help="recommend affected cross-layer L2 targets without running them",
     )
     parser.add_argument("--plan-branch", action="store_true", help="explicit whole-branch comparison for review; not daily continuation")
     parser.add_argument(
@@ -3849,7 +3890,7 @@ def parse_args() -> argparse.Namespace:
 def watch(interval: float, debounce: float) -> int:
     previous = content_snapshot()
     write_state(status="watching", paths=[], targets=[], returncode=None)
-    print("[frontend.dev.watch] watching; candidate build/browser/fingerprint are excluded", flush=True)
+    print("[local.incremental.watch] watching; candidate build/browser/fingerprint are excluded", flush=True)
     try:
         while True:
             time.sleep(interval)
@@ -3864,7 +3905,7 @@ def watch(interval: float, debounce: float) -> int:
             previous = settled
     except KeyboardInterrupt:
         write_state(status="stopped", paths=[], targets=[], returncode=0)
-        print("[frontend.dev.watch] stopped")
+        print("[local.incremental.watch] stopped")
         return 0
 
 

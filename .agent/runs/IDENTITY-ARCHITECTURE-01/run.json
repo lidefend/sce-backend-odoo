@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "id": "IDENTITY-ARCHITECTURE-01",
+  "branch": "audit/identity-architecture-01-20261123",
+  "baseline_sha": "2a99f01c55af1c1cee01bc29d280fa5cc777b12f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/IDENTITY-ARCHITECTURE-01.yaml",
+  "record": "docs/ops/iterations/identity_architecture_01_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/IDENTITY-ARCHITECTURE-01.yaml",
+    ".agent/runs/IDENTITY-ARCHITECTURE-01/run.json",
+    "docs/architecture/identity_architecture_01/identity_authority_audit_20261123.md",
+    "docs/architecture/identity_architecture_01/identity_authority_matrix.json",
+    "docs/architecture/identity_architecture_01/identity_relationship_graph.mmd",
+    "docs/ops/iterations/identity_architecture_01_20261123.md",
+    "make/dev_test.mk",
+    "make/frontend.mk",
+    "scripts/verify/identity_architecture_audit_guard.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_identity_architecture_audit_guard.py",
+    "make/guards.mk"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository source and machine-readable architecture artifacts only"
+  },
+  "checks": {
+    "identity_audit_unit": {
+      "target": "verify.identity.architecture.audit.unit",
+      "inputs": [
+        "docs/architecture/identity_architecture_01/identity_authority_audit_20261123.md",
+        "docs/architecture/identity_architecture_01/identity_authority_matrix.json",
+        "docs/architecture/identity_architecture_01/identity_relationship_graph.mmd",
+        "scripts/verify/identity_architecture_audit_guard.py",
+        "scripts/verify/test_identity_architecture_audit_guard.py",
+        "make/frontend.mk",
+        "make/guards.mk",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs"
+      ],
+      "kind": "offline"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "scripts/verify/identity_architecture_audit_guard.py",
+        "scripts/verify/test_identity_architecture_audit_guard.py",
+        "make/guards.mk",
+        "make/dev_test.mk"
+      ],
+      "kind": "offline"
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "identity authority matrix and graph consistency",
+      "state": "required",
+      "owner_target": "verify.identity.architecture.audit.unit"
+    },
+    {
+      "gate": "product source implementation",
+      "state": "excluded",
+      "reason": "read-only architecture audit"
+    },
+    {
+      "gate": "P0-B, P0-C, FCF-02-2 and FCF-02-3 implementation",
+      "state": "not_authorized",
+      "reason": "separate reviewed work packages"
+    }
+  ],
+  "blockers": [],
+  "next_exact_step": "Commit and publish the read-only identity audit candidate, then wait for exact-head checks and independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
