@@ -8,9 +8,10 @@ from ..support.state_guard import raise_guard
 
 class ProjectSettlement(models.Model):
     _name = "project.settlement"
-    _description = "Project Settlement"
+    _description = "历史项目结算（兼容）"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "id desc"
+    _LEGACY_WRITE_CONTEXT = "allow_legacy_settlement_write"
 
     name = fields.Char(string="结算单号", required=True, default="New", copy=False)
     project_id = fields.Many2one(
@@ -69,6 +70,8 @@ class ProjectSettlement(models.Model):
 
     @api.model_create_multi
     def create(self, vals_list):
+        if not self.env.context.get(self._LEGACY_WRITE_CONTEXT):
+            raise UserError(_("历史项目结算为只读兼容模型，新结算必须使用 sc.settlement.order。"))
         seq = self.env["ir.sequence"]
         for vals in vals_list:
             if not vals.get("name") or vals.get("name") == "New":
@@ -76,6 +79,8 @@ class ProjectSettlement(models.Model):
         return super().create(vals_list)
 
     def write(self, vals):
+        if not self.env.context.get(self._LEGACY_WRITE_CONTEXT):
+            raise UserError(_("历史项目结算为只读兼容模型，不允许继续写入。"))
         vals = dict(vals or {})
         if "state" in vals and not self.env.context.get("allow_transition"):
             sample = self[:1]
@@ -100,20 +105,34 @@ class ProjectSettlement(models.Model):
             if rec.state != "draft":
                 raise UserError(_("只有草稿结算单可以确认。"))
             rec._check_business_anchor()
-            rec.with_context(allow_transition=True).write({"state": "confirmed"})
+            rec.with_context(
+                allow_transition=True,
+                allow_legacy_settlement_write=True,
+            ).write({"state": "confirmed"})
 
     def action_done(self):
         for rec in self:
             if rec.state != "confirmed":
                 raise UserError(_("只有已确认结算单可以完成。"))
             rec._check_business_anchor()
-            rec.with_context(allow_transition=True).write({"state": "done"})
+            rec.with_context(
+                allow_transition=True,
+                allow_legacy_settlement_write=True,
+            ).write({"state": "done"})
 
     def action_cancel(self):
         for rec in self:
             if rec.state not in ("draft", "confirmed"):
                 raise UserError(_("只有草稿或已确认结算单可以取消。"))
-            rec.with_context(allow_transition=True).write({"state": "cancel"})
+            rec.with_context(
+                allow_transition=True,
+                allow_legacy_settlement_write=True,
+            ).write({"state": "cancel"})
+
+    def unlink(self):
+        if not self.env.context.get(self._LEGACY_WRITE_CONTEXT):
+            raise UserError(_("历史项目结算为只读兼容模型，不允许删除。"))
+        return super().unlink()
 
     def _check_business_anchor(self):
         for rec in self:

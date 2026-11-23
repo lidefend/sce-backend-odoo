@@ -2,13 +2,13 @@
   "version": 1,
   "generated_by": "scripts/verify/test_coverage_registry_audit.py --export",
   "counts": {
-    "odoo_tags": 227,
+    "odoo_tags": 228,
     "gated": 5,
-    "on_demand": 86,
+    "on_demand": 87,
     "unwired": 136,
-    "odoo_tag_declarations": 464,
+    "odoo_tag_declarations": 465,
     "gated_declarations": 107,
-    "uncovered_declarations": 357,
+    "uncovered_declarations": 358,
     "ci_unit_scripts": 22,
     "ci_unit_scripts_wired": 22,
     "ci_unit_scripts_unwired": 0
@@ -1519,6 +1519,19 @@
         "make:verify.product.home_objects.contract :: home_objects_contract $(MAKE) --no-print-directory local.dev.test"
       ],
       "disposition": "class-selected"
+    },
+    {
+      "group": "industry_business_model_02",
+      "status": "on-demand",
+      "kind": "odoo_tag",
+      "declarations": 1,
+      "files": [
+        "addons/smart_construction_core/tests/test_industry_business_model_02.py"
+      ],
+      "owner": "construction-product",
+      "evidence": [
+        "make:verify.industry_business_model_02.orm :: industry_business_model_02 \\"
+      ]
     },
     {
       "group": "intent_dispatcher_permission_contract",

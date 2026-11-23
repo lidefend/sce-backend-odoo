@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from datetime import date
+
 from odoo.addons.smart_construction_core.services.project_state_explain_service import lifecycle_state_label
 
 
@@ -10,6 +12,32 @@ def operation_strategy_label(value):
         "joint": "联营项目",
     }
     return labels.get(str(value or "").strip(), "")
+
+
+def select_project_milestone(project):
+    if not project or "milestone_ids" not in getattr(project, "_fields", {}):
+        return False
+    milestones = getattr(project, "milestone_ids", False)
+    if not milestones:
+        return False
+    unreached = milestones.filtered(lambda row: not getattr(row, "is_reached", False))
+    if unreached:
+        return unreached.sorted(
+            lambda row: (
+                getattr(row, "deadline", False) or date.max,
+                int(row.id or 0),
+            )
+        )[:1]
+    reached = milestones.filtered(lambda row: getattr(row, "is_reached", False))
+    if reached:
+        return reached.sorted(
+            lambda row: (
+                getattr(row, "reached_date", False) or date.min,
+                int(row.id or 0),
+            ),
+            reverse=True,
+        )[:1]
+    return False
 
 
 def build_project_context(project):
@@ -34,8 +62,9 @@ def build_project_context(project):
     operation_strategy = str(getattr(project, "operation_strategy", "") or "").strip()
     company = getattr(project, "company_id", None)
     execution_stage_label = lifecycle_state_label(project, default="")
-    milestone = str(getattr(project, "sc_execution_state", "") or "").strip()
-    milestone_label = str(getattr(project, "sc_execution_state_label", "") or "").strip()
+    milestone_record = select_project_milestone(project)
+    milestone = str(milestone_record.display_name or "").strip() if milestone_record else ""
+    milestone_label = milestone
     project_condition = str(getattr(project, "health_state", "") or getattr(project, "state", "") or "").strip()
     return {
         "company_id": int(getattr(company, "id", 0) or 0),

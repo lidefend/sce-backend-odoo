@@ -270,6 +270,23 @@ class ScPlanLine(models.Model):
     phase_name = fields.Char(string="分期/标段", index=True)
     linked_plan_line_id = fields.Many2one("sc.plan.line", string="联动节点", index=True)
     contract_id = fields.Many2one("construction.contract", string="关联合同", index=True)
+    wbs_id = fields.Many2one(
+        "construction.work.breakdown",
+        string="执行工作包",
+        index=True,
+        ondelete="set null",
+        domain="[('project_id', '=', plan_id.project_id)]",
+        help="计划节点通过现有 WBS 工作包关联实际施工任务；计划节点本身不复制任务生命周期。",
+    )
+    task_ids = fields.Many2many(
+        "project.task",
+        string="关联施工任务",
+        compute="_compute_task_links",
+    )
+    task_count = fields.Integer(
+        string="关联任务数",
+        compute="_compute_task_links",
+    )
     planned_start = fields.Date(string="计划开始", index=True)
     planned_finish = fields.Date(string="计划完成", index=True)
     actual_start = fields.Date(string="实际开始", index=True)
@@ -294,6 +311,7 @@ class ScPlanLine(models.Model):
         "line_id",
         "predecessor_id",
         string="前置节点",
+        help="计划编制参考关系；施工启动顺序以 project.task.depend_on_ids 为准。",
     )
     legacy_fact_model = fields.Char(string="来源通用模型", index=True)
     legacy_fact_id = fields.Integer(string="来源通用记录ID", index=True)
@@ -302,6 +320,13 @@ class ScPlanLine(models.Model):
     def _assert_definition_editable(self):
         if any(line.plan_id.state != "draft" or line.plan_id.validation_status in ("waiting", "pending", "validated") for line in self):
             raise UserError(_("已提交审批或已确认的计划节点基准不可直接修改。"))
+
+    @api.depends("wbs_id", "wbs_id.task_ids")
+    def _compute_task_links(self):
+        for line in self:
+            tasks = line.wbs_id.task_ids
+            line.task_ids = tasks
+            line.task_count = len(tasks)
 
     @api.model_create_multi
     def create(self, vals_list):
@@ -351,6 +376,12 @@ class ScPlanLine(models.Model):
         for rec in self:
             if rec.progress_rate < 0 or rec.progress_rate > 100:
                 raise ValidationError(_("完成率必须在 0 到 100 之间。"))
+
+    @api.constrains("plan_id", "wbs_id")
+    def _check_wbs_project(self):
+        for rec in self:
+            if rec.wbs_id and rec.wbs_id.project_id != rec.plan_id.project_id:
+                raise ValidationError(_("计划节点的执行工作包必须属于同一项目。"))
 
 
 class ScPlanVersion(models.Model):

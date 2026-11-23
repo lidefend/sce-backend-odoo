@@ -24,7 +24,8 @@ class ProjectExecutionReadinessPrecheckBuilder(BaseProjectBlockBuilder):
                 "primary_reason_code": "PROJECT_CONTEXT_MISSING",
                 "primary_message": "缺少项目上下文，无法执行上线前检查。",
                 "empty_hint": "请先进入具体项目，再执行上线前检查。",
-                "single_open_task_only": True,
+                "execution_scope": ProjectExecutionConsistencyGuard.SCOPE,
+                "project_execution_state_authoritative": False,
             },
         }
         if not visibility.get("allowed"):

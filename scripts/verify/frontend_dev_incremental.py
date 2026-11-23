@@ -2111,6 +2111,15 @@ RULES = (
         "addons/smart_construction_core/models/core/project_core.py",
         "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
         "scripts/verify/test_payment_approval_state_machine.py",
+    ), (
+        "verify.workflow_contract.be_close_01.unit",
+        "verify.workflow_contract.be_close_01.orm",
+        "verify.payment.approval_state_machine.unit",
+    )),
+    # HTTP sample validation is authoritative only when the probe or its
+    # executable fixture changes. Backend model and ORM contract edits must not
+    # require unrelated acceptance samples that may not exist in every worktree.
+    Rule((
         "scripts/verify/test_be_close_01_workflow_contract_http_probe.py",
         "scripts/verify/be_close_01_workflow_contract_http_probe.py",
         "scripts/verify/be_close_01_workflow_contract_runtime_ids.py",
@@ -2693,6 +2702,42 @@ RULES = (
         "scripts/verify/test_frontend_release_evidence_bundle.py",
     ), (
         "verify.frontend.evidence_bundle.unit",
+    )),
+    # INDUSTRY-BUSINESS-MODEL-02 spans project orchestration, plan/WBS/task
+    # boundaries, formal settlement authority and BOQ task assignment. These
+    # paths must route to the batch's focused ORM and read-only content audit
+    # rather than becoming unmapped merely because the targets are registered
+    # separately in the active run.
+    Rule((
+        "addons/smart_construction_core/handlers/my_work_summary.py",
+        "addons/smart_construction_core/models/core/boq.py",
+        "addons/smart_construction_core/models/core/cost_domain.py",
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/models/core/settlement.py",
+        "addons/smart_construction_core/models/support/document_center.py",
+        "addons/smart_construction_core/models/support/task_extend.py",
+        "addons/smart_construction_core/services/my_work_aggregate_service.py",
+        "addons/smart_construction_core/services/project_context_contract.py",
+        "addons/smart_construction_core/services/project_creation_service.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_header_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_metrics_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_progress_builder.py",
+        "addons/smart_construction_core/services/project_dashboard_builders/project_risk_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_next_actions_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
+        "addons/smart_construction_core/services/project_execution_consistency_guard.py",
+        "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+        "addons/smart_construction_core/services/project_plan_bootstrap_builders/project_plan_tasks_builder.py",
+        "addons/smart_construction_core/services/project_task_state_support.py",
+        "addons/smart_construction_core/views/core/plan_management_views.xml",
+        "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
+        "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
+        "scripts/verify/industry_business_model_02_data_audit.py",
+    ), (
+        "verify.industry_business_model_02.orm",
+        "verify.industry_business_model_02.data_audit",
     )),
     Rule(('config/frontend/acceptance_environments_v1.json', 'scripts/dev/frontend_acceptance_carrier_common.sh', 'scripts/dev/frontend_acceptance_runtime_profile.py', 'scripts/dev/frontend_release_disposable.py', 'scripts/verify/g1_acceptance_baseline_guard.py', 'scripts/verify/test_frontend_release_disposable.py', 'scripts/verify/test_g1_acceptance_baseline_guard.py'), ("verify.acceptance.disposable.unit",)),
 )

@@ -3143,6 +3143,33 @@ verify.product_system_parameter_change: guard.prod.forbid
 verify.runtime_user_management.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=runtime_user_management
 
+.PHONY: verify.industry_business_model_02.data_audit
+verify.industry_business_model_02.data_audit: guard.prod.forbid local.dev.ready
+	@mkdir -p .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02
+	@set -o pipefail; \
+	  $(LOCAL_ENV_ISOLATE) \
+	  $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" DB_NAME=sc_dev_demo odoo.shell.exec \
+	  < scripts/verify/industry_business_model_02_data_audit.py \
+	  2>&1 | tee .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/data_audit_raw.log \
+	  | sed -n 's/^INDUSTRY_BUSINESS_MODEL_02_DATA_AUDIT_JSON=//p' \
+	  > .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/data_audit_readback.json; \
+	  test -s .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/data_audit_readback.json
+
+.PHONY: verify.industry_business_model_02.orm
+verify.industry_business_model_02.orm: guard.prod.forbid
+	@mkdir -p .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02
+	@set -o pipefail; \
+	  $(MAKE) --no-print-directory local.test.test \
+	    MODULE=smart_construction_core \
+	    TEST_TAGS=industry_business_model_02 \
+	    2>&1 | tee .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_raw.log
+	@receipt="$$(sed -n 's/^\[local.test\] receipt=//p' \
+	    .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_raw.log | tail -n 1)"; \
+	  test -f "$$receipt"; \
+	  receipt_rel="$$(realpath --relative-to="$(CURDIR)" "$$receipt")"; \
+	  jq --arg receipt "$$receipt_rel" '{schema: "industry_business_model_02_orm_readback/v1", receipt: $$receipt, head: .head, source_fingerprint: .source_fingerprint, status: .status, count: .count, module: .module, tags: .tags, database: .profile.DB_NAME, execution_order: .execution_order, log: .log, log_sha256: .log_sha256}' \
+	    "$$receipt" > .runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_readback.json
+
 .PHONY: verify.product_job.orm
 verify.product_job.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=product_job

@@ -80,16 +80,15 @@ class ProjectTaskFromBoqWizard(models.TransientModel):
                 "boq_generated": True,
                 "boq_group_key": key,
                 "boq_section_type": data["section"],
-                "boq_quantity_total": data["qty"],
-                "boq_amount_total": data["amount"],
-                "boq_line_ids": [(6, 0, [l.id for l in data["items"]])],
                 "work_id": data.get("work_id"),
             }
 
             if existing:
                 if self.overwrite:
                     existing.write(task_vals)
-                    existing.boq_line_ids.write({"task_id": False})
+                    self.env["project.boq.line"].search(
+                        [("task_id", "=", existing.id)]
+                    ).write({"task_id": False})
                     data["items"].write(
                         {
                             "task_id": existing.id,

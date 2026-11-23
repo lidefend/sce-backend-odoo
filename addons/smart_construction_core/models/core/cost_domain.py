@@ -51,9 +51,9 @@ class ProjectBudget(models.Model):
     )
     contract_id = fields.Many2one(
         "account.analytic.account",
-        string="关联合同",
+        string="关联分析账户",
         domain="[('project_ids', 'in', project_id)]",
-        help="可选：用于映射主合同或成本中心。",
+        help="可选的成本分析维度；合同业务事实仍以 construction.contract 为准。",
     )
     origin_budget_id = fields.Many2one(
         "project.budget",

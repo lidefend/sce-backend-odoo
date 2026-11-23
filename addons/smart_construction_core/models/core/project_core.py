@@ -37,6 +37,8 @@ class ProjectProjectStage(models.Model):
 class ProjectProject(models.Model):
     _inherit = 'project.project'
     _description = '项目'
+    _FORMAL_SETTLEMENT_PENDING_STATES = ('draft', 'submit', 'approve')
+    _FORMAL_SETTLEMENT_ACCOUNTED_STATES = ('approve', 'done')
     # Empty means discover all stored project.project Many2one blockers at runtime.
     _PROJECT_UNLINK_BLOCK_MODELS = ()
 
@@ -224,10 +226,9 @@ class ProjectProject(models.Model):
 
     def _sc_is_settlement_complete(self):
         self.ensure_one()
-        Settlement = self.env['sc.settlement.order'].sudo()
         Payment = self.env['payment.request'].sudo()
-        pending_settlement = Settlement.search_count(
-            [('project_id', '=', self.id), ('state', 'in', ['draft', 'submit'])]
+        pending_settlement = self._formal_settlement_count(
+            states=self._FORMAL_SETTLEMENT_PENDING_STATES
         )
         if pending_settlement:
             return False
@@ -235,6 +236,15 @@ class ProjectProject(models.Model):
             [('project_id', '=', self.id), ('state', 'in', ['submit', 'approve', 'approved'])]
         )
         return pending_payment == 0
+
+    def _formal_settlement_count(self, states=None):
+        self.ensure_one()
+        return self.env['sc.settlement.order'].sudo().search_count(
+            [
+                ('project_id', '=', self.id),
+                ('state', 'in', list(states or self._FORMAL_SETTLEMENT_PENDING_STATES)),
+            ]
+        )
 
     def _sc_compute_stage_key(self):
         self.ensure_one()
@@ -488,10 +498,13 @@ class ProjectProject(models.Model):
         payment ACLs, so only the scoped existence checks are elevated.
         """
         self.ensure_one()
-        Settlement = self.env["project.settlement"].sudo()
+        Settlement = self.env["sc.settlement.order"].sudo()
         Payment = self.env["payment.request"].sudo()
         settle = Settlement.search(
-            [("project_id", "=", self.id), ("state", "in", ["confirmed", "done"])],
+            [
+                ("project_id", "=", self.id),
+                ("state", "in", list(self._FORMAL_SETTLEMENT_ACCOUNTED_STATES)),
+            ],
             limit=1,
         )
         if settle:
@@ -555,7 +568,14 @@ class ProjectProject(models.Model):
     settlement_ids = fields.One2many(
         'project.settlement',
         'project_id',
-        string='结算单',
+        string='历史结算单',
+        readonly=True,
+    )
+    formal_settlement_ids = fields.One2many(
+        'sc.settlement.order',
+        'project_id',
+        string='正式结算单',
+        readonly=True,
     )
     pay_contract_total = fields.Monetary(
         '已付款合同额', currency_field='company_currency_id',
@@ -828,8 +848,8 @@ class ProjectProject(models.Model):
         'contract_ids.state',
         'contract_ids.amount_final',
         'contract_ids.type',
-        'settlement_ids.amount',
-        'settlement_ids.state',
+        'formal_settlement_ids.amount_total',
+        'formal_settlement_ids.state',
     )
     def _compute_pay_overview(self):
         contract_map = defaultdict(float)
@@ -837,7 +857,7 @@ class ProjectProject(models.Model):
         payment_map = defaultdict(float)
 
         can_contract = self._can_read_model('construction.contract')
-        can_settlement = self._can_read_model('project.settlement')
+        can_settlement = self._can_read_model('sc.settlement.order')
         can_payment = ('payment.request' in self.env) and self._can_read_model('payment.request')
 
         if self.ids and can_contract:
@@ -855,18 +875,18 @@ class ProjectProject(models.Model):
                 contract_map[project_id] += rec.get('amount_final_sum', rec.get('amount_final', 0.0)) or 0.0
 
         if self.ids and can_settlement:
-            settlement_read = self.env['project.settlement'].read_group(
+            settlement_read = self.env['sc.settlement.order'].read_group(
                 [
                     ('project_id', 'in', self.ids),
-                    ('type', '=', 'pay'),
-                    ('state', 'in', ['confirmed', 'done']),
+                    ('settlement_type', '=', 'out'),
+                    ('state', 'in', list(self._FORMAL_SETTLEMENT_ACCOUNTED_STATES)),
                 ],
-                ['amount:sum'],
+                ['amount_total:sum'],
                 ['project_id'],
             )
             for rec in settlement_read:
                 project_id = rec['project_id'][0]
-                settlement_map[project_id] += rec.get('amount_sum', rec.get('amount', 0.0)) or 0.0
+                settlement_map[project_id] += rec.get('amount_total_sum', 0.0) or 0.0
 
         if self.ids and can_payment:
             payment_read = self.env['payment.request'].read_group(
@@ -1756,10 +1776,7 @@ class ProjectProject(models.Model):
                     "message": str(exc) or "项目立项尚未审批通过，暂不能启动项目。",
                 })
         if target_state in ("warranty", "closed"):
-            settlement_count = self.env["project.settlement"].sudo().search_count([
-                ("project_id", "=", self.id),
-                ("state", "in", ["draft", "confirmed"]),
-            ])
+            settlement_count = self._formal_settlement_count()
             if settlement_count:
                 blockers.append({
                     "reasonCode": "P0_PROJECT_TERMINAL_BLOCKED",

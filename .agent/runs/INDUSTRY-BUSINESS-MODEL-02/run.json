@@ -1,0 +1,150 @@
+{
+  "schema_version": 1,
+  "id": "INDUSTRY-BUSINESS-MODEL-02",
+  "branch": "feature/industry-business-model-02-20261123",
+  "baseline_sha": "6f4d37255ca717e6ccde69b3f91059ba4dc1bbb9",
+  "status": "active",
+  "goal": ".agent/goals/INDUSTRY-BUSINESS-MODEL-02.yaml",
+  "record": "docs/ops/iterations/industry_business_model_02_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/INDUSTRY-BUSINESS-MODEL-02.yaml",
+    ".agent/runs/INDUSTRY-BUSINESS-MODEL-02/run.json",
+    "docs/ops/iterations/industry_business_model_02_20261123.md",
+    "docs/product/projects_intake_productization_v1.md",
+    "addons/smart_construction_core/services/project_creation_service.py",
+    "addons/smart_construction_core/services/project_context_contract.py",
+    "addons/smart_construction_core/services/project_dashboard_service.py",
+    "addons/smart_construction_core/services/project_task_state_support.py",
+    "addons/smart_construction_core/services/project_dashboard_builders/project_progress_builder.py",
+    "addons/smart_construction_core/services/project_dashboard_builders/project_metrics_builder.py",
+    "addons/smart_construction_core/services/project_dashboard_builders/project_header_builder.py",
+    "addons/smart_construction_core/services/project_dashboard_builders/project_risk_builder.py",
+    "addons/smart_construction_core/services/project_execution_consistency_guard.py",
+    "addons/smart_construction_core/services/project_execution_builders/project_execution_next_actions_builder.py",
+    "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
+    "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
+    "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+    "addons/smart_construction_core/services/project_plan_bootstrap_builders/project_plan_tasks_builder.py",
+    "addons/smart_construction_core/services/my_work_aggregate_service.py",
+    "addons/smart_construction_core/handlers/my_work_summary.py",
+    "addons/smart_construction_core/models/core/cost_domain.py",
+    "addons/smart_construction_core/models/core/boq.py",
+    "addons/smart_construction_core/models/core/plan_management.py",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/models/core/settlement.py",
+    "addons/smart_construction_core/models/support/document_center.py",
+    "addons/smart_construction_core/models/support/task_extend.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+    "addons/smart_construction_core/tests/test_p0_state_closure.py",
+    "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+    "addons/smart_construction_core/views/core/plan_management_views.xml",
+    "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
+    "make/dev_test.mk",
+    "scripts/audit/verification_lane_baseline.json",
+    "scripts/audit/verification_lane_dispositions.json",
+    "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/industry_business_model_02_data_audit.py",
+    "scripts/verify/test_payment_approval_state_machine.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered disposable sc-local-test/sc_test for ORM assertions; registered persistent sc-local-dev/sc_dev_demo for read-only data inventory"
+  },
+  "checks": {
+    "data_audit": {
+      "target": "verify.industry_business_model_02.data_audit",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/industry_business_model_02_data_audit.py",
+        "make/dev_test.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/data_audit_readback.json"
+      }
+    },
+    "boundary_orm": {
+      "target": "verify.industry_business_model_02.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/services/project_creation_service.py",
+        "addons/smart_construction_core/services/project_context_contract.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "addons/smart_construction_core/services/project_execution_consistency_guard.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_next_actions_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
+        "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+    "addons/smart_construction_core/services/project_plan_bootstrap_builders/project_plan_tasks_builder.py",
+        "addons/smart_construction_core/services/my_work_aggregate_service.py",
+        "addons/smart_construction_core/handlers/my_work_summary.py",
+        "addons/smart_construction_core/tests/__init__.py",
+        "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+    "addons/smart_construction_core/views/core/plan_management_views.xml",
+        "make/dev_test.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_readback.json"
+      }
+    },
+    "industry_boundary": {
+      "target": "verify.industry_module.product_boundary",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/industry_module_product_boundary_guard.py",
+        "scripts/verify/test_industry_module_product_boundary_guard.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "model_declaration": {
+      "target": "verify.backend.model_declaration.guard",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_construction_core/services/project_creation_service.py",
+        "addons/smart_construction_core/services/project_context_contract.py",
+        "addons/smart_construction_core/services/project_dashboard_service.py",
+        "addons/smart_construction_core/services/project_execution_consistency_guard.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_next_actions_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
+        "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
+        "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+        "addons/smart_construction_core/services/my_work_aggregate_service.py",
+        "addons/smart_construction_core/handlers/my_work_summary.py",
+        "make/ci.mk"
+      ]
+    },
+    "permission_truth_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/plan_management.py",
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+        "make/dev_test.mk"
+      ]
+    },
+    "workflow_contract_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/core/project_core.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "make/ci.mk"
+      ]
+    },
+    "workflow_contract_samples": {
+      "target": "verify.workflow_contract.be_close_01.samples",
+      "kind": "offline",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        "scripts/verify/test_be_close_01_workflow_contract_http_probe.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the main-sync metadata refresh, run current-head integration validation and publish the exact candidate through the governed PR entry."
+}

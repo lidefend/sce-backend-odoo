@@ -2735,15 +2735,15 @@
       "owner": "platform-team",
       "reason": "诊断/一次性验收 CLI，未被任何门禁消费；后续批次逐条定性为接线或退役。"
     },
-    "verify.page_contract_gate_wiring.unit": {
-      "disposition": "history_probe_runbook",
-      "owner": "platform-team",
-      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
-    },
     "verify.p0_contract_producer.p0a.browser": {
       "disposition": "local_diagnostic",
       "owner": "platform-team",
       "reason": "P0-A real Chromium and exact Contract V2 response decoder acceptance. It requires the governed local.dev runtime and is intentionally explicit rather than auto-selected by ci.local.iteration; re-review when the runbook changes or a runtime lane adopts it."
+    },
+    "verify.page_contract_gate_wiring.unit": {
+      "disposition": "history_probe_runbook",
+      "owner": "platform-team",
+      "reason": "B3 引用口径求真（文档不再是执行引用）后显露的零执行引用 target；批次叙述/台账提及：docs/audit/guard_registry/guard_registry.json。登记待接线或退役，B3 按族处理。"
     },
     "verify.payment_execution.form_productization.runtime_guard": {
       "disposition": "candidate",

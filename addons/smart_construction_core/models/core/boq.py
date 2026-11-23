@@ -578,7 +578,9 @@ class ProjectBoqLine(models.Model):
             if vals.get("version_id"):
                 version = self.env["project.boq.version"].browse(vals["version_id"])
                 vals.setdefault("project_id", version.project_id.id)
-        return super().create(vals_list)
+        records = super().create(vals_list)
+        self._invalidate_task_boq_cache(records.mapped("task_id").ids)
+        return records
 
     def write(self, vals):
         snapshot_fields = {
@@ -595,7 +597,14 @@ class ProjectBoqLine(models.Model):
             lambda line: line.version_id.state in ("published", "superseded")
         ):
             raise UserError(_("已发布清单版本的业务字段不可修改，请创建新版本。"))
-        return super().write(vals)
+        task_ids = set(self.mapped("task_id").ids)
+        result = super().write(vals)
+        if "task_id" in vals:
+            task_ids.update(self.mapped("task_id").ids)
+            if vals.get("task_id"):
+                task_ids.add(int(vals["task_id"]))
+        self._invalidate_task_boq_cache(task_ids)
+        return result
 
     @api.depends("code")
     def _compute_code_segments(self):
@@ -647,7 +656,25 @@ class ProjectBoqLine(models.Model):
                 reasons=[f"涉及已冻结项目数：{len(frozen_projects)}"],
                 hints=["请先完成/撤销结算或付款流程后再调整 BOQ"],
             )
-        return super().unlink()
+        task_ids = self.mapped("task_id").ids
+        result = super().unlink()
+        self._invalidate_task_boq_cache(task_ids)
+        return result
+
+    @api.model
+    def _invalidate_task_boq_cache(self, task_ids):
+        ids = sorted({int(task_id) for task_id in (task_ids or []) if int(task_id or 0) > 0})
+        if not ids:
+            return
+        tasks = self.env["project.task"].browse(ids).exists()
+        tasks.invalidate_recordset(
+            [
+                "boq_line_ids",
+                "boq_quantity_total",
+                "boq_amount_total",
+                "boq_uom_id",
+            ]
+        )
 
     line_type = fields.Selection(
         [

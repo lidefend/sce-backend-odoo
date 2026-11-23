@@ -11,7 +11,7 @@ from odoo.addons.smart_construction_core.services.project_task_state_support imp
 
 class ProjectExecutionConsistencyGuard:
     FOLLOWUP_SUMMARY = "执行推进跟进"
-    SCOPE = "single_open_task_only"
+    SCOPE = "multi_task_native_dependency_execution"
     REQUIRED_PROJECT_FIELDS = (
         ("name", "项目名称"),
         ("project_code", "项目编码"),
@@ -23,9 +23,9 @@ class ProjectExecutionConsistencyGuard:
         self.env = env
 
     def _project_tasks(self, project):
-        task_model = self.env["project.task"] if "project.task" in self.env else None
-        if task_model is None or not project:
-            return self.env["project.task"].browse([])
+        task_model = self.env["project.task"]
+        if not project:
+            return task_model.browse([])
         return task_model.search([("project_id", "=", int(project.id))], order="priority desc, id asc")
 
     def _followup_activities(self, project):
@@ -43,29 +43,7 @@ class ProjectExecutionConsistencyGuard:
 
     def summary(self, project) -> dict:
         tasks = self._project_tasks(project)
-        counts = {
-            "task_total": len(tasks),
-            "task_open_count": 0,
-            "task_ready_count": 0,
-            "task_in_progress_count": 0,
-            "task_done_count": 0,
-            "task_cancelled_count": 0,
-            "root_task_count": 0,
-        }
-        for task in tasks:
-            state = ProjectTaskStateSupport.normalize(getattr(task, "sc_state", "draft"))
-            if ProjectTaskStateSupport.is_open(state):
-                counts["task_open_count"] += 1
-            if state == "ready":
-                counts["task_ready_count"] += 1
-            elif state == "in_progress":
-                counts["task_in_progress_count"] += 1
-            elif state == "done":
-                counts["task_done_count"] += 1
-            elif state == "cancelled":
-                counts["task_cancelled_count"] += 1
-            if "parent_id" not in getattr(task, "_fields", {}) or not getattr(task, "parent_id", False):
-                counts["root_task_count"] += 1
+        counts = ProjectTaskStateSupport.native_metrics(tasks, self.env["project.task"])
         counts["followup_activity_count"] = len(self._followup_activities(project))
         counts["scope"] = self.SCOPE
         return counts
@@ -92,86 +70,46 @@ class ProjectExecutionConsistencyGuard:
 
     def validate_scope(self, project, *, from_state: str, to_state: str) -> tuple[bool, str, dict]:
         summary = self.summary(project)
-        open_count = int(summary.get("task_open_count") or 0)
-        in_progress_count = int(summary.get("task_in_progress_count") or 0)
         if from_state == "done":
             return True, "", summary
         if int(summary.get("task_total") or 0) <= 0:
             return False, "EXECUTION_TASK_MISSING", summary
-        if to_state in {"ready", "in_progress"} and open_count > 1:
-            return False, "EXECUTION_SCOPE_MULTI_OPEN_TASKS_UNSUPPORTED", summary
-        if to_state == "done":
-            if in_progress_count <= 0:
-                return False, "EXECUTION_TASK_NOT_IN_PROGRESS", summary
-            if in_progress_count > 1 or open_count > 1:
-                return False, "EXECUTION_SCOPE_MULTI_OPEN_TASKS_UNSUPPORTED", summary
+        if to_state in {"ready", "in_progress"} and int(summary.get("task_open_count") or 0) <= 0:
+            return False, "EXECUTION_TASK_NOT_OPEN", summary
         return True, "", summary
 
     def validate_state_alignment(self, project) -> tuple[bool, str, dict]:
         summary = self.summary(project)
-        project_state = ProjectExecutionStateMachine.normalize_state(getattr(project, "sc_execution_state", "ready"))
-        open_count = int(summary.get("task_open_count") or 0)
-        in_progress_count = int(summary.get("task_in_progress_count") or 0)
-        if int(summary.get("task_total") or 0) <= 0:
-            return False, "EXECUTION_TASK_MISSING", summary
-        if project_state == "ready" and in_progress_count > 0:
-            return False, "EXECUTION_PROJECT_TASK_STATE_DRIFT", summary
-        if project_state == "in_progress" and in_progress_count != 1:
-            return False, "EXECUTION_PROJECT_TASK_STATE_DRIFT", summary
-        if project_state == "done" and open_count > 0:
-            return False, "EXECUTION_PROJECT_TASK_STATE_DRIFT", summary
+        summary["project_execution_state_authoritative"] = False
+        summary["project_execution_state_compatibility"] = (
+            ProjectExecutionStateMachine.normalize_state(
+                getattr(project, "sc_execution_state", "ready")
+            )
+        )
         return True, "", summary
 
     def validate_followup_activity(self, project) -> tuple[bool, str, dict]:
         summary = self.summary(project)
-        project_state = ProjectExecutionStateMachine.normalize_state(getattr(project, "sc_execution_state", "ready"))
         activity_count = int(summary.get("followup_activity_count") or 0)
         if activity_count > 1:
-            return False, "EXECUTION_PROJECT_ACTIVITY_DRIFT", summary
-        if project_state == "in_progress" and activity_count != 1:
-            return False, "EXECUTION_PROJECT_ACTIVITY_DRIFT", summary
-        if project_state == "done" and activity_count != 0:
             return False, "EXECUTION_PROJECT_ACTIVITY_DRIFT", summary
         return True, "", summary
 
     def readiness_precheck(self, project) -> dict:
         summary = self.summary(project)
         field_summary = self._required_project_field_summary(project)
-        alignment_ok, alignment_reason_code, _ = self.validate_state_alignment(project)
         activity_ok, activity_reason_code, _ = self.validate_followup_activity(project)
         lifecycle_state = str(getattr(project, "lifecycle_state", "") or "").strip().lower()
-        execution_state = ProjectExecutionStateMachine.normalize_state(getattr(project, "sc_execution_state", "ready"))
-        open_count = int(summary.get("task_open_count") or 0)
-        single_open_ok = (execution_state == "done" and open_count == 0) or open_count == 1
+        open_task_count = int(summary.get("task_open_count") or 0)
         checks = [
             {
-                "key": "root_task",
-                "label": "根任务已初始化",
-                "status": "pass" if int(summary.get("root_task_count") or 0) >= 1 else "fail",
-                "reason_code": "" if int(summary.get("root_task_count") or 0) >= 1 else "READINESS_ROOT_TASK_MISSING",
-                "message": "已检测到项目根任务。"
-                if int(summary.get("root_task_count") or 0) >= 1
-                else "上线前必须至少存在一个项目根任务。",
-            },
-            {
-                "key": "single_open_task",
-                "label": "单开放任务约束",
-                "status": "pass" if single_open_ok else "fail",
-                "reason_code": "" if single_open_ok else "READINESS_SINGLE_OPEN_TASK_REQUIRED",
-                "message": "当前满足 single_open_task_only。"
-                if open_count == 1
-                else "当前执行已完成，开放任务已归零。"
-                if execution_state == "done" and open_count == 0
-                else "当前执行准备只允许 1 个开放任务，请收口到单任务后再推进。",
-            },
-            {
-                "key": "execution_task_consistency",
-                "label": "执行态与任务态一致",
-                "status": "pass" if alignment_ok else "fail",
-                "reason_code": "" if alignment_ok else alignment_reason_code,
-                "message": "project.execution 与 project.task 状态一致。"
-                if alignment_ok
-                else "project.execution 与 project.task 状态不一致，需要先校正。",
+                "key": "execution_task",
+                "label": "存在开放施工执行任务",
+                "status": "pass" if open_task_count > 0 else "fail",
+                "reason_code": "" if open_task_count > 0 else "EXECUTION_TASK_NOT_OPEN",
+                "message": "已检测到开放施工执行任务。"
+                if open_task_count > 0
+                else "当前项目没有可推进的开放施工任务。",
             },
             {
                 "key": "required_fields",
@@ -217,7 +155,8 @@ class ProjectExecutionConsistencyGuard:
                 "primary_reason_code": str(primary.get("reason_code") or ""),
                 "primary_message": str(primary.get("message") or "上线前检查通过，可进入执行推进。"),
                 "missing_fields": list(field_summary["missing_fields"]),
-                "single_open_task_only": True,
+                "execution_scope": self.SCOPE,
+                "project_execution_state_authoritative": False,
             },
         }
 
@@ -228,14 +167,9 @@ class ProjectExecutionConsistencyGuard:
     def reconcile_followup_activity(self, project, *, project_state: str | None = None) -> tuple[bool, str, dict]:
         if not project or not hasattr(project, "activity_schedule"):
             return True, "", self.summary(project)
-        project_state = ProjectExecutionStateMachine.normalize_state(
-            project_state or getattr(project, "sc_execution_state", "ready")
-        )
         activities = self._followup_activities(project)
         summary = self.summary(project)
-        expected_count = (
-            1 if project_state in {"ready", "in_progress", "blocked"} and int(summary.get("task_open_count") or 0) > 0 else 0
-        )
+        expected_count = 1 if int(summary.get("task_open_count") or 0) > 0 else 0
         if expected_count <= 0:
             try:
                 if activities:
@@ -255,8 +189,7 @@ class ProjectExecutionConsistencyGuard:
                 project.sudo().activity_schedule(
                     activity_type_id=int(activity_type.id),
                     summary=self.FOLLOWUP_SUMMARY,
-                    note="执行状态为“%s”，请继续按任务推进。"
-                    % ProjectExecutionStateMachine.STATE_LABEL.get(project_state, project_state),
+                    note="项目存在开放施工任务，请继续按任务推进。",
                     user_id=user_id,
                 )
             elif len(activities) > 1:

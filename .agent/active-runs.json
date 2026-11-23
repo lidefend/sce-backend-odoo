@@ -154,6 +154,7 @@
     "fix/main-scheduled-ci-20261120": ".agent/runs/MAIN-SCHEDULED-CI-20261120/run.json",
     "fix/main-scheduled-ci-recovery-20261122": ".agent/runs/MAIN-SCHEDULED-CI-20261122/run.json",
     "fix/release-candidate-dispatch-evidence-20261122": ".agent/runs/MAIN-SCHEDULED-CI-RECOVERY-03/run.json",
-    "fix/mainline-performance-02-scene-facts-r2-20261122": ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json"
+    "fix/mainline-performance-02-scene-facts-r2-20261122": ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json",
+    "feature/industry-business-model-02-20261123": ".agent/runs/INDUSTRY-BUSINESS-MODEL-02/run.json"
   }
 }

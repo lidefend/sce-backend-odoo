@@ -3,6 +3,10 @@ from __future__ import annotations
 
 from odoo import fields
 
+from odoo.addons.smart_construction_core.services.project_task_state_support import (
+    ProjectTaskStateSupport,
+)
+
 from .base import BaseProjectBlockBuilder
 
 
@@ -28,11 +32,20 @@ class ProjectHeaderBuilder(BaseProjectBlockBuilder):
             )
 
         task_domain = self._project_domain("project.task", project)
+        task_model = self._model("project.task")
+        open_task_domain = (
+            task_domain + ProjectTaskStateSupport.native_open_domain(task_model)
+            if task_model is not None
+            else task_domain
+        )
         overdue_tasks = self._safe_count(
             "project.task",
-            task_domain + [("date_deadline", "<", fields.Date.today())],
+            open_task_domain + [("date_deadline", "<", fields.Date.today())],
         ) if self._model_has_fields("project.task", ["date_deadline"]) else 0
-        blocked_tasks = self._safe_count("project.task", task_domain + [("kanban_state", "=", "blocked")]) if self._model_has_fields("project.task", ["kanban_state"]) else 0
+        blocked_tasks = self._safe_count(
+            "project.task",
+            task_domain + ProjectTaskStateSupport.native_waiting_domain(),
+        ) if task_model is not None else 0
         risk_open = self._safe_count("project.risk", [("project_id", "=", int(project.id)), ("status", "not in", ["closed", "done"])])
         payment_domain = self._project_domain("payment.request", project)
         payment_pending = self._safe_count(

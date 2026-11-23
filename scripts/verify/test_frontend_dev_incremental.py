@@ -41,6 +41,39 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_industry_business_model_02_paths_route_to_batch_checks(self):
+        paths = (
+            "addons/smart_construction_core/handlers/my_work_summary.py",
+            "addons/smart_construction_core/models/core/boq.py",
+            "addons/smart_construction_core/models/core/plan_management.py",
+            "addons/smart_construction_core/models/core/project_core.py",
+            "addons/smart_construction_core/models/core/settlement.py",
+            "addons/smart_construction_core/services/project_dashboard_builders/project_progress_builder.py",
+            "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
+            "addons/smart_construction_core/views/core/plan_management_views.xml",
+            "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
+            "scripts/e2e/e2e_boq_to_wbs_task_preflight.py",
+            "scripts/verify/industry_business_model_02_data_audit.py",
+        )
+        for path in paths:
+            with self.subTest(path=path):
+                targets = set(select_targets([path]))
+                self.assertIn("verify.industry_business_model_02.orm", targets)
+                self.assertIn("verify.industry_business_model_02.data_audit", targets)
+
+    def test_backend_workflow_contract_does_not_select_http_samples(self):
+        targets = set(select_targets([
+            "addons/smart_construction_core/models/core/project_core.py",
+            "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        ]))
+        self.assertIn("verify.workflow_contract.be_close_01.orm", targets)
+        self.assertNotIn("verify.workflow_contract.be_close_01.samples", targets)
+
+        probe_targets = set(select_targets([
+            "scripts/verify/be_close_01_workflow_contract_http_probe.py",
+        ]))
+        self.assertIn("verify.workflow_contract.be_close_01.samples", probe_targets)
+
     def test_baseline_debt_routes_are_owning_module_checks(self):
         cases = {
             "addons/smart_core/core/view_orchestrator.py": "verify.smart_core.close_02.module_baseline",

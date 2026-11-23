@@ -82,6 +82,7 @@
                             <field name="line_ids">
                                 <tree editable="bottom">
                                     <field name="sequence" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')" widget="handle"/>
+                                    <field name="plan_id" invisible="1"/>
                                     <field name="parent_id" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="name" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="node_type" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
@@ -89,6 +90,8 @@
                                     <field name="department_id" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="linked_plan_line_id" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="contract_id" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
+                                    <field name="wbs_id" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
+                                    <field name="task_count" readonly="1"/>
                                     <field name="planned_start" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="planned_finish" readonly="parent.state != 'draft' or parent.validation_status in ('waiting', 'pending', 'validated')"/>
                                     <field name="progress_rate" readonly="parent.state != 'in_progress' or parent.validation_status in ('waiting', 'pending')"/>
