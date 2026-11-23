@@ -1425,7 +1425,11 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
 
     def test_project_central_lifecycle_guard_prevents_draft_pause_bypass(self):
         path = MODEL.parent / 'project_core.py'
-        method_names = {'_validate_lifecycle_transition', '_workflow_lifecycle_blockers'}
+        method_names = {
+            '_validate_lifecycle_transition',
+            '_workflow_lifecycle_blockers',
+            '_formal_settlement_count',
+        }
         methods = [
             n for n in ast.walk(ast.parse(path.read_text()))
             if isinstance(n, ast.FunctionDef) and n.name in method_names
@@ -1440,6 +1444,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         class Project:
             display_name = 'project'
             id = 1
+            _FORMAL_SETTLEMENT_PENDING_STATES = ('draft', 'submit', 'approve')
             def __iter__(self): return iter([self])
             def ensure_one(self): return self
             def _assert_initiation_approved(self):
@@ -1451,8 +1456,10 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         empty_model = types.SimpleNamespace(search_count=lambda domain: 0)
         project.env = {
             'project.settlement': types.SimpleNamespace(sudo=lambda: empty_model),
+            'sc.settlement.order': types.SimpleNamespace(sudo=lambda: empty_model),
             'payment.request': types.SimpleNamespace(sudo=lambda: empty_model),
         }
+        project._formal_settlement_count = lambda: namespace['_formal_settlement_count'](project)
         project._workflow_lifecycle_blockers = lambda target: namespace['_workflow_lifecycle_blockers'](project, target)
         for current, target, requires in [('draft', 'in_progress', True), ('draft', 'paused', True), ('draft', 'closed', False), ('paused', 'in_progress', False), ('in_progress', 'done', False)]:
             project.lifecycle_state = current
