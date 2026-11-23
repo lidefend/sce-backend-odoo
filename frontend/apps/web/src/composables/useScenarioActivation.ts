@@ -51,6 +51,30 @@ export type BusinessScenario = {
   enable_allowed: boolean;
   actions: ScenarioAction[];
 };
+export type ScenarioBusinessCenter = {
+  key: string;
+  name: string;
+  sequence: number;
+  scene_keys: string[];
+  scene_count: number;
+  enabled_scene_count: number;
+  status: 'enabled' | 'partial' | 'not_enabled' | 'blocked';
+  status_label: string;
+  default_selected: boolean;
+  enable_allowed: boolean;
+};
+export type ScenarioCenterActivation = {
+  contract_version: string;
+  title: string;
+  description: string;
+  selection_label: string;
+  selection_count_label: string;
+  scene_count_label: string;
+  apply_label: string;
+  advanced_label: string;
+  intent: string;
+  recommended_center_keys: string[];
+};
 export type ScenarioCatalogCardinality = {
   published_page_count: number;
   scenario_bound_page_count: number;
@@ -83,6 +107,21 @@ export type ScenarioReadback = {
     access_granted: boolean;
   };
 };
+export type ScenarioCenterReadback = {
+  contract_version: string;
+  company_id: number;
+  center_keys: string[];
+  scene_keys: string[];
+  enabled_scene_count: number;
+  readback: {
+    company_id: number;
+    center_keys: string[];
+    scene_keys: string[];
+    source: string;
+    write_committed: boolean;
+    access_granted: boolean;
+  };
+};
 type Catalog = {
   contract_version: string;
   published_page_count: number;
@@ -100,10 +139,12 @@ type Catalog = {
   actor: ScenarioActor;
   target_scope: ScenarioTargetScope;
   business_scenarios: BusinessScenario[];
+  business_centers: ScenarioBusinessCenter[];
+  center_activation: ScenarioCenterActivation;
 };
 
 function requireCatalog(value: Catalog): Catalog {
-  if (!value || value.contract_version !== 'scenario_activation_catalog.v2'
+  if (!value || value.contract_version !== 'scenario_activation_catalog.v3'
     || !Number.isInteger(value.published_page_count) || value.published_page_count < 0
     || !value.published_snapshot
     || !Number.isInteger(value.published_snapshot.snapshot_id)
@@ -149,9 +190,70 @@ function requireCatalog(value: Catalog): Catalog {
       || !row.product_qualification.evidence || typeof row.product_qualification.evidence !== 'object'
       || !Array.isArray(row.enablement_blockers)
       || row.enablement_blockers.some((item: unknown) => typeof item !== 'string')
-      || typeof row.enable_allowed !== 'boolean')) {
+      || typeof row.enable_allowed !== 'boolean')
+    || !Array.isArray(value.business_centers) || !value.business_centers.length
+    || value.business_centers.some(center => !center
+      || typeof center.key !== 'string' || !center.key
+      || typeof center.name !== 'string' || !center.name
+      || !Number.isInteger(center.sequence)
+      || !Array.isArray(center.scene_keys)
+      || center.scene_keys.some((key: unknown) => typeof key !== 'string' || !key)
+      || !Number.isInteger(center.scene_count)
+      || center.scene_count !== center.scene_keys.length
+      || !Number.isInteger(center.enabled_scene_count)
+      || center.enabled_scene_count < 0 || center.enabled_scene_count > center.scene_count
+      || !['enabled', 'partial', 'not_enabled', 'blocked'].includes(center.status)
+      || typeof center.status_label !== 'string' || !center.status_label
+      || typeof center.default_selected !== 'boolean'
+      || typeof center.enable_allowed !== 'boolean')
+    || new Set(value.business_centers.map(center => center.key)).size !== value.business_centers.length
+    || value.business_centers.some(center => center.scene_keys.some(
+      key => !value.business_scenarios.some(row => row.scene_key === key),
+    ))
+    || !value.center_activation
+    || typeof value.center_activation.contract_version !== 'string'
+    || !value.center_activation.contract_version
+    || ['title', 'description', 'selection_label', 'selection_count_label', 'scene_count_label',
+      'apply_label', 'advanced_label', 'intent'].some(
+      key => typeof value.center_activation[key as keyof ScenarioCenterActivation] !== 'string'
+        || !value.center_activation[key as keyof ScenarioCenterActivation],
+    )
+    || !Array.isArray(value.center_activation.recommended_center_keys)
+    || value.center_activation.recommended_center_keys.some(
+      key => typeof key !== 'string' || !value.business_centers.some(center => center.key === key),
+    )) {
     throw contractGapError({ kind: 'contract_defect', missing: 'business_scenarios',
       requiredDeclarationLayer: 'P1:smart_construction_scene:scenario.activation.catalog.get' }, '业务场景目录契约不完整');
+  }
+  return value;
+}
+
+export function requireScenarioCenterReadback(
+  value: ScenarioCenterReadback,
+  expected: { companyId: number; centerKeys: string[]; sceneKeys: string[] },
+): ScenarioCenterReadback {
+  const expectedCenters = [...expected.centerKeys].sort();
+  const expectedScenes = [...expected.sceneKeys].sort();
+  const readback = value?.readback;
+  const valid = value
+    && value.contract_version === 'scenario_center_activation.v1'
+    && value.company_id === expected.companyId
+    && [...(value.center_keys || [])].sort().join('\n') === expectedCenters.join('\n')
+    && [...(value.scene_keys || [])].sort().join('\n') === expectedScenes.join('\n')
+    && value.enabled_scene_count === expectedScenes.length
+    && readback
+    && readback.company_id === expected.companyId
+    && [...(readback.center_keys || [])].sort().join('\n') === expectedCenters.join('\n')
+    && [...(readback.scene_keys || [])].sort().join('\n') === expectedScenes.join('\n')
+    && readback.source === 'ir.config_parameter'
+    && readback.write_committed === true
+    && readback.access_granted === false;
+  if (!valid) {
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: 'scenario.activation.centers.set.readback',
+      requiredDeclarationLayer: 'P1:smart_construction_scene:scenario.activation.centers.set',
+    }, '业务中心启用回读与本次公司、中心或场景集合不一致');
   }
   return value;
 }
@@ -202,6 +304,9 @@ export function requireScenarioReadback(
 export function useScenarioActivation() {
   const session = useSessionStore();
   const rows = ref<BusinessScenario[]>([]);
+  const businessCenters = ref<ScenarioBusinessCenter[]>([]);
+  const centerActivation = ref<ScenarioCenterActivation | null>(null);
+  const selectedCenterKeys = ref<string[]>([]);
   const catalogCardinality = ref<ScenarioCatalogCardinality | null>(null);
   const catalogPresentation = ref<ScenarioCatalogPresentation | null>(null);
   const catalogStatus = ref('');
@@ -209,6 +314,7 @@ export function useScenarioActivation() {
   const actor = ref<ScenarioActor | null>(null);
   const targetScope = ref<ScenarioTargetScope | null>(null);
   const readback = ref<ScenarioReadback | null>(null);
+  const centerReadback = ref<ScenarioCenterReadback | null>(null);
   const state = ref<'loading' | 'ready' | 'error'>('loading');
   const errorMessage = ref('');
   const busy = ref(false);
@@ -226,6 +332,9 @@ export function useScenarioActivation() {
   async function load() {
     const request = ++sequence;
     rows.value = [];
+    businessCenters.value = [];
+    centerActivation.value = null;
+    selectedCenterKeys.value = [];
     catalogCardinality.value = null;
     catalogPresentation.value = null;
     catalogStatus.value = '';
@@ -256,6 +365,14 @@ export function useScenarioActivation() {
       catalogStatus.value = catalog.catalog_status;
       catalogBlockers.value = catalog.catalog_blockers;
       rows.value = catalog.business_scenarios;
+      businessCenters.value = catalog.business_centers;
+      centerActivation.value = catalog.center_activation;
+      selectedCenterKeys.value = Array.from(new Set([
+        ...catalog.center_activation.recommended_center_keys,
+        ...catalog.business_centers
+          .filter(center => center.status === 'enabled' || center.status === 'partial')
+          .map(center => center.key),
+      ]));
       actor.value = catalog.actor;
       targetScope.value = catalog.target_scope;
       companyId = catalog.company_id;
@@ -269,6 +386,65 @@ export function useScenarioActivation() {
     }
   }
 
+  function toggleCenter(centerKey: string) {
+    if (busy.value || state.value !== 'ready') return;
+    const center = businessCenters.value.find(row => row.key === centerKey);
+    if (!center || !center.enable_allowed) return;
+    const selected = new Set(selectedCenterKeys.value);
+    if (selected.has(centerKey)) selected.delete(centerKey);
+    else selected.add(centerKey);
+    selectedCenterKeys.value = [...selected];
+    centerReadback.value = null;
+    errorMessage.value = '';
+  }
+
+  async function applyCenters() {
+    if (busy.value || refreshRequired || state.value !== 'ready' || session.initStatus !== 'ready'
+      || !centerActivation.value || !current(catalogKey, catalogEpoch)) return;
+    const centers = businessCenters.value.filter(center => selectedCenterKeys.value.includes(center.key));
+    if (!centers.length || centers.some(center => !center.enable_allowed)) return;
+    const expected = {
+      companyId,
+      centerKeys: centers.map(center => center.key),
+      sceneKeys: Array.from(new Set(centers.flatMap(center => center.scene_keys))).sort(),
+    };
+    const key = contextKey();
+    const epoch = currentContextEpoch();
+    const operation = ++mutation;
+    busy.value = true;
+    errorMessage.value = '';
+    centerReadback.value = null;
+    readback.value = null;
+    let verifiedReadback: ScenarioCenterReadback | null = null;
+    try {
+      const response = await intentRequest<ScenarioCenterReadback>({
+        intent: centerActivation.value.intent,
+        params: { company_id: companyId, center_keys: expected.centerKeys },
+      });
+      if (!current(key, epoch) || operation !== mutation) return;
+      refreshRequired = true;
+      verifiedReadback = requireScenarioCenterReadback(response, expected);
+      centerReadback.value = verifiedReadback;
+      await session.loadAppInit({ force: true });
+      if (current(key, epoch) && operation === mutation) {
+        refreshRequired = false;
+        await load();
+      }
+    } catch (error) {
+      if (!current(key, epoch) || operation !== mutation) return;
+      centerReadback.value = verifiedReadback;
+      state.value = 'error';
+      const message = error instanceof Error ? error.message : '业务中心启用失败';
+      errorMessage.value = refreshRequired && verifiedReadback
+        ? `业务中心状态已保存，但导航刷新失败。请点击刷新恢复：${message}`
+        : refreshRequired
+          ? `业务中心写入结果尚未确认，请点击刷新只读恢复：${message}`
+          : message;
+    } finally {
+      if (operation === mutation) busy.value = false;
+    }
+  }
+
   async function execute(row: BusinessScenario, action: ScenarioAction) {
     if (busy.value || refreshRequired || state.value !== 'ready' || session.initStatus !== 'ready'
       || !current(catalogKey, catalogEpoch) || !rows.value.includes(row) || !row.actions.includes(action)) return;
@@ -278,6 +454,7 @@ export function useScenarioActivation() {
     busy.value = true;
     errorMessage.value = '';
     readback.value = null;
+    centerReadback.value = null;
     let verifiedReadback: ScenarioReadback | null = null;
     try {
       const expected = { companyId, sceneKey: row.scene_key,
@@ -288,6 +465,7 @@ export function useScenarioActivation() {
       refreshRequired = true;
       verifiedReadback = requireScenarioReadback(response, expected);
       readback.value = verifiedReadback;
+      centerReadback.value = null;
       await session.loadAppInit({ force: true });
       if (current(key, epoch) && operation === mutation) {
         refreshRequired = false;
@@ -296,6 +474,9 @@ export function useScenarioActivation() {
     } catch (error) {
       if (!current(key, epoch) || operation !== mutation) return;
       rows.value = [];
+      businessCenters.value = [];
+      centerActivation.value = null;
+      selectedCenterKeys.value = [];
       catalogCardinality.value = null;
       catalogPresentation.value = null;
       catalogStatus.value = '';
@@ -323,6 +504,9 @@ export function useScenarioActivation() {
     busy.value = true;
     state.value = 'loading';
     rows.value = [];
+    businessCenters.value = [];
+    centerActivation.value = null;
+    selectedCenterKeys.value = [];
     catalogCardinality.value = null;
     catalogPresentation.value = null;
     catalogStatus.value = '';
@@ -350,7 +534,11 @@ export function useScenarioActivation() {
     busy.value = false;
     refreshRequired = false;
     readback.value = null;
+    centerReadback.value = null;
     rows.value = [];
+    businessCenters.value = [];
+    centerActivation.value = null;
+    selectedCenterKeys.value = [];
     catalogCardinality.value = null;
     catalogPresentation.value = null;
     catalogStatus.value = '';
@@ -363,6 +551,9 @@ export function useScenarioActivation() {
     if (busy.value) {
       sequence += 1;
       rows.value = [];
+      businessCenters.value = [];
+      centerActivation.value = null;
+      selectedCenterKeys.value = [];
       catalogCardinality.value = null;
       catalogPresentation.value = null;
       catalogStatus.value = '';
@@ -377,7 +568,9 @@ export function useScenarioActivation() {
   }, { immediate: true });
   onScopeDispose(() => { disposed = true; sequence += 1; mutation += 1; });
   return {
-    rows, catalogCardinality, catalogPresentation, catalogStatus, catalogBlockers, actor, targetScope, readback, state, errorMessage, busy,
-    load, refresh, execute,
+    rows, businessCenters, centerActivation, selectedCenterKeys, catalogCardinality,
+    catalogPresentation, catalogStatus, catalogBlockers, actor, targetScope,
+    readback, centerReadback, state, errorMessage, busy,
+    load, refresh, execute, toggleCenter, applyCenters,
   };
 }

@@ -136,7 +136,7 @@
         "TDesignAlert"
       ],
       "officialComponent": "alert",
-      "productionConsumerCount": 114,
+      "productionConsumerCount": 115,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -263,7 +263,7 @@
         "TDesignButton"
       ],
       "officialComponent": "button",
-      "productionConsumerCount": 483,
+      "productionConsumerCount": 484,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -336,7 +336,7 @@
         "TDesignCheckbox"
       ],
       "officialComponent": "checkbox",
-      "productionConsumerCount": 14,
+      "productionConsumerCount": 15,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -372,7 +372,7 @@
         "TDesignCollapsePanel"
       ],
       "officialComponent": "collapse",
-      "productionConsumerCount": 10,
+      "productionConsumerCount": 11,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -830,7 +830,7 @@
         "TDesignLoading"
       ],
       "officialComponent": "loading",
-      "productionConsumerCount": 109,
+      "productionConsumerCount": 110,
       "requiredForCurrentProduct": true,
       "requirementDecision": "required_current_semantic",
       "status": "adapter_present"
@@ -1498,7 +1498,7 @@
     }
   ],
   "directLibraryImportBypasses": [],
-  "inputDigest": "213c811f2d42055dc9e1d4aa5b4066edbe3947c17d4e9afe929410452b637501",
+  "inputDigest": "f651f79381f422a2a4f6c4d55d1db0baff1ad8b19d9f67f9635d1f51decf1cf6",
   "rawBehaviorSurfaces": [],
   "schemaVersion": "frontend-component-driver-takeover/v1",
   "scope": "frontend/apps/web/src production sources except the design-system adapter layer",

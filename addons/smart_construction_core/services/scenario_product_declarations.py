@@ -12,8 +12,14 @@ SURFACE_PATH = (
 )
 
 
-def _direct_platform_pages() -> tuple[dict[str, str], ...]:
+def _load_surface() -> dict:
     surface = json.loads(SURFACE_PATH.read_text(encoding="utf-8"))
+    if not isinstance(surface, dict):
+        raise ValueError("scenario product surface must be an object")
+    return surface
+
+
+def _direct_platform_pages(surface: dict) -> tuple[dict[str, str], ...]:
     rows = surface.get("direct_platform_pages")
     if not isinstance(rows, list):
         raise ValueError("scenario product surface requires direct_platform_pages")
@@ -37,7 +43,35 @@ def _direct_platform_pages() -> tuple[dict[str, str], ...]:
     return tuple(declarations)
 
 
-DIRECT_PLATFORM_PAGES = _direct_platform_pages()
+def _scenario_owner_centers(surface: dict) -> dict[str, str]:
+    centers = surface.get("centers")
+    center_keys = {
+        str(row.get("key") or "").strip()
+        for row in centers or []
+        if isinstance(row, dict) and str(row.get("key") or "").strip()
+    }
+    rows = surface.get("scenarios")
+    if not isinstance(rows, list):
+        raise ValueError("scenario product surface requires scenarios")
+    owners: dict[str, str] = {}
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise ValueError(f"scenarios[{index}] must be an object")
+        scene_key = str(row.get("key") or "").strip()
+        owner_center = str(row.get("owner_center") or "").strip()
+        if not scene_key or scene_key in owners:
+            raise ValueError(f"invalid duplicate scenario key: {scene_key!r}")
+        if not owner_center or (center_keys and owner_center not in center_keys):
+            raise ValueError(
+                f"scenario {scene_key!r} requires a declared owner center"
+            )
+        owners[scene_key] = owner_center
+    return owners
+
+
+_SURFACE = _load_surface()
+DIRECT_PLATFORM_PAGES = _direct_platform_pages(_SURFACE)
+SCENARIO_OWNER_CENTER_BY_KEY = _scenario_owner_centers(_SURFACE)
 DIRECT_CONFIGURATION_MENU_XMLIDS = tuple(
     row["menu_xmlid"]
     for row in DIRECT_PLATFORM_PAGES

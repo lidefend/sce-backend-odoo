@@ -454,6 +454,7 @@ def get_intent_handler_contributions():
     try:
         from odoo.addons.smart_construction_scene.handlers.scenario_activation import (
             ScenarioActivationCatalogGetHandler,
+            ScenarioCenterActivationSetHandler,
             ScenarioActivationSetHandler,
             WorkspaceScenarioProjectionGetHandler,
         )
@@ -466,6 +467,7 @@ def get_intent_handler_contributions():
         return [
             ScenarioActivationCatalogGetHandler,
             ScenarioActivationSetHandler,
+            ScenarioCenterActivationSetHandler,
             WorkspaceScenarioProjectionGetHandler,
             EnterpriseReadinessDiagnosisGetHandler,
             ScenarioDependencyDiagnosisGetHandler,

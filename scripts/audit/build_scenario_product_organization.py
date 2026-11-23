@@ -1967,6 +1967,8 @@ def build_runtime_surface(payload):
         scenarios.append({
             "key": scenario_row["key"],
             "name": scenario_row["name"],
+            "owner_center": scenario_row["owner_center"],
+            "owner_center_name": CENTER_BY_STABLE_KEY[scenario_row["owner_center"]]["name"],
             "type": "COMPOSITE",
             "active": True,
             "sequence": scenario_sequence,

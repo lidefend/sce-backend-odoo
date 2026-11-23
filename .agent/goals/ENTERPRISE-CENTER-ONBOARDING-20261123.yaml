@@ -1,0 +1,55 @@
+schema_version: 1
+
+goal:
+  id: ENTERPRISE-CENTER-ONBOARDING-20261123
+  title: enterprise_initialization_center_level_onboarding
+  status: active
+  formal_product_layer: P1
+  supporting_layers:
+    - frontend_contract_consumer
+    - P0_frontend_node_type_strip_compatibility
+  layer_target: >-
+    smart_construction_scene enterprise scenario catalog and center-level
+    activation for the enterprise initialization workspace.
+  module:
+    - smart_construction_scene
+    - frontend
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Let an enterprise configuration administrator choose the business centers
+    they will operate, then atomically enable the product scenarios owned by
+    those centers. Keep scenario-level selection as advanced detail only.
+  product_result: >-
+    The first-run enterprise initialization experience is organized around ten
+    understandable construction business centers, including the workbench,
+    instead of exposing all product scenarios as the primary selection surface.
+  why_here: >-
+    Center ownership, scenario membership and product qualification are
+    construction product semantics declared by P1. The frontend must only
+    render and submit the declared center selection.
+  why_not_elsewhere:
+    - P0 must not receive construction center or scenario semantics.
+    - The frontend must not hard-code the center-to-scenario mapping.
+    - No second business-state, task, or unified pending model is introduced.
+  blast_radius:
+    contracts:
+      - scenario.activation.catalog
+      - scenario center selection and bulk activation
+      - enterprise initialization workspace
+      - enterprise readiness scenario enablement evidence
+  acceptance:
+    - The catalog declares ten selectable business centers and their scenario counts.
+    - Workbench is a selectable center backed by work.my_queue; "recommended selected" never claims to be persisted as enabled.
+    - Product configuration is admin-only and is not one of the ten business-center choices.
+    - Selecting centers atomically enables every owned, released scenario.
+    - Scenario-level controls remain available only as advanced detail.
+    - The initialization workspace clearly shows selected center count, selected scene count and apply state.
+    - Readback is bound to company, center set, and enabled scenario set.
+  exclusions:
+    - New database models or fields
+    - Task lifecycle changes
+    - Menu policy changes
+    - Customer-specific configuration
+  rollback: >-
+    Revert the scenario catalog, center activation handler, frontend panel and
+    focused tests. Existing per-scenario enablement data remains valid.

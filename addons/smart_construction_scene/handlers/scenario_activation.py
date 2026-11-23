@@ -10,6 +10,33 @@ from odoo.addons.smart_construction_scene.services.tenant_scene_activation impor
     ENABLEMENT_STORAGE_SOURCE,
     enablement_param_key,
 )
+from odoo.addons.smart_construction_core.services.scenario_product_declarations import (
+    SCENARIO_OWNER_CENTER_BY_KEY,
+)
+
+CATALOG_VERSION = "scenario_activation_catalog.v3"
+CENTER_ACTIVATION_VERSION = "scenario_center_activation.v1"
+PRODUCT_CONFIGURATION_CENTER_KEY = "construction.center.product_configuration"
+BUSINESS_CENTER_KEYS = (
+    "workspace.home.workbench",
+    "construction.center.project",
+    "construction.center.contract",
+    "construction.center.cost",
+    "construction.center.supply_chain",
+    "construction.center.finance",
+    "construction.center.tax",
+    "construction.center.accounting",
+    "construction.center.reporting",
+    "construction.center.administration",
+)
+RECOMMENDED_CENTER_KEYS = (
+    "workspace.home.workbench",
+    "construction.center.project",
+    "construction.center.contract",
+    "construction.center.cost",
+    "construction.center.finance",
+    "construction.center.reporting",
+)
 
 
 def _resolve_request_company(env, params):
@@ -74,6 +101,69 @@ def _target_scope(env, company_id: int) -> dict:
         "is_global_product_release": False,
         "source": "res.company + ir.config_parameter",
     }
+
+
+def _business_center_catalog(surface, business_scenarios):
+    rows_by_key = {
+        str(row.get("scene_key") or "").strip(): row
+        for row in business_scenarios
+        if isinstance(row, dict) and str(row.get("scene_key") or "").strip()
+    }
+    scenes_by_owner = {}
+    for scene in surface.get("scenarios") or []:
+        if not isinstance(scene, dict):
+            continue
+        scene_key = str(scene.get("key") or "").strip()
+        owner_center = str(
+            SCENARIO_OWNER_CENTER_BY_KEY.get(scene_key, "")
+        ).strip()
+        if scene_key and owner_center:
+            scenes_by_owner.setdefault(owner_center, []).append(scene_key)
+    rows = []
+    for sequence, center_key in enumerate(BUSINESS_CENTER_KEYS, start=1):
+        center = next(
+            (
+                row for row in (surface.get("centers") or [])
+                if isinstance(row, dict) and str(row.get("key") or "").strip() == center_key
+            ),
+            {},
+        )
+        scene_keys = [
+            str(scene_key or "").strip()
+            for scene_key in scenes_by_owner.get(center_key, [])
+            if str(scene_key or "").strip() in rows_by_key
+        ]
+        scene_rows = [rows_by_key[scene_key] for scene_key in scene_keys]
+        enabled_scene_count = sum(bool(row.get("tenant_enabled")) for row in scene_rows)
+        released = bool(scene_rows) and all(
+            bool(row.get("product_released")) and bool(row.get("enable_allowed"))
+            for row in scene_rows
+        )
+        if not scene_rows or not released:
+            state = "blocked"
+            state_label = "产品未就绪"
+        elif enabled_scene_count == len(scene_rows):
+            state = "enabled"
+            state_label = "已启用"
+        elif enabled_scene_count:
+            state = "partial"
+            state_label = "部分启用"
+        else:
+            state = "not_enabled"
+            state_label = "未启用"
+        rows.append({
+            "key": center_key,
+            "name": str(center.get("name") or center_key).strip(),
+            "sequence": int(center.get("sequence") or sequence),
+            "scene_keys": scene_keys,
+            "scene_count": len(scene_keys),
+            "enabled_scene_count": enabled_scene_count,
+            "status": state,
+            "status_label": state_label,
+            "default_selected": center_key in RECOMMENDED_CENTER_KEYS,
+            "enable_allowed": released,
+        })
+    return rows
 
 
 def _catalog(env, company_id=0):
@@ -168,23 +258,25 @@ def _catalog(env, company_id=0):
         )
     if not business_scenarios:
         blockers.append("SCENARIO_COMPOSITION_EMPTY")
+    business_centers = _business_center_catalog(surface, business_scenarios)
     center_count = len(surface.get("centers") or [])
+    business_center_count = len(business_centers)
     unassigned_page_count = len(published_menu_keys - scenario_menu_keys)
     if not published_menu_keys:
         catalog_summary = "当前没有已发布的正式产品页面"
     elif unassigned_page_count:
         catalog_summary = (
-            f"已发布产品页面 {len(published_menu_keys)} 项 · 产品中心 {center_count} 个"
+            f"已发布产品页面 {len(published_menu_keys)} 项 · 可选业务中心 {business_center_count} 个"
             f" · {unassigned_page_count} 个页面尚未纳入办理场景"
         )
     else:
         catalog_summary = (
-            f"已发布产品页面 {len(published_menu_keys)} 项 · 产品中心 {center_count} 个"
+            f"已发布产品页面 {len(published_menu_keys)} 项 · 可选业务中心 {business_center_count} 个"
             " · 页面均已纳入办理场景"
         )
     blocker_text = " · ".join(blockers) if blockers else "当前没有可启停业务场景"
     return {
-        "contract_version": "scenario_activation_catalog.v2",
+        "contract_version": CATALOG_VERSION,
         "published_page_count": len(published_menu_keys),
         "published_snapshot": {
             "snapshot_id": int(standard_snapshot.get("snapshot_id") or 0),
@@ -195,7 +287,7 @@ def _catalog(env, company_id=0):
         "catalog_status": "ready" if not blockers else "blocked",
         "catalog_blockers": blockers,
         "catalog_presentation": {
-            "title": "企业业务场景管理",
+            "title": "企业业务中心启用",
             "summary": catalog_summary,
             "empty_label": f"{catalog_summary}，{blocker_text}。",
         },
@@ -210,6 +302,23 @@ def _catalog(env, company_id=0):
             ),
         },
         "business_scenarios": business_scenarios,
+        "business_centers": business_centers,
+        "center_activation": {
+            "contract_version": CENTER_ACTIVATION_VERSION,
+            "title": "最后一步：选择企业业务中心",
+            "description": "请先完成企业信息、部门、岗位、人员与账号、业务角色与允许公司。推荐选中仅代表提交前的建议，不代表已经启用。",
+            "selection_label": "已选择业务中心",
+            "selection_count_label": "个业务中心",
+            "scene_count_label": "个业务场景",
+            "apply_label": "启用所选业务中心",
+            "advanced_label": "高级：单独选择业务场景",
+            "intent": "scenario.activation.centers.set",
+            "recommended_center_keys": [
+                center["key"]
+                for center in business_centers
+                if center["default_selected"]
+            ],
+        },
         "company_id": company_id,
         "actor": _actor_fact(env),
         "target_scope": _target_scope(env, company_id) if company_id else {},
@@ -353,6 +462,116 @@ class ScenarioActivationSetHandler(BaseIntentHandler):
                     "target_state": enabled,
                     "source": ENABLEMENT_STORAGE_SOURCE,
                     "storage_key": enablement_param_key(company.id, stored_key),
+                    "write_committed": True,
+                    "access_granted": False,
+                },
+            },
+            "meta": {},
+        }
+
+
+class ScenarioCenterActivationSetHandler(BaseIntentHandler):
+    INTENT_TYPE = "scenario.activation.centers.set"
+    REQUIRED_GROUPS = ["smart_construction_core.group_sc_cap_business_config_admin"]
+    DESCRIPTION = "企业业务中心启用"
+    VERSION = "1.0.0"
+    ETAG_ENABLED = False
+    SOURCE_AUTHORITY = {
+        "kind": "enterprise_center_activation_mutation",
+        "authorities": [
+            "sc.product.scenario",
+            "ir.config_parameter",
+            "sc.edition.release.snapshot",
+        ],
+        "projection_only": False,
+        "no_business_fact_authority": True,
+    }
+
+    def handle(self, params=None, ctx=None):
+        params = params if params is not None else self.params
+        if not isinstance(params, dict):
+            return {"ok": False, "error": {"code": 400, "message": "invalid center activation parameters"}}
+        center_keys = params.get("center_keys")
+        if (
+            not isinstance(center_keys, list)
+            or not center_keys
+            or any(not isinstance(key, str) or not key.strip() for key in center_keys)
+        ):
+            return {"ok": False, "error": {"code": 400, "message": "center_keys must be a nonempty string list"}}
+        center_keys = list(dict.fromkeys(key.strip() for key in center_keys))
+        company_id, error = _resolve_request_company(self.env, params)
+        if error:
+            return {"ok": False, "error": error}
+        env = bind_company_context(self.env, company_id)
+        catalog = _catalog(env, company_id=company_id)
+        centers = {
+            center["key"]: center
+            for center in ((catalog.get("business_centers") or []))
+            if isinstance(center, dict)
+        }
+        unknown = sorted(set(center_keys) - set(centers))
+        if unknown:
+            return {"ok": False, "error": {"code": 400, "message": "unknown business center", "details": unknown}}
+        selected = [centers[key] for key in center_keys]
+        blocked = [
+            center["key"]
+            for center in selected
+            if not center.get("enable_allowed") or not center.get("scene_keys")
+        ]
+        if blocked:
+            return {"ok": False, "error": {"code": 409, "message": "business center not released", "details": blocked}}
+        scene_keys = sorted({
+            scene_key
+            for center in selected
+            for scene_key in (center.get("scene_keys") or [])
+        })
+        scenes = {
+            row["scene_key"]: row
+            for row in (catalog.get("business_scenarios") or [])
+            if isinstance(row, dict) and row.get("scene_key") in scene_keys
+        }
+        missing = sorted(set(scene_keys) - set(scenes))
+        if missing:
+            return {"ok": False, "error": {"code": 409, "message": "business center scenario missing", "details": missing}}
+        from odoo.addons.smart_construction_scene.services.business_scene_enablement import business_key
+        from odoo.addons.smart_construction_scene.services.tenant_scene_activation import (
+            read_tenant_enablement,
+            write_tenant_enablement,
+        )
+        try:
+            with env.cr.savepoint():
+                for scene_key in scene_keys:
+                    write_tenant_enablement(env, company_id, business_key(scene_key), True)
+                enabled_scene_keys = [
+                    scene_key
+                    for scene_key in scene_keys
+                    if read_tenant_enablement(env, company_id, business_key(scene_key))
+                ]
+                if enabled_scene_keys != scene_keys:
+                    raise RuntimeError("business center enablement readback mismatch")
+        except Exception:
+            return {
+                "ok": False,
+                "error": {
+                    "code": 409,
+                    "message": "business center enablement was rolled back",
+                },
+            }
+        return {
+            "ok": True,
+            "data": {
+                "contract_version": CENTER_ACTIVATION_VERSION,
+                "company_id": company_id,
+                "center_keys": center_keys,
+                "scene_keys": scene_keys,
+                "enabled_scene_count": len(enabled_scene_keys),
+                "actor": _actor_fact(env),
+                "target_scope": _target_scope(env, company_id),
+                "readback": {
+                    "company_id": company_id,
+                    "center_keys": center_keys,
+                    "scene_keys": enabled_scene_keys,
+                    "source": ENABLEMENT_STORAGE_SOURCE,
                     "write_committed": True,
                     "access_granted": False,
                 },

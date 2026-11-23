@@ -43,7 +43,10 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
     def test_enterprise_initialization_configuration_journey(self):
         import secrets
         from odoo.addons.smart_construction_scene.handlers.enterprise_readiness import EnterpriseReadinessDiagnosisGetHandler
-        from odoo.addons.smart_construction_scene.handlers.scenario_activation import ScenarioActivationSetHandler
+        from odoo.addons.smart_construction_scene.handlers.scenario_activation import (
+            ScenarioActivationSetHandler,
+            ScenarioCenterActivationSetHandler,
+        )
         company = self.env.company
         self.env["ir.config_parameter"].sudo().set_param("smart_core.platform_release_db", self.env.cr.dbname)
         self.env["project.project"].create({"name": "Synthetic initialization project", "company_id": company.id})
@@ -116,6 +119,44 @@ class TestEnterpriseInitializationJourney(BusinessTransactionCase):
         self.assertTrue(activation.run(payload={'intent': 'scenario.activation.set', 'params': {**params, 'enabled': False}})['ok'])
         self.assertFalse(rules()['enterprise.project_responsibility']['applicability'])
         self.assertEqual(rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'], 0)
+
+        center_activation = ScenarioCenterActivationSetHandler(actor)
+        invalid_center_result = center_activation.run(payload={
+            'intent': 'scenario.activation.centers.set',
+            'params': {
+                'company_id': company.id,
+                'center_keys': ['construction.center.unknown'],
+            },
+        })
+        self.assertFalse(invalid_center_result['ok'])
+        self.assertEqual(invalid_center_result['error']['code'], 400)
+        self.assertEqual(
+            invalid_center_result['error']['details'],
+            ['construction.center.unknown'],
+        )
+        self.assertEqual(
+            rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'],
+            0,
+        )
+        center_result = center_activation.run(payload={
+            'intent': 'scenario.activation.centers.set',
+            'params': {
+                'company_id': company.id,
+                'center_keys': ['workspace.home.workbench'],
+            },
+        })
+        self.assertTrue(center_result['ok'], center_result)
+        center_data = center_result['data']
+        self.assertEqual(center_data['contract_version'], 'scenario_center_activation.v1')
+        self.assertEqual(center_data['center_keys'], ['workspace.home.workbench'])
+        self.assertEqual(center_data['scene_keys'], ['work.my_queue'])
+        self.assertEqual(center_data['enabled_scene_count'], 1)
+        self.assertTrue(center_data['readback']['write_committed'])
+        self.assertFalse(center_data['readback']['access_granted'])
+        self.assertEqual(
+            rules()['enterprise.scenario_enablement']['evidence']['enabled_scene_count'],
+            1,
+        )
         ordinary = EnterpriseReadinessDiagnosisGetHandler(actor(user=user.id))
         self.assertEqual(ordinary.handle({'company_id': company.id})['error']['code'], 403)
         self.assertEqual(diagnose.handle({'company_id': True})['error']['code'], 400)

@@ -45,6 +45,11 @@ product_menu_source = _load(
     "odoo.addons.smart_construction_core.services.product_menu_source",
     SCENE_DIR.parent / "smart_construction_core/services/product_menu_source.py",
 )
+scenario_product_declarations = _load(
+    "odoo.addons.smart_construction_core.services.scenario_product_declarations",
+    SCENE_DIR.parent
+    / "smart_construction_core/services/scenario_product_declarations.py",
+)
 scene_registry_content = _load(
     "odoo.addons.smart_construction_scene.profiles.scene_registry_content",
     SCENE_DIR / "profiles/scene_registry_content.py",
@@ -267,7 +272,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
     def test_catalog_handler_uses_actual_publication(self):
         handlers, env = self._handlers_and_env()
         result = handlers._catalog(env, company_id=1)
-        self.assertEqual(result["contract_version"], "scenario_activation_catalog.v2")
+        self.assertEqual(result["contract_version"], "scenario_activation_catalog.v3")
         self.assertEqual(result["catalog_status"], "ready")
         self.assertEqual(result["published_page_count"], len(self.expected))
         cardinality = result["catalog_cardinality"]
@@ -278,7 +283,7 @@ class TestActualPublicationConsumers(unittest.TestCase):
         self.assertEqual(
             result["catalog_presentation"]["summary"],
             f"已发布产品页面 {len(self.expected)} 项"
-            f" · 产品中心 {len(product_menu_source.center_identity_contract()['centers'])} 个"
+            f" · 可选业务中心 {len(result['business_centers'])} 个"
             " · 页面均已纳入办理场景",
         )
         self.assertEqual(cardinality["published_page_count"], len(self.expected))
@@ -289,6 +294,48 @@ class TestActualPublicationConsumers(unittest.TestCase):
         self.assertEqual(
             cardinality["actionable_business_scenario_count"],
             len([row for row in result["business_scenarios"] if row["actions"]]),
+        )
+        centers = result["business_centers"]
+        self.assertEqual(
+            [center["key"] for center in centers],
+            [
+                "workspace.home.workbench",
+                "construction.center.project",
+                "construction.center.contract",
+                "construction.center.cost",
+                "construction.center.supply_chain",
+                "construction.center.finance",
+                "construction.center.tax",
+                "construction.center.accounting",
+                "construction.center.reporting",
+                "construction.center.administration",
+            ],
+        )
+        self.assertNotIn(
+            "construction.center.product_configuration",
+            {center["key"] for center in centers},
+        )
+        self.assertEqual(centers[0]["scene_keys"], ["work.my_queue"])
+        self.assertEqual(centers[0]["scene_count"], 1)
+        self.assertTrue(centers[0]["default_selected"])
+        self.assertEqual(
+            result["center_activation"]["recommended_center_keys"],
+            [
+                "workspace.home.workbench",
+                "construction.center.project",
+                "construction.center.contract",
+                "construction.center.cost",
+                "construction.center.finance",
+                "construction.center.reporting",
+            ],
+        )
+        self.assertEqual(
+            sum(center["scene_count"] for center in centers),
+            len({
+                scene_key
+                for center in centers
+                for scene_key in center["scene_keys"]
+            }),
         )
 
     def test_activation_request_group_gate_allows_admin_and_rejects_ordinary_user(self):
@@ -310,13 +357,15 @@ class TestActualPublicationConsumers(unittest.TestCase):
             # including its write-intent declaration requirement.
             policy.__package__ = 'odoo.addons.smart_core.security'
             with patch.object(policy, 'registered_handlers', return_value={
-                    'scenario.activation.set': handlers.ScenarioActivationSetHandler}):
-                self.assertTrue(operation.is_write_intent('scenario.activation.set', {}))
-                env.user.has_group = lambda group: group == 'smart_construction_core.group_sc_cap_business_config_admin'
-                self.assertTrue(policy.authorize_intent(env, 'scenario.activation.set', {})['allowed'])
-                env.user.has_group = lambda group: False
-                with self.assertRaises(exceptions.AccessError):
-                    policy.authorize_intent(env, 'scenario.activation.set', {})
+                    'scenario.activation.set': handlers.ScenarioActivationSetHandler,
+                    'scenario.activation.centers.set': handlers.ScenarioCenterActivationSetHandler}):
+                for intent in ('scenario.activation.set', 'scenario.activation.centers.set'):
+                    self.assertTrue(operation.is_write_intent(intent, {}))
+                    env.user.has_group = lambda group: group == 'smart_construction_core.group_sc_cap_business_config_admin'
+                    self.assertTrue(policy.authorize_intent(env, intent, {})['allowed'])
+                    env.user.has_group = lambda group: False
+                    with self.assertRaises(exceptions.AccessError):
+                        policy.authorize_intent(env, intent, {})
 
     def test_actual_catalog_actions_use_native_model_access_rights(self):
         for allowed in (False, True):

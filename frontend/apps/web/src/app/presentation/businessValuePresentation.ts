@@ -1,4 +1,4 @@
-import { contractGapError } from '../contract/contractGap';
+import { contractGapError } from '../contract/contractGap.ts';
 import {
   FIELD_VALUE_EMPTY_TEXT,
   FIELD_VALUE_FALSE_TEXT,
@@ -8,11 +8,11 @@ import {
   normalizeFieldType,
   numericFieldValue,
   formatNumericFieldValue,
-} from '../../utils/fieldSemantics';
+} from '../../utils/fieldSemantics.ts';
 import {
   resolveCollectionStatusPresentation,
   type CollectionStatusTone,
-} from './collectionStatusPresentation';
+} from './collectionStatusPresentation.ts';
 import {
   resolveLocalizedDisplayValue,
   type LocalizedDisplayOptions,
