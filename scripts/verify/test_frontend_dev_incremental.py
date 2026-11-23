@@ -309,6 +309,26 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         )
         self.assertEqual(
             select_targets([
+                "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts"
+            ]),
+            [
+                "verify.execute_button.authority.unit",
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+                "verify.p0_c_fix01.action_id.orm",
+                "verify.p0_c_fix01.action_id.unit",
+                "verify.p0_contract_producer.p0c.orm",
+                "verify.p0_contract_producer.p0c.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/action_view_contract_action_runtime_smoke.js"
+            ]),
+            ["verify.action_view_runtime_smoke.behavior"],
+        )
+        self.assertEqual(
+            select_targets([
                 "scripts/verify/identity_architecture_audit_guard.py"
             ]),
             ["verify.identity.architecture.audit.unit"],

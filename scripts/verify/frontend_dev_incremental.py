@@ -974,6 +974,21 @@ RULES = (
         "verify.p0_contract_producer.p0c.unit",
     )),
     Rule((
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_construction_core/tests/fixtures/p0_c_fix01_action_button.json",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionPresentationRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewContractActionButtonRuntime.ts",
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts",
+        "frontend/apps/web/scripts/p0_c_fix01_action_id_chain_test.ts",
+    ), (
+        "verify.execute_button.authority.unit",
+        "verify.p0_c_fix01.action_id.orm",
+        "verify.p0_c_fix01.action_id.unit",
+        "verify.p0_contract_producer.p0c.orm",
+        "verify.p0_contract_producer.p0c.unit",
+    )),
+    Rule((
         "scripts/verify/p0_contract_producer_money_evidence.py",
         "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts",
     ), (
@@ -989,6 +1004,11 @@ RULES = (
         "scripts/verify/web_contract_v2_frontend_architecture_guard.py",
     ), (
         "verify.unified_page_contract.v2.web_architecture",
+    )),
+    Rule((
+        "scripts/verify/action_view_contract_action_runtime_smoke.js",
+    ), (
+        "verify.action_view_runtime_smoke.behavior",
     )),
     Rule((
         "scripts/verify/identity_architecture_audit_guard.py",

@@ -923,6 +923,11 @@ verify.p0_contract_producer.p0c.unit: guard.prod.forbid
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-p0c-test.mjs >/dev/null
 	@node /tmp/p0-contract-producer-p0c-test.mjs
 
+.PHONY: verify.p0_c_fix01.action_id.unit
+verify.p0_c_fix01.action_id.unit: guard.prod.forbid
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_c_fix01_action_id_chain_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-c-fix01-action-id-chain-test.mjs >/dev/null
+	@node /tmp/p0-c-fix01-action-id-chain-test.mjs
+
 verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
 verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit verify.p0_contract_producer.p0c.unit
 verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit verify.p0_contract_producer.p0c.unit
