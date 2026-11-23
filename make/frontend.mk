@@ -907,9 +907,21 @@ verify.p0_contract_producer.p0a.browser: guard.prod.forbid local.dev.ready local
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_real_contract_decode_test.ts --bundle --platform=node --format=esm --outfile=/tmp/p0-contract-producer-real-contract-decode-test.mjs >/dev/null
 	@node /tmp/p0-contract-producer-real-contract-decode-test.mjs
 
+.PHONY: verify.p0_contract_producer.p0c.unit
+verify.p0_contract_producer.p0c.unit: guard.prod.forbid
+	@python3 -m py_compile \
+		addons/smart_core/core/action_target_schema.py \
+		addons/smart_core/core/page_block_action_contract.py \
+		addons/smart_core/core/unified_page_contract_v2_action.py \
+		addons/smart_core/tests/test_page_block_action_contract.py \
+		addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py
+	@python3 addons/smart_core/tests/test_page_block_action_contract.py
+	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-p0c-test.mjs >/dev/null
+	@node /tmp/p0-contract-producer-p0c-test.mjs
+
 verify.frontend.quick.gate: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
-verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
-verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit
+verify.frontend.pr.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit verify.p0_contract_producer.p0c.unit
+verify.frontend.release.unit: verify.frontend.contract_fidelity.plan.unit verify.p0_contract_producer.p0a.unit verify.p0_contract_producer.p0c.unit
 
 verify.frontend.ui.lint: guard.prod.forbid
 	@cd frontend/apps/web && node_modules/.bin/eslint --no-eslintrc --config .eslintrc.cjs ../../packages/ui/src --ext .ts,.tsx,.vue

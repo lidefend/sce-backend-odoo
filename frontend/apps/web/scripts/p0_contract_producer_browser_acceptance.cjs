@@ -98,7 +98,17 @@ async function validateCompatMatrix(page, token) {
     current_page_block_data: {
       ...base,
       accepted_contract_versions: ['2.5.x', '2.6.x'],
-      client_contract_capabilities: ['page_block_data.v1', 'attachment_fact.v1', 'page_block_action.v1'],
+      client_contract_capabilities: ['page_block_data.v1'],
+    },
+    current_page_block_action: {
+      ...base,
+      accepted_contract_versions: ['2.5.x', '2.6.x'],
+      client_contract_capabilities: ['page_block_action.v1'],
+    },
+    current_page_block_data_and_action: {
+      ...base,
+      accepted_contract_versions: ['2.5.x', '2.6.x'],
+      client_contract_capabilities: ['page_block_data.v1', 'page_block_action.v1'],
     },
     no_common_version: {
       ...base,
@@ -179,7 +189,7 @@ async function renderViewport(browser, viewport) {
   return { viewport, result, matrix, contractV2Matrix, consoleErrors: uiConsoleErrors, pageErrors: uiPageErrors };
 }
 
-function assertCurrentPayload(label, payload) {
+function assertCurrentProjection(label, payload) {
   if (payload.status !== 200 || payload.body?.ok !== true) {
     throw new Error(`${label}: request failed ${JSON.stringify(payload)}`);
   }
@@ -187,13 +197,43 @@ function assertCurrentPayload(label, payload) {
   if (orchestration.contract_version !== '2.1.0' || orchestration.schema_version !== '2.1.0') {
     throw new Error(`${label}: expected 2.1.0`);
   }
+  if (orchestration.attachment_facts || orchestration.action_feedback) {
+    throw new Error(`${label}: undeclared carrier leaked`);
+  }
+  return orchestration;
+}
+
+function assertCurrentDataPayload(label, payload) {
+  const orchestration = assertCurrentProjection(label, payload);
   if (!orchestration.block_data_contracts?.[DATA_SOURCE_KEY]) {
     throw new Error(`${label}: missing company_projects page-block-data`);
   }
   const value = orchestration.block_data_contracts[DATA_SOURCE_KEY].rows[0].values.value;
   if (typeof value !== 'number') throw new Error(`${label}: company_projects raw value is not numeric`);
-  if (orchestration.attachment_facts || orchestration.action_feedback) {
-    throw new Error(`${label}: undeclared P0-B/P0-C carrier leaked`);
+  if (orchestration.action_schema || orchestration.action_contract) {
+    throw new Error(`${label}: undeclared page-block-action leaked`);
+  }
+}
+
+function assertCurrentActionPayload(label, payload, expectData) {
+  const orchestration = assertCurrentProjection(label, payload);
+  const actions = orchestration.action_schema?.actions;
+  if (orchestration.action_schema?.carrier !== 'page-block-action.v1' || !actions) {
+    throw new Error(`${label}: missing page-block-action carrier`);
+  }
+  const projectAction = actions['action.open_company_projects'];
+  if (!projectAction) throw new Error(`${label}: missing company-projects action`);
+  if (projectAction.actionRuleRef !== projectAction.actionId) {
+    throw new Error(`${label}: action rule reference mismatch`);
+  }
+  if (projectAction.target?.value?.action_xmlid !== 'smart_construction_core.action_sc_project_list') {
+    throw new Error(`${label}: resolved action target was changed`);
+  }
+  if (projectAction.permission?.evaluated !== true) {
+    throw new Error(`${label}: action permission was not evaluated`);
+  }
+  if (Boolean(orchestration.block_data_contracts) !== expectData) {
+    throw new Error(`${label}: page-block-data capability mismatch`);
   }
 }
 
@@ -205,8 +245,13 @@ function assertLegacyPayload(label, payload) {
   if (orchestration.contract_version !== '2.0.0' || orchestration.schema_version !== '2.0.0') {
     throw new Error(`${label}: expected complete 2.0.0 projection`);
   }
-  if (orchestration.block_data_contracts || orchestration.block_field_descriptors) {
-    throw new Error(`${label}: new carrier leaked`);
+  if (
+    orchestration.block_data_contracts
+    || orchestration.block_field_descriptors
+    || orchestration.action_schema
+    || orchestration.action_contract
+  ) {
+    throw new Error(`${label}: new semantic carrier leaked`);
   }
 }
 
@@ -229,7 +274,17 @@ async function main() {
     const runs = [];
     for (const viewport of VIEWPORTS) {
       const run = await renderViewport(browser, viewport);
-      assertCurrentPayload(`${viewport.name}.current`, run.matrix.current_page_block_data);
+      assertCurrentDataPayload(`${viewport.name}.current_data`, run.matrix.current_page_block_data);
+      assertCurrentActionPayload(
+        `${viewport.name}.current_action`,
+        run.matrix.current_page_block_action,
+        false,
+      );
+      assertCurrentActionPayload(
+        `${viewport.name}.current_data_and_action`,
+        run.matrix.current_page_block_data_and_action,
+        true,
+      );
       assertLegacyPayload(`${viewport.name}.known_old_without_versions`, run.matrix.known_old_without_versions);
       assertLegacyPayload(
         `${viewport.name}.pre_negotiation_without_identity`,

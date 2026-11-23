@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: P0-CONTRACT-PRODUCER-01-P0A
   title: page_block_data_contract_producer_implementation
-  status: active
+  status: completed
   formal_product_layer: P0
   layer_target: >-
     Contract V2 2.6 consumer decoding, accepted-version negotiation,
@@ -51,10 +51,13 @@ goal:
     Revert the P0-A pull request through a protected pull request. No database
     migration or deployed state requires rollback.
   completion:
-    implementation: verification_pending
-    independent_review: not_started
-    integration: not_started
+    implementation: completed
+    independent_review: approved
+    integration: completed
     deployment: not_applicable
     user_acceptance: not_applicable
   integration:
-    pull_request: null
+    pull_request: 974
+    head_sha: 20a199136831b7ee86691fc7ee18799b03023903
+    merge_commit: 122129513fce17e1d6bf3501fbaa13b4a9e74d84
+    main_sha: 122129513fce17e1d6bf3501fbaa13b4a9e74d84

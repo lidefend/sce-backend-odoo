@@ -1,0 +1,56 @@
+schema_version: 1
+
+goal:
+  id: P0-CONTRACT-PRODUCER-01-P0C
+  title: page_block_action_contract_producer
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Page Block action and feedback production through the existing Contract V2
+    action rules, action target schema, published route authority and runtime
+    feedback envelope.
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend/apps/web
+    - .agent
+  standard_vs_user_specific: platform_generic_contract_runtime
+  objective: >-
+    Implement page-block-action.v1 without inventing action targets, permissions
+    or business availability. Existing ContractV2ActionRule identities remain
+    authoritative, authorization remains server-owned, and execution feedback
+    must correlate to actionId, reasonCode, message and traceId.
+  product_result: >-
+    A P0-C candidate in which Page Blocks receive a strict action carrier from
+    the same published action authority used by navigation, disabled actions
+    retain authoritative reasons, and action execution patches carry correlated
+    success, denied or failed feedback.
+  why_here: >-
+    Action identity, target resolution, ACL/record-rule evaluation and execution
+    belong to the P0 platform and existing Odoo action services.
+  why_not_elsewhere:
+    - No P0-B attachment-fact implementation.
+    - No FCF-02-2 Page Block renderer consumption work.
+    - No second action contract, target schema, runtime or authorization engine.
+    - No database, ACL, workflow or file-service policy change.
+  blast_radius:
+    behavior:
+      - Page Block action carrier and Contract V2 action-rule projection
+      - action-only and combined Page Orchestration capability negotiation
+      - client-side strict recognition of page-block-action.v1
+      - action-result patch feedback
+    exclusions:
+      - actual business execution implementations remain unchanged
+      - attachment facts remain unproduced
+      - no deployment or overall FCF readiness claim
+  rollback: >-
+    Revert the P0-C pull request through a protected pull request. No database
+    migration or deployed state requires rollback.
+  completion:
+    implementation: verification_pending
+    independent_review: not_started
+    integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable
+  integration:
+    pull_request: null

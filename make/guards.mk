@@ -147,6 +147,10 @@ verify.approval.contract_closure.orm: guard.prod.forbid
 verify.tender_award_fact.orm: guard.prod.forbid
 	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=tender_award_fact
 
+.PHONY: verify.p0_contract_producer.p0c.orm
+verify.p0_contract_producer.p0c.orm: guard.prod.forbid
+	@$(MAKE) --no-print-directory local.test.test MODULE=smart_construction_core TEST_TAGS=p0_contract_producer_p0c
+
 .PHONY: verify.smart_core.intent_smoke.orm
 verify.smart_core.intent_smoke.orm: guard.prod.forbid
 	@LOCAL_TEST_TEMPLATE_MODULE=smart_construction_core \

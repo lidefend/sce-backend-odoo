@@ -171,7 +171,7 @@ class ContractVersionNegotiationTest(unittest.TestCase):
             self.negotiate(accepted_contract_versions=["2.6.x"])
         self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
-    def test_26_with_page_block_capability_enables_only_p0_a(self):
+    def test_26_enables_each_declared_current_carrier_independently(self):
         result = self.negotiate(
             accepted_contract_versions=["2.5.x", "2.6.x"],
             client_contract_capabilities=[
@@ -184,7 +184,23 @@ class ContractVersionNegotiationTest(unittest.TestCase):
         self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
         self.assertTrue(result["carriers"]["page_block_data.v1"]["enabled"])
         self.assertFalse(result["carriers"]["attachment_fact.v1"]["enabled"])
-        self.assertFalse(result["carriers"]["page_block_action.v1"]["enabled"])
+        self.assertTrue(result["carriers"]["page_block_action.v1"]["enabled"])
+        self.assertEqual(
+            result["compatibilityMode"],
+            "page_block_data_and_action_v1",
+        )
+
+    def test_26_with_only_page_block_action_enables_action_carrier(self):
+        result = self.negotiate(
+            accepted_contract_versions=["2.5.x", "2.6.x"],
+            client_contract_capabilities=["page_block_action.v1"],
+        )
+        self.assertEqual(result["contractVersion"], "2.6.0")
+        self.assertEqual(result["pageOrchestrationVersion"], "2.1.0")
+        self.assertFalse(result["carriers"]["page_block_data.v1"]["enabled"])
+        self.assertFalse(result["carriers"]["attachment_fact.v1"]["enabled"])
+        self.assertTrue(result["carriers"]["page_block_action.v1"]["enabled"])
+        self.assertEqual(result["compatibilityMode"], "page_block_action_v1")
 
     def test_unknown_client_with_version_or_capability_declaration_fails_closed(self):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:

@@ -1047,8 +1047,12 @@ function decodeContainer(
     : decodeNativeOccurrenceIdentity(raw.nativeIdentity, `${path}.nativeIdentity`, issues, identityKinds);
   if (nestedNativeNode && containerType.toLowerCase() === 'field' && widgetId.includes('.occ.')) {
     if (!nativeLocator) issues.push({ path: `${path}.nativeLocator`, message: 'form field occurrence requires nativeLocator' });
-    if (!Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
-    if (!Number.isInteger(sourcePosition) || sourcePosition < 0) issues.push({ path: `${path}.sourcePosition`, message: 'must be a non-negative integer' });
+    if (typeof occurrenceIndex !== 'number' || !Number.isInteger(occurrenceIndex) || occurrenceIndex < 1) {
+      issues.push({ path: `${path}.occurrenceIndex`, message: 'must be a positive integer' });
+    }
+    if (typeof sourcePosition !== 'number' || !Number.isInteger(sourcePosition) || sourcePosition < 0) {
+      issues.push({ path: `${path}.sourcePosition`, message: 'must be a non-negative integer' });
+    }
   }
   return {
     containerId,

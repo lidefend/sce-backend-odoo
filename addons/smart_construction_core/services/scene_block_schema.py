@@ -14,6 +14,9 @@ try:
         field_descriptor,
         normalize_currency_context,
     )
+    from odoo.addons.smart_core.core.page_block_action_contract import (
+        build_page_block_action_contract,
+    )
 except ModuleNotFoundError:
     _provider_path = Path(__file__).resolve().parents[2] / "smart_core" / "core" / "page_block_data_contract.py"
     _provider_spec = spec_from_file_location("scene_block_page_block_data_contract", _provider_path)
@@ -27,6 +30,23 @@ except ModuleNotFoundError:
     descriptor_ref = _provider.descriptor_ref
     field_descriptor = _provider.field_descriptor
     normalize_currency_context = _provider.normalize_currency_context
+    _action_provider_path = (
+        Path(__file__).resolve().parents[2]
+        / "smart_core"
+        / "core"
+        / "page_block_action_contract.py"
+    )
+    _action_provider_spec = spec_from_file_location(
+        "scene_block_page_block_action_contract",
+        _action_provider_path,
+    )
+    if _action_provider_spec is None or _action_provider_spec.loader is None:
+        raise
+    _action_provider = module_from_spec(_action_provider_spec)
+    _action_provider_spec.loader.exec_module(_action_provider)
+    build_page_block_action_contract = (
+        _action_provider.build_page_block_action_contract
+    )
 
 
 CONTRACT_SCHEMA_VERSION = "2.0.0"
@@ -220,6 +240,61 @@ def _dataset(block: Dict[str, Any]) -> Any:
     return block
 
 
+def _page_action_declarations(blocks: Iterable[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    declarations: List[Dict[str, Any]] = []
+    for index, block in enumerate(blocks):
+        if not isinstance(block, dict):
+            continue
+        key = text(block.get("key")) or f"block_{index + 1}"
+        block_type = text(block.get("type"))
+        block_target = block.get("target") if isinstance(block.get("target"), dict) else {}
+        if block_target and text(block_target.get("type")) != "none":
+            declarations.append({
+                "actionKey": f"open_{key}",
+                "label": "打开明细" if block_type == "native_view_ref" else "打开",
+                "intent": "ui.contract",
+                "target": block_target,
+                "sourceWidgetId": f"block.{key}",
+                "visible": True,
+            })
+        if block_type in {"shortcut_grid", "todo_list", "warning_list"}:
+            for item_index, item in enumerate(block.get("items") or []):
+                if not isinstance(item, dict):
+                    continue
+                item_target = item.get("target") if isinstance(item.get("target"), dict) else {}
+                if not item_target or text(item_target.get("type")) == "none":
+                    continue
+                item_key = text(item.get("key")) or item_index + 1
+                declarations.append({
+                    "actionKey": f"open_{key}_{item_key}",
+                    "label": text(item.get("action_label") or item.get("label") or item.get("title")) or "打开",
+                    "intent": "ui.contract",
+                    "target": item_target,
+                    "sourceWidgetId": f"block.{key}",
+                    "visible": True,
+                })
+    return declarations
+
+
+def _page_block_action_projection(
+    blocks: Iterable[Dict[str, Any]],
+    *,
+    enabled: bool,
+    action_authority=None,
+) -> Dict[str, Any]:
+    if not enabled:
+        return {}
+    if not callable(action_authority):
+        raise ValueError(
+            "page-block-action.v1 requires the published action authority resolver"
+        )
+    actions = []
+    for declaration in _page_action_declarations(blocks):
+        facts = action_authority(declaration["target"])
+        actions.append({**declaration, **dict(facts or {})})
+    return build_page_block_action_contract(actions)
+
+
 def guard_contract_shape(contract: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(contract, dict):
         raise ValueError("scene contract must be a dict")
@@ -259,6 +334,8 @@ def build_contract(
     blocks: List[Dict[str, Any]],
     subtitle: str = "",
     page_block_data_enabled: bool = False,
+    page_block_action_enabled: bool = False,
+    action_authority=None,
     timezone: str = "UTC",
 ) -> Dict[str, Any]:
     contract = guard_contract_shape(
@@ -285,9 +362,21 @@ def build_contract(
         timezone=timezone,
         enabled=page_block_data_enabled,
     )
+    page_block_actions = _page_block_action_projection(
+        blocks or [],
+        enabled=page_block_action_enabled,
+        action_authority=action_authority,
+    )
+    page_block_data.pop("contract_version", None)
+    page_block_data.pop("schema_version", None)
+    page_orchestration_version = (
+        "2.1.0"
+        if page_block_data_enabled or page_block_action_enabled
+        else "2.0.0"
+    )
     contract["page_orchestration"] = {
-        "contract_version": page_block_data.pop("contract_version"),
-        "schema_version": page_block_data.pop("schema_version"),
+        "contract_version": page_orchestration_version,
+        "schema_version": page_orchestration_version,
         "scene_key": text(scene_key),
         "page": {
             "key": text(scene_key),
@@ -305,6 +394,7 @@ def build_contract(
             "blocks": normalized_blocks,
         }],
         **page_block_data,
+        **page_block_actions,
     }
     contract["datasets"] = {
         f"ds_{text(block.get('key')) or f'block_{index + 1}'}": _dataset(block)

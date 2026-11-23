@@ -144,20 +144,35 @@ def negotiate_client_contract(
             REASON_CONTRACT_VERSION_UNSUPPORTED,
             "no common Contract V2 version",
         )
-    if 6 in minors and PAGE_BLOCK_DATA_CAPABILITY in capabilities:
+    page_block_data_enabled = PAGE_BLOCK_DATA_CAPABILITY in capabilities
+    page_block_action_enabled = PAGE_BLOCK_ACTION_CAPABILITY in capabilities
+    if 6 in minors and (page_block_data_enabled or page_block_action_enabled):
+        compatibility_mode = (
+            "page_block_data_and_action_v1"
+            if page_block_data_enabled and page_block_action_enabled
+            else "page_block_action_v1"
+            if page_block_action_enabled
+            else "page_block_data_v1"
+        )
         return {
             "negotiationVersion": NEGOTIATION_VERSION,
             "status": "current",
             "clientType": resolved_client,
-            "compatibilityMode": "page_block_data_v1",
+            "compatibilityMode": compatibility_mode,
             "acceptedContractVersions": versions,
             "clientContractCapabilities": capabilities,
             "contractVersion": CURRENT_CONTRACT_VERSION,
             "pageOrchestrationVersion": CURRENT_PAGE_ORCHESTRATION_VERSION,
             "carriers": {
-                PAGE_BLOCK_DATA_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": True},
+                PAGE_BLOCK_DATA_CAPABILITY: {
+                    "schemaVersion": "1.0.0",
+                    "enabled": page_block_data_enabled,
+                },
                 ATTACHMENT_FACT_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
-                PAGE_BLOCK_ACTION_CAPABILITY: {"schemaVersion": "1.0.0", "enabled": False},
+                PAGE_BLOCK_ACTION_CAPABILITY: {
+                    "schemaVersion": "1.0.0",
+                    "enabled": page_block_action_enabled,
+                },
             },
         }
     if 5 in minors:

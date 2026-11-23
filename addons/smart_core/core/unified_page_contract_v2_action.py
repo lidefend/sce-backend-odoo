@@ -5,6 +5,7 @@ from copy import deepcopy
 from hashlib import sha1
 from typing import Any
 
+from .page_block_action_contract import build_action_feedback_from_result
 from .source_authority import build_source_authority_contract
 
 CONTRACT_VERSION = "2.1.0"
@@ -134,12 +135,27 @@ def build_action_partial_update_v2(
 ) -> dict[str, Any]:
     source = _dict(action_result)
     fp = _fingerprint(source)
+    trace_id = _text(
+        _dict(source.get("meta")).get("trace_id")
+        or _dict(source.get("meta")).get("traceId")
+    ) or f"trace.upc.v2.action.patch.{fp}"
+    runtime_patch = deepcopy(
+        _dict(source.get("runtimePatch") or source.get("updateRuntime"))
+    )
+    if isinstance(source.get("ok"), bool):
+        runtime_patch["actionFeedback"] = [
+            build_action_feedback_from_result(
+                source,
+                action_id=_action_id(action_id),
+                trace_id=trace_id,
+            )
+        ]
     return {
         "updateType": "partial",
         "layoutPatch": deepcopy(_dict(source.get("layoutPatch") or source.get("updateLayout"))),
         "statusPatch": deepcopy(_dict(source.get("statusPatch") or source.get("updateStatus"))),
         "dataPatch": deepcopy(_dict(source.get("dataPatch") or source.get("updateData"))),
-        "runtimePatch": deepcopy(_dict(source.get("runtimePatch") or source.get("updateRuntime"))),
+        "runtimePatch": runtime_patch,
         "meta": {
             "contractVersion": CONTRACT_VERSION,
             "etag": f"upc-v2-action-patch-{fp}",

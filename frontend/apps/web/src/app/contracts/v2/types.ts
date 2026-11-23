@@ -473,6 +473,52 @@ export interface ContractV2PageBlockDataContract {
   sourceAuthority: ContractV2Dictionary;
 }
 
+export interface ContractV2PageBlockActionTarget {
+  source: 'ContractV2ActionRule.target';
+  value: ContractV2Dictionary;
+}
+
+export interface ContractV2PageBlockAction {
+  actionId: string;
+  actionRuleRef: string;
+  actionKey: string;
+  label: string;
+  intent: string;
+  target: ContractV2PageBlockActionTarget;
+  visibility: {
+    visible: boolean;
+    source: 'action_contract';
+  };
+  permission: {
+    evaluated: true;
+    allowed: boolean;
+    authorizationAllowed: boolean;
+    businessAvailable: boolean;
+  };
+  state: {
+    enabled: boolean;
+    disabled: boolean;
+    reasonCode: string;
+    reasonMessage: string;
+  };
+}
+
+export interface ContractV2PageBlockActionSchema {
+  schemaVersion: '1.0.0';
+  carrier: 'page-block-action.v1';
+  sourceAuthority: ContractV2Dictionary;
+  actions: Record<string, ContractV2PageBlockAction>;
+}
+
+export interface ContractV2ActionFeedback {
+  schemaVersion: '1.0.0';
+  actionId: string;
+  status: 'success' | 'denied' | 'failed';
+  reasonCode: string;
+  message: string;
+  traceId: string;
+}
+
 export interface ContractV2FormFieldDescriptor extends ContractV2Dictionary {
   name: string;
   string: string;

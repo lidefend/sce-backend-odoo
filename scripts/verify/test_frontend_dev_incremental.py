@@ -274,6 +274,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.daily_dev.acceptance_fixture.unit"],
         )
 
+    def test_page_block_action_inputs_select_p0c_owners(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_core/core/page_block_action_contract.py"
+            ]),
+            [
+                "verify.p0_contract_producer.p0a.backend_unit",
+                "verify.p0_contract_producer.p0a.money",
+                "verify.p0_contract_producer.p0a.unit",
+                "verify.p0_contract_producer.p0c.orm",
+                "verify.p0_contract_producer.p0c.unit",
+            ],
+        )
+        self.assertEqual(
+            select_targets([
+                "frontend/apps/web/src/app/pageOrchestration.ts"
+            ]),
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.typecheck.strict",
+                "verify.p0_contract_producer.p0c.unit",
+            ],
+        )
     def test_contract_consumer_declaration_changes_select_their_owners(self) -> None:
         cases = {
             "addons/smart_construction_core/tests/test_tender_award_fact.py": [

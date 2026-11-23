@@ -112,18 +112,23 @@ export function decodeContractCarrierCapabilities(raw: unknown): ContractCarrier
       contractVersion: '2.5.0',
       pageOrchestrationVersion: '2.0.0',
       pageBlockData: false,
+      pageBlockAction: false,
     }
     : {
       contractVersion: '2.6.0',
       pageOrchestrationVersion: '2.1.0',
-      pageBlockData: true,
+      pageBlockData: clientContractCapabilities.includes('page_block_data.v1'),
+      pageBlockAction: clientContractCapabilities.includes('page_block_action.v1'),
     };
+  if (status === 'current' && !expected.pageBlockData && !expected.pageBlockAction) {
+    throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:combination');
+  }
   if (
     contractVersion !== expected.contractVersion
     || pageOrchestrationVersion !== expected.pageOrchestrationVersion
     || carriers['page_block_data.v1'].enabled !== expected.pageBlockData
     || carriers['attachment_fact.v1'].enabled
-    || carriers['page_block_action.v1'].enabled
+    || carriers['page_block_action.v1'].enabled !== expected.pageBlockAction
   ) {
     throw new Error('CONTRACT_CARRIER_CAPABILITIES_INVALID:combination');
   }
