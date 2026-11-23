@@ -1216,13 +1216,13 @@ class TestBEClose01WorkflowContract(TransactionCase):
         self.project.action_sc_submit()
         self.project.action_sc_start()
         self.project.action_sc_mark_done()
-        settlement = self.env["project.settlement"].create({
+        settlement = self.env["sc.settlement.order"].create({
+            "name": "IB02 formal terminal settlement",
             "project_id": self.project.id,
             "partner_id": self.partner.id,
-            "amount": 10.0,
-            "state": "confirmed",
+            "settlement_type": "out",
         })
-        self.assertEqual(settlement.state, "confirmed")
+        self.assertEqual(settlement.state, "draft")
         self.assertIn(
             "P0_PROJECT_TERMINAL_BLOCKED",
             {row["reasonCode"] for row in self.project._workflow_lifecycle_blockers("closed")},

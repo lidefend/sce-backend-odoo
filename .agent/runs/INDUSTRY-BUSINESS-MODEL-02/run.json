@@ -37,6 +37,7 @@
     "addons/smart_construction_core/models/support/task_extend.py",
     "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+    "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
     "addons/smart_construction_core/views/core/plan_management_views.xml",
     "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
     "make/dev_test.mk",
