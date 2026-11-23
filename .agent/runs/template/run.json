@@ -25,6 +25,13 @@
       "reason": "Release qualification is evaluated after mainline integration; it does not substitute for exact-head PR CI."
     }
   },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Frontend validation carrying shared contract targets must consume the passed backend channel receipt for the same run and source identity."
+    }
+  },
   "checks": {
     "focused": {
       "target": "verify.REPLACE_REGISTERED_TARGET",

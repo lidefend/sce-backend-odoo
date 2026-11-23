@@ -166,6 +166,41 @@ class RunContextTest(unittest.TestCase):
         with self.assertRaisesRegex(RunError, 'lane order'):
             resolve_run(self.root)
 
+    def test_channel_handoff_is_optional_but_strict_when_declared(self):
+        self.run['channel_handoff'] = {
+            'backend_to_frontend': {
+                'mode': 'same_run_backend_receipt',
+                'require_for_shared_contract_targets': True,
+                'reason': 'frontend shared contract checks consume backend proof',
+            },
+        }
+        self.save()
+        self.assertEqual(
+            summary(self.root)['channel_handoff'],
+            self.run['channel_handoff'],
+        )
+        for mutation, message in (
+            (lambda value: value.update(mode='other'), 'same_run_backend_receipt'),
+            (
+                lambda value: value.update(
+                    require_for_shared_contract_targets=False
+                ),
+                'require_for_shared_contract_targets',
+            ),
+            (lambda value: value.pop('reason'), 'requires a reason'),
+        ):
+            with self.subTest(message=message):
+                value = {
+                    'mode': 'same_run_backend_receipt',
+                    'require_for_shared_contract_targets': True,
+                    'reason': 'frontend shared contract checks consume backend proof',
+                }
+                mutation(value)
+                self.run['channel_handoff'] = {'backend_to_frontend': value}
+                self.save()
+                with self.assertRaisesRegex(RunError, message):
+                    resolve_run(self.root)
+
     def test_reuse_summary_reports_unreusable_checks(self):
         self.assertEqual(summary(self.root)['check_reuse_summary'], {'not_run': 1})
 

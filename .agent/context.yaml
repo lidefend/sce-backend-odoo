@@ -152,6 +152,17 @@ verification_responsibility:
   run_schema: 2
   enforcement_entrypoint: make agent.run.resume
   missing_or_invalid_declaration: fail_closed
+  fast_lanes:
+    backend:
+      entrypoint: make ci.local.backend.iteration
+      scope: backend_and_shared_contract_or_governance
+    frontend:
+      entrypoint: make ci.local.frontend.iteration
+      scope: frontend_and_shared_contract_or_governance
+      contract_handoff: same_run_passed_backend_receipt
+    full:
+      entrypoint: make ci.local.iteration
+      scope: complete_cross_layer
   lanes:
     local_targeted:
       responsibility: affected_static_contract_and_targeted_tests_only

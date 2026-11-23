@@ -1,0 +1,61 @@
+schema_version: 1
+
+goal:
+  id: FAST-LANE-01-IMPLEMENT
+  title: Backend and frontend dual-channel incremental validation
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: existing cross-layer incremental planner and run evidence
+  module:
+    - scripts/verify
+    - make
+    - .agent run metadata
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Add backend-only and frontend-only execution scopes to the existing
+    cross-layer incremental planner, preserving the complete existing
+    ci.local.iteration target set and requiring a valid backend contract
+    handoff whenever the frontend channel carries shared contract checks.
+  why_here: >-
+    The requested behavior is verification routing and evidence reuse. It must
+    not change product contracts, frontend runtime behavior or Odoo business
+    models.
+  why_not_elsewhere:
+    - Do not create a parallel backend planner or second evidence ledger.
+    - Do not change P0/P1 product code, ACL, workflow or database data.
+    - Do not weaken unknown-path, failed-receipt or remote-baseline rules.
+    - Do not deploy.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/context.yaml
+      - .agent/goals/FAST-LANE-01-IMPLEMENT.yaml
+      - .agent/runs/FAST-LANE-01-IMPLEMENT/run.json
+      - .agent/runs/template/run.json
+      - docs/ops/iterations/fast_lane_01_20261123.md
+      - docs/ops/dual_lane_fast_iteration_v1.md
+      - make/ci.mk
+      - scripts/ops/agent_run_context.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/test_agent_run_context.py
+      - scripts/verify/baseline_iteration_execution_policy_guard.py
+      - scripts/verify/test_baseline_iteration_execution_policy_guard.py
+    product_behavior: no product behavior change
+  acceptance:
+    - backend and frontend channels share the existing target selector and run state
+    - backend-only, frontend-only and mixed changes route deterministically
+    - shared contract targets appear in both channels
+    - the union of channel target sets equals the complete full-iteration set
+    - unknown paths remain fail-closed
+    - full module baselines remain deferred_remote
+    - frontend shared checks require a valid passed backend channel handoff
+    - existing ci.local.iteration remains complete
+    - focused planner, run-context and iteration tests pass non-zero
+  exclusions:
+    - p0_p1_product_code
+    - contract_semantic_change
+    - database_or_fixture_write
+    - ci_required_gate_change
+    - deployment
+  rollback: Revert this branch; no persistent data or deployed state changes.

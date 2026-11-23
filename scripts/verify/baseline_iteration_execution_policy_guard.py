@@ -121,6 +121,20 @@ EARLY_INTEGRATION_COMMANDS = (
 )
 
 ITERATION_TARGET = "ci.local.iteration"
+FAST_LANE_TARGETS = {
+    "ci.local.backend.iteration": "--channel backend",
+    "ci.local.frontend.iteration": "--channel frontend",
+}
+FAST_LANE_FORBIDDEN_DEPENDENCIES = {
+    # Neither fast lane may require an installed frontend toolchain for a
+    # change set that selects no frontend source checks. Frontend source and
+    # shared-contract changes select this static gate through the planner.
+    "ci.local.backend.iteration": ("verify.frontend.systemic.convergence.static",),
+    "ci.local.frontend.iteration": ("verify.frontend.systemic.convergence.static",),
+}
+ITERATION_FORBIDDEN_DEPENDENCIES = (
+    "verify.frontend.systemic.convergence.static",
+)
 ITERATION_REQUIRED = (
     "guard.prod.forbid",
     "verify.baseline.iteration.execution.policy",
@@ -287,6 +301,33 @@ def validate(root: Path) -> list[str]:
                 if fragment in block:
                     errors.append(
                         f"make/ci.mk: {ITERATION_TARGET} includes forbidden broad gate {fragment!r}"
+                    )
+            dependencies = _target_dependencies(ci_text, ITERATION_TARGET)
+            for fragment in ITERATION_FORBIDDEN_DEPENDENCIES:
+                if fragment in dependencies:
+                    errors.append(
+                        f"make/ci.mk: {ITERATION_TARGET} has unconditional "
+                        f"prerequisite {fragment!r}"
+                    )
+        for target, channel in FAST_LANE_TARGETS.items():
+            block = _target_block(ci_text, target)
+            if not block:
+                errors.append(
+                    f"make/ci.mk: authoritative target missing: {target}"
+                )
+            elif f"frontend_dev_incremental.py --execute-worktree {channel}" not in block:
+                errors.append(
+                    f"make/ci.mk: {target} must invoke the shared planner with {channel}"
+                )
+            dependencies = _target_dependencies(ci_text, target)
+            for fragment in FAST_LANE_FORBIDDEN_DEPENDENCIES.get(
+                target,
+                (),
+            ):
+                if fragment in dependencies:
+                    errors.append(
+                        f"make/ci.mk: {target} has unrelated prerequisite "
+                        f"{fragment!r}"
                     )
         quick_block = _target_block(ci_text, QUICK_TARGET)
         if not quick_block:
