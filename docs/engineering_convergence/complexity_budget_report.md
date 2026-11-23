@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5349`
+- Scanned files: `5350`
 - Files requiring split plan: `88`
 - Files above warning threshold: `160`
 
@@ -179,6 +179,7 @@ Generated from repository source files. This report is informational during the 
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
 | 1038 | Python source | `addons/smart_core/tests/test_api_data_list_param_boundaries.py` |
+| 1034 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1029 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
 | 1016 | Python source | `addons/smart_core/tests/test_platform_capability_explorer.py` |
@@ -189,6 +190,7 @@ Generated from repository source files. This report is informational during the 
 | 1002 | Python source | `scripts/verify/unified_page_contract_v2_assembler_guard.py` |
 | 1001 | Python source | `scripts/verify/local_dev_project_create_contract_action_scope.py` |
 | 996 | Python source | `scripts/ops/daily_runtime_legacy_stack_retire.py` |
+| 994 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 989 | Python source | `scripts/ops/agent_run_context.py` |
@@ -197,11 +199,9 @@ Generated from repository source files. This report is informational during the 
 | 984 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
-| 974 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
-| 953 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
 | 951 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |

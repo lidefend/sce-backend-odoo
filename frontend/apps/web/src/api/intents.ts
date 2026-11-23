@@ -161,6 +161,7 @@ function throwEnvelopeError(
     errorCategory: parsedError?.error_category,
     retryable: parsedError?.retryable,
     suggestedAction: parsedError?.suggested_action,
+    details: parsedError?.details,
   });
 }
 

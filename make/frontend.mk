@@ -913,9 +913,13 @@ verify.p0_contract_producer.p0c.unit: guard.prod.forbid
 		addons/smart_core/core/action_target_schema.py \
 		addons/smart_core/core/page_block_action_contract.py \
 		addons/smart_core/core/unified_page_contract_v2_action.py \
+		addons/smart_core/handlers/execute_button.py \
+		addons/smart_core/security/intent_permission.py \
 		addons/smart_core/tests/test_page_block_action_contract.py \
+		addons/smart_core/tests/test_intent_permission_operation_policy.py \
 		addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py
 	@python3 addons/smart_core/tests/test_page_block_action_contract.py
+	@python3 addons/smart_core/tests/test_intent_permission_operation_policy.py
 	@frontend/apps/web/node_modules/.bin/esbuild frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts --bundle --platform=node --format=esm --define:import.meta.env='{}' --outfile=/tmp/p0-contract-producer-p0c-test.mjs >/dev/null
 	@node /tmp/p0-contract-producer-p0c-test.mjs
 

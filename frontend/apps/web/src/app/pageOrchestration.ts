@@ -601,6 +601,19 @@ function decodePageBlockActionSchema(raw: unknown): ContractV2PageBlockActionSch
   };
 }
 
+function canonicalActionValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalActionValue(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalActionValue(item)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
 function decodePageBlockActionContract(
   raw: unknown,
   actionSchema?: ContractV2PageBlockActionSchema,
@@ -642,16 +655,44 @@ function decodePageBlockActionContract(
     }),
   );
   if (actionSchema) {
-    const ruleIds = new Set(actionRuleList.map((row) => row.actionId));
-    const carrierIds = new Set(Object.keys(actionSchema.actions));
+    const ruleById = new Map(actionRuleList.map((row) => [row.actionId, row]));
+    const carrierEntries = Object.entries(actionSchema.actions);
+    const carrierIds = new Set(carrierEntries.map(([actionId]) => actionId));
     if (
-      ruleIds.size !== carrierIds.size
-      || [...carrierIds].some((actionId) => !ruleIds.has(actionId))
+      ruleById.size !== actionRuleList.length
+      || ruleById.size !== carrierIds.size
+      || [...carrierIds].some((actionId) => !ruleById.has(actionId))
     ) {
       throw new PageOrchestrationDecodeError([{
         path: 'page_orchestration.action_contract.actionRuleList',
         message: 'must exactly resolve the carrier action identities',
       }]);
+    }
+    for (const [actionId, carrier] of carrierEntries) {
+      const rule = ruleById.get(actionId);
+      if (!rule) continue;
+      const path = `page_orchestration.action_schema.actions.${actionId}`;
+      const mismatches = [
+        carrier.actionRuleRef !== rule.actionId && 'actionRuleRef',
+        carrier.actionKey !== rule.actionKey && 'actionKey',
+        carrier.label !== rule.label && 'label',
+        carrier.intent !== rule.intent && 'intent',
+        canonicalActionValue(carrier.target.value) !== canonicalActionValue(rule.target) && 'target',
+        rule.entitlementEvaluated !== true && 'entitlementEvaluated',
+        carrier.permission.authorizationAllowed !== rule.authorizationAllowed && 'authorizationAllowed',
+        carrier.permission.businessAvailable !== rule.businessAvailable && 'businessAvailable',
+        carrier.permission.allowed !== rule.allowed && 'allowed',
+        carrier.state.enabled !== rule.enabled && 'enabled',
+        carrier.state.disabled !== rule.disabled && 'disabled',
+        carrier.state.reasonCode !== (rule.reasonCode || '') && 'reasonCode',
+        carrier.state.reasonMessage !== (rule.reasonMessage || '') && 'reasonMessage',
+      ].filter((item): item is string => Boolean(item));
+      if (mismatches.length) {
+        throw new PageOrchestrationDecodeError(mismatches.map((field) => ({
+          path: `${path}.${field}`,
+          message: 'must exactly match the referenced ContractV2ActionRule',
+        })));
+      }
     }
   }
   return { actionRuleList, dependencyGraph };

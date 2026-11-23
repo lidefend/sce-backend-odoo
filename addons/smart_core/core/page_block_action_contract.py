@@ -336,16 +336,50 @@ def build_action_feedback_from_result(
 ) -> dict[str, Any]:
     result = _dict(action_result)
     error = _dict(result.get("error"))
+    data = _dict(result.get("data"))
+    payload = _dict(data.get("result"))
+    meta = _dict(result.get("meta"))
     ok = result.get("ok") is True and not error
+    reason_code = _text(
+        meta.get("action_reason_code")
+        or error.get("reason_code")
+        or error.get("reasonCode")
+        or error.get("code")
+        or payload.get("reason_code")
+        or payload.get("reasonCode")
+    )
+    status_code = result.get("code") or result.get("status_code")
+    if not status_code:
+        raw_error_code = error.get("code")
+        if isinstance(raw_error_code, int):
+            status_code = raw_error_code
+    try:
+        status_code = int(status_code or 0)
+    except (TypeError, ValueError):
+        status_code = 0
+    denied_codes = {
+        "ACCESS_DENIED",
+        "ACTION_NOT_AUTHORIZED",
+        "PERMISSION_DENIED",
+        "ROUTE_ACTION_NOT_AUTHORIZED",
+    }
     status = "success"
     if not ok:
-        code = _text(error.get("code"))
-        status = "denied" if code in {"401", "403", "ACCESS_DENIED"} else "failed"
+        status = (
+            "denied"
+            if status_code in {401, 403} or reason_code in denied_codes
+            else "failed"
+        )
+    message = _text(
+        error.get("message")
+        or payload.get("message")
+        or result.get("message")
+    )
     return build_action_feedback(
         action_id=action_id,
         status=status,
-        reason_code=_text(error.get("reason_code") or error.get("reasonCode") or error.get("code")),
-        message=_text(error.get("message")),
+        reason_code=reason_code,
+        message=message,
         trace_id=trace_id,
     )
 

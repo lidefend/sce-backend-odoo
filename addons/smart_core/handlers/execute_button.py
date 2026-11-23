@@ -18,10 +18,12 @@ except ImportError:  # pragma: no cover - compatibility for lightweight boundary
     def record_in_business_scope(env_model, record_id, params=None, context=None):
         return record_in_project_scope(env_model, record_id, selected_record_context_id_from_context(params, context))
 from ..core.navigation_entry_target import normalize_odoo_action_result
+from ..core.page_block_action_contract import build_action_feedback_from_result
 from ..core.request_params import parse_bool
 from odoo.exceptions import AccessError, UserError
 from odoo import fields
 import logging
+import re
 from ..utils.reason_codes import (
     REASON_BUSINESS_RULE_FAILED,
     REASON_DRY_RUN,
@@ -36,6 +38,7 @@ from ..utils.reason_codes import (
 )
 
 _logger = logging.getLogger(__name__)
+_CONTRACT_REASON_CODE = re.compile(r"^[A-Z][A-Z0-9_]{2,}$")
 
 class ExecuteButtonHandler(BaseIntentHandler):
     INTENT_TYPE = "execute_button"
@@ -255,6 +258,52 @@ class ExecuteButtonHandler(BaseIntentHandler):
         return {**rule, "_validated_work_item_access_mode": work_access_mode}
 
     def handle(self, payload=None, ctx=None):
+        result = self._handle(payload=payload, ctx=ctx)
+        params = self.params if isinstance(self.params, dict) else {}
+        button = params.get("button") if isinstance(params.get("button"), dict) else {}
+        action_id = str(button.get("action_id") or button.get("actionId") or "").strip()
+        if not action_id or not isinstance(result, dict):
+            return result
+        meta = result.get("meta") if isinstance(result.get("meta"), dict) else {}
+        trace_id = str(meta.get("trace_id") or meta.get("traceId") or "").strip()
+        if not trace_id:
+            trace_id = str(
+                self.context.get("trace_id")
+                if isinstance(self.context, dict)
+                else ""
+            ).strip()
+        feedback = build_action_feedback_from_result(
+            result,
+            action_id=action_id,
+            trace_id=trace_id,
+        )
+        out = dict(result)
+        data = out.get("data")
+        if data is not None and not isinstance(data, dict):
+            raise AccessError("ACTION_RUNTIME_PATCH_INVALID")
+        data = dict(data or {})
+        runtime_patch = data.get("runtimePatch")
+        if runtime_patch is not None and not isinstance(runtime_patch, dict):
+            raise AccessError("ACTION_RUNTIME_PATCH_INVALID")
+        runtime_patch = dict(runtime_patch or {})
+        runtime_patch["actionFeedback"] = [feedback]
+        data["runtimePatch"] = runtime_patch
+        out["data"] = data
+        if out.get("ok") is not True:
+            error = out.get("error")
+            if error is not None and not isinstance(error, dict):
+                raise AccessError("ACTION_ERROR_ENVELOPE_INVALID")
+            error = dict(error or {})
+            details = error.get("details")
+            if details is not None and not isinstance(details, dict):
+                raise AccessError("ACTION_ERROR_DETAILS_INVALID")
+            details = dict(details or {})
+            details["runtimePatch"] = runtime_patch
+            error["details"] = details
+            out["error"] = error
+        return out
+
+    def _handle(self, payload=None, ctx=None):
         params = self.params if isinstance(self.params, dict) else {}
         model = params.get("model") or params.get("res_model")
         button = params.get("button") if isinstance(params.get("button"), dict) else {}
@@ -477,13 +526,15 @@ class ExecuteButtonHandler(BaseIntentHandler):
                 "meta": {"trace_id": self.context.get("trace_id") if isinstance(self.context, dict) else "", "source_authority": self._source_authority_contract(model, method_name, button_type)},
             }
         except AccessError as exc:
+            raw_reason = str(exc or "").strip()
             return _failure_result(
                 model=model,
                 res_id=res_ids[0] if res_ids else None,
                 reason_code=REASON_PERMISSION_DENIED,
-                message=str(exc) or "后端拒绝本次按钮执行",
+                message=raw_reason or "后端拒绝本次按钮执行",
                 trace_id=self.context.get("trace_id") if isinstance(self.context, dict) else "",
                 status_code=403,
+                action_reason_code=_contract_reason_code(raw_reason),
             )
         except UserError as exc:
             return _failure_result(
@@ -883,6 +934,7 @@ def _failure_result(
     message: str,
     trace_id: str = "",
     status_code: int = 400,
+    action_reason_code: str = "",
 ):
     payload = {
         "type": "noop",
@@ -904,8 +956,16 @@ def _failure_result(
         },
         "data": {"result": payload, "effect": effect},
         "code": int(status_code),
-        "meta": {"trace_id": trace_id},
+        "meta": {
+            "trace_id": trace_id,
+            **({"action_reason_code": action_reason_code} if action_reason_code else {}),
+        },
     }
+
+
+def _contract_reason_code(value: str) -> str:
+    text = str(value or "").strip()
+    return text if _CONTRACT_REASON_CODE.fullmatch(text) else ""
 
 
 def _should_generate_todo(method_name: str) -> bool:

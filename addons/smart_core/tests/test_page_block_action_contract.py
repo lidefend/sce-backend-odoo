@@ -175,6 +175,47 @@ class PageBlockActionContractTest(unittest.TestCase):
                 trace_id="",
             )
 
+    def test_real_failure_envelope_classifies_denied_and_keeps_identity(self):
+        feedback = MODULE.build_action_feedback_from_result(
+            {
+                "ok": False,
+                "code": 403,
+                "error": {
+                    "code": "PERMISSION_DENIED",
+                    "reason_code": "PERMISSION_DENIED",
+                    "message": "当前角色无权执行该动作",
+                },
+                "data": {
+                    "result": {
+                        "status": "failure",
+                        "reason_code": "PERMISSION_DENIED",
+                        "message": "当前角色无权执行该动作",
+                    }
+                },
+                "meta": {"trace_id": "trace-real-denied"},
+            },
+            action_id="action.open_project",
+            trace_id="trace-real-denied",
+        )
+        self.assertEqual(feedback["status"], "denied")
+        self.assertEqual(feedback["reasonCode"], "PERMISSION_DENIED")
+        self.assertEqual(feedback["message"], "当前角色无权执行该动作")
+        self.assertEqual(feedback["traceId"], "trace-real-denied")
+
+    def test_real_success_envelope_keeps_action_identity(self):
+        feedback = MODULE.build_action_feedback_from_result(
+            {
+                "ok": True,
+                "data": {"result": {"status": "success"}},
+                "meta": {"trace_id": "trace-real-success"},
+            },
+            action_id="action.open_project",
+            trace_id="trace-real-success",
+        )
+        self.assertEqual(feedback["status"], "success")
+        self.assertEqual(feedback["actionId"], "action.open_project")
+        self.assertEqual(feedback["traceId"], "trace-real-success")
+
 
 if __name__ == "__main__":
     unittest.main()

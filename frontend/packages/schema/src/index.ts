@@ -608,6 +608,19 @@ export interface ExecuteButtonResult {
   message?: string;
 }
 
+export interface PageBlockActionFeedback {
+  schemaVersion: '1.0.0';
+  actionId: string;
+  status: 'success' | 'denied' | 'failed';
+  reasonCode: string;
+  message: string;
+  traceId: string;
+}
+
+export interface PageBlockActionRuntimePatch {
+  actionFeedback?: PageBlockActionFeedback[];
+}
+
 export interface ButtonEffectTarget {
   kind: 'record' | 'action' | 'url' | 'entry_target';
   model?: string;
@@ -633,6 +646,7 @@ export interface NativeActionNotification {
 export interface ExecuteButtonResponse {
   result: ExecuteButtonResult;
   effect?: ButtonEffect;
+  runtimePatch?: PageBlockActionRuntimePatch;
 }
 
 export interface FileUploadRequest {

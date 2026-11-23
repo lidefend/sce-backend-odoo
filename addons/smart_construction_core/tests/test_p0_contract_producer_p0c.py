@@ -4,6 +4,7 @@ from odoo.tests import TransactionCase, tagged
 from odoo.addons.smart_core.core.unified_page_contract_v2_action import (
     build_action_partial_update_v2,
 )
+from odoo.addons.smart_core.handlers.execute_button import ExecuteButtonHandler
 from odoo.addons.smart_construction_core.handlers.workspace_home_enter import (
     WorkspaceHomeEnterHandler,
 )
@@ -38,6 +39,69 @@ class TestP0ContractProducerP0C(TransactionCase):
                 "client_contract_capabilities": capabilities,
             }
         }
+
+    def _button_handler(
+        self,
+        *,
+        action_id,
+        method_name,
+        allowed=True,
+        trace_id,
+    ):
+        partner = self.env["res.partner"].create({
+            "name": f"P0-C action {trace_id}",
+        })
+        backend_identity = f"contract_action:{method_name}"
+        rule = {
+            "actionId": action_id,
+            "actionKey": action_id,
+            "label": "执行动作",
+            "intent": "execute_button",
+            "backendIdentity": backend_identity,
+            "sourceWidgetId": "field.active",
+            "button": {"name": method_name, "type": "object"},
+            "triggerType": "click",
+            "targetIds": [],
+            "dispatchMode": "server",
+            "targetScope": "page",
+            "refreshMode": "partial",
+            "allowed": allowed,
+            "enabled": allowed,
+            "disabled": not allowed,
+            "entitlementEvaluated": True,
+            "reasonCode": "" if allowed else "ACTION_NOT_AUTHORIZED",
+            "reasonMessage": "" if allowed else "当前角色无权执行该动作",
+        }
+        contract = {
+            "actionContract": {"actionRuleList": [rule]},
+            "statusContract": {
+                "buttonStatus": [{
+                    "backendIdentity": backend_identity,
+                    "visible": True,
+                    "disabled": False,
+                }],
+            },
+        }
+        handler = ExecuteButtonHandler(
+            self.env,
+            context={"trace_id": trace_id},
+            payload={
+                "params": {
+                    "model": "res.partner",
+                    "record_id": partner.id,
+                    "button": {
+                        "type": "object",
+                        "name": method_name,
+                        "action_id": action_id,
+                        "backend_identity": backend_identity,
+                        "source_widget_id": "field.active",
+                    },
+                },
+                "meta": {"action_id": 1, "menu_id": 1},
+            },
+        )
+        handler._load_current_action_contract = lambda **_kwargs: contract
+        return handler
 
     def test_workspace_page_block_action_uses_published_action_authority(self):
         user = self._user_with_group(
@@ -178,6 +242,57 @@ class TestP0ContractProducerP0C(TransactionCase):
         self.assertEqual(feedback[0]["status"], "denied")
         self.assertEqual(feedback[0]["reasonCode"], "ACTION_NOT_AUTHORIZED")
         self.assertEqual(feedback[0]["traceId"], "trace-p0c-action")
+
+    def test_real_action_success_carries_correlated_feedback(self):
+        action_id = "action.partner_toggle_active"
+        handler = self._button_handler(
+            action_id=action_id,
+            method_name="toggle_active",
+            trace_id="trace-execute-p0c-success",
+        )
+        result = handler.handle()
+        self.assertTrue(result["ok"], result)
+        feedback = result["data"]["runtimePatch"]["actionFeedback"]
+        self.assertEqual(len(feedback), 1)
+        self.assertEqual(feedback[0]["actionId"], action_id)
+        self.assertEqual(feedback[0]["status"], "success")
+        self.assertEqual(feedback[0]["traceId"], "trace-execute-p0c-success")
+
+    def test_real_denied_action_carries_correlated_feedback(self):
+        action_id = "action.partner_toggle_active_denied"
+        handler = self._button_handler(
+            action_id=action_id,
+            method_name="toggle_active",
+            allowed=False,
+            trace_id="trace-execute-p0c-denied",
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        feedback = result["data"]["runtimePatch"]["actionFeedback"]
+        self.assertEqual(len(feedback), 1)
+        self.assertEqual(feedback[0]["actionId"], action_id)
+        self.assertEqual(feedback[0]["status"], "denied")
+        self.assertEqual(feedback[0]["reasonCode"], "ACTION_NOT_AUTHORIZED")
+        self.assertEqual(feedback[0]["traceId"], "trace-execute-p0c-denied")
+        self.assertEqual(
+            result["error"]["details"]["runtimePatch"]["actionFeedback"],
+            feedback,
+        )
+
+    def test_real_failed_action_carries_correlated_feedback(self):
+        action_id = "action.partner_write_failed"
+        handler = self._button_handler(
+            action_id=action_id,
+            method_name="write",
+            trace_id="trace-execute-p0c-failed",
+        )
+        result = handler.handle()
+        self.assertFalse(result["ok"], result)
+        feedback = result["data"]["runtimePatch"]["actionFeedback"]
+        self.assertEqual(len(feedback), 1)
+        self.assertEqual(feedback[0]["actionId"], action_id)
+        self.assertEqual(feedback[0]["status"], "failed")
+        self.assertEqual(feedback[0]["traceId"], "trace-execute-p0c-failed")
 
 
 if __name__ == "__main__":

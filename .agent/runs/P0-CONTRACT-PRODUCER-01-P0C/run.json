@@ -3,7 +3,7 @@
   "id": "P0-CONTRACT-PRODUCER-01-P0C",
   "branch": "feature/p0-contract-producer-01-p0c-action-feedback-20261123",
   "baseline_sha": "122129513fce17e1d6bf3501fbaa13b4a9e74d84",
-  "status": "active",
+  "status": "verification_pending",
   "goal": ".agent/goals/P0-CONTRACT-PRODUCER-01-P0C.yaml",
   "record": "docs/ops/iterations/p0_contract_producer_01_p0c_action_feedback_20261123.md",
   "scope": [
@@ -16,7 +16,9 @@
     "addons/smart_core/core/contract_version_negotiation.py",
     "addons/smart_core/core/page_block_action_contract.py",
     "addons/smart_core/core/unified_page_contract_v2_action.py",
+    "addons/smart_core/handlers/execute_button.py",
     "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/tests/test_intent_permission_operation_policy.py",
     "addons/smart_core/tests/test_page_block_action_contract.py",
     "addons/smart_construction_core/handlers/dashboard_company_enter.py",
     "addons/smart_construction_core/handlers/workspace_home_enter.py",
@@ -30,11 +32,16 @@
     "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
     "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
     "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+    "frontend/apps/web/src/api/executeButton.ts",
+    "frontend/apps/web/src/api/intents.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+    "frontend/apps/web/src/app/contract/actionFeedback.ts",
     "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
     "frontend/apps/web/src/app/contracts/v2/types.ts",
     "frontend/apps/web/src/app/pageOrchestration.ts",
     "frontend/apps/web/src/app/contracts/v2/schema.ts",
     "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/packages/schema/src/index.ts",
     "make/frontend.mk",
     "make/ci.mk",
     "make/guards.mk",
@@ -53,11 +60,19 @@
       "inputs": [
         "addons/smart_core/core/page_block_action_contract.py",
         "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/tests/test_intent_permission_operation_policy.py",
         "addons/smart_core/tests/test_page_block_action_contract.py",
+        "frontend/apps/web/src/api/executeButton.ts",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "frontend/apps/web/src/app/contract/actionFeedback.ts",
         "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
         "frontend/apps/web/src/app/contracts/v2/types.ts",
         "frontend/apps/web/src/app/pageOrchestration.ts",
         "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+        "frontend/packages/schema/src/index.ts",
         "make/frontend.mk"
       ],
       "kind": "offline"
@@ -67,6 +82,7 @@
       "inputs": [
         "addons/smart_core/core/page_block_action_contract.py",
         "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/handlers/execute_button.py",
         "addons/smart_core/security/intent_permission.py",
         "addons/smart_construction_core/services/scene_block_schema.py",
         "addons/smart_construction_core/services/workspace_contract_builder.py",
@@ -169,13 +185,18 @@
     },
     "frontend_lint": {
       "target": "verify.frontend.lint.src",
-      "inputs": ["frontend/apps/web/src", "frontend/apps/web/.eslintrc.cjs"],
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/packages/schema/src"
+      ],
       "kind": "offline"
     },
     "frontend_typecheck": {
       "target": "verify.frontend.typecheck.strict",
       "inputs": [
         "frontend/apps/web/src",
+        "frontend/packages/schema/src",
         "frontend/apps/web/tsconfig.json",
         "frontend/apps/web/tsconfig.strict.json"
       ],
@@ -183,7 +204,12 @@
     },
     "frontend_build": {
       "target": "verify.frontend.build",
-      "inputs": ["frontend/apps/web/src", "frontend/apps/web/vite.config.ts", "make/frontend.mk"],
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/vite.config.ts",
+        "make/frontend.mk"
+      ],
       "kind": "offline"
     },
     "verification_lane_coverage": {
@@ -244,7 +270,7 @@
     }
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the clean P0-C candidate, then wait for exact-head required checks and independent review.",
+  "next_exact_step": "Commit the clean P0-C remediation candidate, publish PR #975 and wait for exact-head required checks and independent review.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
