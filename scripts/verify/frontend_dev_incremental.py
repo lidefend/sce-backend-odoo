@@ -991,6 +991,12 @@ RULES = (
         "verify.unified_page_contract.v2.web_architecture",
     )),
     Rule((
+        "scripts/verify/identity_architecture_audit_guard.py",
+        "scripts/verify/test_identity_architecture_audit_guard.py",
+    ), (
+        "verify.identity.architecture.audit.unit",
+    )),
+    Rule((
         "config/contract/page_contract_v1_retirement_manifest.json",
     ), (
         "verify.contract.page_v1_zero_residue.guard",

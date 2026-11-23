@@ -1,0 +1,635 @@
+{
+  "schemaVersion": "identity-architecture-01/v1",
+  "baselineMain": "8b46984d2b896eb104c26348788883993d260beb",
+  "status": "audit_candidate",
+  "decision": {
+    "globalIdentityRegistry": "forbidden",
+    "model": "domain_authority_plus_cross_layer_reference_contract",
+    "frontendAuthority": "consume_and_reference_only",
+    "frontendLocalIdentityMayRepresentBusinessObject": false,
+    "identityFormatUniformityRequired": false,
+    "crossLayerSemanticConsistencyRequired": true
+  },
+  "domains": [
+    {
+      "id": "odoo.model",
+      "label": "Odoo model",
+      "definition": "Stable Odoo model name denoting one ORM model namespace.",
+      "authority": "Odoo model registry",
+      "representation": "string",
+      "uniquenessScope": "database model namespace",
+      "stability": "registry_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "installed module lifetime",
+      "allowedReferences": [
+        "odoo.record",
+        "contract.field",
+        "contract.action_rule"
+      ],
+      "forbiddenMappings": [
+        "label_to_model",
+        "frontend_model_guess"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "registry_owns",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/security/intent_permission.py::_resolve_model"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "odoo.record",
+      "label": "Odoo record",
+      "definition": "One persisted Odoo record identified by model plus record_id.",
+      "authority": "Odoo ORM",
+      "representation": "model + record_id",
+      "uniquenessScope": "database + model",
+      "stability": "record_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "persisted record lifetime",
+      "allowedReferences": [
+        "attachment.record",
+        "runtime.collection_row",
+        "security.authorization_subject",
+        "transport.request"
+      ],
+      "forbiddenMappings": [
+        "row_index_to_record_id",
+        "display_name_to_record",
+        "record_id_without_model"
+      ],
+      "missingPolicy": "draft_or_fail_closed",
+      "duplicatePolicy": "model_scoped",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "frontend/apps/web/src/app/businessValidationError.ts::normalizeBusinessRecordId",
+        "addons/smart_core/handlers/execute_button.py::_read_ids"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "odoo.xmlid",
+      "label": "Odoo External ID",
+      "definition": "Odoo module-qualified external record identifier.",
+      "authority": "Odoo ir.model.data",
+      "representation": "module.name",
+      "uniquenessScope": "database external identifier namespace",
+      "stability": "record_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "bound record lifetime",
+      "allowedReferences": [
+        "odoo.menu",
+        "odoo.action",
+        "odoo.record"
+      ],
+      "forbiddenMappings": [
+        "xmlid_as_display_label",
+        "parsed_xmlid_to_business_identity"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "database_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/delivery/menu_service.py::_record_xmlid"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "odoo.menu",
+      "label": "Odoo menu",
+      "definition": "Native ir.ui.menu record identity.",
+      "authority": "Odoo ir.ui.menu",
+      "representation": "menu_id",
+      "uniquenessScope": "database",
+      "stability": "menu_record_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "menu record lifetime",
+      "allowedReferences": [
+        "navigation.entry"
+      ],
+      "forbiddenMappings": [
+        "menu_id_to_scene_key",
+        "menu_id_as_action_identity"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "database_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/delivery/menu_service.py::_node_route_menu_id"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "odoo.action",
+      "label": "Odoo action",
+      "definition": "Native ir.actions record identity in its action-model namespace.",
+      "authority": "Odoo ir.actions",
+      "representation": "action_model + action_id or action_xmlid",
+      "uniquenessScope": "database + action model",
+      "stability": "action_record_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "action record lifetime",
+      "allowedReferences": [
+        "navigation.entry",
+        "contract.action_rule"
+      ],
+      "forbiddenMappings": [
+        "action_id_to_scene_key",
+        "menu_id_to_action_id"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "database_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/core/action_target_schema.py::validate_action_target",
+        "addons/smart_core/delivery/menu_service.py::_canonical_action_row"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "navigation.entry",
+      "label": "Navigation entry",
+      "definition": "Published entry reference formed by a menu/action pair and route context.",
+      "authority": "Route Authority",
+      "representation": "(menu_id, action_id) plus route_kind and optional entry_target",
+      "uniquenessScope": "published route authority for current principal",
+      "stability": "published_contract_identity",
+      "frontendCreation": "forbidden",
+      "lifetime": "effective navigation contract lifetime",
+      "allowedReferences": [
+        "odoo.menu",
+        "odoo.action",
+        "product.scene"
+      ],
+      "forbiddenMappings": [
+        "action_id_alone_to_ambiguous_entry",
+        "scene_key_as_menu_id",
+        "route_string_as_route_authority"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "exact_pair_or_explicit_contextual_route",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "frontend/apps/web/src/app/canonicalNavigation.ts::authorityIndex",
+        "addons/smart_core/handlers/route_authority_validate.py::_select_route_entry",
+        "addons/smart_core/delivery/runtime_route_authority.py::published_pairs"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "product.scene",
+      "label": "Product scene",
+      "definition": "Declared product organization identity for a published scene.",
+      "authority": "Scenario/product declaration",
+      "representation": "scene_key",
+      "uniquenessScope": "declared product scene namespace",
+      "stability": "declared_scene_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "published scene contract lifetime",
+      "allowedReferences": [
+        "navigation.entry",
+        "contract.action_rule"
+      ],
+      "forbiddenMappings": [
+        "scene_key_to_menu_id",
+        "scene_key_to_action_id",
+        "route_text_to_scene_authority"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "declaration_scope_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/delivery/scene_shell_compiler.py::_native_scene_key",
+        "addons/smart_core/delivery/menu_service.py::_scene_route_entry"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "contract.field",
+      "label": "Contract field",
+      "definition": "Declared business field identity and complete semantic descriptor.",
+      "authority": "ContractV2FieldDescriptor",
+      "representation": "fieldCode plus declared type and semantics",
+      "uniquenessScope": "model/contract field namespace",
+      "stability": "contract_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "effective contract lifetime",
+      "allowedReferences": [
+        "contract.widget_occurrence",
+        "runtime.collection_row"
+      ],
+      "forbiddenMappings": [
+        "label_to_field_code",
+        "widget_id_as_field_code",
+        "row_index_to_field"
+      ],
+      "missingPolicy": "contract_gap",
+      "duplicatePolicy": "descriptor_identity_unique_in_scope",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts::decodeContractV2FieldDescriptor",
+        "frontend/apps/web/src/app/contracts/v2/types.ts::ContractV2FieldDescriptor"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "contract.widget_occurrence",
+      "label": "Contract widget occurrence",
+      "definition": "One declared placement of a field, widget or action in a page contract.",
+      "authority": "Contract V2 widget/native occurrence identity",
+      "representation": "widgetId or occurrenceKey with nativeLocator",
+      "uniquenessScope": "effective page contract",
+      "stability": "contract_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "effective page contract lifetime",
+      "allowedReferences": [
+        "contract.field",
+        "odoo.record"
+      ],
+      "forbiddenMappings": [
+        "dom_selector_to_widget_id",
+        "visible_position_to_occurrence"
+      ],
+      "missingPolicy": "contract_gap",
+      "duplicatePolicy": "contract_scope_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/tests/test_native_occurrence_contract_integration.py::test_occurrence_identities_are_unique",
+        "frontend/apps/web/src/pages/contractForm/nativeActionIdentity.ts::nativeActionOccurrenceKey"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "contract.action_rule",
+      "label": "Contract action rule",
+      "definition": "One executable contract action and its exact target, permission and source facts.",
+      "authority": "ContractV2ActionRule",
+      "representation": "actionId with actionKey, backendIdentity, sourceWidgetId and exact target",
+      "uniquenessScope": "effective page action contract",
+      "stability": "contract_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "effective page contract lifetime",
+      "allowedReferences": [
+        "odoo.action",
+        "product.scene",
+        "contract.widget_occurrence",
+        "odoo.record"
+      ],
+      "forbiddenMappings": [
+        "method_name_as_action_id",
+        "client_action_id_echo_without_rule_match",
+        "action_key_as_backend_identity"
+      ],
+      "missingPolicy": "contract_gap",
+      "duplicatePolicy": "action_id_unique_in_contract",
+      "duplicateAuthority": "name_overlap_only",
+      "evidence": [
+        "frontend/apps/web/src/app/contracts/v2/types.ts::ContractV2ActionRule",
+        "addons/smart_core/handlers/execute_button.py::_authorize_contract_action",
+        "addons/smart_core/core/action_target_schema.py::validate_action_target"
+      ],
+      "status": "remediation_pending"
+    },
+    {
+      "id": "runtime.collection_row",
+      "label": "Runtime collection row",
+      "definition": "Producer-identified row in a declared collection, optionally referencing a persisted record.",
+      "authority": "Declared collection producer",
+      "representation": "rowKey; persisted rows also reference record_id",
+      "uniquenessScope": "owning relation field or data source",
+      "stability": "row_lifetime_in_collection",
+      "frontendCreation": "draft_local_only",
+      "lifetime": "draft or collection row lifetime",
+      "allowedReferences": [
+        "odoo.record",
+        "contract.field"
+      ],
+      "forbiddenMappings": [
+        "row_index_to_business_row",
+        "row_key_to_record_id",
+        "record_id_without_relation_context"
+      ],
+      "missingPolicy": "producer_error_or_local_draft",
+      "duplicatePolicy": "collection_scope_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "frontend/apps/web/src/app/businessValidationError.ts::BusinessErrorRowIdentity",
+        "frontend/apps/web/src/pages/contractForm/one2manyUtils.ts::findOne2manyRow",
+        "addons/smart_core/core/page_block_data_contract.py::build_data_contract"
+      ],
+      "status": "policy_freeze"
+    },
+    {
+      "id": "attachment.record",
+      "label": "Attachment record",
+      "definition": "Odoo ir.attachment record representing one stored or linked file.",
+      "authority": "Odoo ir.attachment",
+      "representation": "attachment_id",
+      "uniquenessScope": "database",
+      "stability": "attachment_record_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "attachment record lifetime",
+      "allowedReferences": [
+        "odoo.record",
+        "security.authorization_subject"
+      ],
+      "forbiddenMappings": [
+        "url_to_attachment_identity",
+        "storage_owner_as_business_owner",
+        "attachment_id_as_record_id"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "database_unique",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/handlers/chatter_timeline.py::_load_attachments",
+        "addons/smart_core/handlers/file_download.py::resolve_file_download_auth_subject"
+      ],
+      "status": "p0_b_pending"
+    },
+    {
+      "id": "security.principal",
+      "label": "Authenticated principal",
+      "definition": "Authenticated Odoo user and credential scope acting in one request.",
+      "authority": "Odoo res.users plus scoped credential",
+      "representation": "user_id, groups, allowed companies",
+      "uniquenessScope": "authenticated request scope",
+      "stability": "session_or_token_lifetime",
+      "frontendCreation": "forbidden",
+      "lifetime": "request/session lifetime",
+      "allowedReferences": [
+        "security.authorization_subject",
+        "transport.request"
+      ],
+      "forbiddenMappings": [
+        "client_supplied_principal",
+        "role_label_to_user",
+        "company_name_to_company_id"
+      ],
+      "missingPolicy": "fail_closed",
+      "duplicatePolicy": "database_user_identity",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/security/intent_permission.py::_sync_authenticated_identity",
+        "addons/smart_core/security/intent_permission.py::assert_principal_scope"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "security.authorization_subject",
+      "label": "Authorization subject",
+      "definition": "Server-selected business target used by one authorization decision.",
+      "authority": "Server authorization service",
+      "representation": "server-resolved model + record and actor context",
+      "uniquenessScope": "single authorization execution",
+      "stability": "request_only",
+      "frontendCreation": "forbidden",
+      "lifetime": "single authorization decision",
+      "allowedReferences": [
+        "odoo.record",
+        "security.principal",
+        "attachment.record"
+      ],
+      "forbiddenMappings": [
+        "frontend_supplied_authorization_subject",
+        "public_action_payload_subject",
+        "storage_owner_as_authorization_subject"
+      ],
+      "missingPolicy": "deny",
+      "duplicatePolicy": "server_resolved",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "addons/smart_core/handlers/file_download.py::resolve_file_download_auth_subject",
+        "addons/smart_core/security/intent_permission.py::action_access_verdict"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "transport.request",
+      "label": "Request identity",
+      "definition": "One intent request and its declared idempotency/request context.",
+      "authority": "Intent request layer",
+      "representation": "requestId plus intent and trace header",
+      "uniquenessScope": "single request",
+      "stability": "request_lifetime",
+      "frontendCreation": "request_scoped_allowed",
+      "lifetime": "single request",
+      "allowedReferences": [
+        "security.principal",
+        "contract.action_rule",
+        "observability.trace"
+      ],
+      "forbiddenMappings": [
+        "request_id_as_record_id",
+        "request_id_as_action_id"
+      ],
+      "missingPolicy": "transport_error_or_generated_request_identity",
+      "duplicatePolicy": "idempotency_scope_specific",
+      "duplicateAuthority": "none_detected",
+      "evidence": [
+        "frontend/apps/web/src/api/intents.ts::intentRequest",
+        "addons/smart_core/controllers/intent_dispatcher.py::handle_intent"
+      ],
+      "status": "frozen"
+    },
+    {
+      "id": "observability.trace",
+      "label": "Execution trace",
+      "definition": "Observed execution correlation identity spanning request events and feedback.",
+      "authority": "Request tracing service",
+      "representation": "traceId",
+      "uniquenessScope": "observed execution chain",
+      "stability": "immutable_request_correlation",
+      "frontendCreation": "request_scoped_allowed",
+      "lifetime": "observation/audit retention",
+      "allowedReferences": [
+        "transport.request",
+        "contract.action_rule"
+      ],
+      "forbiddenMappings": [
+        "content_hash_as_trace",
+        "trace_id_as_business_identity",
+        "trace_id_as_authorization_identity"
+      ],
+      "missingPolicy": "fail_or_explicitly_unavailable",
+      "duplicatePolicy": "one_trace_correlates_many_events",
+      "duplicateAuthority": "fallback_identity_conflict",
+      "evidence": [
+        "frontend/apps/web/src/api/intents.ts::buildHeaders",
+        "addons/smart_core/controllers/intent_dispatcher.py::handle_intent",
+        "addons/smart_core/core/unified_page_contract_v2_action.py::build_action_partial_update_v2"
+      ],
+      "status": "remediation_pending"
+    }
+  ],
+  "edges": [
+    {"from": "odoo.record", "to": "odoo.model", "kind": "instantiates"},
+    {"from": "odoo.xmlid", "to": "odoo.record", "kind": "external_reference"},
+    {"from": "odoo.menu", "to": "odoo.action", "kind": "entry_target"},
+    {"from": "navigation.entry", "to": "odoo.menu", "kind": "carrier"},
+    {"from": "navigation.entry", "to": "odoo.action", "kind": "execution_target"},
+    {"from": "navigation.entry", "to": "product.scene", "kind": "scene_target"},
+    {"from": "product.scene", "to": "navigation.entry", "kind": "composition_reference"},
+    {"from": "contract.field", "to": "odoo.model", "kind": "declares_field"},
+    {"from": "contract.widget_occurrence", "to": "contract.field", "kind": "hosts_field"},
+    {"from": "contract.action_rule", "to": "odoo.action", "kind": "executes_target"},
+    {"from": "contract.action_rule", "to": "product.scene", "kind": "navigates_target"},
+    {"from": "contract.action_rule", "to": "contract.widget_occurrence", "kind": "source_occurrence"},
+    {"from": "runtime.collection_row", "to": "odoo.record", "kind": "persisted_reference"},
+    {"from": "runtime.collection_row", "to": "contract.field", "kind": "owned_by_relation"},
+    {"from": "attachment.record", "to": "odoo.record", "kind": "storage_or_business_owner"},
+    {"from": "security.principal", "to": "security.authorization_subject", "kind": "authorizes_as"},
+    {"from": "security.authorization_subject", "to": "odoo.record", "kind": "checks_record_scope"},
+    {"from": "transport.request", "to": "contract.action_rule", "kind": "references_action"},
+    {"from": "transport.request", "to": "security.principal", "kind": "authenticated_by"},
+    {"from": "observability.trace", "to": "transport.request", "kind": "correlates"},
+    {"from": "observability.trace", "to": "contract.action_rule", "kind": "correlates_feedback"}
+  ],
+  "findings": [
+    {
+      "id": "ID-F-001",
+      "class": "incomplete_mapping",
+      "severity": "P1",
+      "title": "Action execution request does not carry the full ContractV2ActionRule identity",
+      "baselineDomain": "contract.action_rule",
+      "evidence": [
+        "frontend/apps/web/src/app/runtime/actionViewContractActionRuntime.ts::buildContractActionButtonRequest",
+        "addons/smart_core/handlers/execute_button.py::_authorize_contract_action"
+      ],
+      "impact": "Backend feedback cannot correlate a real Action View execution to the canonical action rule.",
+      "owner": "P0-C-FIX-01",
+      "remediation": "PR #976 candidate propagates actionId, backendIdentity and sourceWidgetId and requires backend revalidation.",
+      "status": "remediation_candidate"
+    },
+    {
+      "id": "ID-F-002",
+      "class": "cross_domain_misuse",
+      "severity": "P1",
+      "title": "Content fingerprints are used as trace fallbacks",
+      "baselineDomain": "observability.trace",
+      "evidence": [
+        "addons/smart_core/core/unified_page_contract_v2_action.py::build_action_partial_update_v2",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py::assemble_unified_page_patch_v2"
+      ],
+      "impact": "A deterministic content hash is not an observed request trace and can falsely correlate distinct executions.",
+      "owner": "P0 identity trace follow-up",
+      "remediation": "Require an actual request/response trace or explicitly typed trace-unavailable state; never synthesize a content-hash trace.",
+      "status": "open"
+    },
+    {
+      "id": "ID-F-003",
+      "class": "incomplete_mapping",
+      "severity": "P2",
+      "title": "Page Block data allows positional rowKey fallback",
+      "baselineDomain": "runtime.collection_row",
+      "evidence": [
+        "addons/smart_core/core/page_block_data_contract.py::build_data_contract"
+      ],
+      "impact": "Rows without a producer identity receive row_<index>, which can change after sorting or insertion.",
+      "owner": "P0 identity row follow-up",
+      "remediation": "Require producer-stable rowKey for business collections; reserve positional identity for explicitly local presentation only.",
+      "status": "open"
+    },
+    {
+      "id": "ID-F-004",
+      "class": "frontend_inferred_identity",
+      "severity": "P3",
+      "title": "Record table supplies an index-based rendering key",
+      "baselineDomain": "runtime.collection_row",
+      "evidence": [
+        "frontend/apps/web/src/components/page/blocks/BlockRecordTable.vue::rows"
+      ],
+      "impact": "The index key is safe only while it remains a table virtualization key and never enters business, action or error identities.",
+      "owner": "Frontend presentation",
+      "remediation": "Keep as accepted local rendering identity; future business interactions must consume producer rowKey.",
+      "status": "accepted_local_identity"
+    },
+    {
+      "id": "ID-F-005",
+      "class": "cross_domain_misuse",
+      "severity": "P1",
+      "title": "File URL and name fallback can act as an attachment locator",
+      "baselineDomain": "attachment.record",
+      "evidence": [
+        "addons/smart_core/handlers/file_download.py::handle",
+        "addons/smart_core/handlers/chatter_timeline.py::_load_attachments"
+      ],
+      "impact": "URL text, latest-record order or name matching can be mistaken for attachment identity, and storage owner is not enough to describe business role.",
+      "owner": "P0-B",
+      "remediation": "Introduce attachment-fact transport with attachmentId, storageOwner, businessOwner, role and server-authorized actions while preserving the existing file service.",
+      "status": "scheduled"
+    },
+    {
+      "id": "ID-F-006",
+      "class": "policy_freeze",
+      "severity": "P3",
+      "title": "Navigation identity is mature and should be frozen",
+      "baselineDomain": "navigation.entry",
+      "evidence": [
+        "frontend/apps/web/src/app/canonicalNavigation.ts::authorityIndex",
+        "addons/smart_core/handlers/route_authority_validate.py::_select_route_entry"
+      ],
+      "impact": "No redesign is required; consumers must preserve exact (menu_id, action_id) and explicit scene references.",
+      "owner": "Identity architecture baseline",
+      "remediation": "Freeze the current rule.",
+      "status": "frozen"
+    },
+    {
+      "id": "ID-F-007",
+      "class": "policy_freeze",
+      "severity": "P2",
+      "title": "Authorization subject remains a server-only execution identity",
+      "baselineDomain": "security.authorization_subject",
+      "evidence": [
+        "addons/smart_core/handlers/file_download.py::resolve_file_download_auth_subject",
+        "addons/smart_core/security/intent_permission.py::action_access_verdict"
+      ],
+      "impact": "The server resolver, not the client, decides which owner record is checked.",
+      "owner": "Identity architecture baseline",
+      "remediation": "Never serialize or accept this identity from the frontend.",
+      "status": "frozen"
+    },
+    {
+      "id": "ID-F-008",
+      "class": "cross_domain_misuse",
+      "severity": "P2",
+      "title": "actionId names both native numeric action identity and contract string identity",
+      "baselineDomain": "contract.action_rule",
+      "evidence": [
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts::ContractActionButtonLike",
+        "frontend/apps/web/src/app/contracts/unifiedPageContractV2.ts::UnifiedPageContractV2Action"
+      ],
+      "impact": "A shared property name encourages accidental substitution between Odoo action identity and ContractV2ActionRule identity.",
+      "owner": "P0-C-FIX-01",
+      "remediation": "Use a distinct contractActionId field for the string rule identity and keep native numeric action identity separate.",
+      "status": "remediation_candidate"
+    }
+  ],
+  "workPackages": [
+    {
+      "id": "P0-C-FIX-01",
+      "findingIds": ["ID-F-001", "ID-F-008"],
+      "status": "candidate_ready_for_review",
+      "unlocks": ["P0-C final closure", "P0-B start after merge"]
+    },
+    {
+      "id": "IDENTITY-TRACE-01",
+      "findingIds": ["ID-F-002"],
+      "status": "proposed",
+      "unlocks": ["uniform execution correlation"]
+    },
+    {
+      "id": "IDENTITY-ROW-01",
+      "findingIds": ["ID-F-003", "ID-F-004"],
+      "status": "proposed",
+      "unlocks": ["collection identity guard"]
+    },
+    {
+      "id": "P0-B",
+      "findingIds": ["ID-F-005"],
+      "status": "blocked_by_identity_baseline_and_p0_c",
+      "unlocks": ["FCF-02-2 attachment consumption"]
+    }
+  ]
+}

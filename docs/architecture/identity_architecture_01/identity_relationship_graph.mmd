@@ -1,0 +1,58 @@
+flowchart LR
+  subgraph Odoo["Odoo authority"]
+    MODEL["odoo.model"]
+    RECORD["odoo.record"]
+    XMLID["odoo.xmlid"]
+    MENU["odoo.menu"]
+    ACTION["odoo.action"]
+    ATTACHMENT["attachment.record"]
+    PRINCIPAL["security.principal"]
+  end
+
+  subgraph Delivery["Product and navigation authority"]
+    NAV["navigation.entry"]
+    SCENE["product.scene"]
+  end
+
+  subgraph Contract["Contract V2 authority"]
+    FIELD["contract.field"]
+    OCCURRENCE["contract.widget_occurrence"]
+    RULE["contract.action_rule"]
+  end
+
+  subgraph Runtime["Runtime identity"]
+    ROW["runtime.collection_row"]
+    AUTH_SUBJECT["security.authorization_subject"]
+    REQUEST["transport.request"]
+    TRACE["observability.trace"]
+  end
+
+  RECORD -->|instantiates| MODEL
+  XMLID -->|external reference| RECORD
+  MENU -->|carries| ACTION
+  NAV -->|carrier| MENU
+  NAV -->|execution target| ACTION
+  NAV -->|scene target| SCENE
+  SCENE -->|composition reference| NAV
+  FIELD -->|declares field on| MODEL
+  OCCURRENCE -->|hosts| FIELD
+  RULE -->|resolves action target| ACTION
+  RULE -->|navigates scene| SCENE
+  RULE -->|source occurrence| OCCURRENCE
+  ROW -->|persisted row| RECORD
+  ROW -->|owned by relation| FIELD
+  ATTACHMENT -->|storage or business owner| RECORD
+  PRINCIPAL -->|authorizes as| AUTH_SUBJECT
+  AUTH_SUBJECT -->|checks record scope| RECORD
+  REQUEST -->|references| RULE
+  REQUEST -->|authenticated by| PRINCIPAL
+  TRACE -->|correlates| REQUEST
+  TRACE -->|correlates feedback| RULE
+  ATTACHMENT -->|authorizes through| AUTH_SUBJECT
+
+  classDef frozen fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
+  classDef pending fill:#fff3e0,stroke:#ef6c00,color:#e65100;
+  classDef local fill:#e3f2fd,stroke:#1565c0,color:#0d47a1;
+  class MODEL,RECORD,XMLID,MENU,ACTION,NAV,SCENE,FIELD,OCCURRENCE,PRINCIPAL,AUTH_SUBJECT,REQUEST frozen;
+  class ATTACHMENT,RULE,TRACE pending;
+  class ROW local;

@@ -1,0 +1,56 @@
+schema_version: 1
+
+goal:
+  id: IDENTITY-ARCHITECTURE-01
+  title: identity_authority_and_reference_audit
+  status: active
+  formal_product_layer: P0
+  layer_target: >-
+    Cross-layer identity authority, scope, lifecycle, mapping and validation
+    governance for Odoo records, navigation, scenes, contracts, runtime rows,
+    attachments, authorization subjects and execution traces.
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend/apps/web
+    - docs
+    - .agent
+  standard_vs_user_specific: platform_generic_identity_governance
+  objective: >-
+    Produce a read-only, evidence-backed identity architecture baseline with a
+    complete identity matrix, relationship graph, prohibited mappings,
+    consistency findings and machine-readable validation. Do not create a second
+    identity registry or modify product runtime semantics.
+  product_result: >-
+    A reviewed architecture artifact that freezes domain-specific identity
+    authorities and cross-layer reference rules, identifies real remaining gaps
+    and supplies explicit prerequisites for P0-B, P0-C, FCF-02-2 and future
+    modules.
+  why_here: >-
+    Identity semantics cross Odoo, Contract V2, scene/navigation delivery and
+    frontend runtime, so their governance belongs to the P0 platform boundary.
+  why_not_elsewhere:
+    - No new identity runtime or global identity registry.
+    - No Odoo record, menu, action, attachment or ORM identity rewrite.
+    - No ACL, Record Rule, workflow or database change.
+    - No P0-B, P0-C, FCF-02-2 or FCF-02-3 product implementation.
+    - No deployment.
+  blast_radius:
+    behavior:
+      - architecture documentation and machine-readable identity matrix
+      - identity relationship graph
+      - audit consistency guard and negative tests
+    exclusions:
+      - product source code is read-only in this batch
+      - remediation is scheduled only after separate review
+  rollback: >-
+    Revert the audit documents and guard through the protected pull-request flow.
+    No runtime or data rollback is involved.
+  completion:
+    implementation: verification_pending
+    independent_review: not_started
+    integration: not_started
+    deployment: not_applicable
+    user_acceptance: not_applicable
+  integration:
+    pull_request: null

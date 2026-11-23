@@ -2683,7 +2683,7 @@ verify.docs.links: guard.prod.forbid
 verify.docs.temp_guard: guard.prod.forbid
 	@python3 scripts/verify/docs_temp_guard.py
 
-verify.docs.contract_sync: guard.prod.forbid
+verify.docs.contract_sync: guard.prod.forbid verify.identity.architecture.audit.unit
 	@python3 scripts/verify/docs_contract_sync.py
 
 verify.docs.product_boundary: guard.prod.forbid

@@ -16,6 +16,7 @@
     "audit/native-scene-01-a01-a04-20261116": ".agent/runs/NATIVE-SCENE-01-A01-A04/run.json",
     "audit/native-scene-01-b-semantic-conversion-20261116": ".agent/runs/NATIVE-SCENE-01-B-SEMANTIC-CONVERSION/run.json",
     "audit/system-permission-roles-20261019": ".agent/runs/SYSTEM-PERMISSION-ROLES-20261019/run.json",
+    "audit/identity-architecture-01-20261123": ".agent/runs/IDENTITY-ARCHITECTURE-01/run.json",
     "codex/backend-suite-reuse-authority": ".agent/runs/BACKEND-SUITE-REUSE-AUTHORITY/run.json",
     "codex/cap01b-capability-reconciliation-20261104": ".agent/runs/CAP01B-CAPABILITY-RECONCILIATION-20261104/run.json",
     "codex/cap01c-c1-project-initiation-20261104": ".agent/runs/CAP01C-C1-PROJECT-INITIATION-20261104/run.json",

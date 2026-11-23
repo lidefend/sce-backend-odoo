@@ -588,3 +588,9 @@ verify.admin_close_01.scene.module_baseline: guard.prod.forbid
 verify.construction.policy_maps.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_core_extension_policy_maps_split_guard
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
+
+.PHONY: verify.identity.architecture.audit.unit
+verify.identity.architecture.audit.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/verify/identity_architecture_audit_guard.py scripts/verify/test_identity_architecture_audit_guard.py
+	@python3 -m unittest scripts.verify.test_identity_architecture_audit_guard
+	@python3 scripts/verify/identity_architecture_audit_guard.py

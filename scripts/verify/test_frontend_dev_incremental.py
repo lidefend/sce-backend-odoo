@@ -307,6 +307,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.p0_contract_producer.p0c.unit",
             ],
         )
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/identity_architecture_audit_guard.py"
+            ]),
+            ["verify.identity.architecture.audit.unit"],
+        )
+
     def test_contract_consumer_declaration_changes_select_their_owners(self) -> None:
         cases = {
             "addons/smart_construction_core/tests/test_tender_award_fact.py": [
