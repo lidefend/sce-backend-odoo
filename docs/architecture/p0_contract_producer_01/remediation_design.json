@@ -43,7 +43,7 @@
     "frontend/apps/web/src/app/contracts/v2/schema.ts": "c08e6a1b84ccabd424e3365c96101f0e9f9dc5d7969f638d4b78b6e220fba0fd",
     "frontend/apps/web/src/app/contracts/v2/store.ts": "eef9ec7aef22b556c1b98457293a31900c82660fc48c4ef7dd218fbeb8e10304",
     "frontend/apps/web/src/app/pageContract.ts": "0631b16d5ae8d2826fc58eff868e65883841a4463482f57ec1a40ae31644202d",
-    "frontend/apps/web/src/app/pageOrchestration.ts": "bcb412cf4dd4142d90fbefe4d4e11c8defe7a9566f4696cb0e08eee27d6d0e93",
+    "frontend/apps/web/src/app/pageOrchestration.ts": "d8f106da9c8f94267cf9f0713b7b6eddac2608f8cdeff5612c9fb68f405e0af1",
     "frontend/apps/web/src/api/intents.ts": "c6b26102364fff51ecaf4db4d3a7f6b5a04120e6b0a62b35e031ba69e6fc2ba6",
     "frontend/apps/web/src/components/page/PageRenderer.vue": "c63863737770ae26da2a7e3967cce867016c5695279fd5e7007203cb91400a98",
     "frontend/apps/web/src/components/page/ZoneRenderer.vue": "98835492430fdf6f3a35ae2911f6d55abbe76493fe4dded30e04e060a666ef34"

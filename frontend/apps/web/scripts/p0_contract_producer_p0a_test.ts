@@ -21,6 +21,14 @@ const readyMoney = {
   digits: [16, 2],
   currencyField: 'currency_id',
 };
+const pageBlockSourceAuthority = {
+  kind: 'page_block_data_producer',
+  authorities: ['odoo_model_fields', 'page_orchestration', 'semantic_registry'],
+  projectionOnly: true,
+  noFrontendDefaults: true,
+  carrier: 'page-block-data.v1',
+  schemaVersion: '1.0.0',
+};
 
 const ready = decodeContractV2FieldDescriptor(readyMoney);
 assert.deepEqual(ready.registryResolution.widget, {
@@ -242,7 +250,7 @@ const pageContract = decodePageOrchestrationContract({
         currencies: { '7': { id: 7, code: 'CNY', symbol: '¥' } },
         timezone: 'Asia/Shanghai',
       },
-      sourceAuthority: { kind: 'test', projectionOnly: true },
+      sourceAuthority: pageBlockSourceAuthority,
     },
   },
 });
@@ -337,7 +345,7 @@ const widgetBackedContract = decodePageOrchestrationContract({
       },
       rows: [{ rowKey: 'widget', values: { value: 0, currency_id: 7 } }],
       context: { currencies: { '7': { id: 7, code: 'CNY', symbol: '¥' } }, timezone: 'UTC' },
-      sourceAuthority: { kind: 'test', projectionOnly: true },
+      sourceAuthority: pageBlockSourceAuthority,
     },
   },
 });
@@ -381,14 +389,50 @@ assert.throws(
 
 const unknownAuthority = cloneContract(pageContract as Record<string, unknown>);
 ((unknownAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority = {
-  kind: 'test',
-  projectionOnly: true,
+  ...pageBlockSourceAuthority,
   unexpected: true,
 };
 assert.throws(
   () => decodePageOrchestrationContract(unknownAuthority),
   /sourceAuthority\.unexpected is not allowed/,
 );
+
+for (const [label, mutator, pattern] of [
+  [
+    'missing authorities',
+    (authority: Record<string, unknown>) => { delete authority.authorities; },
+    /authorities must exactly be/,
+  ],
+  [
+    'wrong kind',
+    (authority: Record<string, unknown>) => { authority.kind = 'test'; },
+    /kind must be page_block_data_producer/,
+  ],
+  [
+    'wrong carrier',
+    (authority: Record<string, unknown>) => { authority.carrier = 'attachment-fact.v1'; },
+    /carrier must be page-block-data\.v1/,
+  ],
+  [
+    'wrong schema',
+    (authority: Record<string, unknown>) => { authority.schemaVersion = '2.0.0'; },
+    /schemaVersion must be 1\.0\.0/,
+  ],
+  [
+    'frontend defaults enabled',
+    (authority: Record<string, unknown>) => { authority.noFrontendDefaults = false; },
+    /noFrontendDefaults must be true/,
+  ],
+] as const) {
+  const invalidAuthority = cloneContract(pageContract as Record<string, unknown>);
+  const authority = (((invalidAuthority.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).sourceAuthority) as Record<string, unknown>;
+  mutator(authority);
+  assert.throws(
+    () => decodePageOrchestrationContract(invalidAuthority),
+    pattern,
+    label,
+  );
+}
 
 const unknownFieldRef = cloneContract(pageContract as Record<string, unknown>);
 const fieldRefs = (((unknownFieldRef.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics).fieldRefs) as Record<string, Record<string, unknown>>;
@@ -427,7 +471,7 @@ delete (((missingCurrencyIdentity.block_data_contracts as Record<string, Record<
 const decodedMissingCurrency = decodePageOrchestrationContract(missingCurrencyIdentity);
 assert.throws(
   () => resolvePageBlockData(decodedMissingCurrency, 'ds_metrics'),
-  /money value requires a uniquely resolvable currency identity/,
+  /money value requires exactly one currency descriptor/,
 );
 
 const wrongCurrencyDescriptor = cloneContract(pageContract as Record<string, unknown>);
@@ -438,7 +482,26 @@ assert.throws(
     decodePageOrchestrationContract(wrongCurrencyDescriptor),
     'ds_metrics',
   ),
-  /money value requires a uniquely resolvable currency identity/,
+  /money value requires exactly one currency descriptor/,
+);
+
+const duplicateCurrencyDescriptor = cloneContract(pageContract as Record<string, unknown>);
+const duplicateFields = duplicateCurrencyDescriptor.block_field_descriptors as Record<string, Record<string, unknown>>;
+duplicateFields['metric.currency.duplicate'] = {
+  ...duplicateFields['metric.currency'],
+};
+const duplicateData = (duplicateCurrencyDescriptor.block_data_contracts as Record<string, Record<string, unknown>>).ds_metrics;
+(duplicateData.fieldRefs as Record<string, unknown>).currency_id_duplicate = {
+  kind: 'descriptor',
+  descriptorId: 'metric.currency.duplicate',
+  rawValuePath: 'currency_id',
+};
+assert.throws(
+  () => resolvePageBlockData(
+    decodePageOrchestrationContract(duplicateCurrencyDescriptor),
+    'ds_metrics',
+  ),
+  /money value requires exactly one currency descriptor/,
 );
 
 console.log('P0_A_DESCRIPTOR_AND_PAGE_BLOCK_DATA=PASS');

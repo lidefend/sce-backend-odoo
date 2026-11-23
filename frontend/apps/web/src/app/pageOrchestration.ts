@@ -178,10 +178,17 @@ const SOURCE_AUTHORITY_KEYS = new Set([
   'authorities',
   'projectionOnly',
   'noFrontendDefaults',
-  'noBusinessFactAuthority',
   'carrier',
   'schemaVersion',
 ]);
+const PAGE_BLOCK_SOURCE_KIND = 'page_block_data_producer';
+const PAGE_BLOCK_SOURCE_AUTHORITIES = [
+  'odoo_model_fields',
+  'page_orchestration',
+  'semantic_registry',
+] as const;
+const PAGE_BLOCK_SOURCE_CARRIER = 'page-block-data.v1';
+const PAGE_BLOCK_SOURCE_SCHEMA_VERSION = '1.0.0';
 const FIELD_REF_BASE_KEYS = new Set(['kind', 'rawValuePath']);
 const DESCRIPTOR_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'descriptorId']);
 const WIDGET_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'widgetId']);
@@ -285,33 +292,39 @@ function decodeSourceAuthority(value: unknown, path: string): ContractV2Dictiona
   }
   const authority = value as ContractV2Dictionary;
   rejectUnknownKeys(authority, SOURCE_AUTHORITY_KEYS, path);
-  if (!asText(authority.kind)) {
-    throw new PageOrchestrationDecodeError([{ path: `${path}.kind`, message: 'must be non-empty' }]);
+  if (asText(authority.kind) !== PAGE_BLOCK_SOURCE_KIND) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.kind`,
+      message: `must be ${PAGE_BLOCK_SOURCE_KIND}`,
+    }]);
   }
   if (authority.projectionOnly !== true) {
     throw new PageOrchestrationDecodeError([{ path: `${path}.projectionOnly`, message: 'must be true' }]);
   }
-  for (const key of ['noFrontendDefaults', 'noBusinessFactAuthority']) {
-    if (authority[key] !== undefined && typeof authority[key] !== 'boolean') {
-      throw new PageOrchestrationDecodeError([{ path: `${path}.${key}`, message: 'must be boolean' }]);
-    }
+  if (authority.noFrontendDefaults !== true) {
+    throw new PageOrchestrationDecodeError([{ path: `${path}.noFrontendDefaults`, message: 'must be true' }]);
   }
-  for (const key of ['carrier', 'schemaVersion']) {
-    if (authority[key] !== undefined && !asText(authority[key])) {
-      throw new PageOrchestrationDecodeError([{ path: `${path}.${key}`, message: 'must be non-empty' }]);
-    }
+  if (asText(authority.carrier) !== PAGE_BLOCK_SOURCE_CARRIER) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.carrier`,
+      message: `must be ${PAGE_BLOCK_SOURCE_CARRIER}`,
+    }]);
   }
-  if (authority.authorities !== undefined) {
-    if (
-      !Array.isArray(authority.authorities)
-      || authority.authorities.length === 0
-      || authority.authorities.some((item) => !asText(item))
-    ) {
-      throw new PageOrchestrationDecodeError([{
-        path: `${path}.authorities`,
-        message: 'must be a non-empty string array',
-      }]);
-    }
+  if (asText(authority.schemaVersion) !== PAGE_BLOCK_SOURCE_SCHEMA_VERSION) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.schemaVersion`,
+      message: `must be ${PAGE_BLOCK_SOURCE_SCHEMA_VERSION}`,
+    }]);
+  }
+  if (
+    !Array.isArray(authority.authorities)
+    || authority.authorities.length !== PAGE_BLOCK_SOURCE_AUTHORITIES.length
+    || authority.authorities.some((item, index) => item !== PAGE_BLOCK_SOURCE_AUTHORITIES[index])
+  ) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.authorities`,
+      message: `must exactly be ${PAGE_BLOCK_SOURCE_AUTHORITIES.join(', ')}`,
+    }]);
   }
   return authority;
 }
@@ -502,14 +515,20 @@ function validateMoneyCurrency(
       || value === ''
     ) return;
     const currencyField = asText(descriptor.currencyField);
-    const currencySlot = Object.entries(row.fieldDescriptors)
-      .find(([candidateSlot, candidate]) => (
+    const currencySlots = Object.entries(row.fieldDescriptors)
+      .filter(([candidateSlot, candidate]) => (
         candidateSlot !== slotKey
         && (candidateSlot === currencyField || candidate.fieldCode === currencyField)
         && candidate.semanticType === 'relation'
         && candidate.relation === 'res.currency'
       ));
-    const identity = currencySlot ? currencyIdentityOf(row.values[currencySlot[0]]) : '';
+    if (currencySlots.length !== 1) {
+      throw new PageOrchestrationDecodeError([{
+        path: `block_data_contracts.${dataSourceKey}.rows.${row.rowKey}.${slotKey}`,
+        message: 'money value requires exactly one currency descriptor',
+      }]);
+    }
+    const identity = currencyIdentityOf(row.values[currencySlots[0][0]]);
     if (!currencyField || !identity || !row.context.currencies[identity]) {
       throw new PageOrchestrationDecodeError([{
         path: `block_data_contracts.${dataSourceKey}.rows.${row.rowKey}.${slotKey}`,

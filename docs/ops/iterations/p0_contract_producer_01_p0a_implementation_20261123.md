@@ -156,3 +156,13 @@ Evidence:
 - `make local.test.baseline`: PASS, 6 cases x 3 fresh orders.
 - `make verify.test.baseline`: PASS, 366 cases x 3 independent orders,
   quarantine 0.
+
+Final independent-review closure:
+
+- Page Block source authority now requires the exact producer kind, complete
+  ordered authority list, `projectionOnly=true`, `noFrontendDefaults=true`,
+  `carrier=page-block-data.v1`, and `schemaVersion=1.0.0`. Missing, additional,
+  reordered, or incorrect declarations fail closed.
+- Monetary rows require exactly one matching `res.currency` Descriptor. Zero
+  matches and multiple matches both fail closed; neither the first nor the last
+  match is accepted implicitly.
