@@ -49,7 +49,8 @@
       "view.calendar.v1",
       "view.gantt.v1",
       "view.activity.v1",
-      "view.dashboard.v1"
+      "view.dashboard.v1",
+      "page_block_data.v1"
     ]
   },
   "schema_asset": "docs/architecture/unified_page_contract_v2/unified_page_contract_v2.schema.json",

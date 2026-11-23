@@ -150,6 +150,11 @@ class ContractVersionNegotiationTest(unittest.TestCase):
             self.negotiate(accepted_contract_versions=["2.4.x"])
         self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
 
+    def test_client_that_only_accepts_20_fails_closed(self):
+        with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
+            self.negotiate(accepted_contract_versions=["2.0.x"])
+        self.assertEqual(raised.exception.reason_code, "CONTRACT_VERSION_UNSUPPORTED")
+
     def test_mixed_versions_without_25_have_no_common_legacy_version(self):
         with self.assertRaises(NEGOTIATION_MODULE.ContractNegotiationError) as raised:
             self.negotiate(accepted_contract_versions=["2.4.x", "2.6.x"])

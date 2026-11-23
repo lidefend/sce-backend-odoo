@@ -30,20 +30,37 @@ async function login(page) {
   await page.goto(`${BASE_URL}/login?t=${Date.now()}`, { waitUntil: 'networkidle' });
   await page.locator('input[autocomplete="username"]').fill(LOGIN);
   await page.locator('input[autocomplete="current-password"]').fill(PASSWORD);
+  const loginResponsePromise = page.waitForResponse((response) => {
+    if (!response.url().includes('/api/v1/intent')) return false;
+    try {
+      return JSON.parse(response.request().postData() || '{}')?.intent === 'login';
+    } catch {
+      return false;
+    }
+  }, { timeout: 30000 });
   await page.getByRole('button', { name: /^登录$/ }).click();
+  const loginResponse = await loginResponsePromise;
+  const loginBody = await loginResponse.json().catch(() => ({}));
+  const token = String(loginBody?.data?.session?.token || loginBody?.data?.token || '');
+  if (!loginResponse.ok() || loginBody?.ok !== true || !token) {
+    throw new Error(`login failed: ${JSON.stringify({
+      status: loginResponse.status(),
+      ok: loginBody?.ok,
+      code: loginBody?.error?.code || '',
+    })}`);
+  }
   await page.waitForFunction(() => !window.location.pathname.includes('/login'), null, { timeout: 30000 });
   await page.waitForLoadState('networkidle').catch(() => {});
+  return token;
 }
 
-async function requestIntent(page, intent, params) {
-  return page.evaluate(async ({ baseUrl, intent: requestIntentName, params: requestParams }) => {
-    const tokenKey = Object.keys(sessionStorage).find((key) => key.startsWith('sc_auth_token:'));
-    const token = tokenKey ? sessionStorage.getItem(tokenKey) : '';
+async function requestIntent(page, intent, params, token) {
+  return page.evaluate(async ({ baseUrl, intent: requestIntentName, params: requestParams, authToken }) => {
     const response = await fetch(`${baseUrl}/api/v1/intent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        Authorization: `Bearer ${authToken}`,
       },
       body: JSON.stringify({
         intent: requestIntentName,
@@ -51,14 +68,14 @@ async function requestIntent(page, intent, params) {
       }),
     });
     return { status: response.status, body: await response.json() };
-  }, { baseUrl: BASE_URL, intent, params });
+  }, { baseUrl: BASE_URL, intent, params, authToken: token });
 }
 
-async function requestScene(page, params) {
-  return requestIntent(page, ENTRY_INTENT, params);
+async function requestScene(page, params, token) {
+  return requestIntent(page, ENTRY_INTENT, params, token);
 }
 
-async function validateCompatMatrix(page) {
+async function validateCompatMatrix(page, token) {
   const base = {
     client_type: 'web_pc',
     accepted_contract_versions: ['2.5.x'],
@@ -93,12 +110,12 @@ async function validateCompatMatrix(page) {
   };
   const result = {};
   for (const [key, params] of Object.entries(cases)) {
-    result[key] = await requestScene(page, params);
+    result[key] = await requestScene(page, params, token);
   }
   return result;
 }
 
-async function validateContractV2Matrix(page) {
+async function validateContractV2Matrix(page, token) {
   const base = {
     op: 'model',
     model: 'project.project',
@@ -108,11 +125,11 @@ async function validateContractV2Matrix(page) {
     client_contract_capabilities: [],
   };
   return {
-    legacy_26_without_capability: await requestIntent(page, 'ui.contract.v2', base),
+    legacy_26_without_capability: await requestIntent(page, 'ui.contract.v2', base, token),
     current_26: await requestIntent(page, 'ui.contract.v2', {
       ...base,
       client_contract_capabilities: ['page_block_data.v1'],
-    }),
+    }, token),
   };
 }
 
@@ -125,7 +142,7 @@ async function renderViewport(browser, viewport) {
     if (message.type() === 'error') consoleErrors.push(message.text());
   });
   page.on('pageerror', (error) => pageErrors.push(String(error && error.message || error)));
-  await login(page);
+  const token = await login(page);
   await page.goto(`${BASE_URL}/s/${SCENE_KEY}`, { waitUntil: 'networkidle' });
   await page.waitForFunction(() => {
     const text = String(document.body?.textContent || '');
@@ -149,8 +166,8 @@ async function renderViewport(browser, viewport) {
   });
   const uiConsoleErrors = [...consoleErrors];
   const uiPageErrors = [...pageErrors];
-  const matrix = await validateCompatMatrix(page);
-  const contractV2Matrix = await validateContractV2Matrix(page);
+  const matrix = await validateCompatMatrix(page, token);
+  const contractV2Matrix = await validateContractV2Matrix(page, token);
   if (viewport.name === 'desktop') {
     fs.writeFileSync(
       path.join(ARTIFACT_DIR, 'ui-contract-v2-project-list.json'),

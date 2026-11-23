@@ -137,6 +137,17 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertFalse(result["ok"])
         self.assertEqual(result["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
 
+    def test_handler_rejects_20_only_as_no_common_version(self):
+        result = WorkspaceHomeEnterHandler(self.env).handle({
+            "params": {
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.0.x"],
+                "client_contract_capabilities": [],
+            }
+        })
+        self.assertFalse(result["ok"])
+        self.assertEqual(result["error"]["reason_code"], "CONTRACT_VERSION_UNSUPPORTED")
+
     def test_real_monetary_model_field_keeps_raw_value_and_currency_semantics(self):
         contract, project, currency = _build_real_money_contract(self.env)
         data_contract = contract["page_orchestration"]["block_data_contracts"]["ds_budget_active_cost_target"]

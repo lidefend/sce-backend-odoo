@@ -463,7 +463,7 @@ class TestP1PaymentRequestCapability(BusinessTransactionCase):
                 "context": {"company_id": self.env.company.id},
                 "delivery_profile": "full",
                 "client_type": "web_pc",
-                "accepted_contract_versions": ["2.0.x"],
+                "accepted_contract_versions": ["2.5.x"],
                 "client_contract_capabilities": [
                     "container_tree.v2",
                     "data_source.v2",

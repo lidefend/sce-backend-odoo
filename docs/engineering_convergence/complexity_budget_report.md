@@ -93,7 +93,7 @@ Generated from repository source files. This report is informational during the 
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
-| 1519 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
+| 1520 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1501 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |

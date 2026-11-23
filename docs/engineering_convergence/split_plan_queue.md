@@ -94,7 +94,7 @@ Generated from `complexity_budget_report.md` split-plan-required files.
 | P2 | 1573 | Frontend owner | `frontend/apps/web/src/layouts/AppShell.vue` | Extract composables, child panels, data adapters, and action handlers; keep the route component as orchestration shell. |
 | P2 | 1553 | DevOps owner | `scripts/verify/business_entry_matrix_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1538 | DevOps owner | `scripts/ops/agent_dispatch_inbox.py` | Define owner-specific decomposition plan before adding unrelated behavior. |
-| P2 | 1519 | Construction backend owner | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
+| P2 | 1520 | Construction backend owner | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1501 | Architecture owner | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` | Split fixtures, scenario builders, and assertion groups by behavior area. |
 | P2 | 1501 | DevOps owner | `scripts/verify/frontend_delivery_hardening_browser.mjs` | Define owner-specific decomposition plan before adding unrelated behavior. |
 | P2 | 1107 | DevOps owner | `scripts/dev/frontend_acceptance_runtime.sh` | Move reusable logic into small scripts and keep shell as thin entrypoint. |

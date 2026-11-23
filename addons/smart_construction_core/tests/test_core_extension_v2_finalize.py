@@ -887,7 +887,8 @@ class TestCoreExtensionV2Finalize(TransactionCase):
                 "view_id": view.id,
                 "view_type": "form",
                 "render_profile": "edit",
-                "accepted_contract_versions": ["2.2.x"],
+                "client_type": "web_pc",
+                "accepted_contract_versions": ["2.5.x"],
                 "client_contract_capabilities": list(NODE_CAPABILITIES.values()),
             })
             result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result

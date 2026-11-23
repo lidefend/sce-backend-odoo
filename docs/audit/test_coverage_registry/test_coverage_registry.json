@@ -4,8 +4,8 @@
   "counts": {
     "odoo_tags": 226,
     "gated": 5,
-    "on_demand": 84,
-    "unwired": 137,
+    "on_demand": 85,
+    "unwired": 136,
     "odoo_tag_declarations": 463,
     "gated_declarations": 107,
     "uncovered_declarations": 356,
@@ -2914,14 +2914,16 @@
     },
     {
       "group": "tender_award_fact",
-      "status": "unwired",
+      "status": "on-demand",
       "kind": "odoo_tag",
       "declarations": 1,
       "files": [
         "addons/smart_construction_core/tests/test_tender_award_fact.py"
       ],
       "owner": "construction-product",
-      "evidence": [],
+      "evidence": [
+        "make:verify.tender_award_fact.orm :: tender_award_fact"
+      ],
       "disposition": "wire-pending"
     },
     {
