@@ -2885,7 +2885,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        "make:verify.smart_construction_bundle.system_product_release.orm :: /TestSystemProductRelease (class selection)"
+        "make:verify.smart_construction_bundle.system_product_baseline.orm :: /TestSystemProductRelease (class selection)"
       ]
     },
     {

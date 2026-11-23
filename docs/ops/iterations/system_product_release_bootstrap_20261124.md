@@ -30,6 +30,8 @@ product itself.
   freezes the shipped policy when the snapshot is absent, legacy or empty.
 - Bundle migration `0.1.2` applies the same idempotent initialization to
   existing databases.
+- The incremental planner routes bundle migration and release tests to their
+  owning checks without manual target selection.
 - Fresh-install tests assert one active snapshot per shipped product key, the
   46-scene composition, frozen integrity and runtime publication scope.
 
@@ -37,13 +39,13 @@ product itself.
 
 | Lane | State | Entry |
 | --- | --- | --- |
-| local_targeted | required | `make verify.smart_construction_bundle.system_product_release.orm` |
+| local_targeted | required | `make verify.smart_construction_bundle.system_product_baseline.orm` |
 | remote_integration | required | exact-head required PR CI |
 | scheduled_release | excluded | follows protected main integration |
 
 ## Local results
 
-- `make verify.smart_construction_bundle.system_product_release.orm`:
+- `make verify.smart_construction_bundle.system_product_baseline.orm`:
   3 tests passed on a fresh disposable bundle installation.
 - Verified standard and preview active snapshots, 46-scene composition,
   frozen integrity, runtime publication scope, idempotency and upgrade repair.

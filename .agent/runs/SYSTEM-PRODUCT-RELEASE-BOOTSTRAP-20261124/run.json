@@ -16,6 +16,8 @@
     "addons/smart_construction_bundle/tests/__init__.py",
     "addons/smart_construction_bundle/tests/test_system_product_release.py",
     "make/ci.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "docs/ops/iterations/system_product_release_bootstrap_20261124.md"
   ],
   "environment": {
@@ -25,7 +27,7 @@
   "verification_responsibility": {
     "local_targeted": {
       "status": "required",
-      "entrypoint": "make verify.smart_construction_bundle.system_product_release.orm",
+      "entrypoint": "make verify.smart_construction_bundle.system_product_baseline.orm",
       "reason": "Prove fresh-install system release materialization and idempotency in a disposable local test database."
     },
     "remote_integration": {
@@ -41,7 +43,7 @@
   },
   "checks": {
     "product_release_initialization": {
-      "target": "verify.smart_construction_bundle.system_product_release.orm",
+      "target": "verify.smart_construction_bundle.system_product_baseline.orm",
       "kind": "runtime",
       "inputs": [
         "addons/smart_construction_core/models/support/product_policy_sync.py",
@@ -52,6 +54,15 @@
         "addons/smart_construction_bundle/tests/test_system_product_release.py",
         "make/ci.mk",
         "make/dev.mk"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
       ]
     }
   },
