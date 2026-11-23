@@ -1,0 +1,40 @@
+schema_version: 1
+
+goal:
+  id: SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124
+  title: system_product_release_source_identity
+  status: active
+  formal_product_layer: P1
+  layer_target: construction product release source binding
+  module:
+    - smart_construction_core
+    - smart_construction_bundle
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Bind system product release materialization to the database performing the
+    installation, rather than a bare historical database name.
+  product_result: >-
+    Fresh bundle installs and demo rebuilds create a valid system release even
+    when another database named sc_demo exists in the same cluster.
+  why_here: >-
+    The source database parameter is part of the P1 product release
+    materialization contract.
+  why_not_elsewhere:
+    - P0 already implements source target validation.
+    - P4 deployment must not repair a product initialization identity.
+    - No frontend or tenant behavior should infer which database is authoritative.
+  blast_radius:
+    - system product baseline creation
+    - release source database configuration
+    - local and daily demo rebuilds
+  acceptance:
+    - A fresh bundle install sets catalog_source_db to its current database.
+    - Release preflight succeeds with a stale sc_demo database present locally.
+    - The scenario catalog becomes ready with 132 pages and 46 actionable scenarios.
+  exclusions:
+    - Production state changes
+    - P0 release validation changes
+    - frontend changes
+  rollback: >-
+    Revert the source binding and restore the prior catalog source parameter
+    from the affected database backup if required.

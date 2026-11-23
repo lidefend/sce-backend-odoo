@@ -552,11 +552,29 @@ class ScProductPolicy(models.Model):
             compose_product_policy,
         )
 
-        Snapshot = self.env["sc.edition.release.snapshot"].sudo()
-        service = EditionReleaseSnapshotService(self.env)
+        current_db = _text(getattr(self.env.cr, "dbname", ""))
+        if not current_db:
+            raise LockedMenuPolicyContractError(
+                "SYSTEM_PRODUCT_RELEASE_DATABASE_MISSING", ""
+            )
+        params = self.env["ir.config_parameter"].sudo()
+        catalog_source_key = "smart_core.release_operator.catalog_source_db"
+        catalog_source_db = _text(params.get_param(catalog_source_key, ""))
+        if not catalog_source_db:
+            params.set_param(catalog_source_key, current_db)
+            catalog_source_db = current_db
+        release_env = self.env(
+            context={
+                **self.env.context,
+                "sc_release_catalog_source_db": catalog_source_db,
+            }
+        )
+        Snapshot = release_env["sc.edition.release.snapshot"].sudo()
+        service = EditionReleaseSnapshotService(release_env)
+        policy_model = release_env["sc.product.policy"].sudo()
         results = []
         for product_key in ("construction.standard", "construction.preview"):
-            policy = self.sudo().with_context(active_test=False).search([
+            policy = policy_model.with_context(active_test=False).search([
                 ("product_key", "=", product_key),
                 ("active", "=", True),
             ], limit=1)
@@ -598,7 +616,7 @@ class ScProductPolicy(models.Model):
                 })
                 continue
             source_policy = compose_product_policy(
-                self.env,
+                release_env,
                 policy.to_runtime_dict(),
             )
             draft = service.build_policy_draft_contract(

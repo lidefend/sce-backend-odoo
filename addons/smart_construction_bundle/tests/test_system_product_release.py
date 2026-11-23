@@ -26,6 +26,11 @@ class TestSystemProductRelease(TransactionCase):
         )
 
         service = EditionReleaseSnapshotService(self.env)
+        self.assertTrue(
+            self.env["ir.config_parameter"]
+            .sudo()
+            .get_param("smart_core.release_operator.catalog_source_db")
+        )
         for product_key in self.PRODUCT_KEYS:
             with self.subTest(product_key=product_key):
                 snapshot = self._active_system_release(product_key)
