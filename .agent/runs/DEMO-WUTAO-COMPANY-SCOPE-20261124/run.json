@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "id": "DEMO-WUTAO-COMPANY-SCOPE-20261124",
+  "branch": "fix/demo-wutao-company-scope-20261124",
+  "status": "active",
+  "baseline_sha": "c831905ece3eb5980e86ebfd8b34ecb2bb7e77ad",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/DEMO-WUTAO-COMPANY-SCOPE-20261124.yaml",
+    ".agent/runs/DEMO-WUTAO-COMPANY-SCOPE-20261124/run.json",
+    "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+    "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make targets; startup readback uses the governed local.dev demo"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.demo.usage_foundation_role_scope.unit",
+      "reason": "Validate the corrected company scope declaration; local runtime readback covers the rebuilt demo."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate the verification declaration against current main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release eligibility follows protected integration."
+    }
+  },
+  "checks": {
+    "demo_role_scope": {
+      "target": "verify.demo.usage_foundation_role_scope.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+        "make/dev_test.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Run the role-scope unit, publish the exact candidate, merge after required CI, then continue local and daily demo deployment.",
+  "goal": ".agent/goals/DEMO-WUTAO-COMPANY-SCOPE-20261124.yaml",
+  "record": "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
+}

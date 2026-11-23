@@ -65,7 +65,11 @@ identity.
 - `make ci.local.iteration`: PASS at `34e0f290889adb015686de4d005a077243fa27da`;
   all 7 affected targets executed, with 0 unmapped paths.
 - Read-only startup readback on `sc_dev_demo`: `wutao` resolved to
-  `role_code=business_config_admin` with company scope `[1]`.
+  `role_code=business_config_admin` with company scope `[1, 2]`.
+
+The clean rebuild corrected the earlier observation: `wutao` is a
+group-level demo seat and therefore carries the configured second operating
+company as well as the main company.
 
 ## Remaining runtime application
 

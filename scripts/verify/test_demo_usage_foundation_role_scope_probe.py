@@ -119,7 +119,7 @@ class DemoUsageFoundationRoleScopeProbeTest(unittest.TestCase):
         self.assertEqual(account["login"], "wutao")
         self.assertEqual(account["expectation"], "role_code")
         self.assertEqual(account["expected_role_code"], "business_config_admin")
-        self.assertEqual(account["expected_allowed_company_ids"], [1])
+        self.assertEqual(account["expected_allowed_company_ids"], [1, 2])
 
     def test_real_manifest_has_negative(self):
         manifest = load_manifest(MANIFEST_PATH)

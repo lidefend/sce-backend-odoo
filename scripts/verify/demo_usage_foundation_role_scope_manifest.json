@@ -21,7 +21,7 @@
       "expectation": "role_code",
       "expected_role_code": "business_config_admin",
       "label": "业务配置管理员（含业务全功能能力）",
-      "expected_allowed_company_ids": [1],
+      "expected_allowed_company_ids": [1, 2],
       "first_screen_expectation": "record"
     },
     {
