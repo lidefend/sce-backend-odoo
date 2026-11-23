@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124",
   "branch": "fix/demo-wutao-business-config-admin-20261124",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "32fda4ce4666236295f60c985211ab703dbf4ddf",
   "scope": [
     ".agent/active-runs.json",

@@ -59,8 +59,13 @@ identity.
   `wutao` declared as `business_config_admin`.
 - `make verify.local.dev.baseline_readiness.orm`: 1 test passed on the fully
   seeded local demo.
+- `make verify.frontend.dev.incremental.unit`: 232 tests passed.
+- `make verify.verification.lane.coverage`: 74 tests passed with the
+  verification surface inside the frozen baseline.
+- `make ci.local.iteration`: PASS at `34e0f290889adb015686de4d005a077243fa27da`;
+  all 7 affected targets executed, with 0 unmapped paths.
 - Read-only startup readback on `sc_dev_demo`: `wutao` resolved to
-  `role_code=business_config_admin`.
+  `role_code=business_config_admin` with company scope `[1]`.
 
 ## Remaining runtime application
 
