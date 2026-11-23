@@ -12,6 +12,7 @@ from ..models.support.product_scenario import (
 )
 from ..services.scenario_surface_projection import (
     _apply_scene_target_projection,
+    project_authorized_nav_with_env,
     load_maintained_runtime_surface,
     runtime_menu_scope,
 )
@@ -171,6 +172,126 @@ class TestScenarioDirectInitialization(TransactionCase):
                 "direct_exempt"
             ]
         )
+
+    def test_disabled_business_direct_pages_do_not_materialize_centers(self):
+        Entry = self.env["sc.product.scenario.entry"].sudo()
+        menu_xmlids = (
+            "smart_construction_core.menu_sc_my_work",
+            "smart_construction_core.menu_sc_runtime_user_management",
+            "smart_construction_core.menu_sc_business_config_workbench",
+        )
+        menus = {
+            xmlid: self.env.ref(xmlid)
+            for xmlid in menu_xmlids
+        }
+        enabled = {
+            entry.scenario_id.code: False
+            for entry in Entry.search([("menu_id", "in", [menu.id for menu in menus.values()])])
+        }
+        authority = {"primary_actions": [
+            {
+                "menu_id": menu.id,
+                "action_id": menu.action.id,
+                "menu_xmlid": xmlid,
+            }
+            for xmlid, menu in menus.items()
+        ]}
+        index, menu_ids, _ = runtime_menu_scope(
+            self.env,
+            load_maintained_runtime_surface(self.env),
+        )
+        filtered = filter_business_authority(
+            authority,
+            surface_index=index,
+            enabled=enabled,
+            entries=[],
+            menu_xmlids_by_id=menu_ids,
+            menu_xmlids_by_action={
+                menu.action.id: [xmlid]
+                for xmlid, menu in menus.items()
+            },
+            company_id=self.env.company.id,
+        )
+        self.assertEqual(filtered["primary_actions"], authority["primary_actions"])
+
+        workspace_home = self.env.ref(
+            "smart_construction_core.menu_sc_workspace_home"
+        )
+        role_home_nav = [{
+            "label": "业务场景",
+            "children": [{
+                "label": "工作台",
+                "policy_center_key": "workspace.home.workbench",
+                "policy_center_label": "工作台",
+                "policy_center_sequence": 10,
+                "children": [{
+                    "label": "角色首页",
+                    "menu_id": workspace_home.id,
+                    "action_id": 0,
+                    "menu_xmlid": "smart_construction_core.menu_sc_workspace_home",
+                    "scene_key": "workspace.home",
+                    "route": "/s/workspace.home",
+                    "entry_target": {
+                        "type": "scene",
+                        "scene_key": "workspace.home",
+                        "compatibility_refs": {"menu_id": workspace_home.id},
+                    },
+                    "policy_center_key": "workspace.home.workbench",
+                    "policy_center_label": "工作台",
+                    "policy_center_sequence": 10,
+                }],
+            }],
+        }]
+        projected = project_authorized_nav_with_env(
+            self.env,
+            role_home_nav,
+            filtered,
+        )
+        center_keys = {
+            center["key"]
+            for center in projected["tree"]["centers"]
+        }
+        self.assertNotIn("workspace.home.workbench", center_keys)
+        self.assertNotIn("construction.center.administration", center_keys)
+        self.assertIn("construction.center.product_configuration", center_keys)
+
+        workbench_entry = Entry.search([
+            ("menu_id", "=", menus[
+                "smart_construction_core.menu_sc_my_work"
+            ].id),
+        ], limit=1)
+        admin_entry = Entry.search([
+            ("menu_id", "=", menus[
+                "smart_construction_core.menu_sc_runtime_user_management"
+            ].id),
+        ], limit=1)
+        filtered = filter_business_authority(
+            authority,
+            surface_index=index,
+            enabled={
+                **enabled,
+                workbench_entry.scenario_id.code: True,
+                admin_entry.scenario_id.code: True,
+            },
+            entries=[],
+            menu_xmlids_by_id=menu_ids,
+            menu_xmlids_by_action={
+                menu.action.id: [xmlid]
+                for xmlid, menu in menus.items()
+            },
+            company_id=self.env.company.id,
+        )
+        projected = project_authorized_nav_with_env(
+            self.env,
+            [],
+            filtered,
+        )
+        center_keys = {
+            center["key"]
+            for center in projected["tree"]["centers"]
+        }
+        self.assertIn("workspace.home.workbench", center_keys)
+        self.assertIn("construction.center.administration", center_keys)
 
     def test_bound_business_page_still_cannot_claim_direct_exemption(self):
         menu = self.env.ref("smart_construction_core.menu_sc_user_payment_apply")
