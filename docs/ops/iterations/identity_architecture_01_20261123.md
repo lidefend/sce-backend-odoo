@@ -2,7 +2,7 @@
 
 ## Batch identity
 
-- Base main: `8b46984d2b896eb104c26348788883993d260beb`
+- Integrated baseline: `2a99f01c55af1c1cee01bc29d280fa5cc777b12f`
 - Branch: `audit/identity-architecture-01-20261123`
 - Result index: `.agent/runs/IDENTITY-ARCHITECTURE-01/run.json`
 
@@ -39,7 +39,7 @@ replace existing Odoo, Contract V2, scene, attachment or authorization facts.
 
 ## Audit result
 
-The audit freezes 16 identity domains, 21 relationships and 8 findings:
+The audit freezes 16 identity domains, 23 relationships and 8 findings:
 
 - `odoo.model`, `odoo.record`, `odoo.xmlid`, `odoo.menu`, `odoo.action`;
 - `navigation.entry`, `product.scene`;
@@ -64,19 +64,19 @@ Findings:
 
 | ID | Finding | Owner | Status |
 | --- | --- | --- | --- |
-| `ID-F-001` | Full Action Rule identity missing from real execute request | P0-C-FIX-01 | candidate PR #976 |
+| `ID-F-001` | Full Action Rule identity missing from historical baseline | P0-C-FIX-01 | fixed by PR #976 (`2a99f01c`) |
 | `ID-F-002` | Content fingerprint used as trace fallback | IDENTITY-TRACE-01 proposal | open |
 | `ID-F-003` | Positional Page Block rowKey fallback | IDENTITY-ROW-01 proposal | open |
 | `ID-F-004` | Index-based local table key | frontend presentation | accepted local only |
 | `ID-F-005` | Incomplete attachment fact / URL locator | P0-B | scheduled |
 | `ID-F-006` | Navigation identity mature | identity baseline | frozen |
 | `ID-F-007` | Authorization subject server-only | identity baseline | frozen |
-| `ID-F-008` | `actionId` name overlap across native and contract identity | P0-C-FIX-01 | candidate PR #976 |
+| `ID-F-008` | `actionId` name overlap across native and contract identity | P0-C-FIX-01 | fixed by PR #976 (`2a99f01c`) |
 
 ## Validation
 
-- `verify.identity.architecture.audit.unit`: PASS, 11 tests and matrix/graph
-  validation for 16 domains, 21 edges and 8 findings.
+- `verify.identity.architecture.audit.unit`: PASS, 14 tests and matrix/graph
+  validation for 16 domains, 23 edges and 8 findings.
 - `verify.docs.contract_sync`: PASS and consumes the identity guard.
 - `verify.docs.links`: PASS.
 - `verify.guard.registry`: PASS.
@@ -87,7 +87,7 @@ Findings:
 
 `verify.docs.all` reaches a separate pre-existing
 `verify.native_scene.inventory.unit` failure: five native scene inventory files
-are stale on the selected baseline. This audit changes no native model, menu,
+are stale on the integrated baseline. This audit changes no native model, menu,
 action or view source. The failure is classified as
 `baseline_evidence_defect` and remains outside this read-only identity scope.
 

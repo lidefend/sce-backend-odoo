@@ -28,27 +28,28 @@ flowchart LR
   end
 
   RECORD -->|instantiates| MODEL
-  XMLID -->|external reference| RECORD
-  MENU -->|carries| ACTION
+  XMLID -->|external_reference| RECORD
+  MENU -->|entry_target| ACTION
   NAV -->|carrier| MENU
-  NAV -->|execution target| ACTION
-  NAV -->|scene target| SCENE
-  SCENE -->|composition reference| NAV
-  FIELD -->|declares field on| MODEL
-  OCCURRENCE -->|hosts| FIELD
-  RULE -->|resolves action target| ACTION
-  RULE -->|navigates scene| SCENE
-  RULE -->|source occurrence| OCCURRENCE
-  ROW -->|persisted row| RECORD
-  ROW -->|owned by relation| FIELD
-  ATTACHMENT -->|storage or business owner| RECORD
-  PRINCIPAL -->|authorizes as| AUTH_SUBJECT
-  AUTH_SUBJECT -->|checks record scope| RECORD
-  REQUEST -->|references| RULE
-  REQUEST -->|authenticated by| PRINCIPAL
+  NAV -->|execution_target| ACTION
+  NAV -->|scene_target| SCENE
+  SCENE -->|composition_reference| NAV
+  FIELD -->|declares_field| MODEL
+  OCCURRENCE -->|hosts_field| FIELD
+  RULE -->|executes_target| ACTION
+  RULE -->|navigates_target| SCENE
+  RULE -->|source_occurrence| OCCURRENCE
+  ROW -->|persisted_reference| RECORD
+  ROW -->|owned_by_relation| FIELD
+  ATTACHMENT -->|storage_owner| RECORD
+  ATTACHMENT -->|business_owner| RECORD
+  ATTACHMENT -->|authorized_through| AUTH_SUBJECT
+  PRINCIPAL -->|authorizes_as| AUTH_SUBJECT
+  AUTH_SUBJECT -->|checks_record_scope| RECORD
+  REQUEST -->|references_action| RULE
+  REQUEST -->|authenticated_by| PRINCIPAL
   TRACE -->|correlates| REQUEST
-  TRACE -->|correlates feedback| RULE
-  ATTACHMENT -->|authorizes through| AUTH_SUBJECT
+  TRACE -->|correlates_feedback| RULE
 
   classDef frozen fill:#e8f5e9,stroke:#2e7d32,color:#1b5e20;
   classDef pending fill:#fff3e0,stroke:#ef6c00,color:#e65100;

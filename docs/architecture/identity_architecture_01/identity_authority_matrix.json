@@ -1,6 +1,6 @@
 {
   "schemaVersion": "identity-architecture-01/v1",
-  "baselineMain": "8b46984d2b896eb104c26348788883993d260beb",
+  "baselineMain": "2a99f01c55af1c1cee01bc29d280fa5cc777b12f",
   "status": "audit_candidate",
   "decision": {
     "globalIdentityRegistry": "forbidden",
@@ -478,7 +478,9 @@
     {"from": "contract.action_rule", "to": "contract.widget_occurrence", "kind": "source_occurrence"},
     {"from": "runtime.collection_row", "to": "odoo.record", "kind": "persisted_reference"},
     {"from": "runtime.collection_row", "to": "contract.field", "kind": "owned_by_relation"},
-    {"from": "attachment.record", "to": "odoo.record", "kind": "storage_or_business_owner"},
+    {"from": "attachment.record", "to": "odoo.record", "kind": "storage_owner"},
+    {"from": "attachment.record", "to": "odoo.record", "kind": "business_owner"},
+    {"from": "attachment.record", "to": "security.authorization_subject", "kind": "authorized_through"},
     {"from": "security.principal", "to": "security.authorization_subject", "kind": "authorizes_as"},
     {"from": "security.authorization_subject", "to": "odoo.record", "kind": "checks_record_scope"},
     {"from": "transport.request", "to": "contract.action_rule", "kind": "references_action"},
@@ -499,8 +501,10 @@
       ],
       "impact": "Backend feedback cannot correlate a real Action View execution to the canonical action rule.",
       "owner": "P0-C-FIX-01",
-      "remediation": "PR #976 candidate propagates actionId, backendIdentity and sourceWidgetId and requires backend revalidation.",
-      "status": "remediation_candidate"
+      "remediation": "PR #976 propagated actionId, backendIdentity and sourceWidgetId and required backend revalidation; merged as 2a99f01c.",
+      "status": "fixed",
+      "observedOn": "8b46984d2b896eb104c26348788883993d260beb",
+      "fixedBy": "2a99f01c55af1c1cee01bc29d280fa5cc777b12f"
     },
     {
       "id": "ID-F-002",
@@ -602,16 +606,18 @@
       ],
       "impact": "A shared property name encourages accidental substitution between Odoo action identity and ContractV2ActionRule identity.",
       "owner": "P0-C-FIX-01",
-      "remediation": "Use a distinct contractActionId field for the string rule identity and keep native numeric action identity separate.",
-      "status": "remediation_candidate"
+      "remediation": "PR #976 separated contractActionId from native numeric action identity; merged as 2a99f01c.",
+      "status": "fixed",
+      "observedOn": "8b46984d2b896eb104c26348788883993d260beb",
+      "fixedBy": "2a99f01c55af1c1cee01bc29d280fa5cc777b12f"
     }
   ],
   "workPackages": [
     {
       "id": "P0-C-FIX-01",
       "findingIds": ["ID-F-001", "ID-F-008"],
-      "status": "candidate_ready_for_review",
-      "unlocks": ["P0-C final closure", "P0-B start after merge"]
+      "status": "merged",
+      "unlocks": ["P0-C final closure", "P0-B after identity baseline approval"]
     },
     {
       "id": "IDENTITY-TRACE-01",

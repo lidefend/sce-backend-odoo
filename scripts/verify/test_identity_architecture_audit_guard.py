@@ -68,8 +68,26 @@ class IdentityArchitectureAuditGuardTest(unittest.TestCase):
         errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
         self.assertTrue(any("graph does not declare domain odoo.record" in item for item in errors))
 
+    def test_graph_missing_edge_is_rejected(self):
+        graph = self.graph.replace('  RECORD -->|instantiates| MODEL\n', '')
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(any("missing graph edge: odoo.record->odoo.model" in item for item in errors))
+
+    def test_graph_edge_kind_mismatch_is_rejected(self):
+        graph = self.graph.replace('RECORD -->|instantiates| MODEL', 'RECORD -->|references| MODEL')
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(any("graph edge kind mismatch" in item for item in errors))
+
+    def test_graph_extra_edge_is_rejected(self):
+        graph = self.graph.replace(
+            '  TRACE -->|correlates_feedback| RULE',
+            '  TRACE -->|correlates_feedback| RULE\n  MODEL -->|references_action| RULE',
+        )
+        errors = validate_matrix(self.matrix, doc_text=self.doc, graph_text=graph)
+        self.assertTrue(any("unregistered graph edge: odoo.model->contract.action_rule" in item for item in errors))
+
     def test_baseline_identity_is_fixed(self):
-        self.assertEqual(BASELINE, "8b46984d2b896eb104c26348788883993d260beb")
+        self.assertEqual(BASELINE, "2a99f01c55af1c1cee01bc29d280fa5cc777b12f")
 
     def test_read_only_scope_uses_exact_baseline(self):
         self.assertEqual(validate_product_source_read_only(), [])

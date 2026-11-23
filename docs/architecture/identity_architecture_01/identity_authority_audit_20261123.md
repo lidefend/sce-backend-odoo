@@ -22,11 +22,13 @@ Relationship graph:
 
 ## 2. Baseline and evidence boundary
 
-- Mainline baseline: `8b46984d2b896eb104c26348788883993d260beb`.
+- Mainline baseline: `2a99f01c55af1c1cee01bc29d280fa5cc777b12f`.
 - This audit changes no Odoo model, ORM identity, menu/action identity, ACL,
   Record Rule, workflow, database or product runtime source.
-- P0-C-FIX-01 is recorded as a separate remediation candidate for the Action ID
-  gap. Its future merge does not transfer Odoo or Contract V2 ownership.
+- P0-C-FIX-01 is recorded historically against
+  `8b46984d2b896eb104c26348788883993d260beb` and was merged as
+  `2a99f01c55af1c1cee01bc29d280fa5cc777b12f`. Its merge does not transfer Odoo
+  or Contract V2 ownership.
 - P0-B attachment-fact implementation remains a separate work package.
 
 ## 3. Identity layers
@@ -127,9 +129,9 @@ ContractV2ActionRule
   -> canonical actionId + trace feedback
 ```
 
-`ID-F-001` records the baseline gap. P0-C-FIX-01 is the separate remediation
-candidate. The backend must never echo a client actionId without matching the
-current unique rule.
+`ID-F-001` records the historical baseline gap. P0-C-FIX-01 fixed it in the
+current baseline. The backend must never echo a client actionId without matching
+the current unique rule.
 
 ### 4.5 Runtime row identity
 
@@ -159,6 +161,16 @@ Attachment facts must keep four concepts separate:
 | `storageOwner` | actual Odoo storage association |
 | `businessOwner` | business context represented by the page |
 | authorization subject | server-resolved target used by the file service |
+
+Identity relations are:
+
+```text
+attachment.record -> odoo.record / storage_owner
+attachment.record -> odoo.record / business_owner
+attachment.record -> security.authorization_subject / authorized_through
+```
+
+`storageOwner` and `businessOwner` are never a combined identity relation.
 
 The authorization subject is internal and never public. The client never
 chooses it. Existing `file.download`, upload and delete services remain the
@@ -204,18 +216,18 @@ Neither may be synthesized from a role label, company name, URL or client field.
 
 | ID | Severity | Finding | Owner | Status |
 | --- | --- | --- | --- | --- |
-| `ID-F-001` | P1 | Action View request omits full Action Rule identity | P0-C-FIX-01 | remediation candidate |
+| `ID-F-001` | P1 | Action View request omitted full Action Rule identity | P0-C-FIX-01 | fixed in `2a99f01c` |
 | `ID-F-002` | P1 | Content fingerprint used as trace fallback | identity trace follow-up | open |
 | `ID-F-003` | P2 | Page Block positional `rowKey` fallback | identity row follow-up | open |
 | `ID-F-004` | P3 | Index-based table display key | frontend presentation | accepted local only |
 | `ID-F-005` | P1 | Attachment URL/name fallback lacks full fact identity | P0-B | scheduled |
 | `ID-F-006` | P3 | Navigation identity is mature | identity baseline | frozen |
 | `ID-F-007` | P2 | Authorization subject is server-only | identity baseline | frozen |
-| `ID-F-008` | P2 | `actionId` name spans native numeric and contract string identities | P0-C-FIX-01 | remediation candidate |
+| `ID-F-008` | P2 | `actionId` name spans native numeric and contract string identities | P0-C-FIX-01 | fixed in `2a99f01c` |
 
 ## 7. Delivery order
 
-1. Review/merge `P0-C-FIX-01` for `ID-F-001`.
+1. `P0-C-FIX-01` is merged for `ID-F-001` and `ID-F-008`.
 2. Freeze this identity architecture after independent review.
 3. P0-B implements `ID-F-005` using the existing file services.
 4. `IDENTITY-TRACE-01` closes `ID-F-002` before trace evidence is treated as
@@ -225,9 +237,10 @@ Neither may be synthesized from a role label, company name, URL or client field.
 
 ## 8. Current status
 
-- Identity matrix and graph: complete audit draft.
+- Identity matrix and graph: 16 domains, 23 relations, complete audit draft.
 - Product source changes: none.
 - Database/ACL/workflow changes: none.
-- P0-B: blocked pending this baseline and P0-C-FIX-01 closure.
+- P0-B: blocked pending identity baseline approval. P0-C-FIX-01 closure is
+  complete.
 - FCF-02-2/02-3: still locked.
 - Independent review: pending.

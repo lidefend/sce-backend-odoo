@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 from copy import deepcopy
 from pathlib import Path
@@ -15,7 +16,7 @@ AUDIT_DIR = ROOT / "docs" / "architecture" / "identity_architecture_01"
 MATRIX_PATH = AUDIT_DIR / "identity_authority_matrix.json"
 DOC_PATH = AUDIT_DIR / "identity_authority_audit_20261123.md"
 GRAPH_PATH = AUDIT_DIR / "identity_relationship_graph.mmd"
-BASELINE = "8b46984d2b896eb104c26348788883993d260beb"
+BASELINE = "2a99f01c55af1c1cee01bc29d280fa5cc777b12f"
 
 REQUIRED_DOMAINS = {
     "odoo.model",
@@ -60,6 +61,7 @@ FINDING_STATUSES = {
     "open",
     "scheduled",
     "remediation_candidate",
+    "fixed",
     "frozen",
     "accepted_local_identity",
 }
@@ -72,6 +74,27 @@ def _unique(values: list[str]) -> bool:
 
 def _evidence_path(value: str) -> str:
     return value.split("::", 1)[0].strip()
+
+
+def parse_mermaid_graph(graph_text: str) -> tuple[dict[str, str], list[tuple[str, str, str]], list[str]]:
+    errors: list[str] = []
+    nodes: dict[str, str] = {}
+    for alias, domain in re.findall(r'([A-Z][A-Z0-9_]*)\["([^"]+)"\]', graph_text):
+        if alias in nodes:
+            errors.append(f"graph node alias is duplicated: {alias}")
+        nodes[alias] = domain
+    edges: list[tuple[str, str, str]] = []
+    for source_alias, kind, target_alias in re.findall(
+        r'([A-Z][A-Z0-9_]*)\s*-->\|([^|]+)\|\s*([A-Z][A-Z0-9_]*)',
+        graph_text,
+    ):
+        if source_alias not in nodes or target_alias not in nodes:
+            errors.append(
+                f"graph edge uses undeclared alias: {source_alias}->{target_alias}"
+            )
+            continue
+        edges.append((nodes[source_alias], nodes[target_alias], kind.strip()))
+    return nodes, edges, errors
 
 
 def validate_matrix(
@@ -236,9 +259,41 @@ def validate_matrix(
                     if finding_id not in finding_ids:
                         errors.append(f"{package_id} references unknown finding {finding_id}")
 
+    graph_nodes, graph_edges, graph_errors = parse_mermaid_graph(graph_text)
+    errors.extend(graph_errors)
+    graph_domains = set(graph_nodes.values())
     for domain_id in REQUIRED_DOMAINS:
-        if f'"{domain_id}"' not in graph_text:
+        if domain_id not in graph_domains:
             errors.append(f"graph does not declare domain {domain_id}")
+    if not _unique([f"{source}->{target}:{kind}" for source, target, kind in graph_edges]):
+        errors.append("graph edges must be unique")
+
+    expected_edges = {
+        (
+            str(edge.get("from") or "").strip(),
+            str(edge.get("to") or "").strip(),
+            str(edge.get("kind") or "").strip(),
+        )
+        for edge in edges or []
+        if isinstance(edge, dict)
+    }
+    actual_edges = set(graph_edges)
+    expected_by_pair = {(source, target): kind for source, target, kind in expected_edges}
+    actual_by_pair = {(source, target): kind for source, target, kind in actual_edges}
+    for pair in sorted(set(expected_by_pair) & set(actual_by_pair)):
+        expected_kind = expected_by_pair[pair]
+        actual_kind = actual_by_pair[pair]
+        if expected_kind != actual_kind:
+            errors.append(
+                f"graph edge kind mismatch: {pair[0]}->{pair[1]} "
+                f"expected {expected_kind}, got {actual_kind}"
+            )
+    for source, target, kind in sorted(expected_edges - actual_edges):
+        if (source, target) not in actual_by_pair:
+            errors.append(f"missing graph edge: {source}->{target}:{kind}")
+    for source, target, kind in sorted(actual_edges - expected_edges):
+        if (source, target) not in expected_by_pair:
+            errors.append(f"unregistered graph edge: {source}->{target}:{kind}")
     return errors
 
 

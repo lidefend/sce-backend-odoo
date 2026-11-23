@@ -2,7 +2,7 @@
   "schema_version": 1,
   "id": "IDENTITY-ARCHITECTURE-01",
   "branch": "audit/identity-architecture-01-20261123",
-  "baseline_sha": "8b46984d2b896eb104c26348788883993d260beb",
+  "baseline_sha": "2a99f01c55af1c1cee01bc29d280fa5cc777b12f",
   "status": "verification_pending",
   "goal": ".agent/goals/IDENTITY-ARCHITECTURE-01.yaml",
   "record": "docs/ops/iterations/identity_architecture_01_20261123.md",
