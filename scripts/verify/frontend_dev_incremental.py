@@ -1011,12 +1011,6 @@ RULES = (
         "verify.action_view_runtime_smoke.behavior",
     )),
     Rule((
-        "scripts/verify/identity_architecture_audit_guard.py",
-        "scripts/verify/test_identity_architecture_audit_guard.py",
-    ), (
-        "verify.identity.architecture.audit.unit",
-    )),
-    Rule((
         "config/contract/page_contract_v1_retirement_manifest.json",
     ), (
         "verify.contract.page_v1_zero_residue.guard",
@@ -1416,6 +1410,12 @@ RULES = (
     )),
     # 契约基础台账与它的守卫是 contract_basis 行为锁的直接输入。改台账/守卫
     # 却落到「未映射」会让这份完整性缺口只能靠人工挑目标，甚至漏跑到交付冻结。
+    Rule((
+        "scripts/verify/identity_architecture_audit_guard.py",
+        "scripts/verify/test_identity_architecture_audit_guard.py",
+    ), (
+        "verify.identity.architecture.audit.unit",
+    )),
     Rule((
         "docs/architecture/frontend_contract_basis_ledger.json",
         "scripts/verify/frontend_contract_basis_guard.py",

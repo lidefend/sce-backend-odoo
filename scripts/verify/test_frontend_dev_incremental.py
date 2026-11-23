@@ -327,13 +327,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             ["verify.action_view_runtime_smoke.behavior"],
         )
-        self.assertEqual(
-            select_targets([
-                "scripts/verify/identity_architecture_audit_guard.py"
-            ]),
-            ["verify.identity.architecture.audit.unit"],
-        )
-
     def test_contract_consumer_declaration_changes_select_their_owners(self) -> None:
         cases = {
             "addons/smart_construction_core/tests/test_tender_award_fact.py": [
@@ -4185,6 +4178,14 @@ class RunScopedPlannerTest(unittest.TestCase):
         self.fixture.run['branch'] = 'fix/other'
         self.fixture.save()
         with self.assertRaises(RunError): iteration_plan(self.fixture.root)
+
+    def test_identity_architecture_inputs_select_their_owner(self):
+        self.assertEqual(
+            select_targets([
+                "scripts/verify/identity_architecture_audit_guard.py"
+            ]),
+            ["verify.identity.architecture.audit.unit"],
+        )
 
 
 if __name__ == "__main__":
