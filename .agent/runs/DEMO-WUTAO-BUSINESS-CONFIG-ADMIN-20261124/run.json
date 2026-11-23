@@ -14,6 +14,9 @@
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
     "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
     "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/audit/verification_lane_dispositions.json",
     "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
   ],
   "environment": {
@@ -72,6 +75,25 @@
         "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
         "scripts/verify/demo_usage_foundation_role_scope_probe.py",
         "make/dev_test.mk"
+      ]
+    },
+    "incremental_planner": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    },
+    "verification_lane": {
+      "target": "verify.verification.lane_coverage",
+      "kind": "offline",
+      "inputs": [
+        "scripts/audit/verification_lane_coverage.py",
+        "scripts/audit/verification_lane_dispositions.json",
+        "scripts/audit/verification_lane_baseline.json",
+        "make/guards.mk"
       ]
     }
   },

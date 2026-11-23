@@ -463,6 +463,13 @@ RULES = (
         "verify.demo.scenario_step.unit",
     )),
     Rule((
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+    ), (
+        "verify.demo.usage_foundation_role_scope.unit",
+    )),
+    Rule((
         "demo_addons/smart_construction_demo/tests/test_demo_golden_chain.py",
     ), (
         "verify.demo.lifecycle.unit",

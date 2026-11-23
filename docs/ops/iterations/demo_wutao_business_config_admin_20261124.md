@@ -43,6 +43,10 @@ identity.
 - Pure static regression checks both seed chains and the full-product XML.
 - The demo role-scope manifest now expects `business_config_admin` for
   `wutao`; its previous `business_full` expectation was stale.
+- The incremental planner maps the role-scope declaration and probe to the
+  existing non-zero role-scope unit instead of treating them as unmapped.
+- The now-wired role-scope unit no longer carries the stale zero-reference
+  disposition.
 - The existing G0-G4 runtime probe remains unchanged and is run only against
   its governed, fully seeded local demo database.
 

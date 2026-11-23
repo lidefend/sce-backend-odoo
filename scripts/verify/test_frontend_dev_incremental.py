@@ -744,6 +744,18 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             demo_targets + ["verify.local.dev.golden_chain.orm"],
         )
 
+    def test_demo_role_scope_inputs_select_their_existing_owner(self) -> None:
+        for path in (
+            "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+            "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+            "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.demo.usage_foundation_role_scope.unit"],
+                )
+
     def test_semantic_registry_declarations_keep_generator_and_lint(self) -> None:
         self.assertEqual(
             select_targets([

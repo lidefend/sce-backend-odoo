@@ -1863,12 +1863,6 @@
       "reason": "read-only runtime login/system.init/my.work scope probe for the demo account matrix",
       "review_by": "2026-12-31"
     },
-    "verify.demo.usage_foundation_role_scope.unit": {
-      "disposition": "demo_runbook",
-      "owner": "demo-team",
-      "reason": "offline tests for the demo role/company/project startup acceptance probe",
-      "review_by": "2026-12-31"
-    },
     "verify.dev.acceptance.contract": {
       "disposition": "history_probe_runbook",
       "owner": "platform-team",
