@@ -1,0 +1,52 @@
+{
+  "schema_version": 2,
+  "id": "SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124",
+  "branch": "fix/system-product-release-source-db-20261124",
+  "status": "verification_pending",
+  "baseline_sha": "0412d80eefdf6a11133c35104add7dfb002ae534",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124.yaml",
+    ".agent/runs/SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124/run.json",
+    "addons/smart_construction_core/models/support/product_policy_sync.py",
+    "addons/smart_construction_bundle/tests/test_system_product_release.py",
+    "docs/ops/iterations/system_product_release_source_identity_20261124.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed local.test fresh bundle installation and local.dev rebuild"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make verify.smart_construction_bundle.system_product_baseline.orm",
+      "reason": "Prove current-database source binding in a fresh bundle installation."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate against current main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Scheduled release eligibility follows protected integration."
+    }
+  },
+  "checks": {
+    "product_release_initialization": {
+      "target": "verify.smart_construction_bundle.system_product_baseline.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/models/support/product_policy_sync.py",
+        "addons/smart_construction_bundle/tests/test_system_product_release.py",
+        "make/ci.mk",
+        "make/dev.mk"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and integrate the source identity fix, then deploy the exact main to local and daily demo.",
+  "goal": ".agent/goals/SYSTEM-PRODUCT-RELEASE-SOURCE-IDENTITY-20261124.yaml",
+  "record": "docs/ops/iterations/system_product_release_source_identity_20261124.md"
+}
