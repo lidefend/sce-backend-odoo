@@ -1300,6 +1300,9 @@ type ContractActionButton = {
   kind: string;
   level: string;
   actionId: number | null;
+  contractActionId?: string;
+  backendIdentity?: string;
+  sourceWidgetId?: string;
   methodName: string;
   model: string;
   target: string;
