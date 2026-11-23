@@ -217,6 +217,11 @@ class ProjectTask(models.Model):
 
     def write(self, vals):
         self._ensure_no_direct_state_write(vals)
+        if (
+            "legacy_boq_line_ids" in vals
+            and not self.env.context.get("allow_legacy_boq_relation_write")
+        ):
+            raise UserError("历史 BOQ 关系为只读兼容字段；当前关系必须写入 project.boq.line.task_id。")
         return super().write(vals)
 
     def unlink(self):

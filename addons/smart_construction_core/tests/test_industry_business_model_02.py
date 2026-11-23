@@ -2,7 +2,7 @@
 from types import SimpleNamespace
 
 from odoo import Command
-from odoo.exceptions import ValidationError
+from odoo.exceptions import UserError, ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkSummaryHandler
@@ -145,6 +145,46 @@ class TestIndustryBusinessModel02(TransactionCase):
         self.assertEqual(item["state"], task.state)
         self.assertNotEqual(item["state"], "done")
         self.assertEqual(block["data"]["summary"]["open_count"], 1)
+
+    def test_execution_task_block_full_summary_and_datetime_deadline(self):
+        project = self._create_project("IB02 task summary projection")
+        tasks = [
+            self._create_task(
+                project,
+                "IB02 summary task %s" % index,
+                date_deadline="2026-01-01 08:00:00",
+            )
+            for index in range(7)
+        ]
+        tasks[0].write({"state": "1_done"})
+        tasks[1].write({"state": "1_canceled"})
+        block = ProjectExecutionTasksBuilder(self.env).build(project=project)
+        summary = block["data"]["summary"]
+        self.assertEqual(len(block["data"]["items"]), 6)
+        self.assertEqual(summary["preview_count"], 6)
+        self.assertEqual(summary["count"], 7)
+        self.assertEqual(summary["open_count"], 5)
+        self.assertEqual(summary["done_count"], 1)
+        self.assertEqual(summary["cancelled_count"], 1)
+        self.assertEqual(summary["overdue_count"], 5)
+        self.assertEqual(summary["task_completion_percent"], 16.67)
+
+    def test_execution_scope_requires_an_open_task(self):
+        project = self._create_project("IB02 closed execution scope")
+        done = self._create_task(project, "IB02 closed done")
+        done.write({"state": "1_done"})
+        canceled = self._create_task(project, "IB02 closed canceled")
+        canceled.write({"state": "1_canceled"})
+        guard = ProjectExecutionConsistencyGuard(self.env)
+        ok, reason, _summary = guard.validate_scope(
+            project,
+            from_state="ready",
+            to_state="in_progress",
+        )
+        self.assertFalse(ok)
+        self.assertEqual(reason, "EXECUTION_TASK_NOT_OPEN")
+        precheck = guard.readiness_precheck(project)
+        self.assertEqual(precheck["summary"]["primary_reason_code"], "EXECUTION_TASK_NOT_OPEN")
 
     def test_my_work_excludes_native_closed_task(self):
         project = self._create_project("IB02 closed task")
@@ -326,7 +366,18 @@ class TestIndustryBusinessModel02(TransactionCase):
         self.assertTrue(any("未完成结算单" in row["message"] for row in blockers))
 
         legacy_project = self._create_project("IB02 legacy settlement only")
-        self.env["project.settlement"].create(
+        with self.assertRaises(UserError):
+            self.env["project.settlement"].create(
+                {
+                    "name": "IB02 forbidden new legacy settlement",
+                    "project_id": legacy_project.id,
+                    "partner_id": partner.id,
+                    "type": "pay",
+                }
+            )
+        self.env["project.settlement"].with_context(
+            allow_legacy_settlement_write=True
+        ).create(
             {
                 "name": "IB02 legacy settlement",
                 "project_id": legacy_project.id,
@@ -383,7 +434,11 @@ class TestIndustryBusinessModel02(TransactionCase):
                 "price": 5.0,
             }
         )
-        task.write({"legacy_boq_line_ids": [Command.link(legacy_line.id)]})
+        with self.assertRaises(UserError):
+            task.write({"legacy_boq_line_ids": [Command.link(legacy_line.id)]})
+        task.with_context(allow_legacy_boq_relation_write=True).write(
+            {"legacy_boq_line_ids": [Command.link(legacy_line.id)]}
+        )
         task.invalidate_recordset(
             ["boq_line_ids", "boq_quantity_total", "boq_amount_total", "boq_uom_id"]
         )

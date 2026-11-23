@@ -251,7 +251,9 @@ class TestP0StateClosure(BusinessTransactionCase):
         return attachment
 
     def _create_settlement(self, project, partner, state="confirmed"):
-        return self.env["project.settlement"].create(
+        return self.env["project.settlement"].with_context(
+            allow_legacy_settlement_write=True
+        ).create(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
@@ -1573,7 +1575,9 @@ class TestP0StateClosure(BusinessTransactionCase):
         project = self._create_project("P0 Project Settlement Closure", with_boq=True)
         partner = self._create_partner()
         contract = self._create_contract(project, partner)
-        settlement = self.env["project.settlement"].create(
+        settlement = self.env["project.settlement"].with_context(
+            allow_legacy_settlement_write=True
+        ).create(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
@@ -1595,7 +1599,9 @@ class TestP0StateClosure(BusinessTransactionCase):
         other_project = self._create_project("P0 Project Settlement Closure Other", with_boq=True)
         partner = self._create_partner()
         other_contract = self._create_contract(other_project, partner)
-        settlement = self.env["project.settlement"].create(
+        settlement = self.env["project.settlement"].with_context(
+            allow_legacy_settlement_write=True
+        ).create(
             {
                 "project_id": project.id,
                 "partner_id": partner.id,
@@ -3604,7 +3610,9 @@ class TestDeclaredStateTableIsTheOnlyStateWriter(BusinessTransactionCase):
         }
         if state != "draft":
             vals["state"] = state
-        return self.env["project.settlement"].create(vals)
+        return self.env["project.settlement"].with_context(
+            allow_legacy_settlement_write=True
+        ).create(vals)
 
     def test_contract_rejects_a_bare_state_write(self):
         contract = self._contract()

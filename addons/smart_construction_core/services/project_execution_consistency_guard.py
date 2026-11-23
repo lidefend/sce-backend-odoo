@@ -74,6 +74,8 @@ class ProjectExecutionConsistencyGuard:
             return True, "", summary
         if int(summary.get("task_total") or 0) <= 0:
             return False, "EXECUTION_TASK_MISSING", summary
+        if to_state in {"ready", "in_progress"} and int(summary.get("task_open_count") or 0) <= 0:
+            return False, "EXECUTION_TASK_NOT_OPEN", summary
         return True, "", summary
 
     def validate_state_alignment(self, project) -> tuple[bool, str, dict]:
@@ -98,16 +100,16 @@ class ProjectExecutionConsistencyGuard:
         field_summary = self._required_project_field_summary(project)
         activity_ok, activity_reason_code, _ = self.validate_followup_activity(project)
         lifecycle_state = str(getattr(project, "lifecycle_state", "") or "").strip().lower()
-        task_total = int(summary.get("task_total") or 0)
+        open_task_count = int(summary.get("task_open_count") or 0)
         checks = [
             {
                 "key": "execution_task",
-                "label": "存在施工执行任务",
-                "status": "pass" if task_total > 0 else "fail",
-                "reason_code": "" if task_total > 0 else "EXECUTION_TASK_MISSING",
-                "message": "已检测到施工执行任务。"
-                if task_total > 0
-                else "当前项目尚未创建施工任务。",
+                "label": "存在开放施工执行任务",
+                "status": "pass" if open_task_count > 0 else "fail",
+                "reason_code": "" if open_task_count > 0 else "EXECUTION_TASK_NOT_OPEN",
+                "message": "已检测到开放施工执行任务。"
+                if open_task_count > 0
+                else "当前项目没有可推进的开放施工任务。",
             },
             {
                 "key": "required_fields",

@@ -112,6 +112,11 @@ Corrected behavior:
 - The next-action summary counts native task lifecycle states.
 - Project engineering progress consumes `project.progress.entry` aggregation;
   native task completion is a separate indicator.
+- Execution-task preview is limited to six rows, while counts and rates use the
+  complete project task set.
+- Deadline comparisons use the native datetime representation.
+- Execution readiness requires at least one native open task; a project with
+  only completed or canceled tasks is not advanceable.
 - Canceled tasks are excluded from the task-completion denominator.
 - Dashboard task waiting, completion, overdue and milestone-delay signals use
   native `project.task.state`, `project.milestone.is_reached` and
@@ -131,6 +136,8 @@ Corrected behavior:
   `project.task.boq_line_ids` is a computed effective read that also preserves
   rows from the legacy relation table, so historical data remains visible while
   new writes have one authority.
+- Direct ORM/RPC writes to the legacy BOQ relation and the legacy settlement
+  model are rejected unless an explicit internal compatibility context is set.
 
 ### 02-C business pending versus construction tasks
 
@@ -182,7 +189,7 @@ Identity:
 
 Focused ORM:
 
-- `make verify.industry_business_model_02.orm`: passed, 14 tests.
+- `make verify.industry_business_model_02.orm`: passed, 16 tests.
 - Readback:
   `.runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_readback.json`.
 - The governed `local.test` runner installed `smart_construction_core` into a
@@ -194,6 +201,8 @@ Focused ORM:
   completion, canceled-task denominator exclusion, native waiting metrics and
   truthful analytic-account field labels, plan-to-WBS task links, formal
   settlement authority and BOQ write/read convergence.
+- `p0_state` + `be_close_01_workflow_contract` affected ORM: passed, 95 tests.
+- Payment approval state-machine unit suite: passed, 203 tests.
 - Backend model declaration guard: passed, 5840 declarations with no duplicate
   or same-class duplicate declarations.
 
@@ -231,6 +240,18 @@ Additional observations, excluded from this batch gate:
   environment at its runtime reuse check. The raw local-test receipts and Odoo
   logs are genuine and non-zero, but the P4 reuse verdict is classified as
   `validation_tool_defect`; no identity or readback was altered to hide it.
+
+Independent review of PR #979 found and this follow-up fixed:
+
+- datetime/date comparison in execution-task deadlines;
+- full-project summary counts being derived from the six-row preview;
+- execution appearing advanceable when all tasks were closed;
+- ORM/RPC writes bypassing the legacy BOQ and settlement read-only boundaries.
+
+The legacy summary response still carries `sources/source_refs`, while the
+current product workspace does not render each source action separately. This
+is recorded as a future UI-consumption improvement, not as a new frontend
+business rule.
 
 ## 7. Owner decisions still required
 

@@ -26,7 +26,7 @@ Generated from repository source files. This report is informational during the 
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3719 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3727 | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3653 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3641 | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3575 | Python source | `addons/smart_core/delivery/menu_service.py` |
@@ -285,7 +285,7 @@ Generated from repository source files. This report is informational during the 
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
-| 3719 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
+| 3727 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p0_state_closure.py` |
 | 3653 | split_plan_required | TypeScript source | `frontend/apps/web/src/app/contracts/v2/schema.ts` |
 | 3641 | split_plan_required | Python source | `addons/smart_core/handlers/form_field_configuration.py` |
 | 3575 | split_plan_required | Python source | `addons/smart_core/delivery/menu_service.py` |

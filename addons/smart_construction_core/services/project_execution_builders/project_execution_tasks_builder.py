@@ -21,6 +21,7 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
             "items": [],
             "summary": {
                 "count": 0,
+                "preview_count": 0,
                 "open_count": 0,
                 "blocked_count": 0,
                 "overdue_count": 0,
@@ -45,28 +46,28 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
 
         domain = self._project_domain("project.task", project)
         rows = []
+        all_tasks = []
         try:
-            rows = model.search(domain, order="priority desc, write_date desc, id desc", limit=6)
+            order = "priority desc, write_date desc, id desc"
+            all_tasks = model.search(domain, order=order)
+            rows = all_tasks[:6]
         except Exception:
             rows = []
+            all_tasks = []
 
         items = []
-        metrics = ProjectTaskStateSupport.native_metrics(rows, model)
+        metrics = ProjectTaskStateSupport.native_metrics(all_tasks, model)
         open_states = set(ProjectTaskStateSupport.native_open_states(model))
         overdue_count = 0
-        explicit_count = 0
-        today = fields.Date.today()
+        explicit_count = len(all_tasks)
+        now = fields.Datetime.now()
         state_selection = dict(
             (model.fields_get(["state"]).get("state") or {}).get("selection") or []
         )
         for task in rows:
-            explicit_count += 1
             task_state = str(getattr(task, "state", "") or "")
-            is_open = task_state in open_states
             deadline_value = getattr(task, "date_deadline", False)
             deadline = str(deadline_value or "")
-            if is_open and deadline_value and deadline_value < today:
-                overdue_count += 1
             items.append(
                 {
                     "task_id": int(task.id),
@@ -81,6 +82,12 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
                     "state_label": str(state_selection.get(task_state) or task_state),
                 }
             )
+        overdue_count = len([
+            task for task in all_tasks
+            if str(getattr(task, "state", "") or "") in open_states
+            and getattr(task, "date_deadline", False)
+            and fields.Datetime.to_datetime(task.date_deadline) < now
+        ])
 
         return self._envelope(
             state="ready" if items else "empty",
@@ -88,7 +95,8 @@ class ProjectExecutionTasksBuilder(BaseProjectBlockBuilder):
             data={
                 "items": items,
                 "summary": {
-                    "count": len(items),
+                    "count": len(all_tasks),
+                    "preview_count": len(items),
                     "open_count": metrics["task_open_count"],
                     "blocked_count": metrics["task_waiting_count"],
                     "in_progress_count": metrics["task_in_progress_count"],
