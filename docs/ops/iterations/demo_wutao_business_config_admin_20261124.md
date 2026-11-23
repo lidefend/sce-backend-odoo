@@ -40,17 +40,23 @@ identity.
 - Demo XML and the `demo_10_users` seed assign
   `group_sc_cap_business_config_admin`.
 - The lightweight `demo_users` refresh also canonically restores `wutao`.
-- The baseline readiness hard check requires the configuration administrator
-  group, not only `group_sc_business_full`.
+- Pure static regression checks both seed chains and the full-product XML.
+- The demo role-scope manifest now expects `business_config_admin` for
+  `wutao`; its previous `business_full` expectation was stale.
+- The existing G0-G4 runtime probe remains unchanged and is run only against
+  its governed, fully seeded local demo database.
 
 ## Local results
 
 - `make local.dev.demo_users.sync`: PASS on `sc-local-dev` / `sc_dev_demo`.
-- `make verify.demo.supplemental.unit`: 85 tests passed.
-- `make verify.local.dev.baseline_readiness.orm`: 1 test passed; the updated
-  hard check requires both `group_sc_business_full` and
-  `group_sc_cap_business_config_admin` for `wutao`.
-- `make ci.local.iteration`: passed; 3 affected governance targets executed.
+- `make verify.demo.supplemental.unit`: 87 tests passed, including the two
+  static `wutao` declaration tests.
+- `make verify.demo.usage_foundation_role_scope.unit`: 16 tests passed with
+  `wutao` declared as `business_config_admin`.
+- `make verify.local.dev.baseline_readiness.orm`: 1 test passed on the fully
+  seeded local demo.
+- Read-only startup readback on `sc_dev_demo`: `wutao` resolved to
+  `role_code=business_config_admin`.
 
 ## Remaining runtime application
 

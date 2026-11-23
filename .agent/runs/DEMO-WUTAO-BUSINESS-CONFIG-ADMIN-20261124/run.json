@@ -11,7 +11,9 @@
     "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
     "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
     "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
-    "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+    "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
     "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
   ],
   "environment": {
@@ -21,7 +23,7 @@
   "verification_responsibility": {
     "local_targeted": {
       "status": "required",
-      "entrypoint": "make verify.demo.supplemental.unit verify.local.dev.baseline_readiness.orm",
+      "entrypoint": "make verify.demo.supplemental.unit verify.demo.usage_foundation_role_scope.unit verify.local.dev.baseline_readiness.orm",
       "reason": "Validate the demo declaration and the actual local demo principal role."
     },
     "remote_integration": {
@@ -53,16 +55,28 @@
       "inputs": [
         "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
         "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+        "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+        "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
         "demo_addons/smart_construction_demo/tests/test_demo_baseline_readiness.py",
         "make/dev.mk"
       ],
       "readback": {
         "artifact": ".runtime/agent-runs/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124/local_demo_baseline_readiness.log"
       }
+    },
+    "demo_role_scope": {
+      "target": "verify.demo.usage_foundation_role_scope.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/demo_usage_foundation_role_scope_manifest.json",
+        "scripts/verify/test_demo_usage_foundation_role_scope_probe.py",
+        "scripts/verify/demo_usage_foundation_role_scope_probe.py",
+        "make/dev_test.mk"
+      ]
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit and integrate the P1 demo identity declaration, then apply it to local and daily demos and read back wutao's business_config_admin identity.",
+  "next_exact_step": "Publish the corrected demo identity candidate, merge it after exact-head required CI, then deploy and read back wutao as business_config_admin on local and daily demos.",
   "goal": ".agent/goals/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124.yaml",
   "record": "docs/ops/iterations/demo_wutao_business_config_admin_20261124.md"
 }

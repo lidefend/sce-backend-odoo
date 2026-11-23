@@ -96,7 +96,7 @@ class DemoUsageFoundationRoleScopeProbeTest(unittest.TestCase):
         manifest = load_manifest(MANIFEST_PATH)
         by_key = {a["key"] for a in manifest["accounts"]}
         for expected in (
-            "business_full_wutao",
+            "business_config_admin_wutao",
             "project_manager",
             "finance_manager",
             "owner",
@@ -108,6 +108,18 @@ class DemoUsageFoundationRoleScopeProbeTest(unittest.TestCase):
             "material_manager",
         ):
             self.assertIn(expected, by_key)
+
+    def test_wutao_is_the_business_config_admin(self):
+        manifest = load_manifest(MANIFEST_PATH)
+        account = next(
+            account
+            for account in manifest["accounts"]
+            if account["key"] == "business_config_admin_wutao"
+        )
+        self.assertEqual(account["login"], "wutao")
+        self.assertEqual(account["expectation"], "role_code")
+        self.assertEqual(account["expected_role_code"], "business_config_admin")
+        self.assertEqual(account["expected_allowed_company_ids"], [1])
 
     def test_real_manifest_has_negative(self):
         manifest = load_manifest(MANIFEST_PATH)
