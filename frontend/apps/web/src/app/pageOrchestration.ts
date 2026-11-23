@@ -4,13 +4,17 @@ import {
   decodeContractV2FieldDescriptorMap,
 } from './contracts/v2/fieldDescriptor';
 import type {
+  ContractV2ActionContract,
   ContractV2Dictionary,
   ContractV2FieldDescriptor,
   ContractV2FieldDescriptorDecodeResult,
+  ContractV2PageBlockAction,
+  ContractV2PageBlockActionSchema,
   ContractV2PageBlockDataContract,
   ContractV2PageBlockFieldRef,
   ContractV2PageBlockDataRow,
 } from './contracts/v2/types';
+import { decodeContractV2ActionRule } from './contracts/v2/schema';
 
 export type SemanticTone = 'success' | 'warning' | 'danger' | 'info' | 'neutral';
 export type SemanticProgress = 'overdue' | 'blocked' | 'pending' | 'running' | 'completed';
@@ -70,11 +74,12 @@ export interface PageOrchestrationContract {
   zones?: PageOrchestrationZone[];
   data_sources?: Record<string, unknown>;
   state_schema?: Record<string, unknown>;
-  action_schema?: Record<string, unknown>;
   render_hints?: Record<string, unknown>;
   meta?: Record<string, unknown>;
   block_field_descriptors?: Record<string, ContractV2FieldDescriptor>;
   block_data_contracts?: Record<string, ContractV2PageBlockDataContract>;
+  action_schema?: ContractV2PageBlockActionSchema | Record<string, unknown>;
+  action_contract?: ContractV2ActionContract;
 }
 
 export interface PageBlockActionEvent {
@@ -166,7 +171,7 @@ export class PageOrchestrationDecodeError extends Error {
 const PAGE_ORCHESTRATION_KEYS = new Set([
   'schema_version', 'contract_version', 'scene_key', 'page', 'zones',
   'data_sources', 'state_schema', 'action_schema', 'render_hints', 'meta',
-  'block_field_descriptors', 'block_data_contracts',
+  'block_field_descriptors', 'block_data_contracts', 'action_contract',
 ]);
 const PAGE_BLOCK_DATA_KEYS = new Set([
   'schemaVersion', 'fieldRefs', 'rows', 'context', 'sourceAuthority',
@@ -189,6 +194,31 @@ const PAGE_BLOCK_SOURCE_AUTHORITIES = [
 ] as const;
 const PAGE_BLOCK_SOURCE_CARRIER = 'page-block-data.v1';
 const PAGE_BLOCK_SOURCE_SCHEMA_VERSION = '1.0.0';
+const ACTION_SCHEMA_KEYS = new Set([
+  'schemaVersion', 'carrier', 'sourceAuthority', 'actions',
+]);
+const ACTION_ENTRY_KEYS = new Set([
+  'actionId', 'actionRuleRef', 'actionKey', 'label', 'intent', 'target',
+  'visibility', 'permission', 'state',
+]);
+const ACTION_TARGET_KEYS = new Set(['source', 'value']);
+const ACTION_VISIBILITY_KEYS = new Set(['visible', 'source']);
+const ACTION_PERMISSION_KEYS = new Set([
+  'evaluated', 'allowed', 'authorizationAllowed', 'businessAvailable',
+]);
+const ACTION_STATE_KEYS = new Set([
+  'enabled', 'disabled', 'reasonCode', 'reasonMessage',
+]);
+const ACTION_SOURCE_AUTHORITY_KEYS = new Set(SOURCE_AUTHORITY_KEYS);
+const ACTION_SOURCE_KIND = 'page_block_action_producer';
+const ACTION_SOURCE_AUTHORITIES = [
+  'contract_v2_action_rules',
+  'action_target_schema',
+  'odoo_action_groups',
+  'ir_model_access',
+  'ir_rule',
+] as const;
+const ACTION_SOURCE_CARRIER = 'page-block-action.v1';
 const FIELD_REF_BASE_KEYS = new Set(['kind', 'rawValuePath']);
 const DESCRIPTOR_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'descriptorId']);
 const WIDGET_REF_KEYS = new Set([...FIELD_REF_BASE_KEYS, 'widgetId']);
@@ -329,6 +359,345 @@ function decodeSourceAuthority(value: unknown, path: string): ContractV2Dictiona
   return authority;
 }
 
+function decodeActionSourceAuthority(value: unknown, path: string): ContractV2Dictionary {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    throw new PageOrchestrationDecodeError([{ path, message: 'must be an object' }]);
+  }
+  const authority = value as ContractV2Dictionary;
+  rejectUnknownKeys(authority, ACTION_SOURCE_AUTHORITY_KEYS, path);
+  if (asText(authority.kind) !== ACTION_SOURCE_KIND) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.kind`,
+      message: `must be ${ACTION_SOURCE_KIND}`,
+    }]);
+  }
+  if (authority.projectionOnly !== true || authority.noFrontendDefaults !== true) {
+    throw new PageOrchestrationDecodeError([{
+      path,
+      message: 'must declare projectionOnly=true and noFrontendDefaults=true',
+    }]);
+  }
+  if (asText(authority.carrier) !== ACTION_SOURCE_CARRIER) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.carrier`,
+      message: `must be ${ACTION_SOURCE_CARRIER}`,
+    }]);
+  }
+  if (asText(authority.schemaVersion) !== '1.0.0') {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.schemaVersion`,
+      message: 'must be 1.0.0',
+    }]);
+  }
+  if (
+    !Array.isArray(authority.authorities)
+    || authority.authorities.length !== ACTION_SOURCE_AUTHORITIES.length
+    || authority.authorities.some((item, index) => item !== ACTION_SOURCE_AUTHORITIES[index])
+  ) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.authorities`,
+      message: `must exactly be ${ACTION_SOURCE_AUTHORITIES.join(', ')}`,
+    }]);
+  }
+  return authority;
+}
+
+function decodePageBlockActionTarget(value: unknown, path: string): ContractV2Dictionary {
+  const target = asRecord(value);
+  if (!Object.keys(target).length) {
+    throw new PageOrchestrationDecodeError([{ path, message: 'must be a non-empty target' }]);
+  }
+  const kind = asText(target.kind);
+  const type = asText(target.type || target._name);
+  if (kind) {
+    const allowedByKind: Record<string, string[]> = {
+      'scene.key': ['kind', 'scene_key'],
+      'route.path': ['kind', 'path'],
+      'page.refresh': ['kind'],
+      'menu.first_reachable': ['kind'],
+    };
+    const allowed = allowedByKind[kind];
+    if (!allowed) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.kind`, message: 'is unsupported' }]);
+    }
+    const unknown = Object.keys(target).filter((key) => !allowed.includes(key));
+    if (unknown.length) {
+      throw new PageOrchestrationDecodeError(unknown.map((key) => ({
+        path: `${path}.${key}`,
+        message: 'is not allowed for this target kind',
+      })));
+    }
+    if (kind === 'scene.key' && !asText(target.scene_key)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.scene_key`, message: 'is required' }]);
+    }
+    if (kind === 'route.path' && !asText(target.path)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.path`, message: 'is required' }]);
+    }
+    return target;
+  }
+  if (type === 'action') {
+    if (!asText(target.action_xmlid || target.action_id)) {
+      throw new PageOrchestrationDecodeError([{ path, message: 'action identity is required' }]);
+    }
+    return target;
+  }
+  if (type === 'intent') {
+    if (!asText(target.intent)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.intent`, message: 'is required' }]);
+    }
+    if (target.params !== undefined && !asRecord(target.params)) {
+      throw new PageOrchestrationDecodeError([{ path: `${path}.params`, message: 'must be an object' }]);
+    }
+    return target;
+  }
+  throw new PageOrchestrationDecodeError([{
+    path,
+    message: 'must be an existing ContractV2ActionRule target',
+  }]);
+}
+
+function decodePageBlockAction(value: unknown, path: string): ContractV2PageBlockAction {
+  const source = asRecord(value);
+  rejectUnknownKeys(source, ACTION_ENTRY_KEYS, path);
+  const actionId = asText(source.actionId);
+  const actionRuleRef = asText(source.actionRuleRef);
+  const actionKey = asText(source.actionKey);
+  const label = asText(source.label);
+  const intent = asText(source.intent);
+  if (!actionId || !actionKey || !label || !intent || actionRuleRef !== actionId) {
+    throw new PageOrchestrationDecodeError([{
+      path,
+      message: 'requires matching actionId/actionRuleRef plus actionKey, label and intent',
+    }]);
+  }
+  const target = asRecord(source.target);
+  rejectUnknownKeys(target, ACTION_TARGET_KEYS, `${path}.target`);
+  if (target.source !== 'ContractV2ActionRule.target') {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.target.source`,
+      message: 'must be ContractV2ActionRule.target',
+    }]);
+  }
+  const targetValue = decodePageBlockActionTarget(target.value, `${path}.target.value`);
+  const visibility = asRecord(source.visibility);
+  rejectUnknownKeys(visibility, ACTION_VISIBILITY_KEYS, `${path}.visibility`);
+  if (typeof visibility.visible !== 'boolean' || visibility.source !== 'action_contract') {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.visibility`,
+      message: 'requires boolean visible and action_contract source',
+    }]);
+  }
+  const permission = asRecord(source.permission);
+  rejectUnknownKeys(permission, ACTION_PERMISSION_KEYS, `${path}.permission`);
+  if (
+    permission.evaluated !== true
+    || typeof permission.allowed !== 'boolean'
+    || typeof permission.authorizationAllowed !== 'boolean'
+    || typeof permission.businessAvailable !== 'boolean'
+  ) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.permission`,
+      message: 'requires complete evaluated permission facts',
+    }]);
+  }
+  const expectedAllowed = permission.authorizationAllowed && permission.businessAvailable;
+  if (permission.allowed !== expectedAllowed) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.permission.allowed`,
+      message: 'must equal authorizationAllowed && businessAvailable',
+    }]);
+  }
+  const state = asRecord(source.state);
+  rejectUnknownKeys(state, ACTION_STATE_KEYS, `${path}.state`);
+  if (typeof state.enabled !== 'boolean' || typeof state.disabled !== 'boolean') {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.state`,
+      message: 'requires boolean enabled and disabled',
+    }]);
+  }
+  if (state.enabled && (!permission.allowed || state.disabled)) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.state`,
+      message: 'enabled requires allowed permission and disabled=false',
+    }]);
+  }
+  if (state.disabled !== !state.enabled) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.state.disabled`,
+      message: 'must be the inverse of enabled',
+    }]);
+  }
+  const reasonCode = asText(state.reasonCode);
+  const reasonMessage = asText(state.reasonMessage);
+  if (visibility.visible && !state.enabled && (!reasonCode || !reasonMessage)) {
+    throw new PageOrchestrationDecodeError([{
+      path: `${path}.state`,
+      message: 'visible unavailable action requires reasonCode and reasonMessage',
+    }]);
+  }
+  return {
+    actionId,
+    actionRuleRef,
+    actionKey,
+    label,
+    intent,
+    target: {
+      source: 'ContractV2ActionRule.target',
+      value: targetValue,
+    },
+    visibility: {
+      visible: visibility.visible,
+      source: 'action_contract',
+    },
+    permission: {
+      evaluated: true,
+      allowed: permission.allowed,
+      authorizationAllowed: permission.authorizationAllowed,
+      businessAvailable: permission.businessAvailable,
+    },
+    state: {
+      enabled: state.enabled,
+      disabled: state.disabled,
+      reasonCode,
+      reasonMessage,
+    },
+  };
+}
+
+function decodePageBlockActionSchema(raw: unknown): ContractV2PageBlockActionSchema {
+  const source = asRecord(raw);
+  rejectUnknownKeys(source, ACTION_SCHEMA_KEYS, 'page_orchestration.action_schema');
+  if (source.schemaVersion !== '1.0.0' || source.carrier !== 'page-block-action.v1') {
+    throw new PageOrchestrationDecodeError([{
+      path: 'page_orchestration.action_schema',
+      message: 'must declare schemaVersion=1.0.0 and carrier=page-block-action.v1',
+    }]);
+  }
+  const sourceAuthority = decodeActionSourceAuthority(
+    source.sourceAuthority,
+    'page_orchestration.action_schema.sourceAuthority',
+  );
+  const actionsRaw = asRecord(source.actions);
+  const actions = Object.fromEntries(
+    Object.entries(actionsRaw).map(([actionId, value]) => {
+      const action = decodePageBlockAction(
+        value,
+        `page_orchestration.action_schema.actions.${actionId}`,
+      );
+      if (action.actionId !== actionId) {
+        throw new PageOrchestrationDecodeError([{
+          path: `page_orchestration.action_schema.actions.${actionId}.actionId`,
+          message: 'must match its map key',
+        }]);
+      }
+      return [actionId, action];
+    }),
+  );
+  return {
+    schemaVersion: '1.0.0',
+    carrier: 'page-block-action.v1',
+    sourceAuthority,
+    actions,
+  };
+}
+
+function canonicalActionValue(value: unknown): string {
+  if (Array.isArray(value)) {
+    return `[${value.map((item) => canonicalActionValue(item)).join(',')}]`;
+  }
+  if (value && typeof value === 'object') {
+    return `{${Object.entries(value as Record<string, unknown>)
+      .sort(([left], [right]) => left.localeCompare(right))
+      .map(([key, item]) => `${JSON.stringify(key)}:${canonicalActionValue(item)}`)
+      .join(',')}}`;
+  }
+  return JSON.stringify(value) ?? 'undefined';
+}
+
+function decodePageBlockActionContract(
+  raw: unknown,
+  actionSchema?: ContractV2PageBlockActionSchema,
+): ContractV2ActionContract {
+  const source = asRecord(raw);
+  const unknown = Object.keys(source).filter((key) => !['actionRuleList', 'dependencyGraph'].includes(key));
+  if (unknown.length) {
+    throw new PageOrchestrationDecodeError(unknown.map((key) => ({
+      path: `page_orchestration.action_contract.${key}`,
+      message: 'is not allowed',
+    })));
+  }
+  if (!Array.isArray(source.actionRuleList)) {
+    throw new PageOrchestrationDecodeError([{
+      path: 'page_orchestration.action_contract.actionRuleList',
+      message: 'must be an array',
+    }]);
+  }
+  const actionRuleList = source.actionRuleList.map((item, index) => {
+    try {
+      return decodeContractV2ActionRule(item);
+    } catch (error) {
+      throw new PageOrchestrationDecodeError([{
+        path: `page_orchestration.action_contract.actionRuleList[${index}]`,
+        message: error instanceof Error ? error.message : 'is invalid',
+      }]);
+    }
+  });
+  const graphRaw = asRecord(source.dependencyGraph);
+  const dependencyGraph = Object.fromEntries(
+    Object.entries(graphRaw).map(([key, values]) => {
+      if (!Array.isArray(values) || values.some((value) => typeof value !== 'string' || !value.trim())) {
+        throw new PageOrchestrationDecodeError([{
+          path: `page_orchestration.action_contract.dependencyGraph.${key}`,
+          message: 'must be an array of non-empty strings',
+        }]);
+      }
+      return [key, [...new Set(values as string[])].sort()];
+    }),
+  );
+  if (actionSchema) {
+    const ruleById = new Map(actionRuleList.map((row) => [row.actionId, row]));
+    const carrierEntries = Object.entries(actionSchema.actions);
+    const carrierIds = new Set(carrierEntries.map(([actionId]) => actionId));
+    if (
+      ruleById.size !== actionRuleList.length
+      || ruleById.size !== carrierIds.size
+      || [...carrierIds].some((actionId) => !ruleById.has(actionId))
+    ) {
+      throw new PageOrchestrationDecodeError([{
+        path: 'page_orchestration.action_contract.actionRuleList',
+        message: 'must exactly resolve the carrier action identities',
+      }]);
+    }
+    for (const [actionId, carrier] of carrierEntries) {
+      const rule = ruleById.get(actionId);
+      if (!rule) continue;
+      const path = `page_orchestration.action_schema.actions.${actionId}`;
+      const mismatches = [
+        carrier.actionRuleRef !== rule.actionId && 'actionRuleRef',
+        carrier.actionKey !== rule.actionKey && 'actionKey',
+        carrier.label !== rule.label && 'label',
+        carrier.intent !== rule.intent && 'intent',
+        canonicalActionValue(carrier.target.value) !== canonicalActionValue(rule.target) && 'target',
+        rule.entitlementEvaluated !== true && 'entitlementEvaluated',
+        carrier.permission.authorizationAllowed !== rule.authorizationAllowed && 'authorizationAllowed',
+        carrier.permission.businessAvailable !== rule.businessAvailable && 'businessAvailable',
+        carrier.permission.allowed !== rule.allowed && 'allowed',
+        carrier.state.enabled !== rule.enabled && 'enabled',
+        carrier.state.disabled !== rule.disabled && 'disabled',
+        carrier.state.reasonCode !== (rule.reasonCode || '') && 'reasonCode',
+        carrier.state.reasonMessage !== (rule.reasonMessage || '') && 'reasonMessage',
+      ].filter((item): item is string => Boolean(item));
+      if (mismatches.length) {
+        throw new PageOrchestrationDecodeError(mismatches.map((field) => ({
+          path: `${path}.${field}`,
+          message: 'must exactly match the referenced ContractV2ActionRule',
+        })));
+      }
+    }
+  }
+  return { actionRuleList, dependencyGraph };
+}
+
 function decodeCurrencies(value: unknown, path: string): Record<string, ContractV2Dictionary> {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new PageOrchestrationDecodeError([{ path, message: 'must be an object' }]);
@@ -424,10 +793,18 @@ export function decodePageOrchestrationContract(raw: unknown): PageOrchestration
       issues.push({ path: `page_orchestration.${key}`, message: 'is not allowed' });
     }
   });
+  const actionSchemaRaw = asRecord(source.action_schema);
+  const hasActionCarrier = (
+    Object.prototype.hasOwnProperty.call(actionSchemaRaw, 'schemaVersion')
+    || Object.prototype.hasOwnProperty.call(actionSchemaRaw, 'carrier')
+  );
   if (version === '2.0.0' && (
-    source.block_field_descriptors !== undefined || source.block_data_contracts !== undefined
+    source.block_field_descriptors !== undefined
+    || source.block_data_contracts !== undefined
+    || source.action_contract !== undefined
+    || hasActionCarrier
   )) {
-    issues.push({ path: 'page_orchestration', message: '2.0.0 cannot contain page-block-data carriers' });
+    issues.push({ path: 'page_orchestration', message: '2.0.0 cannot contain semantic carriers' });
   }
   if (issues.length) throw new PageOrchestrationDecodeError(issues);
   if (version === '2.0.0') {
@@ -437,44 +814,77 @@ export function decodePageOrchestrationContract(raw: unknown): PageOrchestration
       contract_version: version,
     } as PageOrchestrationContract;
   }
-  if (!Object.keys(asRecord(source.block_field_descriptors)).length) {
-    throw new PageOrchestrationDecodeError([{
-      path: 'page_orchestration.block_field_descriptors',
-      message: '2.1.0 requires at least one descriptor',
-    }]);
-  }
-  if (!Object.keys(asRecord(source.block_data_contracts)).length) {
-    throw new PageOrchestrationDecodeError([{
-      path: 'page_orchestration.block_data_contracts',
-      message: '2.1.0 requires at least one page-block-data contract',
-    }]);
-  }
-  let decodedDescriptors;
-  try {
-    decodedDescriptors = decodeContractV2FieldDescriptorMap(
-      source.block_field_descriptors,
-      'page_orchestration.block_field_descriptors',
-    );
-  } catch (error) {
-    if (error instanceof FieldDescriptorDecodeError) {
-      throw new PageOrchestrationDecodeError(error.issues.map((item) => ({ path: item.path, message: item.code })));
-    }
-    throw error;
-  }
-  const rawDataContracts = asRecord(source.block_data_contracts);
-  const dataContracts = Object.fromEntries(
-    Object.entries(rawDataContracts).map(([key, value]) => [
-      key,
-      decodePageBlockDataContract(value, `page_orchestration.block_data_contracts.${key}`),
-    ]),
+  const hasDataCarrier = (
+    source.block_field_descriptors !== undefined
+    || source.block_data_contracts !== undefined
   );
+  if (!hasDataCarrier && !hasActionCarrier) {
+    throw new PageOrchestrationDecodeError([{
+      path: 'page_orchestration',
+      message: '2.1.0 requires at least one declared semantic carrier',
+    }]);
+  }
+  let decodedDescriptors: ReturnType<typeof decodeContractV2FieldDescriptorMap> | undefined;
+  let dataContracts: Record<string, ContractV2PageBlockDataContract> | undefined;
+  if (hasDataCarrier) {
+    if (!Object.keys(asRecord(source.block_field_descriptors)).length) {
+      throw new PageOrchestrationDecodeError([{
+        path: 'page_orchestration.block_field_descriptors',
+        message: 'page-block-data requires at least one descriptor',
+      }]);
+    }
+    if (!Object.keys(asRecord(source.block_data_contracts)).length) {
+      throw new PageOrchestrationDecodeError([{
+        path: 'page_orchestration.block_data_contracts',
+        message: 'page-block-data requires at least one data contract',
+      }]);
+    }
+    try {
+      decodedDescriptors = decodeContractV2FieldDescriptorMap(
+        source.block_field_descriptors,
+        'page_orchestration.block_field_descriptors',
+      );
+    } catch (error) {
+      if (error instanceof FieldDescriptorDecodeError) {
+        throw new PageOrchestrationDecodeError(error.issues.map((item) => ({ path: item.path, message: item.code })));
+      }
+      throw error;
+    }
+    const rawDataContracts = asRecord(source.block_data_contracts);
+    dataContracts = Object.fromEntries(
+      Object.entries(rawDataContracts).map(([key, value]) => [
+        key,
+        decodePageBlockDataContract(value, `page_orchestration.block_data_contracts.${key}`),
+      ]),
+    );
+  }
+  const actionSchema = hasActionCarrier
+    ? decodePageBlockActionSchema(source.action_schema)
+    : undefined;
+  if (hasActionCarrier && source.action_contract === undefined) {
+    throw new PageOrchestrationDecodeError([{
+      path: 'page_orchestration.action_contract',
+      message: 'is required by page-block-action',
+    }]);
+  }
+  const actionContract = source.action_contract === undefined
+    ? undefined
+    : decodePageBlockActionContract(source.action_contract, actionSchema);
+  if (!hasActionCarrier && actionContract) {
+    throw new PageOrchestrationDecodeError([{
+      path: 'page_orchestration.action_contract',
+      message: 'requires page-block-action action_schema',
+    }]);
+  }
   return {
     ...source,
     schema_version: schemaVersion,
     contract_version: version,
-    block_field_descriptors: decodedDescriptors.descriptors,
-    block_data_contracts: dataContracts,
-  } as PageOrchestrationContract;
+    ...(decodedDescriptors ? { block_field_descriptors: decodedDescriptors.descriptors } : {}),
+    ...(dataContracts ? { block_data_contracts: dataContracts } : {}),
+    ...(actionSchema ? { action_schema: actionSchema } : {}),
+    ...(actionContract ? { action_contract: actionContract } : {}),
+  } as unknown as PageOrchestrationContract;
 }
 
 function readPath(value: unknown, path: string): { found: boolean; value: unknown } {

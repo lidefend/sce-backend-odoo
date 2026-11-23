@@ -364,7 +364,7 @@ assert.throws(
     schema_version: '2.0.0',
     block_data_contracts: {},
   }),
-  /2\.0\.0 cannot contain page-block-data carriers/,
+  /2\.0\.0 cannot contain semantic carriers/,
 );
 assert.throws(
   () => decodePageOrchestrationContract({

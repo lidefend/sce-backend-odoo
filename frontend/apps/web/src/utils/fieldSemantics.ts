@@ -138,7 +138,10 @@ export function formatNumericFieldValue(
     : null;
   const fractionDigits = type === 'integer'
     ? 0
-    : Number.isInteger(declaredScale) && declaredScale >= 0 && declaredScale <= 20
+    : declaredScale !== null
+      && Number.isInteger(declaredScale)
+      && declaredScale >= 0
+      && declaredScale <= 20
       ? declaredScale
       : 2;
   return parsed.toLocaleString(options?.locale || 'zh-CN', {

@@ -635,6 +635,20 @@
       "ownerLayer": "P0_frontend_renderer_consumer"
     },
     {
+      "decisionKey": "R4_business_state_literal|current|frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+      "rule": "R4_business_state_literal",
+      "literal": "current",
+      "path": "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+      "lines": [
+        123
+      ],
+      "occurrences": 1,
+      "classification": "excluded-render-interaction",
+      "reason": "Contract carrier negotiation status discriminator. The server supplies the status and complete carrier verdict; the client only verifies that the transport projection is internally consistent.",
+      "declaredClass": "protocol_state",
+      "ownerLayer": "P0_frontend_renderer"
+    },
+    {
       "decisionKey": "R4_business_state_literal|legacy|frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
       "rule": "R4_business_state_literal",
       "literal": "legacy",
@@ -680,7 +694,7 @@
       "literal": "allow",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1877
+        1881
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -693,7 +707,7 @@
       "literal": "coming_soon",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1877
+        1881
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -706,7 +720,7 @@
       "literal": "deny",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1877
+        1881
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -719,7 +733,7 @@
       "literal": "draft",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1566
+        1570
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -732,7 +746,7 @@
       "literal": "pending",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1877
+        1881
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -746,7 +760,7 @@
       "literal": "preview",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1566
+        1570
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -760,7 +774,7 @@
       "literal": "published",
       "path": "frontend/apps/web/src/app/contracts/v2/schema.ts",
       "lines": [
-        1566
+        1570
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -1961,21 +1975,21 @@
     }
   ],
   "summary": {
-    "totalFindings": 181,
-    "distinctDecisions": 133,
+    "totalFindings": 182,
+    "distinctDecisions": 134,
     "byRule": {
       "R2_intent_literal": 19,
       "R3_router_literal_destination": 18,
-      "R4_business_state_literal": 144
+      "R4_business_state_literal": 145
     },
     "byClassification": {
       "contract-derived": 75,
-      "excluded-render-interaction": 106
+      "excluded-render-interaction": 107
     },
     "unclassified": 0,
     "contractDerived": 75,
     "contractProjectableGaps": 0,
     "frontendLogicDefects": 0,
-    "excludedRenderInteraction": 106
+    "excludedRenderInteraction": 107
   }
 }

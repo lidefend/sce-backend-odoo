@@ -1,0 +1,276 @@
+{
+  "schema_version": 1,
+  "id": "P0-CONTRACT-PRODUCER-01-P0C",
+  "branch": "feature/p0-contract-producer-01-p0c-action-feedback-20261123",
+  "baseline_sha": "122129513fce17e1d6bf3501fbaa13b4a9e74d84",
+  "status": "verification_pending",
+  "goal": ".agent/goals/P0-CONTRACT-PRODUCER-01-P0C.yaml",
+  "record": "docs/ops/iterations/p0_contract_producer_01_p0c_action_feedback_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-CONTRACT-PRODUCER-01-P0A.yaml",
+    ".agent/goals/P0-CONTRACT-PRODUCER-01-P0C.yaml",
+    ".agent/runs/P0-CONTRACT-PRODUCER-01-P0A/run.json",
+    ".agent/runs/P0-CONTRACT-PRODUCER-01-P0C/run.json",
+    "addons/smart_core/core/action_target_schema.py",
+    "addons/smart_core/core/contract_version_negotiation.py",
+    "addons/smart_core/core/page_block_action_contract.py",
+    "addons/smart_core/core/unified_page_contract_v2_action.py",
+    "addons/smart_core/handlers/execute_button.py",
+    "addons/smart_core/security/intent_permission.py",
+    "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+    "addons/smart_core/tests/test_page_block_action_contract.py",
+    "addons/smart_construction_core/handlers/dashboard_company_enter.py",
+    "addons/smart_construction_core/handlers/workspace_home_enter.py",
+    "addons/smart_construction_core/services/dashboard_contract_builder.py",
+    "addons/smart_construction_core/services/scene_block_schema.py",
+    "addons/smart_construction_core/services/workspace_contract_builder.py",
+    "addons/smart_construction_core/tests/__init__.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/ops/iterations/p0_contract_producer_01_p0c_action_feedback_20261123.md",
+    "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+    "frontend/apps/web/src/api/executeButton.ts",
+    "frontend/apps/web/src/api/intents.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+    "frontend/apps/web/src/app/contract/actionFeedback.ts",
+    "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+    "frontend/apps/web/src/app/contracts/v2/types.ts",
+    "frontend/apps/web/src/app/pageOrchestration.ts",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/utils/fieldSemantics.ts",
+    "frontend/packages/schema/src/index.ts",
+    "make/frontend.mk",
+    "make/ci.mk",
+    "make/guards.mk",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/frontend_decision_authority.py",
+    "scripts/verify/test_contract_fidelity_plan_guard.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "registered local.test and local.dev profiles with offline contract tests"
+  },
+  "checks": {
+    "p0c_action_unit": {
+      "target": "verify.p0_contract_producer.p0c.unit",
+      "inputs": [
+        "addons/smart_core/core/page_block_action_contract.py",
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_core/tests/test_intent_permission_operation_policy.py",
+        "addons/smart_core/tests/test_page_block_action_contract.py",
+        "frontend/apps/web/src/api/executeButton.ts",
+        "frontend/apps/web/src/api/intents.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewActionRuntime.ts",
+        "frontend/apps/web/src/app/contract/actionFeedback.ts",
+        "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+        "frontend/apps/web/src/app/contracts/v2/types.ts",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+        "frontend/packages/schema/src/index.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0c_action_orm": {
+      "target": "verify.p0_contract_producer.p0c.orm",
+      "inputs": [
+        "addons/smart_core/core/page_block_action_contract.py",
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/handlers/execute_button.py",
+        "addons/smart_core/security/intent_permission.py",
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/services/workspace_contract_builder.py",
+        "addons/smart_construction_core/handlers/workspace_home_enter.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
+        "make/guards.mk"
+      ],
+      "kind": "runtime"
+    },
+    "p0c_action_browser": {
+      "target": "verify.p0_contract_producer.p0a.browser",
+      "inputs": [
+        "frontend/apps/web/scripts/p0_contract_producer_browser_acceptance.cjs",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "addons/smart_construction_core/services/workspace_contract_builder.py",
+        "addons/smart_construction_core/handlers/workspace_home_enter.py",
+        "make/frontend.mk"
+      ],
+      "kind": "runtime",
+      "readback": {
+        "artifact": "artifacts/p0_contract_producer_01/p0a_browser_acceptance.json"
+      }
+    },
+    "frontend_dev_incremental": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "p0a_regression": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "scripts/verify/test_contract_fidelity_plan_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "p0a_backend_unit": {
+      "target": "verify.p0_contract_producer.p0a.backend_unit",
+      "inputs": [
+        "addons/smart_core/core/contract_version_negotiation.py",
+        "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_construction_core/services/scene_block_schema.py"
+      ],
+      "kind": "offline"
+    },
+    "p0a_money_chain": {
+      "target": "verify.p0_contract_producer.p0a.money",
+      "inputs": [
+        "addons/smart_construction_core/services/scene_block_schema.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_real_money_decode_test.ts"
+      ],
+      "kind": "runtime"
+    },
+    "guard_registry": {
+      "target": "verify.guard.registry",
+      "inputs": [
+        "addons/smart_core/core/action_target_schema.py",
+        "addons/smart_core/core/page_block_action_contract.py",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "scripts/verify/frontend_dev_incremental.py"
+      ],
+      "kind": "offline"
+    },
+    "page_contract_guards": {
+      "target": "verify.page_contract.action_schema_semantics.guard",
+      "inputs": [
+        "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py",
+        "scripts/verify/page_contract_action_schema_semantics_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_block_renderer": {
+      "target": "verify.frontend.page_block_renderer_smoke",
+      "inputs": [
+        "frontend/apps/web/src/components/page",
+        "frontend/apps/web/src/app/pageBlockRegistry.ts",
+        "scripts/verify/frontend_page_block_renderer_smoke_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "page_block_registry": {
+      "target": "verify.frontend.page_block_registry_guard",
+      "inputs": [
+        "frontend/apps/web/src/app/pageBlockRegistry.ts",
+        "scripts/verify/frontend_page_block_registry_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "frontend_lint": {
+      "target": "verify.frontend.lint.src",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/apps/web/.eslintrc.cjs",
+        "frontend/packages/schema/src"
+      ],
+      "kind": "offline"
+    },
+    "frontend_typecheck": {
+      "target": "verify.frontend.typecheck.strict",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/tsconfig.json",
+        "frontend/apps/web/tsconfig.strict.json"
+      ],
+      "kind": "offline"
+    },
+    "frontend_build": {
+      "target": "verify.frontend.build",
+      "inputs": [
+        "frontend/apps/web/src",
+        "frontend/packages/schema/src",
+        "frontend/apps/web/vite.config.ts",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "verification_lane_coverage": {
+      "target": "verify.verification.lane_coverage",
+      "inputs": [
+        "scripts/audit/verification_lane_baseline.json",
+        "scripts/audit/verification_lane_dispositions.json",
+        "make/frontend.mk",
+        "make/guards.mk"
+      ],
+      "kind": "offline"
+    },
+    "agent_ledger": {
+      "target": "verify.agent.ledger.unit",
+      "inputs": [
+        ".agent/active-runs.json",
+        ".agent/goals",
+        ".agent/runs"
+      ],
+      "kind": "offline"
+    }
+  },
+  "validation_responsibility": [
+    {
+      "gate": "action carrier structure, permission and feedback",
+      "state": "required",
+      "owner_target": "verify.p0_contract_producer.p0c.unit"
+    },
+    {
+      "gate": "real Odoo action authority and disabled reasons",
+      "state": "required",
+      "owner_target": "verify.p0_contract_producer.p0c.orm"
+    },
+    {
+      "gate": "Page Block response and browser decode",
+      "state": "required",
+      "owner_target": "verify.p0_contract_producer.p0c.browser"
+    },
+    {
+      "gate": "owning module ORM baseline",
+      "state": "required",
+      "owner_target": "local.test.baseline"
+    },
+    {
+      "gate": "frontend lint, strict typecheck and build",
+      "state": "required",
+      "owner_target": "registered frontend entries"
+    },
+    {
+      "gate": "P0-B attachment fact implementation",
+      "state": "not_authorized",
+      "reason": "separate follow-on batch"
+    },
+    {
+      "gate": "FCF-02-2 frontend transport implementation",
+      "state": "not_authorized",
+      "reason": "requires P0-B and P0-C production completion"
+    }
+  ],
+  "blockers": [],
+  "next_exact_step": "Commit the clean P0-C remediation candidate, publish PR #975 and wait for exact-head required checks and independent review.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

@@ -6,6 +6,7 @@ import time
 from odoo.addons.smart_core.core.base_handler import BaseIntentHandler
 from odoo.addons.smart_core.core.contract_version_negotiation import (
     ContractNegotiationError,
+    PAGE_BLOCK_ACTION_CAPABILITY,
     PAGE_BLOCK_DATA_CAPABILITY,
     carrier_enabled,
     negotiate_payload,
@@ -37,6 +38,10 @@ class DashboardCompanyEnterHandler(BaseIntentHandler):
         builder = DashboardContractBuilder(self.env)
         contract = builder.build(
             page_block_data_enabled=carrier_enabled(negotiation, PAGE_BLOCK_DATA_CAPABILITY),
+            page_block_action_enabled=carrier_enabled(
+                negotiation,
+                PAGE_BLOCK_ACTION_CAPABILITY,
+            ),
             timezone=str((ctx or {}).get("tz") or getattr(self.env.user, "tz", "") or "UTC"),
         )
         return {

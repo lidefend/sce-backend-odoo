@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import type { Ref } from 'vue';
+import type { PageBlockActionFeedback } from '@sc/schema';
+import { firstActionFeedback } from '../contract/actionFeedback';
 
 type Dict = Record<string, unknown>;
 
@@ -235,6 +237,7 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
     try {
       let successCount = 0;
       let failureCount = 0;
+      let terminalFeedback: PageBlockActionFeedback | undefined;
       for (const id of execIds) {
         try {
           const response = await options.executeButton(options.buildButtonRequest({
@@ -245,6 +248,9 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
             kind,
             context: action.context,
           }));
+          terminalFeedback = firstActionFeedback(
+            (response as Record<string, unknown> | null)?.runtimePatch,
+          ) || terminalFeedback;
           const navigation = options.resolveResponseNavigation(response);
           if (options.shouldNavigate(navigation)) {
             await options.routerPush(options.buildRouteTarget(navigation));
@@ -255,7 +261,11 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
             failureCount,
             ok: true,
           }));
-        } catch {
+        } catch (error) {
+          const details = error && typeof error === 'object'
+            ? (error as { details?: Record<string, unknown> }).details
+            : undefined;
+          terminalFeedback = firstActionFeedback(details?.runtimePatch) || terminalFeedback;
           ({ successCount, failureCount } = options.resolveCounters({
             successCount,
             failureCount,
@@ -263,7 +273,8 @@ export function useActionViewActionRuntime(options: UseActionViewActionRuntimeOp
           }));
         }
       }
-      options.batchMessage.value = options.resolveDoneMessage({ successCount, failureCount, text: options.pageText });
+      options.batchMessage.value = terminalFeedback?.message
+        || options.resolveDoneMessage({ successCount, failureCount, text: options.pageText });
       if (successCount > 0) {
         await applyActionRefreshPolicy(action.refreshPolicy);
       }

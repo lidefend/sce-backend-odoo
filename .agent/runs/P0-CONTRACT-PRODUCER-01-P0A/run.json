@@ -3,7 +3,7 @@
   "id": "P0-CONTRACT-PRODUCER-01-P0A",
   "branch": "feature/p0-contract-producer-01-p0a-implementation-20261123",
   "baseline_sha": "dbee64518ba9b35099408c91758c1c85d6d3a62f",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/P0-CONTRACT-PRODUCER-01-P0A.yaml",
   "record": "docs/ops/iterations/p0_contract_producer_01_p0a_implementation_20261123.md",
   "scope": [
@@ -434,7 +434,7 @@
     }
   ],
   "blockers": [],
-  "next_exact_step": "Commit and publish the clean exact-head candidate, then wait for all five required remote checks and independent review.",
+  "next_exact_step": "P0-A is merged at 122129513; continue in P0-CONTRACT-PRODUCER-01-P0C.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

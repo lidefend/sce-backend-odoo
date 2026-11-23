@@ -937,13 +937,18 @@ RULES = (
     )),
     Rule((
         "addons/smart_core/core/page_contracts_builder.py",
+        "addons/smart_core/core/action_target_schema.py",
     ), (
         "verify.frontend.page_contract_boundary.guard",
+        "verify.page_contract.action_schema_semantics.guard",
+        "verify.p0_contract_producer.p0c.unit",
     )),
     Rule((
         "addons/smart_core/core/contract_version_negotiation.py",
         "addons/smart_core/core/page_block_data_contract.py",
+        "addons/smart_core/core/page_block_action_contract.py",
         "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_action.py",
         "addons/smart_core/handlers/ui_contract_v2.py",
         "addons/smart_core/tests/test_page_contracts_builder_boundaries.py",
         "addons/smart_construction_core/handlers/dashboard_company_enter.py",
@@ -952,10 +957,21 @@ RULES = (
         "addons/smart_construction_core/services/scene_block_schema.py",
         "addons/smart_construction_core/services/workspace_contract_builder.py",
         "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+        "addons/smart_construction_core/tests/test_p0_contract_producer_p0c.py",
     ), (
         "verify.p0_contract_producer.p0a.backend_unit",
         "verify.p0_contract_producer.p0a.money",
         "verify.p0_contract_producer.p0a.unit",
+        "verify.p0_contract_producer.p0c.orm",
+        "verify.p0_contract_producer.p0c.unit",
+    )),
+    Rule((
+        "frontend/apps/web/src/app/contracts/v2/carrierCapabilities.ts",
+        "frontend/apps/web/src/app/pageOrchestration.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0c_test.ts",
+        "addons/smart_core/tests/test_page_block_action_contract.py",
+    ), (
+        "verify.p0_contract_producer.p0c.unit",
     )),
     Rule((
         "scripts/verify/p0_contract_producer_money_evidence.py",

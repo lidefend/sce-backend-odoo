@@ -45,9 +45,22 @@ class _FakeAction:
         self.name = name
         self.groups_id = groups_id or set()
         self._exists = exists
+        self.res_model = ""
+        self.access_modes = []
+        self.rule_modes = []
 
     def exists(self):
         return self if self._exists else False
+
+    def with_user(self, user):
+        del user
+        return self
+
+    def check_access_rights(self, mode):
+        self.access_modes.append(mode)
+
+    def check_access_rule(self, mode):
+        self.rule_modes.append(mode)
 
 
 class _FakeActionModel:
@@ -183,6 +196,17 @@ class _FakeEnv:
         if name == "sc.capability":
             return self.capability_model
         raise KeyError(name)
+
+    def __contains__(self, name):
+        return name in {
+            self.model.name,
+            "ir.actions.actions",
+            "ir.actions.client",
+            "ir.ui.menu",
+            "res.users",
+            "sc.capability",
+            *( {"sc.entitlement"} if self.entitlement_model else set() ),
+        }
 
 
 class _FakeCursor:
@@ -436,6 +460,67 @@ class TestIntentPermissionOperationPolicy(unittest.TestCase):
 
         self.assertEqual(self.model.access_modes, ["write"])
         self.assertEqual(self.model.rule_modes, ["write"])
+
+    def test_action_gate_preserves_existing_group_only_boundary(self):
+        self.env.action.res_model = self.env.model.name
+        ctx = _Ctx({
+            "intent": "execute_button",
+            "params": {"model": "x.model", "record_id": 4, "action_id": 31},
+        })
+
+        self.permission.check_intent_permission(ctx)
+
+        self.assertEqual(self.model.access_modes, ["write"])
+        self.assertEqual(self.model.rule_modes, ["write"])
+        self.assertEqual(self.env.generic_action_model.browsed_ids, [31])
+        self.assertEqual(self.env.action.access_modes, [])
+        self.assertEqual(self.env.action.rule_modes, [])
+
+    def test_action_contract_verdict_checks_action_and_target_model_acl(self):
+        self.env.action.res_model = self.env.model.name
+
+        verdict = self.permission.action_access_verdict(
+            self.env,
+            action_id=31,
+            access_mode="read",
+        )
+
+        self.assertTrue(verdict["authorizationAllowed"])
+        self.assertEqual(self.env.action.access_modes, ["read"])
+        self.assertEqual(self.env.action.rule_modes, ["read"])
+        self.assertEqual(self.model.access_modes, ["read"])
+
+    def test_action_contract_verdict_denies_unreadable_action_record(self):
+        def deny_read(mode):
+            self.env.action.access_modes.append(mode)
+            raise AccessError("action record denied")
+
+        self.env.action.check_access_rights = deny_read
+
+        verdict = self.permission.action_access_verdict(
+            self.env,
+            action_id=31,
+        )
+
+        self.assertFalse(verdict["authorizationAllowed"])
+        self.assertEqual(verdict["reasonCode"], "ACTION_RECORD_NOT_AUTHORIZED")
+
+    def test_action_contract_verdict_denies_unreadable_target_model(self):
+        self.env.action.res_model = self.env.model.name
+
+        def deny_target(mode):
+            self.model.access_modes.append(mode)
+            raise AccessError("target denied")
+
+        self.model.check_access_rights = deny_target
+
+        verdict = self.permission.action_access_verdict(
+            self.env,
+            action_id=31,
+        )
+
+        self.assertFalse(verdict["authorizationAllowed"])
+        self.assertEqual(verdict["reasonCode"], "ACTION_NOT_AUTHORIZED")
 
     def test_user_view_preference_get_does_not_gate_on_target_business_model_acl(self):
         ctx = _Ctx({"intent": "user.view.preference.get", "params": {"model": "x.model", "action_id": 31}})

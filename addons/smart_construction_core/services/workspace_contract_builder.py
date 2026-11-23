@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+from odoo.addons.smart_core.core.page_block_action_contract import (
+    build_navigation_action_authority,
+)
+
 from .scene_block_schema import action_target, build_contract, metric_card, native_view_ref, shortcut_grid, todo_list, warning_list
 
 
@@ -37,7 +41,13 @@ class WorkspaceContractBuilder:
         except Exception:
             return 0
 
-    def build(self, *, page_block_data_enabled: bool = False, timezone: str = "UTC"):
+    def build(
+        self,
+        *,
+        page_block_data_enabled: bool = False,
+        page_block_action_enabled: bool = False,
+        timezone: str = "UTC",
+    ):
         project_total = self._count("project.project", [])
         active_projects = self._count("project.project", [("active", "=", True)])
         payment_pending = self._count("payment.request", [("state", "not in", ["done", "cancel"])])
@@ -119,6 +129,12 @@ class WorkspaceContractBuilder:
             subtitle="今日任务、快捷入口与业务摘要",
             blocks=blocks,
             page_block_data_enabled=page_block_data_enabled,
+            page_block_action_enabled=page_block_action_enabled,
+            action_authority=(
+                build_navigation_action_authority(self.env)
+                if page_block_action_enabled
+                else None
+            ),
             timezone=timezone,
         )
         contract["source_authority"] = self.source_authority_contract()
