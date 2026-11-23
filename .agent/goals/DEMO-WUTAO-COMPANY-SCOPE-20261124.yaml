@@ -1,0 +1,37 @@
+schema_version: 1
+
+goal:
+  id: DEMO-WUTAO-COMPANY-SCOPE-20261124
+  title: demo_wutao_company_scope_verification_alignment
+  status: active
+  formal_product_layer: P4
+  layer_target: demo role-scope verification declaration
+  module:
+    - smart_construction_demo
+  standard_vs_user_specific: construction_product_validation
+  objective: >-
+    Correct the wutao role-scope verification expectation to the demo carrier's
+    real group-level company membership: main company 1 and operating company 2.
+  product_result: >-
+    A clean demo rebuild and the role-scope verifier agree that wutao is a
+    business_config_admin with allowed company scope [1, 2].
+  why_here: >-
+    The role-scope manifest and its unit own the expected startup identity used
+    to verify the demo carrier.
+  why_not_elsewhere:
+    - Product role and company membership are already owned by smart_construction_demo.
+    - The frontend must not infer company scope.
+    - No database repair is needed because the rebuilt seed already produces the correct scope.
+  blast_radius:
+    - wutao role-scope verification
+    - local and daily demo startup readback
+  acceptance:
+    - The verifier expects company scope [1, 2].
+    - Local startup readback passes with business_config_admin and [1, 2].
+  exclusions:
+    - Product role/company membership changes
+    - platform administrator privileges
+    - frontend changes
+    - production and platform_control
+  rollback: >-
+    Revert the verification expectation and rerun the role-scope unit.

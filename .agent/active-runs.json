@@ -158,6 +158,7 @@
     "fix/mainline-performance-02-scene-facts-r2-20261122": ".agent/runs/MAINLINE-PERFORMANCE-02-R1/run.json",
     "fix/p1-demo-terminal-settlement-20261123": ".agent/runs/P1-DEMO-SETTLEMENT-SEED-20261123/run.json",
     "fix/demo-wutao-business-config-admin-20261124": ".agent/runs/DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124/run.json",
+    "fix/demo-wutao-company-scope-20261124": ".agent/runs/DEMO-WUTAO-COMPANY-SCOPE-20261124/run.json",
     "feature/enterprise-center-onboarding-20261123": ".agent/runs/ENTERPRISE-CENTER-ONBOARDING-20261123/run.json",
     "feature/industry-business-model-02-20261123": ".agent/runs/INDUSTRY-BUSINESS-MODEL-02/run.json"
   }
