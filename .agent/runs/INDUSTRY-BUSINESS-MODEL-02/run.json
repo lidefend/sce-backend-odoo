@@ -42,7 +42,9 @@
     "make/dev_test.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
-    "scripts/verify/industry_business_model_02_data_audit.py"
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/industry_business_model_02_data_audit.py",
+    "scripts/verify/test_frontend_dev_incremental.py"
   ],
   "environment": {
     "kind": "runtime",
