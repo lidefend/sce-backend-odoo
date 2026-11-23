@@ -439,6 +439,7 @@ def resolve_run(root: Path) -> tuple[str, dict] | None:
         raise RunError('invalid run status')
     if run.get('schema_version') == 2:
         validate_verification_responsibility(run)
+    validate_channel_handoff(run)
     validate_delivery_lifecycle(root, run)
     return relative, run
 
@@ -476,6 +477,35 @@ def validate_verification_responsibility(run: dict) -> None:
             raise RunError(
                 f'verification_responsibility.{lane} requires an entrypoint when required'
             )
+
+
+def validate_channel_handoff(run: dict) -> None:
+    """Validate optional fast-lane channel handoff metadata."""
+    handoff = run.get('channel_handoff')
+    if handoff is None:
+        return
+    if not isinstance(handoff, dict) or tuple(handoff) != ('backend_to_frontend',):
+        raise RunError(
+            'channel_handoff must contain exactly backend_to_frontend'
+        )
+    declaration = handoff['backend_to_frontend']
+    if not isinstance(declaration, dict):
+        raise RunError('channel_handoff.backend_to_frontend must be an object')
+    if declaration.get('mode') != 'same_run_backend_receipt':
+        raise RunError(
+            'channel_handoff.backend_to_frontend.mode must be '
+            'same_run_backend_receipt'
+        )
+    if declaration.get('require_for_shared_contract_targets') is not True:
+        raise RunError(
+            'channel_handoff.backend_to_frontend.'
+            'require_for_shared_contract_targets must be true'
+        )
+    reason = declaration.get('reason')
+    if not isinstance(reason, str) or not reason.strip():
+        raise RunError(
+            'channel_handoff.backend_to_frontend requires a reason'
+        )
 
 
 def validate_delivery_lifecycle(root: Path, run: dict) -> None:
@@ -915,6 +945,7 @@ def summary(root: Path) -> dict:
             'outside_scope': outside, 'checks': checks,
             'registered_check_targets': sorted(declared_check_targets(run)),
             'verification_responsibility': run.get('verification_responsibility'),
+            'channel_handoff': run.get('channel_handoff'),
             'blockers': run.get('blockers', []), 'next_exact_step': run['next_exact_step'],
             'write_replay_authorized': False,
             'candidate_evidence': run.get('candidate_evidence', False)}

@@ -1275,7 +1275,7 @@ verify.platform.duty.contract.unit: guard.prod.forbid
 	@python3 addons/smart_core/tests/test_platform_admin_duty_contract.py
 	@cd frontend/apps/web && mkdir -p node_modules/.cache && ./node_modules/.bin/esbuild src/components/platform-duty/dutyAction.test.ts --bundle --platform=node --format=esm --outfile=node_modules/.cache/duty-action.test.mjs >/dev/null && node node_modules/.cache/duty-action.test.mjs
 
-ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit verify.frontend.systemic.convergence.static
+ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit
 	@python3 scripts/ops/agent_run_context.py
 	@$(MAKE) --no-print-directory ci.delivery.plan.merge
 	@git diff --check
@@ -1284,6 +1284,29 @@ ci.local.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy
 	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
 	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
 	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree
+	@python3 scripts/ci/trusted_scan_scope.py
+
+.PHONY: ci.local.backend.iteration ci.local.frontend.iteration
+ci.local.backend.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit
+	@python3 scripts/ops/agent_run_context.py
+	@$(MAKE) --no-print-directory ci.delivery.plan.merge
+	@git diff --check
+	@python3 scripts/ops/local_quick_evidence.py preflight
+	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
+	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
+	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
+	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree --channel backend
+	@python3 scripts/ci/trusted_scan_scope.py
+
+ci.local.frontend.iteration: guard.prod.forbid verify.baseline.iteration.execution.policy verify.platform.admin.credential.unit
+	@python3 scripts/ops/agent_run_context.py
+	@$(MAKE) --no-print-directory ci.delivery.plan.merge
+	@git diff --check
+	@python3 scripts/ops/local_quick_evidence.py preflight
+	@$(MAKE) --no-print-directory audit.verification.lane_coverage.check
+	@python3 scripts/verify/construction_core_extension_intent_handlers_split_guard.py
+	@python3 scripts/verify/frontend_page_contract_boundary_guard.py --check-only
+	@python3 scripts/verify/frontend_dev_incremental.py --execute-worktree --channel frontend
 	@python3 scripts/ci/trusted_scan_scope.py
 
 # The frozen-head Quick entry. It shards the declared ci.local.quick.run target

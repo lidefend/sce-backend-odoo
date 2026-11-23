@@ -37,6 +37,7 @@ from scripts.ops.incremental_execution import (
     verified_receipt as incremental_verified_receipt,
     write_index as write_incremental_index,
 )
+from scripts.ci import ci_path_ownership
 
 WATCH_ROOTS = (
     "frontend/apps/web/src",
@@ -67,9 +68,15 @@ BASE_FRONTEND_TARGETS = (
     "verify.frontend.lint.src",
     "verify.frontend.typecheck.strict",
 )
+FRONTEND_SOURCE_SCAN_TARGET = "verify.frontend.systemic.convergence.static"
+FRONTEND_SOURCE_TARGETS = tuple(sorted((
+    *BASE_FRONTEND_TARGETS,
+    FRONTEND_SOURCE_SCAN_TARGET,
+)))
 NODE_TOOL_REQUIREMENTS = {
     "verify.frontend.lint.src": "eslint",
     "verify.frontend.typecheck.strict": "vue-tsc",
+    FRONTEND_SOURCE_SCAN_TARGET: "esbuild",
     "verify.frontend.professional_component_registry.unit": "esbuild",
     "verify.frontend.runtime_identity.unit": "esbuild",
     "verify.frontend.session_persistence.snapshot.unit": "esbuild",
@@ -2773,10 +2780,134 @@ MODULE_BASELINE_TARGETS = {
 TEST_AUXILIARY_PREFIXES = {
     ("smart_construction_acceptance_fixture", "tools/"),
 }
+CHANNEL_ALL = "all"
+CHANNEL_BACKEND = "backend"
+CHANNEL_FRONTEND = "frontend"
+CHANNELS = (CHANNEL_ALL, CHANNEL_BACKEND, CHANNEL_FRONTEND)
+SHARED_TARGET_MARKERS = (
+    ".assembler.",
+    ".descriptor.",
+    ".registry.",
+    ".schema.",
+    ".semantic.",
+    "contract_v2",
+    "contract_fidelity",
+    "contract_shape",
+    "contract_structure",
+    "p0_contract_producer",
+    "unified_page_contract",
+)
+CONTRACT_PATH_MARKERS = (
+    "/contracts/",
+    "/assemblers/",
+    "contract",
+    "descriptor",
+    "page_orchestration",
+    "schema",
+    "semantic_registry",
+)
 
 
 def changed_test_target(module: str) -> str:
     return "verify.changed_tests.orm"
+
+
+def is_contract_handoff_target(target: str) -> bool:
+    lowered = target.lower()
+    return (
+        any(marker in lowered for marker in SHARED_TARGET_MARKERS)
+        or target.startswith(("verify.contract.", "verify.semantic."))
+        or "contract" in target_layers([target])
+    )
+
+
+def is_contract_path(path: str) -> bool:
+    normalized = path.replace("\\", "/").lower()
+    return any(marker in normalized for marker in CONTRACT_PATH_MARKERS)
+
+
+def shared_contract_targets_for_paths(paths: list[str]) -> set[str]:
+    selected: set[str] = set()
+    for path in paths:
+        if is_contract_path(path):
+            selected.update(select_iteration_targets([path]))
+    return selected
+
+
+def channel_target_class(target: str) -> str:
+    """Classify one target as backend, frontend or shared contract/governance."""
+    lowered = target.lower()
+    layers = target_layers([target])
+    if (
+        is_contract_handoff_target(target)
+        or "docs" in layers
+        or "governance" in layers
+    ):
+        return "shared"
+    if "frontend" in layers:
+        return CHANNEL_FRONTEND
+    if "backend" in layers:
+        return CHANNEL_BACKEND
+    return "shared"
+
+
+def select_channel_targets(
+    targets: set[str] | list[str],
+    channel: str,
+    *,
+    paths: list[str] | None = None,
+) -> list[str]:
+    if channel not in CHANNELS:
+        raise ValueError(f"unknown validation channel: {channel}")
+    selected = set(targets)
+    if channel == CHANNEL_ALL:
+        return sorted(selected)
+    contract_targets = shared_contract_targets_for_paths(paths or [])
+    allowed = {channel, "shared"}
+    return sorted(
+        target
+        for target in selected
+        if channel_target_class(target) in allowed
+        or target in contract_targets
+    )
+
+
+def channel_target_sets(
+    targets: set[str] | list[str],
+    *,
+    paths: list[str] | None = None,
+) -> dict[str, list[str]]:
+    complete = set(targets)
+    contract_targets = shared_contract_targets_for_paths(paths or [])
+    backend = set(select_channel_targets(
+        complete,
+        CHANNEL_BACKEND,
+        paths=paths,
+    ))
+    frontend = set(select_channel_targets(
+        complete,
+        CHANNEL_FRONTEND,
+        paths=paths,
+    ))
+    union = backend | frontend
+    if union != complete:
+        missing = sorted(complete - union)
+        raise RuntimeError(
+            "channel partition is incomplete: " + ", ".join(missing)
+        )
+    return {
+        "backend": sorted(backend),
+        "frontend": sorted(frontend),
+        "shared": sorted(backend & frontend),
+        "sharedContract": sorted(
+            target
+            for target in backend & frontend
+            if is_contract_handoff_target(target)
+            or target in contract_targets
+        ),
+        "backendOnly": sorted(backend - frontend),
+        "frontendOnly": sorted(frontend - backend),
+    }
 
 
 def remote_integration_targets(targets: set[str] | list[str]) -> set[str]:
@@ -2785,6 +2916,76 @@ def remote_integration_targets(targets: set[str] | list[str]) -> set[str]:
         target
         for target in targets
         if target.endswith(".module_baseline")
+    }
+
+
+def remote_scope_projection(paths: list[str]) -> dict:
+    """Describe remote responsibility from the shared path-ownership registry.
+
+    This projection does not select backend modules or frontend targets; those
+    remain owned by the exact-head remote planners. It records which remote
+    authorities must run, using the same path ownership facts as the CI risk
+    and backend impact entries.
+    """
+    normalized = sorted({
+        path.replace("\\", "/")
+        for path in paths
+        if path.strip()
+    })
+    ownership = ci_path_ownership.classify_paths(normalized)
+    categories = {
+        path: category_id
+        for path, category_id in ownership.assignments.items()
+        if category_id not in ("__unknown__", "__invalid__")
+    }
+    backend_runtime_paths = sorted(
+        path
+        for path in categories
+        if ownership.category_for(path)
+        and ownership.category_for(path).backend_runtime
+    )
+    frontend_paths = sorted(
+        path
+        for path in categories
+        if ownership.category_for(path)
+        and ownership.category_for(path).frontend
+    )
+    frontend_full_paths = sorted(
+        path
+        for path in categories
+        if ownership.category_for(path)
+        and ownership.category_for(path).frontend_full
+    )
+    backend_seed_modules = sorted({
+        parts[1]
+        for path in normalized
+        if len(parts := path.split("/")) >= 2
+        and parts[0] in ("addons", "demo_addons")
+        and re.fullmatch(r"[a-z_][a-z0-9_]*", parts[1])
+    })
+    return {
+        "authority": "exact_head_remote_planners",
+        "pathOwnershipRegistry": "config/ci/path_ownership_v1.json",
+        "backendSuiteRequired": bool(
+            backend_runtime_paths
+            or ownership.unknown_paths
+            or ownership.invalid_paths
+        ),
+        "backendSeedModules": backend_seed_modules,
+        "frontendReleaseGateRequired": bool(frontend_paths),
+        "frontendFullRequired": bool(frontend_full_paths),
+        "controlPlaneChanged": ownership.control_plane_changed,
+        "pathOwnershipToolChecks": list(ownership.tool_checks),
+        "ownershipCategories": sorted(set(categories.values())),
+        "backendRuntimePaths": backend_runtime_paths,
+        "frontendPaths": frontend_paths,
+        "unknownPaths": list(ownership.unknown_paths),
+        "invalidPaths": list(ownership.invalid_paths),
+        "selection": {
+            "backend": "owning_and_transitive_consumer_module_baseline_at_exact_head",
+            "frontend": "risk_selected_release_lane_at_exact_head",
+            "controlPlane": "registered_owner_tool_checks_at_exact_head",
+        },
     }
 
 
@@ -2808,7 +3009,7 @@ def select_targets(paths: list[str]) -> list[str]:
         ):
             # A focused rule supplements the source-wide baseline; it never
             # replaces lint or strict typechecking.
-            path_targets.update(BASE_FRONTEND_TARGETS)
+            path_targets.update(FRONTEND_SOURCE_TARGETS)
         selected.update(path_targets)
     targets = sorted(selected)
     if any(
@@ -2994,6 +3195,10 @@ def resumable_receipt_results(
     root: Path,
     paths: list[str],
     targets: list[str],
+    *,
+    identity: dict | None = None,
+    channel: str | None = None,
+    run_id: str | None = None,
 ) -> tuple[Path | None, str, dict[str, dict]]:
     """Carry verified targets from a prior exact execution identity.
 
@@ -3015,12 +3220,16 @@ def resumable_receipt_results(
         reverse=True,
     )
     expected_targets = sorted(set(targets))
-    current_identity = current_execution_identity(root)
+    current_identity = identity or current_execution_identity(root)
     current_head = str(current_identity.get("head", ""))
     best = None
     for receipt_path in receipts:
         try:
             receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+            if channel is not None and receipt.get("channel") != channel:
+                continue
+            if run_id is not None and receipt.get("runId") != run_id:
+                continue
             receipt_identity = receipt.get("identity")
             if not isinstance(receipt_identity, dict):
                 continue
@@ -3090,6 +3299,35 @@ def resumable_receipt_results(
         _, receipt_path, head, results = best
         return receipt_path, head, results
     return None, "", {}
+
+
+def channel_receipt_complete_pass(
+    receipt_path: Path | None,
+    targets: set[str] | list[str],
+) -> bool:
+    """Require a complete passed receipt for cross-channel target reuse."""
+    if receipt_path is None:
+        return False
+    try:
+        receipt = json.loads(receipt_path.read_text(encoding="utf-8"))
+        rows = receipt.get("targetResults")
+        if (
+            receipt.get("status") != "passed"
+            or receipt.get("verificationPassed") is not True
+            or receipt.get("notRunTargets")
+            or not isinstance(rows, list)
+        ):
+            return False
+        passed = {
+            row.get("target")
+            for row in rows
+            if isinstance(row, dict)
+            and row.get("status") == "passed"
+            and row.get("returncode") == 0
+        }
+        return set(targets) <= passed
+    except (OSError, ValueError, TypeError):
+        return False
 
 
 def worktree_changed_paths(root: Path = ROOT, base_ref: str = "origin/main") -> list[str]:
@@ -3359,7 +3597,7 @@ def validation_exclusion_targets(run: dict) -> set[str]:
     return set(declaration)
 
 
-def iteration_plan(root: Path = ROOT) -> int:
+def iteration_plan(root: Path = ROOT, channel: str = CHANNEL_ALL) -> int:
     selected = resolve_run(root)
     if selected is None:
         raise RunError("no registered run; select/register one goal before iteration")
@@ -3375,6 +3613,7 @@ def iteration_plan(root: Path = ROOT) -> int:
     )
     return print_plan(
         paths,
+        channel=channel,
         source=relative,
         checks=checks,
         registered_targets=registered,
@@ -3387,6 +3626,7 @@ def iteration_plan(root: Path = ROOT) -> int:
 def print_plan(
     paths: list[str],
     *,
+    channel: str = CHANNEL_ALL,
     source: str = "explicit_paths",
     checks: dict | None = None,
     registered_targets: set[str] | None = None,
@@ -3395,9 +3635,19 @@ def print_plan(
     excluded_targets: set[str] | None = None,
 ) -> int:
     excluded_targets = excluded_targets or set()
-    complete_targets = set(select_iteration_targets(paths)) - excluded_targets
-    deferred_remote = remote_integration_targets(complete_targets)
-    required_targets = complete_targets - deferred_remote
+    full_affected = set(select_iteration_targets(paths)) - excluded_targets
+    partition = channel_target_sets(full_affected, paths=paths)
+    channel_affected = set(select_channel_targets(
+        full_affected,
+        channel,
+        paths=paths,
+    ))
+    deferred_remote = remote_integration_targets(channel_affected)
+    required_targets = channel_affected - deferred_remote
+    shared_targets = set(partition["shared"]) - deferred_remote
+    shared_contract_targets = (
+        set(partition["sharedContract"]) - deferred_remote
+    )
     reusable = reusable_check_targets(checks or {})
     blocked = blocked_check_targets(checks or {})
     targets = required_targets | {
@@ -3424,12 +3674,22 @@ def print_plan(
         "iterationBaselineKind": iteration_baseline_kind,
         "recordedChecks": checks or {},
         "mode": "development_incremental_plan",
+        "channel": channel,
         "status": "recommendation_only",
         "registrationMode": "planner_managed",
         "changedPathCount": len(paths),
         "requiredTargets": sorted(required_targets),
         "deferredRemoteTargets": sorted(deferred_remote),
-        "completeAffectedTargets": sorted(complete_targets),
+        "remoteIntegrationScope": remote_scope_projection(paths),
+        "completeAffectedTargets": sorted(full_affected),
+        "channelAffectedTargets": sorted(channel_affected),
+        "sharedTargets": sorted(shared_targets),
+        "sharedContractTargets": sorted(shared_contract_targets),
+        "backendOnlyTargets": partition["backendOnly"],
+        "frontendOnlyTargets": partition["frontendOnly"],
+        "channelHandoffRequired": (
+            channel == CHANNEL_FRONTEND and bool(shared_contract_targets)
+        ),
         "targets": sorted(targets),
         "requiredLayers": target_layers(required_targets),
         "executionLayers": target_layers(targets),
@@ -3513,6 +3773,8 @@ def write_state(
     paths: list[str],
     targets: list[str],
     returncode: int | None,
+    channel: str = CHANNEL_ALL,
+    run_id: str | None = None,
     receipt: str | None = None,
     reason: str = "",
     target_results: list[dict] | None = None,
@@ -3525,6 +3787,8 @@ def write_state(
     payload = {
         "schemaVersion": 1,
         "mode": "development_incremental",
+        "channel": channel,
+        "runId": run_id,
         "status": status,
         "changedPaths": paths,
         "targets": targets,
@@ -3675,6 +3939,8 @@ def execute_targets(
     paths: list[str],
     *,
     root: Path = ROOT,
+    channel: str = CHANNEL_ALL,
+    run_id: str | None = None,
     registered_targets: set[str] | None = None,
     blocked_targets: set[str] | None = None,
     reusable_targets: set[str] | None = None,
@@ -3688,13 +3954,27 @@ def execute_targets(
 ) -> int:
     paths = sorted(set(paths))
     excluded_targets = excluded_targets or set()
-    complete_targets = [
+    full_affected = [
         target for target in select_iteration_targets(paths)
         if target not in excluded_targets
     ]
-    deferred_remote = remote_integration_targets(complete_targets)
+    partition = channel_target_sets(full_affected, paths=paths)
+    channel_affected = select_channel_targets(
+        full_affected,
+        channel,
+        paths=paths,
+    )
+    deferred_remote = remote_integration_targets(channel_affected)
     required_targets = [
-        target for target in complete_targets
+        target for target in channel_affected
+        if target not in deferred_remote
+    ]
+    shared_targets = [
+        target for target in partition["shared"]
+        if target not in deferred_remote
+    ]
+    shared_contract_targets = [
+        target for target in partition["sharedContract"]
         if target not in deferred_remote
     ]
     blocked = sorted(set(required_targets) & (blocked_targets or set()))
@@ -3707,8 +3987,34 @@ def execute_targets(
         if target in reusable
     }
     reusable_evidence_missing = sorted(set(reusable) - set(reusable_results))
-    targets = [target for target in required_targets if target not in reusable]
     identity = worktree_identity or current_execution_identity(root)
+    handoff_receipt = None
+    handoff_results: dict[str, dict] = {}
+    handoff_missing = (
+        channel == CHANNEL_FRONTEND and bool(shared_contract_targets)
+    )
+    if channel == CHANNEL_FRONTEND and shared_contract_targets:
+        handoff_receipt, _, handoff_results = resumable_receipt_results(
+            root,
+            paths,
+            shared_contract_targets,
+            identity=identity,
+            channel=CHANNEL_BACKEND,
+            run_id=run_id,
+        )
+        handoff_missing = (
+            set(handoff_results) != set(shared_contract_targets)
+            or not channel_receipt_complete_pass(
+                handoff_receipt,
+                shared_contract_targets,
+            )
+        )
+    handoff_targets = set(handoff_results) if not handoff_missing else set()
+    targets = [
+        target
+        for target in required_targets
+        if target not in reusable and target not in handoff_targets
+    ]
     unmapped_paths = [
         path
         for path in paths
@@ -3725,6 +4031,8 @@ def execute_targets(
     payload = {
         "schemaVersion": 1,
         "mode": "development_incremental_execution",
+        "channel": channel,
+        "runId": run_id,
         "iterationBaselineSha": iteration_checkpoint_sha,
         "iterationBaselineKind": iteration_checkpoint_kind,
         "status": "not_run",
@@ -3733,7 +4041,24 @@ def execute_targets(
         "changedPaths": paths,
         "requiredTargets": required_targets,
         "deferredRemoteTargets": sorted(deferred_remote),
-        "completeAffectedTargets": complete_targets,
+        "remoteIntegrationScope": remote_scope_projection(paths),
+        "completeAffectedTargets": sorted(full_affected),
+        "channelAffectedTargets": channel_affected,
+        "sharedTargets": shared_targets,
+        "sharedContractTargets": shared_contract_targets,
+        "backendOnlyTargets": partition["backendOnly"],
+        "frontendOnlyTargets": partition["frontendOnly"],
+        "channelHandoffRequired": (
+            channel == CHANNEL_FRONTEND and bool(shared_contract_targets)
+        ),
+        "channelHandoffStatus": (
+            "not_required"
+            if channel != CHANNEL_FRONTEND or not shared_contract_targets
+            else "missing" if handoff_missing else "ready"
+        ),
+        "backendHandoffReceipt": (
+            _json_path(handoff_receipt, root) if handoff_receipt else None
+        ),
         "requiredLayers": target_layers(required_targets),
         "executionLayers": target_layers(targets),
         "targetOrder": required_targets,
@@ -3754,7 +4079,13 @@ def execute_targets(
         "verificationPassed": False,
         "reason": "",
     }
-    if environment_missing:
+    if handoff_missing:
+        payload.update(
+            status="blocked",
+            reason="backend contract handoff receipt is required for frontend shared targets",
+            notRunTargets=targets,
+        )
+    elif environment_missing:
         payload.update(
             status="blocked",
             reason="required frontend toolchain dependencies are missing",
@@ -3786,6 +4117,8 @@ def execute_targets(
             paths=paths,
             targets=targets,
             returncode=2,
+            channel=channel,
+            run_id=run_id,
             receipt=_json_path(receipt, root),
             reason=payload["reason"],
             target_results=payload["targetResults"],
@@ -3796,22 +4129,34 @@ def execute_targets(
         )
         return 2
     if not targets:
-        if reusable:
+        reused_rows = {
+            **{
+                target: reusable_results[target]
+                for target in reusable
+                if target in reusable_results
+            },
+            **handoff_results,
+        }
+        if reused_rows:
             payload.update(
                 status="passed",
                 reason="all required targets reused from unchanged receipts",
                 testsRun=False,
                 verificationPassed=True,
                 executedTargetCount=0,
-                reusedTargetCount=len(reusable),
-                targetResults=[reusable_results[target] for target in required_targets],
+                reusedTargetCount=len(reused_rows),
+                targetResults=[
+                    reused_rows[target]
+                    for target in required_targets
+                    if target in reused_rows
+                ],
                 reused=True,
             )
         else:
             payload.update(status="not_run", reason="no relevant L2 checks")
         receipt_directory = _execution_directory(root, receipt_dir)
         receipt = _write_receipt(receipt_directory, payload)
-        if reusable:
+        if reused_rows:
             write_incremental_index(
                 root,
                 paths,
@@ -3824,14 +4169,16 @@ def execute_targets(
             paths=paths,
             targets=[],
             returncode=0,
+            channel=channel,
+            run_id=run_id,
             receipt=_json_path(receipt, root),
             reason=payload["reason"],
             target_results=payload["targetResults"],
         )
-        if reusable:
+        if reused_rows:
             print(
                 "[local.incremental] PASS "
-                f"reused_targets={len(reusable)} receipt={_json_path(receipt, root)}"
+                f"reused_targets={len(reused_rows)} receipt={_json_path(receipt, root)}"
             )
         else:
             print(f"[local.incremental] NOT_RUN reason=no_relevant_l2 receipt={_json_path(receipt, root)}")
@@ -3844,7 +4191,14 @@ def execute_targets(
         else incremental_verified_receipt(root, paths, required_targets, identity)
     )
     resume_receipt, resume_head, carried_results = (
-        resumable_receipt_results(root, paths, targets)
+        resumable_receipt_results(
+            root,
+            paths,
+            targets,
+            identity=identity,
+            channel=None if channel == CHANNEL_ALL else channel,
+            run_id=run_id,
+        )
         if source_receipt is None
         else (None, "", {})
     )
@@ -3893,6 +4247,8 @@ def execute_targets(
             paths=paths,
             targets=targets,
             returncode=0,
+            channel=channel,
+            run_id=run_id,
             receipt=_json_path(receipt, root),
             reason=payload["reason"],
             target_results=[],
@@ -3914,8 +4270,16 @@ def execute_targets(
         ),
         flush=True,
     )
-    write_state(status="running", paths=paths, targets=targets, returncode=None)
+    write_state(
+        status="running",
+        paths=paths,
+        targets=targets,
+        returncode=None,
+        channel=channel,
+        run_id=run_id,
+    )
     result_rows = dict(reusable_results)
+    result_rows.update(handoff_results)
     executed_targets: set[str] = set()
     for target in targets:
         if target in carried_results:
@@ -3948,7 +4312,7 @@ def execute_targets(
     payload["testsRun"] = bool(executed_targets)
     payload["verificationPassed"] = payload["status"] == "passed"
     payload["executedTargetCount"] = len(executed_targets)
-    reused = sorted(set(reusable) | set(carried_results))
+    reused = sorted(set(reusable) | set(carried_results) | handoff_targets)
     payload["reusedTargets"] = reused
     payload["reusedTargetCount"] = len(reused)
     if resume_receipt is not None:
@@ -3966,6 +4330,8 @@ def execute_targets(
         paths=paths,
         targets=targets,
         returncode=returncode,
+        channel=channel,
+        run_id=run_id,
         receipt=_json_path(receipt, root),
         reason=payload["reason"],
         target_results=payload["targetResults"],
@@ -3981,7 +4347,10 @@ def execute_targets(
     return returncode
 
 
-def execute_worktree(root: Path = ROOT) -> int:
+def execute_worktree(
+    root: Path = ROOT,
+    channel: str = CHANNEL_ALL,
+) -> int:
     selected = resolve_run(root)
     if selected is None:
         raise RunError("no registered run; select/register one goal before iteration")
@@ -4005,6 +4374,8 @@ def execute_worktree(root: Path = ROOT) -> int:
     return execute_targets(
         paths,
         root=root,
+        channel=channel,
+        run_id=run["id"],
         registered_targets=registered,
         blocked_targets=blocked,
         reusable_targets=reusable,
@@ -4023,6 +4394,12 @@ def execute_worktree(root: Path = ROOT) -> int:
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--channel",
+        choices=CHANNELS,
+        default=CHANNEL_ALL,
+        help="all, backend-only or frontend-only target scope",
+    )
     parser.add_argument("--watch", action="store_true", help="watch source content and validate after each settled batch")
     parser.add_argument(
         "--plan-worktree",
@@ -4065,6 +4442,10 @@ def watch(interval: float, debounce: float) -> int:
 
 def main() -> int:
     args = parse_args()
+    if args.channel != CHANNEL_ALL and not (
+        args.plan_worktree or args.execute_worktree
+    ):
+        raise SystemExit("--channel is only supported with --plan-worktree or --execute-worktree")
     if sum((args.watch, args.plan_worktree, args.plan_branch, args.execute_worktree)) > 1:
         raise SystemExit(
             "--watch, --plan-worktree, --plan-branch and --execute-worktree are mutually exclusive"
@@ -4079,14 +4460,14 @@ def main() -> int:
         if args.path:
             raise SystemExit("--plan-worktree does not accept --path")
         try:
-            return iteration_plan()
+            return iteration_plan(channel=args.channel)
         except RunError as exc:
             raise SystemExit(f"run reconciliation required: {exc}") from exc
     if args.execute_worktree:
         if args.path:
             raise SystemExit("--execute-worktree does not accept --path")
         try:
-            return execute_worktree()
+            return execute_worktree(channel=args.channel)
         except RunError as exc:
             raise SystemExit(f"run reconciliation required: {exc}") from exc
     if not args.path:

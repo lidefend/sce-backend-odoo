@@ -1,0 +1,115 @@
+{
+  "schema_version": 2,
+  "id": "FAST-LANE-01-IMPLEMENT",
+  "branch": "feature/fast-lane-01-dual-channel-20261123",
+  "baseline_sha": "0f1930cfcd7f111051a6ef7b02a217964d785df8",
+  "status": "active",
+  "goal": ".agent/goals/FAST-LANE-01-IMPLEMENT.yaml",
+  "record": "docs/ops/iterations/fast_lane_01_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/context.yaml",
+    ".agent/goals/FAST-LANE-01-IMPLEMENT.yaml",
+    ".agent/runs/FAST-LANE-01-IMPLEMENT/run.json",
+    ".agent/runs/template/run.json",
+    "docs/ops/iterations/fast_lane_01_20261123.md",
+    "docs/ops/dual_lane_fast_iteration_v1.md",
+    "make/ci.mk",
+    "scripts/ops/agent_run_context.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_agent_run_context.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository checks, run receipts and toolchain; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate planner routing, channel union, handoff blocking and existing full iteration behavior."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P4 candidate must pass against the current target base before merge."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "Release qualification remains separate from local channel verification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "A frontend channel carrying shared contract targets must consume a passed backend channel receipt for the same source and run identity."
+    }
+  },
+  "checks": {
+    "planner_unit": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ops/agent_run_context.py",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/backend_impact_plan.py",
+        "config/ci/path_ownership_v1.json",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        "make/ci.mk",
+        "make/frontend.mk"
+      ],
+      "kind": "offline"
+    },
+    "run_context_unit": {
+      "target": "verify.agent.resume.unit",
+      "inputs": [
+        "scripts/ops/agent_run_context.py",
+        "scripts/verify/test_agent_run_context.py",
+        ".agent/runs/template/run.json",
+        "make/codex.mk"
+      ],
+      "kind": "offline"
+    },
+    "policy": {
+      "target": "verify.baseline.iteration.execution.policy",
+      "inputs": [
+        "make/ci.mk",
+        "scripts/verify/baseline_iteration_execution_policy_guard.py",
+        "scripts/verify/test_baseline_iteration_execution_policy_guard.py",
+        "AGENTS.md",
+        "docs/ops/iteration_validation_responsibility_v1.md"
+      ],
+      "kind": "offline"
+    },
+    "ci_workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        "make/ci.mk",
+        "config/ci/path_ownership_v1.json",
+        "scripts/ci/ci_path_ownership.py",
+        "scripts/ci/test_ci_path_ownership.py",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/backend_impact_plan.py",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/frontend_release_gate.yml"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the bounded P4 candidate, refresh exact identity, run final targeted checks and publish an independent PR for exact-head remote CI.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

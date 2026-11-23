@@ -15,15 +15,23 @@ from scripts.verify.frontend_dev_incremental import (
     BASE_FRONTEND_TARGETS,
     FALLBACK_TARGET,
     FRONTEND_SOURCE_ROOTS,
+    FRONTEND_SOURCE_TARGETS,
     FRONTEND_SOURCE_SUFFIXES,
     RULES,
+    CHANNEL_ALL,
+    CHANNEL_BACKEND,
+    CHANNEL_FRONTEND,
+    channel_target_class,
+    channel_target_sets,
     execute_targets,
     implicitly_registered_offline_targets,
     iteration_scope,
     iteration_plan,
     print_plan,
     remote_integration_targets,
+    remote_scope_projection,
     select_targets,
+    select_channel_targets,
     select_iteration_targets,
     target_layers,
     validation_exclusion_targets,
@@ -41,6 +49,420 @@ ROOT = Path(__file__).resolve().parents[2]
 
 
 class FrontendDevelopmentIncrementalTest(unittest.TestCase):
+    def test_channel_targets_partition_without_losing_shared_or_union_members(self):
+        targets = {
+            "verify.frontend.lint.src",
+            "verify.frontend.typecheck.strict",
+            "verify.smart_construction_core.changed_tests.orm",
+            "verify.smart_core.close_02.module_baseline",
+            "verify.unified_page_contract.v2",
+            "verify.frontend.contract_v2_occurrence_authority.unit",
+            "verify.agent.resume.unit",
+        }
+        partition = channel_target_sets(targets)
+        self.assertEqual(
+            set(partition["backend"]) | set(partition["frontend"]),
+            targets,
+        )
+        self.assertEqual(
+            partition["shared"],
+            [
+                "verify.agent.resume.unit",
+                "verify.frontend.contract_v2_occurrence_authority.unit",
+                "verify.unified_page_contract.v2",
+            ],
+        )
+        self.assertEqual(
+            partition["frontendOnly"],
+            ["verify.frontend.lint.src", "verify.frontend.typecheck.strict"],
+        )
+        self.assertEqual(
+            partition["backendOnly"],
+            [
+                "verify.smart_construction_core.changed_tests.orm",
+                "verify.smart_core.close_02.module_baseline",
+            ],
+        )
+        self.assertEqual(
+            select_channel_targets(targets, CHANNEL_ALL),
+            sorted(targets),
+        )
+
+    def test_channel_classification_keeps_contract_and_governance_shared(self):
+        self.assertEqual(
+            channel_target_class("verify.frontend.contract_v2_occurrence_authority.unit"),
+            "shared",
+        )
+        self.assertEqual(
+            channel_target_class("verify.agent.resume.unit"),
+            "shared",
+        )
+        self.assertEqual(
+            channel_target_class("verify.frontend.lint.src"),
+            CHANNEL_FRONTEND,
+        )
+        self.assertEqual(
+            channel_target_class("verify.smart_construction_core.changed_tests.orm"),
+            CHANNEL_BACKEND,
+        )
+
+    def test_shared_contract_path_is_visible_to_both_channels(self):
+        paths = ["frontend/apps/web/src/app/contracts/v2/schema.ts"]
+        targets = select_iteration_targets(paths)
+        partition = channel_target_sets(targets, paths=paths)
+        self.assertIn("verify.frontend.lint.src", partition["backend"])
+        self.assertIn("verify.frontend.typecheck.strict", partition["backend"])
+        self.assertTrue(partition["sharedContract"])
+        self.assertTrue(set(partition["sharedContract"]) <= set(partition["frontend"]))
+
+    def test_backend_and_frontend_channels_keep_deferred_module_baseline(self):
+        targets = select_iteration_targets([
+            "addons/smart_core/handlers/business_config_change_set.py",
+        ])
+        backend = set(select_channel_targets(targets, CHANNEL_BACKEND))
+        frontend = set(select_channel_targets(targets, CHANNEL_FRONTEND))
+        self.assertIn("verify.smart_core.close_02.module_baseline", backend)
+        self.assertEqual(frontend, set())
+        self.assertEqual(
+            remote_integration_targets(backend),
+            {"verify.smart_core.close_02.module_baseline"},
+        )
+
+    def test_real_backend_frontend_and_mixed_paths_select_expected_channels(self):
+        backend_path = "addons/smart_core/handlers/business_config_change_set.py"
+        frontend_path = "frontend/apps/web/src/views/ActionView.vue"
+        backend_targets = select_iteration_targets([backend_path])
+        frontend_targets = select_iteration_targets([frontend_path])
+        self.assertTrue(select_channel_targets(backend_targets, CHANNEL_BACKEND))
+        self.assertFalse(select_channel_targets(backend_targets, CHANNEL_FRONTEND))
+        self.assertTrue(select_channel_targets(frontend_targets, CHANNEL_FRONTEND))
+        self.assertFalse(select_channel_targets(frontend_targets, CHANNEL_BACKEND))
+        mixed = select_iteration_targets([backend_path, frontend_path])
+        mixed_partition = channel_target_sets(
+            mixed,
+            paths=[backend_path, frontend_path],
+        )
+        self.assertTrue(mixed_partition["backendOnly"])
+        self.assertTrue(mixed_partition["frontendOnly"])
+        self.assertEqual(
+            set(mixed_partition["backend"]) | set(mixed_partition["frontend"]),
+            set(mixed),
+        )
+
+    def test_remote_scope_projection_records_each_exact_head_responsibility(self):
+        cases = {
+            "addons/smart_core/handlers/business_config_change_set.py": {
+                "backendSuiteRequired": True,
+                "backendSeedModules": ["smart_core"],
+                "frontendReleaseGateRequired": False,
+                "controlPlaneChanged": False,
+            },
+            "addons/smart_core/tests/test_authentication_compatibility.py": {
+                "backendSuiteRequired": True,
+                "backendSeedModules": ["smart_core"],
+                "frontendReleaseGateRequired": False,
+                "controlPlaneChanged": False,
+            },
+            "frontend/apps/web/src/views/ActionView.vue": {
+                "backendSuiteRequired": False,
+                "backendSeedModules": [],
+                "frontendReleaseGateRequired": True,
+                "controlPlaneChanged": False,
+            },
+            "frontend/apps/web/src/app/contracts/v2/schema.ts": {
+                "backendSuiteRequired": False,
+                "backendSeedModules": [],
+                "frontendReleaseGateRequired": True,
+                "controlPlaneChanged": False,
+            },
+            "make/ci.mk": {
+                "backendSuiteRequired": False,
+                "backendSeedModules": [],
+                "frontendReleaseGateRequired": False,
+                "controlPlaneChanged": True,
+            },
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                scope = remote_scope_projection([path])
+                for key, value in expected.items():
+                    self.assertEqual(value, scope[key])
+                self.assertEqual(
+                    "exact_head_remote_planners",
+                    scope["authority"],
+                )
+
+        unknown = remote_scope_projection(["unexpected/runtime/loader.py"])
+        self.assertTrue(unknown["backendSuiteRequired"])
+        self.assertEqual(
+            ["unexpected/runtime/loader.py"],
+            unknown["unknownPaths"],
+        )
+
+    def test_local_channels_and_remote_exact_scope_use_the_same_path_facts(self):
+        from scripts.ci import backend_impact_plan
+
+        graph = {
+            "smart_core": {
+                "depends": set(),
+                "tests": True,
+                "installable": True,
+            },
+            "smart_construction_core": {
+                "depends": {"smart_core"},
+                "tests": True,
+                "installable": True,
+            },
+        }
+        production = "addons/smart_core/handlers/business_config_change_set.py"
+        production_targets = select_iteration_targets([production])
+        production_partition = channel_target_sets(
+            production_targets,
+            paths=[production],
+        )
+        production_remote = backend_impact_plan.select(
+            [production],
+            graph,
+            graph,
+        )
+        self.assertTrue(production_partition["backend"])
+        self.assertFalse(production_partition["frontend"])
+        self.assertEqual(
+            ["smart_construction_core", "smart_core"],
+            production_remote["modules"],
+        )
+        self.assertEqual(
+            {"verify.smart_core.close_02.module_baseline"},
+            remote_integration_targets(production_partition["backend"]),
+        )
+
+        test_only = (
+            "addons/smart_core/tests/"
+            "test_authentication_compatibility.py"
+        )
+        test_targets = select_iteration_targets([test_only])
+        test_partition = channel_target_sets(test_targets, paths=[test_only])
+        test_remote = backend_impact_plan.select([test_only], graph, graph)
+        self.assertEqual(
+            ["verify.changed_tests.orm"],
+            test_partition["backend"],
+        )
+        self.assertEqual([], test_partition["frontend"])
+        self.assertEqual(
+            ["smart_construction_core", "smart_core"],
+            test_remote["modules"],
+        )
+        self.assertEqual(
+            set(),
+            remote_integration_targets(test_partition["backend"]),
+        )
+        test_scope = remote_scope_projection([test_only])
+        self.assertTrue(test_scope["backendSuiteRequired"])
+        self.assertEqual(["smart_core"], test_scope["backendSeedModules"])
+
+        frontend = "frontend/apps/web/src/views/ActionView.vue"
+        frontend_targets = select_iteration_targets([frontend])
+        frontend_partition = channel_target_sets(
+            frontend_targets,
+            paths=[frontend],
+        )
+        self.assertEqual([], frontend_partition["backend"])
+        self.assertTrue(frontend_partition["frontend"])
+        self.assertEqual(
+            [],
+            backend_impact_plan.select([frontend], graph, graph)["modules"],
+        )
+        self.assertTrue(
+            remote_scope_projection([frontend])[
+                "frontendReleaseGateRequired"
+            ]
+        )
+
+        contract = "frontend/apps/web/src/app/contracts/v2/schema.ts"
+        contract_targets = select_iteration_targets([contract])
+        contract_partition = channel_target_sets(
+            contract_targets,
+            paths=[contract],
+        )
+        self.assertTrue(contract_partition["backend"])
+        self.assertTrue(contract_partition["frontend"])
+        self.assertTrue(contract_partition["sharedContract"])
+        self.assertEqual(
+            [],
+            backend_impact_plan.select([contract], graph, graph)["modules"],
+        )
+
+        control = "make/ci.mk"
+        control_targets = select_iteration_targets([control])
+        control_partition = channel_target_sets(control_targets, paths=[control])
+        control_remote = backend_impact_plan.select([control], graph, graph)
+        self.assertEqual([], control_remote["modules"])
+        self.assertEqual(
+            [
+                "verify.baseline.iteration.execution.policy",
+                "verify.ci.workflow.contract",
+            ],
+            control_remote["tool_checks"],
+        )
+        self.assertEqual(
+            set(control_targets),
+            set(control_partition["shared"]),
+        )
+
+    def test_remote_entries_preserve_exact_head_scope_and_owner_execution(self):
+        professional = (
+            ROOT / ".github/workflows/professional_quality_gate.yml"
+        ).read_text(encoding="utf-8")
+        self.assertIn(
+            '--base "${BASE_SHA}"',
+            professional,
+        )
+        self.assertIn(
+            '--head "${CHECKOUT_SHA}"',
+            professional,
+        )
+        self.assertIn(
+            "scope_mode: ${{ needs.professional_authorization.outputs."
+            "candidate_requested == 'true' && 'full' || 'focused' }}",
+            professional,
+        )
+        self.assertIn("make ${TOOL_CHECKS}", professional)
+        self.assertIn(
+            'test "${TOOL_CHECKS_RAN}" = true',
+            professional,
+        )
+
+        backend_suite = (
+            ROOT / ".github/workflows/backend_test_suite.yml"
+        ).read_text(encoding="utf-8")
+        for fragment in (
+            'test "$(git rev-parse HEAD)" = "${HEAD_SHA}"',
+            '--frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json"',
+            '--plan-sha256 "${PLAN_SHA256}"',
+            '--shard "${SHARD_INDEX}"',
+            '--module "${module}" --selectors',
+        ):
+            self.assertIn(fragment, backend_suite)
+
+        frontend = (
+            ROOT / ".github/workflows/frontend_release_gate.yml"
+        ).read_text(encoding="utf-8")
+        for fragment in (
+            "ref: ${{ env.CHECKOUT_SHA }}",
+            'test "$(git rev-parse HEAD)" = "${CHECKOUT_SHA}"',
+            "Resolve effective frontend lane",
+            "pnpm -C frontend/apps/web lint:src",
+            "pnpm -C frontend/apps/web typecheck:strict",
+            "pnpm -C frontend/apps/web test",
+        ):
+            self.assertIn(fragment, frontend)
+
+    def test_backend_handoff_receipt_is_channel_and_run_scoped(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / ".runtime/frontend-dev-validation/executions/one/verify.unified_page_contract.v2.log"
+            log.parent.mkdir(parents=True)
+            log.write_text("contract ok\n")
+            identity = {
+                "head": "a" * 40,
+                "runtimeTreeSha256": "b" * 64,
+                "authoritySha256": {"authority.py": "c" * 64},
+                "worktreeClean": False,
+            }
+            receipt = {
+                "status": "passed",
+                "verificationPassed": True,
+                "channel": CHANNEL_BACKEND,
+                "runId": "RUN",
+                "identity": identity,
+                "requiredTargets": ["verify.unified_page_contract.v2"],
+                "targetResults": [{
+                    "target": "verify.unified_page_contract.v2",
+                    "status": "passed",
+                    "returncode": 0,
+                    "log": str(log.relative_to(root)),
+                    "logSha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+                }],
+                "notRunTargets": [],
+            }
+            path = log.parent / "receipt.json"
+            path.write_text(json.dumps(receipt))
+            found, _, rows = incremental.resumable_receipt_results(
+                root,
+                [],
+                ["verify.unified_page_contract.v2"],
+                identity=identity,
+                channel=CHANNEL_BACKEND,
+                run_id="RUN",
+            )
+            self.assertEqual(found, path)
+            self.assertIn("verify.unified_page_contract.v2", rows)
+            self.assertTrue(
+                incremental.channel_receipt_complete_pass(
+                    found,
+                    {"verify.unified_page_contract.v2"},
+                )
+            )
+            self.assertEqual(
+                incremental.resumable_receipt_results(
+                    root,
+                    [],
+                    ["verify.unified_page_contract.v2"],
+                    identity=identity,
+                    channel=CHANNEL_FRONTEND,
+                    run_id="RUN",
+                )[0],
+                None,
+            )
+            receipt["status"] = "failed"
+            receipt["verificationPassed"] = False
+            path.write_text(json.dumps(receipt))
+            self.assertFalse(
+                incremental.channel_receipt_complete_pass(
+                    path,
+                    {"verify.unified_page_contract.v2"},
+                )
+            )
+
+    def test_frontend_shared_contract_targets_block_without_backend_receipt(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state_path = root / ".runtime/state.json"
+            receipt_dir = root / ".runtime/one"
+            identity = {
+                "head": "a" * 40,
+                "tree": "d" * 40,
+                "runtimeTreeSha256": "b" * 64,
+                "authoritySha256": {"authority.py": "c" * 64},
+                "worktreeClean": False,
+            }
+            with mock.patch.object(incremental, "STATE_PATH", state_path), \
+                    mock.patch.object(incremental, "_run_make_target") as run:
+                status = execute_targets(
+                    ["frontend/apps/web/src/app/contracts/v2/schema.ts"],
+                    root=root,
+                    channel=CHANNEL_FRONTEND,
+                    run_id="RUN",
+                    worktree_identity=identity,
+                    receipt_dir=receipt_dir,
+                )
+            self.assertEqual(status, 2)
+            run.assert_not_called()
+            receipt = json.loads((receipt_dir / "receipt.json").read_text())
+            self.assertEqual(receipt["channelHandoffStatus"], "missing")
+            self.assertIn("backend contract handoff", receipt["reason"])
+            self.assertEqual(
+                incremental.resumable_receipt_results(
+                    root,
+                    [],
+                    ["verify.unified_page_contract.v2"],
+                    identity=identity,
+                    channel=CHANNEL_BACKEND,
+                    run_id="OTHER",
+                )[0],
+                None,
+            )
+
     def test_industry_business_model_02_paths_route_to_batch_checks(self):
         paths = (
             "addons/smart_construction_core/handlers/my_work_summary.py",
@@ -195,13 +617,30 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         makefile = (ROOT / "make/frontend.mk").read_text()
         def prerequisites(target):
             return " ".join(re.findall(r"^" + re.escape(target) + r":(.*)$", makefile, re.M)).split()
-        # Local iteration and standard PR both run the systemic static entry.
         # The full-source scan must not depend on recognizing a new filename.
         self.assertIn("verify.frontend.localized_display.unit", prerequisites("verify.frontend.systemic.convergence.static"))
         self.assertIn("verify.frontend.localized_display.unit", prerequisites("verify.frontend.pr.unit"))
         self.assertIn("verify.frontend.contract_reason_dialog.browser", prerequisites("verify.frontend.pr.unit"))
+        self.assertIn(
+            "verify.frontend.systemic.convergence.static",
+            select_targets(["frontend/apps/web/src/new-area/NewSurface.vue"]),
+        )
         ci = (ROOT / "make/ci.mk").read_text()
-        self.assertRegex(ci, r"(?m)^ci\.local\.iteration:.*verify\.frontend\.systemic\.convergence\.static")
+        for target in (
+            "ci.local.iteration",
+            "ci.local.backend.iteration",
+            "ci.local.frontend.iteration",
+        ):
+            dependency_line = re.search(
+                r"^" + re.escape(target) + r":(.*)$",
+                ci,
+                re.M,
+            )
+            self.assertIsNotNone(dependency_line)
+            self.assertNotIn(
+                "verify.frontend.systemic.convergence.static",
+                dependency_line.group(1),
+            )
 
     def test_incremental_targets_enable_database_template_reuse(self):
         with tempfile.TemporaryDirectory() as directory:
@@ -393,6 +832,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ]),
             [
                 "verify.frontend.lint.src",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
                 "verify.p0_contract_producer.p0c.unit",
             ],
@@ -404,6 +844,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.execute_button.authority.unit",
                 "verify.frontend.lint.src",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
                 "verify.p0_c_fix01.action_id.orm",
                 "verify.p0_c_fix01.action_id.unit",
@@ -446,6 +887,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.product_page_header.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
                 "verify.nav.pro01r.route_authority.unit",
             ],
@@ -455,6 +897,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.record_form_return.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ],
         )
@@ -467,6 +910,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             {
                 "verify.frontend.lint.src",
                 "verify.frontend.product_page_header.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             },
         )
@@ -475,6 +919,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             {
                 "verify.frontend.lint.src",
                 "verify.frontend.product_page_header.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             },
         )
@@ -920,6 +1365,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     [
                         "verify.frontend.lint.src",
                         "verify.frontend.platform_capability_explorer.unit",
+                        "verify.frontend.systemic.convergence.static",
                         "verify.frontend.typecheck.strict",
                     ]
                     if path.startswith("frontend/apps/web/src/")
@@ -972,6 +1418,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.scene_shell_contract.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ],
         )
@@ -1348,6 +1795,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.canonical_form_presenter.unit",
                 "verify.frontend.contract_record_action_state.unit",
                 "verify.frontend.lint.src",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ],
         )
@@ -1716,7 +2164,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         expected = sorted({
             "verify.ci.workflow.contract",
             FALLBACK_TARGET,
-            *BASE_FRONTEND_TARGETS,
+            *FRONTEND_SOURCE_TARGETS,
         })
         self.assertEqual(select_targets(paths), expected)
         self.assertEqual(select_targets(list(reversed(paths))), expected)
@@ -1742,6 +2190,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.auth_surface.guard",
                 "verify.frontend.lint.src",
                 "verify.frontend.page_pattern_reference_parity.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ],
         )
@@ -1758,6 +2207,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     "verify.frontend.auth_surface.guard",
                     "verify.frontend.lint.src",
                     "verify.frontend.page_pattern_reference_parity.unit",
+                    "verify.frontend.systemic.convergence.static",
                     "verify.frontend.typecheck.strict",
                 ],
             )
@@ -1794,6 +2244,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.lint.src",
                 "verify.frontend.navigation_shell.unit",
                 "verify.frontend.scene_entry_contract.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ]
             if path.endswith("/SceneView.vue"):
@@ -1955,7 +2406,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             approval_targets,
             {
                 "verify.business_config.approval_targets.unit",
-                *BASE_FRONTEND_TARGETS,
+                *FRONTEND_SOURCE_TARGETS,
             },
         )
         shared_context_targets = set(select_targets([
@@ -2589,7 +3040,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
     def test_unmapped_frontend_change_fails_safe_to_typecheck(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/new-area/NewSurface.vue"]),
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
 
     def test_single_vue_change_always_selects_lint_and_strict_typecheck(self) -> None:
@@ -2603,11 +3054,11 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
 
     def test_single_ts_change_always_selects_lint_and_strict_typecheck(self) -> None:
         targets = select_targets(["frontend/apps/web/src/utils/money.ts"])
-        self.assertEqual(targets, list(BASE_FRONTEND_TARGETS))
+        self.assertEqual(targets, list(FRONTEND_SOURCE_TARGETS))
 
     def test_web_tsx_change_uses_the_same_base_targets(self) -> None:
         targets = select_targets(["frontend/apps/web/src/components/Probe.tsx"])
-        self.assertEqual(targets, list(BASE_FRONTEND_TARGETS))
+        self.assertEqual(targets, list(FRONTEND_SOURCE_TARGETS))
 
     def test_shared_ui_ts_tsx_and_vue_use_base_targets(self) -> None:
         for path in (
@@ -2646,6 +3097,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.auth_surface.guard",
                 "verify.frontend.lint.src",
                 "verify.frontend.page_pattern_reference_parity.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
             ],
         )
@@ -2658,6 +3110,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.professional_component_registry.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
                 "verify.semantic.registry.lint",
             ],
@@ -2672,6 +3125,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             [
                 "verify.frontend.lint.src",
                 "verify.frontend.professional_component_registry.unit",
+                "verify.frontend.systemic.convergence.static",
                 "verify.frontend.typecheck.strict",
                 "verify.semantic.registry.lint",
             ],
@@ -2915,7 +3369,13 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 0,
             )
         payload = json.loads(output.getvalue().split("] ", 1)[1])
-        self.assertEqual(payload["registrationMissingTargets"], ["verify.frontend.lint.src"])
+        self.assertEqual(
+            payload["registrationMissingTargets"],
+            [
+                "verify.frontend.lint.src",
+                "verify.frontend.systemic.convergence.static",
+            ],
+        )
         self.assertEqual(payload["registrationMode"], "planner_managed")
         self.assertTrue(payload["executionReady"])
         self.assertFalse(payload["testsRun"])
@@ -3006,7 +3466,7 @@ class FrontendCoverageContractTest(unittest.TestCase):
                 path = f"{root}__coverage_probe{suffix}"
                 with self.subTest(path=path):
                     targets = select_targets([path])
-                    for target in BASE_FRONTEND_TARGETS:
+                    for target in FRONTEND_SOURCE_TARGETS:
                         self.assertIn(target, targets)
 
 
@@ -3029,6 +3489,8 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.root.joinpath("Makefile").write_text(
             "verify.frontend.lint.src:\n"
             "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.systemic.convergence.static:\n"
+            "\t@printf 'systemic static executed\\n'\n"
             "verify.frontend.typecheck.strict:\n"
             "\t@printf 'typecheck executed\\n'\n",
             encoding="utf-8",
@@ -3086,14 +3548,14 @@ class IncrementalExecutionTest(unittest.TestCase):
         }
 
     def test_execution_runs_each_required_target_and_records_logs(self) -> None:
-        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        code, receipt = self.execute(registered=set(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "passed")
         self.assertTrue(receipt["testsRun"])
         self.assertTrue(receipt["verificationPassed"])
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         for row in receipt["targetResults"]:
             self.assertEqual(row["returncode"], 0)
@@ -3102,28 +3564,28 @@ class IncrementalExecutionTest(unittest.TestCase):
 
     def test_reusable_check_targets_are_not_executed(self) -> None:
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
-            reusable={BASE_FRONTEND_TARGETS[0]},
+            registered=set(FRONTEND_SOURCE_TARGETS),
+            reusable={FRONTEND_SOURCE_TARGETS[0]},
         )
         self.assertEqual(code, 0)
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         self.assertEqual(
             receipt["targetOrder"],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         self.assertEqual(
             receipt["executionTargetOrder"],
-            [BASE_FRONTEND_TARGETS[1]],
+            list(FRONTEND_SOURCE_TARGETS[1:]),
         )
         self.assertTrue(receipt["targetResults"][0]["reusedFrom"])
         self.assertNotIn("reusedFrom", receipt["targetResults"][1])
-        self.assertEqual(receipt["requiredTargets"], list(BASE_FRONTEND_TARGETS))
-        self.assertEqual(receipt["reusedTargets"], [BASE_FRONTEND_TARGETS[0]])
+        self.assertEqual(receipt["requiredTargets"], list(FRONTEND_SOURCE_TARGETS))
+        self.assertEqual(receipt["reusedTargets"], [FRONTEND_SOURCE_TARGETS[0]])
         self.assertEqual(receipt["reusedTargetCount"], 1)
-        self.assertEqual(receipt["executedTargetCount"], 1)
+        self.assertEqual(receipt["executedTargetCount"], 2)
         self.assertTrue(receipt["verificationPassed"])
 
     def test_reusable_check_results_require_materialized_log_evidence(self) -> None:
@@ -3153,19 +3615,19 @@ class IncrementalExecutionTest(unittest.TestCase):
             side_effect=AssertionError("reusable checks must not rerun"),
         ):
             code, receipt = self.execute(
-                registered=set(BASE_FRONTEND_TARGETS),
-                reusable=set(BASE_FRONTEND_TARGETS),
+                registered=set(FRONTEND_SOURCE_TARGETS),
+                reusable=set(FRONTEND_SOURCE_TARGETS),
             )
         self.assertEqual(code, 0)
         self.assertEqual(receipt["status"], "passed")
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         self.assertTrue(
             all(row.get("reusedFrom") for row in receipt["targetResults"])
         )
-        self.assertEqual(receipt["reusedTargets"], list(BASE_FRONTEND_TARGETS))
+        self.assertEqual(receipt["reusedTargets"], list(FRONTEND_SOURCE_TARGETS))
         self.assertFalse(receipt["testsRun"])
         self.assertEqual(receipt["executedTargetCount"], 0)
         self.assertTrue(receipt["verificationPassed"])
@@ -3179,16 +3641,16 @@ class IncrementalExecutionTest(unittest.TestCase):
             "authoritySha256": {"planner.py": "b" * 64},
         }
         first_code, first = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
-            reusable={BASE_FRONTEND_TARGETS[0]},
+            registered=set(FRONTEND_SOURCE_TARGETS),
+            reusable={FRONTEND_SOURCE_TARGETS[0]},
             identity=identity,
         )
         self.assertEqual(first_code, 0)
         self.assertEqual(
             [row["target"] for row in first["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
-        self.assertEqual(first["executedTargetCount"], 1)
+        self.assertEqual(first["executedTargetCount"], 2)
         self.assertEqual(first["reusedTargetCount"], 1)
 
         with mock.patch(
@@ -3196,26 +3658,26 @@ class IncrementalExecutionTest(unittest.TestCase):
             side_effect=AssertionError("complete mixed receipt must be reusable"),
         ):
             second_code, second = self.execute(
-                registered=set(BASE_FRONTEND_TARGETS),
+                registered=set(FRONTEND_SOURCE_TARGETS),
                 identity=identity,
             )
         self.assertEqual(second_code, 0)
         self.assertTrue(second["reused"])
         self.assertEqual(second["executedTargetCount"], 0)
-        self.assertEqual(second["reusedTargetCount"], len(BASE_FRONTEND_TARGETS))
+        self.assertEqual(second["reusedTargetCount"], len(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(second["targetResults"], [])
 
     def test_tsx_execution_uses_the_same_base_targets(self) -> None:
         path = "frontend/apps/web/src/NewSurface.tsx"
         self.root.joinpath(path).write_text("export const probe = true;\n", encoding="utf-8")
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             paths=[path],
         )
         self.assertEqual(code, 0)
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         self.assertTrue(receipt["verificationPassed"])
 
@@ -3234,7 +3696,7 @@ class IncrementalExecutionTest(unittest.TestCase):
         required = set(select_targets([path]))
         code, receipt = self.execute(registered=required, paths=[path])
         self.assertEqual(code, 0)
-        self.assertTrue(set(BASE_FRONTEND_TARGETS).issubset(receipt["requiredTargets"]))
+        self.assertTrue(set(FRONTEND_SOURCE_TARGETS).issubset(receipt["requiredTargets"]))
         self.assertIn("verify.frontend.primitive_adapter.unit", receipt["requiredTargets"])
         self.assertTrue(receipt["verificationPassed"])
 
@@ -3245,11 +3707,14 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.assertEqual(receipt["registrationMode"], "planner_managed")
         self.assertEqual(
             receipt["registrationMissingTargets"],
-            ["verify.frontend.typecheck.strict"],
+            [
+                "verify.frontend.systemic.convergence.static",
+                "verify.frontend.typecheck.strict",
+            ],
         )
         self.assertEqual(
             [row["target"] for row in receipt["targetResults"]],
-            list(BASE_FRONTEND_TARGETS),
+            list(FRONTEND_SOURCE_TARGETS),
         )
         self.assertEqual(receipt["notRunTargets"], [])
         self.assertTrue(receipt["testsRun"])
@@ -3262,7 +3727,7 @@ class IncrementalExecutionTest(unittest.TestCase):
             "authoritySha256": {"planner.py": "b" * 64},
         }
         first_code, first = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity=identity,
         )
         self.assertEqual(first_code, 0)
@@ -3272,13 +3737,13 @@ class IncrementalExecutionTest(unittest.TestCase):
             side_effect=AssertionError("reusable execution must not rerun targets"),
         ):
             second_code, second = self.execute(
-                registered=set(BASE_FRONTEND_TARGETS),
+                registered=set(FRONTEND_SOURCE_TARGETS),
                 identity=identity,
             )
         self.assertEqual(second_code, 0)
         self.assertTrue(second["reused"])
         self.assertEqual(second["status"], "passed")
-        self.assertEqual(second["reusedTargetCount"], len(BASE_FRONTEND_TARGETS))
+        self.assertEqual(second["reusedTargetCount"], len(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(second["targetResults"], [])
         self.assertFalse(second["testsRun"])
         self.assertTrue(second["verificationPassed"])
@@ -3293,13 +3758,13 @@ class IncrementalExecutionTest(unittest.TestCase):
         }
         dirty = {**clean, "worktreeClean": False}
         first_code, first = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity=dirty,
         )
         self.assertEqual(first_code, 0)
         self.assertFalse(first["reused"])
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity=clean,
         )
         self.assertEqual(code, 0)
@@ -3314,9 +3779,9 @@ class IncrementalExecutionTest(unittest.TestCase):
             "runtimeTreeSha256": "c" * 64,
             "authoritySha256": {"planner.py": "b" * 64},
         }
-        self.execute(registered=set(BASE_FRONTEND_TARGETS), identity=identity)
+        self.execute(registered=set(FRONTEND_SOURCE_TARGETS), identity=identity)
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity={**identity, "runtimeTreeSha256": "d" * 64},
         )
         self.assertEqual(code, 0)
@@ -3330,13 +3795,13 @@ class IncrementalExecutionTest(unittest.TestCase):
             "authoritySha256": {"planner.py": "b" * 64},
         }
         _, first = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity=identity,
         )
         log = self.root / first["targetResults"][0]["log"]
         log.write_text("tampered\n", encoding="utf-8")
         code, second = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             identity=identity,
         )
         self.assertEqual(code, 0)
@@ -3345,7 +3810,7 @@ class IncrementalExecutionTest(unittest.TestCase):
 
     def test_unchanged_recorded_failure_blocks_instead_of_blind_retry(self) -> None:
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             blocked={"verify.frontend.typecheck.strict"},
         )
         self.assertEqual(code, 2)
@@ -3355,7 +3820,7 @@ class IncrementalExecutionTest(unittest.TestCase):
 
     def test_missing_frontend_toolchain_blocks_before_target_execution(self) -> None:
         self.root.joinpath("frontend/apps/web/node_modules/.bin/eslint").unlink()
-        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        code, receipt = self.execute(registered=set(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(code, 2)
         self.assertEqual(receipt["status"], "blocked")
         self.assertEqual(
@@ -3363,11 +3828,11 @@ class IncrementalExecutionTest(unittest.TestCase):
             ["frontend/apps/web/node_modules/.bin/eslint"],
         )
         self.assertEqual(receipt["targetResults"], [])
-        self.assertEqual(receipt["notRunTargets"], list(BASE_FRONTEND_TARGETS))
+        self.assertEqual(receipt["notRunTargets"], list(FRONTEND_SOURCE_TARGETS))
 
     def test_no_relevant_l2_is_not_run_not_pass(self) -> None:
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             paths=["docs/record.md"],
         )
         self.assertEqual(code, 0)
@@ -3378,7 +3843,7 @@ class IncrementalExecutionTest(unittest.TestCase):
     def test_pure_unmapped_source_is_blocked_with_nonzero_exit(self) -> None:
         path = "addons/smart_core/models/example.py"
         code, receipt = self.execute(
-            registered=set(BASE_FRONTEND_TARGETS),
+            registered=set(FRONTEND_SOURCE_TARGETS),
             paths=[path],
         )
         self.assertEqual(code, 2)
@@ -3393,11 +3858,13 @@ class IncrementalExecutionTest(unittest.TestCase):
         self.root.joinpath("Makefile").write_text(
             "verify.frontend.lint.src:\n"
             "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.systemic.convergence.static:\n"
+            "\t@printf 'systemic static executed\\n'\n"
             "verify.frontend.typecheck.strict:\n"
             "\t@exit 7\n",
             encoding="utf-8",
         )
-        code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+        code, receipt = self.execute(registered=set(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(code, 1)
         self.assertEqual(receipt["status"], "failed")
         self.assertNotEqual(receipt["targetResults"][-1]["returncode"], 0)
@@ -3418,7 +3885,7 @@ class IncrementalExecutionTest(unittest.TestCase):
             "scripts.verify.frontend_dev_incremental._run_make_target",
             return_value=interrupted,
         ):
-            code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+            code, receipt = self.execute(registered=set(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(code, 130)
         self.assertEqual(receipt["status"], "interrupted")
         self.assertEqual(receipt["executedTargetCount"], 1)
@@ -3439,10 +3906,13 @@ class IncrementalExecutionTest(unittest.TestCase):
             "scripts.verify.frontend_dev_incremental._run_make_target",
             return_value=blocked,
         ):
-            code, receipt = self.execute(registered=set(BASE_FRONTEND_TARGETS))
+            code, receipt = self.execute(registered=set(FRONTEND_SOURCE_TARGETS))
         self.assertEqual(code, 2)
         self.assertEqual(receipt["status"], "blocked")
-        self.assertEqual(receipt["notRunTargets"], ["verify.frontend.typecheck.strict"])
+        self.assertEqual(
+            receipt["notRunTargets"],
+            ["verify.frontend.systemic.convergence.static", "verify.frontend.typecheck.strict"],
+        )
         self.assertFalse(receipt["verificationPassed"])
 
 
@@ -3544,13 +4014,15 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         self.root.joinpath(".gitignore").write_text(".runtime/\n", encoding="utf-8")
         binaries = self.root / "frontend/apps/web/node_modules/.bin"
         binaries.mkdir(parents=True)
-        for tool in ("eslint", "vue-tsc"):
+        for tool in ("eslint", "vue-tsc", "esbuild"):
             binary = binaries / tool
             binary.write_text("#!/bin/sh\n", encoding="utf-8")
             binary.chmod(0o755)
         self.root.joinpath("Makefile").write_text(
             "verify.frontend.lint.src:\n"
             "\t@printf 'lint check executed\\n'\n"
+            "verify.frontend.systemic.convergence.static:\n"
+            "\t@printf 'systemic static executed\\n'\n"
             "verify.frontend.typecheck.strict:\n"
             "\t@printf 'typecheck executed\\n'\n"
             "verify.workspace.branch.sync-main:\n"
@@ -3643,7 +4115,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         self.assertEqual(second["status"], "passed")
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
         self.assertEqual(second["executedTargetCount"], 1)
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
         self.assertEqual(
             second["sourceReceipt"],
             ".runtime/frontend-dev-validation/executions/first/receipt.json",
@@ -3691,7 +4163,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         self.assertEqual(second["_code"], 0)
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
         self.assertEqual(second["executedTargetCount"], 1)
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
         self.assertEqual(
             second["sourceReceipt"],
             ".runtime/frontend-dev-validation/executions/first/receipt.json",
@@ -3742,7 +4214,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
 
         self.assertEqual(second["_code"], 0)
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
 
     def test_changed_verifier_authority_blocks_resume(self) -> None:
         self._execute("first", interrupted=True)
@@ -3837,7 +4309,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         self.assertEqual(second["status"], "passed")
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
         self.assertEqual(second["executedTargetCount"], 1)
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
         self.assertEqual(
             second["sourceReceipt"],
             ".runtime/frontend-dev-validation/executions/first/receipt.json",
@@ -3851,7 +4323,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         second = self._execute("second", interrupted=False)
         self.assertEqual(second["_code"], 0)
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
 
     def test_declared_stale_input_cannot_be_overridden_by_aggregate(self) -> None:
         self._execute("first", interrupted=False)
@@ -3859,7 +4331,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         second = self._execute("second", interrupted=False, non_reusable_targets={target})
         self.assertEqual(second["_code"], 0)
         self.assertEqual(second["_calls"], [target])
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
 
     def test_remaining_target_subset_reuses_only_verified_source_rows(self) -> None:
         self._execute("first", interrupted=False)
@@ -3888,7 +4360,7 @@ class InterruptedExecutionResumeTest(unittest.TestCase):
         second = self._execute("second", interrupted=False)
         self.assertEqual(second["_code"], 0)
         self.assertEqual(second["_calls"], ["verify.workspace.branch.sync-main"])
-        self.assertEqual(second["reusedTargetCount"], 2)
+        self.assertEqual(second["reusedTargetCount"], 3)
 
 
 class RunScopedPlannerTest(unittest.TestCase):
