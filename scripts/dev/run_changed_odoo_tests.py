@@ -118,9 +118,9 @@ def reusable_receipt(
     ):
         try:
             receipt = json.loads(path.read_text(encoding="utf-8"))
+            receipt_head = receipt.get("head")
             if not (
                 receipt.get("status") == "passed"
-                and receipt.get("head") == head
                 and receipt.get("test_surface_fingerprint") == test_surface_fingerprint
                 and receipt.get("test_surface_unchanged") is True
                 and receipt.get("source_unchanged") is True
@@ -130,8 +130,18 @@ def reusable_receipt(
                 and receipt.get("tags") == ",".join(tags)
                 and isinstance(receipt.get("count"), int)
                 and receipt.get("count") > 0
+                and isinstance(receipt_head, str)
+                and re.fullmatch(r"[0-9a-f]{40}", receipt_head)
             ):
                 continue
+            if receipt_head != head:
+                ancestor = subprocess.run(
+                    ["git", "merge-base", "--is-ancestor", receipt_head, head],
+                    cwd=root,
+                    check=False,
+                )
+                if ancestor.returncode:
+                    continue
             log = root / str(receipt["log"])
             if (
                 not log.is_file()

@@ -118,6 +118,48 @@ class RunChangedOdooTestsTest(unittest.TestCase):
                 "",
             )
 
+    def test_receipt_can_survive_a_descendant_commit_with_the_same_test_surface(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            log = root / ".runtime/test-baseline/1/odoo.log"
+            log.parent.mkdir(parents=True)
+            log.write_text("ok\n")
+            receipt = root / ".runtime/test-baseline/1/receipt.json"
+            receipt.write_text(json.dumps({
+                "status": "passed",
+                "head": "a" * 40,
+                "source_fingerprint": "c" * 64,
+                "test_surface_fingerprint": "b" * 64,
+                "test_surface_unchanged": True,
+                "source_unchanged": True,
+                "profile_unchanged": True,
+                "image_unchanged": True,
+                "module": "smart_core",
+                "tags": "/smart_core:TestOne",
+                "count": 1,
+                "log": ".runtime/test-baseline/1/odoo.log",
+                "log_sha256": hashlib.sha256(log.read_bytes()).hexdigest(),
+            }))
+            with mock.patch.object(
+                runner.subprocess,
+                "run",
+                return_value=mock.Mock(returncode=0),
+            ) as execute:
+                self.assertEqual(
+                    runner.reusable_receipt(
+                        root,
+                        "smart_core",
+                        ["/smart_core:TestOne"],
+                        head="d" * 40,
+                        test_surface_fingerprint="b" * 64,
+                    ),
+                    ".runtime/test-baseline/1/receipt.json",
+                )
+            self.assertEqual(
+                execute.call_args.args[0],
+                ["git", "merge-base", "--is-ancestor", "a" * 40, "d" * 40],
+            )
+
 
 if __name__ == "__main__":
     unittest.main()

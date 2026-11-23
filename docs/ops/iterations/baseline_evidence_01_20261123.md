@@ -129,7 +129,9 @@ This branch implements the bounded remediation:
 11. Select test-only changes by changed test class, remove overlapping focused
     ORM targets when the exact class set already covers them, and reuse a
     passed local.test receipt only when the test-specific input fingerprint,
-    HEAD, module, tag set and log bytes are unchanged.
+    module, tag set and log bytes are unchanged. The receipt head may be any
+    ancestor of the current HEAD because the module-scoped test input
+    fingerprint, not the commit-only governance change, proves test identity.
 
 The local-test runner derives `sc-local-test-<worktree-key>`, unique volumes
 and a worktree-local lock from the absolute worktree root. Each attempt clones
