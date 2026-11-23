@@ -13,6 +13,8 @@
     "addons/smart_construction_core/tests/test_scenario_direct_entry_initialization.py",
     "addons/smart_construction_scene/services/business_scene_enablement.py",
     "addons/smart_construction_scene/tests/test_tenant_scene_activation.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iterations/admin_workbench_navigation_enablement_20261124.md"
   ],
   "environment": {

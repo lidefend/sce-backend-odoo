@@ -63,6 +63,8 @@ On local `sc_dev_demo` at source `7a41b86b073e0f062a1ee7f38aa628d375587954`:
   - Product Configuration remains visible;
   - default route remains `/s/enterprise.setup`;
   - no frontend source was changed.
+- The tracked complexity and split-plan reports were deterministically refreshed
+  by the commit hook to reflect the two changed source files.
 
 Two initial ORM failures were test-fixture defects, not product regressions:
 
