@@ -19,6 +19,8 @@
     "frontend/apps/web/scripts/workspace_scenario_lifecycle_test.ts",
     "frontend/apps/web/src/components/scene/ScenarioActivationPanel.vue",
     "frontend/apps/web/src/composables/useScenarioActivation.ts",
+    "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+    "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
     "scripts/audit/build_scenario_product_organization.py"
   ],
   "environment": {
@@ -89,6 +91,21 @@
         "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
         "scripts/audit/generate_frontend_component_driver_takeover_inventory.py",
         "scripts/audit/test_generate_frontend_component_driver_takeover_inventory.py",
+        "make/frontend.mk"
+      ]
+    },
+    "frontend_list_optional_columns": {
+      "target": "verify.frontend.list_optional_columns.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/presentation/businessValuePresentation.ts",
+        "frontend/apps/web/src/app/presentation/collectionStatusPresentation.ts",
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/utils/fieldSemantics.ts",
+        "frontend/apps/web/src/utils/display.ts",
+        "frontend/apps/web/src/pages/listPage/listColumnWidth.ts",
+        "frontend/apps/web/src/pages/listPage/listColumnVisibility.ts",
+        "scripts/verify/frontend_list_optional_columns_contract_test.ts",
         "make/frontend.mk"
       ]
     }

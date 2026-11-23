@@ -1,4 +1,4 @@
-import { contractGapError } from '../contract/contractGap';
+import { contractGapError } from '../contract/contractGap.ts';
 import { FIELD_VALUE_EMPTY_TEXT } from '../../utils/fieldSemantics.ts';
 
 export type CollectionStatusTone = 'neutral' | 'info' | 'success' | 'warning' | 'danger';

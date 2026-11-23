@@ -7,6 +7,7 @@ goal:
   formal_product_layer: P1
   supporting_layers:
     - frontend_contract_consumer
+    - P0_frontend_node_type_strip_compatibility
   layer_target: >-
     smart_construction_scene enterprise scenario catalog and center-level
     activation for the enterprise initialization workspace.

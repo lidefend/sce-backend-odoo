@@ -50,6 +50,7 @@ transactional action.
 | Tenant scenario activation semantic suite | 103 passed |
 | Frontend workspace scenario lifecycle | passed, including navigation consumers and controlled contract transport |
 | Frontend component driver takeover | 18 passed; scenario detail disclosure uses `ScDisclosure`, not native `<details>` |
+| Frontend list optional-column contract | passed after adding Node 22 type-strip-compatible `.ts` suffixes to the presentation import closure |
 | Enterprise initialization ORM journey | 1 passed in the governed disposable `local.test` database; unknown center wrote nothing, `work.my_queue` persisted, and readiness count reached 1 |
 | Frontend strict typecheck | passed |
 | Frontend source lint | passed with zero errors |
