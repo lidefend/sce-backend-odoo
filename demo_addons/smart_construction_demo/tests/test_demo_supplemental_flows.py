@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 import unittest
 from unittest.mock import patch
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -239,6 +240,69 @@ class DemoCompanyIdentity(unittest.TestCase):
             DEMO_PRINCIPAL_LOGINS=("demo_full",),
         )(env)
         self.assertEqual([record.login for record in records], ["xmlid-39", "demo_full"])
+
+
+class DemoWutaoBusinessConfigAdmin(unittest.TestCase):
+    GROUP = "smart_construction_core.group_sc_cap_business_config_admin"
+
+    def _seed_calls(self, filename, **bindings):
+        calls = []
+
+        def ensure_user(_env, login, name, groups_xmlids, password, lang, tz):
+            calls.append({
+                "login": login,
+                "name": name,
+                "groups_xmlids": list(groups_xmlids),
+                "password": password,
+                "lang": lang,
+                "tz": tz,
+            })
+
+        bindings.update(
+            _ensure_user=ensure_user,
+            _resolve_lang=lambda *args, **kwargs: "zh_CN",
+            os=SimpleNamespace(getenv=lambda key, default: default),
+            DEMO_USER_PASSWORD="123456",
+            guard_demo_data_space=lambda env: None,
+        )
+        function(filename, "run", **bindings)(object())
+        return {call["login"]: call for call in calls}
+
+    def _xml_group_evals(self):
+        tree = ElementTree.parse(ROOT / "data/demo/wutao_full_product_user.xml")
+        return {
+            record.get("id"): record.find("field[@name='groups_id']").get("eval", "")
+            for record in tree.findall(".//record")
+            if record.get("model") == "res.users"
+        }
+
+    def test_full_product_xml_declares_wutao_as_config_admin(self):
+        groups = self._xml_group_evals()
+        self.assertIn(self.GROUP, groups["user_wutao_full_product"])
+        self.assertIn(
+            "smart_construction_core.group_sc_business_full",
+            groups["user_wutao_full_product"],
+        )
+        self.assertNotIn(self.GROUP, groups["user_demo_full"])
+
+    def test_both_seed_paths_declare_wutao_as_config_admin(self):
+        for filename in ("step_10_users_demo.py", "step_demo_users.py"):
+            with self.subTest(filename=filename):
+                calls = self._seed_calls(filename)
+                self.assertEqual(calls["wutao"]["name"], "吴涛")
+                self.assertIn(self.GROUP, calls["wutao"]["groups_xmlids"])
+                self.assertIn(
+                    "smart_construction_core.group_sc_business_full",
+                    calls["wutao"]["groups_xmlids"],
+                )
+                self.assertNotIn(
+                    self.GROUP,
+                    next(
+                        call["groups_xmlids"]
+                        for login, call in calls.items()
+                        if login in ("demo_full", "demo_pm")
+                    ),
+                )
 
 
 class DemoAdminPassword(unittest.TestCase):

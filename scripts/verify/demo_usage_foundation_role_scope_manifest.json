@@ -16,12 +16,12 @@
   },
   "accounts": [
     {
-      "key": "business_full_wutao",
+      "key": "business_config_admin_wutao",
       "login": "wutao",
       "expectation": "role_code",
-      "expected_role_code": "business_full",
-      "label": "业务全功能账号（纯能力，无项目成员）",
-      "expected_allowed_company_ids": [1, 2],
+      "expected_role_code": "business_config_admin",
+      "label": "业务配置管理员（含业务全功能能力）",
+      "expected_allowed_company_ids": [1],
       "first_screen_expectation": "record"
     },
     {

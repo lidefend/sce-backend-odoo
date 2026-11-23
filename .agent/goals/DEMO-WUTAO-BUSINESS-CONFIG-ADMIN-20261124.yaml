@@ -1,0 +1,44 @@
+schema_version: 1
+
+goal:
+  id: DEMO-WUTAO-BUSINESS-CONFIG-ADMIN-20261124
+  title: demo_wutao_business_config_admin_identity_alignment
+  status: active
+  formal_product_layer: P1
+  layer_target: >-
+    smart_construction_demo user seed and demo data declaration for the
+    canonical wutao principal.
+  module:
+    - smart_construction_demo
+  standard_vs_user_specific: construction_product_standard
+  objective: >-
+    Make wutao consistently resolve as business_config_admin in local and
+    daily demo installations, including full rebuilds and targeted demo-user
+    refreshes.
+  product_result: >-
+    The canonical demo principal wutao has the declared business configuration
+    administrator identity rather than only the business_full capability.
+  why_here: >-
+    Demo users and their canonical roles are owned by the
+    smart_construction_demo carrier.
+  why_not_elsewhere:
+    - P0 must not contain demo identities.
+    - The frontend must not infer an administrator role from a login name.
+    - Existing response/daily databases must not become the only source of the role fix.
+  blast_radius:
+    contracts:
+      - demo_full profile user roles
+      - wutao operational identity
+      - demo baseline readiness
+  acceptance:
+    - Demo XML and seed both assign wutao group_sc_cap_business_config_admin.
+    - The resulting effective role is business_config_admin.
+    - Local and daily demos both read back the corrected role.
+  exclusions:
+    - Production and platform-control identities
+    - Platform administrator privileges
+    - Frontend role inference
+    - Unrelated demo records
+  rollback: >-
+    Revert the demo user declaration and seed change, then reapply the previous
+    demo user seed to the affected demo databases.
