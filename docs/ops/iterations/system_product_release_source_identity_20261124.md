@@ -36,3 +36,5 @@ longer change the menu identities used by a fresh `sc_dev_demo` installation.
   10 business centers.
 - Active system release created from
   `system-baseline-97092f2d9f0e`.
+- `make ci.local.iteration`: PASS at `5d272a481`; two affected backend targets
+  executed after rebasing onto main `0412d80ee`.
