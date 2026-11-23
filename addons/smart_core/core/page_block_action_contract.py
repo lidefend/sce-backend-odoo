@@ -36,7 +36,9 @@ SOURCE_KIND = "page_block_action_producer"
 SOURCE_AUTHORITIES = (
     "contract_v2_action_rules",
     "action_target_schema",
-    "published_route_authority",
+    "odoo_action_groups",
+    "ir_model_access",
+    "ir_rule",
 )
 FORBIDDEN_PUBLIC_KEYS = frozenset({"authorizationSubject", "authorization_subject"})
 FEEDBACK_STATUSES = frozenset({"success", "denied", "failed"})
@@ -349,19 +351,9 @@ def build_action_feedback_from_result(
 
 
 def build_navigation_action_authority(env) -> Callable[[dict[str, Any]], dict[str, Any]]:
-    """Resolve published navigation targets through the existing authority."""
+    """Resolve executable action targets through the shared intent authority."""
 
-    from ..delivery.runtime_route_authority import (
-        iter_published_pairs,
-        published_route_authority,
-    )
-
-    authority = published_route_authority(env)
-    published_action_ids = {
-        action_id
-        for _menu_id, action_id in iter_published_pairs(authority)
-        if action_id
-    }
+    from ..security.intent_permission import action_access_verdict
 
     def resolve(target: dict[str, Any]) -> dict[str, Any]:
         validated = validate_action_target(target)
@@ -372,33 +364,11 @@ def build_navigation_action_authority(env) -> Callable[[dict[str, Any]], dict[st
             )
         action_xmlid = _text(validated.get("action_xmlid"))
         action_id_raw = validated.get("action_id")
-        action = (
-            env.ref(action_xmlid, raise_if_not_found=False)
-            if action_xmlid
-            else env["ir.actions.actions"].browse(int(action_id_raw or 0)).exists()
+        return action_access_verdict(
+            env,
+            action_id=action_id_raw,
+            action_xmlid=action_xmlid,
+            access_mode="read",
         )
-        if not action or not action.exists():
-            return {
-                "authorizationAllowed": False,
-                "businessAvailable": False,
-                "permissionEvaluated": True,
-                "reasonCode": "ACTION_TARGET_NOT_FOUND",
-                "reasonMessage": "动作目标不存在",
-            }
-        if int(action.id) not in published_action_ids:
-            return {
-                "authorizationAllowed": False,
-                "businessAvailable": True,
-                "permissionEvaluated": True,
-                "reasonCode": "ACTION_NOT_AUTHORIZED",
-                "reasonMessage": "当前角色无权执行该动作",
-            }
-        return {
-            "authorizationAllowed": True,
-            "businessAvailable": True,
-            "permissionEvaluated": True,
-            "reasonCode": "",
-            "reasonMessage": "",
-        }
 
     return resolve

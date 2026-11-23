@@ -204,6 +204,74 @@ def _resolve_action(env, action_id, action_type=None):
     return None
 
 
+def action_access_verdict(
+    env,
+    *,
+    action_id,
+    action_xmlid=None,
+    action_type=None,
+    access_mode="read",
+):
+    """Return the actor's action authorization without navigation publication.
+
+    Page Block actions target executable actions, not necessarily menus. The
+    authoritative actor check is therefore the action's native group boundary
+    plus the target model's ACL/rule entry point. This helper is shared by the
+    normal intent permission gate and contract producers; it never accepts a
+    client-supplied authorization subject.
+    """
+
+    action = None
+    if action_xmlid:
+        action = env.ref(str(action_xmlid), raise_if_not_found=False)
+    if not action:
+        action = _resolve_action(env, action_id, action_type=action_type)
+    if not action or not action.exists():
+        return {
+            "authorizationAllowed": False,
+            "businessAvailable": False,
+            "permissionEvaluated": True,
+            "reasonCode": "ACTION_TARGET_NOT_FOUND",
+            "reasonMessage": "动作目标不存在",
+        }
+    groups = getattr(action, "groups_id", None)
+    if groups and not (groups & env.user.groups_id):
+        return {
+            "authorizationAllowed": False,
+            "businessAvailable": True,
+            "permissionEvaluated": True,
+            "reasonCode": "ACTION_NOT_AUTHORIZED",
+            "reasonMessage": "当前角色无权执行该动作",
+        }
+    model_name = str(getattr(action, "res_model", "") or "").strip()
+    if model_name:
+        if model_name not in env:
+            return {
+                "authorizationAllowed": False,
+                "businessAvailable": True,
+                "permissionEvaluated": True,
+                "reasonCode": "ACTION_TARGET_MODEL_UNAVAILABLE",
+                "reasonMessage": "动作目标模型不可用",
+            }
+        try:
+            env[model_name].check_access_rights(access_mode)
+        except AccessError:
+            return {
+                "authorizationAllowed": False,
+                "businessAvailable": True,
+                "permissionEvaluated": True,
+                "reasonCode": "ACTION_NOT_AUTHORIZED",
+                "reasonMessage": "当前角色无权读取动作目标",
+            }
+    return {
+        "authorizationAllowed": True,
+        "businessAvailable": True,
+        "permissionEvaluated": True,
+        "reasonCode": "",
+        "reasonMessage": "",
+    }
+
+
 def _is_ui_only_config_intent(intent_name):
     return str(intent_name or "").strip() in {
         "user.view.preference.get",
@@ -406,15 +474,16 @@ def check_intent_permission(ctx):
 
         # ✅ 校验动作权限（如果传入 action_id）
         if action_id:
-            # 动作元数据读取使用 sudo，避免被 ir.actions.* 模型 ACL 拦截。
-            # 最终授权仍基于当前用户组与动作 groups_id 交集判断。
-            action = _resolve_action(env, action_id, action_type=action_type)
-            if not action:
+            verdict = action_access_verdict(
+                env,
+                action_id=action_id,
+                action_type=action_type,
+                access_mode=access_mode,
+            )
+            if verdict["reasonCode"] == "ACTION_TARGET_NOT_FOUND":
                 raise MissingError(f"动作 {action_id} 不存在")
-            # 集合交集判断
-            groups = getattr(action, "groups_id", None)
-            if groups and not (groups & env.user.groups_id):
-                raise AccessError(f"用户无权执行动作 {getattr(action, 'name', action_id)}")
+            if verdict["authorizationAllowed"] is not True:
+                raise AccessError(verdict["reasonMessage"])
 
         # ✅ 授权/功能开关检查（若启用）
         try:

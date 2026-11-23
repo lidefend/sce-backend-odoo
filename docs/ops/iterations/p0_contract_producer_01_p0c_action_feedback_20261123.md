@@ -36,7 +36,8 @@ Produce Page Block action facts from existing authoritative structures:
 
 - Added the strict P0-C action carrier producer.
 - Added action-only, data-only and combined capability negotiation.
-- Added real action authority resolution through published route authority.
+- Added real action authority resolution through the shared intent permission
+  action-group and target-model ACL/rule verdict.
 - Added Page Block action/rule projection to workspace and company dashboard contracts.
 - Added strict frontend decoding for the action carrier and action contract references.
 - Added correlated action feedback to Contract V2 action patches.
@@ -44,12 +45,15 @@ Produce Page Block action facts from existing authoritative structures:
 
 ## Validation
 
-- `verify.p0_contract_producer.p0c.unit`: PASS, 10 Python tests and the P0-C TypeScript decoder.
+- `verify.p0_contract_producer.p0c.unit`: PASS, 12 Python tests and the P0-C TypeScript decoder.
 - `verify.p0_contract_producer.p0c.orm`: PASS, 6 real ORM tests.
-- `verify.p0_contract_producer.p0a.unit`: PASS after adding action-only negotiation coverage.
+- `verify.p0_contract_producer.p0a.unit`: PASS, 51 Python tests plus both TypeScript
+  suites after adding action-only negotiation coverage.
 - P0-A ORM regression: PASS, 10 tests.
 - shared P0-A/P0-C browser lane: PASS at 1440 and 390; data-only, action-only,
   combined, legacy and rejection projections all behaved as declared.
+- Each browser viewport produced 10 `page-block-action.v1` entries: 9 authorized and
+  enabled, 1 authoritatively disabled with `ACTION_NOT_AUTHORIZED`.
 - Chrome reported no Console/Page errors and no horizontal overflow.
 
 ## Remaining validation

@@ -23,6 +23,8 @@
     "addons/smart_core/core/unified_page_contract_v2_permissions.py": "8cb51efb86be1268d02cef9e4ee73b6a7556d2fa123e7c8d7e1740c6ba1aaa3a",
     "addons/smart_core/core/unified_page_contract_v2_status.py": "880639609f653adf483068ae8d1ab26d3cf5fbbc42f3471ee29e70f4fea29987",
     "addons/smart_core/core/action_target_schema.py": "663eafe686f61edefc469d4398a48483953c2f00a01ae3993c0cf86d1fd93290",
+    "addons/smart_core/core/page_block_action_contract.py": "a0894fde32a4505606977c323d4590b5764b766f67100c5b2c1683b6323ea268",
+    "addons/smart_core/security/intent_permission.py": "a5d6cdfe1629d13ac8998f4971efbc2d7a2a12278d6f69f7d8157221804c92a1",
     "addons/smart_core/core/contract_version_compatibility.py": "f3051933d11bdc125b0a0fa9098e7d31c578fffc41945d3610d1b517ee5fdb6f",
     "addons/smart_core/app_config_engine/utils/payload.py": "fbdba97d4e2753d436542324386dda52a8f50e07f95d57bcf9c1d7929425866e",
     "addons/smart_core/handlers/ui_contract.py": "45d60550e76d978f91f2ce3450b3f617ae6b8a8cb5a3a2f14bc86a0ffca29d63",
@@ -43,7 +45,7 @@
     "frontend/apps/web/src/app/contracts/v2/schema.ts": "746a6179b8708f5ad7e3e464f66c0abaec080aa78722593450c3e4a4159b1690",
     "frontend/apps/web/src/app/contracts/v2/store.ts": "eef9ec7aef22b556c1b98457293a31900c82660fc48c4ef7dd218fbeb8e10304",
     "frontend/apps/web/src/app/pageContract.ts": "0631b16d5ae8d2826fc58eff868e65883841a4463482f57ec1a40ae31644202d",
-    "frontend/apps/web/src/app/pageOrchestration.ts": "96c1ad95c6c9fad94c3f913384c517560e36b260b0e143c05c3e8171a12e0111",
+    "frontend/apps/web/src/app/pageOrchestration.ts": "dde920e08cea597f7de888730acdb15c9c70c8f6c584ce2742414c54d59b4574",
     "frontend/apps/web/src/api/intents.ts": "c6b26102364fff51ecaf4db4d3a7f6b5a04120e6b0a62b35e031ba69e6fc2ba6",
     "frontend/apps/web/src/components/page/PageRenderer.vue": "c63863737770ae26da2a7e3967cce867016c5695279fd5e7007203cb91400a98",
     "frontend/apps/web/src/components/page/ZoneRenderer.vue": "98835492430fdf6f3a35ae2911f6d55abbe76493fe4dded30e04e060a666ef34"

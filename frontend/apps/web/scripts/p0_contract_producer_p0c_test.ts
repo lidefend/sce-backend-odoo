@@ -11,7 +11,9 @@ const sourceAuthority = {
   authorities: [
     'contract_v2_action_rules',
     'action_target_schema',
-    'published_route_authority',
+    'odoo_action_groups',
+    'ir_model_access',
+    'ir_rule',
   ],
   projectionOnly: true,
   noFrontendDefaults: true,

@@ -201,7 +201,7 @@ Generated from repository source files. This report is informational during the 
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
-| 951 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
+| 953 | TypeScript source | `frontend/apps/web/src/app/pageOrchestration.ts` |
 | 951 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |

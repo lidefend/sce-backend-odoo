@@ -214,7 +214,9 @@ const ACTION_SOURCE_KIND = 'page_block_action_producer';
 const ACTION_SOURCE_AUTHORITIES = [
   'contract_v2_action_rules',
   'action_target_schema',
-  'published_route_authority',
+  'odoo_action_groups',
+  'ir_model_access',
+  'ir_rule',
 ] as const;
 const ACTION_SOURCE_CARRIER = 'page-block-action.v1';
 const FIELD_REF_BASE_KEYS = new Set(['kind', 'rawValuePath']);

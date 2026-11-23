@@ -355,6 +355,24 @@ async function main() {
             negotiation_version: value.body?.meta?.contract_negotiation?.contractVersion,
           },
         ])),
+        action_carrier: (() => {
+          const orchestration = run.matrix.current_page_block_action.body?.data?.page_orchestration;
+          const schema = orchestration?.action_schema;
+          return {
+            contract_version: orchestration?.contract_version,
+            carrier: schema?.carrier,
+            actions: Object.values(schema?.actions || {}).map((action) => ({
+              action_id: action.actionId,
+              action_rule_ref: action.actionRuleRef,
+              action_key: action.actionKey,
+              action_xmlid: action.target?.value?.action_xmlid,
+              authorization_allowed: action.permission?.authorizationAllowed,
+              business_available: action.permission?.businessAvailable,
+              enabled: action.state?.enabled,
+              reason_code: action.state?.reasonCode,
+            })),
+          };
+        })(),
         console_errors: run.consoleErrors,
         page_errors: run.pageErrors,
       })),
