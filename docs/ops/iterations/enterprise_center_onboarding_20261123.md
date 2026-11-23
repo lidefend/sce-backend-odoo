@@ -58,8 +58,8 @@ transactional action.
 
 ## Remaining work
 
-- Amend the clean candidate with the governed disclosure fix and publish it
-  through the GitHub PR lane.
+- Revalidate the candidate synchronized with current main `3d1f062f`.
+- Publish the synchronized HEAD to the existing GitHub PR.
 - Wait for required checks on the exact source and current target, then merge
   only after they pass.
 

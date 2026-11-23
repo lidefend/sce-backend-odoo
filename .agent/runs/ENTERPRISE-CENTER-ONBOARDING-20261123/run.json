@@ -3,7 +3,7 @@
   "id": "ENTERPRISE-CENTER-ONBOARDING-20261123",
   "branch": "feature/enterprise-center-onboarding-20261123",
   "status": "active",
-  "baseline_sha": "0f1930cfcd7f111051a6ef7b02a217964d785df8",
+  "baseline_sha": "3d1f062f86508e0efc8dbdb1c0f599dc0b87ca06",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/ENTERPRISE-CENTER-ONBOARDING-20261123.yaml",
@@ -94,7 +94,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Amend the clean candidate with the governed disclosure fix, then publish through the GitHub PR lane and require all checks on the exact head and current target.",
+  "next_exact_step": "Revalidate the synchronized candidate against main 3d1f062f, publish the new exact head, and rerun required GitHub checks.",
   "goal": ".agent/goals/ENTERPRISE-CENTER-ONBOARDING-20261123.yaml",
   "record": "docs/ops/iterations/enterprise_center_onboarding_20261123.md"
 }
