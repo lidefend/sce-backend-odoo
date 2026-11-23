@@ -2,6 +2,7 @@
 from types import SimpleNamespace
 
 from odoo import Command
+from odoo.exceptions import ValidationError
 from odoo.tests.common import TransactionCase, tagged
 
 from odoo.addons.smart_construction_core.handlers.my_work_summary import MyWorkSummaryHandler
@@ -25,6 +26,9 @@ from odoo.addons.smart_construction_core.services.project_dashboard_builders.pro
 )
 from odoo.addons.smart_construction_core.services.project_execution_consistency_guard import (
     ProjectExecutionConsistencyGuard,
+)
+from odoo.addons.smart_construction_core.services.project_plan_bootstrap_builders.project_plan_tasks_builder import (
+    ProjectPlanTasksBuilder,
 )
 from odoo.addons.smart_construction_core.services.project_task_state_support import (
     ProjectTaskStateSupport,
@@ -264,3 +268,124 @@ class TestIndustryBusinessModel02(TransactionCase):
             field = self.env[model_name]._fields["contract_id"]
             self.assertEqual(field.comodel_name, "account.analytic.account")
             self.assertEqual(field.string, "关联分析账户")
+
+    def test_plan_nodes_reuse_wbs_as_the_task_relation_carrier(self):
+        project = self._create_project("IB02 plan task boundary")
+        plan = self.env["sc.plan"].create(
+            {
+                "name": "IB02 execution plan",
+                "project_id": project.id,
+                "company_id": self.env.company.id,
+            }
+        )
+        wbs = self.env["construction.work.breakdown"].create(
+            {"name": "IB02 work package", "project_id": project.id}
+        )
+        plan_line = self.env["sc.plan.line"].create(
+            {
+                "plan_id": plan.id,
+                "name": "IB02 plan node",
+                "node_type": "task",
+                "wbs_id": wbs.id,
+            }
+        )
+        first = self._create_task(project, "IB02 planned task 1", work_id=wbs.id)
+        second = self._create_task(project, "IB02 planned task 2", work_id=wbs.id)
+        self._create_task(project, "IB02 unplanned task")
+
+        self.assertEqual(set(plan_line.task_ids.ids), {first.id, second.id})
+        self.assertEqual(plan_line.task_count, 2)
+        block = ProjectPlanTasksBuilder(self.env).build(project=project)
+        items = block["data"]["items"]
+        self.assertEqual({item["task_id"] for item in items}, {first.id, second.id})
+        self.assertTrue(all(item["plan_line_id"] == plan_line.id for item in items))
+        self.assertTrue(all(item["wbs_id"] == wbs.id for item in items))
+        self.assertTrue(all(item["state"] for item in items))
+
+        other_project = self._create_project("IB02 other WBS project")
+        other_wbs = self.env["construction.work.breakdown"].create(
+            {"name": "IB02 foreign work package", "project_id": other_project.id}
+        )
+        with self.assertRaises(ValidationError):
+            plan_line.wbs_id = other_wbs
+
+    def test_formal_settlement_order_is_the_project_close_authority(self):
+        project = self._create_project("IB02 formal settlement authority")
+        partner = self.env["res.partner"].create({"name": "IB02 settlement partner"})
+        formal = self.env["sc.settlement.order"].create(
+            {
+                "name": "IB02 formal settlement",
+                "project_id": project.id,
+                "partner_id": partner.id,
+                "settlement_type": "out",
+            }
+        )
+        self.assertEqual(project.formal_settlement_ids, formal)
+        self.assertFalse(project._sc_is_settlement_complete())
+        blockers = project._workflow_lifecycle_blockers("warranty")
+        self.assertTrue(any("未完成结算单" in row["message"] for row in blockers))
+
+        legacy_project = self._create_project("IB02 legacy settlement only")
+        self.env["project.settlement"].create(
+            {
+                "name": "IB02 legacy settlement",
+                "project_id": legacy_project.id,
+                "partner_id": partner.id,
+                "type": "pay",
+            }
+        )
+        self.assertTrue(legacy_project._sc_is_settlement_complete())
+        self.assertFalse(
+            any(
+                "未完成结算单" in row["message"]
+                for row in legacy_project._workflow_lifecycle_blockers("warranty")
+            )
+        )
+
+    def test_boq_task_assignment_has_one_current_write_authority(self):
+        project = self._create_project("IB02 BOQ task authority")
+        task = self._create_task(project, "IB02 BOQ task")
+        uom = self.env.ref("uom.product_uom_unit")
+        version = self.env["project.boq.version"].create(
+            {
+                "name": "IB02 BOQ version",
+                "code": "IB02-V1",
+                "project_id": project.id,
+            }
+        )
+        scalar_line = self.env["project.boq.line"].create(
+            {
+                "project_id": project.id,
+                "version_id": version.id,
+                "code": "IB02-001",
+                "name": "IB02 scalar BOQ line",
+                "uom_id": uom.id,
+                "quantity": 2.0,
+                "price": 10.0,
+                "task_id": task.id,
+            }
+        )
+        task.invalidate_recordset(
+            ["boq_line_ids", "boq_quantity_total", "boq_amount_total", "boq_uom_id"]
+        )
+        self.assertIn(scalar_line, task.boq_line_ids)
+        self.assertEqual(task.boq_quantity_total, 2.0)
+        self.assertEqual(task.boq_amount_total, scalar_line.amount)
+
+        legacy_line = self.env["project.boq.line"].create(
+            {
+                "project_id": project.id,
+                "version_id": version.id,
+                "code": "IB02-002",
+                "name": "IB02 legacy BOQ line",
+                "uom_id": uom.id,
+                "quantity": 3.0,
+                "price": 5.0,
+            }
+        )
+        task.write({"legacy_boq_line_ids": [Command.link(legacy_line.id)]})
+        task.invalidate_recordset(
+            ["boq_line_ids", "boq_quantity_total", "boq_amount_total", "boq_uom_id"]
+        )
+        self.assertEqual(set(task.boq_line_ids.ids), {scalar_line.id, legacy_line.id})
+        self.assertEqual(task.boq_quantity_total, 5.0)

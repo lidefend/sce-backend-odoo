@@ -58,8 +58,8 @@ Generated from repository source files. This report is informational during the 
 | 2021 | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 2002 | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1981 | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1980 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1969 | Python source | `addons/smart_core/handlers/system_init.py` |
-| 1963 | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1946 | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1937 | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1930 | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |
@@ -317,8 +317,8 @@ Generated from repository source files. This report is informational during the 
 | 2021 | split_plan_required | Python source | `addons/smart_core/tests/test_delivery_menu_entry_target.py` |
 | 2002 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_project_authorization_foundation.py` |
 | 1981 | split_plan_required | TypeScript source | `frontend/apps/web/src/stores/session.ts` |
+| 1980 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1969 | split_plan_required | Python source | `addons/smart_core/handlers/system_init.py` |
-| 1963 | split_plan_required | Python source | `addons/smart_construction_core/models/core/project_core.py` |
 | 1946 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/view_Parser/parsers Tree Form.py` |
 | 1937 | split_plan_required | Python source | `addons/smart_construction_core/models/support/workflow_contract_service.py` |
 | 1930 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_finance_projection_authority.py` |

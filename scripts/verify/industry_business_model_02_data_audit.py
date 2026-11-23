@@ -138,9 +138,10 @@ def build_report(env):
         ("name", "ilike", "Project Root Task"),
     ])
 
-    plan_without_task_relation = {
+    plan_relation_carrier = {
         "task_field_present": bool(plan_line_model and "task_id" in plan_line_model._fields),
         "task_ids_field_present": bool(plan_line_model and "task_ids" in plan_line_model._fields),
+        "wbs_field_present": bool(plan_line_model and "wbs_id" in plan_line_model._fields),
     }
 
     predecessor_relation_exists = False
@@ -223,7 +224,7 @@ def build_report(env):
                 else None
             ),
             "predecessor_relation_exists": predecessor_relation_exists,
-            **plan_without_task_relation,
+            **plan_relation_carrier,
         },
         "wbs_task_boundary": {
             "wbs_count": _count(env, "construction.work.breakdown"),
@@ -242,6 +243,9 @@ def build_report(env):
             ),
         },
         "settlement_authority": {
+            "authoritative_model": "sc.settlement.order",
+            "legacy_model": "project.settlement",
+            "legacy_compatibility": "readonly",
             "legacy_project_settlement_count": _count(env, "project.settlement"),
             "legacy_project_settlement_state": _group(
                 env, "project.settlement", "state"

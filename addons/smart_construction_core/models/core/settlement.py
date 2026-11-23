@@ -8,7 +8,7 @@ from ..support.state_guard import raise_guard
 
 class ProjectSettlement(models.Model):
     _name = "project.settlement"
-    _description = "Project Settlement"
+    _description = "历史项目结算（兼容）"
     _inherit = ["mail.thread", "mail.activity.mixin"]
     _order = "id desc"
 

@@ -73,12 +73,18 @@ class ProjectTask(models.Model):
         ondelete="set null",
         index=True,
     )
-    boq_line_ids = fields.Many2many(
+    legacy_boq_line_ids = fields.Many2many(
         "project.boq.line",
         "project_task_boq_rel",
         "task_id",
         "boq_id",
+        string="历史关联BOQ行",
+        readonly=True,
+    )
+    boq_line_ids = fields.Many2many(
+        "project.boq.line",
         string="关联BOQ行",
+        compute="_compute_boq_line_ids",
         readonly=True,
     )
     boq_uom_id = fields.Many2one("uom.uom", string="工程量单位", readonly=True)
@@ -104,13 +110,32 @@ class ProjectTask(models.Model):
         readonly=True,
     )
 
-    def _compute_boq_totals(self):
+    @api.depends("legacy_boq_line_ids")
+    def _compute_boq_line_ids(self):
+        BoqLine = self.env["project.boq.line"]
+        scalar_lines = BoqLine.search([("task_id", "in", self.ids)]) if self.ids else BoqLine
+        scalar_by_task = {}
+        for line in scalar_lines:
+            scalar_by_task.setdefault(int(line.task_id.id), BoqLine)
+            scalar_by_task[int(line.task_id.id)] |= line
         for task in self:
-            qty = sum(task.boq_line_ids.mapped("quantity"))
-            amount = sum(task.boq_line_ids.mapped("amount"))
+            task.boq_line_ids = task.legacy_boq_line_ids | scalar_by_task.get(int(task.id), BoqLine)
+
+    @api.depends("legacy_boq_line_ids")
+    def _compute_boq_totals(self):
+        BoqLine = self.env["project.boq.line"]
+        scalar_lines = BoqLine.search([("task_id", "in", self.ids)]) if self.ids else BoqLine
+        scalar_by_task = {}
+        for line in scalar_lines:
+            scalar_by_task.setdefault(int(line.task_id.id), BoqLine)
+            scalar_by_task[int(line.task_id.id)] |= line
+        for task in self:
+            lines = task.legacy_boq_line_ids | scalar_by_task.get(int(task.id), BoqLine)
+            qty = sum(lines.mapped("quantity"))
+            amount = sum(lines.mapped("amount"))
             task.boq_quantity_total = qty
             task.boq_amount_total = amount
-            task.boq_uom_id = task.boq_line_ids[:1].uom_id.id if task.boq_line_ids else False
+            task.boq_uom_id = lines[:1].uom_id.id if lines else False
 
     @api.depends("project_id", "work_id", "sc_state")
     def _compute_readiness(self):

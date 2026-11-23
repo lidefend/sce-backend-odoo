@@ -7,12 +7,12 @@
 - Formal product layer: P1 `smart_construction_core`
 - Supporting layer: P4 read-only inventory, focused tests and evidence carriers
 - Standard vs user-specific: construction product standard
-- Current slice: 02-A project execution entry boundaries and 02-C
-  business-pending/task presentation separation
-- Excluded until Owner decision or schema evidence: 02-B plan/task
-  cardinality, predecessor retirement, 02-D settlement retirement, BOQ source
-  selection, contract-field schema changes, task lifecycle bridge T0, frontend
-  source changes and P0 platform changes
+- Current slice: 02-A project execution entry boundaries, 02-B plan/WBS/task
+  connection, 02-C business-pending/task separation and code-only 02-D
+  settlement/BOQ/progress semantic convergence
+- Excluded: destructive retirement of the legacy settlement model, retirement
+  of the legacy BOQ relation table, plan predecessor retirement, task lifecycle
+  bridge T0, frontend source changes and P0 platform changes
 
 This is an unreleased dirty-tree iteration. It is not a frozen candidate,
 mainline integration, deployment or user acceptance result.
@@ -71,12 +71,14 @@ Required interpretation:
 
 - Multiple open tasks per project are a real business shape; the
   `single_open_task_only` execution constraint is contradicted by data.
-- Plan-to-task cardinality cannot be chosen safely because no relation field or
-  related rows exist in the sampled data.
+- The sampled data had no plan-to-task relation. The selected convergence keeps
+  plan nodes in `sc.plan.line` and uses the existing WBS
+  `construction.work.breakdown.task_ids` carrier for actual tasks.
 - Legacy settlement still has data and cannot be deleted or retired in this
   batch.
-- BOQ already has two relation carriers and one observed drift, so a unique
-  authority must be an explicit product decision with migration design.
+- BOQ already had two relation carriers and one observed drift. Current writes
+  now use scalar `project.boq.line.task_id`; legacy relation rows remain
+  available through the computed task read while table retirement is deferred.
 - `sc_execution_state` cannot be removed immediately because non-empty legacy
   values exist.
 
@@ -111,6 +113,18 @@ Corrected behavior:
 - `project.budget.contract_id` and `sc.project.document.contract_id` retain their
   compatibility field names but now truthfully declare the actual
   `account.analytic.account` model as an analysis dimension.
+- Plan nodes now optionally reference an existing WBS work package through
+  `sc.plan.line.wbs_id`; native tasks are exposed through the WBS
+  `project.task.work_id` relation instead of a second plan-to-task table.
+- Plan task blocks show only tasks reached through plan-node WBS links and
+  retain the native task state.
+- `sc.settlement.order` is the current settlement authority for project paid
+  totals, settlement completeness, BOQ freeze and project-close blockers.
+  `project.settlement` remains a read-only historical model.
+- `project.boq.line.task_id` is the current BOQ-to-task write authority.
+  `project.task.boq_line_ids` is a computed effective read that also preserves
+  rows from the legacy relation table, so historical data remains visible while
+  new writes have one authority.
 
 ### 02-C business pending versus construction tasks
 
@@ -147,6 +161,9 @@ Corrected behavior:
 | My Work task list | assigned task + native open states | closed/canceled tasks do not enter todo | native reopened tasks follow Odoo state |
 | My Work business pending | contract/payment/settlement source projections | source model and record identity retained | duplicate count across all sources remains source-count based |
 | project execution projection service | source-preserving inbox projection | no task-shaped API remains | service name is retained for compatibility |
+| plan task block | plan node → WBS → native task | no second plan-task relation | plan predecessor remains planning-only |
+| project paid/close facts | formal `sc.settlement.order` | legacy settlement no longer controls current facts | migration/retirement remains a data project |
+| BOQ task links | scalar `project.boq.line.task_id` writes | legacy many-to-many rows remain readable | relation table retirement remains a data project |
 
 ## 6. Validation results
 
@@ -159,7 +176,7 @@ Identity:
 
 Focused ORM:
 
-- `make verify.industry_business_model_02.orm`: passed, 11 tests.
+- `make verify.industry_business_model_02.orm`: passed, 14 tests.
 - Readback:
   `.runtime/agent-runs/INDUSTRY-BUSINESS-MODEL-02/boundary_orm_readback.json`.
 - The governed `local.test` runner installed `smart_construction_core` into a
@@ -169,18 +186,18 @@ Focused ORM:
   native task-state consumption, closed-task filtering in My Work, disabled
   legacy workflow todos, multi-source aggregation, separate engineering/task
   completion, canceled-task denominator exclusion, native waiting metrics and
-  truthful analytic-account field labels.
+  truthful analytic-account field labels, plan-to-WBS task links, formal
+  settlement authority and BOQ write/read convergence.
+- Backend model declaration guard: passed, 5840 declarations with no duplicate
+  or same-class duplicate declarations.
 
 Restart:
 
-- `make local.dev.upgrade MODULE=smart_construction_core` correctly refused an
-  unnecessary module upgrade because this slice changes no Views, Security,
-  Data or Schema.
-- `make local.dev.restart`: passed.
-- `make local.dev.health`: passed for `sc-local-dev/sc_dev_demo`.
-- The bounded service log shows the final registry loaded 77 modules without a
-  startup exception. Shutdown-time database-disconnect warnings belong to the
-  intentional preceding stop.
+- The earlier non-schema slice restart and health check passed.
+- The 02-B/02-D follow-up adds a nullable plan WBS field and changes the BOQ
+  task read model, so it was installed only in the disposable test template.
+  The persistent development database was intentionally not upgraded in this
+  local-only batch.
 
 Generated content:
 
@@ -211,29 +228,24 @@ Additional observations, excluded from this batch gate:
 
 ## 7. Owner decisions still required
 
-1. `sc.plan.line` to `project.task`: direct one-to-many relation, indirect
-   relation through WBS, or no relation for non-executable plan nodes?
-2. Can `sc.plan.line.predecessor_ids` be retired after confirming no external
+1. Can `sc.plan.line.predecessor_ids` be retired after confirming no external
    consumers, or must historical data be migrated first?
-3. Which BOQ/task carrier is authoritative: scalar
-   `project.boq.line.task_id`, many-to-many `project.task.boq_line_ids`, or
-   neither until an explicit execution relation is introduced?
-4. Is `project.settlement` migrated into `sc.settlement.order`, retained
+2. Is `project.settlement` migrated into `sc.settlement.order`, retained
    read-only, or archived by a separate data project?
-5. Should `project.budget.contract_id` and
-   `sc.project.document.contract_id` become links to project contracts or be
-   repurposed as analytic-account fields?
-6. When may `project.project.sc_execution_state` become read-only compatibility,
+3. When may the legacy `project_task_boq_rel` relation table be retired after
+   confirming no remaining legacy read consumers?
+4. When may `project.project.sc_execution_state` become read-only compatibility,
    and which historical values must be migrated before removal?
 
-No schema, field deletion, data migration or repair is authorized by this
-record.
+No field deletion, data migration or repair is authorized by this record.
 
 ## 8. Current status and next exact step
 
 Status: `local_criteria_passed_pending_commit`.
 
 No further full-contract, module-baseline or frontend regression is required
-for this slice by the Owner criterion. The remaining action is a clean commit
-of the current candidate. Plan/task cardinality, legacy-settlement retirement,
-BOQ relation authority and T0 lifecycle bridging remain separate decisions.
+for this slice by the Owner criterion. The remaining action is a clean local
+commit. The new WBS field and BOQ computed-read change require a governed module
+upgrade when a future integration/deployment is authorized; no persistent
+database upgrade was performed in this local-only slice. T0 lifecycle bridging
+remains a separate batch.

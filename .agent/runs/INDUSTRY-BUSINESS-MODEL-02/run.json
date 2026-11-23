@@ -25,12 +25,20 @@
     "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
     "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
     "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+    "addons/smart_construction_core/services/project_plan_bootstrap_builders/project_plan_tasks_builder.py",
     "addons/smart_construction_core/services/my_work_aggregate_service.py",
     "addons/smart_construction_core/handlers/my_work_summary.py",
     "addons/smart_construction_core/models/core/cost_domain.py",
+    "addons/smart_construction_core/models/core/boq.py",
+    "addons/smart_construction_core/models/core/plan_management.py",
+    "addons/smart_construction_core/models/core/project_core.py",
+    "addons/smart_construction_core/models/core/settlement.py",
     "addons/smart_construction_core/models/support/document_center.py",
+    "addons/smart_construction_core/models/support/task_extend.py",
     "addons/smart_construction_core/tests/__init__.py",
     "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+    "addons/smart_construction_core/views/core/plan_management_views.xml",
+    "addons/smart_construction_core/wizard/project_task_from_boq_wizard.py",
     "make/dev_test.mk",
     "scripts/audit/verification_lane_baseline.json",
     "scripts/audit/verification_lane_dispositions.json",
@@ -64,10 +72,12 @@
         "addons/smart_construction_core/services/project_execution_builders/project_execution_readiness_precheck_builder.py",
         "addons/smart_construction_core/services/project_execution_builders/project_execution_tasks_builder.py",
         "addons/smart_construction_core/services/project_execution_item_projection_service.py",
+    "addons/smart_construction_core/services/project_plan_bootstrap_builders/project_plan_tasks_builder.py",
         "addons/smart_construction_core/services/my_work_aggregate_service.py",
         "addons/smart_construction_core/handlers/my_work_summary.py",
         "addons/smart_construction_core/tests/__init__.py",
         "addons/smart_construction_core/tests/test_industry_business_model_02.py",
+    "addons/smart_construction_core/views/core/plan_management_views.xml",
         "make/dev_test.mk"
       ],
       "readback": {
@@ -102,5 +112,5 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the current P1 candidate; installation, restart, focused ORM and contract-content criteria have passed. Do not run additional validation without a new changed input."
+  "next_exact_step": "Commit the 02-B/02-D completion follow-up locally; do not push, create a PR or upgrade the persistent database."
 }

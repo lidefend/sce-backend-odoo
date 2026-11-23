@@ -32,8 +32,11 @@ goal:
   why_not_elsewhere:
     - The frontend must not infer which business records are tasks.
     - No second task, pending-work or business-status infrastructure is introduced.
-    - Plan-task cardinality, old settlement retirement and BOQ relationship
-      selection require data evidence and are excluded until that evidence exists.
+    - Plan nodes reuse the existing WBS work-package carrier instead of adding a
+      second plan-to-task association.
+    - BOQ-to-task writes use project.boq.line.task_id as the current authority;
+      the historical relation table remains readable for compatibility.
+    - Old settlement retirement requires a separate data migration decision.
   blast_radius:
     behavior:
       - project initiation no longer creates a project root task
@@ -42,6 +45,9 @@ goal:
       - project dashboard engineering progress is separate from native task completion
       - task risk, waiting and completion metrics use native project.task.state
       - analytic-account compatibility fields use truthful labels
+      - plan nodes link to existing WBS work packages and expose their native tasks
+      - formal settlement orders control settlement completeness, project close and paid totals
+      - BOQ task assignment uses one write authority and preserves legacy relation rows for readback
       - project execution task block contains only project.task records
       - construction business pending records retain their source model and identity
     contracts:
@@ -62,10 +68,14 @@ goal:
     - Canceled tasks are excluded from the task-completion denominator.
     - Project dashboard task waiting, completion and milestone delay use native facts.
     - Analytics-account compatibility fields declare their actual model and label.
+    - A plan node may link to zero or one WBS work package and therefore zero or many native tasks.
+    - Plan nodes from different projects cannot link to a foreign WBS.
+    - Formal sc.settlement.order records control project settlement completeness and close blockers.
+    - A BOQ line task assignment appears on its task whether written by the scalar authority or present in the legacy relation table.
     - Read-only data evidence records plan/task/WBS, settlement, BOQ relation and contract-field counts before schema decisions.
   exclusions:
     - direct removal of project.settlement
-    - schema changes to sc.plan.line, project.task, project.boq.line or contract fields
+    - schema changes to project.task or contract fields
     - data migration or repair
     - T0 native state bridge implementation
     - frontend source changes
