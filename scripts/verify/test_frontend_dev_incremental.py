@@ -274,6 +274,29 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.daily_dev.acceptance_fixture.unit"],
         )
 
+    def test_contract_consumer_declaration_changes_select_their_owners(self) -> None:
+        cases = {
+            "addons/smart_construction_core/tests/test_tender_award_fact.py": [
+                "verify.tender_award_fact.orm",
+            ],
+            "addons/smart_core/handlers/route_authority_validate.py": [
+                "verify.execute_button.authority.unit",
+                "verify.product.entry_publication.unit",
+            ],
+            "scripts/verify/acceptance_contract_receipt_test.mjs": [
+                "verify.frontend.list_surface_search_contract.unit",
+            ],
+            "scripts/verify/daily_demo_contract_api_acceptance.py": [
+                "verify.daily.demo.contract.api.unit",
+            ],
+            "scripts/verify/daily_demo_runtime_performance.py": [
+                "verify.local.dev.runtime.performance.unit",
+            ],
+        }
+        for path, expected in cases.items():
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), expected)
+
     def test_expression_feedback_and_responsive_inputs_route_to_owning_units(self) -> None:
         self.assertEqual(
             select_targets(["frontend/apps/web/src/app/routeFailure.ts"]),

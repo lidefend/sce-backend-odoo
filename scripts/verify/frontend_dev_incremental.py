@@ -476,6 +476,32 @@ RULES = (
     ), (
         "verify.daily_dev.acceptance_fixture.unit",
     )),
+    Rule((
+        "addons/smart_construction_core/tests/test_tender_award_fact.py",
+    ), (
+        "verify.tender_award_fact.orm",
+    )),
+    Rule((
+        "addons/smart_core/handlers/route_authority_validate.py",
+    ), (
+        "verify.execute_button.authority.unit",
+        "verify.product.entry_publication.unit",
+    )),
+    Rule((
+        "scripts/verify/acceptance_contract_receipt_test.mjs",
+    ), (
+        "verify.frontend.list_surface_search_contract.unit",
+    )),
+    Rule((
+        "scripts/verify/daily_demo_contract_api_acceptance.py",
+    ), (
+        "verify.daily.demo.contract.api.unit",
+    )),
+    Rule((
+        "scripts/verify/daily_demo_runtime_performance.py",
+    ), (
+        "verify.local.dev.runtime.performance.unit",
+    )),
     # Acceptance runtime rebuild, startup, artifact and carrier-discard inputs
     # form one P4 behavior lock. Leaving their tests unmapped forces a manual
     # L2 choice and can silently omit the exact runtime/tooling suite.
