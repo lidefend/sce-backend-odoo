@@ -55,7 +55,7 @@ class TestInvoiceNativeLowcode(TransactionCase):
     def contract(self, action_key, **extra):
         from odoo.addons.smart_core.handlers.ui_contract_v2 import UiContractV2Handler
         action = self.ref(action_key)
-        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
+        result = UiContractV2Handler(self.env, su_env=self.env["ir.model"].sudo().env).handle({"client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": 0,
             "view_type": "form", "render_profile": "create", **extra,
@@ -214,7 +214,7 @@ class TestInvoiceNativeLowcode(TransactionCase):
             return {"target": node["nativeLocator"], "expected": {"type": node["type"], "name": node.get("name"), "occurrence_index": node.get("occurrenceIndex")}, **change}
 
         def call(cls, **params):
-            result = cls(self.env).handle(payload={"params": {"role_key": role, "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], **params}})
+            result = cls(self.env).handle(payload={"params": {"role_key": role, "client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], **params}})
             self.assertTrue(result.get("ok"), result)
             return result["data"]
 

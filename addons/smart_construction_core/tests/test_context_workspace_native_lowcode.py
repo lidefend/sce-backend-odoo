@@ -318,7 +318,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_id),
             "view_type": "form", "render_profile": "create",
-            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES), **extra,
+            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES), **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
         self.assertTrue(result.get("ok", True), result.get("error"))
@@ -1352,7 +1352,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
             "op": "model", "model": action.res_model, "action_id": action.id,
             "view_id": self.view_ref_id(view_key), "view_type": "form",
             "render_profile": "create",
-            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
+            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
             **extra,
         })
         result = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
@@ -1451,7 +1451,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         previewed = BusinessConfigChangeSetPreviewHandler(env).handle(
             payload={"params": {
                 "change_set_token": change_set["token"],
-                "client_contract_capabilities": capabilities,
+                "client_type": "web_pc", "client_contract_capabilities": capabilities,
             }})
         if not expect_ok:
             return validated, previewed
@@ -1544,7 +1544,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         published = BusinessConfigChangeSetPublishHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"],
             "request_id": "g08-c-closure-%s" % change_set["id"],
-            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
+            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
         }})
         self.assertTrue(published["ok"], published)
         publish_result = published["data"]["publish_result"]
@@ -1565,7 +1565,7 @@ class TestContextWorkspaceNativeLowcode(BusinessTransactionCase):
         rolled_back = BusinessConfigChangeSetRollbackHandler(env).handle(payload={"params": {
             "change_set_token": change_set["token"],
             "request_id": "g08-c-rollback-%s" % change_set["id"],
-            "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
+            "client_type": "web_pc", "client_contract_capabilities": list(self.CONTRACT_CLIENT_CAPABILITIES),
         }})
         self.assertTrue(rolled_back["ok"], rolled_back)
         self.assertEqual(self.contract_identity(self.entry_contract(self.env, action_key, view_key)),

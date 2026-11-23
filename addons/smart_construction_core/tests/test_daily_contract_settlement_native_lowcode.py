@@ -99,7 +99,7 @@ class TestDailyContractNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
-        ).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
+        ).handle({"client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": self.MODEL, "action_id": action.id,
             "view_id": 0,
             "view_type": "form", "render_profile": "edit",
@@ -134,7 +134,7 @@ class TestDailyContractNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         data, _versions = UiContractV2Handler._dispatch_native_form_source(
             self.env, self.env["ir.model"].sudo().env,
-            {"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
+            {"client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
         layout = (data.get("nativeFormProjection") or {}).get("layout") or []
         seen, ordered = set(), []
 
@@ -363,7 +363,7 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
         view_id = self.VIEW_ID if view_id is None else view_id
         result = UiContractV2Handler(
             self.env, su_env=self.env["ir.model"].sudo().env
-        ).handle({"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
+        ).handle({"client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY],
             "op": "model", "model": self.MODEL, "action_id": action_id,
             "view_id": 0, "view_type": "form", "render_profile": "edit",
         })
@@ -397,7 +397,7 @@ class TestDailyContractSettlementNativeLowcode(TransactionCase):
         action = self.env.ref("smart_construction_core.%s" % self.ACTION)
         data, _versions = UiContractV2Handler._dispatch_native_form_source(
             self.env, self.env["ir.model"].sudo().env,
-            {"client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
+            {"client_type": "web_pc", "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY], "op": "model", "model": self.MODEL, "action_id": action.id, "view_id": 0})
         layout = (data.get("nativeFormProjection") or {}).get("layout") or []
         seen, ordered = set(), []
 

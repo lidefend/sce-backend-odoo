@@ -242,7 +242,7 @@ class TestCompanyProjectRefundFeedback(CompanyRefundFeedbackAssertions, Transact
             "view_id": self.view.id,
             "view_type": "form",
             "render_profile": "create",
-            "client_contract_capabilities": [
+            "client_type": "web_pc", "client_contract_capabilities": [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],
@@ -552,7 +552,7 @@ class TestCompanyProjectRefundFeedbackHttp(
                 "allowed_company_ids": [self.company.id],
                 "lang": "en_US",
             },
-            "client_contract_capabilities": capabilities if capabilities is not None else [
+            "client_type": "web_pc", "client_contract_capabilities": capabilities if capabilities is not None else [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
             ],

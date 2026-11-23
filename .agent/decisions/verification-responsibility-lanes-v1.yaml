@@ -1,0 +1,33 @@
+schema_version: 1
+id: VERIFICATION-RESPONSIBILITY-LANES-V1
+title: Separate local targeted validation, remote PR CI and scheduled release CI
+status: active
+date: 2026-11-23
+authority: AGENTS.md
+
+decision:
+  local_targeted:
+    purpose: prove only the affected diff, contract and targeted tests
+    must_not_substitute: [remote_integration, scheduled_release]
+    default_full_module_suite: forbidden_as_inner_loop
+  remote_integration:
+    purpose: prove the exact PR head against the current target base
+    required_before_merge: true
+    must_not_substitute: [scheduled_release]
+  scheduled_release:
+    purpose: prove current main is eligible for release
+    required_before_release: true
+
+pre_action_declaration:
+  required_fields: [local_targeted, remote_integration, scheduled_release]
+  allowed_states: [required, excluded, not_run]
+  exclusions_require_reason: true
+  environment_failure_state: not_run_environment_defect
+
+shared_local_test_lock:
+  wait_or_steal: forbidden
+  response: continue_without_shared_database_and_publish_remote_ci
+  current_architecture_defect: >-
+    Multiple worktrees share sc-local-test/sc_test and a common lock. Fresh
+    attempts do not provide worktree-level database isolation.
+  owner_layer: P4

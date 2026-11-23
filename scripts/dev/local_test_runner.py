@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
-"""Single governed owner of the registered disposable sc_test database.
+"""Single governed owner of the worktree-scoped disposable sc_test database.
 
 Credentials come only from the existing private profile. No shell sourcing,
 recursive Make overrides, persistent application server, or retry-to-green.
+Each worktree gets a separate Compose project, database volume and local lock;
+the database name inside that isolated carrier remains the governed ``sc_test``.
 """
 from __future__ import annotations
 import argparse
@@ -22,11 +24,38 @@ ORDER_DRIVER = ROOT / 'scripts/test/odoo_ordered_tests.py'
 PROFILE = Path('/home/lidefend/workspace/sce-backend-odoo/.env.local.test')
 TEMPLATE_DATABASE_PREFIX = 'sc_test_template__'
 TEMPLATE_MARKER = ROOT / '.runtime/test-baseline/sc-test-template.json'
-IDENTITY = dict(ENV='dev', COMPOSE_PROJECT_NAME='sc-local-test', DB_NAME='sc_test',
+PROFILE_IDENTITY = dict(ENV='dev', COMPOSE_PROJECT_NAME='sc-local-test', DB_NAME='sc_test',
     DB_USER='sc_test_odoo', ODOO_DBFILTER='^sc_test$', DB_DATA='sc_local_test_db_data',
     REDIS_DATA='sc_local_test_redis_data', ODOO_DATA='sc_local_test_odoo_data',
     NGINX_PORT='18084', ODOO_PORT='8073', SC_ALLOW_DEMO_DATA='0', ISOLATED_REHEARSAL_DATABASE='1')
 START = re.compile(r' INFO sc_test odoo\.addons\.([\w.]+): Starting ([\w.]+) \.\.\.')
+
+
+def worktree_key(root: Path = ROOT) -> str:
+    return hashlib.sha256(str(root.resolve()).encode("utf-8")).hexdigest()[:12]
+
+
+def test_identity(root: Path = ROOT) -> dict:
+    key = worktree_key(root)
+    project = "sc-local-test-" + key
+    return dict(
+        ENV="dev",
+        COMPOSE_PROJECT_NAME=project,
+        DB_NAME="sc_test",
+        DB_USER="sc_test_odoo",
+        ODOO_DBFILTER="^sc_test$",
+        DB_DATA="sc_local_test_" + key + "_db_data",
+        REDIS_DATA="sc_local_test_" + key + "_redis_data",
+        ODOO_DATA="sc_local_test_" + key + "_odoo_data",
+        NGINX_PORT="18084",
+        ODOO_PORT="8073",
+        SC_ALLOW_DEMO_DATA="0",
+        ISOLATED_REHEARSAL_DATABASE="1",
+        WORKTREE_ROOT=str(root.resolve()),
+    )
+
+
+IDENTITY = test_identity(ROOT)
 
 
 def profile(path: Path) -> dict:
@@ -45,7 +74,7 @@ def profile(path: Path) -> dict:
         if len(parts) != 1 or any(c in parts[0] for c in ('`', '\n', '\r')) or '$(' in raw:
             raise ValueError('profile must contain literal values')
         values[key] = parts[0]
-    for key, expected in IDENTITY.items():
+    for key, expected in PROFILE_IDENTITY.items():
         if values.get(key) != expected:
             raise ValueError('foreign local.test identity: ' + key)
     # Older registered credentials use dev. Every test carrier is forced to test
@@ -73,16 +102,23 @@ def command(argv, env, *, capture=True):
     return subprocess.run(argv, cwd=ROOT, env=env, text=True, capture_output=capture, check=True)
 
 
-def compose_config(config: dict) -> None:
-    if config.get('name') != 'sc-local-test':
+def compose_config(config: dict, identity: dict | None = None) -> None:
+    identity = identity or IDENTITY
+    if config.get('name') != identity['COMPOSE_PROJECT_NAME']:
         raise ValueError('foreign compose project')
-    for key, name in [('db_data', 'sc_local_test_db_data'), ('redis_data', 'sc_local_test_redis_data'),
-                      ('odoo_data', 'sc_local_test_odoo_data')]:
+    for key, name in [
+        ('db_data', identity['DB_DATA']),
+        ('redis_data', identity['REDIS_DATA']),
+        ('odoo_data', identity['ODOO_DATA']),
+    ]:
         item = config['volumes'][key]
         if item.get('name') != name or item.get('external'):
             raise ValueError('foreign or external volume')
     db = config['services']['db']
-    if db['environment'].get('POSTGRES_DB') != 'sc_test' or db['environment'].get('POSTGRES_USER') != 'sc_test_odoo':
+    if (
+        db['environment'].get('POSTGRES_DB') != identity['DB_NAME']
+        or db['environment'].get('POSTGRES_USER') != identity['DB_USER']
+    ):
         raise ValueError('foreign database config')
     data_mounts = [x for x in db['volumes'] if x['target'] == '/var/lib/postgresql/data']
     if len(data_mounts) != 1 or data_mounts[0].get('type') != 'volume' or data_mounts[0].get('source') != 'db_data':
@@ -286,6 +322,7 @@ def template_reuse_decision(
 
 def environment_plan(
     *,
+    environment,
     template_module,
     requested_module,
     template_database,
@@ -294,7 +331,7 @@ def environment_plan(
 ):
     return {
         "decision": decision,
-        "environment": "sc-local-test/sc_test",
+        "environment": environment,
         "requested_module": requested_module,
         "template_database": template_database,
         "template_key": template_key,
@@ -310,7 +347,8 @@ def emit_environment_plan(**kwargs):
     )
 
 
-def cleanup_carrier(name, env):
+def cleanup_carrier(name, env, *, project_name=None):
+    project_name = project_name or IDENTITY['COMPOSE_PROJECT_NAME']
     found = command(['docker', 'ps', '-aq', '--filter', 'name=^/' + name + '$'], env).stdout.strip()
     if not found:
         return 'absent'
@@ -318,7 +356,10 @@ def cleanup_carrier(name, env):
     if len(rows) != 1 or rows[0].get('Name') != '/' + name:
         raise ValueError('carrier cleanup identity mismatch')
     labels = rows[0]['Config'].get('Labels') or {}
-    if labels.get('com.docker.compose.project') != 'sc-local-test' or labels.get('com.docker.compose.service') != 'odoo':
+    if (
+        labels.get('com.docker.compose.project') != project_name
+        or labels.get('com.docker.compose.service') != 'odoo'
+    ):
         raise ValueError('carrier cleanup owner mismatch')
     command(['docker', 'rm', '-f', rows[0]['Id']], env)
     if command(['docker', 'ps', '-aq', '--filter', 'name=^/' + name + '$'], env).stdout.strip():
@@ -385,24 +426,49 @@ def main(argv=None):
         if rehearsal_script and args.action != 'test':
             raise ValueError('upgrade rehearsal is only a fresh test attempt')
         values = profile(args.env_file)
+        identity = test_identity(ROOT)
+        environment_name = (
+            identity['COMPOSE_PROJECT_NAME'] + '/' + identity['DB_NAME']
+        )
         profile_sha = hashlib.sha256(PROFILE.read_bytes()).hexdigest()
         env = {k: os.environ[k] for k in ('PATH', 'HOME', 'DOCKER_HOST', 'DOCKER_CONFIG') if k in os.environ}
-        env.update(values, ENV_FILE=str(PROFILE), SC_ENVIRONMENT='test', SC_ALLOW_DEMO_DATA='0')
-        dc = ['docker', 'compose', '--env-file', str(PROFILE), '-p', 'sc-local-test', '-f', str(ROOT / 'docker-compose.yml'), '-f', str(ROOT / 'docker-compose.test-isolation.yml')]
+        env.update(values)
+        env.update(identity)
+        env.update(ENV_FILE=str(PROFILE), SC_ENVIRONMENT='test', SC_ALLOW_DEMO_DATA='0')
+        dc = [
+            'docker', 'compose', '--env-file', str(PROFILE),
+            '-p', identity['COMPOSE_PROJECT_NAME'],
+            '-f', str(ROOT / 'docker-compose.yml'),
+            '-f', str(ROOT / 'docker-compose.test-isolation.yml'),
+        ]
         config = json.loads(command(dc + ['config', '--format', 'json'], env).stdout)
-        compose_config(config)
-        # A fixed lock in the shared Git directory serializes all linked worktrees.
+        compose_config(config, identity)
+        # The lock is worktree-scoped. Different worktrees use different Compose
+        # projects and volumes, so they cannot contend for the same database.
         common = Path(command(['git', 'rev-parse', '--git-common-dir'], env).stdout.strip()).resolve()
-        with (common / 'local-test.lock').open('w') as lock:
+        with (common / ('local-test-' + worktree_key(ROOT) + '.lock')).open('w') as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
             # Existing named resources must be owned by this exact project.
-            for name in (IDENTITY['DB_DATA'], IDENTITY['REDIS_DATA'], IDENTITY['ODOO_DATA']):
+            for name in (
+                identity['DB_DATA'],
+                identity['REDIS_DATA'],
+                identity['ODOO_DATA'],
+            ):
                 found = command(['docker', 'volume', 'ls', '--filter', 'name=^' + name + '$', '--format', '{{.Name}}'], env).stdout.strip()
                 if found:
                     rows = json.loads(command(['docker', 'volume', 'inspect', name], env).stdout)
-                    if len(rows) != 1 or (rows[0].get('Labels') or {}).get('com.docker.compose.project') != 'sc-local-test':
+                    if (
+                        len(rows) != 1
+                        or (rows[0].get('Labels') or {}).get('com.docker.compose.project')
+                        != identity['COMPOSE_PROJECT_NAME']
+                    ):
                         raise ValueError('unowned test volume')
-            running = command(['docker', 'ps', '--filter', 'label=com.docker.compose.project=sc-local-test', '--format', '{{.Label "com.docker.compose.service"}}'], env).stdout.splitlines()
+            running = command([
+                'docker', 'ps',
+                '--filter',
+                'label=com.docker.compose.project=' + identity['COMPOSE_PROJECT_NAME'],
+                '--format', '{{.Label "com.docker.compose.service"}}',
+            ], env).stdout.splitlines()
             if set(running) - {'db', 'redis'}:
                 raise ValueError('concurrent application/test carrier; no database mutation allowed')
             if args.action == 'prepare':
@@ -465,6 +531,7 @@ def main(argv=None):
                 )
                 template_ready = template_decision == "reuse"
             emit_environment_plan(
+                environment=environment_name,
                 template_module=template_module,
                 requested_module=module,
                 template_database=template_database,
@@ -475,7 +542,9 @@ def main(argv=None):
             if args.reuse_database:
                 if not template_ready:
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', template_database], env)
-                    prepare_carrier = 'sc-local-test-prepare-' + output.name
+                    prepare_carrier = (
+                        identity['COMPOSE_PROJECT_NAME'] + '-prepare-' + output.name
+                    )
                     prepare_script = '''set -euo pipefail
 python3 -m pip install -q -r /mnt/config/requirements-test.txt
 python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"'
@@ -501,7 +570,11 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                         if prepare_result.returncode:
                             raise ValueError('test database template preparation failed')
                     finally:
-                        cleanup_carrier(prepare_carrier, env)
+                        cleanup_carrier(
+                            prepare_carrier,
+                            env,
+                            project_name=identity['COMPOSE_PROJECT_NAME'],
+                        )
                     command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', 'sc_test', template_database], env)
                     command(dc + ['exec', '-T', 'db', 'dropdb', '-U', 'sc_test_odoo', '--if-exists', 'sc_test'], env)
                     if not module_is_installed(dc, env, module, template_database):
@@ -523,14 +596,15 @@ exec python3 /usr/bin/odoo --db_host=db --db_port=5432 --db_user="$DB_USER" --db
                     }, indent=2) + '\n')
                 command(dc + ['exec', '-T', 'db', 'createdb', '-U', 'sc_test_odoo', '-T', template_database, 'sc_test'], env)
                 template_reused = True
-            carrier = 'sc-local-test-attempt-' + output.name
+            carrier = identity['COMPOSE_PROJECT_NAME'] + '-attempt-' + output.name
             # Transient data-dir prevents prior filestore/sessions/config leakage.
             script = '''set -euo pipefail
 python3 -m pip install -q -r /mnt/config/requirements-test.txt
 python3 -c 'import importlib.metadata as m,hashlib; print("LOCAL_TEST_PACKAGES="+hashlib.sha256("\\n".join(sorted(d.metadata["Name"]+"=="+d.version for d in m.distributions())).encode()).hexdigest())'
-python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"; print("LOCAL_TEST_IDENTITY=sc-local-test/sc_test/test")'
+python3 -c 'import os; assert os.environ["DB_NAME"]=="sc_test" and os.environ["SC_ENVIRONMENT"]=="test" and os.environ["SC_ALLOW_DEMO_DATA"]=="0"; print("LOCAL_TEST_IDENTITY=__ENVIRONMENT__/test")'
 exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$DB_USER" --db_password="$DB_PASSWORD" -d sc_test --db-filter='^sc_test$' --data-dir=/tmp/sc-test-data --addons-path=/usr/lib/python3/dist-packages/odoo/addons,/mnt/source-addons,/mnt/demo-addons,/mnt/addons_external/oca_server_ux -i "$SC_TEST_MODULE" --without-demo=all --no-http --workers=0 --max-cron-threads=0 --test-enable --test-tags="$SC_TEST_TAGS" --stop-after-init --log-level=test
 '''
+            script = script.replace('__ENVIRONMENT__', environment_name)
             if template_reused:
                 script = script.replace(' -i "$SC_TEST_MODULE"', '')
             if rehearsal_script:
@@ -548,7 +622,11 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
                 process_status = 127
             finally:
                 try:
-                    cleanup = cleanup_carrier(carrier, env)
+                    cleanup = cleanup_carrier(
+                        carrier,
+                        env,
+                        project_name=identity['COMPOSE_PROJECT_NAME'],
+                    )
                 except (ValueError, OSError, subprocess.SubprocessError):
                     cleanup = 'failed'
                     process_status = 1
@@ -568,7 +646,7 @@ exec python3 /tmp/odoo_ordered_tests.py --db_host=db --db_port=5432 --db_user="$
             except ValueError:
                 cases = []
             receipt = dict(schema='local-test-execution/v1', head=head_before, source_fingerprint=source_before, source_unchanged=source_before == source_after, cleanup=cleanup,
-                dirty=command(['git','status','--porcelain'],env).stdout, profile=IDENTITY, purpose='test',
+                dirty=command(['git','status','--porcelain'],env).stdout, profile=identity, purpose='test',
                 profile_sha256=profile_sha, profile_unchanged=profile_unchanged, image_id=image_id, image_unchanged=image_id == image_after, module=module, tags=tags, order=args.order, seed=20261026, execution_order=[f'{m}:{case}' for m,case in START.findall(text)], packages_sha256=(re.findall(r'^LOCAL_TEST_PACKAGES=([a-f0-9]{64})$',text,re.M) or ['missing'])[0], fresh_database=True, transient_application_state=True,
                 database_template_reused=template_reused, schema_fingerprint=schema_sha,
                 upgrade_schema_fingerprint=upgrade_schema_sha,

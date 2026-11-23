@@ -167,7 +167,8 @@ class _ChangeSetBase(BaseIntentHandler):
                 item.sudo().write({"draft_payload": sealed})
 
     def _compile_form_item(
-        self, item, preview_token=None, *, rollback=False, client_contract_capabilities=None,
+        self, item, preview_token=None, *, rollback=False,
+        client_type=None, client_contract_capabilities=None,
     ):
         """Verify the actual final contract, never equate storage with runtime."""
         spec = (((item.draft_payload or {}).get("view_orchestration") or {}).get("views") or {}).get("form") or {}
@@ -183,6 +184,8 @@ class _ChangeSetBase(BaseIntentHandler):
                   "view_type": "form", "render_profile": "create"}
         if preview_token:
             params["view_id"] = item.view_id
+        if client_type is not None:
+            params["client_type"] = client_type
         if client_contract_capabilities is not None:
             params["client_contract_capabilities"] = client_contract_capabilities
         if preview_token:
@@ -429,6 +432,7 @@ class BusinessConfigChangeSetPreviewHandler(BusinessConfigChangeSetValidateHandl
             final_contracts = [
                 self._compile_form_item(
                     item, token,
+                    client_type=params.get("client_type"),
                     client_contract_capabilities=params.get("client_contract_capabilities"),
                 )
                 for item in record.item_ids
@@ -634,6 +638,7 @@ class BusinessConfigChangeSetPublishHandler(_ChangeSetBase):
                         raise ValidationError("发布后运行态投影验证失败：%s" % item.target_key)
                     final_contract = self._compile_form_item(
                         item,
+                        client_type=params.get("client_type"),
                         client_contract_capabilities=params.get("client_contract_capabilities"),
                     )
                     post_publish_hash = self._current_hash(item)
@@ -731,6 +736,7 @@ class BusinessConfigChangeSetRollbackHandler(_ChangeSetBase):
                 self._compile_form_item(
                     item,
                     rollback=True,
+                    client_type=params.get("client_type"),
                     client_contract_capabilities=params.get("client_contract_capabilities"),
                 )
                 for item in record.item_ids

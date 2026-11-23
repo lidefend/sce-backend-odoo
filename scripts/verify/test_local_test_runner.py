@@ -62,7 +62,7 @@ class LocalTestRunnerTest(unittest.TestCase):
             self.assertTrue(namespace['apply_user_visible_approval_templates'](owner))
 
     def profile_file(self, root, **changes):
-        values = dict(runner.IDENTITY, SC_ENVIRONMENT='dev', DB_PASSWORD='private', ADMIN_PASSWD='private', JWT_SECRET='private')
+        values = dict(runner.PROFILE_IDENTITY, SC_ENVIRONMENT='dev', DB_PASSWORD='private', ADMIN_PASSWD='private', JWT_SECRET='private')
         values.update(changes)
         path = Path(root) / '.env.local.test'
         path.write_text(''.join(f'{key}={value}\n' for key,value in values.items()))
@@ -78,7 +78,7 @@ class LocalTestRunnerTest(unittest.TestCase):
             self.assertEqual(before, path.read_bytes())
 
     def test_foreign_identity_rejected_before_any_docker_command(self):
-        for key in runner.IDENTITY:
+        for key in runner.PROFILE_IDENTITY:
             with self.subTest(key=key), tempfile.TemporaryDirectory() as root:
                 path = self.profile_file(root, **{key:'foreign'})
                 with patch.object(runner, 'PROFILE', path), patch.object(runner, 'command') as command:
@@ -127,13 +127,20 @@ class LocalTestRunnerTest(unittest.TestCase):
                 self.assertEqual(env['DB_NAME'],'sc_test')
                 self.assertEqual(env['SC_ENVIRONMENT'],'test')
                 for key in ('MAKEFLAGS','MAKEOVERRIDES','COMPOSE_FILE'): self.assertNotIn(key,env)
-                self.assertIn('sc-local-test',argv)
+                self.assertTrue(
+                    any(
+                        item.startswith('sc-local-test-')
+                        for item in argv
+                        if isinstance(item, str)
+                    )
+                )
 
 
     def test_cleanup_only_removes_exact_owned_carrier_and_checks_absence(self):
         from types import SimpleNamespace
-        name='sc-local-test-attempt-123'
-        row={'Name':'/'+name,'Id':'exact-id','Config':{'Labels':{'com.docker.compose.project':'sc-local-test','com.docker.compose.service':'odoo'}}}
+        project = runner.IDENTITY['COMPOSE_PROJECT_NAME']
+        name=project + '-attempt-123'
+        row={'Name':'/'+name,'Id':'exact-id','Config':{'Labels':{'com.docker.compose.project':project,'com.docker.compose.service':'odoo'}}}
         replies=[name,json.dumps([row]),'', '']
         with patch.object(runner,'command',side_effect=[SimpleNamespace(stdout=x) for x in replies]) as command:
             self.assertEqual(runner.cleanup_carrier(name,{}),'removed_exact_carrier')
@@ -393,6 +400,7 @@ class LocalTestRunnerTest(unittest.TestCase):
         stream = io.StringIO()
         with redirect_stdout(stream):
             runner.emit_environment_plan(
+                environment=runner.IDENTITY['COMPOSE_PROJECT_NAME'] + '/sc_test',
                 template_module="smart_construction_core",
                 requested_module="smart_construction_core",
                 template_database="sc_test_template__smart_construction_core",
@@ -412,7 +420,25 @@ class LocalTestRunnerTest(unittest.TestCase):
         )
         self.assertEqual(
             payload["environment"],
-            "sc-local-test/sc_test",
+            runner.IDENTITY["COMPOSE_PROJECT_NAME"] + "/sc_test",
         )
+
+    def test_worktree_identity_isolates_project_volumes_and_lock(self):
+        with tempfile.TemporaryDirectory() as first, tempfile.TemporaryDirectory() as second:
+            one = runner.test_identity(Path(first))
+            two = runner.test_identity(Path(second))
+            self.assertNotEqual(
+                one["COMPOSE_PROJECT_NAME"],
+                two["COMPOSE_PROJECT_NAME"],
+            )
+            self.assertNotEqual(one["DB_DATA"], two["DB_DATA"])
+            self.assertNotEqual(one["REDIS_DATA"], two["REDIS_DATA"])
+            self.assertNotEqual(one["ODOO_DATA"], two["ODOO_DATA"])
+            self.assertEqual(one["DB_NAME"], "sc_test")
+            self.assertEqual(two["DB_NAME"], "sc_test")
+            self.assertNotEqual(
+                runner.worktree_key(Path(first)),
+                runner.worktree_key(Path(second)),
+            )
 
 if __name__=='__main__': unittest.main()

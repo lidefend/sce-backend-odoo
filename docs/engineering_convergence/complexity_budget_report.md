@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5352`
 - Files requiring split plan: `88`
-- Files above warning threshold: `160`
+- Files above warning threshold: `161`
 
 ## Split Plan Required
 
@@ -146,7 +146,7 @@ Generated from repository source files. This report is informational during the 
 | 1199 | JavaScript source | `scripts/verify/frontend_form_system_audit.mjs` |
 | 1197 | Vue source | `frontend/apps/web/src/views/PlatformCapabilityExplorerView.vue` |
 | 1192 | JavaScript source | `scripts/verify/frontend_material_domain_browser.mjs` |
-| 1189 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
+| 1191 | Python source | `addons/smart_core/tests/test_business_config_change_set.py` |
 | 1185 | Python source | `scripts/ops/test_safe_branch_sync_main.py` |
 | 1182 | Python source | `scripts/verify/test_frontend_product_page_header_guard.py` |
 | 1176 | Python source | `scripts/ops/safe_branch_sync_main.py` |
@@ -248,6 +248,7 @@ Generated from repository source files. This report is informational during the 
 | 807 | Python source | `addons/smart_construction_core/models/core/material_rental.py` |
 | 807 | Python source | `scripts/verify/test_frontend_acceptance_runtime_profile.py` |
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
+| 805 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 594 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |

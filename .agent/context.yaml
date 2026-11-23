@@ -147,6 +147,22 @@ execution:
   gitee_pr_human_test_approval_required: false
   gitee_pr_merge_via_protected_pr_only: true
 
+verification_responsibility:
+  declaration_before_action: required
+  lanes:
+    local_targeted:
+      responsibility: affected_static_contract_and_targeted_tests_only
+      may_satisfy: local_diff_confidence
+    remote_integration:
+      responsibility: exact_pr_head_against_current_target_base
+      may_satisfy: integration_merge_gate
+    scheduled_release:
+      responsibility: current_remote_main_release_eligibility
+      may_satisfy: release_qualification_only
+  shared_test_lock_policy: record_not_run_environment_defect_and_continue_to_remote_ci
+  default_local_full_module_suite: forbidden_as_inner_loop
+  ordinary_pr_requires_local_quick: false
+
 run_statuses:
   - planned
   - active

@@ -135,6 +135,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         })
         request = {"op": "model", "model": "res.partner", "view_type": "form", "view_id": view.id,
                    "action_id": action.id, "render_profile": "create",
+                   "client_type": "web_pc",
                    "client_contract_capabilities": ["view.form.v1", "view.tree.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY]}
         def load(**extra):
             result = UiContractV2Handler(env, su_env=env["ir.model"].sudo().env).handle({**request, **extra})
@@ -155,6 +156,7 @@ class TestBusinessConfigChangeSet(TransactionCase):
         expected = {"type": "group", "name": group.get("name"),
                     "occurrence_index": group["occurrenceIndex"]}
         params = {"change_set_token": draft["token"], "role_key": owner_role,
+                  "client_type": "web_pc",
                   "client_contract_capabilities": ["view.form.v1", *NODE_CAPABILITIES.values(), DRAFT_FEEDBACK_CAPABILITY]}
         result = BusinessConfigChangeSetStageHandler(env).handle(payload={"params": {
             **params, "config_type": "form", "target_role_key": "", "target_key": "test.global.compiled.layout",

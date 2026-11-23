@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "id": "BASELINE-EVIDENCE-01",
+  "branch": "audit/BASELINE-EVIDENCE-01-20261123",
+  "baseline_sha": "b0c08392679b9f305c9b6e6819c86e254b9e7d61",
+  "formal_stable_baseline_sha": "5b58d6a1b2ac759c2f1c1cac26e820236fd74f9f",
+  "status": "verification_pending",
+  "goal": ".agent/goals/BASELINE-EVIDENCE-01.yaml",
+  "record": "docs/ops/iterations/baseline_evidence_01_20261123.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BASELINE-EVIDENCE-01.yaml",
+    ".agent/runs/BASELINE-EVIDENCE-01/run.json",
+    "docs/audit/baseline_evidence_01/failure_inventory.json",
+    "docs/ops/iterations/baseline_evidence_01_20261123.md",
+    "AGENTS.md",
+    ".agent/context.yaml",
+    ".agent/decisions/verification-responsibility-lanes-v1.yaml",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "scripts/dev/local_test_runner.py",
+    "scripts/verify/test_local_test_runner.py",
+    "addons/smart_core/handlers/business_config_change_set.py",
+    "addons/smart_core/tests/test_business_config_change_set.py",
+    "addons/smart_construction_core/tests"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "read-only Git/source/log analysis; no product or runtime mutation"
+  },
+  "checks": {
+    "runner_unit": {
+      "target": "python3 -m unittest scripts.verify.test_local_test_runner",
+      "status": "passed",
+      "test_count": 23
+    },
+    "local_test_prepare": {
+      "target": "local.test.prepare",
+      "status": "passed",
+      "test_count": 0,
+      "note": "identity-only validation; no runtime write and therefore no test count"
+    },
+    "targeted_passthrough": {
+      "target": "local.test.test",
+      "status": "passed",
+      "test_count": 1,
+      "evidence": ".runtime/test-baseline/1795425004279808499/receipt.json"
+    },
+    "remote_integration": {
+      "target": "exact-head required PR CI",
+      "status": "required"
+    },
+    "scheduled_release": {
+      "target": "scheduled mainline CI",
+      "status": "required"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the bounded baseline/tooling fix, push the branch, create the PR, and wait for exact-head remote required checks.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}
