@@ -145,6 +145,7 @@ python3() {
             with self.subTest(authenticated=authenticated), tempfile.TemporaryDirectory() as tmp:
                 env = {**os.environ, 'HEAD_SHA': 'a' * 40, 'IMPACT_BASE': '',
                        'MODULE_OVERRIDE': '', 'RUNNER_TEMP': tmp,
+                       'SUITE_NAME': 'product',
                        'PLAN_SHA256': 'fixture-digest', 'SHARD_INDEX': '0',
                        'GITHUB_ENV': str(Path(tmp) / 'env'),
                        'GITHUB_STEP_SUMMARY': str(Path(tmp) / 'summary')}
@@ -297,6 +298,19 @@ python3() {
             'gh workflow run auxiliary_backend_suite.yml --ref',
         ):
             self.assertIn(required, target)
+        backend = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        resolve = next(
+            step['run'] for step in backend['jobs']['backend_suite']['steps']
+            if step.get('name') == 'Resolve module list'
+        )
+        self.assertIn('--suite "${SUITE_NAME}"', resolve)
+        reconcile = next(
+            step['run'] for step in backend['jobs']['verify_coverage']['steps']
+            if step.get('name') == 'Reconcile module identities'
+        )
+        self.assertIn('--suite "${{ needs.plan.outputs.suite }}"', reconcile)
 
     def test_focused_python_modules_run_only_exact_changed_files(self):
         workflow = yaml.safe_load(

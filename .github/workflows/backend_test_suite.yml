@@ -234,6 +234,7 @@ jobs:
           # Verify required scope from exact trees, then consume the frozen partition.
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
+            --suite "${SUITE_NAME}" \
             --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" --plan-sha256 "${PLAN_SHA256}" --shard "${SHARD_INDEX}" --input-inventory \
             $(if [ "${SUITE_MODE:-full}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/backend-plan.json")"
@@ -838,6 +839,7 @@ jobs:
         run: |
           python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
             --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+            --suite "${{ needs.plan.outputs.suite }}" \
             --plan-sha256 "${PLAN_SHA256}" --receipts "${RUNNER_TEMP}/execution-receipts" \
             $(if [ "${{ needs.plan.outputs.scope_mode }}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/verified-plan.json"

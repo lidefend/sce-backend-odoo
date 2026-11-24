@@ -97,7 +97,7 @@ Generated from repository source files. This report is informational during the 
 | 1520 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 873 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 875 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -218,9 +218,9 @@ Generated from repository source files. This report is informational during the 
 | 889 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
+| 883 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 871 | Python source | `scripts/ci/backend_suite_plan.py` |
-| 869 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
