@@ -290,6 +290,57 @@ def git_local_iteration_recipe_only(base: str, head: str) -> bool:
         return False
 
 
+def scheduled_gate_recipe_only(before: str, after: str) -> bool:
+    """Prove a make/ci.mk edit is confined to the scheduled-gate recipe body."""
+    target = "verify.ci.scheduled_gates:"
+
+    def retained(text: str) -> str | None:
+        lines = text.splitlines(keepends=True)
+        if sum(line.startswith(target) for line in lines) != 1:
+            return None
+        result = []
+        index = 0
+        while index < len(lines):
+            if lines[index].startswith(target):
+                index += 1
+                while index < len(lines) and lines[index].startswith("\t"):
+                    index += 1
+                continue
+            result.append(lines[index])
+            index += 1
+        return "".join(result)
+
+    old, new = retained(before), retained(after)
+    return before != after and old is not None and old == new
+
+
+def git_scheduled_gate_recipe_only(base: str, head: str) -> bool:
+    """Apply the scheduled-gate recipe proof to exact Git blobs."""
+    if not all(re.fullmatch(r'[0-9a-f]{40}', sha) for sha in (base, head)):
+        return False
+
+    def git(*args: str) -> str:
+        return subprocess.run(
+            ['git', *args],
+            cwd=ROOT,
+            check=True,
+            capture_output=True,
+            timeout=15,
+        ).stdout.decode('utf-8')
+
+    try:
+        ancestor = git('merge-base', base, head).strip()
+        texts = []
+        for sha in (ancestor, head):
+            entry = git('ls-tree', sha, '--', 'make/ci.mk')
+            if not re.fullmatch(r'100644 blob [0-9a-f]{40}\tmake/ci\.mk\n', entry):
+                return False
+            texts.append(git('show', f'{sha}:make/ci.mk'))
+        return scheduled_gate_recipe_only(*texts)
+    except (OSError, subprocess.SubprocessError, UnicodeError):
+        return False
+
+
 def classify(
     paths: Iterable[str],
     *,
@@ -398,7 +449,11 @@ def classify(
         'make/ci.mk' in changed
         and git_local_iteration_recipe_only(base, head)
     )
-    if recipe_scoped or local_iteration_scoped:
+    scheduled_gate_scoped = (
+        'make/ci.mk' in changed
+        and git_scheduled_gate_recipe_only(base, head)
+    )
+    if recipe_scoped or local_iteration_scoped or scheduled_gate_scoped:
         frontend_full = any(
             _matches(path, policy["frontend_full_paths"]) for path in changed
             if path != "make/ci.mk"
@@ -420,6 +475,8 @@ def classify(
             reasons.append('make_ci_backend_recipe_only_exact_git_scope')
         if local_iteration_scoped:
             reasons.append('make_ci_local_iteration_only_exact_git_scope')
+        if scheduled_gate_scoped:
+            reasons.append('make_ci_scheduled_gate_recipe_only_exact_git_scope')
         result = Classification(
             "HIGH_RISK",
             changed,

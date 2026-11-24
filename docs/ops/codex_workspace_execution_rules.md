@@ -222,7 +222,8 @@ main 的必需检查保持；人工审核按上方最新合并规则执行。新
      baseline 并重跑受影响本地集合，旧 base 的远端结果失效。
    - **远端前后端按真实 runtime 选测。** 前端 tooling-only 变更保留工具 owner checks，但不运行
      完整前端 runtime；只有实际 `frontend/**` 变更进入 standard/full。`make/ci.mk` 只有在 exact Git
-     tree 证明变化仅限三个 `ci.local.*iteration` 目标块时才跳过远端前端 runtime。后端 focused
+     tree 证明变化仅限三个 `ci.local.*iteration` 目标块或 `verify.ci.scheduled_gates` recipe
+     时才跳过远端前端 runtime。后端 focused
      模式仅在全部后端变更均为直接 `tests/test*.py` 变更且选择完整时生效，执行范围收窄到测试文件
      的直接归属模块，未变化依赖消费者不重跑；ORM 执行 changed-test selectors，pure-Python
      只执行精确 changed files；production、helper、删除测试和 mixed 变更仍保留完整受影响模块覆盖。

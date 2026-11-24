@@ -386,6 +386,14 @@ class BackendRecipeScopeTests(unittest.TestCase):
         'ci.local.frontend.iteration: guard\n\t@new-frontend\n'
         'frontend.release:\n\t@pnpm test\n'
     )
+    scheduled_before = (
+        'verify.ci.scheduled_gates: guard\n\t@old-scheduled\n'
+        'unrelated:\n\t@unchanged\n'
+    )
+    scheduled_after = (
+        'verify.ci.scheduled_gates: guard\n\t@new-scheduled\n'
+        'unrelated:\n\t@unchanged\n'
+    )
 
     def test_literal_backend_recipe_change_is_recognized(self):
         self.assertTrue(ci_risk_classifier.backend_recipe_only(self.before, self.after))
@@ -459,6 +467,43 @@ class BackendRecipeScopeTests(unittest.TestCase):
         self.assertFalse(ci_risk_classifier.git_backend_recipe_only('main', 'HEAD'))
         with patch.object(ci_risk_classifier.subprocess, 'run', side_effect=subprocess.TimeoutExpired('git', 15)):
             self.assertFalse(ci_risk_classifier.git_backend_recipe_only('a'*40, 'b'*40))
+
+    def test_scheduled_gate_recipe_scope_skips_unrelated_frontend_runtime(self):
+        self.assertTrue(
+            ci_risk_classifier.scheduled_gate_recipe_only(
+                self.scheduled_before,
+                self.scheduled_after,
+            )
+        )
+        self.assertFalse(
+            ci_risk_classifier.scheduled_gate_recipe_only(
+                self.scheduled_before,
+                self.scheduled_before,
+            )
+        )
+        self.assertFalse(
+            ci_risk_classifier.scheduled_gate_recipe_only(
+                self.scheduled_before,
+                self.scheduled_after.replace('unrelated:', 'unrelated-changed:'),
+            )
+        )
+        with patch.object(
+            ci_risk_classifier,
+            "git_scheduled_gate_recipe_only",
+            return_value=True,
+        ):
+            result = classify(
+                ["make/ci.mk"],
+                event_name="pull_request",
+                base="a" * 40,
+                head="b" * 40,
+            )
+        self.assertEqual("skip", result.frontend_mode)
+        self.assertFalse(result.frontend_runtime_changed)
+        self.assertIn(
+            "make_ci_scheduled_gate_recipe_only_exact_git_scope",
+            result.reasons,
+        )
 
     def test_exact_git_scope_preserves_other_triggers_and_ignores_dirty_files(self):
         with tempfile.TemporaryDirectory() as directory:

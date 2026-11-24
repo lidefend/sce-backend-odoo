@@ -97,7 +97,8 @@ Previously recorded exact-head remote checks do not carry across the new base.
   standard or full frontend lane.
 - A `make/ci.mk` edit may skip the remote frontend runtime lane only when an
   exact Git-tree proof shows every changed byte belongs to the three
-  `ci.local.*iteration` target blocks. Any other Make change remains
+  `ci.local.*iteration` target blocks or to the
+  `verify.ci.scheduled_gates` recipe body. Any other Make change remains
   conservatively full.
 - Backend focused planning uses exact changed-test selectors or exact changed
   pure-Python files only when every backend change is a direct `tests/test*.py`

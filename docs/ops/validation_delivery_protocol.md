@@ -28,7 +28,7 @@
 
 验证工具自身也按影响面运行。`audit.verification.lane_coverage.check` 仅在 Make、workflow、guard registry、verification lane 或规划器输入变化时执行；已通过的完整 lane-coverage 回执可覆盖其内部子检查，但必须绑定同一 run 和同一源身份。规划器与 run-context 分别由自己的非零测试负责；本地 `make/ci.mk` 改动运行 lane policy 和 planner 测试，完整 workflow contract 仍由精确 HEAD 远端 CI 负责。
 
-远端前端 gate 区分 runtime 与 tooling：tooling-only 改动保留 owner tool checks，但跳过完整 lint/typecheck/test/build；实际 `frontend/**` runtime 仍走 standard/full。`make/ci.mk` 只有经精确 Git tree 证明改动仅限三个 `ci.local.*iteration` 目标块时，才允许跳过远端前端 runtime。后端 `focused` 计划仅在全部后端变更都是直接 `tests/test*.py` 变更时启用精确选择，并收窄到测试文件的直接归属模块，未变化依赖消费者不重跑：ORM 使用 changed-test selectors，pure-Python 只执行精确 changed files；production、helper、删除测试和 mixed 变更继续使用完整受影响模块。
+远端前端 gate 区分 runtime 与 tooling：tooling-only 改动保留 owner tool checks，但跳过完整 lint/typecheck/test/build；实际 `frontend/**` runtime 仍走 standard/full。`make/ci.mk` 只有经精确 Git tree 证明改动仅限三个 `ci.local.*iteration` 目标块或 `verify.ci.scheduled_gates` recipe 时，才允许跳过远端前端 runtime。后端 `focused` 计划仅在全部后端变更都是直接 `tests/test*.py` 变更时启用精确选择，并收窄到测试文件的直接归属模块，未变化依赖消费者不重跑：ORM 使用 changed-test selectors，pure-Python 只执行精确 changed files；production、helper、删除测试和 mixed 变更继续使用完整受影响模块。
 
 ## 开发检查依赖
 

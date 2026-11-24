@@ -88,7 +88,8 @@ Remote frontend ownership now distinguishes runtime from tooling:
   use `frontend_mode=skip` for the frontend runtime lane;
 - a `make/ci.mk` diff may use skip only when all changed bytes are proven to be
   inside `ci.local.iteration`, `ci.local.backend.iteration` and
-  `ci.local.frontend.iteration` target blocks.
+  `ci.local.frontend.iteration` target blocks, or inside the
+  `verify.ci.scheduled_gates` recipe body.
 
 For backend test-only changes, remote `scope_mode=focused` is now effective:
 the plan carries exact changed ORM selectors and exact changed pure-Python test

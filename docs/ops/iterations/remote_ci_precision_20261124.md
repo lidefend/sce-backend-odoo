@@ -54,10 +54,10 @@ removed.
 - PR #988 real change set: `frontend_changed=true`,
   `frontend_runtime_changed=false`, `frontend_mode=skip`,
   reason contains `make_ci_local_iteration_only_exact_git_scope`.
-- `verify.ci.workflow.contract`: 497 tests PASS.
+- `verify.ci.workflow.contract`: 498 tests PASS.
 - `verify.ci.scheduled_gates`: 105 tests PASS.
 - Path ownership: 23 tests PASS.
-- Risk classifier: 45 tests PASS.
+- Risk classifier: 46 tests PASS.
 - Backend suite planner: 64 tests PASS.
 - Backend dispatch workflow contract: 29 tests PASS.
 - Gitee gate plan: 18 tests PASS.
@@ -84,6 +84,7 @@ Historical exact-diff replays:
 | frontend tooling or documentation | tool checks; frontend runtime skipped |
 | `make/ci.mk` local iteration recipes only | exact Git-tree proof; frontend runtime skipped |
 | unrelated `make/ci.mk` change | full frontend lane retained |
+| `make/ci.mk` scheduled-gate recipe only | exact Git-tree proof; frontend runtime skipped |
 | backend production source | full impacted modules |
 | backend ORM test-only source | owning module and exact changed ORM selectors |
 | backend pure-Python test-only source | owning module and exact changed files |
@@ -117,6 +118,10 @@ Local planner routing was also corrected: changes to those five workflows,
 `release_condition.py`, `scheduled_validation.py`, authoritative-run selection
 and their owning tests now select `verify.ci.scheduled_gates` in addition to
 the general CI contract where applicable.
+
+`make/ci.mk` also received a second exact target-block proof. A change confined
+to the `verify.ci.scheduled_gates` recipe retains the scheduled/CI tool checks
+but no longer forces the unrelated frontend runtime.
 
 Final local iteration executed 8 affected targets, including both CI contract
 owners and frontend incremental routing. Raw output:
