@@ -14,6 +14,7 @@
     ".agent/context.yaml",
     "make/ci.mk",
     "make/frontend.mk",
+    ".github/workflows/frontend_release_gate.yml",
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
     "scripts/ci/backend_impact_plan.py",
@@ -90,6 +91,7 @@
       "target": "verify.frontend.delivery_hardening.guard",
       "inputs": [
         "make/frontend.mk",
+        ".github/workflows/frontend_release_gate.yml",
         "scripts/verify/frontend_delivery_hardening_browser.mjs",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "scripts/verify/frontend_delivery_hardening_guard.py"

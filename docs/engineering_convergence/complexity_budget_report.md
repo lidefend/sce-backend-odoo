@@ -253,7 +253,7 @@ Generated from repository source files. This report is informational during the 
 | 805 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
 | 596 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
-| 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
+| 502 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
 | 385 | Shell script | `scripts/release/production_contract_image_acceptance.sh` |

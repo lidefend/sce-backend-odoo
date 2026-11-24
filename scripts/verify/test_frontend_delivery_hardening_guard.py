@@ -605,6 +605,13 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("source: 'synthetic_acceptance_fixture'", source)
         self.assertIn("failure-contract.json", source)
         self.assertNotIn("bodyText: JSON.stringify(body", source)
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "artifacts/frontend-delivery-hardening/failure-contract.json",
+            workflow,
+        )
 
 
 MODULE = ROOT / 'addons/smart_construction_core'

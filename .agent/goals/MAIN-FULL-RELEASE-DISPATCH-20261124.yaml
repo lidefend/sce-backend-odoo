@@ -32,6 +32,7 @@ goal:
       - .agent/context.yaml
       - make/ci.mk
       - make/frontend.mk
+      - .github/workflows/frontend_release_gate.yml
       - scripts/ci/main_full_release_dispatch.py
       - scripts/ci/test_main_full_release_dispatch.py
       - scripts/ci/backend_impact_plan.py
@@ -61,6 +62,7 @@ goal:
     - operator dispatch is labelled operator_full_audit, not scheduled_mainline
     - the five newly discovered mainline test groups are dispositioned without weakening the audit
     - route failures retain bounded contract identity diagnostics for root-cause analysis
+    - failed synthetic contract responses are available from the exact-head artifact
   exclusions:
     - product_code_change
     - database_or_fixture_write
