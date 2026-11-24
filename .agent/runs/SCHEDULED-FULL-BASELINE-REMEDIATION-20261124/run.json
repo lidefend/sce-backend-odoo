@@ -28,8 +28,10 @@
     "docs/ops/iteration_validation_responsibility_v1.md",
     "docs/ops/validation_delivery_protocol.md",
     "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/self_hosted_runner_cleanup.sh",
     "scripts/ci/test_backend_suite_plan.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/test/dependency_baseline.py",
     "scripts/verify/github_actions_security_guard.py",
     "scripts/verify/test_github_actions_security_guard.py"
   ],
@@ -78,7 +80,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the focused fixes, publish the PR, and run the exact-head full backend suite.",
+  "next_exact_step": "Push this suite-aware harness identity fix and dispatch product, demo and acceptance full suites against the exact new PR head.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

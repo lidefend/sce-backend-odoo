@@ -64,3 +64,31 @@ Focused results:
 - Shell/attempt identity tests: 11 PASS.
 - Demo ORM reproduction is intentionally deferred to the governed remote full
   suite because `local.test` forbids the demo pre-init profile.
+
+## Suite-aware harness identity
+
+The first exact-head three-suite dispatch exposed a P4 validation-tool defect:
+the Compose project identity had been changed to
+`sc-suite-<run>-<suite>-<shard>`, while dependency preparation and runner
+cleanup still accepted only `sc-suite-<run>-<shard>`. Product and acceptance
+tests therefore stopped before Odoo test execution with
+`not an isolated backend suite project`; this is not a product-test verdict.
+
+The harness now binds suite identity in dependency-template keys and accepts
+only the following exact shard project shape:
+
+```text
+sc-suite-<run-id>-<product|demo|acceptance>-<0..3>
+```
+
+The focused negative cases reject the legacy shard shape, a missing or unknown
+suite, a mismatched suite, an unbounded shard and a mismatched run identity.
+
+Focused results:
+
+- `scripts.test.test_dependency_baseline`: 11 PASS.
+- `scripts.verify.test_github_actions_security_guard`: 18 PASS.
+- `scripts.ci.test_ci_risk_workflow_contract`: 31 PASS.
+- `scripts.ci.test_backend_suite_plan` plus dispatch contract: 96 PASS.
+- `make ci.local.iteration`: PASS after the run scope was updated to the owned P4 files.
+- `make verify.ci.scheduled_gates`: PASS.

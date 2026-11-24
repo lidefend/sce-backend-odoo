@@ -313,7 +313,9 @@ jobs:
             classes = {item.classification for item in guard.scan(root)}
             self.assertIn("BACKEND_SUITE_TEST_ROUTING_NOT_FAIL_CLOSED", classes)
 
-    def run_cleanup_fixture(self, project: str, shard: str = '') -> tuple[subprocess.CompletedProcess[str], str]:
+    def run_cleanup_fixture(
+        self, project: str, shard: str = '', suite: str = ''
+    ) -> tuple[subprocess.CompletedProcess[str], str]:
         with tempfile.TemporaryDirectory() as directory:
             fixture = Path(directory)
             root = fixture / "repo"
@@ -346,6 +348,7 @@ jobs:
                     "RUNNER_TEMP": str(runner_temp),
                     "CI_PROJECT_NAME": project,
                     "SHARD_INDEX": shard,
+                    "SUITE_NAME": suite,
                 }
             )
             result = subprocess.run(
@@ -359,14 +362,9 @@ jobs:
             calls = docker_log.read_text(encoding="utf-8") if docker_log.exists() else ""
             return result, calls
 
-    def test_backend_suite_cleanup_accepts_only_exact_run_project(self) -> None:
-        result, calls = self.run_cleanup_fixture("sc-suite-12345")
-        self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("[self_hosted_cleanup] PASS project=sc-suite-12345", result.stdout)
-        self.assertIn("compose -p sc-suite-12345 down -v --remove-orphans", calls)
-        self.assertIn("label=com.docker.compose.project=sc-suite-12345", calls)
-
+    def test_backend_suite_cleanup_accepts_only_exact_suite_run_project(self) -> None:
         for project in (
+            "sc-suite-12345",
             "sc-suite-1234",
             "sc-suite-12345-extra",
             "sc-suite-${GITHUB_RUN_ID}",
@@ -377,14 +375,22 @@ jobs:
                 self.assertIn("invalid project scope", result.stderr)
                 self.assertEqual(calls, "")
 
-    def test_cleanup_shards_require_exact_run_and_bounded_index(self) -> None:
-        for index in range(4):
-            result, calls = self.run_cleanup_fixture(f'sc-suite-12345-{index}', str(index))
-            self.assertEqual(result.returncode, 0, result.stderr)
-            self.assertIn(f'compose -p sc-suite-12345-{index} down', calls)
-        for project, shard in [('sc-suite-12345-0', ''), ('sc-suite-12345-0', '1'),
-                               ('sc-suite-12345-4', '4'), ('sc-suite-1234-0', '0')]:
-            result, calls = self.run_cleanup_fixture(project, shard)
+    def test_cleanup_shards_bind_exact_suite_run_and_bounded_index(self) -> None:
+        for suite in ('product', 'demo', 'acceptance'):
+            for index in range(4):
+                project = f'sc-suite-12345-{suite}-{index}'
+                result, calls = self.run_cleanup_fixture(project, str(index), suite)
+                self.assertEqual(result.returncode, 0, result.stderr)
+                self.assertIn(f'compose -p {project} down', calls)
+        for project, shard, suite in [
+            ('sc-suite-12345-0', '', ''),
+            ('sc-suite-12345-0', '0', ''),
+            ('sc-suite-12345-product-0', '0', 'demo'),
+            ('sc-suite-12345-product-0', '0', 'unknown'),
+            ('sc-suite-12345-product-0', '4', 'product'),
+            ('sc-suite-1234-product-0', '0', 'product'),
+        ]:
+            result, calls = self.run_cleanup_fixture(project, shard, suite)
             self.assertEqual(result.returncode, 2)
             self.assertEqual(calls, '')
 
