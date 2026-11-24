@@ -31,7 +31,10 @@
     "scripts/verify/test_local_development_lifecycle.py",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
-    "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
+    "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md",
+    "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "frontend/apps/web/src/pages/ListPage.vue",
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
   ],
   "environment": {
     "kind": "runtime",
