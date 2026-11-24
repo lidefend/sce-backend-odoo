@@ -32,6 +32,7 @@
     "make/frontend.mk",
     "scripts/release/test_locked_menu_policy_contract.py",
     "scripts/dev/frontend_static_build.sh",
+    "scripts/dev/local_dev_frontend_quick.py",
     "scripts/verify/business_entry_matrix_browser.mjs",
     "scripts/verify/business_entry_matrix_incremental.py",
     "scripts/verify/business_entry_matrix_model.mjs",

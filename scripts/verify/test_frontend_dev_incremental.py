@@ -3393,10 +3393,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.local.development_lifecycle.unit"],
                 )
-        self.assertEqual(
-            select_targets(["scripts/verify/test_local_dev_frontend_quick.py"]),
-            ["verify.local.dev.frontend.quick.unit"],
-        )
+        for path in (
+            "scripts/dev/local_dev_frontend_quick.py",
+            "scripts/verify/test_local_dev_frontend_quick.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.local.dev.frontend.quick.unit"],
+                )
 
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(

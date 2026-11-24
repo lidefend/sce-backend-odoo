@@ -1274,6 +1274,7 @@ RULES = (
         "verify.local.development_lifecycle.unit",
     )),
     Rule((
+        "scripts/dev/local_dev_frontend_quick.py",
         "scripts/verify/test_local_dev_frontend_quick.py",
     ), (
         "verify.local.dev.frontend.quick.unit",
