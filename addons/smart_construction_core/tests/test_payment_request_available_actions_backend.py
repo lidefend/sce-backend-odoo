@@ -275,13 +275,13 @@ class TestPaymentRequestAvailableActionsBackend(BusinessTransactionCase):
         self.assertEqual(approve.get("required_role_label"), "财务经办人")
         self.assertEqual(
             approve.get("required_group_xmlid"),
-            "smart_construction_core.group_sc_role_finance_user",
+            "smart_construction_core.group_sc_cap_finance_user",
         )
         self.assertEqual(approve.get("required_role_key"), "finance")
         self.assertEqual(reject.get("required_role_label"), "财务经办人")
         self.assertEqual(
             reject.get("required_group_xmlid"),
-            "smart_construction_core.group_sc_role_finance_user",
+            "smart_construction_core.group_sc_cap_finance_user",
         )
 
     def test_finance_manager_inherits_submit_capability(self):

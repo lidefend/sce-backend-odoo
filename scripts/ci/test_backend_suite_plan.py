@@ -418,6 +418,39 @@ class ShardPlanTest(unittest.TestCase):
             planned['focused_orm_files'],
         )
 
+    def test_focused_plan_uses_changed_tests_for_production_module_changes(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'full',
+            'scope_mode': 'full',
+            'reasons': ['shared_runtime:docker-compose.yml'],
+            'modules': ['core', 'scene'],
+            'changed_paths': [
+                'addons/core/models/document.py',
+                'addons/core/tests/test_flow.py',
+                'docker-compose.yml',
+            ],
+            'changed_deletions': [],
+            'preparation_groups': [['core', 'scene']],
+            'changed_test_coverage': [{
+                'path': 'addons/core/tests/test_flow.py',
+                'module': 'core',
+                'owner': 'backend_suite',
+                'kind': 'orm',
+                'execution_selector': '*/core:TestFlow.test_one',
+            }],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual('focused', planned['scope_mode'])
+        self.assertEqual('changed_module_tests_cover_runtime_changes', planned['focused_reason'])
+        self.assertEqual(['core'], planned['modules'])
+        self.assertEqual(
+            ['*/core:TestFlow.test_one'],
+            planned['focused_selectors']['core'],
+        )
+
     def test_focused_plan_narrows_dependent_modules_to_changed_test_owners(self):
         complete = {
             'base': 'b' * 40,
