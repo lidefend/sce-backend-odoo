@@ -332,9 +332,11 @@ class FiveCiScenarioTest(unittest.TestCase):
         self.assertFalse(risk.backend_runtime_changed)
         self.assertFalse(risk.orm_required)
         self.assertEqual(backend["modules"], [])
+        self.assertTrue(backend["required"])
         self.assertIn("verify.ci.workflow.contract", backend["tool_checks"])
         self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
         iteration_backend = self.plan("scripts/ci/backend_iteration_lanes.py")
+        self.assertTrue(iteration_backend["required"])
         self.assertIn(
             "verify.backend_iteration_lanes.unit",
             iteration_backend["tool_checks"],

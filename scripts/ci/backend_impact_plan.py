@@ -441,6 +441,7 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
             raise ValueError(f'changed backend module has no runnable test coverage: {seed}')
     if not runnable:
         raise ValueError('no runnable backend tests')
+    backend_harness_required = 'backend_ci_harness' in set(ownership.assignments.values())
     return {'mode': 'full' if reasons else 'incremental', 'reasons': sorted(reasons),
             'seeds': sorted(seeds), 'affected': sorted(affected),
             'modules': sorted(selected), 'excluded': sorted(runnable - selected),
@@ -449,6 +450,7 @@ def select(paths: list[str], before: dict, after: dict, *, full: bool = False) -
                                                 for data in tree.values()
                                                 for site in data.get('unresolved_file_reads', [])}),
             'changed_paths': sorted(paths), 'tool_checks': sorted(tool_checks),
+            'required': bool(selected) or backend_harness_required,
             'scope_status': 'required' if selected else 'NOT_APPLICABLE'}
 
 
@@ -473,7 +475,7 @@ def main() -> None:
     if args.github_output:
         with args.github_output.open('a') as stream:
             stream.write('modules=' + ' '.join(plan['modules']) + '\n')
-            stream.write('required=' + str(bool(plan['modules'])).lower() + '\n')
+            stream.write('required=' + str(plan['required']).lower() + '\n')
             stream.write('tool_checks=' + ' '.join(plan['tool_checks']) + '\n')
             stream.write('scope_status=' + plan['scope_status'] + '\n')
 
