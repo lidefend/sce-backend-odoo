@@ -97,7 +97,9 @@ jobs:
           printf 'frontend_mode=%s\n' "${mode}" >> "${GITHUB_OUTPUT}"
 
       - name: Generate isolated acceptance environment
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode == 'full' ||
+          steps.risk.outputs.frontend_contract_diagnostic_required == 'true'
         run: |
           set -euo pipefail
           db_password="$(openssl rand -hex 32)"
@@ -159,7 +161,9 @@ jobs:
           } >> "${GITHUB_ENV}"
 
       - name: Freeze isolated frontend release identity
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode == 'full' ||
+          steps.risk.outputs.frontend_contract_diagnostic_required == 'true'
         run: |
           set -euo pipefail
           bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
@@ -217,7 +221,9 @@ jobs:
 
       - name: Run focused payment-request diagnostic
         id: payment_request_diagnostic
-        if: env.PAYMENT_REQUEST_DIAGNOSTIC == '1'
+        if: >-
+          env.PAYMENT_REQUEST_DIAGNOSTIC == '1' ||
+          steps.risk.outputs.frontend_contract_diagnostic_required == 'true'
         run: make --no-print-directory verify.frontend.payment_request.diagnostic
 
       - name: Execute governed managed ORM regressions

@@ -1164,6 +1164,12 @@ RULES = (
     ), (
         "verify.semantic.registry.lint",
     )),
+    Rule((
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "scripts/verify/test_construction_semantic_declarations.py",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
     # FormSection consumes the canonical field presentation contract. The broad
     # template rule contributes primitive/page-pattern suites; these explicit
     # rules add the field-to-section mapper and contract-v2 occurrence behaviour

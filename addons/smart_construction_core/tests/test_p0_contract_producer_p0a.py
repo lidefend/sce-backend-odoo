@@ -5,7 +5,10 @@ import json
 from odoo.tests import TransactionCase, tagged
 
 from odoo.addons.smart_core.core.page_block_data_contract import field_descriptor
-from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import _strict_field_descriptor
+from odoo.addons.smart_core.core.unified_page_contract_v2_assembler import (
+    _strict_field_descriptor,
+    _upgrade_contract_v2_field_descriptors,
+)
 from odoo.addons.smart_construction_core.handlers.workspace_home_enter import WorkspaceHomeEnterHandler
 from odoo.addons.smart_construction_core.services.scene_block_schema import build_contract, metric_card
 from odoo.addons.smart_construction_core.services.workspace_contract_builder import WorkspaceContractBuilder
@@ -238,6 +241,72 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertIsNotNone(numeric)
         self.assertEqual(numeric["widgetType"], "number")
         self.assertEqual(numeric["semanticType"], "number")
+
+    def test_strict_monetary_descriptor_uses_authoritative_currency_precision(self):
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "widgetList": [{
+                        "widgetId": "field.amount.occ.1234567890abcdef",
+                        "fieldCode": "amount",
+                        "label": "申请金额",
+                        "fieldDescriptor": {
+                            "schemaVersion": "1.0.0",
+                            "name": "amount",
+                            "type": "monetary",
+                        },
+                        "componentConfig": {
+                            "fieldType": "monetary",
+                            "currency_field": "currency_id",
+                        },
+                    }],
+                    "children": [],
+                }],
+            },
+            "dataContract": {
+                "mainData": {
+                    "currency_id": [self.env.company.currency_id.id, self.env.company.currency_id.name],
+                },
+            },
+        }
+        upgraded = _upgrade_contract_v2_field_descriptors(contract, env=self.env)
+        descriptor = upgraded["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+        self.assertEqual(descriptor["currencyField"], "currency_id")
+        self.assertEqual(
+            descriptor["digits"],
+            [16, int(self.env.company.currency_id.decimal_places or 2)],
+        )
+
+    def test_strict_monetary_descriptor_uses_company_precision_when_currency_value_is_empty(self):
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "widgetList": [{
+                        "widgetId": "field.settlement_amount.occ.1234567890abcdef",
+                        "fieldCode": "settlement_amount",
+                        "label": "结算金额",
+                        "fieldDescriptor": {
+                            "schemaVersion": "1.0.0",
+                            "name": "settlement_amount",
+                            "type": "monetary",
+                        },
+                        "componentConfig": {
+                            "fieldType": "monetary",
+                            "currency_field": "settlement_currency_id",
+                        },
+                    }],
+                    "children": [],
+                }],
+            },
+            "dataContract": {"mainData": {}},
+        }
+        upgraded = _upgrade_contract_v2_field_descriptors(contract, env=self.env)
+        descriptor = upgraded["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+        self.assertEqual(descriptor["currencyField"], "settlement_currency_id")
+        self.assertEqual(
+            descriptor["digits"],
+            [16, int(self.env.company.currency_id.decimal_places or 2)],
+        )
 
 
 @tagged("post_install", "-at_install", "p0_contract_producer_p0a_money_evidence")

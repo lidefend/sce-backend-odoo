@@ -3307,6 +3307,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ],
         )
 
+    def test_construction_semantic_declarations_keep_the_registry_lint(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/core_extension_contract_normalizers.py",
+                "scripts/verify/test_construction_semantic_declarations.py",
+            ]),
+            [
+                "verify.semantic.registry.lint",
+            ],
+        )
+
     def test_contract_make_fragment_keeps_the_generator_lock(self) -> None:
         self.assertEqual(
             select_targets(["make/contract.mk"]),

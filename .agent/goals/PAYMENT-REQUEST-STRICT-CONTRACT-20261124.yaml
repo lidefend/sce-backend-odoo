@@ -1,0 +1,65 @@
+schema_version: 1
+
+goal:
+  id: PAYMENT-REQUEST-STRICT-CONTRACT-20261124
+  title: Close Contract V2 strict field descriptors for payment request
+  status: active
+  formal_product_layer: P0 platform kernel plus P1 construction semantics
+  layer_target: Contract V2 strict descriptor producer and consumer
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend/apps/web
+  standard_vs_user_specific: platform_and_industry_standard
+  objective: >-
+    Make the real payment.request form contract decode successfully under
+    Contract V2 2.6 by aligning canonical field identity, monetary precision,
+    declared semantic keys and attachment-role metadata.
+  why_here: >-
+    The strict descriptor is produced by smart_core and P1 declares the
+    construction field meaning and attachment role. The frontend decoder must
+    consume the canonical fields without inventing defaults.
+  why_not_elsewhere:
+    - Do not add a frontend fallback or special-case payment.request.
+    - Do not weaken strict Contract V2 validation.
+    - Do not change ACL, Record Rules, workflow state or database structure.
+    - Do not absorb the complete P0-B attachment-fact package into this fix.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/PAYMENT-REQUEST-STRICT-CONTRACT-20261124.yaml
+      - .agent/runs/PAYMENT-REQUEST-STRICT-CONTRACT-20261124/run.json
+      - .github/workflows/frontend_release_gate.yml
+      - addons/smart_core/core/unified_page_contract_v2_assembler.py
+      - addons/smart_core/handlers/ui_contract_v2.py
+      - addons/smart_construction_core/core_extension_contract_normalizers.py
+      - addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py
+      - frontend/apps/web/src/app/contracts/v2/schema.ts
+      - frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts
+      - scripts/verify/test_construction_semantic_declarations.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/unified_page_contract_v2_assembler_guard.py
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - docs/architecture/p0_contract_producer_01/remediation_design.json
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
+      - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
+      - docs/ops/iterations/payment_request_strict_contract_20261124.md
+    product_behavior: payment-request form can consume its real 2.6 contract
+  acceptance:
+    - canonical fieldCode and fieldType pass form occurrence authority
+    - monetary descriptors retain authority-derived precision
+    - P1 declared semantics use semanticType and never an undeclared descriptor key
+    - ir.attachment field descriptors receive the declared P1 attachment role
+    - focused real page diagnostic passes on the exact candidate HEAD
+  exclusions:
+    - database_or_fixture_migration
+    - acl_or_record_rule_change
+    - business_workflow_change
+    - frontend_product_fallback
+    - full_p0b_attachment_fact_delivery
+    - deployment
+  rollback: Revert this branch; no persistent product data changes.

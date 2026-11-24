@@ -84,6 +84,24 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(result.frontend_mode, "standard")
         self.assertTrue(result.frontend_runtime_changed)
 
+    def test_contract_runtime_changes_require_the_bounded_payment_diagnostic(self) -> None:
+        for path in (
+            "frontend/apps/web/src/app/contracts/v2/schema.ts",
+            "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+            "addons/smart_core/handlers/ui_contract_v2.py",
+            "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        ):
+            with self.subTest(path=path):
+                result = classify([path], event_name="pull_request")
+                self.assertTrue(result.frontend_contract_diagnostic_required)
+                self.assertEqual("true", result.outputs()["frontend_contract_diagnostic_required"])
+        self.assertFalse(
+            classify(
+                ["frontend/apps/web/src/pages/ProjectListPage.vue"],
+                event_name="pull_request",
+            ).frontend_contract_diagnostic_required
+        )
+
     def test_professional_frontend_delivery_batch_avoids_release_and_backend_lanes(self) -> None:
         result = classify(
             [

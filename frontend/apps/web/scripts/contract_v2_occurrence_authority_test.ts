@@ -145,6 +145,40 @@ const snapshot = {
   },
 };
 
+const strictSnapshot = structuredClone(snapshot) as any;
+strictSnapshot.pageInfo.contractVersion = '2.6.0';
+const strictField = fieldNode('validation_status', 'field.validation_status.occ.strict', 1);
+strictField.widgetList[0].fieldDescriptor = {
+  schemaVersion: '1.0.0',
+  fieldCode: 'validation_status',
+  label: 'validation_status',
+  fieldType: 'selection',
+  widgetType: 'select',
+  componentKey: 'sc.select.remote',
+  semanticType: 'choice',
+  required: true,
+  readonly: true,
+  selection: [['draft', 'Draft']],
+} as never;
+strictSnapshot.layoutContract.containerTree = [strictField];
+strictSnapshot.statusContract.widgetStatus = [{
+  widgetId: 'field.validation_status.occ.strict',
+  visible: true,
+  readonly: true,
+  required: true,
+  disabled: false,
+  auth: 'read',
+}];
+strictSnapshot.statusContract.buttonStatus = [];
+strictSnapshot.statusContract.containerStatus = [];
+strictSnapshot.actionContract.actionRuleList = [];
+const strictDecoded = decodeContractV2Snapshot(strictSnapshot);
+assert.equal(
+  strictDecoded.layoutContract.containerTree[0].widgetList[0].fieldDescriptor?.fieldCode,
+  'validation_status',
+  'strict 2.6 form occurrences must validate canonical fieldCode/fieldType descriptors',
+);
+
 
 // A structural group's fetch-time predicate must follow the same live draft
 // used by the controls. Neither static hiding nor authority may be released.

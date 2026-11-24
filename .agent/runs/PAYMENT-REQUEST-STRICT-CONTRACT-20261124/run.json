@@ -1,0 +1,93 @@
+{
+  "schema_version": 2,
+  "baseline_sha": "5b41af7be62846da7378951a00c2c5f8bcbb25e7",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/PAYMENT-REQUEST-STRICT-CONTRACT-20261124.yaml",
+    ".agent/runs/PAYMENT-REQUEST-STRICT-CONTRACT-20261124/run.json",
+    ".github/workflows/frontend_release_gate.yml",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_construction_core/core_extension_contract_normalizers.py",
+    "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_construction_semantic_declarations.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "docs/ops/iterations/payment_request_strict_contract_20261124.md"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools; exact-head isolated acceptance runtime is exercised separately"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Run affected Contract V2, semantic-declaration and occurrence-authority tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Validate this product fix against the current main base and full target environment."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "This candidate fixes one contract mismatch; mainline release qualification is evaluated only after protected integration."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "The real payment-request contract must come from the backend producer at the same source identity before frontend runtime validation."
+    }
+  },
+  "checks": {
+    "strict_contract": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts"
+      ],
+      "kind": "offline"
+    },
+    "semantic_declarations": {
+      "target": "verify.semantic.registry.lint",
+      "inputs": [
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "scripts/verify/test_construction_semantic_declarations.py"
+      ],
+      "kind": "offline"
+    },
+    "contract_diagnostic_routing": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish the Contract V2 fix, run exact-head required CI including the automatic payment-request diagnostic, then inspect the resulting contract and browser evidence.",
+  "id": "PAYMENT-REQUEST-STRICT-CONTRACT-20261124",
+  "branch": "fix/payment-contract-strict-decode-20261124",
+  "status": "active",
+  "goal": ".agent/goals/PAYMENT-REQUEST-STRICT-CONTRACT-20261124.yaml",
+  "record": "docs/ops/iterations/payment_request_strict_contract_20261124.md"
+}

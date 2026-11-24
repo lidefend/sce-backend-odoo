@@ -719,6 +719,25 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             self.assertEqual(0, result.returncode, result.stderr)
             self.assertEqual(expected, 'playwright install --with-deps chromium' in result.stdout)
 
+    def test_contract_runtime_diagnostic_uses_the_isolated_acceptance_runtime(self):
+        workflow = yaml.safe_load(self.text('frontend_release_gate.yml'))
+        steps = next(iter(workflow['jobs'].values()))['steps']
+        for name in (
+            'Generate isolated acceptance environment',
+            'Freeze isolated frontend release identity',
+        ):
+            step = next(s for s in steps if s.get('name') == name)
+            self.assertIn('frontend_contract_diagnostic_required', step['if'])
+        diagnostic = next(
+            s for s in steps if s.get('name') == 'Run focused payment-request diagnostic'
+        )
+        self.assertIn('PAYMENT_REQUEST_DIAGNOSTIC', diagnostic['if'])
+        self.assertIn('frontend_contract_diagnostic_required', diagnostic['if'])
+        self.assertEqual(
+            'make --no-print-directory verify.frontend.payment_request.diagnostic',
+            diagnostic['run'],
+        )
+
     def test_merge_summary_matches_backend_and_mainline_execution(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))
         step = next(s for job in workflow['jobs'].values() for s in job.get('steps', [])

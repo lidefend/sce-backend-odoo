@@ -1224,7 +1224,11 @@ def _page_composition_contract(contract: dict[str, Any], source: dict[str, Any])
     }
 
 
-def _strict_field_descriptor(widget: dict[str, Any]) -> dict[str, Any] | None:
+def _strict_field_descriptor(
+    widget: dict[str, Any],
+    *,
+    currency_digits_by_field: dict[str, list[int]] | None = None,
+) -> dict[str, Any] | None:
     legacy = _dict(widget.get("fieldDescriptor"))
     config = _dict(widget.get("componentConfig"))
     if not legacy:
@@ -1285,8 +1289,17 @@ def _strict_field_descriptor(widget: dict[str, Any]) -> dict[str, Any] | None:
         if isinstance(config.get("selection"), list) and config.get("selection")
         else legacy.get("selection")
     )
+    currency_field = _text(
+        config.get("currencyField")
+        or config.get("currency_field")
+        or legacy.get("currencyField")
+        or legacy.get("currency_field")
+    )
     digits = config.get("digits") if isinstance(config.get("digits"), list) else legacy.get("digits")
-    currency_field = _text(config.get("currencyField") or legacy.get("currency_field"))
+    if not isinstance(digits, list) and currency_digits_by_field:
+        digits = currency_digits_by_field.get(currency_field)
+    if not isinstance(digits, list) and currency_digits_by_field:
+        digits = currency_digits_by_field.get("__contract_default__")
     attachment_role = _text(config.get("attachmentRole") or legacy.get("attachmentRole"))
     if relation:
         descriptor["relation"] = relation
@@ -1325,10 +1338,50 @@ def _strict_field_descriptor(widget: dict[str, Any]) -> dict[str, Any] | None:
     return descriptor
 
 
-def _upgrade_contract_v2_field_descriptors(contract: dict[str, Any]) -> dict[str, Any]:
+def _upgrade_contract_v2_field_descriptors(
+    contract: dict[str, Any],
+    *,
+    env: Any = None,
+) -> dict[str, Any]:
     out = dict(contract)
     layout = _dict(out.get("layoutContract"))
     out["layoutContract"] = layout
+    currency_digits_by_field: dict[str, list[int]] = {}
+    main_data = _dict(_dict(out.get("dataContract")).get("mainData"))
+    default_currency = getattr(getattr(env, "company", None), "currency_id", None)
+    if default_currency:
+        currency_digits_by_field["__contract_default__"] = [
+            16,
+            int(getattr(default_currency, "decimal_places", 2) or 2),
+        ]
+    currency_field_names: set[str] = set()
+
+    def collect_currency_fields(rows: list[Any]) -> None:
+        for row in rows:
+            node = _dict(row)
+            for widget in _list(node.get("widgetList")):
+                config = _dict(_dict(widget).get("componentConfig"))
+                currency_field = _text(config.get("currency_field") or config.get("currencyField"))
+                if currency_field:
+                    currency_field_names.add(currency_field)
+            collect_currency_fields(_list(node.get("children")))
+
+    collect_currency_fields(_list(layout.get("containerTree")))
+    if env is not None and currency_field_names:
+        for field_name in currency_field_names:
+            raw = main_data.get(field_name)
+            currency_id = raw[0] if isinstance(raw, (list, tuple)) and raw else raw
+            if not isinstance(currency_id, int) or isinstance(currency_id, bool) or currency_id <= 0:
+                continue
+            try:
+                currency = env["res.currency"].browse(currency_id).exists()
+            except Exception:
+                continue
+            if currency:
+                currency_digits_by_field[field_name] = [
+                    16,
+                    int(currency.decimal_places or 2),
+                ]
 
     def walk(rows: list[Any]) -> None:
         for row in rows:
@@ -1337,7 +1390,10 @@ def _upgrade_contract_v2_field_descriptors(contract: dict[str, Any]) -> dict[str
             for widget in widgets:
                 if not isinstance(widget, dict):
                     continue
-                strict = _strict_field_descriptor(widget)
+                strict = _strict_field_descriptor(
+                    widget,
+                    currency_digits_by_field=currency_digits_by_field,
+                )
                 if strict:
                     widget["fieldDescriptor"] = strict
                 elif _text(_dict(widget.get("fieldDescriptor")).get("type") or _dict(widget.get("fieldDescriptor")).get("ttype")) == "monetary":
@@ -1404,7 +1460,7 @@ def _assemble_unified_page_contract_v2(
                 **(_dict(contract.get("pageInfo"))),
                 "contractVersion": contract_version,
             },
-        }) if contract_version.startswith("2.6.") else {
+        }, env=node_actor_env) if contract_version.startswith("2.6.") else {
             **contract,
             "pageInfo": {
                 **(_dict(contract.get("pageInfo"))),
