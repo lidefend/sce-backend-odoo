@@ -647,7 +647,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                     ns['write'](rows, values)
 
     def test_workflow_evidence_only_describes_current_actions(self):
-        path = MODEL.parents[1] / 'support/workflow_contract_service.py'
+        path = ROOT / 'addons/smart_core/models/workflow_contract.py'
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'describe_record')
         method.decorator_list = []
         ns = {}
@@ -793,7 +793,7 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
         self.assertEqual(writes[-1], {'state': 'cancel'})
 
     def test_unsaved_workflow_catalog_declares_meaning_without_execution_grants(self):
-        path = ROOT / 'addons/smart_construction_core/models/support/workflow_contract_service.py'
+        path = ROOT / 'addons/smart_core/models/workflow_contract.py'
         method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'describe_model_actions')
         method.decorator_list = []
         ns = {}
@@ -828,23 +828,41 @@ class PaymentApprovalStateMachineTests(unittest.TestCase):
                 self.assertIsNotNone(form.find('.//field[@name="submission_attachment_policy"]'))
 
     def test_unsaved_workflow_injection_preserves_capabilities_and_does_not_browse(self):
-        path = ROOT / 'addons/smart_construction_core/core_extension.py'
-        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == '_sc_inject_workflow_contract')
-        ns = {}
+        path = ROOT / 'addons/smart_core/core/workflow_contract_injection.py'
+        method = next(n for n in ast.walk(ast.parse(path.read_text())) if isinstance(n, ast.FunctionDef) and n.name == 'inject_workflow_contract')
+        ns = {
+            '_logger': types.SimpleNamespace(exception=lambda *args, **kwargs: None),
+            '_text': lambda value: str(value or '').strip(),
+        }
         exec(compile(ast.Module(body=[method], type_ignores=[]), str(path), 'exec'), ns)
-        catalog = {'model': 'sc.expense.claim', 'actions': [{'method': 'action_submit'}]}
+        catalog = {
+            'model': 'sc.expense.claim',
+            'actions': [{'method': 'action_submit'}],
+            'editability': 'readonly',
+            'businessPhase': 'draft',
+            'approvalPhase': 'none',
+        }
         class Env:
-            registry = {'sc.expense.claim': True}
+            registry = {
+                'sc.expense.claim': True,
+                'smart_core.workflow.contract': True,
+            }
+            def __contains__(self, name):
+                return name in self.registry
             def __getitem__(self, name):
                 self.assert_service(name)
                 return types.SimpleNamespace(describe_model_actions=lambda model: catalog)
             def assert_service(self, name):
-                assert name == 'sc.workflow.contract.service', 'unsaved injection must not browse or invent a record'
+                assert name == 'smart_core.workflow.contract', 'unsaved injection must not browse or invent a record'
         status = {'globalStatus': {'effectiveRecordCapabilities': {'create': True, 'write': False}}}
         contract = {'statusContract': copy.deepcopy(status)}
-        ns['_sc_inject_workflow_contract'](Env(), contract, {}, model='sc.expense.claim', view_type='form')
+        ns['inject_workflow_contract'](Env(), contract, {}, model='sc.expense.claim', view_type='form')
         self.assertEqual(contract['workflowContract'], catalog)
-        self.assertEqual(contract['statusContract'], status)
+        global_status = contract['statusContract']['globalStatus']
+        self.assertEqual(global_status['pageAuth'], 'read')
+        self.assertEqual(global_status['effectiveRecordCapabilities']['write'], False)
+        self.assertEqual(global_status['workflowPhase'], 'draft')
+        self.assertEqual(global_status['approvalPhase'], 'none')
 
     def test_expense_relation_direction_uses_execution_authority(self):
         path = MODEL.with_name('expense_claim.py')

@@ -28,9 +28,14 @@
     "docs/engineering_convergence/complexity_budget_report.md",
     "docker-compose.yml",
     "make/ci.mk",
+    "make/codex.mk",
     "make/dev.mk",
     "make/frontend.mk",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/personal_data_false_positives.json",
+    "scripts/ci/test_backend_suite_plan.py",
     "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/dev/run_changed_odoo_tests.py",
     "scripts/dev/frontend_static_build.sh",
     "scripts/dev/local_dev_frontend_quick.py",
     "scripts/verify/business_entry_matrix_browser.mjs",
@@ -44,12 +49,16 @@
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/test_local_dev_frontend_quick.py",
     "scripts/verify/test_local_development_lifecycle.py",
+    "scripts/verify/test_payment_approval_state_machine.py",
+    "scripts/verify/test_pr_publish_preflight.py",
+    "scripts/verify/test_run_changed_odoo_tests.py",
     "scripts/verify/unified_page_contract_v2_assembler_guard.py",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
     "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md",
     "docs/ops/codex_execution_allowlist.md",
     "docs/ops/codex_workspace_execution_rules.md",
+    "docs/ops/dual_lane_fast_iteration_v1.md",
     "docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json",
     "docs/architecture/p0_contract_producer_01/remediation_design.json",
     "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
@@ -79,6 +88,7 @@
     "addons/smart_construction_core/security/sc_record_rules.xml",
     "addons/smart_construction_core/security/sc_role_groups.xml",
     "addons/smart_construction_core/tests/business_case.py",
+    "addons/smart_construction_core/tests/test_core_extension_v2_finalize.py",
     "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
     "addons/smart_construction_core/tests/test_p0_state_closure.py",
     "addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py",
@@ -100,7 +110,9 @@
     "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
     "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
     "docs/architecture/role_capability_and_approval_authority_v1.md",
-    "scripts/verify/user_role_approval_matrix_guard.py"
+    "scripts/verify/user_role_approval_matrix_guard.py",
+    "scripts/verify/baseline_iteration_execution_policy_guard.py",
+    "scripts/verify/test_baseline_iteration_execution_policy_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -191,6 +203,33 @@
         "scripts/verify/test_frontend_dev_incremental.py"
       ]
     },
+    "backend_suite_planning": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/backend_suite_plan.py",
+        "scripts/ci/test_backend_suite_plan.py",
+        "config/tenant/module_sets.v1.json",
+        ".github/workflows/backend_test_suite.yml",
+        "make/ci.mk"
+      ]
+    },
+    "pr_publish_preflight": {
+      "target": "verify.pr.push.unit",
+      "kind": "offline",
+      "inputs": [
+        "make/codex.mk",
+        "scripts/verify/test_pr_publish_preflight.py",
+        "scripts/ops/git_safe_push.sh"
+      ]
+    },
+    "clean_history_scan": {
+      "target": "verify.repository.clean_history",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/personal_data_false_positives.json"
+      ]
+    },
     "matrix_parallelization": {
       "target": "verify.frontend.business_entry.evidence_scope.unit",
       "kind": "offline",
@@ -223,6 +262,27 @@
         "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
         "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
         "make/guards.mk"
+      ]
+    },
+    "payment_approval_state_machine": {
+      "target": "verify.payment.approval_state_machine.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/test_payment_approval_state_machine.py",
+        "addons/smart_core/models/workflow_contract.py",
+        "addons/smart_core/core/workflow_contract_injection.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/guards.mk"
+      ]
+    },
+    "changed_backend_tests": {
+      "target": "verify.changed_tests.orm",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/dev/run_changed_odoo_tests.py",
+        "scripts/dev/changed_odoo_tests.py",
+        "scripts/verify/test_run_changed_odoo_tests.py",
+        "make/dev.mk"
       ]
     },
     "workflow_contract_orm": {
