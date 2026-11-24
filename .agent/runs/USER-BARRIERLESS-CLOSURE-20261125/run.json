@@ -22,7 +22,9 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
     "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
     "scripts/verify/frontend_localized_display_contract_test.ts",
-    "scripts/verify/business_entry_matrix_browser.mjs"
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/ops/safe_branch_sync_main.py",
+    "scripts/ops/test_safe_branch_sync_main.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -74,9 +76,10 @@
     }
   },
   "blockers": [
-    "The complete 132-entry local re-walk is excluded by owner direction because those surfaces are already established as correct; exact-head remote CI remains required before any integration claim."
+    "The complete 132-entry local re-walk is excluded by owner direction because those surfaces are already established as correct; exact-head remote CI remains required before any integration claim.",
+    "Mainline alignment reproduced a P4 safe-sync defect when main and topic update different sorted active-run keys without a Git conflict. The corrected semantic-union handling passed 52 sync tests; exact-main replay is awaiting retry."
   ],
-  "next_exact_step": "Await owner authorization before publish, mainline integration or deployment; the verified batch candidate is committed locally.",
+  "next_exact_step": "Retry governed mainline alignment on exact GitHub main after committing the validated P4 safe-sync correction.",
   "goal": ".agent/goals/USER-BARRIERLESS-CLOSURE-20261125.yaml",
   "record": "docs/ops/iterations/user_barrierless_closure_20261125.md"
 }

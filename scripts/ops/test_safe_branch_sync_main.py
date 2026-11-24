@@ -378,6 +378,57 @@ class SafeBranchSyncMainTest(unittest.TestCase):
         self.assertEqual(result.metadata_conflicts, (syncer.ACTIVE_RUNS_INDEX_PATH,))
         self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
 
+    def test_nonconflicting_active_runs_main_addition_is_a_verified_union(self) -> None:
+        base_index = {
+            "schema_version": 1,
+            "branches": {
+                key: f"{key}.json"
+                for key in ("a", "c", "d", "e", "f", "g", "h", "i", "j", "z")
+            },
+        }
+        self.active_runs.write_text(json.dumps(base_index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "baseline run index")
+        git(self.root, "branch", "-f", "main", "HEAD")
+        git(self.root, "push", "--force", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        self.old_base = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        topic_index = {
+            "schema_version": 1,
+            "branches": {
+                **base_index["branches"],
+                "m": "topic.json",
+            },
+        }
+        self.active_runs.write_text(json.dumps(topic_index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "topic run index")
+        self.head = git(self.root, "rev-parse", "HEAD").stdout.strip()
+
+        git(self.root, "switch", "main")
+        main_index = {
+            "schema_version": 1,
+            "branches": {
+                **base_index["branches"],
+                "b": "maintenance.json",
+            },
+        }
+        self.active_runs.write_text(json.dumps(main_index, indent=2) + "\n", encoding="utf-8")
+        git(self.root, "add", syncer.ACTIVE_RUNS_INDEX_PATH)
+        git(self.root, "commit", "-m", "main run index")
+        self.new_main = git(self.root, "rev-parse", "HEAD").stdout.strip()
+        git(self.root, "push", "origin", "HEAD:main")
+        git(self.root, "fetch", "origin", "main")
+        git(self.root, "switch", "feature/local-sync")
+
+        result = syncer.sync(self.plan())
+        merged = json.loads(self.active_runs.read_text(encoding="utf-8"))
+        self.assertEqual(merged["branches"]["b"], "maintenance.json")
+        self.assertEqual(merged["branches"]["m"], "topic.json")
+        self.assertEqual(result.metadata_conflicts, (syncer.ACTIVE_RUNS_INDEX_PATH,))
+        self.assertEqual(git(self.root, "status", "--porcelain").stdout.strip(), "")
+
     def test_extended_sync_preserves_reviewed_semantic_union_path(self) -> None:
         path = syncer.SEMANTIC_UNION_CONFLICT_PATH
         target = self.root / path

@@ -73,6 +73,23 @@ secondary 500 responses. Those observations are classified as an environment /
 validation-tool defect and were not counted as product failures. Per owner
 instruction, already-correct surfaces were not re-walked.
 
+## Mainline Alignment
+
+The first governed `workspace.branch.sync-main` attempt targeted GitHub
+`origin/main` commit `11a6984c433be21904f4f1479c1291999c67a146`. The tool
+correctly restored the original candidate after rejecting a patch-identity
+change on `.agent/active-runs.json`.
+
+Root cause: main and the topic both added different sorted branch entries.
+Git merged those JSON entries without a conflict marker, so the existing tool
+did not classify the file as a three-way metadata union and compared the
+relocated JSON patch as product responsibility.
+
+The P4 safe-sync entry now recognizes a clean active-run merge only when the
+current file equals the exact base/main/topic branch-map union. The new
+regression covers non-conflicting insertions at different sorted positions.
+`make verify.workspace.branch.sync-main` passed 52 tests.
+
 ## Exclusions
 
 No database migration, fixture rebuild, demo-data rewrite, mainline integration,
@@ -95,7 +112,8 @@ deployment or production change is included.
   `a5aff5c2684ef015a9462d836e29d82d970a4971` did not match the requested
   candidate `f07f65967df5b42eabf9d752ee7a439d91f27a1e`. This is recorded as a
   validation/environment identity failure, not a product pass.
-- Mainline integration: not started.
+- Mainline integration: exact-main alignment is pending the validated safe-sync
+  correction; no push, PR or merge has occurred.
 - Deployment: the candidate is running only in the governed local development
   environment.
 - User acceptance: affected blocker paths passed; the complete 132-entry release
