@@ -92,3 +92,17 @@ Focused results:
 - `scripts.ci.test_backend_suite_plan` plus dispatch contract: 96 PASS.
 - `make ci.local.iteration`: PASS after the run scope was updated to the owned P4 files.
 - `make verify.ci.scheduled_gates`: PASS.
+
+The exact-head dispatch then exposed the next boundary in the same tool chain:
+the workflow had the exact `SUITE_NAME`, `SC_ENVIRONMENT` and demo policy, but
+`scripts/test/test.sh` forwarded only run/attempt/shard/head/project into the
+isolated Odoo container. Preparation therefore rejected the missing suite
+before any product test started. Runs `45341435662` (product) and
+`45341434954` (acceptance) failed as `validation_tool_defect`, not as product
+test verdicts.
+
+The container preparation arguments now forward the same suite, environment
+and demo policy as the workflow, and the focused test executes the real shell
+fragment to assert all six exact identity fields. Updated focused result:
+`scripts.test.test_dependency_baseline`: 12 PASS; `make ci.local.iteration`:
+PASS.

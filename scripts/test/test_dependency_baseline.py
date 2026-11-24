@@ -188,6 +188,44 @@ class PreparationTests(unittest.TestCase):
             script.index('--entrypoint bash odoo'),
         )
 
+    def test_preparation_container_receives_exact_suite_environment_identity(self):
+        script = (Path(__file__).with_name('test.sh')).read_text()
+        fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
+        env = dict(
+            os.environ,
+            ROOT_DIR='/fixture',
+            MODULE='smart_construction_acceptance_fixture',
+            DB_NAME='sc_suite_ci_smart_construction_acceptance_fixture',
+            GITHUB_RUN_ID='45341434954',
+            GITHUB_RUN_ATTEMPT='1',
+            SHARD_INDEX='0',
+            SOURCE_SHA='a' * 40,
+            SUITE_NAME='acceptance',
+            COMPOSE_PROJECT_NAME='sc-suite-45341434954-acceptance-0',
+            ADDONS_EXTERNAL_MOUNT='/fixture/external',
+            SC_TEST_DEPENDENCY_PREPARATION='1',
+            SC_ENVIRONMENT='test',
+            SC_ALLOW_DEMO_DATA='0',
+            TEST_TAGS_INPUT='',
+        )
+        result = subprocess.run(
+            ['bash', '-eu', '-c', 'PREPARATION_ARGS=()\n' + fragment
+             + '\nprintf "%s\\n" "${PREPARATION_ARGS[@]}"'],
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for expected in (
+            'SC_TEST_TARGET_MODULE=smart_construction_acceptance_fixture',
+            'SC_TEST_TARGET_DB=sc_suite_ci_smart_construction_acceptance_fixture',
+            'SUITE_NAME=acceptance',
+            'SC_ENVIRONMENT=test',
+            'SC_ALLOW_DEMO_DATA=0',
+            'COMPOSE_PROJECT_NAME=sc-suite-45341434954-acceptance-0',
+        ):
+            self.assertIn(expected, result.stdout.splitlines())
+
 
 if __name__ == '__main__':
     unittest.main()
