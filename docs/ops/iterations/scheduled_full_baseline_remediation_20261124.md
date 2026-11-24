@@ -125,3 +125,18 @@ attempt database and exact equality with the active Odoo connection; it does
 not admit arbitrary databases. `TestAcceptanceFixtureGuard` passed 5/5 in the
 isolated `local.test` ORM lane. The subsequent `make ci.local.iteration`
 passed with 19 acceptance-fixture tests plus all affected demo/tool guards.
+
+Run `048cf551f0b88380baf1e0e6797ebda8ac951782` confirmed product and demo
+success, and the acceptance test shard executed successfully after the guard
+fix. Acceptance coverage then revealed one remaining P4 inefficiency: changed
+fixture methods were always marked pending for the separate managed producer,
+so the independent acceptance lane waited up to 7200 seconds even though its
+own logs contained exact method execution identity.
+
+The coverage verifier now has an explicit acceptance-only
+`--accept-direct-managed-executions` mode. The ordinary product lane keeps the
+managed-producer requirement, and discovery runs only while a managed-owned row
+is still pending. New focused results:
+
+- `test_backend_changed_test_coverage`: 32 PASS.
+- `test_backend_test_suite_dispatch_contract`: 32 PASS.

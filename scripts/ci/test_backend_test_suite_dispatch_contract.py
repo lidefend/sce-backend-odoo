@@ -180,6 +180,21 @@ python3() {
                     capture_output=True, text=True)
                 self.assertEqual(expected, outcome.returncode)
 
+    def test_acceptance_suite_closes_on_its_own_managed_execution(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        step = next(
+            s for s in workflow['jobs']['verify_coverage']['steps']
+            if s.get('name') == 'Verify changed test execution identities'
+        )
+        self.assertIn('needs.plan.outputs.suite', step['run'])
+        self.assertIn(
+            'direct_managed_args+=(--accept-direct-managed-executions)',
+            step['run'],
+        )
+        self.assertIn('"${direct_managed_args[@]}"', step['run'])
+
     def test_matrix_cannot_hide_failed_or_cancelled_shards(self):
         workflow = yaml.safe_load((ROOT / '.github/workflows/backend_test_suite.yml').read_text())
         plan = workflow['jobs']['plan']

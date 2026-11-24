@@ -248,6 +248,19 @@ class SubmissionReadinessNoticeP1Tests(TransactionCase):
         log = f'odoo.addons.{coverage.MANAGED_MODULE}.tests.test_nav: Starting TestNavigation.test_upgrade ...'
         self.assertEqual('pending', coverage.verify_logs(rows, [self.orm_src(log, module=coverage.MANAGED_MODULE)])[0]['status'])
 
+    def test_acceptance_suite_can_prove_its_own_direct_managed_execution(self):
+        rows = self.rows(coverage.MANAGED_MODULE)
+        log = f'odoo.addons.{coverage.MANAGED_MODULE}.tests.test_nav: Starting TestNavigation.test_upgrade ...'
+        source = self.orm_src(log, module=coverage.MANAGED_MODULE)
+        self.assertEqual(
+            'executed',
+            coverage.verify_logs(
+                rows,
+                [source],
+                accept_direct_managed_executions=True,
+            )[0]['status'],
+        )
+
     def test_managed_acceptance_has_explicit_owner_and_stays_pending(self):
         rows = self.rows(coverage.MANAGED_MODULE)
         self.assertEqual(coverage.MANAGED_TARGET, rows[0]['owner'])
@@ -377,6 +390,47 @@ class ManagedEvidenceTests(unittest.TestCase):
                     patch.object(coverage, 'discover_managed_evidence', return_value={'executed': [row['selector']]}) as discover:
                 coverage.main()
             discover.assert_called_once_with('a' * 40, schedule_slot='2026-11-04T18:00:00+00:00')
+            self.assertEqual([], json.loads(output.read_text())['pending'])
+
+    def test_acceptance_cli_closes_on_its_own_execution_without_managed_wait(self):
+        import os
+        import sys
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            row = coverage.inventory(
+                ChangedCoverageTests.source,
+                f'addons/{coverage.MANAGED_MODULE}/tests/test_nav.py',
+            )[0]
+            plan = root / 'plan.json'
+            plan.write_text(json.dumps({
+                'head': 'a' * 40,
+                'base': '',
+                'changed_test_coverage': [row],
+            }))
+            receipt_dir = root / 'receipts' / 'fixture'
+            receipt_dir.mkdir(parents=True)
+            (receipt_dir / 'receipt.json').write_text(json.dumps({
+                'module': coverage.MANAGED_MODULE,
+                'kind': 'orm',
+                'execution': '',
+            }))
+            (receipt_dir / 'execution.log').write_text(
+                f'odoo.addons.{coverage.MANAGED_MODULE}.tests.test_nav: '
+                'Starting TestNavigation.test_upgrade ...\n'
+            )
+            output = root / 'result.json'
+            args = [
+                'coverage', '--plan', str(plan),
+                '--receipts', str(root / 'receipts'),
+                '--output', str(output),
+                '--discover-managed', '--wait-managed-seconds', '0',
+                '--accept-direct-managed-executions',
+            ]
+            with patch.object(sys, 'argv', args), patch.dict(
+                os.environ, GITHUB_EVENT_NAME='workflow_dispatch'
+            ), patch.object(coverage, 'discover_managed_evidence') as discover:
+                coverage.main()
+            discover.assert_not_called()
             self.assertEqual([], json.loads(output.read_text())['pending'])
 
     def test_current_successful_managed_evidence_is_bound_to_platform_digest(self):

@@ -849,9 +849,14 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MANAGED_WAIT_SECONDS: ${{ '7200' }}
         run: |
+          direct_managed_args=()
+          if [ "${{ needs.plan.outputs.suite }}" = "acceptance" ]; then
+            direct_managed_args+=(--accept-direct-managed-executions)
+          fi
           python3 scripts/ci/backend_changed_test_coverage.py \
             --discover-managed --wait-managed-seconds "${MANAGED_WAIT_SECONDS}" --plan "${RUNNER_TEMP}/verified-plan.json" --receipts "${RUNNER_TEMP}/execution-receipts" \
-            --output "${RUNNER_TEMP}/changed-test-coverage.json"
+            --output "${RUNNER_TEMP}/changed-test-coverage.json" \
+            "${direct_managed_args[@]}"
       - name: Publish changed test coverage
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
