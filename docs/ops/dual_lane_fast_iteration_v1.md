@@ -69,7 +69,7 @@ Remote entries consume exact base/head identities:
 Scheduled release is a separate identity from both the local lanes and the
 ordinary PR integration lane. It runs on the same scheduled slot against exact
 `main` head/tree: public guard full history scan, professional full, nested
-backend full all modules, frontend full release, merge-policy aggregation and
+backend full all modules and tests, frontend full release, merge-policy aggregation and
 the release-condition artifact. Its result is candidate-build eligibility
 only (`deployment_ready=false`); it cannot be reused as a PR's exact-head
 integration result, and a local candidate audit cannot be reused as the

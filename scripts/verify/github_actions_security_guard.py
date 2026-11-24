@@ -172,7 +172,7 @@ def scan(root: Path) -> list[Finding]:
             if any(item not in text for item in mask_requirements):
                 findings.add(Finding("GA019", relative, "BACKEND_SUITE_DYNAMIC_SECRET_MASKING_INCOMPLETE"))
             test_routing_requirements = (
-                'module_test_tags="sc_smoke/${module},sc_gate/${module}"',
+                'module_test_tags="sc_smoke/${module},sc_gate/${module},/${module}"',
                 'timeout --foreground --signal=TERM --kill-after=10',
                 '"${BACKEND_MODULE_TIMEOUT_SECONDS:-1200}"',
                 'start_heartbeat "${module}" "${module_log}" "${module_attempt}"',

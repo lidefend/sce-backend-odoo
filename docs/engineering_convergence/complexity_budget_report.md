@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5364`
 - Files requiring split plan: `88`
-- Files above warning threshold: `163`
+- Files above warning threshold: `164`
 
 ## Split Plan Required
 
@@ -97,7 +97,7 @@ Generated from repository source files. This report is informational during the 
 | 1520 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 861 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 858 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -167,7 +167,7 @@ Generated from repository source files. This report is informational during the 
 | 1125 | Python source | `addons/smart_construction_core/models/support/product_policy_sync.py` |
 | 1121 | Python source | `scripts/release/production_backup_restore.py` |
 | 1117 | Python source | `scripts/ops/codex_agent_controller.py` |
-| 1112 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
+| 1114 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1096 | JavaScript source | `scripts/verify/local_dev_project_create_contract_driver_probe.mjs` |
 | 1095 | Python source | `addons/smart_construction_core/models/core/payment_ledger.py` |
 | 1095 | JavaScript source | `scripts/verify/pfl035_payment_request_runtime_acceptance.mjs` |
@@ -242,6 +242,7 @@ Generated from repository source files. This report is informational during the 
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
 | 821 | Python source | `scripts/ci/backend_suite_plan.py` |
+| 816 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |

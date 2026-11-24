@@ -282,7 +282,7 @@ jobs:
             source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
             workflow.write_text(
                 source.replace(
-                    'module_test_tags="sc_smoke/${module},sc_gate/${module}"\n',
+                    'module_test_tags="sc_smoke/${module},sc_gate/${module},/${module}"\n',
                     'module_test_tags="sc_smoke,sc_gate"\n',
                     1,
                 ),

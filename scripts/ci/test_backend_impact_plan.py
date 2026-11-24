@@ -391,7 +391,7 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
         suite = (planner.ROOT / '.github/workflows/backend_test_suite.yml').read_text()
         self.assertIn('workflow_call:', suite)
         self.assertIn('--base "${IMPACT_BASE}"', suite)
-        self.assertIn('module_test_tags="sc_smoke/${module},sc_gate/${module}"', suite)
+        self.assertIn('sc_smoke/${module},sc_gate/${module},/${module}', suite)
         self.assertIn('if ! evaluate_orm_outcome', suite)
         self.assertNotIn("  schedule:", suite)
 

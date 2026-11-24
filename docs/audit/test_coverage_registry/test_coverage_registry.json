@@ -94,7 +94,7 @@
       ],
       "owner": "platform-team",
       "evidence": [
-        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module}"
+        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module},/${module}"
       ]
     },
     {
@@ -134,7 +134,7 @@
       ],
       "owner": "construction-product",
       "evidence": [
-        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module}",
+        ".github/workflows/backend_test_suite.yml :: sc_smoke/${module},sc_gate/${module},/${module}",
         ".github/workflows/sc_smoke.yml :: sc_smoke"
       ]
     },

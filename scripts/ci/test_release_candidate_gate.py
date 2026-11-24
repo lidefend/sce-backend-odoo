@@ -22,7 +22,7 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("github.event_name != 'pull_request'", self.workflow)
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", self.workflow)
         self.assertIn(
-            "types: [opened, reopened, synchronize, labeled]",
+            "types: [labeled]",
             self.workflow,
         )
         self.assertIn("cron: '0 18 * * *'", self.workflow)
@@ -59,6 +59,63 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("release-condition.json", self.workflow)
         self.assertIn("actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02", self.workflow)
         self.assertIn("--scheduled-slot", self.workflow)
+
+    def test_mainline_condition_requires_current_remote_main(self) -> None:
+        self.assertIn("Prove validated main is still authoritative", self.workflow)
+        self.assertIn(
+            'gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main"',
+            self.workflow,
+        )
+        self.assertIn(
+            'if [ "${current_main}" != "${HEAD_SHA}" ]; then',
+            self.workflow,
+        )
+        self.assertIn("STALE_MAIN", self.workflow)
+        self.assertIn('echo "CURRENT_MAIN_SHA=${current_main}" >> "${GITHUB_ENV}"', self.workflow)
+        materialize_index = self.workflow.index("Materialize exact formal release condition")
+        prove_index = self.workflow.index("Prove validated main is still authoritative")
+        self.assertLess(prove_index, materialize_index)
+        self.assertIn('--current-main "${CURRENT_MAIN_SHA}"', self.workflow)
+
+    def test_current_main_probe_executes_pass_and_stale_negative(self) -> None:
+        workflow = yaml.safe_load(self.workflow)
+        step = next(
+            row for row in workflow["jobs"]["wait_for_candidate_checks"]["steps"]
+            if row.get("name") == "Prove validated main is still authoritative"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            fake_bin = root / "bin"
+            fake_bin.mkdir()
+            gh = fake_bin / "gh"
+            gh.write_text("#!/bin/sh\nprintf '%s\\n' \"${STUB_CURRENT_MAIN}\"\n", encoding="utf-8")
+            gh.chmod(0o755)
+            head = "a" * 40
+            for current, passed in ((head, True), ("b" * 40, False), ("main", False)):
+                with self.subTest(current=current):
+                    env = root / f"env-{current[:3]}"
+                    env.unlink(missing_ok=True)
+                    result = subprocess.run(
+                        ["bash", "-ec", step["run"]],
+                        env={
+                            **os.environ,
+                            "PATH": f"{fake_bin}:{os.environ['PATH']}",
+                            "GITHUB_REPOSITORY": "lidefend/sce-backend-odoo",
+                            "HEAD_SHA": head,
+                            "GITHUB_ENV": str(env),
+                            "STUB_CURRENT_MAIN": current,
+                        },
+                        text=True,
+                        capture_output=True,
+                    )
+                    self.assertEqual(passed, result.returncode == 0, result.stderr)
+                    if passed:
+                        self.assertEqual(
+                            f"CURRENT_MAIN_SHA={head}",
+                            env.read_text(encoding="utf-8").strip(),
+                        )
+                    else:
+                        self.assertFalse(env.exists())
 
     def test_candidate_summary_distinguishes_pass_skip_and_failure(self) -> None:
         workflow = yaml.safe_load(self.workflow)

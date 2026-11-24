@@ -151,7 +151,9 @@ class ExplicitCoTagConsumerTest(unittest.TestCase):
                 self.assertIn('MODULE=' + bound['module'], args)
                 selected = next(arg.removeprefix('TEST_TAGS=') for arg in args
                                 if arg.startswith('TEST_TAGS='))
-                self.assertIn(bound['tag'] + '/' + bound['module'], selected.split(','))
+                # Full release mode selects the whole module, which supersedes
+                # narrower sc_gate selectors while retaining the same class.
+                self.assertIn('/' + bound['module'], selected.split(','))
                 self.assertNotIn(group, selected)
 
 

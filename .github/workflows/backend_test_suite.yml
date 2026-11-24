@@ -492,14 +492,11 @@ jobs:
                 exit 1
               }
             elif [ -z "${module_test_tags}" ]; then
-              # Select only tests owned by this module. Bare sc_gate/sc_smoke
-              # tags also select dependency tests and made wrapper modules run
-              # smart_construction_core's suite repeatedly.
-              module_test_tags="sc_smoke/${module},sc_gate/${module}"
-              changed_tags="$(python3 scripts/ci/backend_changed_test_coverage.py --plan "${RUNNER_TEMP}/backend-plan.json" --module "${module}")" || exit 1
-              if [ -n "${changed_tags}" ]; then
-                module_test_tags="${module_test_tags},${changed_tags}"
-              fi
+              # Full release scope executes every test owned by the selected
+              # module. Keep the explicit gate/special tags in the selector
+              # union so coverage-registry ownership remains machine-visible,
+              # but "/${module}" is the authoritative no-subset selector.
+              module_test_tags="sc_smoke/${module},sc_gate/${module},/${module}"
               if [ "${module}" = smart_core ]; then
                 module_test_tags="${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_write_authority/${module}"
               fi
