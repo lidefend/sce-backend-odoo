@@ -22,6 +22,36 @@ import backend_test_receipt as execution_receipt
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / 'ops'))
 import evidence_scope
 
+SUITE_NAMES = ('product', 'demo', 'acceptance')
+MODULE_SETS_PATH = 'config/tenant/module_sets.v1.json'
+
+
+def suite_modules(suite: str, modules: list[str], graph: dict) -> list[str]:
+    """Partition runnable modules by their delivery responsibility."""
+    if suite not in SUITE_NAMES:
+        raise ValueError(f'unsupported backend suite: {suite}')
+    try:
+        config = json.loads((impact.ROOT / MODULE_SETS_PATH).read_text(encoding='utf-8'))
+        forbidden = set(config.get('forbidden_implicit_modules') or [])
+    except (OSError, json.JSONDecodeError) as exc:
+        raise ValueError('invalid module-set authority') from exc
+    selected = []
+    for name in modules:
+        if name not in graph:
+            raise ValueError(f'runnable module missing from graph: {name}')
+        prefix = str(graph[name].get('prefix') or '')
+        if prefix.startswith('demo_addons/'):
+            responsibility = 'demo'
+        elif name in forbidden:
+            responsibility = 'acceptance'
+        else:
+            responsibility = 'product'
+        if responsibility == suite:
+            selected.append(name)
+    if not selected:
+        raise ValueError(f'backend suite has no runnable modules: {suite}')
+    return selected
+
 
 def partition(
     modules: list[str],
@@ -180,11 +210,20 @@ def target_input_inventory(head: str, graph: dict, modules: list[str]) -> dict:
     return inventory_from_tree(graph,modules,entries)
 
 
-def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool = False) -> dict:
+def build_plan(
+    base: str,
+    head: str,
+    override: str = '',
+    *,
+    suite: str = 'product',
+    include_inputs: bool = False,
+) -> dict:
     head = impact.git('rev-parse', '--verify', head + '^{commit}').strip()
     after = impact.snapshot(head)
     deleted_paths: list[str] = []
     if base:
+        if suite != 'product':
+            raise ValueError('impact-scoped execution only supports the product suite')
         if override:
             raise ValueError('premerge scope cannot be overridden')
         base = impact.git('rev-parse', '--verify', base + '^{commit}').strip()
@@ -199,8 +238,9 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
         # tests directory, including non-installable pure-Python test modules.
         directories = set(impact.git('ls-tree', '-r', '-d', '--name-only', head,
                                      '--', 'addons', 'demo_addons').splitlines())
-        modules = sorted(name for name, data in after.items()
-                         if data['prefix'] + 'tests' in directories)
+        runnable = sorted(name for name, data in after.items()
+                          if data['prefix'] + 'tests' in directories)
+        modules = suite_modules(suite, runnable, after)
         selected = {'modules': modules, 'mode': 'full', 'reasons': ['explicit_full']}
         if override:
             modules = override.replace(',', ' ').split()
@@ -208,7 +248,7 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
                 raise ValueError('override contains a module without runnable tests')
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
     groups = preparation_groups(after, selected['modules'])
-    plan = {**selected, 'base': base, 'head': head, 'scope_mode': 'full',
+    plan = {**selected, 'base': base, 'head': head, 'suite': suite, 'scope_mode': 'full',
             'changed_deletions': sorted(deleted_paths),
             'preparation_groups': groups,
             'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
@@ -614,6 +654,8 @@ def validate_execution_plan(plan: dict, required: dict) -> dict:
     for key in ('base', 'head', 'modules', 'changed_test_coverage', 'preparation_groups'):
         if plan.get(key) != required.get(key):
             raise ValueError('frozen plan differs from required ' + key)
+    if plan.get('suite', 'product') != required.get('suite', 'product'):
+        raise ValueError('frozen plan differs from required suite')
     shards = plan.get('shards', [])
     executed = [name for shard in shards for name in shard['modules']]
     reused = plan.get('reuse_decision', {}).get('reuse', [])
@@ -694,6 +736,7 @@ def main() -> None:
     parser.add_argument('--base', default='')
     parser.add_argument('--head', required=True)
     parser.add_argument('--modules', default='')
+    parser.add_argument('--suite', choices=SUITE_NAMES, default='product')
     parser.add_argument('--output', type=Path)
     parser.add_argument('--github-output', type=Path)
     parser.add_argument('--shard', type=int)
@@ -716,7 +759,13 @@ def main() -> None:
         plan = (
             build_focused_plan(args.base, args.head, include_inputs=args.input_inventory)
             if args.focused
-            else build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
+            else build_plan(
+                args.base,
+                args.head,
+                args.modules,
+                suite=args.suite,
+                include_inputs=args.input_inventory,
+            )
         )
         if args.frozen_plan:
             plan = validate_execution_plan(
@@ -813,6 +862,7 @@ def main() -> None:
             output.write('matrix=' + json.dumps(matrix, separators=(',', ':')) + '\n')
             output.write('plan_sha256=' + hashlib.sha256(args.output.read_bytes()).hexdigest() + '\n')
             output.write('head=' + plan['head'] + '\n')
+            output.write('suite=' + plan['suite'] + '\n')
             output.write('required=' + str(bool(plan['shards'])).lower() + '\n')
             output.write('reuse_authority=' + str(bool(plan.get('reuse_decision', {}).get('reuse'))).lower() + '\n')
 

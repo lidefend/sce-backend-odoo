@@ -23,6 +23,10 @@ on:
         required: false
         type: string
         default: full
+      suite:
+        required: false
+        type: string
+        default: product
   workflow_dispatch:
     inputs:
       head_ref:
@@ -37,13 +41,19 @@ on:
         description: "Odoo --test-tags override (default: module default tags)"
         required: false
         default: ""
+      suite:
+        description: "Release-responsibility suite (product, demo, acceptance)"
+        required: false
+        type: choice
+        options: [product, demo, acceptance]
+        default: product
 
 permissions:
   contents: read
   actions: read
 
 concurrency:
-  group: backend-test-suite-${{ github.ref }}
+  group: backend-test-suite-${{ github.ref }}-${{ inputs.suite || 'product' }}
   cancel-in-progress: false
 
 jobs:
@@ -64,6 +74,7 @@ jobs:
       required: ${{ steps.scope.outputs.required }}
       reuse_authority: ${{ steps.scope.outputs.reuse_authority }}
       scope_mode: ${{ steps.scope.outputs.scope_mode }}
+      suite: ${{ steps.scope.outputs.suite }}
     steps:
       - name: Checkout exact candidate for scope planning
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -81,6 +92,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           GITHUB_EVENT_NAME: ${{ github.event_name }}
           SCOPE_MODE: ${{ inputs.scope_mode || 'full' }}
+          SUITE_NAME: ${{ inputs.suite || 'product' }}
         run: |
           set -euo pipefail
           test "$(git rev-parse HEAD)" = "${HEAD_SHA}"
@@ -97,11 +109,13 @@ jobs:
             discover_args="--discover-receipts"
           fi
           python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
-            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
+            --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" --suite "${SUITE_NAME}" \
             --output "${RUNNER_TEMP}/backend-plan.json" --github-output "${GITHUB_OUTPUT}" \
             "${focused_args[@]}" ${discover_args}
           plan_mode="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["scope_mode"])')"
+          plan_suite="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["suite"])')"
           echo "scope_mode=${plan_mode}" >> "${GITHUB_OUTPUT}"
+          echo "suite=${plan_suite}" >> "${GITHUB_OUTPUT}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"
 
       # Re-running only failed jobs reuses this artifact from the previous
@@ -111,7 +125,7 @@ jobs:
       - name: Upload stable execution plan
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: backend-plan-${{ github.run_id }}
+          name: backend-plan-${{ github.run_id }}-${{ inputs.suite || 'product' }}
           path: ${{ runner.temp }}/backend-plan.json
           if-no-files-found: error
           overwrite: true
@@ -131,8 +145,8 @@ jobs:
       HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}
       HEAD_SHA: ${{ inputs.head_sha || github.sha }}
       IMPACT_BASE: ${{ inputs.base_sha }}
-      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}
-      COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}
+      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}
+      COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}
       DB_NAME: sc_suite_ci
       TEST_TAGS_INPUT: ${{ github.event.inputs.test_tags }}
       SHARD_INDEX: ${{ matrix.index }}
@@ -144,6 +158,7 @@ jobs:
       # process output instead of deleting the only diagnostic carrier.
       KEEP_TEST_CONTAINER: '1'
       SUITE_MODE: ${{ needs.plan.outputs.scope_mode }}
+      SUITE_NAME: ${{ needs.plan.outputs.suite }}
       BACKEND_MODULE_TIMEOUT_SECONDS: ${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}
       BACKEND_MODULE_HEARTBEAT_SECONDS: '30'
 
@@ -175,7 +190,7 @@ jobs:
       - name: Download immutable execution plan
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: backend-plan-${{ github.run_id }}
+          name: backend-plan-${{ github.run_id }}-${{ needs.plan.outputs.suite }}
           path: ${{ runner.temp }}/frozen-plan
 
       - name: Resolve module list
@@ -219,6 +234,7 @@ jobs:
           # Verify required scope from exact trees, then consume the frozen partition.
           candidates="$(python3 scripts/ci/backend_suite_plan.py --base "${IMPACT_BASE}" \
             --head "${HEAD_SHA}" --modules "${MODULE_OVERRIDE}" \
+            --suite "${SUITE_NAME}" \
             --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" --plan-sha256 "${PLAN_SHA256}" --shard "${SHARD_INDEX}" --input-inventory \
             $(if [ "${SUITE_MODE:-full}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/backend-plan.json")"
@@ -760,7 +776,7 @@ jobs:
         if: always() && env.BACKEND_RECEIPT_DIR != ''
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: backend-execution-${{ github.run_id }}-${{ matrix.index }}
+          name: backend-execution-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}
           path: ${{ env.BACKEND_RECEIPT_DIR }}
           if-no-files-found: error
           overwrite: true
@@ -804,13 +820,13 @@ jobs:
       - name: Download coverage evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         with:
-          name: backend-plan-${{ github.run_id }}
+          name: backend-plan-${{ github.run_id }}-${{ needs.plan.outputs.suite }}
           path: ${{ runner.temp }}/frozen-plan
       - name: Download coverage evidence
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
         if: needs.plan.outputs.required == 'true'
         with:
-          pattern: backend-execution-${{ github.run_id }}-*
+          pattern: backend-execution-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-*
           path: ${{ runner.temp }}/execution-receipts
       - name: Reconcile module identities
         env:
@@ -823,6 +839,7 @@ jobs:
         run: |
           python3 scripts/ci/backend_suite_plan.py --head "${HEAD_SHA}" --base "${IMPACT_BASE}" \
             --modules "${MODULE_OVERRIDE}" --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+            --suite "${{ needs.plan.outputs.suite }}" \
             --plan-sha256 "${PLAN_SHA256}" --receipts "${RUNNER_TEMP}/execution-receipts" \
             $(if [ "${{ needs.plan.outputs.scope_mode }}" = focused ]; then printf '%s' '--focused'; fi) \
             --output "${RUNNER_TEMP}/verified-plan.json"
@@ -832,14 +849,19 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           MANAGED_WAIT_SECONDS: ${{ '7200' }}
         run: |
+          direct_managed_args=()
+          if [ "${{ needs.plan.outputs.suite }}" = "acceptance" ]; then
+            direct_managed_args+=(--accept-direct-managed-executions)
+          fi
           python3 scripts/ci/backend_changed_test_coverage.py \
             --discover-managed --wait-managed-seconds "${MANAGED_WAIT_SECONDS}" --plan "${RUNNER_TEMP}/verified-plan.json" --receipts "${RUNNER_TEMP}/execution-receipts" \
-            --output "${RUNNER_TEMP}/changed-test-coverage.json"
+            --output "${RUNNER_TEMP}/changed-test-coverage.json" \
+            "${direct_managed_args[@]}"
       - name: Publish changed test coverage
         if: always()
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
-          name: changed-test-coverage-${{ github.run_id }}
+          name: changed-test-coverage-${{ github.run_id }}-${{ needs.plan.outputs.suite }}
           path: ${{ runner.temp }}/changed-test-coverage.json
           if-no-files-found: error
           overwrite: true

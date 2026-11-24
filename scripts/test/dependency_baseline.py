@@ -52,11 +52,14 @@ def eligible(module: str, roots=ROOTS) -> bool:
 def identity(env: dict) -> dict:
     run, attempt, shard = (env.get(k, '') for k in ('GITHUB_RUN_ID', 'GITHUB_RUN_ATTEMPT', 'SHARD_INDEX'))
     head = env.get('SOURCE_SHA', '')
+    suite = env.get('SUITE_NAME', '')
     if not all(re.fullmatch(r'[0-9]+', v) for v in (run, attempt, shard)):
         raise ValueError('preparation requires exact CI run/attempt/shard')
     if not re.fullmatch('[0-9a-f]{40}', head):
         raise ValueError('preparation requires exact source SHA')
-    if env.get('COMPOSE_PROJECT_NAME') != f'sc-suite-{run}-{shard}':
+    if suite not in ('product', 'demo', 'acceptance'):
+        raise ValueError('preparation requires an exact backend suite')
+    if env.get('COMPOSE_PROJECT_NAME') != f'sc-suite-{run}-{suite}-{shard}':
         raise ValueError('not an isolated backend suite project')
     if env.get('SC_ENVIRONMENT') != 'test' or env.get('SC_ALLOW_DEMO_DATA', '') not in ('', '0'):
         raise ValueError('dependency preparation requires non-demo test environment')
@@ -65,7 +68,8 @@ def identity(env: dict) -> dict:
         raise ValueError('invalid target module')
     if database not in (f'sc_suite_ci_{module}', f'sc_suite_ci_{module}_retry1') or len(database) > 63:
         raise ValueError('invalid isolated target database')
-    return dict(run=run, attempt=attempt, shard=shard, head=head, dependency=('smart_core' if module == 'smart_core' else CORE),
+    return dict(run=run, attempt=attempt, shard=shard, suite=suite, head=head,
+                dependency=('smart_core' if module == 'smart_core' else CORE),
                 demo=False, schema=1)
 
 

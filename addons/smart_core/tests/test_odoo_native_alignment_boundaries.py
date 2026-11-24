@@ -722,8 +722,13 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         payload = release_navigation_contract_builder.build_release_navigation_contract({"role_surface": {"role_code": "pm"}})
         root = (payload.get("nav") or [{}])[0]
         groups = root.get("children") or []
-        leaves = (groups[0].get("children") if groups else []) or []
-        first_meta = (leaves[0].get("meta") if leaves else {}) or {}
+        leaves = [
+            leaf
+            for group in groups
+            for leaf in (group.get("children") or [])
+        ]
+        self.assertTrue(leaves)
+        first_meta = (leaves[0].get("meta") or {})
 
         self.assertTrue((payload.get("meta") or {}).get("fallback_used"))
         self.assertEqual((first_meta.get("source_authority") or {}).get("kind"), "legacy_release_navigation_fallback")
@@ -741,8 +746,22 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
         self.assertTrue(handler_source.get("metadata_proxy_only"))
         self.assertEqual(legacy_source.get("kind"), "legacy_business_reason_metadata_provider")
         self.assertTrue(legacy_source.get("legacy_compatibility"))
+        reason_code = "TEST_LEGACY_BUSINESS_REASON_PROVIDER"
+        reason_codes.register_legacy_business_reason_meta(
+            reason_code,
+            {
+                "retryable": False,
+                "error_category": "test",
+                "suggested_action": "none",
+            },
+        )
+        self.addCleanup(
+            reason_codes._LEGACY_BUSINESS_REASON_META_REGISTRY.pop,
+            reason_code,
+            None,
+        )
         mapping = reason_codes.legacy_business_reason_meta_mapping()
-        self.assertTrue(mapping)
+        self.assertIn(reason_code, mapping)
         self.assertTrue(all(
             ((meta.get("source_authority") or {}).get("kind"))
             == "legacy_business_reason_metadata_provider"
@@ -1768,6 +1787,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             "view_type": "form",
             "action_id": action.id,
             "render_profile": "edit",
+            "client_type": "web_pc",
             "client_contract_capabilities": [
                 "form.feedback.message.v1",
                 "form.feedback.draft.v1",
@@ -1776,7 +1796,7 @@ class TestOdooNativeAlignmentBoundaries(TransactionCase):
             ],
         })
         envelope = result.to_legacy_dict() if hasattr(result, "to_legacy_dict") else result
-        self.assertTrue(envelope.get("ok", True))
+        self.assertTrue(envelope.get("ok", True), envelope)
         action_rows = envelope["data"]["actionContract"]["actionRuleList"]
         settings_rows = [
             row for row in action_rows

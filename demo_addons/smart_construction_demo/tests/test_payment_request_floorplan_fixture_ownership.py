@@ -4,10 +4,26 @@ from unittest.mock import patch
 from odoo.tests.common import TransactionCase, tagged
 
 from ..seed.steps import step_payment_request_floorplan_demo as fixture_step
+from ..tools.scenario_loader import load_scenario
 
 
 @tagged("post_install", "-at_install", "payment_request_fixture_ownership")
 class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if not cls.env.ref(
+            "smart_construction_demo.sc_demo_contract_in_069_payment",
+            raise_if_not_found=False,
+        ):
+            load_scenario(
+                cls.env,
+                "s69_payment_ledger_surface",
+                ensure_base=False,
+                apply_passwords=False,
+                commit=False,
+            )
+
     def _values(self, name):
         contract = self.env.ref("smart_construction_demo.sc_demo_contract_in_069_payment")
         return {
@@ -72,7 +88,7 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
         self.assertEqual(len(funding_baseline), 1)
         self.assertEqual(second_record.date_request, funding_baseline.period_start)
         self.assertEqual(second_record.payee_account_completeness, "complete")
-        self.assertEqual(second_record.payer_unit, "演示付款单位基本户")
+        self.assertEqual(second_record.payer_unit, "德阳建科建材有限公司基本户")
         self.assertTrue(second["approval_actor_ids"])
         follower_partners = second_record.project_id.message_follower_ids.mapped(
             "partner_id"

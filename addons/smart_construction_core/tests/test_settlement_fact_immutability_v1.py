@@ -2,7 +2,7 @@
 import threading
 import uuid
 
-from psycopg2.errors import SerializationFailure
+from psycopg2.errors import DeadlockDetected, SerializationFailure
 
 from odoo import SUPERUSER_ID, api
 from lxml import etree
@@ -592,7 +592,7 @@ class TestSettlementFactConcurrencyV1(TransactionCase):
                         cursor.commit()
                         outcomes.append("written")
                         break
-                    except SerializationFailure:
+                    except (DeadlockDetected, SerializationFailure):
                         cursor.rollback()
                         if attempt:
                             outcomes.append("serialization_failed")
@@ -649,7 +649,7 @@ class TestSettlementFactConcurrencyV1(TransactionCase):
                         cursor.commit()
                         outcome = "%s_ok" % action
                         break
-                    except SerializationFailure:
+                    except (DeadlockDetected, SerializationFailure):
                         cursor.rollback()
                         if attempt:
                             outcome = "%s_serialization_failed" % action

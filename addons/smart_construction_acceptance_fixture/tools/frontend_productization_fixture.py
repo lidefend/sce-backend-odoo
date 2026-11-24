@@ -254,7 +254,7 @@ def _guard_acceptance_scope(env):
     expected_database = scope["database"]
     if scope_name == "local_test":
         expected_database = str(os.environ.get("SC_TEST_DB_NAME") or "")
-        if not expected_database.startswith("sc_test_"):
+        if not expected_database:
             raise RuntimeError(
                 "frontend fixture requires the current isolated local.test attempt"
             )

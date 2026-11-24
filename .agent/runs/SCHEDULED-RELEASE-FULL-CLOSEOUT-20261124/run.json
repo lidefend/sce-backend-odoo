@@ -3,7 +3,7 @@
   "id": "SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124",
   "branch": "fix/scheduled-release-full-closeout-main-20261124",
   "baseline_sha": "193d382c61b12e66a2974bada6fb334f5b9d6417",
-  "status": "active",
+  "status": "completed",
   "goal": ".agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml",
   "record": "docs/ops/iterations/scheduled_release_full_closeout_20261124.md",
   "scope": [
@@ -102,7 +102,14 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the verified candidate and publish one exact-head PR, then wait for all required checks.",
+  "next_exact_step": "Closed by PR #994 merge; full-suite baseline defects moved to SCHEDULED-FULL-BASELINE-REMEDIATION-20261124.",
+  "completion": {
+    "batch": "scheduled_release_full_scope_and_current_main_closeout",
+    "pr": 994,
+    "mainline_sha": "5e436b2a6cb8816da94c0b3d3d831279628adf3d",
+    "deployment": "not_performed",
+    "user_acceptance": "scheduled full execution correctly exposed four baseline blockers"
+  },
   "write_replay_authorized": false,
   "candidate_evidence": false
 }
