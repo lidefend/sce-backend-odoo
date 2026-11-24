@@ -302,6 +302,15 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             resolver._pick_landing_scene(["projects.list", "workspace.home"], {"workspace.home"}),
             "workspace.home",
         )
+        # A declared platform-safe candidate is not automatically available:
+        # an earlier unavailable declaration must not hide a later available one.
+        self.assertEqual(
+            resolver._pick_landing_scene(
+                ["workspace.home", "enterprise.setup"],
+                {"enterprise.setup"},
+            ),
+            "enterprise.setup",
+        )
 
     def test_role_surface_landing_path_is_consistent_with_the_picked_scene(self):
         resolver = target.IdentityResolver()

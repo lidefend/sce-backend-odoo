@@ -271,13 +271,13 @@ class IdentityResolver:
             if str(candidate or "").strip()
         ]
         # The platform-safe landing is appended as the guaranteed terminal
-        # candidate: it is available independently from the optional startup
-        # scene subset, so a declared role policy can always be satisfied
-        # without a scene-registry entry being preloaded in the boot payload.
+        # fallback. A declared initialization candidate that is actually
+        # available must still win before that fallback, otherwise a completed
+        # product configuration can never leave its setup workspace.
         if PLATFORM_SAFE_LANDING_SCENE not in candidates:
             candidates.append(PLATFORM_SAFE_LANDING_SCENE)
         for candidate in candidates:
-            if candidate == PLATFORM_SAFE_LANDING_SCENE or candidate in scene_keys:
+            if candidate in scene_keys:
                 return candidate
         return PLATFORM_SAFE_LANDING_SCENE
 
