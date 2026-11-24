@@ -88,9 +88,9 @@ Generated from repository source files. This report is informational during the 
 | 1583 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1564 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1556 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1553 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
-| 1540 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
@@ -350,9 +350,9 @@ Generated from repository source files. This report is informational during the 
 | 1583 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
+| 1564 | split_plan_required | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1553 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
-| 1540 | split_plan_required | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 
 ## Interpretation
 

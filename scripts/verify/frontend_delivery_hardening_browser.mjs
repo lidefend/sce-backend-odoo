@@ -376,7 +376,7 @@ function capture(page) {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
     requestCounts: {}, relationCandidateCounts: {}, pendingHttpDetails: [],
-    contractDiagnostics: [], pendingContractDiagnostics: [],
+    contractDiagnostics: [], pendingContractDiagnostics: [], contractBodies: [],
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -460,6 +460,22 @@ function capture(page) {
             error_message: String(error.message || '').slice(0, 500),
           });
           state.contractDiagnostics = state.contractDiagnostics.slice(-20);
+          const serialized = JSON.stringify(body);
+          state.contractBodies.push({
+            request: {
+              intent: payload.intent,
+              op: String(params.op || ''),
+              model: String(params.model || ''),
+              view_type: String(params.view_type || ''),
+              record_id: Number(params.record_id || params.recordId || params.res_id || 0) || 0,
+              action_id: Number(params.action_id || 0) || 0,
+              menu_id: Number(params.menu_id || 0) || 0,
+            },
+            http_status: response.status(),
+            sha256: crypto.createHash('sha256').update(serialized).digest('hex'),
+            body,
+          });
+          state.contractBodies = state.contractBodies.slice(-5);
         }).catch(() => {}));
       }
     }
@@ -615,6 +631,14 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
   } catch (error) {
     const runtime = runtimeByPage.get(page);
     await Promise.allSettled(runtime?.pendingContractDiagnostics || []);
+    if (runtime?.contractBodies?.length) {
+      fs.writeFileSync(path.join(OUT, 'failure-contract.json'), `${JSON.stringify({
+        schema_version: 'frontend-failed-contract/v1',
+        git_sha: process.env.GIT_SHA || '',
+        source: 'synthetic_acceptance_fixture',
+        contracts: runtime.contractBodies,
+      }, null, 2)}\n`);
+    }
     const diagnostic = await page.evaluate(() => ({
       url: window.location.href,
       title: document.title,

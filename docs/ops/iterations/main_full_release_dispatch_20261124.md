@@ -89,6 +89,11 @@ keeps bounded evidence for each `ui.contract.v2` response:
 It does not save the full contract payload or business data. This is a
 diagnostic capability, not a product fallback.
 
+On a failed route, the acceptance-only `failure-contract.json` additionally
+retains the last bounded synthetic contract responses so the exact decoder
+failure can be reproduced offline. The artifact is marked
+`source=synthetic_acceptance_fixture`; it is not a production payload capture.
+
 ## Boundaries
 
 - No product code, contract, ACL, Record Rule, workflow semantics, database,

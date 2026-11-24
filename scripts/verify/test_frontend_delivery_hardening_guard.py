@@ -602,6 +602,8 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("trace_id:", source)
         self.assertIn("productPages: Array.from(document.querySelectorAll('[data-product-page-mode]'))", source)
         self.assertIn("contractDiagnostics: runtime?.contractDiagnostics || []", source)
+        self.assertIn("source: 'synthetic_acceptance_fixture'", source)
+        self.assertIn("failure-contract.json", source)
         self.assertNotIn("bodyText: JSON.stringify(body", source)
 
 
