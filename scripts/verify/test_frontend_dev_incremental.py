@@ -1503,17 +1503,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.page_contract_boundary.guard"],
         )
 
-    def test_api_data_list_boundaries_select_their_nonzero_unit(self) -> None:
-        for path in (
-            "addons/smart_core/handlers/api_data.py",
-            "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
-        ):
-            with self.subTest(path=path):
-                self.assertEqual(
-                    select_targets([path]),
-                    ["verify.smart_core.api_data_list_boundaries.unit"],
-                )
-
     def test_decision_authority_artifacts_select_their_unit(self) -> None:
         for path in (
             "scripts/verify/frontend_decision_authority.py",
@@ -2897,15 +2886,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             select_targets(["make/guards.mk"]),
             ["verify.guard.registry"],
         )
-        for path in (
-            "addons/smart_core/identity/identity_resolver.py",
-            "addons/smart_core/tests/test_identity_resolver_entry_target.py",
-        ):
-            with self.subTest(path=path):
-                self.assertEqual(
-                    select_targets([path]),
-                    ["verify.identity_resolver.landing.unit"],
-                )
         for path in (
             "addons/smart_core/delivery/menu_service.py",
             "addons/smart_core/tests/test_delivery_menu_entry_target.py",

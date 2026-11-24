@@ -200,14 +200,6 @@ RULES = (
         "addons/smart_core/tests/test_user_activation.py",
     ), ("verify.smart_core.close_02.module_baseline",)),
     Rule((
-        "addons/smart_core/identity/identity_resolver.py",
-        "addons/smart_core/tests/test_identity_resolver_entry_target.py",
-    ), ("verify.identity_resolver.landing.unit",)),
-    Rule((
-        "addons/smart_core/handlers/api_data.py",
-        "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
-    ), ("verify.smart_core.api_data_list_boundaries.unit",)),
-    Rule((
         "addons/smart_construction_core/tests/test_um_p1_contract_settlement_visibility_contract_orm.py",
         "addons/smart_construction_core/tests/test_um_p1_cost_ledger_visibility_contract_orm.py",
         "addons/smart_construction_core/tests/test_um_p1_interfund_financing_visibility_contract_orm.py",

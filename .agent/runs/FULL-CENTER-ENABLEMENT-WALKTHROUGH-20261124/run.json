@@ -109,8 +109,8 @@
   "verification_responsibility": {
     "local_targeted": {
       "status": "required",
-      "entrypoint": "verify.identity_resolver.landing.unit, verify.role_surface.landing.contract.unit and verify.frontend.business_entry.matrix.incremental",
-      "reason": "Validate the P0 mechanism, P1 locked landing policy and the complete declared entry matrix on the exact local deployment."
+      "entrypoint": "verify.identity_resolver.landing.unit, verify.smart_core.api_data_list_boundaries.unit, verify.role_surface.landing.contract.unit and verify.frontend.business_entry.matrix.incremental",
+      "reason": "Validate each changed backend concern through its exact backend target; the declared frontend entry matrix remains required only for the branch's frontend and navigation inputs."
     },
     "remote_integration": {
       "status": "required",
@@ -171,6 +171,15 @@
       "inputs": [
         "addons/smart_core/identity/identity_resolver.py",
         "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+        "make/ci.mk"
+      ]
+    },
+    "api_data_list_boundaries": {
+      "target": "verify.smart_core.api_data_list_boundaries.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/handlers/api_data.py",
+        "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
         "make/ci.mk"
       ]
     },
