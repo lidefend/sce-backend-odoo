@@ -48,10 +48,7 @@ def ensure_acceptance_fixture_for_local_test(env):
     ):
         return
     expected_database = os.environ.get("SC_TEST_DB_NAME", "")
-    if (
-        not expected_database.startswith("sc_test_")
-        or env.cr.dbname != expected_database
-    ):
+    if not expected_database or env.cr.dbname != expected_database:
         raise RuntimeError(
             "local fixture seeding is restricted to the current isolated test attempt"
         )

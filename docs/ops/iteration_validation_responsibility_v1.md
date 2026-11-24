@@ -50,15 +50,28 @@ for release.
 | Remote integration | Ordinary PR open/sync; the four required PR workflows | Exact PR HEAD against the current target base | Risk-selected affected surface; test-only backend changes use the owning changed tests, not unrelated dependency consumers | The merge gate when every current required check passes | Scheduled mainline release eligibility |
 | Explicit candidate | PR `ci:candidate` label | Exact candidate HEAD/base | Full candidate professional/frontend/backend checks | Exact candidate-build eligibility | An ordinary PR shortcut, operator mainline audit or scheduled mainline result |
 | Operator full release | `make release.main_full EXPECTED_MAIN=<sha>` | Exact main head/tree, five newly dispatched `workflow_dispatch` runs | Same full public/professional/nested-backend/frontend/merge/release-condition set as the scheduled lane | `operator_full_audit` candidate-build eligibility | A `scheduled_mainline` observation, PR merge acceptance or deployment authorization |
-| Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact current main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests `backend_test_suite` with `scope_mode=full`, executing every test owned by every selected module | `candidate_build_eligible` for that exact current main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
+| Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact current main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests the full `product` backend suite. Demo and acceptance responsibilities run in the independent `auxiliary_backend_suite` workflow | `candidate_build_eligible` for that exact current main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
 
 The scheduled five-workflow set is intentional. `release_candidate_gate` is
 not a substitute for the four producer workflows: it waits for the exact-head,
 same-scheduled-slot runs of `public_guard`, `professional_quality_gate`,
 `frontend_release_gate` and `merge_policy_gate`, then materializes the
 `sce.release_condition.v1` artifact. The nested backend suite is not a separate
-schedule trigger; it is invoked by the full professional lane and must
-enumerate all runnable modules without a PR base.
+schedule trigger; it is invoked by the full professional lane and enumerates
+the complete product suite without a PR base.
+
+Backend responsibility is release-carrier driven:
+
+- `product`: modules under the product path, excluding explicit test-only
+  carriers.
+- `demo`: modules from `demo_addons`.
+- `acceptance`: explicitly forbidden implicit test carriers such as the
+  acceptance fixture.
+
+The three sets must partition every runnable backend module without overlap.
+Demo or acceptance failure blocks its own lane, not product candidate-build
+eligibility. They still run on the same schedule to preserve full coverage and
+publish independent evidence.
 
 The scheduled condition is only `candidate_build_eligible`. It remains
 `deployment_ready=false`; deployment approval and runtime readback are later,

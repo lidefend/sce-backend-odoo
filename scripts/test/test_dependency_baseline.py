@@ -13,7 +13,8 @@ from scripts.test import dependency_baseline as baseline
 class PreparationTests(unittest.TestCase):
     def environment(self):
         return dict(GITHUB_RUN_ID='12', GITHUB_RUN_ATTEMPT='1', SHARD_INDEX='0',
-                    SOURCE_SHA='a'*40, COMPOSE_PROJECT_NAME='sc-suite-12-0',
+                    SOURCE_SHA='a'*40, SUITE_NAME='product',
+                    COMPOSE_PROJECT_NAME='sc-suite-12-product-0',
                     SC_ENVIRONMENT='test', SC_TEST_TARGET_MODULE='portal',
                     SC_TEST_TARGET_DB='sc_suite_ci_portal')
 
@@ -22,10 +23,17 @@ class PreparationTests(unittest.TestCase):
         original = baseline.identity(env)
         for key, value in [('SOURCE_SHA', 'b'*40), ('GITHUB_RUN_ATTEMPT', '2')]:
             self.assertNotEqual(original, baseline.identity(dict(env, **{key: value})))
-        self.assertNotEqual(original, baseline.identity(dict(env, SHARD_INDEX='1', COMPOSE_PROJECT_NAME='sc-suite-12-1')))
+        self.assertNotEqual(original, baseline.identity(dict(
+            env, SHARD_INDEX='1', COMPOSE_PROJECT_NAME='sc-suite-12-product-1')))
+        self.assertNotEqual(original, baseline.identity(dict(
+            env, SUITE_NAME='demo', COMPOSE_PROJECT_NAME='sc-suite-12-demo-0')))
 
     def test_reject_persistent_demo_wrong_target_and_unknown_identity(self):
         for key, value in [('COMPOSE_PROJECT_NAME', 'sc-local-test'),
+                           ('COMPOSE_PROJECT_NAME', 'sc-suite-12-0'),
+                           ('COMPOSE_PROJECT_NAME', 'sc-suite-12-product-1'),
+                           ('SUITE_NAME', ''), ('SUITE_NAME', 'unknown'),
+                           ('SUITE_NAME', 'product;DROP'),
                            ('SC_ENVIRONMENT', 'demo'), ('SC_ALLOW_DEMO_DATA', '1'),
                            ('SC_TEST_TARGET_DB', 'sc_dev_demo'),
                            ('SC_TEST_TARGET_DB', 'sc_suite_ci_other'),
@@ -142,7 +150,7 @@ class PreparationTests(unittest.TestCase):
         script = Path(__file__).with_name('test.sh').read_text()
         fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
         env = dict(os.environ, ROOT_DIR='/fixture', DB_NAME='sc_suite_ci_smart_core',
-                   COMPOSE_PROJECT_NAME='sc-suite-12-0', ADDONS_EXTERNAL_MOUNT='/fixture')
+                   COMPOSE_PROJECT_NAME='sc-suite-12-product-0', ADDONS_EXTERNAL_MOUNT='/fixture')
         for module, enabled, tags, expected in [
             ('smart_core', '1', '', True), ('portal', '1', '', False),
             ('smart_core', '0', '', False), ('smart_core', '1', 'sc_gate', False),
@@ -161,7 +169,8 @@ class PreparationTests(unittest.TestCase):
         script = (Path(__file__).with_name('test.sh')).read_text()
         fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
         env = dict(os.environ, SC_TEST_DEPENDENCY_PREPARATION='1', ROOT_DIR='/fixture',
-                   MODULE='portal', DB_NAME='sc_suite_ci_portal', COMPOSE_PROJECT_NAME='sc-suite-12-0',
+                   MODULE='portal', DB_NAME='sc_suite_ci_portal',
+                   COMPOSE_PROJECT_NAME='sc-suite-12-product-0',
                    ADDONS_EXTERNAL_MOUNT='/fixture/external')
         for override in ('', 'sc_gate/smart_construction_core,sc_gate/portal', 'sc_gate'):
             with self.subTest(override=override):
@@ -170,6 +179,52 @@ class PreparationTests(unittest.TestCase):
                                         env=dict(env, TEST_TAGS_INPUT=override), capture_output=True, text=True)
                 self.assertEqual(result.returncode, 0, result.stderr)
                 self.assertEqual(bool(result.stdout), not bool(override))
+
+    def test_test_container_receives_exact_attempt_database_identity(self):
+        script = (Path(__file__).with_name('test.sh')).read_text()
+        self.assertIn('-e "SC_TEST_DB_NAME=${DB_NAME}"', script)
+        self.assertLess(
+            script.index('-e "SC_TEST_DB_NAME=${DB_NAME}"'),
+            script.index('--entrypoint bash odoo'),
+        )
+
+    def test_preparation_container_receives_exact_suite_environment_identity(self):
+        script = (Path(__file__).with_name('test.sh')).read_text()
+        fragment = script.split('PREPARATION_ARGS=()', 1)[1].split('RUN_RM=', 1)[0]
+        env = dict(
+            os.environ,
+            ROOT_DIR='/fixture',
+            MODULE='smart_construction_acceptance_fixture',
+            DB_NAME='sc_suite_ci_smart_construction_acceptance_fixture',
+            GITHUB_RUN_ID='45341434954',
+            GITHUB_RUN_ATTEMPT='1',
+            SHARD_INDEX='0',
+            SOURCE_SHA='a' * 40,
+            SUITE_NAME='acceptance',
+            COMPOSE_PROJECT_NAME='sc-suite-45341434954-acceptance-0',
+            ADDONS_EXTERNAL_MOUNT='/fixture/external',
+            SC_TEST_DEPENDENCY_PREPARATION='1',
+            SC_ENVIRONMENT='test',
+            SC_ALLOW_DEMO_DATA='0',
+            TEST_TAGS_INPUT='',
+        )
+        result = subprocess.run(
+            ['bash', '-eu', '-c', 'PREPARATION_ARGS=()\n' + fragment
+             + '\nprintf "%s\\n" "${PREPARATION_ARGS[@]}"'],
+            env=env,
+            capture_output=True,
+            text=True,
+        )
+        self.assertEqual(result.returncode, 0, result.stderr)
+        for expected in (
+            'SC_TEST_TARGET_MODULE=smart_construction_acceptance_fixture',
+            'SC_TEST_TARGET_DB=sc_suite_ci_smart_construction_acceptance_fixture',
+            'SUITE_NAME=acceptance',
+            'SC_ENVIRONMENT=test',
+            'SC_ALLOW_DEMO_DATA=0',
+            'COMPOSE_PROJECT_NAME=sc-suite-45341434954-acceptance-0',
+        ):
+            self.assertIn(expected, result.stdout.splitlines())
 
 
 if __name__ == '__main__':

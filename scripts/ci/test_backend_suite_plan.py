@@ -7,6 +7,7 @@ import sys
 import tempfile
 import unittest
 import copy
+from pathlib import Path
 from unittest.mock import patch
 
 import backend_suite_plan as planner
@@ -214,7 +215,34 @@ class ShardPlanTest(unittest.TestCase):
                 patch.object(planner.impact, 'snapshot', return_value=graph):
             plan = planner.build_plan('', 'head')
         self.assertEqual(plan['modules'], ['a', 'b', 'c'])
+        self.assertEqual(plan['suite'], 'product')
         self.assertIn('explicit_full', plan['reasons'])
+
+    def test_full_suites_partition_product_demo_and_acceptance(self):
+        graph = {
+            'product': {'prefix': 'addons/product/'},
+            'acceptance_fixture': {'prefix': 'addons/acceptance_fixture/'},
+            'demo': {'prefix': 'demo_addons/demo/'},
+        }
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'config/tenant').mkdir(parents=True)
+            (root / 'config/tenant/module_sets.v1.json').write_text(json.dumps({
+                'forbidden_implicit_modules': ['acceptance_fixture'],
+            }))
+            with patch.object(planner.impact, 'ROOT', root):
+                product = planner.suite_modules('product', ['product', 'acceptance_fixture', 'demo'], graph)
+                demo = planner.suite_modules('demo', ['product', 'acceptance_fixture', 'demo'], graph)
+                acceptance = planner.suite_modules(
+                    'acceptance',
+                    ['product', 'acceptance_fixture', 'demo'],
+                    graph,
+                )
+        self.assertEqual(product, ['product'])
+        self.assertEqual(demo, ['demo'])
+        self.assertEqual(acceptance, ['acceptance_fixture'])
+        self.assertEqual(set(product + demo + acceptance), set(graph))
+        self.assertEqual(len(product + demo + acceptance), len(set(product + demo + acceptance)))
 
     def test_full_plan_demands_registered_managed_methods(self):
         module = planner.changed_coverage.MANAGED_MODULE
@@ -225,8 +253,9 @@ class ShardPlanTest(unittest.TestCase):
         with patch.object(planner.impact, 'git', side_effect=git), \
                 patch.object(planner.impact, 'snapshot', return_value=graph), \
                 patch.object(planner.changed_coverage, 'managed_tests', return_value=rows) as managed:
-            plan = planner.build_plan('', 'head')
+            plan = planner.build_plan('', 'head', suite='acceptance')
         self.assertEqual(rows, plan['changed_test_coverage'])
+        self.assertEqual(plan['suite'], 'acceptance')
         managed.assert_called_once()
 
     def test_dispatch_rejects_unknown_or_duplicate_modules(self):

@@ -188,7 +188,7 @@ verification_responsibility:
         - frontend_release_gate.yml
         - merge_policy_gate.yml
         - release_candidate_gate.yml
-      nested_scope: backend_test_suite_full_all_modules_and_tests
+      nested_scope: product_suite_full_all_tests_plus_independent_demo_and_acceptance_suites
       release_condition_kinds:
         - scheduled_mainline
         - operator_full_audit

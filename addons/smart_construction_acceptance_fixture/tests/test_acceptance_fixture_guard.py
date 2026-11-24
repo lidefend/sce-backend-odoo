@@ -4,7 +4,10 @@ from unittest.mock import patch
 
 from odoo.tests.common import TransactionCase, tagged
 
-from ..tools.frontend_productization_fixture import _guard_acceptance_scope
+from ..tools.frontend_productization_fixture import (
+    FIXTURE_SCOPE_ENV,
+    _guard_acceptance_scope,
+)
 
 
 class _Cursor:
@@ -51,3 +54,15 @@ class TestAcceptanceFixtureGuard(TransactionCase):
         self._assert_denied(
             "sc_frontend_acceptance", "acceptance", "1", "", "SC_ACCEPTANCE_FIXTURE_PASSWORD"
         )
+
+    def test_local_test_scope_accepts_the_exact_attempt_database_identity(self):
+        database = "sc_suite_ci_smart_construction_acceptance_fixture"
+        values = {
+            FIXTURE_SCOPE_ENV: "local_test",
+            "SC_TEST_DB_NAME": database,
+            "SC_ENVIRONMENT": "dev",
+            "SC_ALLOW_DEMO_DATA": "1",
+            "SC_ACCEPTANCE_FIXTURE_PASSWORD": "secret",
+        }
+        with patch.dict(os.environ, values, clear=False):
+            _guard_acceptance_scope(_NoOrmEnvironment(database))

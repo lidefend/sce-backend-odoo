@@ -115,7 +115,12 @@ def changed_tests(base: str, head: str) -> list[dict]:
     return rows
 
 
-def verify_logs(rows: list[dict], sources: list[dict]) -> list[dict]:
+def verify_logs(
+    rows: list[dict],
+    sources: list[dict],
+    *,
+    accept_direct_managed_executions: bool = False,
+) -> list[dict]:
     """Match each row inside its own receipt scope, never a merged log blob.
 
     Each ``source`` is ``{'module', 'kind', 'execution', 'text'}`` read from one
@@ -180,7 +185,8 @@ def verify_logs(rows: list[dict], sources: list[dict]) -> list[dict]:
                 r'(?<!\S)' + re.escape(row['class'] + '.' + row['method']) + r'\s+skipp'
             )
             skipped = any(re.search(skip_identity, line) for line in text.splitlines())
-        result.append({**row, 'status': 'executed' if matched and not skipped and row['owner'] != MANAGED_TARGET else 'pending'})
+        direct_managed = row['owner'] != MANAGED_TARGET or accept_direct_managed_executions
+        result.append({**row, 'status': 'executed' if matched and not skipped and direct_managed else 'pending'})
     return result
 
 
@@ -338,6 +344,7 @@ def main() -> None:
     parser.add_argument('--head')
     parser.add_argument('--discover-managed', action='store_true')
     parser.add_argument('--wait-managed-seconds', type=int, default=0)
+    parser.add_argument('--accept-direct-managed-executions', action='store_true')
     parser.add_argument('--module')
     parser.add_argument('--receipts', type=Path)
     parser.add_argument('--output', type=Path)
@@ -361,9 +368,15 @@ def main() -> None:
             'execution': receipt.get('execution', ''),
             'text': (path.parent / 'execution.log').read_text(),
         })
-    rows = verify_logs(rows, sources)
+    rows = verify_logs(
+        rows,
+        sources,
+        accept_direct_managed_executions=args.accept_direct_managed_executions,
+    )
     managed = None
-    if args.discover_managed and any(r['owner'] == MANAGED_TARGET for r in rows):
+    if args.discover_managed and any(
+        r['owner'] == MANAGED_TARGET and r['status'] == 'pending' for r in rows
+    ):
         if not 0 <= args.wait_managed_seconds <= 7200:
             parser.error('managed evidence wait must be between 0 and 7200 seconds')
         schedule_slot = None

@@ -1,0 +1,43 @@
+name: auxiliary_backend_suite
+
+on:
+  schedule:
+    - cron: '0 18 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: auxiliary-backend-suite-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  demo:
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      ((github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner))
+    uses: ./.github/workflows/backend_test_suite.yml
+    with:
+      base_sha: ''
+      head_sha: ${{ github.sha }}
+      head_ref: ${{ github.ref_name }}
+      scope_mode: full
+      suite: demo
+
+  acceptance:
+    if: >-
+      github.repository == 'lidefend/sce-backend-odoo' &&
+      ((github.event_name == 'schedule' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' &&
+      github.actor == github.repository_owner))
+    uses: ./.github/workflows/backend_test_suite.yml
+    with:
+      base_sha: ''
+      head_sha: ${{ github.sha }}
+      head_ref: ${{ github.ref_name }}
+      scope_mode: full
+      suite: acceptance

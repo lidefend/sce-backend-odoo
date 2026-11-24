@@ -48,6 +48,8 @@ if [[ "${SC_TEST_DEPENDENCY_PREPARATION:-0}" == "1" && -z "${TEST_TAGS_INPUT:-}"
     -e "SC_TEST_TARGET_MODULE=${MODULE}" -e "SC_TEST_TARGET_DB=${DB_NAME}"
     -e "GITHUB_RUN_ID=${GITHUB_RUN_ID:-}" -e "GITHUB_RUN_ATTEMPT=${GITHUB_RUN_ATTEMPT:-}"
     -e "SHARD_INDEX=${SHARD_INDEX:-}" -e "SOURCE_SHA=${SOURCE_SHA:-}"
+    -e "SUITE_NAME=${SUITE_NAME:-}" -e "SC_ENVIRONMENT=${SC_ENVIRONMENT:-}"
+    -e "SC_ALLOW_DEMO_DATA=${SC_ALLOW_DEMO_DATA:-}"
     -e "COMPOSE_PROJECT_NAME=${COMPOSE_PROJECT_NAME}" -e "ADDONS_EXTERNAL_MOUNT=${ADDONS_EXTERNAL_MOUNT}")
   PREPARATION_ODOO_ARGS="--db-filter=^${DB_NAME}$ --data-dir=/var/lib/odoo"
   PREPARATION_COMMAND="python3 /tmp/sc-dependency-baseline.py || exit \$?"
@@ -72,6 +74,7 @@ fi
 # shellcheck disable=SC2086
 compose ${COMPOSE_FILES} -f "${ROOT_DIR}/docker-compose.test-isolation.yml" run --no-deps ${RUN_RM} -T --interactive=false "${RUN_NAME[@]}" \
   -e PYTHONFAULTHANDLER=1 \
+  -e "SC_TEST_DB_NAME=${DB_NAME}" \
   "${RECEIPT_ARGS[@]}" "${PIP_CACHE_ARGS[@]}" "${PREPARATION_ARGS[@]}" \
   -v "${DOCS_MOUNT_HOST}:${DOCS_MOUNT_CONT}:ro" \
   -v "${CONFIG_MOUNT_HOST}:${CONFIG_MOUNT_CONT}:ro" \
