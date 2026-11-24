@@ -580,11 +580,15 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         self.assertEqual(
             backend_suite["with"]["scope_mode"],
-            "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
+            "${{ (needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}",
         )
         self.assertEqual(
             backend_suite["with"]["base_sha"],
-            "${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}",
+            "${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
+        )
+        self.assertEqual(
+            "${{ steps.risk.outputs.backend_tooling_changed }}",
+            authorization["outputs"]["backend_tooling_changed"],
         )
         self.assertIn(
             "github.event_name == 'schedule' && 'full'",
@@ -1048,7 +1052,7 @@ class ParallelQualityExecutionTest(unittest.TestCase):
             self.jobs()['backend_impact_suite']['if'],
         )
         self.assertEqual(
-            "${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}",
+            "${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}",
             self.jobs()['backend_impact_suite']['with']['base_sha'],
         )
         full_gate = next(

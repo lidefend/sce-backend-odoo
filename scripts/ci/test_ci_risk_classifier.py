@@ -155,6 +155,19 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertEqual(result.lane, "STANDARD")
         self.assertEqual(result.professional_mode, "standard_backend")
 
+    def test_backend_ci_harness_is_backend_tooling_and_control_plane(self) -> None:
+        result = classify(
+            ["scripts/ci/backend_iteration_lanes.py"],
+            event_name="pull_request",
+        )
+        self.assertEqual(result.lane, "HIGH_RISK")
+        self.assertTrue(result.backend_changed)
+        self.assertTrue(result.control_plane_changed)
+        self.assertTrue(result.backend_tooling_changed)
+        self.assertFalse(result.backend_runtime_changed)
+        self.assertIn("backend_ci_harness", result.ownership_categories)
+        self.assertEqual("true", result.outputs()["backend_tooling_changed"])
+
     def test_p4_executor_batch_does_not_require_orm(self) -> None:
         result = classify([
             '.agent/context.yaml', '.agent/runs/P4-INCREMENTAL-RESUME/run.json',

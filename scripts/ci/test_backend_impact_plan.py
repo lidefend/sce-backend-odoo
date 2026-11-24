@@ -369,7 +369,8 @@ def test_input(payload=(ROOT / "docs" / "default.json").read_text()):
                     with contextlib.redirect_stdout(io.StringIO()):
                         planner.main()
             emitted = gho.read_text()
-            self.assertIn('required=false', emitted)
+            self.assertIn('required=true', emitted)
+            self.assertIn('modules=\n', emitted)
             self.assertIn('tool_checks=verify.ci.workflow.contract', emitted)
             self.assertIn('scope_status=NOT_APPLICABLE', emitted)
 

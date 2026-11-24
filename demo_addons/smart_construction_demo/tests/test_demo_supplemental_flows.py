@@ -722,8 +722,8 @@ class SupplementalFlows(unittest.TestCase):
         }
         scopes = assignments["APPROVAL_SCOPE_GROUP_XMLIDS"]
         templates = assignments["USER_VISIBLE_APPROVAL_TEMPLATES"]
-        for name in ("project_contract_approval", "general_contract_approval"):
-            for _label, scope in templates[name]["steps"]:
+        for name, template in templates.items():
+            for _label, scope in template["steps"]:
                 self.assertIn(scopes[scope], seats, (name, scope))
 
     def test_user_role_replacement_reenrolls_before_return(self):

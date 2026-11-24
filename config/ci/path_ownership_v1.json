@@ -333,6 +333,30 @@
       "tool_checks": []
     },
     {
+      "id": "backend_ci_harness",
+      "patterns": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/auxiliary_backend_suite.yml",
+        "scripts/ci/backend_*",
+        "scripts/ci/test_backend_*",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
+        "scripts/test/test.sh",
+        "scripts/test/dependency_baseline.py"
+      ],
+      "risk": "high",
+      "frontend": false,
+      "backend": true,
+      "backend_runtime": false,
+      "control_plane": true,
+      "backend_tooling": true,
+      "tool_checks": [
+        "verify.backend_iteration_lanes.unit",
+        "verify.ci.workflow.contract",
+        "verify.ci.scheduled_gates",
+        "verify.github_actions.security"
+      ]
+    },
+    {
       "id": "ci_tooling",
       "patterns": [
         "scripts/ci/**",

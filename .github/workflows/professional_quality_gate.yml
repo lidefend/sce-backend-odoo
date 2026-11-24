@@ -35,6 +35,7 @@ jobs:
       frontend_runtime_changed: ${{ steps.risk.outputs.frontend_runtime_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
       backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}
+      backend_tooling_changed: ${{ steps.risk.outputs.backend_tooling_changed }}
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
       orm_required: ${{ steps.risk.outputs.orm_required }}
       orm_scopes: ${{ steps.risk.outputs.orm_scopes }}
@@ -159,10 +160,10 @@ jobs:
       needs.professional_authorization.outputs.backend_impact_required == 'true')
     uses: ./.github/workflows/backend_test_suite.yml
     with:
-      base_sha: ${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}
+      base_sha: ${{ (needs.professional_authorization.outputs.candidate_requested != 'true' && needs.professional_authorization.outputs.backend_tooling_changed != 'true') && github.event.pull_request.base.sha || '' }}
       head_sha: ${{ github.event.pull_request.head.sha || github.sha }}
       head_ref: ${{ github.event.pull_request.head.ref || github.ref_name }}
-      scope_mode: ${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}
+      scope_mode: ${{ (needs.professional_authorization.outputs.candidate_requested == 'true' || needs.professional_authorization.outputs.backend_tooling_changed == 'true') && 'full' || 'focused' }}
       suite: product
 
   python310_runtime_compatibility:

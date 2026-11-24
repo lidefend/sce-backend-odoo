@@ -536,17 +536,26 @@ _DEMO_APPROVAL_ACTORS = {
     "smart_construction_core.group_sc_role_operation_user": "smart_construction_demo.user_sc_operation_demo",
     "smart_construction_core.group_sc_cap_cost_manager": "smart_construction_demo.user_sc_cost_manager_cap",
     "smart_construction_core.group_sc_role_contract_admin": "smart_construction_demo.user_sc_contract_01",
+    "smart_construction_core.group_sc_cap_contract_user": "smart_construction_demo.user_sc_contract_user_cap",
     "smart_construction_core.group_sc_cap_contract_manager": "smart_construction_demo.user_sc_contract_manager_cap",
     "smart_construction_core.group_sc_role_finance_user":
         "smart_construction_demo.user_sc_fin_01",
+    "smart_construction_core.group_sc_cap_finance_user":
+        "smart_construction_demo.user_sc_finance_user_cap",
+    "smart_construction_core.group_sc_cap_finance_read":
+        "smart_construction_demo.user_sc_finance_read_cap",
     "smart_construction_core.group_sc_cap_project_manager":
         "smart_construction_demo.user_demo_project_manager",
     "smart_construction_core.group_sc_cap_finance_manager":
         "smart_construction_demo.user_sc_fin_mgr_01",
     "smart_construction_core.group_sc_role_executive":
         "smart_construction_demo.user_demo_role_executive",
+    "smart_construction_core.group_sc_cap_executive_approver":
+        "smart_construction_demo.user_demo_role_executive",
     "smart_construction_core.group_sc_cap_settlement_manager": "smart_construction_demo.user_sc_settlement_manager_cap",
     "smart_construction_core.group_sc_role_settlement_user": "smart_construction_demo.user_sc_settlement_user_cap",
+    "smart_construction_core.group_sc_cap_settlement_user": "smart_construction_demo.user_sc_settlement_user_cap",
+    "smart_construction_core.group_sc_cap_cost_user": "smart_construction_demo.user_sc_cost_user_cap",
     "smart_construction_core.group_sc_cap_material_manager": "smart_construction_demo.user_sc_material_mgr_01",
     "smart_construction_core.group_sc_cap_purchase_manager": "smart_construction_demo.user_sc_purchase_manager_cap",
     "smart_construction_core.group_sc_role_project_user": "smart_construction_demo.user_sc_project_user",
@@ -567,6 +576,7 @@ _DEMO_DOCUMENT_SUBMITTER = "smart_construction_demo.user_demo_role_project_a_mem
 _DEMO_PAYMENT_SCOPED_SEATS = (
     _DEMO_DOCUMENT_SUBMITTER,
     _DEMO_APPROVAL_ACTORS["smart_construction_core.group_sc_role_finance_user"],
+    _DEMO_APPROVAL_ACTORS["smart_construction_core.group_sc_cap_finance_user"],
 )
 
 

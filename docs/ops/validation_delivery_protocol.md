@@ -57,6 +57,17 @@ run 中的每项检查可以声明 `depends_on: ["another_check_id"]`。引用�
 3. 前提通过后，才复用有效 Quick 或执行原有 Quick 后备路径。Make recipe 保证 `-j` 也不能并发越过前提。
 4. Quick 后重新读取 source/base 并验证证据，漂移或证据改变即拒绝；随后沿用受保护 PR 合并及 head 绑定。
 
+后端 CI/测试工具面的候选还必须先执行：
+
+`make ci.backend.iteration.close EXPECTED_HEAD=<full_sha>`
+
+该入口优先复用 exact-head `professional_quality_gate` 的 full product
+frozen plan，只补跑缺失的 demo 与 acceptance，并在一个等待循环中核对
+run id、head、suite、完整模块集合和 plan artifact 摘要。回执写入
+`.runtime/backend-iteration/<head>.json`；`pr.merge.preflight` 与真正合并前
+都会实时复核，回执缺失、漂移或任一套件失败均拒绝。普通非后端工具候选不受
+该额外三赛道门禁影响。
+
 目标 main 前进后，先把最新 main 合入 PR 分支，并把当前 run 基线更新到该 main 的完整 SHA，再重跑受影响本地集合。旧基线的 PR 检查不能承接为新基线的集成证据。
 
 合并入口不再暗中记录证据；新证据先显式执行 `acceptance.evolution.record`。所有原始记录、哈希、套件适配器和时效检查保持。

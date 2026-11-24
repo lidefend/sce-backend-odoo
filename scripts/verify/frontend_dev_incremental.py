@@ -1213,6 +1213,14 @@ RULES = (
         "verify.ci.workflow.contract",
     )),
     Rule((
+        "scripts/ci/backend_iteration_lanes.py",
+        "scripts/ci/test_backend_iteration_lanes.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    ), (
+        "verify.backend_iteration_lanes.unit",
+        "verify.ci.workflow.contract",
+    )),
+    Rule((
         ".github/workflows/backend_test_suite.yml",
         "scripts/verify/github_actions_security_guard.py",
         "scripts/verify/test_github_actions_security_guard.py",

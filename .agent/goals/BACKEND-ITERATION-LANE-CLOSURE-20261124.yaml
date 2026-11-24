@@ -1,0 +1,71 @@
+schema_version: 1
+
+goal:
+  id: BACKEND-ITERATION-LANE-CLOSURE-20261124
+  title: Close and certify the exact-head backend iteration lanes
+  status: active
+  formal_product_layer: P4
+  layer_target: exact-head backend product/demo/acceptance iteration lane
+  module:
+    - ops_delivery_tool
+    - backend_test_suite
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Provide one governed exact-head backend iteration close entry that proves
+    all three backend responsibility lanes are feasible, reuses an already-full
+    product execution from the required PR gate, dispatches only missing
+    auxiliary lanes, verifies every run and frozen plan against the same head and
+    base, and materializes one machine-readable receipt for merge preflight.
+  why_here: >-
+    The defect is in CI orchestration and evidence identity. The existing
+    backend_test_suite already owns execution, so the missing capability belongs
+    in P4 dispatch, polling, identity and merge-preflight tooling.
+  why_not_elsewhere:
+    - Do not change product, demo or acceptance business tests to make orchestration pass.
+    - Do not weaken the strict suite partition or reuse rules.
+    - Do not introduce a second backend test executor.
+    - Do not make ordinary product release eligibility depend on auxiliary failures without an explicit iteration close requirement.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/goals/BACKEND-ITERATION-LANE-CLOSURE-20261124.yaml
+      - .agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json
+      - .github/workflows/backend_test_suite.yml
+      - .github/workflows/professional_quality_gate.yml
+      - config/ci/path_ownership_v1.json
+      - demo_addons/smart_construction_demo/tools/scenario_loader.py
+      - demo_addons/smart_construction_demo/tests/test_demo_usage_foundation_approval.py
+      - demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py
+      - demo_addons/smart_construction_demo/data/demo/role_matrix_demo_users.xml
+      - make/ci.mk
+      - make/codex.mk
+      - scripts/ci/backend_iteration_lanes.py
+      - scripts/ci/backend_impact_plan.py
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/test_ci_path_ownership.py
+      - scripts/ci/test_backend_iteration_lanes.py
+      - scripts/ci/test_backend_impact_plan.py
+      - scripts/ci/test_backend_test_suite_dispatch_contract.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - docs/ops/iteration_validation_responsibility_v1.md
+      - docs/ops/validation_delivery_protocol.md
+      - docs/ops/codex_execution_allowlist.md
+      - docs/ops/iterations/backend_iteration_lane_closure_20261124.md
+    product_behavior: no production behavior change
+  acceptance:
+    - product full plan is reused from professional_quality_gate when available
+    - only missing demo and acceptance full suites are dispatched
+    - every run and plan binds the exact PR head, target base and suite
+    - one receipt proves all three lane results without duplicate product execution
+    - harness changes cannot pass merge preflight without the exact-head lane receipt
+    - real PR execution produces all three successful exact-head runs
+  exclusions:
+    - product_semantic_change
+    - acl_or_record_rule_change
+    - database_migration
+    - deployment
+    - weakening_suite_partition_or_reuse
+  rollback: Revert this P4 branch; no database or deployed state changes.

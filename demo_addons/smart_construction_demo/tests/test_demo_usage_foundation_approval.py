@@ -10,6 +10,17 @@ from ..tools.scenario_loader import _DEMO_APPROVAL_ACTORS
 
 @tagged("post_install", "-at_install", "-standard", "demo_usage_foundation_approval")
 class TestDemoUsageFoundationApproval(TransactionCase):
+    def test_contract_user_group_has_a_declared_demo_seat(self):
+        group = self.env.ref(
+            "smart_construction_core.group_sc_cap_contract_user"
+        )
+        actor_xmlid = _DEMO_APPROVAL_ACTORS.get(
+            "smart_construction_core.group_sc_cap_contract_user"
+        )
+        self.assertTrue(actor_xmlid)
+        actor = self.env.ref(actor_xmlid)
+        self.assertIn(actor, group.users)
+
     def test_approval_readiness_and_zero_reviewer_groups(self):
         report = {
             "policies": 0,
