@@ -533,6 +533,10 @@ _DEMO_LIFECYCLE_REVIEWER = {
 # seat once means the generic driver below can walk any chain for any model, so
 # a scenario that adds an approval-bearing document needs no tier-specific code.
 _DEMO_APPROVAL_ACTORS = {
+    "smart_construction_core.group_sc_cap_executive_approver":
+        "smart_construction_demo.user_demo_role_executive",
+    "smart_construction_core.group_sc_cap_contract_user":
+        "smart_construction_demo.user_sc_contract_user_cap",
     "smart_construction_core.group_sc_role_operation_user": "smart_construction_demo.user_sc_operation_demo",
     "smart_construction_core.group_sc_cap_cost_manager": "smart_construction_demo.user_sc_cost_manager_cap",
     "smart_construction_core.group_sc_role_contract_admin": "smart_construction_demo.user_sc_contract_01",

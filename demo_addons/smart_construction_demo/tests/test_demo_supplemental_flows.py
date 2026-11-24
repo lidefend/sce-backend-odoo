@@ -708,6 +708,14 @@ class SupplementalFlows(unittest.TestCase):
                     and any(isinstance(t, ast.Name) and t.id == "_DEMO_APPROVAL_ACTORS"
                             for t in n.targets))
         seats = ast.literal_eval(node.value)
+        self.assertEqual(
+            seats["smart_construction_core.group_sc_cap_contract_user"],
+            "smart_construction_demo.user_sc_contract_user_cap",
+        )
+        self.assertEqual(
+            seats["smart_construction_core.group_sc_cap_executive_approver"],
+            "smart_construction_demo.user_demo_role_executive",
+        )
         self.assertEqual(seats["smart_construction_core.group_sc_cap_contract_manager"],
                          "smart_construction_demo.user_sc_contract_manager_cap")
         self.assertEqual(seats["smart_construction_core.group_sc_role_contract_admin"],
