@@ -181,10 +181,16 @@ export function declaredRowSceneNavigation(contracts, actionId, rowId) {
   return null;
 }
 
-export function sceneNavigationMatchesUrl(navigation, rawUrl) {
+export function sceneNavigationMatchesUrl(navigation, rawUrl, baseUrl = '') {
   try {
     const url = new URL(rawUrl);
-    const expectedPath = String(navigation?.route || '').split('?', 1)[0];
+    const declaredPath = String(navigation?.route || '').split('?', 1)[0];
+    const basePath = baseUrl
+      ? new URL(baseUrl).pathname.replace(/\/+$/, '')
+      : '';
+    const expectedPath = basePath && declaredPath.startsWith('/')
+      ? `${basePath}${declaredPath}`
+      : declaredPath;
     if (!expectedPath || url.pathname !== expectedPath) return false;
     if (navigation.scene_key && url.searchParams.get('scene_key') !== navigation.scene_key) return false;
     return Object.entries(navigation.query || {}).every(([key, value]) => (

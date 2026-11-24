@@ -135,6 +135,24 @@ check(
 check(
   sceneNavigationMatchesUrl(
     contextualScene,
+    'http://fixture.invalid/t/demo/s/project.management?scene_key=project.management&project_id=130&entry_intent=project.dashboard.enter',
+    'http://fixture.invalid/t/demo',
+  ),
+  true,
+  'the tenant namespace prefix is bound to the declared product route',
+);
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
+    'http://fixture.invalid/other/s/project.management?scene_key=project.management&project_id=130&entry_intent=project.dashboard.enter',
+    'http://fixture.invalid/t/demo',
+  ),
+  false,
+  'a scene outside the acting tenant namespace is not accepted',
+);
+check(
+  sceneNavigationMatchesUrl(
+    contextualScene,
     'http://fixture.invalid/s/project.management?scene_key=project.management&entry_intent=project.dashboard.enter',
   ),
   false,

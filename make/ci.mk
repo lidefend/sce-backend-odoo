@@ -1758,6 +1758,12 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
 
+.PHONY: verify.smart_core.api_data_list_boundaries.unit
+verify.smart_core.api_data_list_boundaries.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/handlers/api_data.py addons/smart_core/tests/test_api_data_list_param_boundaries.py
+	@python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py
+	@echo "[verify.smart_core.api_data_list_boundaries.unit] PASS"
+
 .PHONY: verify.test.dependency_baseline.unit
 verify.test.dependency_baseline.unit: guard.prod.forbid
 	@python3 -m unittest scripts.test.test_dependency_baseline

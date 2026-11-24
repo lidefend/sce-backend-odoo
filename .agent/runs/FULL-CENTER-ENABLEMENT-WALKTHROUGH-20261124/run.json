@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124",
   "branch": "audit/full-center-enablement-walkthrough-20261124",
-  "status": "active",
+  "status": "verification_pending",
   "baseline_sha": "193d382c61b12e66a2974bada6fb334f5b9d6417",
   "scope": [
     ".agent/active-runs.json",
@@ -17,11 +17,13 @@
     "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py",
     "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
     "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/api_data.py",
     "addons/smart_core/handlers/ui_contract_v2.py",
     "addons/smart_core/identity/identity_resolver.py",
     "contracts/registry/component.yaml",
     "contracts/registry/semantic.yaml",
     "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+    "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
     "docs/engineering_convergence/complexity_budget_report.md",
     "docker-compose.yml",
     "make/ci.mk",
@@ -31,6 +33,9 @@
     "scripts/dev/frontend_static_build.sh",
     "scripts/verify/business_entry_matrix_browser.mjs",
     "scripts/verify/business_entry_matrix_incremental.py",
+    "scripts/verify/business_entry_matrix_model.mjs",
+    "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
+    "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_business_entry_matrix_incremental.py",
     "scripts/verify/test_construction_semantic_declarations.py",
@@ -46,8 +51,14 @@
     "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
     "frontend/apps/web/scripts/professional_component_registry_test.ts",
     "frontend/apps/web/scripts/contract_shape_projection_test.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewContractShapeRuntime.ts",
+    "frontend/apps/web/src/app/contract/contractGap.ts",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/composables/useStatus.ts",
     "frontend/apps/web/src/pages/ListPage.vue",
-    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts"
+    "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "scripts/verify/error_state_component_test.cjs"
   ],
   "environment": {
     "kind": "runtime",
@@ -135,18 +146,19 @@
       "inputs": [
         "scripts/verify/business_entry_matrix_browser.mjs",
         "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_runtime_route.test.mjs",
         "scripts/verify/test_business_entry_matrix_incremental.py",
-    "scripts/verify/test_construction_semantic_declarations.py",
+        "scripts/verify/test_construction_semantic_declarations.py",
         "make/frontend.mk"
       ]
     }
   },
   "blockers": [
-    "20/132 entries still declare no recognised presentation surface after the P0 relation fixes",
-    "19 scene-error and 3 assertion-failed entries remain for owner-layer classification",
-    "1 account journal entry still reports field.journal_group_ids.relation_identity"
+    "The affected project kanban, data permission and account journal surfaces now pass with zero console errors; the remaining matrix exit is a P4 negative-authority coverage gap because no eligible released denied-role candidate is disjoint from group_sc_cap_project_read",
+    "The previous 132-entry status counts are stale after the P0 relation-semantics, ACL-preserving label projection and tenant-route probe fixes; rerun only the deterministically affected set before recomputing the matrix"
   ],
-  "next_exact_step": "Validate the merged Contract V2 strict-decode fix, rebuild the exact synchronized candidate, and rerun the affected presentation entries.",
+  "next_exact_step": "Publish the clean exact-head candidate for remote integration; recompute matrix coverage only for entries whose declared inputs changed.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

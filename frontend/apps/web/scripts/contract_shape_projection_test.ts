@@ -19,7 +19,10 @@ import { projectStoredListPreference } from '../src/app/runtime/listPreferencePr
 import { resolveEnabledListColumns, resolveListColumnChoices } from '../src/pages/listPage/listColumnVisibility';
 import { ref } from 'vue';
 
-import { useActionViewContractShapeRuntime } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import {
+  extractListFieldSemanticsFromContract,
+  useActionViewContractShapeRuntime,
+} from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
 import { normalizeListRelationValue, presentListCell } from '../src/pages/listPage/listCellPresentation';
@@ -73,6 +76,40 @@ const runtime = useActionViewContractShapeRuntime({
   advancedFields: ref<string[]>([]),
   activeGroupByField: ref(''),
 });
+
+// A table owns the collection container, while its field descriptor owns the
+// cell widget. Sending the container type to api.data makes the backend skip
+// the x2many display-label projection, leaving raw ids for the renderer.
+const tagCollectionWidget = {
+  widgetId: 'field.company_ids',
+  widgetType: 'table',
+  fieldCode: 'company_ids',
+  label: '允许公司',
+  componentKey: 'sc.select.tags',
+  fieldDescriptor: {
+    fieldCode: 'company_ids',
+    fieldType: 'many2many',
+    widgetType: 'many2many_tags',
+  },
+  componentConfig: {
+    fieldType: 'many2many',
+    nativeWidget: 'many2many_tags',
+  },
+};
+const tagCollectionStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[tagCollectionWidget.widgetId, tagCollectionWidget]]),
+  widgetsByFieldCode: new Map([[tagCollectionWidget.fieldCode, tagCollectionWidget]]),
+  widgetsByFieldCodeAll: new Map([[tagCollectionWidget.fieldCode, [tagCollectionWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const tagCollectionSemantics = extractListFieldSemanticsFromContract(tagCollectionStore);
+check(
+  tagCollectionSemantics[0]?.widget,
+  'many2many_tags',
+  'list field semantics preserve the field widget instead of the table container widget',
+);
 
 const storeWithListProfile = (listProfile: Record<string, unknown>) => ({
   snapshot: {

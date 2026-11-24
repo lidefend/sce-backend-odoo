@@ -194,6 +194,47 @@ The existing P0 test file has two unrelated historical failures. They are not
 used as pass evidence and are not modified by this batch; the registered P0
 target runs only the landing assertions owned by this change.
 
+## Runtime contract-consumer closure
+
+The latest affected runtime pass separated three distinct defects instead of
+treating the remaining failures as one product or configuration gap:
+
+1. P0 frontend list request semantics used the collection container
+   (`widgetType=table`) where the field descriptor declared `many2many_tags`.
+   `api.data` therefore received no relation-tag presentation request.
+2. P0 backend label projection attempted a mixed-record `res.company` batch
+   read. Odoo record rules denied that batch, so the backend dropped all
+   company labels. The fix keeps Odoo ACL authority and retries individual
+   records, projecting only labels the caller can independently read.
+3. P4 scene matching compared the tenant-relative contract route
+   `/s/project.management` with the namespaced runtime pathname
+   `/t/demo/s/project.management`. The probe now binds the declared route to the
+   acting tenant base instead of weakening path matching.
+
+Targeted evidence:
+
+- `contract_shape_projection_test.ts`: PASS, 23 cases.
+- `business_entry_matrix_runtime_route.test.mjs`: PASS, 32 cases.
+- `test_api_data_list_param_boundaries.py`: PASS, 40 tests.
+- strict frontend typecheck: PASS.
+- `make ci.local.iteration`: PASS, 46 required targets, receipt
+  `.runtime/frontend-dev-validation/executions/20261124T055630Z-992657-640580091/receipt.json`.
+- affected matrix:
+  `.runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/post-diagnostics-r5/summary.json`
+
+The affected set now has three passing entry surfaces and zero console errors:
+
+- project kanban: navigation, kanban presentation and row scene detail passed;
+- data permission: collection and detail passed with projected company and role
+  labels;
+- account journal: collection and detail passed.
+
+The matrix command still exits non-zero for one P4 coverage limitation, not a
+product failure: every eligible denied-role candidate with released navigation
+also carries `group_sc_cap_project_read`, so a legal disjoint negative candidate
+for the project-kanban entry cannot be derived from the current demo principals.
+No gate, ACL, or frontend assertion was relaxed to convert this into a pass.
+
 ## Exclusions
 
 - No daily or production enablement.

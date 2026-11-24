@@ -744,7 +744,7 @@ async function openFirstRecord(page, state, presentation) {
   if (declaredScene) {
     const deadline = Date.now() + DETAIL_TIMEOUT_MS;
     while (Date.now() < deadline) {
-      if (sceneNavigationMatchesUrl(declaredScene, page.url())) {
+      if (sceneNavigationMatchesUrl(declaredScene, page.url(), BASE)) {
         const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
         if (!(await sceneError.count())) return { sceneNavigation: declaredScene };
       }

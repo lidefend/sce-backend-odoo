@@ -1503,6 +1503,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.frontend.page_contract_boundary.guard"],
         )
 
+    def test_api_data_list_boundaries_select_their_nonzero_unit(self) -> None:
+        for path in (
+            "addons/smart_core/handlers/api_data.py",
+            "addons/smart_core/tests/test_api_data_list_param_boundaries.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.smart_core.api_data_list_boundaries.unit"],
+                )
+
     def test_decision_authority_artifacts_select_their_unit(self) -> None:
         for path in (
             "scripts/verify/frontend_decision_authority.py",
