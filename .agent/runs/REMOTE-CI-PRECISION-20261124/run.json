@@ -2,7 +2,7 @@
   "schema_version": 2,
   "id": "REMOTE-CI-PRECISION-20261124",
   "branch": "feature/remote-ci-precision-20261124",
-  "baseline_sha": "7a41b86b073e0f062a1ee7f38aa628d375587954",
+  "baseline_sha": "49eaed0281f733d08e1f891324fa0d08cf03fa33",
   "status": "active",
   "goal": ".agent/goals/REMOTE-CI-PRECISION-20261124.yaml",
   "record": "docs/ops/iterations/remote_ci_precision_20261124.md",

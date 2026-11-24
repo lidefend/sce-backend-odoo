@@ -2,7 +2,8 @@
 
 ## Identity
 
-- Base: `7a41b86b073e0f062a1ee7f38aa628d375587954`
+- Initial base: `7a41b86b073e0f062a1ee7f38aa628d375587954`
+- Current base after mainline sync: `49eaed0281f733d08e1f891324fa0d08cf03fa33`
 - Branch: `feature/remote-ci-precision-20261124`
 - Formal product layer: P4 verification tooling
 
