@@ -244,10 +244,51 @@ with zero leakage, while project kanban remains explicitly inapplicable because
 all released candidates carry `group_sc_cap_project_read`. No gate, ACL, or
 frontend assertion was relaxed.
 
+## Platform approval-contract convergence
+
+The follow-up review separated platform mechanics from industry declarations:
+
+- `smart_core.workflow.contract` now builds the canonical workflow contract,
+  approval phase, action availability and statusbar projection.
+- P0 `ui.contract.v2` now injects `workflowContract`; the P1 extension no longer
+  owns generic injection.
+- P1 supplies workflow profiles, business evidence and configured-approval
+  presence through declared extension hooks.
+- Existing model methods and OCA `tier.validation` remain the runtime
+  authorities; no second approval engine or state machine was introduced.
+- Role groups express identity, while capability groups authorize ACL, record
+  rules, menus, actions and approval scopes.
+- Payment approval entry now permits the current configured Tier reviewer and
+  still requires the model's `can_review` and business gate.
+- Demo `wutao` and fixture source declarations use the business administrator
+  role group instead of directly assigning the configuration capability.
+
+Targeted evidence for this backend-only convergence:
+
+- P0 workflow contract ORM: PASS, 2 tests.
+- P1 workflow contract ORM: PASS, 40 tests.
+- payment permission, approval and state closure ORM: PASS, 101 tests.
+- acceptance fixture role/navigation ORM: PASS, 13 tests.
+- identity resolver and cost-role pure tests: PASS, 22 tests.
+- locked product/role contract pure tests: PASS, 35 tests.
+- approval-policy configuration pure tests: PASS, 9 tests.
+- workflow profile inventory/coverage guards: PASS.
+- extension-hook contract/resolver guards: PASS.
+- demo `wutao` source assertions: PASS, 2 tests.
+- `make ci.delivery.freeze.prepare`: PASS.
+
+The local frontend incremental planner was not used as backend evidence. It was
+initially being used as the cross-layer target selector, but these changes are
+backend-only and must be selected by backend evidence. No backend path was added
+to the frontend planner. Exact-head remote backend CI remains the integration
+authority.
+
 ## Exclusions
 
 - No daily or production enablement.
 - No demo data rebuild.
 - No frontend source changes.
-- No demo fixture changes.
+- No persistent demo database upgrade; source fixture declarations changed, but
+  the running demo database remains at its previous identity until a controlled
+  deployment/upgrade.
 - No unrelated repair of historical P0 test debt.

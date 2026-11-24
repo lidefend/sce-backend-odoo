@@ -62,7 +62,45 @@
     "frontend/apps/web/src/pages/ListPage.vue",
     "frontend/apps/web/src/pages/listPage/listCellPresentation.ts",
     "frontend/apps/web/src/views/ActionView.vue",
-    "scripts/verify/error_state_component_test.cjs"
+    "scripts/verify/error_state_component_test.cjs",
+    "addons/smart_construction_core/__init__.py",
+    "addons/smart_construction_core/core_extension.py",
+    "addons/smart_construction_core/core_extension_hook_facts.py",
+    "addons/smart_construction_core/handlers/payment_request_approval.py",
+    "addons/smart_construction_core/handlers/payment_request_available_actions.py",
+    "addons/smart_construction_core/handlers/payment_request_execute.py",
+    "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+    "addons/smart_construction_core/models/core/payment_request.py",
+    "addons/smart_construction_core/models/support/approval_policy.py",
+    "addons/smart_construction_core/models/support/sc_workflow.py",
+    "addons/smart_construction_core/models/support/workflow_contract_service.py",
+    "addons/smart_construction_core/security/ir.model.access.csv",
+    "addons/smart_construction_core/security/sc_capability_groups.xml",
+    "addons/smart_construction_core/security/sc_record_rules.xml",
+    "addons/smart_construction_core/security/sc_role_groups.xml",
+    "addons/smart_construction_core/tests/business_case.py",
+    "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+    "addons/smart_construction_core/tests/test_p0_state_closure.py",
+    "addons/smart_construction_core/tests/test_payment_request_action_surface_backend.py",
+    "addons/smart_construction_core/tests/test_payment_request_permission.py",
+    "addons/smart_construction_core/tests/test_role_surface_cost_label.py",
+    "addons/smart_construction_core/tests/test_role_surface_project_member.py",
+    "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+    "addons/smart_construction_core/views/core/settlement_views.xml",
+    "addons/smart_core/core/extension_hook_contracts.py",
+    "addons/smart_core/core/workflow_contract_injection.py",
+    "addons/smart_core/models/__init__.py",
+    "addons/smart_core/models/workflow_contract.py",
+    "addons/smart_core/tests/__init__.py",
+    "addons/smart_core/tests/test_workflow_contract_platform.py",
+    "config/frontend/role_surface_exposure_declarations_v1.json",
+    "demo_addons/smart_construction_demo/data/demo/sc_demo_users.xml",
+    "demo_addons/smart_construction_demo/data/demo/wutao_full_product_user.xml",
+    "demo_addons/smart_construction_demo/seed/steps/step_10_users_demo.py",
+    "demo_addons/smart_construction_demo/seed/steps/step_demo_users.py",
+    "demo_addons/smart_construction_demo/tests/test_demo_supplemental_flows.py",
+    "docs/architecture/role_capability_and_approval_authority_v1.md",
+    "scripts/verify/user_role_approval_matrix_guard.py"
   ],
   "environment": {
     "kind": "runtime",
@@ -155,6 +193,38 @@
         "scripts/verify/test_business_entry_matrix_incremental.py",
         "scripts/verify/test_construction_semantic_declarations.py",
         "make/frontend.mk"
+      ]
+    },
+    "approval_contract_closure": {
+      "target": "verify.approval.contract_closure.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/services/review_work_item_service.py",
+        "addons/smart_construction_core/tests/test_approval_contract_closure.py",
+        "addons/smart_construction_core/models/support/workflow_contract_service.py",
+        "make/guards.mk"
+      ]
+    },
+    "payment_authorization_boundary": {
+      "target": "verify.payment.authorization_boundary.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_construction_core/handlers/payment_request_approval.py",
+        "addons/smart_construction_core/handlers/payment_request_execute.py",
+        "addons/smart_construction_core/handlers/payment_request_settlement_introduce.py",
+        "addons/smart_construction_core/tests/test_payment_domain_permission_isolation.py",
+        "make/guards.mk"
+      ]
+    },
+    "workflow_contract_orm": {
+      "target": "verify.workflow_contract.be_close_01.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/core/workflow_contract_injection.py",
+        "addons/smart_core/models/workflow_contract.py",
+        "addons/smart_construction_core/models/core/payment_request.py",
+        "addons/smart_construction_core/tests/test_workflow_contract_backend.py",
+        "make/ci.mk"
       ]
     }
   },

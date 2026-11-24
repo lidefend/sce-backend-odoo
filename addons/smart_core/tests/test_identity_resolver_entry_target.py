@@ -55,7 +55,7 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
         resolver = self._construction_resolver()
         surface = resolver.build_role_surface(
             {
-                "smart_construction_core.group_sc_cap_business_config_admin",
+                "smart_construction_core.group_sc_role_business_admin",
                 "smart_construction_core.group_sc_role_finance_manager",
             },
             [],
@@ -97,7 +97,7 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
         resolver = self._construction_resolver()
         surface = resolver.build_role_surface(
             {
-                "smart_construction_core.group_sc_cap_business_config_admin",
+                "smart_construction_core.group_sc_role_business_admin",
                 "smart_construction_core.group_sc_role_executive",
                 "smart_construction_core.group_sc_role_project_user",
             },
@@ -106,7 +106,10 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             construction_policy.ROLE_SURFACE_OVERRIDES,
         )
 
-        self.assertEqual(surface["role_codes"], ["business_config_admin", "executive", "pm"])
+        self.assertEqual(
+            surface["role_codes"],
+            ["business_config_admin", "executive", "project_member"],
+        )
         self.assertEqual(surface["surface_role_codes"], ["business_config_admin"])
         self.assertIn("projects.intake", surface["scene_candidates"])
 
@@ -234,8 +237,8 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             {"projects.ledger"},
         )
 
-        self.assertEqual(role_surface.get("landing_scene_key"), "projects.ledger")
-        self.assertEqual(role_surface.get("landing_path"), "/s/projects.ledger")
+        self.assertEqual(role_surface.get("landing_scene_key"), "workspace.home")
+        self.assertEqual(role_surface.get("landing_path"), "/s/workspace.home")
 
     def test_build_role_surface_appends_available_scene_keys_when_nav_lacks_scene_identity(self):
         resolver = target.IdentityResolver()

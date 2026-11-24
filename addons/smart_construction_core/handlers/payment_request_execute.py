@@ -30,7 +30,7 @@ class PaymentRequestExecuteHandler(BaseIntentHandler):
         "smart_construction_core.group_sc_cap_finance_user",
         "smart_core.group_smart_core_finance_approver",
         "smart_construction_core.group_sc_cap_finance_manager",
-        "smart_construction_core.group_sc_role_executive",
+        "smart_construction_core.group_sc_cap_executive_approver",
     ]
     ACL_MODE = "explicit_check"
 
@@ -80,7 +80,6 @@ class PaymentRequestExecuteHandler(BaseIntentHandler):
         }
 
     def handle(self, payload=None, ctx=None):
-        self._assert_required_groups()
         params = payload or self.params or {}
         if isinstance(params, dict) and isinstance(params.get("params"), dict):
             params = params.get("params") or {}

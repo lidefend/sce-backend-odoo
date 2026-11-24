@@ -75,7 +75,7 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
             "idempotency_authority": "sc.audit.log",
         }
 
-    def _assert_required_groups(self):
+    def _assert_required_groups(self, payment_request=None):
         user = self.env.user
         if not user:
             raise AccessError("PERMISSION_DENIED: missing required group")
@@ -86,6 +86,12 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
                     return
             except Exception:
                 continue
+        if (
+            payment_request is not None
+            and self.ACTION_NAME in {"approve", "reject"}
+            and bool(payment_request.can_review)
+        ):
+            return
         raise AccessError("PERMISSION_DENIED: missing required group")
 
     def _extract_reason(self, params: dict) -> str:
@@ -247,11 +253,12 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
         return REASON_BUSINESS_RULE_FAILED
 
     def handle(self, payload=None, ctx=None):
-        self._assert_required_groups()
         params = payload or self.params or {}
         if isinstance(params, dict) and isinstance(params.get("params"), dict):
             # Intent router passes payload envelope: {intent, params, context}
             params = params.get("params") or {}
+        if self.ACTION_NAME not in {"approve", "reject"}:
+            self._assert_required_groups()
         raw_id = params.get("id") or params.get("payment_request_id") or params.get("res_id")
         try:
             payment_request_id = int(raw_id)
@@ -298,6 +305,8 @@ class _BasePaymentApprovalHandler(BaseIntentHandler):
                 trace_id=trace_id,
                 status_code=404,
             )
+        if self.ACTION_NAME in {"approve", "reject"}:
+            self._assert_required_groups(payment_request)
         in_scope, scope_meta = record_in_business_scope(
             self.env["payment.request"],
             payment_request_id,
@@ -440,7 +449,6 @@ class PaymentRequestApproveHandler(_BasePaymentApprovalHandler):
     ACTION_NAME = "approve"
     ACCESS_GROUPS = [
         "smart_core.group_smart_core_finance_approver",
-        "smart_construction_core.group_sc_role_executive",
     ]
 
 
@@ -453,7 +461,6 @@ class PaymentRequestRejectHandler(_BasePaymentApprovalHandler):
     ACTION_NAME = "reject"
     ACCESS_GROUPS = [
         "smart_core.group_smart_core_finance_approver",
-        "smart_construction_core.group_sc_role_executive",
     ]
 
     def _validate_action_params(self, params: dict) -> str:

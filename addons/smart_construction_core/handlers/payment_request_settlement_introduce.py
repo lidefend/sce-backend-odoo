@@ -175,7 +175,7 @@ class PaymentRequestSettlementPreviewHandler(BaseIntentHandler):
         "smart_construction_core.group_sc_cap_finance_user",
         "smart_construction_core.group_sc_cap_finance_manager",
         "smart_core.group_smart_core_finance_approver",
-        "smart_construction_core.group_sc_role_executive",
+        "smart_construction_core.group_sc_cap_executive_approver",
     ]
 
     def _assert_access(self):
@@ -291,7 +291,7 @@ class PaymentRequestAddSettlementLinesHandler(BaseIntentHandler):
         "smart_construction_core.group_sc_cap_finance_user",
         "smart_construction_core.group_sc_cap_finance_manager",
         "smart_core.group_smart_core_finance_approver",
-        "smart_construction_core.group_sc_role_executive",
+        "smart_construction_core.group_sc_cap_executive_approver",
     ]
 
     def _assert_access(self):

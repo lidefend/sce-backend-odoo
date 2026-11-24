@@ -728,7 +728,7 @@
             <field name="perm_write" eval="True"/>
             <field name="perm_create" eval="False"/>
             <field name="perm_unlink" eval="False"/>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_executive'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_executive_approver'))]"/>
         </record>
 
         <record id="rule_sc_config_admin_payment_request" model="ir.rule">
@@ -2917,21 +2917,21 @@
             <field name="name">Workflow instance: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_instance"/>
             <field name="domain_force">['|', ('company_id', '=', False), ('company_id', 'in', company_ids)]</field>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
         <record id="rule_sc_workflow_workitem_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow workitem: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_workitem"/>
             <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
         <record id="rule_sc_workflow_log_tenant_business_admin_company" model="ir.rule">
             <field name="name">Workflow log: tenant business admin allowed company</field>
             <field name="model_id" ref="model_sc_workflow_log"/>
             <field name="domain_force">['|', ('instance_id.company_id', '=', False), ('instance_id.company_id', 'in', company_ids)]</field>
-            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_role_business_admin'))]"/>
+            <field name="groups" eval="[(4, ref('smart_construction_core.group_sc_cap_business_config_admin'))]"/>
         </record>
 
         <record id="rule_sc_boq_version_project_scope" model="ir.rule">

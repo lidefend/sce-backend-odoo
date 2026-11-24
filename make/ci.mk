@@ -718,7 +718,7 @@ verify.backend.model_declaration.guard: guard.prod.forbid
 
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
-	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
+	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_core/core/workflow_contract_injection.py addons/smart_core/models/workflow_contract.py addons/smart_core/tests/test_workflow_contract_platform.py addons/smart_core/tests/test_workflow_contract_profile_registry.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
 	@python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py

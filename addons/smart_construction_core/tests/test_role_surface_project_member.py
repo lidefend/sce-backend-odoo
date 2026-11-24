@@ -162,15 +162,15 @@ class TestProjectMemberRoleSurface(TransactionCase):
         )
         role_codes, evidence = resolver.resolve_role_codes_with_evidence({
             "smart_construction_core.group_sc_business_full",
-            "smart_construction_core.group_sc_cap_business_config_admin",
+            "smart_construction_core.group_sc_role_business_admin",
             "smart_construction_core.group_sc_cap_project_manager",
         })
-        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(role_codes, ["business_config_admin", "business_full"])
         self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
 
     def test_business_config_admin_is_full_superset(self):
         config_admin = self.env.ref(
-            "smart_construction_core.group_sc_cap_business_config_admin"
+            "smart_construction_core.group_sc_role_business_admin"
         )
         business_full = self.env.ref(
             "smart_construction_core.group_sc_business_full"
@@ -189,9 +189,9 @@ class TestProjectMemberRoleSurface(TransactionCase):
         self.assertTrue(user.has_group("smart_construction_core.group_sc_cap_business_config_admin"))
         role_codes, evidence = self._resolver().resolve_role_codes_with_evidence({
             "smart_construction_core.group_sc_business_full",
-            "smart_construction_core.group_sc_cap_business_config_admin",
+            "smart_construction_core.group_sc_role_business_admin",
         })
-        self.assertEqual(role_codes, ["business_config_admin"])
+        self.assertEqual(role_codes, ["business_config_admin", "business_full"])
         self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
 
     def test_formal_role_surface_uses_authoritative_product_label_and_home(self):
@@ -785,7 +785,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
         Users = self.env["res.users"].with_context(no_reset_password=True)
         base_group = self.env.ref("base.group_user")
         pm_group = self.env.ref("smart_construction_core.group_sc_role_project_manager")
-        config_group = self.env.ref("smart_construction_core.group_sc_cap_business_config_admin")
+        config_group = self.env.ref("smart_construction_core.group_sc_role_business_admin")
         pm_user = Users.create({
             "name": "Route Authority PM",
             "login": "route.authority.pm",
@@ -804,7 +804,7 @@ class TestProjectMemberRoleSurface(TransactionCase):
             ROLE_SURFACE_OVERRIDES,
         )
         config_surface = resolver.build_role_surface(
-            {"smart_construction_core.group_sc_cap_business_config_admin"},
+            {"smart_construction_core.group_sc_role_business_admin"},
             [],
             {"workspace.home"},
             ROLE_SURFACE_OVERRIDES,

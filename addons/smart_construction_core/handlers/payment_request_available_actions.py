@@ -206,11 +206,11 @@ class PaymentRequestAvailableActionsHandler(BaseIntentHandler):
         if key == "submit":
             return bool(getattr(record, '_has_submit_access', lambda: True)())
         if key in {"approve", "reject"}:
-            # R10-v2: stub records in work-item projections may not carry the
-            # finance-approve helper; mirror the submit fallback semantics.
-            finance_allowed = bool(getattr(record, '_has_finance_approve_access', lambda: False)())
             if str(getattr(record, "validation_status", "") or "") in ("waiting", "pending"):
-                return finance_allowed and bool(getattr(record, "can_review", False))
+                return bool(getattr(record, "can_review", False))
+            finance_allowed = bool(
+                getattr(record, "_has_finance_approve_access", lambda: False)()
+            )
             return finance_allowed
         if key == "done":
             return bool(

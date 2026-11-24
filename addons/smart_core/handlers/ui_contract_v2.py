@@ -54,6 +54,7 @@ from ..utils.contract_governance import (
     resolve_contract_surface,
 )
 from ..utils.extension_hooks import call_extension_hook_first
+from ..core.workflow_contract_injection import inject_workflow_contract
 from ..utils.load_contract_response_cache import (
     CONTRACT_PROJECTION_HOT_CACHE,
     assembled_snapshot_gate_matches,
@@ -1442,6 +1443,13 @@ class UiContractV2Handler(BaseIntentHandler):
         )
         if isinstance(hook_payload, dict):
             contract_v2 = dict(hook_payload)
+        inject_workflow_contract(
+            self.env,
+            contract_v2,
+            source_contract,
+            model=str(model or "").strip(),
+            view_type=str(view_type or "").strip().lower(),
+        )
         self._normalize_final_layout_contract(contract_v2)
         # Extension finalizers may append native form occurrences after the
         # assembler's initial status pass. Reconcile the final tree before

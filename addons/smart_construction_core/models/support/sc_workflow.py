@@ -5,7 +5,7 @@ from odoo.addons.smart_core.security.platform_admin import user_is_tenant_config
 
 LEGACY_WORKFLOW_RUNTIME_PARAM = "sc.workflow.legacy_runtime_enabled"
 LEGACY_WORKFLOW_RUNTIME_CONTEXT = "allow_legacy_workflow_runtime"
-TENANT_BUSINESS_ADMIN_GROUP = "smart_construction_core.group_sc_role_business_admin"
+TENANT_BUSINESS_ADMIN_GROUP = "smart_construction_core.group_sc_cap_business_config_admin"
 
 
 def _user_is_tenant_business_admin(user):
