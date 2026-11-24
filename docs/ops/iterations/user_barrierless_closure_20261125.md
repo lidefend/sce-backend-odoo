@@ -180,3 +180,11 @@ a closed dialog before its mounted hook had created the style element.
 `ScDialog` now mounts its TDesign driver only while `open` is true and always
 passes `visible=true` to that mounted driver. The overlay lifecycle guard pins
 both conditions so a closed dialog cannot regress to eager vendor mounting.
+
+With the lifecycle failure removed, the payment diagnostic exposed the
+underlying contract-consumer issue: `ledger_line_ids` already declared
+`componentConfig.relationEntry.page_size = 20`, but the canonical form adapter
+only read `fieldDescriptor.relation_entry` and therefore published no page
+size. The adapter now consumes the producer's `relationEntry` carrier first,
+then the descriptor carrier. Missing declarations still remain missing and
+continue to stop at the renderer.
