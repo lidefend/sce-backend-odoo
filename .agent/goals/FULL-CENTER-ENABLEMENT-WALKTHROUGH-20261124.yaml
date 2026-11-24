@@ -1,0 +1,51 @@
+schema_version: 1
+
+goal:
+  id: FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124
+  title: full_center_enablement_and_business_entry_walkthrough
+  status: active
+  formal_product_layer: P0/P1/P3/P4
+  layer_target: layered landing repair, local enterprise scenario activation and formal product entry acceptance
+  module:
+    - smart_core
+    - smart_construction_core
+    - smart_construction_scene
+    - frontend
+    - scripts/verify
+  standard_vs_user_specific: local_demo_runtime_configuration
+  objective: >-
+    Enable every released business center for the local demo enterprise,
+    execute the complete declared formal business-entry matrix, and repair
+    confirmed user blockers only in their owning product layer.
+  product_result: >-
+    A completed-enterprise login and an evidence-backed blocker inventory for
+    all enabled centers and declared pages under the canonical
+    configuration-admin demo principal.
+  why_here: >-
+    Landing availability is a P0 identity concern; industry landing order and
+    locked product declarations are P1; activation facts are P3 runtime
+    configuration; execution and evidence remain P4.
+  why_not_elsewhere:
+    - Product code must not embed a permanent all-centers-on state.
+    - Demo data must not be rebuilt to hide activation or page defects.
+    - Frontend must not synthesize missing enablement or page contracts.
+  blast_radius:
+    - sc-dev local company 1 scenario enablement
+    - system.init navigation for all ten business centers
+    - all 132 declared formal product entries
+  acceptance:
+    - All ten business centers and all 46 released scenarios enable successfully.
+    - A completed enterprise lands on Workbench while initialization remains reachable.
+    - Every declared entry is attempted once against the exact local deployment.
+    - Failures are classified as product, fixture, environment or validation-tool defects.
+    - Every implemented blocker is isolated to its owning P0, P1, P3 or P4 commit.
+  exclusions:
+    - Daily and production data writes
+    - demo data rebuild
+    - frontend source changes
+    - demo fixture changes
+    - unrelated performance optimization
+    - silent test weakening
+  rollback: >-
+    Restore the previous local company enablement parameters if the all-centers
+    runtime state must be withdrawn. No schema or source rollback is involved.

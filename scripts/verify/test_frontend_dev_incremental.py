@@ -2887,6 +2887,15 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             ["verify.guard.registry"],
         )
         for path in (
+            "addons/smart_core/identity/identity_resolver.py",
+            "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(
+                    select_targets([path]),
+                    ["verify.identity_resolver.landing.unit"],
+                )
+        for path in (
             "addons/smart_core/delivery/menu_service.py",
             "addons/smart_core/tests/test_delivery_menu_entry_target.py",
         ):

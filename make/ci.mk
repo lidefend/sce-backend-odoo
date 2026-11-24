@@ -1743,6 +1743,12 @@ verify.role_surface.landing.contract.unit: guard.prod.forbid
 	@python3 scripts/release/test_locked_menu_policy_contract.py
 	@echo "[verify.role_surface.landing.contract.unit] PASS"
 
+.PHONY: verify.identity_resolver.landing.unit
+verify.identity_resolver.landing.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/identity/identity_resolver.py addons/smart_core/tests/test_identity_resolver_entry_target.py
+	@python3 addons/smart_core/tests/test_identity_resolver_entry_target.py TestIdentityResolverEntryTarget.test_landing_always_ends_at_the_platform_safe_surface TestIdentityResolverEntryTarget.test_declared_landing_order_is_respected_before_the_safe_fallback
+	@echo "[verify.identity_resolver.landing.unit] PASS"
+
 .PHONY: verify.construction.create_defaults.unit
 verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks

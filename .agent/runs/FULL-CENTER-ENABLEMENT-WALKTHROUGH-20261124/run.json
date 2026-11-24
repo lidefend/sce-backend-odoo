@@ -1,0 +1,112 @@
+{
+  "schema_version": 2,
+  "id": "FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124",
+  "branch": "audit/full-center-enablement-walkthrough-20261124",
+  "status": "active",
+  "baseline_sha": "49eaed0281f733d08e1f891324fa0d08cf03fa33",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
+    ".agent/runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/run.json",
+    "addons/smart_construction_core/core_extension_policy_maps.py",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json",
+    "addons/smart_construction_core/data/formal_business_product_menu_policy_v1.json.sha256",
+    "addons/smart_construction_core/data/product_menu_source.json",
+    "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+    "addons/smart_core/identity/identity_resolver.py",
+    "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "make/ci.mk",
+    "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+    "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+    "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "governed local.dev sc-local-dev/sc_dev_demo and formal business-entry browser matrix"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "verify.identity_resolver.landing.unit, verify.role_surface.landing.contract.unit and verify.frontend.business_entry.matrix.incremental",
+      "reason": "Validate the P0 mechanism, P1 locked landing policy and the complete declared entry matrix on the exact local deployment."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "P0, P1 and P4 source changes require exact-head integration against the current target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "No mainline release is proposed by the read-only walkthrough."
+    }
+  },
+  "checks": {
+    "matrix_universe": {
+      "target": "verify.frontend.business_entry.matrix.universe",
+      "kind": "offline",
+      "inputs": [
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "scripts/verify/business_entry_matrix_universe_guard.py",
+        "scripts/verify/test_business_entry_matrix_universe_guard.py",
+        "make/frontend.mk"
+      ]
+    },
+    "full_entry_walkthrough": {
+      "target": "verify.frontend.business_entry.matrix.incremental",
+      "kind": "runtime",
+      "inputs": [
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_model.mjs",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_matrix_scope.mjs",
+        "scripts/verify/business_entry_matrix_overlay.json",
+        "config/frontend/role_surface_exposure_declarations_v1.json",
+        "make/frontend.mk"
+      ],
+      "readback": {
+        "artifact": ".runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/enablement-readback.json"
+      }
+    },
+    "initialization_landing_orm": {
+      "target": "verify.daily.permission_truth.capability.orm",
+      "kind": "runtime",
+      "inputs": [
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+        "addons/smart_construction_core/core_extension_policy_maps.py",
+        "addons/smart_construction_scene/tests/test_company_route_scope_cache.py",
+        "scripts/release/test_locked_menu_policy_contract.py",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
+        "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
+        "make/dev_test.mk"
+      ]
+    },
+    "identity_resolver_landing": {
+      "target": "verify.identity_resolver.landing.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/identity/identity_resolver.py",
+        "addons/smart_core/tests/test_identity_resolver_entry_target.py",
+        "make/ci.mk"
+      ]
+    },
+    "incremental_planning": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py"
+      ]
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Split the mixed candidate into P0, P1 and P4 commits, synchronize it with current origin/main 05762e9628c6b8c40045f66e5438c5a37d187441, then deploy and resume the full entry matrix.",
+  "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
+  "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
+}
