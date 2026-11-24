@@ -284,6 +284,19 @@ python3() {
             product['jobs']['backend_impact_suite']['with']['suite'],
             'product',
         )
+        makefile = (ROOT / 'make/ci.mk').read_text(encoding='utf-8')
+        target = makefile.split('ci.auxiliary_backend_suite.dispatch:', 1)[1].split(
+            '\n.PHONY:',
+            1,
+        )[0]
+        for required in (
+            'EXPECTED_HEAD',
+            'git status --porcelain',
+            'git ls-remote --heads origin',
+            'gh pr view --json headRefOid',
+            'gh workflow run auxiliary_backend_suite.yml --ref',
+        ):
+            self.assertIn(required, target)
 
     def test_focused_python_modules_run_only_exact_changed_files(self):
         workflow = yaml.safe_load(

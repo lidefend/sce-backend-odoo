@@ -16,6 +16,7 @@
     ".github/workflows/backend_test_suite.yml",
     ".github/workflows/auxiliary_backend_suite.yml",
     ".github/workflows/professional_quality_gate.yml",
+    "make/ci.mk",
     "scripts/test/test.sh",
     "scripts/test/test_dependency_baseline.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
