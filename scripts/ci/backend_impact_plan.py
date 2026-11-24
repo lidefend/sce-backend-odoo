@@ -42,6 +42,8 @@ CONTROL_PLANE = {
     'scripts/ci/frontend_fixture_orm_entry.sh': 'verify.ci.scheduled_gates',
     'scripts/ci/backend_impact_plan.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_changed_test_coverage.py': 'verify.ci.workflow.contract',
+    'scripts/ci/backend_iteration_lanes.py': 'verify.backend_iteration_lanes.unit',
+    'scripts/ci/test_backend_iteration_lanes.py': 'verify.backend_iteration_lanes.unit',
     'scripts/ci/backend_suite_plan.py': 'verify.ci.workflow.contract',
     'scripts/ci/backend_test_receipt.py': 'verify.ci.workflow.contract',
     'scripts/ci/ci_risk_classifier.py': 'verify.ci.workflow.contract',

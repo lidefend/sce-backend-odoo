@@ -31,9 +31,16 @@ goal:
       - .agent/goals/BACKEND-ITERATION-LANE-CLOSURE-20261124.yaml
       - .agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json
       - .github/workflows/backend_test_suite.yml
+      - .github/workflows/professional_quality_gate.yml
+      - config/ci/path_ownership_v1.json
       - make/ci.mk
       - make/codex.mk
       - scripts/ci/backend_iteration_lanes.py
+      - scripts/ci/backend_impact_plan.py
+      - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_classifier.py
+      - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/test_ci_path_ownership.py
       - scripts/ci/test_backend_iteration_lanes.py
       - scripts/ci/test_backend_test_suite_dispatch_contract.py
       - scripts/verify/frontend_dev_incremental.py

@@ -319,20 +319,26 @@ class FiveCiScenarioTest(unittest.TestCase):
         self.assertEqual(backend["modules"], ["bundle"])
         self.assertEqual(backend["mode"], "incremental")
 
-    def test_pure_ci_tooling_is_control_plane_not_backend_business(self):
+    def test_backend_ci_tooling_requires_control_plane_and_product_responsibility(self):
         path = "scripts/ci/backend_impact_plan.py"
         risk = self.classify(path)
         backend = self.plan(path)
         self.assertEqual(risk.lane, "HIGH_RISK")
         self.assertEqual(risk.professional_mode, "full")
         self.assertFalse(risk.frontend_changed)
-        self.assertFalse(risk.backend_changed)
+        self.assertTrue(risk.backend_changed)
+        self.assertTrue(risk.backend_tooling_changed)
         self.assertTrue(risk.control_plane_changed)
         self.assertFalse(risk.backend_runtime_changed)
         self.assertFalse(risk.orm_required)
         self.assertEqual(backend["modules"], [])
         self.assertIn("verify.ci.workflow.contract", backend["tool_checks"])
         self.assertEqual(backend["scope_status"], "NOT_APPLICABLE")
+        iteration_backend = self.plan("scripts/ci/backend_iteration_lanes.py")
+        self.assertIn(
+            "verify.backend_iteration_lanes.unit",
+            iteration_backend["tool_checks"],
+        )
 
     def test_release_and_security_control_plane_do_not_trigger_module_suite(self):
         paths = [

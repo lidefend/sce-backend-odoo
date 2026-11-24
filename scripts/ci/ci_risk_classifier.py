@@ -44,6 +44,7 @@ class Classification:
     contract_only_targets: tuple[str, ...] = ()
     contract_only_excluded_targets: tuple[str, ...] = ()
     frontend_runtime_changed: bool = False
+    backend_tooling_changed: bool = False
 
     @property
     def frontend_mode(self) -> str:
@@ -129,6 +130,7 @@ class Classification:
             "backend_changed": str(self.backend_changed).lower(),
             "control_plane_changed": str(self.control_plane_changed).lower(),
             "backend_runtime_changed": str(self.backend_runtime_changed).lower(),
+            "backend_tooling_changed": str(self.backend_tooling_changed).lower(),
             "ownership_categories_json": json.dumps(
                 self.ownership_categories, separators=(",", ":")
             ),
@@ -440,6 +442,7 @@ def classify(
     control_plane = ownership.control_plane_changed
     backend_runtime = ownership.backend_runtime_changed
     ownership_categories = tuple(sorted(set(ownership.assignments.values())))
+    backend_tooling = "backend_ci_harness" in ownership_categories
     database_lifecycle_paths = ownership.paths_for("database_lifecycle_tooling")
     high_risk_override = tuple(
         path for path in changed
@@ -505,6 +508,7 @@ def classify(
             orm_required,
             database_lifecycle_paths,
             frontend_runtime_changed=frontend_runtime,
+            backend_tooling_changed=backend_tooling,
         )
         return _apply_contract_scope(result, matched_scope)
     if frontend or backend:
@@ -521,6 +525,7 @@ def classify(
             orm_required,
             database_lifecycle_paths,
             frontend_runtime_changed=frontend_runtime,
+            backend_tooling_changed=backend_tooling,
         )
         return _apply_contract_scope(result, matched_scope)
     return Classification(
@@ -536,6 +541,7 @@ def classify(
         False,
         database_lifecycle_paths,
         frontend_runtime_changed=frontend_runtime,
+        backend_tooling_changed=backend_tooling,
     )
 
 

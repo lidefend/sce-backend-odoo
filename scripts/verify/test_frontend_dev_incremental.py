@@ -408,8 +408,9 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             professional,
         )
         self.assertIn(
-            "scope_mode: ${{ needs.professional_authorization.outputs."
-            "candidate_requested == 'true' && 'full' || 'focused' }}",
+            "scope_mode: ${{ (needs.professional_authorization.outputs."
+            "candidate_requested == 'true' || needs.professional_authorization.outputs."
+            "backend_tooling_changed == 'true') && 'full' || 'focused' }}",
             professional,
         )
         self.assertIn("make ${TOOL_CHECKS}", professional)

@@ -42,4 +42,33 @@ and unrelated-path non-requirement.
 
 ## Real iteration evidence
 
-Pending publication and exact-head execution.
+The first real PR attempt (`6f4e1101e`) dispatched only demo and acceptance, as
+intended, but the required professional gate skipped `backend_impact_suite`.
+The path registry classified backend CI harness files as generic
+non-backend control-plane. That made a separate product dispatch necessary and
+violated the requested efficiency target.
+
+The registry now has an exact `backend_ci_harness` category:
+
+- `backend=true`;
+- `backend_runtime=false`;
+- `control_plane=true`;
+- `backend_tooling=true`.
+
+The risk classifier emits `backend_tooling_changed`. For that flag the required
+professional gate runs an unbounded-base **full product** backend plan, so the
+iteration close can consume it directly instead of launching a duplicate
+product run. Focused backend business changes retain their existing bounded
+selection.
+
+Local evidence after this correction:
+
+- `test_ci_risk_classifier`: 48 PASS.
+- `test_ci_risk_workflow_contract`: 31 PASS.
+- `test_backend_test_suite_dispatch_contract`: 34 PASS.
+- `verify.ci.path_ownership.unit`: 23 PASS.
+- `verify.frontend.dev.incremental.unit`: 240 PASS.
+- `make ci.local.iteration`: PASS, eleven affected targets executed.
+
+The superseded direct demo/acceptance runs were cancelled. A new exact PR head
+must now prove the corrected chain.
