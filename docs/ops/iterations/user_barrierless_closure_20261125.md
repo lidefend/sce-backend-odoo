@@ -116,10 +116,32 @@ deployment or production change is included.
   `a5aff5c2684ef015a9462d836e29d82d970a4971` did not match the requested
   candidate `f07f65967df5b42eabf9d752ee7a439d91f27a1e`. This is recorded as a
   validation/environment identity failure, not a product pass.
-- Mainline integration: candidate is aligned to exact GitHub main; no push,
-  PR or merge has occurred yet.
+- Mainline integration: candidate is aligned to exact GitHub main and published
+  as PR #998; merge has not occurred.
 - Deployment: the candidate is running only in the governed local development
   environment.
 - User acceptance: affected blocker paths passed; the complete 132-entry release
   acceptance is not being rerun while already-correct surfaces are frozen by
   owner instruction.
+
+## PR #998 CI Isolation Correction
+
+The exact main-aligned candidate was published as PR
+[#998](https://github.com/lidefend/sce-backend-odoo/pull/998). Its first backend
+suite failed because `test_ui_contract_v2_boundaries.py` installed a fixture
+stub under the canonical assembler module name and left it in `sys.modules`.
+When the mobile-contract tests later triggered the lazy `layout_semantics`
+import, they received the stub and failed with:
+
+`ImportError: cannot import name 'NOTE_FIELD_TOKENS'`.
+
+`verify_coverage` failed as a consequence of that suite failure. This is a
+test-isolation defect, not a contract or runtime product failure.
+
+The fixture now restores the pre-existing canonical assembler module after the
+handler test module has finished loading. A regression asserts that the shared
+module is restored.
+
+- Boundary tests: 181 passed.
+- Mobile-contract tests: 151 passed.
+- Combined discover order: 332 passed.
