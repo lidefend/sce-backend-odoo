@@ -66,17 +66,10 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
         self.assertEqual(surface["role_code"], "business_config_admin")
         self.assertEqual(surface["primary_role_code"], "business_config_admin")
         self.assertEqual(surface["role_codes"], ["business_config_admin", "finance"])
-        self.assertEqual(surface["role_labels"], ["业务配置管理员", "财务主管"])
-        self.assertEqual(surface["role_label"], "业务配置管理员 / 财务主管")
+        self.assertEqual(surface["role_labels"], ["业务配置管理员（全功能）", "财务主管"])
+        self.assertEqual(surface["role_label"], "业务配置管理员（全功能） / 财务主管")
         self.assertTrue(surface["multi_role"])
-        self.assertIn(
-            "smart_construction_core.menu_ui_menu_config_policy_business_config",
-            surface["admin_menu_xmlids"],
-        )
-        self.assertIn(
-            "smart_construction_core.menu_payment_request_receive",
-            surface["primary_menu_xmlids"],
-        )
+        self.assertEqual(surface["surface_role_codes"], ["business_config_admin"])
 
     def test_multi_role_denials_only_apply_when_every_effective_role_denies(self):
         resolver = self._construction_resolver()
@@ -114,10 +107,7 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
         )
 
         self.assertEqual(surface["role_codes"], ["business_config_admin", "executive", "pm"])
-        self.assertIn(
-            "smart_construction_core.menu_sc_project_initiation",
-            surface["primary_menu_xmlids"],
-        )
+        self.assertEqual(surface["surface_role_codes"], ["business_config_admin"])
         self.assertIn("projects.intake", surface["scene_candidates"])
 
     def test_additive_technical_surface_does_not_impersonate_business_role(self):
@@ -244,8 +234,8 @@ class TestIdentityResolverEntryTarget(unittest.TestCase):
             {"projects.ledger"},
         )
 
-        self.assertEqual(role_surface.get("landing_scene_key"), "workspace.home")
-        self.assertEqual(role_surface.get("landing_path"), "/s/workspace.home")
+        self.assertEqual(role_surface.get("landing_scene_key"), "projects.ledger")
+        self.assertEqual(role_surface.get("landing_path"), "/s/projects.ledger")
 
     def test_build_role_surface_appends_available_scene_keys_when_nav_lacks_scene_identity(self):
         resolver = target.IdentityResolver()

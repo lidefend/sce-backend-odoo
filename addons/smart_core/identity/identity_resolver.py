@@ -210,8 +210,11 @@ class IdentityResolver:
             )
             if dominant_role:
                 surface_roles = [dominant_role]
-                explicit_hits = {dominant_role: explicit_hits[dominant_role]}
-            role_codes = [role for role in surface_roles if self._role_is_identity_role(role)] or surface_roles
+            role_codes = [
+                role
+                for role in self._role_precedence
+                if role in explicit_hits and self._role_is_identity_role(role)
+            ] or surface_roles
             return role_codes, {
                 "source": "explicit",
                 "primary_role": role_codes[0],
