@@ -1,0 +1,45 @@
+schema_version: 1
+
+goal:
+  id: USER-BARRIERLESS-CLOSURE-20261125
+  title: user_barrierless_product_walkthrough
+  status: active
+  formal_product_layer: P0/P1/P3/P4
+  layer_target: full formal-entry user journey closure
+  module:
+    - smart_core
+    - smart_construction_core
+    - frontend
+    - scripts/verify
+  standard_vs_user_specific: standard_product_with_governed_demo_runtime
+  objective: >-
+    Continue from the Contract V2 2.6 closure candidate, remove user-visible
+    blockers found through the released navigation and real business-entry
+    journeys, and fix each defect only in its owning product layer.
+  product_result: >-
+    The configuration-admin user can reach every released formal entry and
+    complete the declared collection/detail/surface journey without a contract,
+    navigation, rendering or misleading-error stop.
+  why_here: >-
+    The work combines P0 contract/runtime semantics, P1 industry declarations,
+    P3 scenario enablement and P4 user-perspective verification.
+  why_not_elsewhere:
+    - Demo data must not be changed to conceal product defects.
+    - Frontend code must not infer missing declaration semantics.
+    - A verification tool must not redefine product behavior.
+  blast_radius:
+    - all 132 released formal business entries
+    - Contract V2 form, collection, status and action consumers
+    - governed local.dev demo runtime
+  acceptance:
+    - The exact affected entry set is derived through the evidence-scope engine.
+    - Every selected entry is exercised through the rendered navigation.
+    - Failures are classified by owning P0/P1/P3/P4 layer and fixed or explicitly blocked.
+    - No known earlier-layer failure is bypassed to obtain a green browser result.
+  exclusions:
+    - Database migration, fixture rebuild or demo-data rewrite without separate owner authorization.
+    - Mainline integration, deployment and production changes without explicit instruction.
+    - Unrelated refactoring.
+  rollback: >-
+    Revert the owning user-journey commits. Contract/demo data rollback is not
+    required unless a separately authorized data change occurs.

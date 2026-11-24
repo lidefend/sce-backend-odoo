@@ -135,6 +135,22 @@ assert.equal(presentDeclaredBusinessValue({
   field: { name: 'false_boolean', type: 'boolean' },
   value: false,
 }).text, FIELD_VALUE_FALSE_TEXT);
+assert.equal(presentDeclaredBusinessValue({
+  field: {
+    name: 'pricing_mode',
+    type: 'selection',
+    selection: [{ value: 'lump_sum', label: '总价' }],
+  },
+  value: false,
+}).text, FIELD_VALUE_EMPTY_TEXT);
+assert.throws(() => presentDeclaredBusinessValue({
+  field: {
+    name: 'pricing_mode',
+    type: 'selection',
+    selection: [{ value: 'lump_sum', label: '总价' }],
+  },
+  value: 'unknown_key',
+}), /pricing_mode.*缺少有效选择项标签/);
 
 assert.equal(formatNumericFieldValue('1234.5', 'float'), '1,234.50');
 assert.equal(formatNumericFieldValue('1234', 'integer'), '1,234');

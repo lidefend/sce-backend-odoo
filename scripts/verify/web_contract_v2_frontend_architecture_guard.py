@@ -335,10 +335,10 @@ FORBIDDEN_WORKFLOW_EVIDENCE_RECOMPUTE_TOKENS: tuple[tuple[str, str], ...] = (
 )
 
 REQUIRED_WORKFLOW_STATUSBAR_CONTRACT_TOKENS: tuple[tuple[Path, str], ...] = (
-    (ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py", '"statusbar": self._statusbar_projection'),
-    (ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py", '"field": state_field'),
-    (ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py", 'record.fields_get([state_field])'),
-    (ROOT / "addons/smart_construction_core/models/support/workflow_contract_service.py", '"source": "workflowContract"'),
+    (ROOT / "addons/smart_core/models/workflow_contract.py", '"statusbar": self._statusbar_projection'),
+    (ROOT / "addons/smart_core/models/workflow_contract.py", '"field": state_field'),
+    (ROOT / "addons/smart_core/models/workflow_contract.py", 'record.fields_get([state_field])'),
+    (ROOT / "addons/smart_core/models/workflow_contract.py", '"source": "workflowContract"'),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "function normalizeWorkflowPhaseStatusbar"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "function normalizeNativeFormStatusbar"),
     (WEB_ROOT / "pages/contractForm/workflowContract.ts", "const raw = workflow.statusbar;"),

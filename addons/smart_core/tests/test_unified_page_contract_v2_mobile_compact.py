@@ -168,6 +168,33 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_tree_row_buttons_keep_the_native_default_open_form_action(self):
+        parser = _NativeTreeFormFixtureParser()
+        fields = {
+            "name": {"name": "name", "type": "char", "string": "Name"},
+            "amount": {"name": "amount", "type": "float", "string": "Amount"},
+        }
+        parsed = parser._parse_tree_view(
+            '<tree open_form_view="1">'
+            '<field name="name"/><field name="amount"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        actions = parsed["row_actions"]
+        self.assertEqual([row["name"] for row in actions], ["mark_checked", "open_form"])
+        self.assertEqual(actions[-1]["intent"], "open")
+        self.assertEqual(actions[-1]["payload"], {"ref": None, "view_mode": "form"})
+
+        disabled = parser._parse_tree_view(
+            '<tree open_form_view="0">'
+            '<field name="name"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        self.assertEqual([row["name"] for row in disabled["row_actions"]], ["mark_checked"])
+
     def test_native_collection_row_open_publishes_complete_record_entry(self):
         source = {
             "model": "x.document",

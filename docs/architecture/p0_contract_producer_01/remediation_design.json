@@ -18,7 +18,7 @@
     "addons/smart_core/core/page_block_data_contract.py": "8af76b96dbeb44f27090cc049449517b5ab1ece446fffe9b3e9c82e02f0cece1",
     "addons/smart_core/core/page_contracts_builder.py": "fbb4e8f5bd7a94252a28351728cdc16178359c477c80fe8e83e2d05f561b99f9",
     "addons/smart_core/core/page_orchestration_data_provider.py": "80438c6489006fb163445a73aa1a7d4597eaf891cafa71d151e6b4957aef0b1e",
-    "addons/smart_core/core/unified_page_contract_v2_assembler.py": "335d57b024967e3d5e834af54b39812035cabfbc8adf22c730905152c7140b76",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py": "78cb3446c7bd0c866cec6286a8ab023d5934475287c84a1851f15078d9f8653c",
     "addons/smart_core/core/unified_page_contract_v2_action.py": "b93b4d9ed0f372e5f69e80722d3f62416c0cfca37ac99c6be5476603540a5082",
     "addons/smart_core/core/unified_page_contract_v2_permissions.py": "8cb51efb86be1268d02cef9e4ee73b6a7556d2fa123e7c8d7e1740c6ba1aaa3a",
     "addons/smart_core/core/unified_page_contract_v2_status.py": "880639609f653adf483068ae8d1ab26d3cf5fbbc42f3471ee29e70f4fea29987",

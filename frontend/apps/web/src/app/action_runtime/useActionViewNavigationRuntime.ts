@@ -30,6 +30,26 @@ export function isRowPlacementAction(action: unknown): boolean {
   return String((action as Dict).sourceWidgetId || '').trim() === ROW_PLACEMENT_WIDGET_ID;
 }
 
+export function isRowNavigationAction(action: unknown): boolean {
+  if (!isRowPlacementAction(action)) return false;
+  const row = action as Dict;
+  const intent = String(row.intent || '').trim().toLowerCase();
+  if (['open', 'open_scene', 'url'].includes(intent)) return true;
+  if (String(row.actionKey || row.actionId || '').trim() === 'open_form' || String(row.actionId || '').trim() === 'action.open_form') {
+    return true;
+  }
+  const target = row.target && typeof row.target === 'object' && !Array.isArray(row.target)
+    ? row.target as Dict
+    : {};
+  return Boolean(
+    target.record_entry
+    || target.entry_target
+    || target.scene_key
+    || target.route
+    || target.url
+  );
+}
+
 type UseActionViewNavigationRuntimeOptions = {
   routeQueryMap: Ref<Record<string, unknown>>;
   showHud: Ref<boolean>;
@@ -182,19 +202,13 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
     const v2ViewType = String(store.snapshot.pageInfo.viewType || '').trim().toLowerCase();
     if (!['list', 'tree', 'kanban'].includes(v2ViewType)) return undefined;
     const rows = resolveContractV2ActionRules(store);
-    const rowAction = rows.find((action) => isRowPlacementAction(action));
+    const rowAction = rows.find((action) => isRowNavigationAction(action));
     return rowAction ? (rowAction as unknown as Dict) : undefined;
   }
 
   function handleRowClick(row: Dict) {
     const rowAction = resolveRowOpenAction();
-    if (!rowAction) {
-      throw contractGapError({
-        kind: 'contract_defect',
-        missing: 'actionContract.actionRuleList.page.row',
-        requiredDeclarationLayer: 'P0:smart_core:unified_page_contract_v2_assembler',
-      }, '原生集合行点击缺少 page.row 动作声明');
-    }
+    if (!rowAction) return;
     const contractTarget = buildContractRowClickTarget(rowAction, row);
     if (contractTarget) {
       const rowClickState = resolveRowClickPushState({ routeTarget: contractTarget });

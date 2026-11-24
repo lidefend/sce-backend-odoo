@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   ROW_PLACEMENT_WIDGET_ID,
+  isRowNavigationAction,
   isRowPlacementAction,
   useActionViewNavigationRuntime,
 } from '../src/app/action_runtime/useActionViewNavigationRuntime';
@@ -64,6 +65,15 @@ const rowAction = rule({
   },
 });
 
+const rowMethodAction = rule({
+  actionId: 'action.action_open_actual_revenue_lines',
+  actionKey: 'action_open_actual_revenue_lines',
+  sourceWidgetId: ROW_PLACEMENT_WIDGET_ID,
+  intent: 'execute_button',
+  target: {},
+  button: { name: 'action_open_actual_revenue_lines', type: 'object' },
+});
+
 function makeStore(actionRuleList: Dict[], viewType = 'list') {
   return {
     snapshot: {
@@ -103,10 +113,13 @@ assert.equal(isRowPlacementAction(headerAction), false, 'header placement is not
 assert.equal(isRowPlacementAction(null), false, 'missing action is not a row action');
 assert.equal(isRowPlacementAction(undefined), false, 'undefined action is not a row action');
 assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'placement id is trimmed');
+assert.equal(isRowNavigationAction(rowAction), true, 'row navigation is distinguished from row buttons');
+assert.equal(isRowNavigationAction(rowMethodAction), false, 'an object-method row button is not row activation');
 
-// 1. A header action declared before the row action must never be chosen.
+// 1. Header and object-method row actions declared before row navigation must
+// never be chosen as the row-open target.
 {
-  const pushes = drive([headerAction, rowAction], { id: 10, model: 'project.project' });
+  const pushes = drive([headerAction, rowMethodAction, rowAction], { id: 10, model: 'project.project' });
   assert.equal(pushes.length, 1, 'a row click resolves exactly one target');
   const path = String(pushes[0].path || '');
   assert.ok(
@@ -138,21 +151,15 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
 // 3. Without a declared row placement the runtime must not invent row identity.
 {
   const pushes: Push[] = [];
-  assert.throws(
-    () => drive([headerAction], { id: 10, model: 'project.project' }, { pushes }),
-    isContractGapError,
-    'header-only contracts must stop instead of inventing row identity',
-  );
+  drive([headerAction], { id: 10, model: 'project.project' }, { pushes });
+  assert.equal(pushes.length, 0, 'header-only contracts must not invent row identity');
 }
 
 // 4. Row placement is only consumed on collection view types.
 {
   const pushes: Push[] = [];
-  assert.throws(
-    () => drive([headerAction, rowAction], { id: 10, model: 'project.project' }, { viewType: 'form', pushes }),
-    isContractGapError,
-    'form contracts do not expose a collection row action',
-  );
+  drive([headerAction, rowAction], { id: 10, model: 'project.project' }, { viewType: 'form', pushes });
+  assert.equal(pushes.length, 0, 'form contracts do not expose a collection row action');
 }
 
 // 5. A hierarchical worksheet consumes the same declared row target as every
@@ -167,7 +174,15 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
   assert.equal(pushes[0].path, '/f/project.project/10');
 }
 
-// 6. A native row-open action without a complete target stops before routing.
+// 6. A row containing only object-method buttons remains clickable only through
+// its declared buttons; the row itself does not fabricate a navigation.
+{
+  const pushes: Push[] = [];
+  drive([rowMethodAction], { id: 10, model: 'project.project' }, { pushes });
+  assert.equal(pushes.length, 0, 'method-only row actions do not create a row-open route');
+}
+
+// 7. A native row-open action without a complete target stops before routing.
 {
   const incompleteRow = rule({
     actionId: 'action.open_form',
@@ -184,7 +199,7 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
   assert.equal(pushes.length, 0, 'an incomplete row target cannot fall back to model/id inference');
 }
 
-// 7. A row action that explicitly targets a contextual scene carries the
+// 8. A row action that explicitly targets a contextual scene carries the
 // declared target query through materialization.
 {
   const sceneRow = rule({
@@ -204,7 +219,7 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
   assert.equal((pushes[0].query as Dict).project_id, '10', 'scene row query materializes the clicked row id');
 }
 
-console.log('[OK] collection row action identity: 8 cases');
+console.log('[OK] collection row action identity: 9 cases');
 
 // An existing malformed formal declaration cannot be rescued by either fallback.
 let formalBoundaryCases = 0;

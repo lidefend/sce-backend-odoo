@@ -6367,6 +6367,23 @@ def _complete_native_row_record_entry(
     }
 
 
+def _row_open_view_available(contract: dict[str, Any]) -> bool:
+    native_action = _dict(contract.get("nativeActionContract"))
+    if not native_action:
+        return True
+    view_set = _dict(native_action.get("viewSet"))
+    for view in _list(view_set.get("orderedViews")):
+        row = _dict(view)
+        if _text(row.get("viewType")).lower() != "form":
+            continue
+        if _text(row.get("projectionStatus")).lower() == "blocked":
+            continue
+        if _text(row.get("rendererStatus")).lower() == "unsupported":
+            continue
+        return True
+    return False
+
+
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:
     views = _dict(ui.get("views"))
     rows: list[dict[str, Any]] = []
@@ -6384,6 +6401,8 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
             continue
         raw_key = _text(row.get("key") or row.get("name") or row.get("intent"), "row_action")
         key = _stable_id(raw_key, "row_action")
+        if key == "open_form" and not _row_open_view_available(contract):
+            continue
         policy = _dict(action_policies.get(raw_key) or action_policies.get(key))
         enabled_when = _dict(policy.get("enabled_when") or policy.get("enabledWhen"))
         kind = _text(row.get("kind") or row.get("type")).lower()

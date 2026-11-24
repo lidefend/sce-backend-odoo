@@ -168,7 +168,7 @@
     "fix/user-delivery-acceptance-20261025": ".agent/runs/USER-DELIVERY-ACCEPTANCE-20261025/run.json",
     "fix/verification-efficiency-01": ".agent/runs/VERIFY-EFFICIENCY-01/run.json",
     "refactor/be00-be01-fact-closure-20261105": ".agent/runs/BE00-BE01-FACT-CLOSURE-20261105/run.json",
-    "release/daily-main-mode-20261124": ".agent/runs/P0-CONTRACT-RUNTIME-2.6-CLOSURE/run.json",
+    "release/daily-main-mode-20261124": ".agent/runs/USER-BARRIERLESS-CLOSURE-20261125/run.json",
     "refactor/be02-product-fact-authority-20261105": ".agent/runs/BE02-PRODUCT-FACT-AUTHORITY-20261105/run.json",
     "audit/full-center-enablement-walkthrough-20261124": ".agent/runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/run.json",
     "refactor/scene-diagnosis-boundary-20261105": ".agent/runs/SCENE-DIAGNOSIS-BOUNDARY-20261105/run.json",
