@@ -863,6 +863,9 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertNotIn("local.clean.down: guard.prod.forbid local.clean.prepare", make_text)
         self.assertIn("local.sample.up: guard.prod.forbid local.sample.ready", make_text)
         self.assertIn("local.dev.up: guard.prod.forbid local.dev.ready", make_text)
+        local_up = make_text.split("local.dev.up:", 1)[1].split("\n\n", 1)[0]
+        self.assertIn("frontend/apps/web/dist-dev/.build-sha256", local_up)
+        self.assertIn("FRONTEND_BUILD_SHA256", local_up)
         self.assertIn("local.dev.health: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn("local.dev.frontend: guard.prod.forbid local.dev.ready", make_text)
         self.assertIn(
@@ -883,6 +886,8 @@ class LocalDevelopmentLifecycleTest(unittest.TestCase):
         self.assertIn("local.dev.verify_authority", upgrade)
         self.assertIn("local.dev.demo_credentials.prepare", upgrade)
         self.assertIn("SC_ENVIRONMENT=demo SC_ALLOW_DEMO_DATA=1", upgrade)
+        compose = (ROOT / "docker-compose.yml").read_text(encoding="utf-8")
+        self.assertIn("FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256:-}", compose)
         for entry in ("local.dev.demo.load", "local.dev.demo.seed"):
             wrapper = make_text.split(entry + ":", 1)[1].split("\n\n", 1)[0]
             self.assertIn("local.dev.ready local.dev.demo_credentials.prepare", wrapper)
