@@ -576,6 +576,7 @@ _DEMO_DOCUMENT_SUBMITTER = "smart_construction_demo.user_demo_role_project_a_mem
 _DEMO_PAYMENT_SCOPED_SEATS = (
     _DEMO_DOCUMENT_SUBMITTER,
     _DEMO_APPROVAL_ACTORS["smart_construction_core.group_sc_role_finance_user"],
+    _DEMO_APPROVAL_ACTORS["smart_construction_core.group_sc_cap_finance_user"],
 )
 
 
