@@ -2011,6 +2011,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.standard_preview.unit",
             ],
         )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/views/core/settlement_views.xml"]),
+            ["verify.frontend.delivery_hardening.guard"],
+        )
         for path in (
             "scripts/verify/frontend_delivery_hardening_browser.mjs",
             "scripts/verify/test_frontend_delivery_hardening_guard.py",

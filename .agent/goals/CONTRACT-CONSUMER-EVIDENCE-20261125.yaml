@@ -3,7 +3,7 @@ schema_version: 1
 goal:
   id: CONTRACT-CONSUMER-EVIDENCE-20261125
   title: contract_consumer_error_evidence_and_runtime_routing
-  status: blocked
+  status: active
   formal_product_layer: P0/P4
   layer_target: generic contract-consumer error evidence and risk-selected runtime validation
   module:
@@ -15,6 +15,8 @@ goal:
     Preserve the original frontend consumer failure stage and component evidence
     at the contract error boundary, and make generic form, overlay and relation
     carrier changes deterministically select their owning runtime validation.
+    Align the P1 settlement compliance visibility with payment-request read
+    authority so the dependent candidate can complete protected integration.
   product_result: >-
     A consumer error identifies whether it is a contract declaration problem,
     a contract decode mismatch or a frontend implementation failure without
