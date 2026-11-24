@@ -3,7 +3,7 @@
   "id": "FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124",
   "branch": "audit/full-center-enablement-walkthrough-20261124",
   "status": "active",
-  "baseline_sha": "05762e9628c6b8c40045f66e5438c5a37d187441",
+  "baseline_sha": "193d382c61b12e66a2974bada6fb334f5b9d6417",
   "scope": [
     ".agent/active-runs.json",
     ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
@@ -132,7 +132,7 @@
     "19 scene-error and 3 assertion-failed entries remain for owner-layer classification",
     "1 account journal entry still reports field.journal_group_ids.relation_identity"
   ],
-  "next_exact_step": "Classify the 20 unknown-presentation entries against their backend action/view contracts, then handle the single remaining x2many identity case separately.",
+  "next_exact_step": "Validate the merged Contract V2 strict-decode fix, rebuild the exact synchronized candidate, and rerun the affected presentation entries.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

@@ -163,6 +163,24 @@ The other 23 previously affected relation entries no longer failed with
 relation-label or many2one-identity errors. Remaining failures are mostly
 separate action/view presentation or scene-state gaps.
 
+## Contract V2 strict-decode mainline update
+
+The remaining action/view failures were paused pending the dedicated Contract V2
+strict-decode fix. Mainline PR #993 (`193d382c61b12e66a2974bada6fb334f5b9d6417`)
+now supplies the canonical `fieldCode`/`fieldType` decoder alignment, monetary
+precision retention, legal semantic declaration and attachment-role closure.
+
+The branch was replayed onto this exact mainline by the governed sync entry:
+
+- previous HEAD: `053166bd02bb62be935f3ca991b8d75a3f198e7e`
+- new HEAD: `acaee8f4e9868a7b7fcee03065d2fc6c9cb46a6a`
+- recovery bundle:
+  `/home/lidefend/workspace/sce-backend-odoo/.git/codex-recovery/branch-sync/audit-full-center-enablement-walkthrough-20261124-053166bd02bb62be935f3ca991b8d75a3f198e7e.bundle`
+
+The next runtime pass must rebuild the frontend at the synchronized candidate,
+deploy it to `sc-local-dev`, and rerun only entries affected by the strict
+descriptor update and the still-open presentation declarations.
+
 The six remaining `unknown-presentation` entries are:
 
 - `smart_construction_core.menu_sc_runtime_user_management`
