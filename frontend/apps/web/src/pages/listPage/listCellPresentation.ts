@@ -36,7 +36,7 @@ export function normalizeListRelationValue(
     || displayValue === 0
     || displayValue === '0'
   ) return displayValue;
-  if (Array.isArray(displayValue) && displayValue.length >= 2) return displayValue;
+  if (Array.isArray(displayValue)) return displayValue;
   if (
     displayValue
     && typeof displayValue === 'object'

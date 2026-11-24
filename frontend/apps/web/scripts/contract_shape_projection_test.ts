@@ -60,6 +60,12 @@ assert.equal(
   'a missing many2one identity remains empty',
 );
 cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue([], []),
+  [],
+  'an empty many2many value remains empty instead of becoming a nested member',
+);
+cases += 1;
 
 const runtime = useActionViewContractShapeRuntime({
   pageText: (_key: string, fallback: string) => fallback,
