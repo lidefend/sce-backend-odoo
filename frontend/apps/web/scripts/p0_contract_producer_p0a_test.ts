@@ -39,6 +39,29 @@ assert.deepEqual(ready.registryResolution.widget, {
 assert.equal('widgetStatus' in ready.descriptor, false);
 assert.equal('fallbackReasonCode' in ready.descriptor, false);
 
+const paymentDetailCollection = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'outflow_line_ids',
+  label: '付款申请明细',
+  fieldType: 'one2many',
+  widgetType: 'one2many',
+  componentKey: 'sc.payment.settlement_detail_collection',
+  semanticType: 'payment_settlement_detail_collection',
+  relation: 'payment.request.line',
+  relationField: 'request_id',
+});
+assert.equal(
+  paymentDetailCollection.descriptor.componentKey,
+  'sc.payment.settlement_detail_collection',
+);
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...paymentDetailCollection.descriptor,
+    componentKey: 'sc.relation.table',
+  }),
+  /FIELD_DESCRIPTOR_SEMANTIC_MISMATCH/,
+);
+
 const fallback = decodeContractV2FieldDescriptor({
   schemaVersion: '1.0.0',
   fieldCode: 'project.is_favorite',
@@ -183,6 +206,13 @@ assert.throws(
     currencyField: readyMoney.fieldCode,
   }),
   /FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED/,
+);
+const moneyWithoutObservedCurrencyPrecision = { ...readyMoney } as Record<string, unknown>;
+delete moneyWithoutObservedCurrencyPrecision.digits;
+assert.equal(
+  decodeContractV2FieldDescriptor(moneyWithoutObservedCurrencyPrecision).descriptor.currencyField,
+  readyMoney.currencyField,
+  'a monetary field may declare its native currency binding before a current currency fact exists',
 );
 
 const pageContract = decodePageOrchestrationContract({

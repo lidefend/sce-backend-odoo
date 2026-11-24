@@ -1656,6 +1656,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_frontend_cleanup_selects_workflow_contract(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/ci/self_hosted_runner_cleanup.sh"]),
+            ["verify.ci.workflow.contract"],
+        )
+
     def test_required_pr_workflows_select_contract_and_security_checks(self) -> None:
         for path in (
             ".github/workflows/frontend_release_gate.yml",

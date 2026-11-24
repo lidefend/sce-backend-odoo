@@ -42,7 +42,7 @@ if [[ ! -d "$resolved_runner_temp" || "$(basename "$resolved_runner_temp")" != "
 fi
 
 if [[ "$project" == sc-fe-release-* ]]; then
-  if [[ "$frontend_mode" == "full" ]]; then
+  if [[ "$frontend_mode" == "full" || "$frontend_mode" == "contract_diagnostic" ]]; then
     source "$root_dir/scripts/common/frontend_release_ci_identity.sh"
     verify_frozen_frontend_release_ci_identity "$root_dir"
     validate_frozen_frontend_release_ci_resources "$root_dir" optional

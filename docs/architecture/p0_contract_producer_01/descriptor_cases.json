@@ -23,8 +23,8 @@
       }
     },
     {
-      "id": "DESC-MONEY-MISSING-DIGITS",
-      "expect": "invalid",
+      "id": "DESC-MONEY-WITHOUT-OBSERVED-PRECISION",
+      "expect": "valid",
       "descriptor": {
         "schemaVersion": "1.0.0",
         "fieldCode": "payment.pending_amount",

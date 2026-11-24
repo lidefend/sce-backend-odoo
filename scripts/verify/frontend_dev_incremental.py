@@ -609,6 +609,7 @@ RULES = (
         "scripts/ci/scheduled_validation.py",
         "scripts/ci/select_authoritative_workflow_run.py",
         "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
     ), (
         "verify.ci.workflow.contract",
     )),

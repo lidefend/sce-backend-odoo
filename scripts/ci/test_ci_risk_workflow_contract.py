@@ -137,21 +137,27 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             if step.get("name") == "Resolve effective frontend lane"
         )
         cases = (
-            ("schedule", "skip", "false", "false", "full"),
-            ("pull_request", "full", "true", "false", "standard"),
-            ("pull_request", "full", "false", "true", "full"),
-            ("pull_request", "standard", "false", "false", "standard"),
-            ("pull_request", "full", "false", "false", "standard"),
+            ("schedule", "skip", "false", "false", "false", "full"),
+            ("pull_request", "full", "true", "false", "false", "standard"),
+            ("pull_request", "full", "false", "true", "false", "full"),
+            ("pull_request", "standard", "false", "false", "false", "standard"),
+            ("pull_request", "full", "false", "false", "false", "standard"),
+            ("pull_request", "standard", "false", "false", "true", "contract_diagnostic"),
+            ("pull_request", "full", "false", "false", "true", "contract_diagnostic"),
         )
         with tempfile.TemporaryDirectory() as tmp:
             output = Path(tmp) / "github-output"
-            for event, mode, full_required, candidate, expected in cases:
+            for event, mode, full_required, candidate, diagnostic, expected in cases:
                 with self.subTest(event=event, mode=mode, full_required=full_required,
-                                  candidate=candidate):
+                                  candidate=candidate, diagnostic=diagnostic):
                     output.write_text("")
                     script = (
                         step["run"]
                         .replace("${{ steps.risk.outputs.frontend_mode }}", mode)
+                        .replace(
+                            "${{ steps.risk.outputs.frontend_contract_diagnostic_required }}",
+                            diagnostic,
+                        )
                     )
                     result = subprocess.run(
                         ["bash", "-c", script],
@@ -711,7 +717,12 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         install = next(s for s in steps if s.get('name') == 'Install locked frontend toolchain')['run']
         cache = next(s for s in steps if s.get('id') == 'playwright-cache')
         self.assertEqual("steps.effective_lane.outputs.frontend_mode != 'skip'", cache['if'])
-        for mode, expected in [('skip', False), ('standard', True), ('full', True)]:
+        for mode, expected in [
+            ('skip', False),
+            ('standard', True),
+            ('contract_diagnostic', True),
+            ('full', True),
+        ]:
             script = install.replace("${{ steps.effective_lane.outputs.frontend_mode }}", mode).replace(
                 "${{ steps.playwright-cache.outputs.cache-hit }}", 'false')
             stubs = 'python3() { :; }; corepack() { :; }; pnpm() { printf "%s\\n" "$*"; };\n'
@@ -727,16 +738,23 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
             'Freeze isolated frontend release identity',
         ):
             step = next(s for s in steps if s.get('name') == name)
-            self.assertIn('frontend_contract_diagnostic_required', step['if'])
+            self.assertIn("frontend_mode == 'contract_diagnostic'", step['if'])
         diagnostic = next(
             s for s in steps if s.get('name') == 'Run focused payment-request diagnostic'
         )
         self.assertIn('PAYMENT_REQUEST_DIAGNOSTIC', diagnostic['if'])
-        self.assertIn('frontend_contract_diagnostic_required', diagnostic['if'])
+        self.assertIn("frontend_mode == 'contract_diagnostic'", diagnostic['if'])
         self.assertEqual(
             'make --no-print-directory verify.frontend.payment_request.diagnostic',
             diagnostic['run'],
         )
+        record = next(
+            s for s in steps if s.get('name') == 'Record explicit non-release lane result'
+        )
+        self.assertIn('PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME', record['env'])
+        self.assertIn('contract_diagnostic', record['run'])
+        cleanup = (ROOT / "scripts/ci/self_hosted_runner_cleanup.sh").read_text(encoding="utf-8")
+        self.assertIn('"$frontend_mode" == "contract_diagnostic"', cleanup)
 
     def test_merge_summary_matches_backend_and_mainline_execution(self):
         workflow = yaml.safe_load(self.text('merge_policy_gate.yml'))

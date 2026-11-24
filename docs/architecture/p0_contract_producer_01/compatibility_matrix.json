@@ -219,10 +219,10 @@
       "owner": "P4 design validation"
     },
     {
-      "id": "DESC-MONEY-MISSING-DIGITS",
+      "id": "DESC-MONEY-WITHOUT-OBSERVED-PRECISION",
       "consumer": "strict descriptor schema",
-      "payload": "money descriptor missing digits",
-      "expectation": "invalid",
+      "payload": "money descriptor with native currencyField but no current currency precision fact",
+      "expectation": "valid",
       "evidence": "executed_schema_validation",
       "owner": "P4 design validation"
     },

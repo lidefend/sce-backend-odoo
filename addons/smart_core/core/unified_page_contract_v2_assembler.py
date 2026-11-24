@@ -1295,11 +1295,14 @@ def _strict_field_descriptor(
         or legacy.get("currencyField")
         or legacy.get("currency_field")
     )
+    field_code = _text(widget.get("fieldCode") or legacy.get("name"))
     digits = config.get("digits") if isinstance(config.get("digits"), list) else legacy.get("digits")
-    if not isinstance(digits, list) and currency_digits_by_field:
-        digits = currency_digits_by_field.get(currency_field)
-    if not isinstance(digits, list) and currency_digits_by_field:
-        digits = currency_digits_by_field.get("__contract_default__")
+    if (
+        field_type == "monetary"
+        and not isinstance(digits, list)
+        and currency_digits_by_field
+    ):
+        digits = currency_digits_by_field.get(field_code)
     attachment_role = _text(config.get("attachmentRole") or legacy.get("attachmentRole"))
     if relation:
         descriptor["relation"] = relation
@@ -1333,7 +1336,7 @@ def _strict_field_descriptor(
         descriptor["temporal"] = {"kind": "datetime", "timezoneAuthority": "user"}
     if relation == "ir.attachment" and attachment_role:
         descriptor["attachmentRole"] = attachment_role
-    if field_type == "monetary" and not descriptor.get("digits"):
+    if field_type == "monetary" and not descriptor.get("currencyField"):
         return None
     return descriptor
 
@@ -1348,40 +1351,41 @@ def _upgrade_contract_v2_field_descriptors(
     out["layoutContract"] = layout
     currency_digits_by_field: dict[str, list[int]] = {}
     main_data = _dict(_dict(out.get("dataContract")).get("mainData"))
-    default_currency = getattr(getattr(env, "company", None), "currency_id", None)
-    if default_currency:
-        currency_digits_by_field["__contract_default__"] = [
-            16,
-            int(getattr(default_currency, "decimal_places", 2) or 2),
-        ]
-    currency_field_names: set[str] = set()
+    page_info = _dict(out.get("pageInfo"))
+    model_name = _text(page_info.get("model"))
+    record_id = _positive_int(main_data.get("id"), 0)
+    monetary_field_codes: set[str] = set()
 
     def collect_currency_fields(rows: list[Any]) -> None:
         for row in rows:
             node = _dict(row)
             for widget in _list(node.get("widgetList")):
                 config = _dict(_dict(widget).get("componentConfig"))
-                currency_field = _text(config.get("currency_field") or config.get("currencyField"))
-                if currency_field:
-                    currency_field_names.add(currency_field)
+                legacy = _dict(_dict(widget).get("fieldDescriptor"))
+                field_code = _text(_dict(widget).get("fieldCode") or legacy.get("name"))
+                if _text(config.get("fieldType")) == "monetary" and field_code:
+                    monetary_field_codes.add(field_code)
             collect_currency_fields(_list(node.get("children")))
 
     collect_currency_fields(_list(layout.get("containerTree")))
-    if env is not None and currency_field_names:
-        for field_name in currency_field_names:
-            raw = main_data.get(field_name)
-            currency_id = raw[0] if isinstance(raw, (list, tuple)) and raw else raw
-            if not isinstance(currency_id, int) or isinstance(currency_id, bool) or currency_id <= 0:
+    if env is not None and model_name and monetary_field_codes:
+        model = env[model_name]
+        record = model.browse(record_id).exists() if record_id else model.browse()
+        for field_code in monetary_field_codes:
+            field = getattr(model, "_fields", {}).get(field_code)
+            if field is None or getattr(field, "type", "") != "monetary":
                 continue
             try:
-                currency = env["res.currency"].browse(currency_id).exists()
+                currency_field = field.get_currency_field(model)
+                currency = record[currency_field] if record else None
             except Exception:
+                currency = None
+            if not currency:
                 continue
-            if currency:
-                currency_digits_by_field[field_name] = [
-                    16,
-                    int(currency.decimal_places or 2),
-                ]
+            currency_digits_by_field[field_code] = [
+                16,
+                int(currency.decimal_places or 2),
+            ]
 
     def walk(rows: list[Any]) -> None:
         for row in rows:

@@ -201,6 +201,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
         expected = semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC)
         self.assertEqual(expected, node["componentKey"])
         self.assertEqual(PAYMENT_DETAIL_SEMANTIC, node["fieldDescriptor"]["semanticType"])
+        self.assertEqual(expected, node["fieldDescriptor"]["componentKey"])
         self.assertNotIn("semantic", node["fieldDescriptor"])
 
     def test_declared_field_publishes_the_registry_identity(self) -> None:

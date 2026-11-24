@@ -87,6 +87,36 @@ export const SEMANTIC_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Obj
   'unsupported_native_widget': 'sc.unsupported.native_widget',
 });
 
+export const SEMANTIC_FIELD_TYPES: Readonly<Record<string, readonly string[]>> = Object.freeze({
+  'action': Object.freeze(['action']),
+  'binary': Object.freeze(['binary']),
+  'boolean': Object.freeze(['boolean']),
+  'challenge_status': Object.freeze(['char', 'selection', 'text']),
+  'choice': Object.freeze(['selection']),
+  'credential_entry': Object.freeze(['char']),
+  'date': Object.freeze(['date']),
+  'datetime': Object.freeze(['datetime']),
+  'detail_collection': Object.freeze(['one2many']),
+  'detail_table': Object.freeze(['one2many', 'many2many']),
+  'duration': Object.freeze(['float', 'integer']),
+  'hierarchical_collection': Object.freeze(['one2many', 'many2many']),
+  'long_text': Object.freeze(['text', 'html']),
+  'money': Object.freeze(['monetary']),
+  'number': Object.freeze(['integer', 'float', 'monetary']),
+  'one_time_secret': Object.freeze(['char', 'text']),
+  'payment_settlement_detail_collection': Object.freeze(['one2many']),
+  'percentage': Object.freeze(['float', 'integer']),
+  'readable_value': Object.freeze(['*']),
+  'relation': Object.freeze(['many2one']),
+  'relation_collection': Object.freeze(['many2many']),
+  'secret_confirmation': Object.freeze(['char']),
+  'status': Object.freeze(['selection', 'char']),
+  'support_action': Object.freeze(['action']),
+  'tag_collection': Object.freeze(['many2many']),
+  'text': Object.freeze(['char']),
+  'unsupported_native_widget': Object.freeze(['*']),
+});
+
 export type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';
 
 export const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, {status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({

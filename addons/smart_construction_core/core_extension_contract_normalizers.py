@@ -188,6 +188,7 @@ def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
     if _is_widget_node(node):
         descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
         descriptor["semanticType"] = semantic
+        descriptor["componentKey"] = component_key
         node["fieldDescriptor"] = descriptor
     node["componentKey"] = component_key
     vocabulary = SEMANTIC_PRESENTATION_VOCABULARY.get(semantic)

@@ -243,21 +243,26 @@ class TestP0ContractProducerP0A(TransactionCase):
         self.assertEqual(numeric["semanticType"], "number")
 
     def test_strict_monetary_descriptor_uses_authoritative_currency_precision(self):
+        project = self.env["project.project"].create({
+            "name": "Strict monetary descriptor",
+            "company_id": self.env.company.id,
+        })
         contract = {
+            "pageInfo": {"model": "project.project"},
             "layoutContract": {
                 "containerTree": [{
                     "widgetList": [{
-                        "widgetId": "field.amount.occ.1234567890abcdef",
-                        "fieldCode": "amount",
-                        "label": "申请金额",
+                        "widgetId": "field.company_currency_id.occ.1234567890abcdef",
+                        "fieldCode": "budget_active_cost_target",
+                        "label": "当前预算成本",
                         "fieldDescriptor": {
                             "schemaVersion": "1.0.0",
-                            "name": "amount",
+                            "name": "budget_active_cost_target",
                             "type": "monetary",
                         },
                         "componentConfig": {
                             "fieldType": "monetary",
-                            "currency_field": "currency_id",
+                            "currency_field": "company_currency_id",
                         },
                     }],
                     "children": [],
@@ -265,48 +270,76 @@ class TestP0ContractProducerP0A(TransactionCase):
             },
             "dataContract": {
                 "mainData": {
-                    "currency_id": [self.env.company.currency_id.id, self.env.company.currency_id.name],
+                    "id": project.id,
+                    "company_currency_id": [
+                        self.env.company.currency_id.id,
+                        self.env.company.currency_id.name,
+                    ],
                 },
             },
         }
         upgraded = _upgrade_contract_v2_field_descriptors(contract, env=self.env)
         descriptor = upgraded["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
-        self.assertEqual(descriptor["currencyField"], "currency_id")
+        self.assertEqual(descriptor["currencyField"], "company_currency_id")
         self.assertEqual(
             descriptor["digits"],
             [16, int(self.env.company.currency_id.decimal_places or 2)],
         )
 
-    def test_strict_monetary_descriptor_uses_company_precision_when_currency_value_is_empty(self):
+    def test_strict_monetary_descriptor_keeps_currency_binding_without_inventing_precision(self):
         contract = {
+            "pageInfo": {"model": "project.project"},
             "layoutContract": {
                 "containerTree": [{
                     "widgetList": [{
-                        "widgetId": "field.settlement_amount.occ.1234567890abcdef",
-                        "fieldCode": "settlement_amount",
-                        "label": "结算金额",
+                        "widgetId": "field.budget_active_cost_target.occ.1234567890abcdef",
+                        "fieldCode": "budget_active_cost_target",
+                        "label": "当前预算成本",
                         "fieldDescriptor": {
                             "schemaVersion": "1.0.0",
-                            "name": "settlement_amount",
+                            "name": "budget_active_cost_target",
                             "type": "monetary",
                         },
                         "componentConfig": {
                             "fieldType": "monetary",
-                            "currency_field": "settlement_currency_id",
+                            "currency_field": "company_currency_id",
+                        },
+                    }],
+                    "children": [],
+                }],
+            },
+            "dataContract": {"mainData": {"id": 0}},
+        }
+        upgraded = _upgrade_contract_v2_field_descriptors(contract, env=self.env)
+        descriptor = upgraded["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+        self.assertEqual(descriptor["currencyField"], "company_currency_id")
+        self.assertNotIn("digits", descriptor)
+
+    def test_strict_non_monetary_descriptor_does_not_inherit_currency_digits(self):
+        upgraded = _upgrade_contract_v2_field_descriptors({
+            "layoutContract": {
+                "containerTree": [{
+                    "widgetList": [{
+                        "widgetId": "field.outflow_line_ids.occ.1234567890abcdef",
+                        "fieldCode": "outflow_line_ids",
+                        "label": "付款申请明细",
+                        "fieldDescriptor": {
+                            "schemaVersion": "1.0.0",
+                            "name": "outflow_line_ids",
+                            "type": "one2many",
+                        },
+                        "componentConfig": {
+                            "fieldType": "one2many",
+                            "relation": "payment.request.line",
                         },
                     }],
                     "children": [],
                 }],
             },
             "dataContract": {"mainData": {}},
-        }
-        upgraded = _upgrade_contract_v2_field_descriptors(contract, env=self.env)
+        }, env=self.env)
         descriptor = upgraded["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
-        self.assertEqual(descriptor["currencyField"], "settlement_currency_id")
-        self.assertEqual(
-            descriptor["digits"],
-            [16, int(self.env.company.currency_id.decimal_places or 2)],
-        )
+        self.assertNotIn("digits", descriptor)
 
 
 @tagged("post_install", "-at_install", "p0_contract_producer_p0a_money_evidence")

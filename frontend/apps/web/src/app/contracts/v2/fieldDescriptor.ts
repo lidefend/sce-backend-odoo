@@ -1,6 +1,7 @@
 import {
   NATIVE_WIDGET_REGISTRY,
   SEMANTIC_COMPONENT_REGISTRY,
+  SEMANTIC_FIELD_TYPES,
   SEMANTIC_REGISTRY_ROWS,
 } from '../../presentation/semantic_registry.generated';
 import type {
@@ -131,15 +132,11 @@ function decodeOptionalText(
 }
 
 function applicableFieldSemantics(): Set<string> {
-  const out = new Set<string>();
-  Object.entries(SEMANTIC_COMPONENT_REGISTRY).forEach(([semanticType, componentKey]) => {
-    const component = COMPONENTS_BY_KEY.get(componentKey);
-    if (!component) return;
-    if (component.supportedFieldTypes.some((fieldType) => fieldType !== 'action')) {
-      out.add(semanticType);
-    }
-  });
-  return out;
+  return new Set(
+    Object.entries(SEMANTIC_FIELD_TYPES)
+      .filter(([, fieldTypes]) => fieldTypes.some((fieldType) => fieldType !== 'action'))
+      .map(([semanticType]) => semanticType),
+  );
 }
 
 function decodeWidgetResolution(
@@ -330,10 +327,18 @@ export function decodeContractV2FieldDescriptor(
     push(issues, `${path}.componentKey`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey does not resolve from semanticType');
   }
   const component = COMPONENTS_BY_KEY.get(componentKey);
-  if (!component) {
+  const declaredFieldTypes = SEMANTIC_FIELD_TYPES[semanticType] || [];
+  if (!component && !declaredFieldTypes.length) {
     push(issues, `${path}.componentKey`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey is not registered');
   } else if (
-    !component.supportedFieldTypes.includes('*')
+    declaredFieldTypes.length
+    && !declaredFieldTypes.includes('*')
+    && !declaredFieldTypes.includes(fieldType)
+  ) {
+    push(issues, `${path}.fieldType`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'semanticType does not support fieldType');
+  } else if (
+    component
+    && !component.supportedFieldTypes.includes('*')
     && !component.supportedFieldTypes.includes(fieldType)
   ) {
     push(issues, `${path}.fieldType`, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'componentKey does not support fieldType');
@@ -370,11 +375,10 @@ export function decodeContractV2FieldDescriptor(
     if (
       fieldType !== 'monetary'
       || semanticType !== 'money'
-      || !digits
       || !currencyField
       || currencyField === fieldCode
     ) {
-      push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'money requires monetary fieldType, digits and currencyField');
+      push(issues, path, 'FIELD_DESCRIPTOR_CONDITIONAL_REQUIRED', 'money requires monetary fieldType and currencyField');
     }
     if (raw.unit !== undefined || raw.temporal !== undefined || raw.attachmentRole !== undefined) {
       push(issues, path, 'FIELD_DESCRIPTOR_SEMANTIC_MISMATCH', 'money cannot declare unit, temporal or attachmentRole');

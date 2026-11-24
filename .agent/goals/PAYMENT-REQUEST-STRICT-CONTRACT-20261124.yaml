@@ -34,16 +34,24 @@ goal:
       - addons/smart_core/handlers/ui_contract_v2.py
       - addons/smart_construction_core/core_extension_contract_normalizers.py
       - addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py
+      - frontend/apps/web/src/app/contracts/v2/fieldDescriptor.ts
       - frontend/apps/web/src/app/contracts/v2/schema.ts
+      - frontend/apps/web/src/app/presentation/semantic_registry.generated.ts
       - frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts
+      - frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts
+      - scripts/contract/generate_semantic_registry.py
       - scripts/verify/test_construction_semantic_declarations.py
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/unified_page_contract_v2_assembler_guard.py
       - scripts/ci/ci_risk_classifier.py
+      - scripts/ci/self_hosted_runner_cleanup.sh
       - scripts/ci/test_ci_risk_classifier.py
       - scripts/ci/test_ci_risk_workflow_contract.py
       - docs/architecture/p0_contract_producer_01/remediation_design.json
+      - docs/architecture/p0_contract_producer_01/compatibility_matrix.json
+      - docs/architecture/p0_contract_producer_01/contract_v2_field_descriptor.schema.json
+      - docs/architecture/p0_contract_producer_01/descriptor_cases.json
       - docs/engineering_convergence/complexity_budget_report.md
       - docs/engineering_convergence/split_plan_queue.md
       - docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json
