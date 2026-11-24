@@ -3,7 +3,7 @@
   "id": "FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124",
   "branch": "audit/full-center-enablement-walkthrough-20261124",
   "status": "verification_pending",
-  "baseline_sha": "5e436b2a6cb8816da94c0b3d3d831279628adf3d",
+  "baseline_sha": "27d0e2ae62065bdf7d5543f40c2387c7dd1a4f0d",
   "scope": [
     "AGENTS.md",
     ".agent/active-runs.json",
