@@ -106,3 +106,22 @@ and demo policy as the workflow, and the focused test executes the real shell
 fragment to assert all six exact identity fields. Updated focused result:
 `scripts.test.test_dependency_baseline`: 12 PASS; `make ci.local.iteration`:
 PASS.
+
+Exact-head run `cf0a71a28eb6a47819cf8948503bd13249a2ec4c` then exercised the
+three suites independently:
+
+- Product `45342230427`: all four shards and coverage verification PASS.
+- Demo `45342236804`: 28 tests executed; one stale test expectation still
+  asserted the former generic payer label instead of the current realistic
+  demo seed value. Classified as `baseline_evidence_defect`.
+- Acceptance `45342251532`: 24 tests loaded, with two setup errors because the
+  production fixture guard still required an `sc_test_` prefix while the
+  isolated backend suite uses the exact attempt database
+  `sc_suite_ci_<module>`. Classified as `validation_tool_defect`.
+
+The demo assertion now matches the current declared seed fact,
+`德阳建科建材有限公司基本户`. The acceptance guard now requires a non-empty
+attempt database and exact equality with the active Odoo connection; it does
+not admit arbitrary databases. `TestAcceptanceFixtureGuard` passed 5/5 in the
+isolated `local.test` ORM lane. The subsequent `make ci.local.iteration`
+passed with 19 acceptance-fixture tests plus all affected demo/tool guards.

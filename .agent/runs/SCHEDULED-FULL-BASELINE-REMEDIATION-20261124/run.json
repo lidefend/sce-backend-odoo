@@ -20,7 +20,9 @@
     "scripts/test/test.sh",
     "scripts/test/test_dependency_baseline.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
+    "addons/smart_construction_acceptance_fixture/tests/test_acceptance_fixture_guard.py",
     "addons/smart_construction_acceptance_fixture/tests/test_scenario_navigation_maintenance.py",
+    "addons/smart_construction_acceptance_fixture/tools/frontend_productization_fixture.py",
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     "addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py",
     "demo_addons/smart_construction_demo/tests/test_payment_request_floorplan_fixture_ownership.py",
@@ -80,7 +82,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Push this suite-aware harness identity fix and dispatch product, demo and acceptance full suites against the exact new PR head.",
+  "next_exact_step": "Commit the exact attempt-database guard and current demo fact assertion, then dispatch all three full suites against the new exact PR head.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

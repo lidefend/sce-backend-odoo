@@ -88,7 +88,7 @@ class TestPaymentRequestFloorplanFixtureOwnership(TransactionCase):
         self.assertEqual(len(funding_baseline), 1)
         self.assertEqual(second_record.date_request, funding_baseline.period_start)
         self.assertEqual(second_record.payee_account_completeness, "complete")
-        self.assertEqual(second_record.payer_unit, "演示付款单位基本户")
+        self.assertEqual(second_record.payer_unit, "德阳建科建材有限公司基本户")
         self.assertTrue(second["approval_actor_ids"])
         follower_partners = second_record.project_id.message_follower_ids.mapped(
             "partner_id"
