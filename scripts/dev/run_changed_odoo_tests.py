@@ -26,7 +26,6 @@ def plan(root: Path) -> dict[str, list[str]]:
     _, run = selected
     paths = delta_paths(root, run["baseline_sha"])
     test_modules: set[str] = set()
-    production_modules: set[str] = set()
     for path in paths:
         match = re.match(r"addons/([a-z][a-z0-9_]*)/(.+)$", path)
         if not match:
@@ -45,8 +44,12 @@ def plan(root: Path) -> dict[str, list[str]]:
                 for owner, prefix in TEST_AUXILIARY_PREFIXES
             )
         ):
-            production_modules.add(module)
-    modules = sorted(test_modules - production_modules)
+            # Production changes retain remote owning-module coverage. Locally,
+            # changed tests in the same module still provide the exact behavior
+            # evidence and must not be skipped merely because production code
+            # also changed.
+            continue
+    modules = sorted(test_modules)
     return {
         module: changed_odoo_tests.selection(root, module)
         for module in modules

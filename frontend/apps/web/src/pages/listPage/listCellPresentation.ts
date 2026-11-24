@@ -25,6 +25,36 @@ export function resolveListDisplayField(
   return String(option?.displayField || field).trim() || field;
 }
 
+export function normalizeListRelationValue(
+  displayValue: unknown,
+  underlyingValue: unknown,
+): unknown {
+  if (
+    displayValue === false
+    || displayValue === null
+    || displayValue === undefined
+    || displayValue === 0
+    || displayValue === '0'
+  ) return displayValue;
+  if (Array.isArray(displayValue)) return displayValue;
+  if (
+    displayValue
+    && typeof displayValue === 'object'
+    && !Array.isArray(displayValue)
+    && 'id' in displayValue
+  ) return displayValue;
+  if (
+    underlyingValue === false
+    || underlyingValue === null
+    || underlyingValue === undefined
+    || underlyingValue === 0
+    || underlyingValue === '0'
+  ) {
+    return displayValue;
+  }
+  return [underlyingValue, displayValue];
+}
+
 type CellPresentationInput = {
   raw: unknown;
   column: ColumnSemanticInput;

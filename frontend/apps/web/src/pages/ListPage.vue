@@ -349,7 +349,7 @@ import {
   isNumericFieldType,
 } from '../utils/fieldSemantics.ts';
 import { attachmentLinkDownloadParams, openExternalAttachmentUrl } from '../utils/filePreview';
-import { isListAttachmentCountColumn, isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
+import { isListAttachmentCountColumn, isListBusinessIdentifierColumn, isListStatusColumn, isListTemporalColumn, normalizeListRelationValue, presentListCell, resolveListDisplayField } from './listPage/listCellPresentation';
 import {
   canListGroupPageNext,
   canListGroupPagePrev,
@@ -737,7 +737,7 @@ function semanticCell(field: string, value: unknown, relationItems: Array<{ id: 
   const displayField = String(option?.displayField || '').trim();
   const valueField = String(option?.valueField || '').trim();
   const relationValue = displayField && valueField && value !== null && value !== undefined
-    ? [row?.[valueField], value]
+    ? normalizeListRelationValue(value, row?.[valueField])
     : value;
   const rawText = typeof value === 'string' ? value : '';
   const attachmentText = rawText && containsAttachmentReference(rawText)

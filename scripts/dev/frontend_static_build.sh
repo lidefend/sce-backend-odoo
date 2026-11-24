@@ -81,3 +81,5 @@ for forbidden in sc_demo sc_dev_demo sc_platform_control sc_prod; do
     exit 1
   fi
 done
+
+ROOT_DIR="${ROOT_DIR}" bash "${ROOT_DIR}/scripts/verify/frontend_build_fingerprint.sh" "${FRONTEND_DIST_ABS}"

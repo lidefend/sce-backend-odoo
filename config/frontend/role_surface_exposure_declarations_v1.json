@@ -84,7 +84,7 @@
       "identity_groups": [
         "smart_construction_core.group_sc_business_full"
       ],
-      "identity_evidence": "无夹具身份；取能力组 group_sc_business_full（业务全能力，显式声明不含系统管理）。",
+      "identity_evidence": "无夹具身份；取兼容角色组 group_sc_business_full；权限由其 implied 的能力包派生，显式声明不含系统管理。",
       "rationale": "能力发现模式（discover_installed_capabilities=true）：能力可达即交付，无窄化声明；本条同时锁定“发现模式不得被改成静默白名单”。"
     },
     "business_config_admin": {

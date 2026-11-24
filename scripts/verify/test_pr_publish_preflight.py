@@ -96,6 +96,16 @@ pr.create: pr.publish.preflight
         self.assertIn("--stage merge --require-ready", block.group())
         self.assertIn("PR_PUBLISH_MODE must be merge or review", block.group())
 
+    def test_explicit_targeted_checks_bypass_cross_layer_planner_only_by_verify_targets(self):
+        makefile = (ROOT / "make" / "codex.mk").read_text(encoding="utf-8")
+        self.assertIn("PR_PUBLISH_TARGETED_CHECKS ?=", makefile)
+        block = re.search(r"(?m)^pr\.publish\.preflight:[^\n]*\n(?:\t[^\n]*\n)+", makefile)
+        self.assertIsNotNone(block)
+        recipe = block.group()
+        self.assertIn("targeted check must be a verify.* target", recipe)
+        self.assertIn("$(PR_PUBLISH_TARGETED_CHECKS)", recipe)
+        self.assertIn("ci.local.iteration", recipe)
+
 
 if __name__ == "__main__":
     unittest.main()

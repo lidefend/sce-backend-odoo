@@ -11,7 +11,7 @@ from scripts.dev import run_changed_odoo_tests as runner
 
 
 class RunChangedOdooTestsTest(unittest.TestCase):
-    def test_plan_excludes_modules_with_production_changes(self):
+    def test_plan_keeps_changed_tests_even_when_production_code_changed(self):
         paths = [
             "addons/smart_construction_core/tests/test_one.py",
             "addons/smart_construction_acceptance_fixture/tests/test_fixture.py",
@@ -37,9 +37,10 @@ class RunChangedOdooTestsTest(unittest.TestCase):
             {
                 "smart_construction_acceptance_fixture": ["/module:TestOne"],
                 "smart_construction_core": ["/module:TestOne"],
+                "smart_core": ["/module:TestOne"],
             },
         )
-        self.assertEqual(selection.call_count, 2)
+        self.assertEqual(selection.call_count, 3)
 
     def test_empty_plan_and_first_failure_fail_closed(self):
         with tempfile.TemporaryDirectory() as directory:

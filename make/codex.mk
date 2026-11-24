@@ -276,6 +276,7 @@ codex.run: guard.prod.forbid
 
 PR_BASE ?= main
 PR_PUBLISH_MODE ?= merge
+PR_PUBLISH_TARGETED_CHECKS ?=
 PR_TITLE ?=
 PR_BODY_FILE ?= artifacts/pr_body.md
 PR_DRAFT ?= 0
@@ -429,7 +430,16 @@ pr.publish.preflight: guard.prod.forbid
 	fi; \
 	echo "[pr.publish.preflight] head=$$EXPECTED clean=ok"; \
 	'
-	@$(MAKE) --no-print-directory ci.local.iteration
+	@if [ -n "$(strip $(PR_PUBLISH_TARGETED_CHECKS))" ]; then \
+	  for target in $(PR_PUBLISH_TARGETED_CHECKS); do \
+	    case "$$target" in verify.*) ;; \
+	      *) echo "[DENY] pr.publish.preflight: targeted check must be a verify.* target: $$target"; exit 13 ;; \
+	    esac; \
+	  done; \
+	  $(MAKE) --no-print-directory $(PR_PUBLISH_TARGETED_CHECKS); \
+	else \
+	  $(MAKE) --no-print-directory ci.local.iteration; \
+	fi
 	@case "$(PR_PUBLISH_MODE)" in \
 	  merge) \
 	    python3 scripts/ops/validation_delivery_plan.py --expected-head "$(EXPECTED_HEAD)" --stage merge --require-ready ;; \

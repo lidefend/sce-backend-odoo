@@ -41,6 +41,7 @@ export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
   {componentKey: 'sc.relation.many2one', semanticType: 'relation', supportedFieldTypes: ['many2one'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
   {componentKey: 'sc.relation.many2many', semanticType: 'relation_collection', supportedFieldTypes: ['many2many'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
   {componentKey: 'sc.relation.table', semanticType: 'detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'ProfessionalDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
+  {componentKey: 'sc.relation.activity', semanticType: 'activity_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'ProfessionalDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
   {componentKey: 'sc.select.tags', semanticType: 'tag_collection', supportedFieldTypes: ['many2many'], readiness: 'ready', renderer: 'ProfessionalRelationFieldControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
   {componentKey: 'sc.button.action', semanticType: 'action', supportedFieldTypes: ['action'], readiness: 'ready', renderer: 'FormSectionField', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
   {componentKey: 'sc.auth.credential_entry', semanticType: 'credential_entry', supportedFieldTypes: ['char'], readiness: 'ready', renderer: 'FormSectionField', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: []},
@@ -58,6 +59,7 @@ export const SEMANTIC_REGISTRY_ROWS: readonly SemanticRegistryRow[] = [
 
 export const SEMANTIC_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Object.freeze({
   'action': 'sc.button.action',
+  'activity_collection': 'sc.relation.activity',
   'binary': 'sc.input.binary',
   'boolean': 'sc.input.boolean',
   'challenge_status': 'sc.auth.challenge_status',
@@ -89,6 +91,7 @@ export const SEMANTIC_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Obj
 
 export const SEMANTIC_FIELD_TYPES: Readonly<Record<string, readonly string[]>> = Object.freeze({
   'action': Object.freeze(['action']),
+  'activity_collection': Object.freeze(['one2many']),
   'binary': Object.freeze(['binary']),
   'boolean': Object.freeze(['boolean']),
   'challenge_status': Object.freeze(['char', 'selection', 'text']),
@@ -121,6 +124,7 @@ export type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';
 
 export const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, {status: NativeWidgetStatus; reasonCode: string}>> = Object.freeze({
   'account-tax-totals-field': {status: 'ready', reasonCode: ''},
+  'account_type_selection': {status: 'fallback', reasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION'},
   'analytic_distribution': {status: 'ready', reasonCode: ''},
   'badge': {status: 'ready', reasonCode: ''},
   'binary': {status: 'ready', reasonCode: ''},
@@ -142,6 +146,7 @@ export const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, {status: NativeWidg
   'image': {status: 'fallback', reasonCode: 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK'},
   'input': {status: 'ready', reasonCode: ''},
   'json': {status: 'ready', reasonCode: ''},
+  'list_activity': {status: 'fallback', reasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION'},
   'many2many': {status: 'ready', reasonCode: ''},
   'many2many_binary': {status: 'ready', reasonCode: ''},
   'many2many_tags': {status: 'ready', reasonCode: ''},

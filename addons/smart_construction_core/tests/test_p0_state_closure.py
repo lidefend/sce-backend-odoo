@@ -29,7 +29,7 @@ class TestP0StateClosure(BusinessTransactionCase):
             values["contract_id"] = contract.id
         request = self.env["payment.request"].create(values)
         reviewer = self._create_finance_user("synthetic_request_reviewer_%s" % request.id)
-        self.env.ref("smart_construction_core.group_sc_role_executive").write({"users": [(4, reviewer.id)]})
+        self.env.ref("smart_construction_core.group_sc_cap_executive_approver").write({"users": [(4, reviewer.id)]})
         request.action_submit()
         if request.state == "submit":
             self._complete_tier_validation(request, reviewer)

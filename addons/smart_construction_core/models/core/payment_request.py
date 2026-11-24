@@ -1404,8 +1404,11 @@ class PaymentRequest(models.Model):
             "smart_construction_core.group_sc_cap_business_initiator"
         )
         can_manage = user.has_group("smart_construction_core.group_sc_cap_finance_manager")
-        can_approve = can_manage or user.has_group("smart_construction_core.group_sc_role_executive")
+        has_generic_approval = can_manage or user.has_group(
+            "smart_construction_core.group_sc_cap_executive_approver"
+        )
         for record in self:
+            can_approve = has_generic_approval or bool(record.can_review)
             executions = record.payment_execution_ids.filtered(
                 lambda execution: execution.active and execution.state in ("draft", "confirmed")
             ).sorted(
@@ -2222,12 +2225,12 @@ class PaymentRequest(models.Model):
             for xmlid in (
                 "smart_construction_core.group_sc_cap_finance_manager",
                 "smart_core.group_smart_core_finance_approver",
-                "smart_construction_core.group_sc_role_executive",
+                "smart_construction_core.group_sc_cap_executive_approver",
             )
         )
 
     def _assert_finance_approve_access(self):
-        if not self._has_finance_approve_access():
+        if not self._has_finance_approve_access() and not any(self.mapped("can_review")):
             raise ValidationError(_("你没有审批付款/收款申请的权限。"))
 
     def _workflow_action_is_authorized(self, action_key):
@@ -2244,7 +2247,7 @@ class PaymentRequest(models.Model):
         if key == "submit":
             return self._has_submit_access()
         if key in ("approve", "reject"):
-            return self._has_finance_approve_access() and bool(self.can_review)
+            return bool(self.can_review)
         if key in ("done", "cancel"):
             return self.env.user.has_group("smart_construction_core.group_sc_cap_finance_manager")
         return False

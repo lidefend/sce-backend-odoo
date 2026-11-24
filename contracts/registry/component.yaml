@@ -58,6 +58,7 @@ components:
   sc.relation.many2one: {semantic: relation, field_types: [many2one], renderer: ProfessionalRelationFieldControl}
   sc.relation.many2many: {semantic: relation_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
   sc.relation.table: {semantic: detail_collection, field_types: [one2many], renderer: ProfessionalDetailCollectionControl}
+  sc.relation.activity: {semantic: activity_collection, field_types: [one2many], renderer: ProfessionalDetailCollectionControl}
   sc.payment.settlement_detail_collection: {semantic: payment_settlement_detail_collection, field_types: [one2many], renderer: PaymentSettlementDetailCollectionControl, capabilities: [form.relation.one2many]}
   sc.select.tags: {semantic: tag_collection, field_types: [many2many], renderer: ProfessionalRelationFieldControl}
   sc.button.action: {semantic: action, field_types: [action], renderer: FormSectionField}

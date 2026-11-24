@@ -777,22 +777,69 @@ class ApiDataHandler(BaseIntentHandler):
             if not ids:
                 continue
             labels = {}
+            label_fields = []
             try:
                 related_model = env_model.env[comodel_name]
-                if "display_name" not in self._filter_readable_fields(related_model, ["display_name"]):
+                # ``display_name`` can be an ORM virtual field rather than an
+                # entry in ``_fields`` (notably res.company). Read it when it
+                # is materialized, but always fall back to the model's
+                # authoritative record-name field instead of dropping the
+                # entire x2many display projection.
+                rec_name = str(getattr(related_model, "_rec_name", "") or "name").strip()
+                label_fields = self._filter_readable_fields(
+                    related_model,
+                    list(dict.fromkeys(["display_name", rec_name, "name"])),
+                )
+                if not [name for name in label_fields if name != "id"]:
+                    _logger.warning(
+                        "relation display projection has no readable label field model=%s field=%s comodel=%s rec_name=%s",
+                        env_model._name,
+                        field_name,
+                        comodel_name,
+                        rec_name,
+                    )
                     continue
-                related_rows = related_model.browse(ids).exists().read(["display_name"])
+                try:
+                    related_rows = related_model.browse(ids).exists().read(label_fields)
+                except AccessError as batch_error:
+                    # Record rules can reject a batch because one related record
+                    # is outside the caller's scope. Keep the same ACL and
+                    # project labels only for records that are individually
+                    # readable; never elevate this label lookup to sudo().
+                    related_rows = []
+                    for record_id in ids:
+                        try:
+                            related_rows.extend(
+                                related_model.browse([record_id]).exists().read(label_fields)
+                            )
+                        except AccessError:
+                            continue
+                    if not related_rows:
+                        raise batch_error
                 labels = {
-                    int(item.get("id")): str(item.get("display_name") or "").strip()
+                    int(item.get("id")): str(
+                        item.get("display_name")
+                        or item.get(rec_name)
+                        or item.get("name")
+                        or ""
+                    ).strip()
                     for item in related_rows or []
-                    if isinstance(item, dict) and item.get("id") and str(item.get("display_name") or "").strip()
+                    if isinstance(item, dict)
+                    and item.get("id")
+                    and str(
+                        item.get("display_name")
+                        or item.get(rec_name)
+                        or item.get("name")
+                        or ""
+                    ).strip()
                 }
             except AccessError:
                 _logger.warning(
-                    "relation display projection denied model=%s field=%s comodel=%s",
+                    "relation display projection denied model=%s field=%s comodel=%s fields=%s",
                     env_model._name,
                     field_name,
                     comodel_name,
+                    label_fields,
                 )
                 continue
             except Exception:

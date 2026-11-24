@@ -280,6 +280,99 @@ class TestApiDataListParamBoundaries(unittest.TestCase):
 
         self.assertNotIn("__display_values", result[0])
 
+    def test_x2many_display_projection_uses_rec_name_for_virtual_display_name(self):
+        field = lambda field_type, comodel_name="": types.SimpleNamespace(
+            type=field_type,
+            comodel_name=comodel_name,
+        )
+
+        class _RelatedRecords:
+            def __init__(self):
+                self.requested_fields = []
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                self.requested_fields = fields
+                return [{"id": 1, "name": "四川智汇某某建设集团有限公司"}]
+
+        records = _RelatedRecords()
+
+        class _RelatedModel:
+            _fields = {"name": field("char")}
+            _rec_name = "name"
+
+            def browse(self, ids):
+                return records
+
+        model = types.SimpleNamespace(
+            _name="res.users",
+            _fields={"company_ids": field("many2many", "res.company")},
+            env={"res.company": _RelatedModel()},
+        )
+        self.handler._filter_readable_fields = lambda _model, names: [
+            name for name in names if name in {"id", "name"}
+        ]
+        rows = [{"id": 1, "company_ids": [1]}]
+
+        result = self.handler._attach_relation_display_values(
+            model,
+            rows,
+            {"company_ids": {"value_field": "company_ids", "presentation": "relation_tags"}},
+        )
+
+        self.assertEqual(
+            result[0]["__display_values"]["company_ids"],
+            [{"id": 1, "label": "四川智汇某某建设集团有限公司"}],
+        )
+        self.assertEqual(records.requested_fields, ["name"])
+
+    def test_x2many_display_projection_keeps_individually_readable_records(self):
+        access_error = sys.modules["odoo.exceptions"].AccessError
+        field = lambda field_type, comodel_name="": types.SimpleNamespace(
+            type=field_type,
+            comodel_name=comodel_name,
+        )
+
+        class _RelatedRecords:
+            def __init__(self, ids):
+                self.ids = ids
+
+            def exists(self):
+                return self
+
+            def read(self, fields):
+                if self.ids == [1, 2]:
+                    raise access_error("record rule denied the mixed batch")
+                return [{"id": 1, "name": "Visible company"}]
+
+        class _RelatedModel:
+            _fields = {"name": field("char")}
+            _rec_name = "name"
+
+            def browse(self, ids):
+                return _RelatedRecords(ids)
+
+        model = types.SimpleNamespace(
+            _name="res.users",
+            _fields={"company_ids": field("many2many", "res.company")},
+            env={"res.company": _RelatedModel()},
+        )
+        self.handler._filter_readable_fields = lambda _model, names: list(names)
+        rows = [{"id": 1, "company_ids": [1, 2]}]
+
+        result = self.handler._attach_relation_display_values(
+            model,
+            rows,
+            {"company_ids": {"value_field": "company_ids", "presentation": "relation_tags"}},
+        )
+
+        self.assertEqual(
+            result[0]["__display_values"]["company_ids"],
+            [{"id": 1, "label": "Visible company"}],
+        )
+
     def test_semantic_aggregates_return_authoritative_page_and_filtered_sums(self):
         class _Model:
             _fields = {"currency_id": object()}

@@ -522,9 +522,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   preflight 或 hook 失败均拒绝并恢复原 HEAD/索引/工作树。只清理单写者操作期间新增的
   非 ignored 未跟踪文件，保留事前 ignored 依赖与证据，不运行全局 clean。
   生成日志、冲突路径和 Git 原始诊断保留在恢复 bundle 旁；不会伪造 Quick 或验收回执。
-  普通入口成功后按增量规则对新 HEAD 执行 L1、风险定向验证、冻结和远端门禁，
-  不无条件追加完整 Quick。extended 或用户显式要求的 Quick 仍须绑定对应新 HEAD；
-  本次工具修复不解除任何显式验收要求，也不能沿用旧候选身份。
+  普通入口成功后按增量规则对新 HEAD 执行 L1、风险定向验证和远端门禁，
+  不追加本地 Quick。用户显式要求正式交付或发布资格时，Quick 仍须绑定对应
+  新 HEAD；普通 PR 集成和冲突消解不因缺少 Quick 被阻断，也不能沿用旧候选身份。
 
   仅允许同步未发布、没有开放 PR 的合规本地分支。调用者必须提供当前
   分支、HEAD、旧基线和 `origin/main` 的完整 SHA，并提供精确确认短语。
@@ -536,11 +536,11 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
 
   仅用于仓库所有者已明确批准、尚未发布且已经冻结的 13—64 提交候选。除普通
   `sync-main` 的全部精确身份、clean、无远端分支/PR、恢复 bundle 与冲突回滚
-  门禁外，还必须具有当前工作树的有效 exact-head Quick receipt，并提供准确的
-  `EXPECTED_COMMIT_COUNT` 和独立确认短语
+  门禁外，还必须提供准确的 `EXPECTED_COMMIT_COUNT` 和独立确认短语
   `REBASE_APPROVED_FROZEN_BRANCH_ON_EXACT_MAIN`。可同时显式设置
-  `REGENERATE_GENERATED_EVIDENCE=1`，按上面的原生成器流程重建报告；Quick 和
-  提交数约束保持。未选择重建时，该入口仅可把已登记的纯生成报告
+  `REGENERATE_GENERATED_EVIDENCE=1`，按上面的原生成器流程重建报告；精确提交数、
+  recovery bundle、稳定路径集与 patch identity 约束保持，本地 Quick 不是前置。
+  未选择重建时，该入口仅可把已登记的纯生成报告
   冲突复位到新 main 版本，并在结果中明确标记证据失效；调用方必须随后执行生成
   证据刷新、重新冻结和新 HEAD 验证。重放后的提交数只允许减少不超过已确认冲突
   的纯生成证据提交数，且稳定路径集合与 patch identity 必须保持一致。其他冲突仍
@@ -550,8 +550,9 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   入口提供 `COVERED_PREFIX` 和 `COVERED_MERGE`。`COVERED_PREFIX` 必须是候选
   祖先，`COVERED_MERGE` 必须是目标 main 祖先的单父 squash 提交，且 prefix 的
   每个变更路径都必须出现在 merge 的变更路径集中；入口只重放 prefix 后的未集成
-  提交。exact-head Quick、`EXPECTED_COMMIT_COUNT`、恢复 bundle、路径集与 patch
-  identity 校验不得省略。该能力不得用于掩盖未集成的产品或业务变更。
+  提交。`EXPECTED_COMMIT_COUNT`、恢复 bundle、路径集与 patch identity 校验不得
+  省略。普通 PR 集成不以本地 Quick 为前置；正式交付或用户显式要求时另行执行
+  绑定新 HEAD 的 Quick。该能力不得用于掩盖未集成的产品或业务变更。
 
 ---
 

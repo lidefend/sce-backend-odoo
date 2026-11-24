@@ -181,10 +181,16 @@ export function declaredRowSceneNavigation(contracts, actionId, rowId) {
   return null;
 }
 
-export function sceneNavigationMatchesUrl(navigation, rawUrl) {
+export function sceneNavigationMatchesUrl(navigation, rawUrl, baseUrl = '') {
   try {
     const url = new URL(rawUrl);
-    const expectedPath = String(navigation?.route || '').split('?', 1)[0];
+    const declaredPath = String(navigation?.route || '').split('?', 1)[0];
+    const basePath = baseUrl
+      ? new URL(baseUrl).pathname.replace(/\/+$/, '')
+      : '';
+    const expectedPath = basePath && declaredPath.startsWith('/')
+      ? `${basePath}${declaredPath}`
+      : declaredPath;
     if (!expectedPath || url.pathname !== expectedPath) return false;
     if (navigation.scene_key && url.searchParams.get('scene_key') !== navigation.scene_key) return false;
     return Object.entries(navigation.query || {}).every(([key, value]) => (
@@ -356,6 +362,27 @@ export function negativePlanByCandidate(entries, candidateOrder, states) {
     byCandidate.get(resolved.chosen).push({ action: row.action_xmlid, menu: row.menu_xmlid });
   }
   return { byCandidate, undecidable, notApplicable };
+}
+
+export function summarizeNegativeCoverage({
+  selected = 0,
+  checked = 0,
+  explicitNotApplicable = 0,
+  noLegalCandidate = 0,
+} = {}) {
+  const counts = [selected, checked, explicitNotApplicable, noLegalCandidate]
+    .map((value) => Math.max(0, Number(value) || 0));
+  const [selectedCount, checkedCount, explicitCount, noCandidateCount] = counts;
+  const accounted = checkedCount + explicitCount + noCandidateCount;
+  return {
+    selected: selectedCount,
+    checked: checkedCount,
+    explicit_not_applicable: explicitCount,
+    no_legal_candidate: noCandidateCount,
+    representative_verified: checkedCount > 0,
+    uncovered_entries: Math.max(0, selectedCount - accounted),
+    closed: checkedCount > 0 && selectedCount === accounted,
+  };
 }
 
 export function universalCapabilities(candidateOrder, states) {

@@ -645,7 +645,7 @@ def smart_core_finalize_unified_page_contract_v2(env, contract, context):
             list_profile["collection_presentation"] = presentation
             layout["listProfile"] = list_profile
             out["layoutContract"] = layout
-    _sc_inject_workflow_contract(env, out, source, model=model, view_type=view_type)
+    _sc_apply_plan_workflow_denial(env, out, source, model=model)
     inject_financial_workspace_runtime(
         env, out, source, head, context, model, view_type, smart_core_form_business_actions,
     )
@@ -768,10 +768,9 @@ def _sc_apply_form_layout_governance_to_group(node: dict[str, Any], title: str =
     _contract_helpers.sc_apply_form_layout_governance_to_group(node, title, source_contract=source_contract)
 
 
-def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
-    if view_type != "form" or not model:
-        return
-    if env is None or not getattr(env, "registry", None):
+def _sc_apply_plan_workflow_denial(env, contract, source, *, model):
+    """P1 adds only the plan-specific delete denial; P0 owns workflow injection."""
+    if model != "sc.plan" or env is None or not getattr(env, "registry", None):
         return
     record_id = (
         source.get("record_id")
@@ -786,52 +785,57 @@ def _sc_inject_workflow_contract(env, contract, source, *, model, view_type):
         if model not in env.registry:
             return
         if record_id <= 0:
-            catalog = env["sc.workflow.contract.service"].describe_model_actions(model)
-            if catalog:
-                contract["workflowContract"] = catalog
             return
         record = env[model].browse(record_id).exists()
         if not record:
             return
-        workflow_contract = env["sc.workflow.contract.service"].describe_record(record)
-    except Exception:
-        _logger.exception("Failed to inject workflow contract for %s,%s", model, record_id)
-        return
-    if not isinstance(workflow_contract, dict) or not workflow_contract:
-        return
-    contract["workflowContract"] = workflow_contract
-    if model == "sc.plan":
         denial = record._plan_unlink_denial()
-        if denial:
-            delete_policy = dict((contract.get("actionContract") or {}).get("deletePolicy") or {})
-            delete_policy.update({
-                "allowed": False, "delete_mode": "none",
-                "reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "message": denial,
-                "denied_reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE", "denied_message": denial,
-            })
-            contract.setdefault("actionContract", {})["deletePolicy"] = delete_policy
-            capabilities = (contract.get("statusContract") or {}).get("globalStatus", {}).get("effectiveRecordCapabilities")
-            if isinstance(capabilities, dict):
-                capabilities["unlink"] = False
-    status = contract.get("statusContract") if isinstance(contract.get("statusContract"), dict) else {}
-    global_status = status.get("globalStatus") if isinstance(status.get("globalStatus"), dict) else {}
-    editability = _sc_text(workflow_contract.get("editability"))
-    if editability in {"readonly", "locked"}:
-        global_status["pageAuth"] = "read"
-        # Workflow authority is a narrowing layer.  Keep the normalized ORM
-        # rights for audit, but ensure the effective record capabilities and
-        # render profile cannot continue to advertise an editable surface.
-        effective_capabilities = global_status.get("effectiveRecordCapabilities")
-        if isinstance(effective_capabilities, dict):
-            effective_capabilities["write"] = False
-        global_status["effectiveRenderProfile"] = "readonly"
-    # Workflow state may narrow the ORM-derived page authority, but it must
-    # never elevate a caller from read to edit.  Editable means the workflow
-    # does not add a lock; the existing normalized permission remains final.
-    global_status["workflowPhase"] = workflow_contract.get("businessPhase")
-    global_status["approvalPhase"] = workflow_contract.get("approvalPhase")
-    status["globalStatus"] = global_status
-    contract["statusContract"] = status
+    except Exception:
+        _logger.exception("Failed to apply plan workflow denial for %s,%s", model, record_id)
+        return
+    if not denial:
+        return
+    delete_policy = dict((contract.get("actionContract") or {}).get("deletePolicy") or {})
+    delete_policy.update({
+        "allowed": False,
+        "delete_mode": "none",
+        "reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE",
+        "message": denial,
+        "denied_reason_code": "BUSINESS_DOCUMENT_STATE_NOT_DELETABLE",
+        "denied_message": denial,
+    })
+    contract.setdefault("actionContract", {})["deletePolicy"] = delete_policy
+    capabilities = (
+        (contract.get("statusContract") or {})
+        .get("globalStatus", {})
+        .get("effectiveRecordCapabilities")
+    )
+    if isinstance(capabilities, dict):
+        capabilities["unlink"] = False
+
+
+def smart_core_workflow_contract_profiles(env):
+    """P1 supplies workflow profiles; P0 owns the canonical contract shape."""
+    if env is None or not getattr(env, "registry", None):
+        return {}
+    return env["sc.workflow.contract.service"].profile_by_model()
+
+
+def smart_core_workflow_contract_evidence(env, record):
+    """P1 supplies business evidence; P0 owns approval/action projection."""
+    if env is None or not getattr(env, "registry", None) or not record:
+        return []
+    return env["sc.workflow.contract.service"]._evidence_gate(record)
+
+
+def smart_core_workflow_approval_required(env, record):
+    """Expose configured approval presence without coupling P0 to the P1 model."""
+    if env is None or not getattr(env, "registry", None) or not record:
+        return False
+    if "sc.approval.policy" not in env:
+        return False
+    company = getattr(record, "company_id", False) or env.company
+    return bool(env["sc.approval.policy"].is_approval_required(record._name, company=company))
 
 
 ROLE_SURFACE_OVERRIDES = _policy_maps.ROLE_SURFACE_OVERRIDES

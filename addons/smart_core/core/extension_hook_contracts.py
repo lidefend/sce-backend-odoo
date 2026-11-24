@@ -99,6 +99,9 @@ SINGLE_OWNER_HOOKS = frozenset({
     "smart_core_surface_policy_file_default",
     "smart_core_surface_unregistered_bypass",
     "smart_core_user_data_acceptance_nav_contract",
+    "smart_core_workflow_contract_profiles",
+    "smart_core_workflow_contract_evidence",
+    "smart_core_workflow_approval_required",
 })
 
 

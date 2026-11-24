@@ -416,6 +416,44 @@ class NormalizerConsumptionTest(unittest.TestCase):
             descriptor["attachmentRole"],
         )
 
+    def test_attachment_role_is_projected_to_non_form_contracts(self) -> None:
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "payment.attachments",
+                    "widgetList": [{
+                        "widgetId": "field.attachment_ids.occ.0123456789abcdef",
+                        "widgetType": "many2many_binary",
+                        "fieldCode": "attachment_ids",
+                        "label": "附件",
+                        "componentKey": "sc.relation.many2many",
+                        "componentConfig": {
+                            "fieldType": "many2many",
+                            "relation": "ir.attachment",
+                        },
+                        "fieldDescriptor": {
+                            "schemaVersion": "1.0.0",
+                            "fieldCode": "attachment_ids",
+                            "label": "附件",
+                            "fieldType": "many2many",
+                            "widgetType": "many2many_binary",
+                            "componentKey": "sc.relation.many2many",
+                            "semanticType": "relation_collection",
+                            "relation": "ir.attachment",
+                        },
+                    }],
+                }],
+            },
+        }
+        self.normalize(contract, model=PAYMENT_MODEL, view_type="tree")
+        descriptor = contract["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+        self.assertEqual(
+            self.namespace["ATTACHMENT_ROLE_DECLARATIONS"][
+                (PAYMENT_MODEL, "attachment_ids")
+            ][0],
+            descriptor["attachmentRole"],
+        )
+
 
 class FrontendVocabularyTest(unittest.TestCase):
     def setUp(self) -> None:

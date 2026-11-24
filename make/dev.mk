@@ -98,7 +98,11 @@ local.dev.ready: guard.prod.forbid
 	  bash scripts/dev/local_dev_readiness.sh
 
 local.dev.up: guard.prod.forbid local.dev.ready
-	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
+	@frontend_build_sha="$${FRONTEND_BUILD_SHA256:-$$(cat "$(ROOT_DIR)/frontend/apps/web/dist-dev/.build-sha256" 2>/dev/null || true)}"; \
+	  if [ -n "$$frontend_build_sha" ] && ! printf '%s' "$$frontend_build_sha" | grep -Eq '^[0-9a-f]{64}$$'; then \
+	    echo "local.dev.up: invalid frontend build fingerprint" >&2; exit 2; \
+	  fi; \
+	  $(LOCAL_ENV_ISOLATE) FRONTEND_BUILD_SHA256="$$frontend_build_sha" $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" up
 
 local.dev.down: guard.prod.forbid
 	@$(LOCAL_ENV_ISOLATE) $(MAKE) --no-print-directory ENV=dev ENV_FILE="$(LOCAL_DEV_ENV_FILE)" down

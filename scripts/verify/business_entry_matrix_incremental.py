@@ -105,6 +105,175 @@ def run_checked(command: list[str], env: dict | None = None) -> subprocess.Compl
     return result
 
 
+def resolve_probe_concurrency(value: object, *, unit_count: int) -> int:
+    try:
+        requested = int(str(value or "1"))
+    except (TypeError, ValueError):
+        requested = 1
+    return max(1, min(requested, 8, max(1, unit_count)))
+
+
+def partition_probe_keys(keys: list[str], concurrency: int) -> list[list[str]]:
+    workers = resolve_probe_concurrency(concurrency, unit_count=len(keys))
+    shards: list[list[str]] = [[] for _ in range(workers)]
+    for index, key in enumerate(keys):
+        shards[index % workers].append(key)
+    return [shard for shard in shards if shard]
+
+
+def _merge_assertion_summary(summaries: list[dict]) -> dict:
+    stages = (
+        "entry_navigation",
+        "presentation",
+        "collection",
+        "detail",
+        "write",
+        "navigation_denial",
+        "direct_access_denial",
+    )
+    merged: dict[str, dict[str, int]] = {stage: {} for stage in stages}
+    for summary in summaries:
+        source = summary.get("assertion_summary") or {}
+        for stage in stages:
+            counts = source.get(stage) if isinstance(source.get(stage), dict) else {}
+            for status, count in counts.items():
+                if isinstance(count, int):
+                    merged[stage][status] = merged[stage].get(status, 0) + count
+    merged["navigation_denial_checked"] = sum(
+        int(summary.get("assertion_summary", {}).get("navigation_denial_checked") or 0)
+        for summary in summaries
+    )
+    merged["direct_access_denial_checked"] = sum(
+        int(summary.get("assertion_summary", {}).get("direct_access_denial_checked") or 0)
+        for summary in summaries
+    )
+    return merged
+
+
+def merge_probe_summaries(
+    summaries: list[dict],
+    expected_keys: list[str],
+    *,
+    child_problems: list[str] | None = None,
+) -> dict:
+    _require(bool(summaries), "no browser shard produced a summary")
+    by_entry = {}
+    for summary in summaries:
+        for entry in summary.get("entries") or []:
+            key = str((entry or {}).get("entry") or "").strip()
+            if key and key not in by_entry:
+                by_entry[key] = entry
+    entries = [by_entry[key] for key in expected_keys if key in by_entry]
+    complete = (
+        len(entries) == len(expected_keys)
+        and all(str(summary.get("completeness") or "") == "complete" for summary in summaries)
+    )
+    problems = [
+        str(problem)
+        for summary in summaries
+        for problem in (summary.get("problems") or [])
+    ] + list(child_problems or [])
+    base = dict(summaries[0])
+    base_selection = dict(base.get("selection") or {})
+    base_selection["keys"] = expected_keys
+    base_selection["entries"] = expected_keys
+    base.update({
+        "selection": base_selection,
+        "completeness": "complete" if complete else "partial",
+        "entries": entries,
+        "observations": [
+            row for summary in summaries for row in (summary.get("observations") or [])
+        ],
+        "console_errors": list(dict.fromkeys(
+            error
+            for summary in summaries
+            for error in (summary.get("console_errors") or [])
+        )),
+        "problems": list(dict.fromkeys(problems)),
+        "assertion_summary": _merge_assertion_summary(summaries),
+        "ok": complete and not problems and all(summary.get("ok") is True for summary in summaries),
+    })
+    return base
+
+
+def run_browser_probe(
+    execute: list[str],
+    output_dir: Path,
+    env: dict[str, str],
+) -> subprocess.CompletedProcess:
+    concurrency = resolve_probe_concurrency(
+        env.get("SC_ENTRY_MATRIX_CONCURRENCY", "1"),
+        unit_count=len(execute),
+    )
+    if concurrency <= 1:
+        child_env = dict(env)
+        child_env.update({
+            "SC_ENTRY_MATRIX_KEYS": ",".join(execute),
+            "SC_ENTRY_MATRIX_INCLUDE_PASSED": "1",
+            "SC_ACCEPTANCE_OUTPUT_DIR": str(output_dir),
+        })
+        return run(["node", BROWSER_PROBE], child_env)
+
+    shards = partition_probe_keys(execute, concurrency)
+    children: list[tuple[subprocess.Popen, Path, list[str]]] = []
+    for index, shard in enumerate(shards, start=1):
+        shard_dir = output_dir / "shards" / f"{index:02d}"
+        child_env = dict(env)
+        child_env.update({
+            "SC_ENTRY_MATRIX_KEYS": ",".join(shard),
+            "SC_ENTRY_MATRIX_INCLUDE_PASSED": "1",
+            "SC_ACCEPTANCE_OUTPUT_DIR": str(shard_dir),
+        })
+        process = subprocess.Popen(
+            ["node", BROWSER_PROBE],
+            cwd=ROOT,
+            env=child_env,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+        )
+        children.append((process, shard_dir, shard))
+
+    stdout: list[str] = []
+    stderr: list[str] = []
+    summaries: list[dict] = []
+    child_problems: list[str] = []
+    returncodes: list[int] = []
+    for index, (process, shard_dir, shard) in enumerate(children, start=1):
+        child_stdout, child_stderr = process.communicate()
+        returncodes.append(process.returncode)
+        stdout.append(f"--- shard {index}/{len(children)} entries={len(shard)} ---\n{child_stdout}")
+        if child_stderr:
+            stderr.append(f"--- shard {index}/{len(children)} ---\n{child_stderr}")
+        summary_path = shard_dir / "summary.json"
+        if summary_path.exists():
+            summaries.append(load_json(summary_path))
+        else:
+            child_problems.append(
+                f"browser shard {index} exited {process.returncode} without summary.json"
+            )
+
+    if summaries:
+        merged = merge_probe_summaries(summaries, execute, child_problems=child_problems)
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "summary.json").write_text(
+            json.dumps(merged, ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        (output_dir / "entries.jsonl").write_text(
+            "".join(json.dumps(entry, ensure_ascii=False) + "\n" for entry in merged["entries"]),
+            encoding="utf-8",
+        )
+    else:
+        child_problems.append("all browser shards exited without summary.json")
+    return subprocess.CompletedProcess(
+        ["node", BROWSER_PROBE],
+        max(returncodes or [1]),
+        "".join(stdout),
+        "\n".join(stderr + child_problems),
+    )
+
+
 def load_json(path: Path) -> dict:
     try:
         return json.loads(Path(path).read_text(encoding='utf-8'))
@@ -371,10 +540,7 @@ def main(argv: list[str] | None = None) -> int:
 
     print(f"[business-entry-incremental] executing {len(execute)} entr{'y' if len(execute) == 1 else 'ies'}")
     env = dict(os.environ)
-    env['SC_ENTRY_MATRIX_KEYS'] = ','.join(execute)
-    env['SC_ENTRY_MATRIX_INCLUDE_PASSED'] = '1'
-    env['SC_ACCEPTANCE_OUTPUT_DIR'] = str(output_dir)
-    probe = run(['node', BROWSER_PROBE], env)
+    probe = run_browser_probe(execute, output_dir, env)
     sys.stdout.write(probe.stdout)
     sys.stderr.write(probe.stderr)
 

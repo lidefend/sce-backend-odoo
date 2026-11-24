@@ -243,7 +243,7 @@ class DemoCompanyIdentity(unittest.TestCase):
 
 
 class DemoWutaoBusinessConfigAdmin(unittest.TestCase):
-    GROUP = "smart_construction_core.group_sc_cap_business_config_admin"
+    GROUP = "smart_construction_core.group_sc_role_business_admin"
 
     def _seed_calls(self, filename, **bindings):
         calls = []
@@ -279,8 +279,8 @@ class DemoWutaoBusinessConfigAdmin(unittest.TestCase):
     def test_full_product_xml_declares_wutao_as_config_admin(self):
         groups = self._xml_group_evals()
         self.assertIn(self.GROUP, groups["user_wutao_full_product"])
-        self.assertIn(
-            "smart_construction_core.group_sc_business_full",
+        self.assertNotIn(
+            "smart_construction_core.group_sc_cap_business_config_admin",
             groups["user_wutao_full_product"],
         )
         self.assertNotIn(self.GROUP, groups["user_demo_full"])
@@ -291,8 +291,8 @@ class DemoWutaoBusinessConfigAdmin(unittest.TestCase):
                 calls = self._seed_calls(filename)
                 self.assertEqual(calls["wutao"]["name"], "吴涛")
                 self.assertIn(self.GROUP, calls["wutao"]["groups_xmlids"])
-                self.assertIn(
-                    "smart_construction_core.group_sc_business_full",
+                self.assertNotIn(
+                    "smart_construction_core.group_sc_cap_business_config_admin",
                     calls["wutao"]["groups_xmlids"],
                 )
                 self.assertNotIn(

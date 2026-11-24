@@ -7,11 +7,13 @@ import hashlib
 import importlib.util
 import json
 import importlib.util
+import re
 import sys
 import tempfile
 import types
 import unittest
 from pathlib import Path
+from xml.etree import ElementTree
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -274,14 +276,26 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     candidates[0],
-                    "enterprise.setup" if role_code in {"business_config_admin", "business_full"} else "workspace.home",
-                    f"{product_key}.{role_code} first hop must follow the released entry policy",
+                    "workspace.home",
+                    f"{product_key}.{role_code} first hop must avoid completed initialization",
                 )
             resolver = _load_identity_resolver_module().IdentityResolver()
             for role in ("business_config_admin", "business_full"):
                 candidates = declared[role]
-                self.assertEqual(resolver._pick_landing_scene(candidates, {"enterprise.setup", "workspace.home"}), "enterprise.setup")
-                self.assertEqual(resolver._pick_landing_scene(candidates, {"workspace.home"}), "workspace.home")
+                self.assertEqual(
+                    resolver._pick_landing_scene(
+                        candidates,
+                        {"enterprise.setup", "workspace.home"},
+                    ),
+                    "workspace.home",
+                )
+                self.assertEqual(
+                    resolver._pick_landing_scene(
+                        candidates,
+                        {"enterprise.setup"},
+                    ),
+                    "enterprise.setup",
+                )
             # The released role landing must never send a role to a scene the
             # published surface does not grant, which is what caused the
             # login -> access-denied first hop.
@@ -330,7 +344,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertTrue(receipt["overlaid_roles"])
         for role, candidates in declared.items():
             self.assertEqual(overrides[role]["landing_scene_candidates"], candidates, role)
-            self.assertEqual(candidates[0], "enterprise.setup" if role in {"business_config_admin", "business_full"} else "workspace.home", role)
+            self.assertEqual(candidates[0], "workspace.home", role)
         # A role the contract does not declare keeps its own declaration.
         self.assertEqual(overrides["unknown_role_kept"]["landing_scene_candidates"], ["custom.scene"])
 
@@ -406,8 +420,80 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                     sorted(groups),
                     f"{role} capability fallback must be declared by the contract",
                 )
+        self.assertTrue(
+            resolution["metadata"]["business_full"]["identity_role"],
+            "business_full is a declared role; capability groups are a separate concept",
+        )
         for role in resolution["synthetic_role_codes"]:
             self.assertNotIn(role, resolution["bindings"], f"{role} is synthetic and cannot be a delivered role")
+
+    def test_business_config_admin_keeps_inherited_full_role_group(self):
+        contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
+        resolution = CONTRACT.role_catalog_resolution(contract)
+        resolver = self._contract_resolver(resolution)
+        groups = (
+            set(resolution["bindings"]["business_config_admin"])
+            | set(resolution["bindings"]["business_full"])
+        )
+
+        role_codes, evidence = resolver.resolve_role_codes_with_evidence(groups)
+
+        self.assertEqual(role_codes, ["business_config_admin", "business_full"])
+        self.assertEqual(evidence["surface_roles"], ["business_config_admin"])
+
+    def test_role_groups_only_compose_capability_authorization(self):
+        paths = (
+            ROOT / "addons/smart_construction_core/security/sc_role_groups.xml",
+            ROOT / "addons/smart_construction_core/security/sc_capability_groups.xml",
+        )
+        graph = {}
+        for path in paths:
+            tree = ElementTree.parse(path)
+            for record in tree.findall(".//record[@model='res.groups']"):
+                group = "smart_construction_core." + str(record.get("id") or "")
+                implied = []
+                for field in record.findall("field[@name='implied_ids']"):
+                    implied.extend(re.findall(r"ref\(\s*'([^']+)'\s*\)", field.get("eval") or ""))
+                graph[group] = implied
+
+        def closure(group):
+            seen = set()
+            stack = [group]
+            while stack:
+                current = stack.pop()
+                if current in seen:
+                    continue
+                seen.add(current)
+                stack.extend(graph.get(current, []))
+            return seen
+
+        full_role = "smart_construction_core.group_sc_business_full"
+        config_role = "smart_construction_core.group_sc_role_business_admin"
+        full_capability = "smart_construction_core.group_sc_cap_business_full"
+        config_capability = "smart_construction_core.group_sc_cap_business_config_admin"
+        self.assertIn(full_role, closure(config_role))
+        self.assertIn(config_capability, closure(config_role))
+        self.assertIn(full_capability, closure(full_role))
+        self.assertIn(full_capability, closure(config_capability))
+        self.assertNotIn(full_role, closure(config_capability))
+
+        permission_sources = (
+            ROOT / "addons/smart_construction_core/security/ir.model.access.csv",
+            ROOT / "addons/smart_construction_core/security/sc_record_rules.xml",
+        )
+        permission_sources += tuple(
+            (ROOT / "addons/smart_construction_core/views").rglob("*.xml")
+        )
+        for path in permission_sources:
+            source = path.read_text(encoding="utf-8")
+            self.assertNotIn("group_sc_role_", source, str(path))
+
+        approval_source = (
+            ROOT / "addons/smart_construction_core/models/support/approval_policy.py"
+        ).read_text(encoding="utf-8")
+        approval_map = approval_source.split("APPROVAL_SCOPE_GROUP_XMLIDS = {", 1)[1].split("}", 1)[0]
+        self.assertNotIn("group_sc_role_", approval_map)
+        self.assertIn("group_sc_cap_", approval_map)
 
     def test_declared_roles_are_pairwise_distinguishable(self):
         """Different roles must be genuinely different principals.
@@ -558,65 +644,38 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         resolver._role_meta = {role: dict(meta) for role, meta in resolution["metadata"].items()}
         return resolver
 
-    def test_capability_roles_never_join_the_business_surface(self):
-        """A declared capability role resolves as a fallback, never as a surface.
-
-        The product declares two different things.  ``default_roles`` order
-        plus ``capability_role_codes``: a role named as a capability is the
-        identity a principal falls back to when its real groups match no
-        business role; it is not a second identity that a business principal
-        accumulates.  Odoo materialises implied groups into ``groups_id``, so
-        almost every construction role reaches the project-baseline capability
-        group.  If the catalog projection put that capability role into the
-        explicit business ``precedence``, the resolver would union its surface
-        into finance/owner/pm and deliver menus the declared role partition
-        never granted.  This locks the projection boundary, not a menu string.
-        """
+    def test_capability_groups_are_fallbacks_not_identity_roles(self):
+        """Role groups identify principals; capability groups authorize them."""
         contract = CONTRACT.load_locked_menu_policy_contract(self.baseline, self.checksum)
         resolution = CONTRACT.role_catalog_resolution(contract)
-        capability_roles = tuple(resolution["capability_role_codes"])
-        self.assertTrue(capability_roles, "the catalog must declare its capability roles")
-        self.assertEqual(
-            [role for role in resolution["precedence"] if role in set(capability_roles)],
-            [],
-            "a declared capability role cannot also be an explicit business precedence role",
-        )
-        for role in capability_roles:
+        self.assertEqual(resolution["capability_role_codes"], ())
+        for role, groups in resolution["bindings"].items():
+            if role in {"business_full", "system_admin"}:
+                continue
+            with self.subTest(role=role):
+                self.assertTrue(
+                    all("group_sc_role_" in group for group in groups),
+                    f"{role} identity must be declared by role groups: {groups}",
+                )
+        for role, groups in resolution["capability_groups"].items():
+            with self.subTest(role=f"fallback:{role}"):
+                self.assertTrue(
+                    groups and all("group_sc_cap_" in group for group in groups),
+                    f"{role} fallback must be declared by capability groups: {groups}",
+                )
+        resolver = self._provider_resolver(resolution)
+        for role in resolution["capability_fallback_order"]:
+            groups = sorted(resolution["capability_groups"].get(role) or ())
             self.assertIn(
                 role,
                 resolution["bindings"],
-                f"{role} must stay bound to a real group so the capability branch can resolve it",
+                f"{role} fallback must also declare an identity role",
             )
-        resolver = self._provider_resolver(resolution)
-        capability_groups = set()
-        for role in capability_roles:
-            capability_groups.update(resolution["bindings"][role])
-        self.assertTrue(capability_groups, "a capability role must bind at least one real group")
-
-        for role in resolution["precedence"]:
-            with self.subTest(role=role):
-                business_groups = set(resolution["bindings"][role])
-                self.assertFalse(business_groups & capability_groups)
-                resolved, evidence = resolver.resolve_role_codes_with_evidence(
-                    business_groups | capability_groups
-                )
-                self.assertEqual(
-                    resolved,
-                    [role],
-                    f"{role} must not accumulate the declared capability role",
-                )
-                self.assertEqual(evidence["surface_roles"], [role])
-                self.assertEqual(
-                    resolver.resolve_role_codes_with_evidence(business_groups)[0],
-                    [role],
-                )
-
-        only_capability = resolver.resolve_role_code(set(capability_groups))
-        self.assertIn(
-            only_capability,
-            capability_roles,
-            "a principal holding only capability groups must fall back to the declared capability role",
-        )
+            self.assertEqual(
+                resolver.resolve_role_code(set(groups)),
+                role,
+                f"{role} capability fallback must resolve without a role group",
+            )
 
     def _write_contract(self, root: Path, payload) -> tuple[Path, Path]:
         baseline = root / CONTRACT.BASELINE_FILE

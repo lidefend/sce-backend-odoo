@@ -210,8 +210,11 @@ class IdentityResolver:
             )
             if dominant_role:
                 surface_roles = [dominant_role]
-                explicit_hits = {dominant_role: explicit_hits[dominant_role]}
-            role_codes = [role for role in surface_roles if self._role_is_identity_role(role)] or surface_roles
+            role_codes = [
+                role
+                for role in self._role_precedence
+                if role in explicit_hits and self._role_is_identity_role(role)
+            ] or surface_roles
             return role_codes, {
                 "source": "explicit",
                 "primary_role": role_codes[0],
@@ -264,20 +267,26 @@ class IdentityResolver:
         role_code, _ = self.resolve_role_code_with_evidence(user_xmlids)
         return role_code
 
-    def _pick_landing_scene(self, scene_candidates: List[str], scene_keys: set) -> str:
+    def _pick_landing_scene(
+        self,
+        scene_candidates: List[str],
+        scene_keys: set,
+        prefer_platform_safe: bool = False,
+    ) -> str:
         candidates = [
             str(candidate or "").strip()
             for candidate in (scene_candidates or [])
             if str(candidate or "").strip()
         ]
-        # The platform-safe landing is appended as the guaranteed terminal
-        # candidate: it is available independently from the optional startup
-        # scene subset, so a declared role policy can always be satisfied
-        # without a scene-registry entry being preloaded in the boot payload.
+        # The workbench is the stable landing whenever it is available. Other
+        # declared candidates may win only when the workbench was not delivered
+        # (for example, while the user is still inside enterprise setup).
+        if prefer_platform_safe:
+            return PLATFORM_SAFE_LANDING_SCENE
         if PLATFORM_SAFE_LANDING_SCENE not in candidates:
             candidates.append(PLATFORM_SAFE_LANDING_SCENE)
         for candidate in candidates:
-            if candidate == PLATFORM_SAFE_LANDING_SCENE or candidate in scene_keys:
+            if candidate in scene_keys:
                 return candidate
         return PLATFORM_SAFE_LANDING_SCENE
 
@@ -523,7 +532,11 @@ class IdentityResolver:
         model_blocklist = list(role_meta.get("model_blocklist") or [])
         model_prefix_blocklist = list(role_meta.get("model_prefix_blocklist") or [])
         group_key_blocklist = list(role_meta.get("group_key_blocklist") or [])
-        landing_scene_key = self._pick_landing_scene(scene_candidates, scene_keys)
+        landing_scene_key = self._pick_landing_scene(
+            scene_candidates,
+            scene_keys,
+            prefer_platform_safe=True,
+        )
         nav_index = self._index_nav_by_xmlid(nav_tree)
         landing_menu_xmlid = ""
         landing_menu_id = None

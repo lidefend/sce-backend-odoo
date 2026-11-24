@@ -63,8 +63,7 @@ def run(env):
         name="吴涛",
         groups_xmlids=[
             "base.group_user",
-            "smart_construction_core.group_sc_business_full",
-            "smart_construction_core.group_sc_cap_business_config_admin",
+            "smart_construction_core.group_sc_role_business_admin",
         ],
         password=password,
         lang=lang,

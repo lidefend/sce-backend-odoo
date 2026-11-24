@@ -469,7 +469,7 @@ assert.throws(() => resolveProfessionalComponent({
   renderProfile: 'edit',
 }), /PROFESSIONAL_COMPONENT_UNREGISTERED:sc\.unsupported\.native_widget/);
 
-assert.equal(professionalComponentRegistrations.length, 26);
+assert.equal(professionalComponentRegistrations.length, 27);
 const registeredRenderers: ReadonlySet<string> = new Set<string>(PROFESSIONAL_COMPONENT_RENDERERS);
 const everyFieldType = [
   'char', 'text', 'html', 'integer', 'float', 'monetary', 'date', 'datetime', 'boolean',
