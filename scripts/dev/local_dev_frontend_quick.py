@@ -171,7 +171,11 @@ def main() -> int:
         if len(sys.argv) > 2 and sys.argv[1] == "--quick-targets":
             sys.path.insert(0, str(ROOT / "scripts" / "ops"))
             import local_quick_evidence as evidence
-            evidence.require_safe_make_environment()
+            try:
+                evidence.require_safe_make_environment()
+            except evidence.EvidenceError as exc:
+                print(f"[local.dev.frontend.quick] DENY {exc}", file=sys.stderr)
+                return 2
             targets = sys.argv[2:]
             manifest = evidence.required_targets(ROOT)
             if (len(set(targets)) != len(targets) or not set(targets) <= set(manifest)
