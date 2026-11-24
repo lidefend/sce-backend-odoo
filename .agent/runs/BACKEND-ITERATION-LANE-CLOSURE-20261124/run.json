@@ -1,0 +1,75 @@
+{
+  "schema_version": 2,
+  "id": "BACKEND-ITERATION-LANE-CLOSURE-20261124",
+  "branch": "fix/backend-iteration-lane-closure-20261124",
+  "baseline_sha": "27d0e2ae62065bdf7d5543f40c2387c7dd1a4f0d",
+  "status": "active",
+  "goal": ".agent/goals/BACKEND-ITERATION-LANE-CLOSURE-20261124.yaml",
+  "record": "docs/ops/iterations/backend_iteration_lane_closure_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/BACKEND-ITERATION-LANE-CLOSURE-20261124.yaml",
+    ".agent/runs/BACKEND-ITERATION-LANE-CLOSURE-20261124/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    "make/ci.mk",
+    "make/codex.mk",
+    "scripts/ci/backend_iteration_lanes.py",
+    "scripts/ci/test_backend_iteration_lanes.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "docs/ops/validation_delivery_protocol.md",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/iterations/backend_iteration_lane_closure_20261124.md"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "existing exact-head GitHub PR workflows and independent backend suites; no persistent database or local runtime"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration plus focused backend iteration lane unit tests",
+      "reason": "Prove dispatch selection, full-plan reuse, identity rejection, polling and manifest verification with non-zero tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI plus make ci.backend.iteration.close",
+      "reason": "Prove the real PR produces one full product source, successful demo and acceptance suites, and one exact-head receipt."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI after merge",
+      "reason": "This PR cannot satisfy or substitute for post-merge scheduled release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "P4 backend orchestration only; no frontend contract carrier changes."
+    }
+  },
+  "checks": {
+    "backend_iteration_lanes": {
+      "target": "verify.backend_iteration_lanes.unit",
+      "inputs": [
+        "scripts/ci/backend_iteration_lanes.py",
+        "scripts/ci/test_backend_iteration_lanes.py"
+      ],
+      "kind": "offline"
+    },
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish the locally verified candidate, then run the exact-head backend iteration close on its real PR.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

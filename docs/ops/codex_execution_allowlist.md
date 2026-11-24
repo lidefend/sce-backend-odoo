@@ -407,6 +407,15 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 不提供模块或 test-tags 缩减参数，不得用局部测试冒充完整套件；
   * 工作流创建的 Compose project、数据库和卷由工作流按 run id 隔离并在结束时清理，不得复用 local.dev、acceptance 或生产环境。
 
+* `make ci.backend.iteration.close EXPECTED_HEAD=<full-40-char-sha>`
+
+  * 只用于显式关闭当前开放 PR 的 exact-head product、demo、acceptance 三后端责任赛道；
+  * 先验证 clean worktree、本地/远端/PR head 一致且 PR base 等于当前 `origin/main`；
+  * 优先复用 `professional_quality_gate` 中 exact-head、full 的 product frozen plan，不重复派发 product；
+  * 只派发缺失的 demo/acceptance 完整套件，并在一个等待循环中验证 run、head、suite 与 frozen plan；
+  * 回执写入 `.runtime/backend-iteration/<head>.json`，不是产品交付或部署证据；
+  * 触及后端 CI/测试工具面的 PR 在 `pr.merge` 前后都必须通过该回执的实时身份复核。
+
 * `make release.main_full EXPECTED_MAIN=<full-40-char-sha>`
 
   * 仅用于 owner 显式发起的 exact-main operator full audit；

@@ -1162,6 +1162,31 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	gh workflow run demo-ci.yml --ref "$$branch"
 
 BACKEND_SUITE ?= product
+BACKEND_ITERATION_TIMEOUT_SECONDS ?= 7200
+BACKEND_ITERATION_DISCOVERY_SECONDS ?= 900
+BACKEND_ITERATION_PROFESSIONAL_WAIT_SECONDS ?= 1200
+BACKEND_ITERATION_POLL_SECONDS ?= 15
+BACKEND_ITERATION_RECEIPT ?= .runtime/backend-iteration/$(EXPECTED_HEAD).json
+
+.PHONY: verify.backend_iteration_lanes.unit ci.backend.iteration.close
+verify.backend_iteration_lanes.unit: guard.prod.forbid
+	@python3 -m py_compile scripts/ci/backend_iteration_lanes.py scripts/ci/test_backend_iteration_lanes.py
+	@python3 scripts/ci/test_backend_iteration_lanes.py
+
+ci.backend.iteration.close: guard.prod.forbid
+	@bash -c '\
+	set -euo pipefail; \
+	test -n "$${EXPECTED_HEAD:-}" || { echo "[DENY] ci.backend.iteration.close: EXPECTED_HEAD is required"; exit 2; }; \
+	branch="$$(git branch --show-current)"; \
+	python3 scripts/ci/backend_iteration_lanes.py close \
+	  --branch "$$branch" \
+	  --expected-head "$${EXPECTED_HEAD}" \
+	  --output "$(BACKEND_ITERATION_RECEIPT)" \
+	  --timeout-seconds "$(BACKEND_ITERATION_TIMEOUT_SECONDS)" \
+	  --discovery-seconds "$(BACKEND_ITERATION_DISCOVERY_SECONDS)" \
+	  --professional-wait-seconds "$(BACKEND_ITERATION_PROFESSIONAL_WAIT_SECONDS)" \
+	  --poll-seconds "$(BACKEND_ITERATION_POLL_SECONDS)" \
+	'
 
 .PHONY: ci.backend_test_suite.dispatch
 ci.backend_test_suite.dispatch: guard.prod.forbid
@@ -1202,7 +1227,7 @@ ci.backend_test_suite.dispatch: guard.prod.forbid
 	  echo "[DENY] ci.backend_test_suite.dispatch: open PR HEAD $$pr_head does not match EXPECTED_HEAD $$expected"; exit 9; \
 	fi; \
 	echo "[ci.backend_test_suite.dispatch] repo=$$repo branch=$$branch exact_head=$$expected suite=$$suite"; \
-	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch" -f "suite=$$suite"; \
+	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch" -f "head_sha=$$expected" -f "suite=$$suite"; \
 	echo "[ci.backend_test_suite.dispatch] dispatched $$suite backend suite for exact_head=$$expected"; \
 	'
 

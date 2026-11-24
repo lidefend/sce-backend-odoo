@@ -526,6 +526,7 @@ DELIVERY_MERGE_PREFLIGHT_REPORT ?= .runtime/validation-delivery/merge-preflight.
 .PHONY: pr.merge.preflight
 pr.merge.preflight: guard.prod.forbid
 	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --require-ready
+	@python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)"
 
 # Read-only preparation: existing affected evidence/identity and live
 # PR readiness checks. Never route this name to pr.merge.prep (remote POST).
@@ -539,6 +540,7 @@ pr.merge.prepare: pr.merge.preflight
 pr.merge: guard.prod.forbid pr.merge.preflight
 	@python3 scripts/ops/integration_cycle.py merge-readiness --pr "$(PR)"
 	@python3 scripts/ops/validation_delivery_plan.py --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --manifest "$(ACCEPTANCE_EVOLUTION_EVIDENCE)" --output "$(DELIVERY_MERGE_PREFLIGHT_REPORT)" --verify-pr-identity
+	@python3 scripts/ci/backend_iteration_lanes.py verify-merge --pr "$(PR)" --expected-head "$(EXPECTED_HEAD)" --receipt "$(BACKEND_ITERATION_RECEIPT)"
 	@bash -c '\
 	set -euo pipefail; \
 	BR="$$(git rev-parse --abbrev-ref HEAD)"; \

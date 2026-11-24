@@ -672,6 +672,7 @@ python3() {
             "gh pr view --json headRefOid",
             "gh workflow run backend_test_suite.yml",
             '-f "head_ref=$$branch"',
+            '-f "head_sha=$$expected"',
             '-f "suite=$$suite"',
             "BACKEND_SUITE",
         ):
@@ -706,7 +707,13 @@ python3() {
     def test_workflow_supports_governed_dispatch_inputs(self):
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
+        self.assertIn(
+            "run-name: backend_test_suite (${{ inputs.suite || 'product' }}) "
+            "${{ inputs.head_sha || github.sha }}",
+            workflow,
+        )
         self.assertIn("head_ref:", workflow)
+        self.assertIn("head_sha:", workflow)
         self.assertIn("suite:", workflow)
         self.assertIn("HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}", workflow)
         self.assertIn(
@@ -714,6 +721,40 @@ python3() {
             workflow,
         )
         self.assertIn("docker compose down -v --remove-orphans", workflow)
+
+    def test_planner_suite_must_match_the_requested_suite(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        scope = next(
+            step for step in workflow['jobs']['plan']['steps']
+            if step.get('id') == 'scope'
+        )
+        self.assertIn(
+            'test "${plan_suite}" = "${SUITE_NAME}"',
+            scope['run'],
+        )
+
+    def test_backend_iteration_close_and_merge_gate_are_registered(self):
+        makefile = (ROOT / 'make/ci.mk').read_text(encoding='utf-8')
+        codex = (ROOT / 'make/codex.mk').read_text(encoding='utf-8')
+        close = makefile.split('ci.backend.iteration.close:', 1)[1].split(
+            '\n.PHONY:', 1
+        )[0]
+        for required in (
+            'backend_iteration_lanes.py close',
+            '--expected-head',
+            '--timeout-seconds',
+            'BACKEND_ITERATION_RECEIPT',
+        ):
+            self.assertIn(required, close)
+        merge = codex.split('pr.merge.preflight:', 1)[1].split(
+            '\n.PHONY:', 1
+        )[0]
+        self.assertIn(
+            'backend_iteration_lanes.py verify-merge',
+            merge,
+        )
 
     def test_cross_job_artifacts_survive_failed_job_rerun(self):
         workflow = yaml.safe_load(

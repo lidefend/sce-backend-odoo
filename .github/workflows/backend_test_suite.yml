@@ -1,4 +1,5 @@
 name: backend_test_suite
+run-name: backend_test_suite (${{ inputs.suite || 'product' }}) ${{ inputs.head_sha || github.sha }}
 
 # R9 (productization audit): automated entry for the backend Odoo test
 # suite, which needs a live database. Runs nightly on the default branch
@@ -29,6 +30,11 @@ on:
         default: product
   workflow_dispatch:
     inputs:
+      head_sha:
+        description: "Exact commit SHA to test (default: dispatched ref SHA)"
+        required: false
+        type: string
+        default: ""
       head_ref:
         description: "Branch or tag to test (default: default branch)"
         required: false
@@ -114,6 +120,10 @@ jobs:
             "${focused_args[@]}" ${discover_args}
           plan_mode="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["scope_mode"])')"
           plan_suite="$(python3 -c 'import json,os; print(json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json"))["suite"])')"
+          test "${plan_suite}" = "${SUITE_NAME}" || {
+            echo "planner suite ${plan_suite} differs from requested ${SUITE_NAME}" >&2
+            exit 1
+          }
           echo "scope_mode=${plan_mode}" >> "${GITHUB_OUTPUT}"
           echo "suite=${plan_suite}" >> "${GITHUB_OUTPUT}"
           python3 -c 'import json,os; p=json.load(open(os.environ["RUNNER_TEMP"]+"/backend-plan.json")); p.pop("input_inventory",None); print(json.dumps(p,indent=2))' >> "${GITHUB_STEP_SUMMARY}"

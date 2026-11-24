@@ -73,6 +73,18 @@ Demo or acceptance failure blocks its own lane, not product candidate-build
 eligibility. They still run on the same schedule to preserve full coverage and
 publish independent evidence.
 
+Backend CI-harness iterations use one explicit close entry:
+
+`make ci.backend.iteration.close EXPECTED_HEAD=<full-sha>`
+
+The exact-head professional gate remains the product producer. When its frozen
+plan is full, the close entry reuses it and dispatches only demo and acceptance.
+Every selected run and plan must bind the same head, suite and complete module
+set. One `.runtime/backend-iteration/<head>.json` receipt records the three run
+ids, plan artifact digests and the no-duplicate-product decision. Merge
+preflight live-verifies this receipt for changes to the backend CI/test harness.
+This closes the remote chain without adding a second product execution.
+
 The scheduled condition is only `candidate_build_eligible`. It remains
 `deployment_ready=false`; deployment approval and runtime readback are later,
 separate authorities.

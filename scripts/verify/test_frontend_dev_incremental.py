@@ -1632,7 +1632,6 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "scripts/ci/test_backend_changed_test_coverage.py",
             "scripts/ci/backend_test_receipt.py",
             "scripts/ci/test_backend_test_receipt.py",
-            "scripts/ci/test_backend_test_suite_dispatch_contract.py",
             "scripts/verify/backend_contract_fact_readback_probe.py",
             "scripts/verify/test_backend_contract_fact_readback_probe.py",
             "scripts/test/test.sh",
@@ -1644,6 +1643,16 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+        for path in (
+            "scripts/ci/backend_iteration_lanes.py",
+            "scripts/ci/test_backend_iteration_lanes.py",
+            "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        ):
+            with self.subTest(path=path):
+                self.assertEqual(select_targets([path]), [
+                    "verify.backend_iteration_lanes.unit",
+                    "verify.ci.workflow.contract",
+                ])
 
     def test_build_and_test_isolation_select_existing_tool_owners(self):
         self.assertEqual(select_targets(["Dockerfile"]), ["verify.ci.workflow.contract"])
