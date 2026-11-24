@@ -182,6 +182,7 @@ Generated from repository source files. This report is informational during the 
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
 | 1060 | Python source | `scripts/ops/agent_run_context.py` |
 | 1047 | Python source | `addons/smart_core/tests/test_page_assembler_view_orchestration_versions.py` |
+| 1039 | Python source | `scripts/ci/test_backend_suite_plan.py` |
 | 1038 | Python source | `addons/smart_core/handlers/execute_button.py` |
 | 1029 | Python source | `scripts/verify/frontend_v2_policy_projection_guard.py` |
 | 1019 | Python source | `scripts/contract/snapshot_export.py` |
@@ -197,7 +198,6 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 987 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
-| 985 | Python source | `scripts/ci/test_backend_suite_plan.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 979 | Python source | `scripts/release/test_locked_menu_policy_contract.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
@@ -219,8 +219,8 @@ Generated from repository source files. This report is informational during the 
 | 889 | Python source | `addons/smart_core/handlers/ui_contract.py` |
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
+| 880 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
-| 871 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |

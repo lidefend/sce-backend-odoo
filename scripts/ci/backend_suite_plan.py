@@ -233,6 +233,10 @@ def build_plan(
             base, head, '--',
         ).splitlines()
         selected = impact.select(paths, impact.snapshot(base), after)
+        selected = {
+            **selected,
+            'modules': suite_modules(suite, selected['modules'], after),
+        }
     else:
         # Preserve the original nightly/dispatch discovery: a manifest and
         # tests directory, including non-installable pure-Python test modules.
@@ -252,9 +256,14 @@ def build_plan(
             'changed_deletions': sorted(deleted_paths),
             'preparation_groups': groups,
             'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
-    plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
-    if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
-        plan['changed_test_coverage'] = changed_coverage.managed_tests(head)
+    module_scope = set(plan['modules'])
+    coverage = changed_coverage.changed_tests(base, head)
+    if not base and changed_coverage.MANAGED_MODULE in module_scope:
+        coverage = changed_coverage.managed_tests(head)
+    plan['changed_test_coverage'] = [
+        row for row in coverage
+        if row.get('module') in module_scope
+    ]
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan
