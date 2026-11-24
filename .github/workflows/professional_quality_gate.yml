@@ -32,6 +32,7 @@ jobs:
       lane: ${{ steps.risk.outputs.lane }}
       professional_mode: ${{ steps.risk.outputs.professional_mode }}
       frontend_changed: ${{ steps.risk.outputs.frontend_changed }}
+      frontend_runtime_changed: ${{ steps.risk.outputs.frontend_runtime_changed }}
       backend_changed: ${{ steps.risk.outputs.backend_changed }}
       backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}
       control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}
@@ -251,8 +252,9 @@ jobs:
       BASE_SHA: ${{ github.event.pull_request.base.sha || github.event.before || github.sha }}
       CI_PROJECT_NAME: sc-prof-${{ github.run_id }}
       CANDIDATE_REQUESTED: ${{ needs.professional_authorization.outputs.candidate_requested }}
-      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_runtime_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
+      PROFESSIONAL_MODE: ${{ github.event_name == 'schedule' && 'full' || (github.event_name == 'push' && github.ref == 'refs/heads/main') && 'mainline' || needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.backend_runtime_changed == 'true' && 'standard_backend') || (needs.professional_authorization.outputs.professional_mode == 'full' && needs.professional_authorization.outputs.frontend_runtime_changed == 'true' && 'standard_frontend') || (needs.professional_authorization.outputs.professional_mode == 'full' && 'governance') || needs.professional_authorization.outputs.professional_mode }}
       FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}
+      FRONTEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_runtime_changed }}
       BACKEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_changed }}
       BACKEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.backend_runtime_changed }}
       CONTROL_PLANE_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.control_plane_changed }}
@@ -426,7 +428,7 @@ jobs:
           # Determine which shards to run based on change type
           # If only docs/config changed (no frontend/backend code), skip test shard
           RUN_TESTS=1
-          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${CANDIDATE_REQUESTED}" != true ] && [ "${FRONTEND_CHANGED}" = "false" ] && [ "${BACKEND_RUNTIME_CHANGED}" = "false" ]; then
+          if [ "${GITHUB_EVENT_NAME}" != schedule ] && [ "${CANDIDATE_REQUESTED}" != true ] && [ "${FRONTEND_RUNTIME_CHANGED}" = "false" ] && [ "${BACKEND_RUNTIME_CHANGED}" = "false" ]; then
             echo "Change detected: docs/config only - skipping test shard"
             RUN_TESTS=0
           fi

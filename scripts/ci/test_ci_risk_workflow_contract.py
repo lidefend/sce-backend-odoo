@@ -231,6 +231,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
     def test_professional_lane_commands_are_explicit(self) -> None:
         text = self.text("professional_quality_gate.yml")
         self.assertIn("frontend_changed: ${{ steps.risk.outputs.frontend_changed }}", text)
+        self.assertIn(
+            "frontend_runtime_changed: ${{ steps.risk.outputs.frontend_runtime_changed }}",
+            text,
+        )
         self.assertIn("backend_changed: ${{ steps.risk.outputs.backend_changed }}", text)
         self.assertIn("backend_runtime_changed: ${{ steps.risk.outputs.backend_runtime_changed }}", text)
         self.assertIn("control_plane_changed: ${{ steps.risk.outputs.control_plane_changed }}", text)
@@ -240,6 +244,10 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", text)
         self.assertIn(
             "FRONTEND_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_changed }}",
+            text,
+        )
+        self.assertIn(
+            "FRONTEND_RUNTIME_CHANGED: ${{ github.event_name == 'schedule' && 'true' || needs.professional_authorization.outputs.frontend_runtime_changed }}",
             text,
         )
         self.assertIn(
@@ -264,7 +272,8 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         )
         self.assertIn("needs.professional_authorization.outputs.professional_mode", professional_mode)
         self.assertIn("outputs.backend_runtime_changed == 'true'", professional_mode)
-        self.assertIn("outputs.frontend_changed == 'true'", professional_mode)
+        self.assertIn("outputs.frontend_runtime_changed == 'true'", professional_mode)
+        self.assertNotIn("outputs.frontend_changed == 'true'", professional_mode)
         self.assertNotIn("outputs.backend_changed == 'true'", professional_mode)
         self.assertIn("PROFESSIONAL_MODE == 'full'", text)
         self.assertIn("PROFESSIONAL_MODE == 'standard_backend'", text)
@@ -541,6 +550,84 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         professional_target = makefile.split("ci.professional.backend:", 1)[1].split("\n", 1)[0]
         self.assertIn("verify.unified_page_contract.v2.professional_backend", professional_target)
         self.assertNotIn("verify.unified_page_contract.v2.frontend_static", professional_target)
+
+    def test_validation_lane_boundaries_keep_scheduled_release_full_and_distinct(self) -> None:
+        scheduled = (
+            "public_guard.yml",
+            "merge_policy_gate.yml",
+            "professional_quality_gate.yml",
+            "frontend_release_gate.yml",
+            "release_candidate_gate.yml",
+        )
+        for name in scheduled:
+            self.assertIn("cron: '0 18 * * *'", self.text(name))
+
+        professional = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        authorization = professional["jobs"]["professional_authorization"]
+        backend_suite = professional["jobs"]["backend_impact_suite"]
+        quality = professional["jobs"]["professional_quality_checks"]
+        self.assertIn(
+            "github.event_name == 'schedule'",
+            authorization["outputs"]["candidate_requested"],
+        )
+        self.assertEqual(
+            backend_suite["with"]["scope_mode"],
+            "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
+        )
+        self.assertEqual(
+            backend_suite["with"]["base_sha"],
+            "${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}",
+        )
+        self.assertIn(
+            "github.event_name == 'schedule' && 'full'",
+            quality["env"]["PROFESSIONAL_MODE"],
+        )
+        self.assertEqual(
+            quality["env"]["ORM_REQUIRED"],
+            "${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}",
+        )
+        baseline = next(
+            step for step in quality["steps"]
+            if step.get("run") == "make verify.test.baseline"
+        )
+        self.assertEqual(
+            baseline["if"],
+            "github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'",
+        )
+
+        frontend = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        frontend_job = frontend["jobs"]["frontend_release_gate"]
+        self.assertIn("github.event_name == 'schedule'", frontend_job["env"]["CANDIDATE_REQUESTED"])
+        effective = next(
+            step for step in frontend_job["steps"]
+            if step.get("name") == "Resolve effective frontend lane"
+        )
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" = "schedule" ]', effective["run"])
+        self.assertIn("mode='full'", effective["run"])
+
+        public = self.text("public_guard.yml")
+        self.assertIn("schedule|workflow_dispatch)", public)
+        self.assertIn("make verify.repository.clean_history", public)
+
+        backend = self.text("backend_test_suite.yml")
+        self.assertNotIn("\n  schedule:", backend)
+        self.assertIn("workflow_call:", backend)
+
+        from scripts.ci.release_condition import REQUIRED_WORKFLOWS
+
+        self.assertEqual(
+            REQUIRED_WORKFLOWS,
+            {
+                ".github/workflows/public_guard.yml",
+                ".github/workflows/professional_quality_gate.yml",
+                ".github/workflows/frontend_release_gate.yml",
+                ".github/workflows/merge_policy_gate.yml",
+            },
+        )
+        self.assertNotIn(
+            "  push:\n    branches: [main]",
+            self.text("release_candidate_gate.yml"),
+        )
 
     def test_cache_keys_bind_lockfile_and_runtime(self) -> None:
         text = self.text("frontend_release_gate.yml")
@@ -931,6 +1018,10 @@ class ParallelQualityExecutionTest(unittest.TestCase):
         )
         self.assertIn(
             '[ "${CANDIDATE_REQUESTED}" != true ]',
+            full_gate['run'],
+        )
+        self.assertIn(
+            '[ "${FRONTEND_RUNTIME_CHANGED}" = "false" ]',
             full_gate['run'],
         )
         for name in ('professional_quality_gate', 'frontend_release_gate', 'public_guard',

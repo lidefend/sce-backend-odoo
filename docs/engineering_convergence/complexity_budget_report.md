@@ -6,7 +6,7 @@ Generated from repository source files. This report is informational during the 
 
 - Scanned files: `5362`
 - Files requiring split plan: `88`
-- Files above warning threshold: `161`
+- Files above warning threshold: `163`
 
 ## Split Plan Required
 
@@ -19,10 +19,10 @@ Generated from repository source files. This report is informational during the 
 | 5294 | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5059 | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4908 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4911 | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 4841 | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4597 | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4577 | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4593 | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | Vue source | `frontend/apps/web/src/views/ActionView.vue` |
@@ -97,7 +97,7 @@ Generated from repository source files. This report is informational during the 
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1501 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 823 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 861 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -175,6 +175,7 @@ Generated from repository source files. This report is informational during the 
 | 1093 | TypeScript source | `frontend/apps/web/src/pages/contractForm/formConfigHelpers.ts` |
 | 1091 | Python source | `scripts/ops/test_platform_security_admin_credential.py` |
 | 1083 | TypeScript source | `frontend/apps/web/src/pages/contractForm/one2manyUtils.ts` |
+| 1075 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 1073 | Python source | `scripts/ci/test_backend_test_receipt.py` |
 | 1063 | Python source | `scripts/verify/test_dev_acceptance_release_identity.py` |
 | 1062 | Python source | `addons/smart_core/model/ui_business_config_contract.py` |
@@ -196,12 +197,12 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 987 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
-| 984 | Python source | `scripts/ci/test_ci_risk_workflow_contract.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
+| 956 | Python source | `scripts/ci/test_backend_suite_plan.py` |
 | 951 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
@@ -240,6 +241,7 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
+| 821 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
@@ -250,7 +252,7 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 805 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 594 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 596 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 501 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |
@@ -278,10 +280,10 @@ Generated from repository source files. This report is informational during the 
 | 5294 | split_plan_required | Python source | `scripts/verify/business_config_approval_runtime_smoke.py` |
 | 5059 | split_plan_required | Python source | `addons/smart_core/app_config_engine/services/assemblers/page_assembler.py` |
 | 5028 | split_plan_required | JavaScript source | `scripts/verify/local_dev_candidate_visual_smoke.mjs` |
-| 4908 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
+| 4911 | split_plan_required | Python source | `scripts/verify/test_frontend_dev_incremental.py` |
 | 4841 | split_plan_required | Python source | `addons/smart_core/handlers/ui_contract_v2.py` |
 | 4597 | split_plan_required | Python source | `scripts/verify/test_payment_approval_state_machine.py` |
-| 4577 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
+| 4593 | split_plan_required | Python source | `scripts/verify/frontend_dev_incremental.py` |
 | 3843 | split_plan_required | Python source | `addons/smart_construction_core/models/core/payment_request.py` |
 | 3753 | split_plan_required | Python source | `scripts/ops/daily_runtime_database_duty.py` |
 | 3746 | split_plan_required | Vue source | `frontend/apps/web/src/views/ActionView.vue` |

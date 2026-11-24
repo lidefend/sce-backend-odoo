@@ -236,6 +236,178 @@ python3() {
             resolve['run'],
         )
 
+    def test_focused_python_modules_run_only_exact_changed_files(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        run = next(
+            step['run']
+            for step in workflow['jobs']['backend_suite']['steps']
+            if step['name'] == 'Run backend test suite per module'
+        )
+        python_start = run.index('for module in ${PYTHON_MODULES}')
+        focused_start = run.index(
+            'if [ "${SUITE_MODE:-full}" = "focused" ]; then',
+            python_start,
+        )
+        focused = run[focused_start:].split('\n  else\n', 1)
+        self.assertEqual(2, len(focused), 'focused/full Python branches must both exist')
+
+        focused_branch, full_branch = focused[0], focused[1].split(
+            '\n  fi\n  pipeline_status=',
+            1,
+        )[0]
+        self.assertIn('--module "${module}" --python-files', focused_branch)
+        self.assertIn(
+            'python3 scripts/ci/run_mixed_python_tests.py "${python_files[@]}"',
+            focused_branch,
+        )
+        self.assertIn(
+            'focused backend Python module ${module} has no exact changed files',
+            focused_branch,
+        )
+        self.assertNotIn('unittest discover', focused_branch)
+        self.assertIn(
+            "python3 -m unittest discover -v -s \"${test_dir}\" -p 'test*.py'",
+            full_branch,
+        )
+
+    def test_focused_backend_classifies_changed_files_not_the_whole_test_dir(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        resolve = next(
+            step['run']
+            for step in workflow['jobs']['backend_suite']['steps']
+            if step['name'] == 'Resolve module list'
+        )
+        classification = resolve[
+            resolve.index('for module in ${candidates}; do'):
+            resolve.index(
+                'test -n "${MODULES}${PYTHON_MODULES}${MIXED_PYTHON_FILES}"'
+            )
+        ]
+        self.assertIn('--module "${module}" --orm-files', classification)
+        self.assertIn('--module "${module}" --python-files', classification)
+        self.assertNotIn(
+            "grep -qE '(^|[[:space:]])(from|import)[[:space:]]+odoo\\\\.tests' "
+            '"${changed_file}"',
+            classification.split('if [ "${SUITE_MODE:-full}" = focused ]; then', 1)[1]
+            .split('elif grep -RqsE', 1)[0],
+        )
+        scenarios = (
+            (
+                'mixed_pure_only',
+                'focused',
+                True,
+                'core',
+                '',
+                'addons/core/tests/test_plain.py',
+                '',
+                'core',
+                '',
+            ),
+            (
+                'mixed_orm_and_python',
+                'focused',
+                True,
+                'core',
+                'addons/core/tests/test_orm.py',
+                'addons/core/tests/test_plain.py',
+                'core',
+                '',
+                'addons/core/tests/test_plain.py',
+            ),
+            (
+                'pure_module',
+                'focused',
+                False,
+                'core',
+                '',
+                'addons/core/tests/test_plain.py',
+                '',
+                'core',
+                '',
+            ),
+            (
+                'full_mixed',
+                'full',
+                True,
+                'core',
+                '',
+                '',
+                'core',
+                '',
+                'addons/core/tests/test_plain.py',
+            ),
+        )
+        for (
+            name,
+            mode,
+            has_orm_file,
+            module,
+            stub_orm,
+            stub_python,
+            expected_modules,
+            expected_python,
+            expected_mixed,
+        ) in scenarios:
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as tmp:
+                tests = Path(tmp) / 'addons/core/tests'
+                tests.mkdir(parents=True)
+                if has_orm_file:
+                    (tests / 'test_orm.py').write_text(
+                        'from odoo.tests.common import TransactionCase\n'
+                    )
+                (tests / 'test_plain.py').write_text('import unittest\n')
+                if mode == 'focused' and expected_mixed:
+                    changed = (
+                        'addons/core/tests/test_orm.py '
+                        'addons/core/tests/test_plain.py'
+                    )
+                else:
+                    changed = 'addons/core/tests/test_plain.py'
+                command = (
+                    'set -eu\n'
+                    'python3() {\n'
+                    '  if [ "$1" = scripts/ci/backend_suite_plan.py ]; then\n'
+                    '    case "$*" in\n'
+                    '      *--orm-files*) [ -n "${STUB_ORM:-}" ] && printf "%s\\n" "${STUB_ORM}" || return 1 ;;\n'
+                    '      *--python-files*) [ -n "${STUB_PYTHON:-}" ] && printf "%s\\n" "${STUB_PYTHON}" || return 1 ;;\n'
+                    '      *) return 2 ;;\n'
+                    '    esac\n'
+                    '  fi\n'
+                    '}\n'
+                    f'candidates={module}\n'
+                    f'changed_tests="{changed}"\n'
+                    f'SUITE_MODE={mode}\n'
+                    'IMPACT_BASE=' + 'b' * 40 + '\n'
+                    'HEAD_SHA=' + 'a' * 40 + '\n'
+                    'RUNNER_TEMP=/tmp\n'
+                    'PLAN_SHA256=fixture\n'
+                    f'STUB_ORM="{stub_orm}"\n'
+                    f'STUB_PYTHON="{stub_python}"\n'
+                    'MODULES=""\nPYTHON_MODULES=""\nMIXED_PYTHON_FILES=""\n'
+                    + classification
+                    + "printf 'MODULES=<%s>\\n' \"${MODULES# }\"\n"
+                    + "printf 'PYTHON=<%s>\\n' \"${PYTHON_MODULES# }\"\n"
+                    + "printf 'MIXED=<%s>\\n' \"${MIXED_PYTHON_FILES# }\"\n"
+                )
+                result = subprocess.run(
+                    ['bash', '-c', command],
+                    cwd=tmp,
+                    text=True,
+                    capture_output=True,
+                )
+                self.assertEqual(0, result.returncode, result.stdout + result.stderr)
+                values = dict(
+                    line.split('=', 1)
+                    for line in result.stdout.splitlines()
+                )
+                self.assertEqual(f'<{expected_modules}>', values['MODULES'])
+                self.assertEqual(f'<{expected_python}>', values['PYTHON'])
+                self.assertEqual(f'<{expected_mixed}>', values['MIXED'])
+
     def test_shard_materializes_mainline_ref_before_running_module_tests(self):
         workflow = yaml.safe_load(
             (ROOT / '.github/workflows/backend_test_suite.yml').read_text()

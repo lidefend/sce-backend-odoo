@@ -36,6 +36,7 @@ class OwnershipCategory:
     agent_run_registration: bool
     agent_governance: bool
     backend_tooling: bool
+    frontend_runtime: bool
     tool_checks: tuple[str, ...]
 
 
@@ -75,6 +76,11 @@ class OwnershipSummary:
     @property
     def backend_runtime_changed(self) -> bool:
         return any(self.category_for(path) and self.category_for(path).backend_runtime
+                   for path in self.assignments)
+
+    @property
+    def frontend_runtime_changed(self) -> bool:
+        return any(self.category_for(path) and self.category_for(path).frontend_runtime
                    for path in self.assignments)
 
     @property
@@ -153,6 +159,7 @@ def load_registry(path: Path = REGISTRY_PATH) -> dict[str, OwnershipCategory]:
             agent_run_registration=_bool(row, "agent_run_registration"),
             agent_governance=_bool(row, "agent_governance"),
             backend_tooling=_bool(row, "backend_tooling"),
+            frontend_runtime=_bool(row, "frontend_runtime"),
             tool_checks=tuple(sorted(set(checks))),
         )
     return categories
@@ -216,6 +223,7 @@ def main() -> int:
         "unknown_paths": result.unknown_paths,
         "invalid_paths": result.invalid_paths,
         "frontend_changed": result.frontend_changed,
+        "frontend_runtime_changed": result.frontend_runtime_changed,
         "backend_changed": result.backend_changed,
         "backend_runtime_changed": result.backend_runtime_changed,
         "control_plane_changed": result.control_plane_changed,

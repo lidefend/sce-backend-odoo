@@ -166,13 +166,29 @@ verification_responsibility:
   lanes:
     local_targeted:
       responsibility: affected_static_contract_and_targeted_tests_only
+      may_run: worktree_change_records_and_nonzero_targeted_checks
+      must_not_claim: exact_head_integration_or_release_eligibility
       may_satisfy: local_diff_confidence
     remote_integration:
       responsibility: exact_pr_head_against_current_target_base
+      ordinary_pr_scope: risk_selected_affected_checks
+      explicit_candidate_scope: full_candidate_checks
       may_satisfy: integration_merge_gate
+      must_not_claim: scheduled_mainline_release_eligibility
     scheduled_release:
-      responsibility: current_remote_main_release_eligibility
+      responsibility: current_remote_main_full_release_eligibility
+      trigger: schedule
+      scheduled_slot: 18:00_utc
+      workflows:
+        - public_guard.yml
+        - professional_quality_gate.yml
+        - frontend_release_gate.yml
+        - merge_policy_gate.yml
+        - release_candidate_gate.yml
+      nested_scope: backend_test_suite_full_all_modules
       may_satisfy: release_qualification_only
+      grants: exact_head_and_tree_candidate_build_eligibility
+      must_not_claim: pull_request_merge_or_deployment_authorization
   local_test_identity:
     compose_project: worktree_scoped
     volumes: worktree_scoped
@@ -182,6 +198,7 @@ verification_responsibility:
   occupied_worktree_lock_policy: record_not_run_environment_defect_and_continue_to_remote_ci
   default_local_full_module_suite: forbidden_as_inner_loop
   module_baseline_execution_lane: remote_integration
+  scheduled_module_baseline: all_modules_full
   test_only_selection: changed_test_classes_with_valid_receipt_reuse
   ordinary_pr_requires_local_quick: false
 

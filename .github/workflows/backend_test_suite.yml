@@ -237,7 +237,32 @@ jobs:
               fi
             done
             test -n "${test_dir}" || { echo "module ${module} has no tests/ directory" >&2; exit 1; }
-            if grep -RqsE '(^|[[:space:]])(from|import)[[:space:]]+odoo\.tests' "${test_dir}"; then
+            module_changed_tests=""
+            for changed_file in ${changed_tests}; do
+              case "${changed_file}" in
+                "${test_dir}"/test*.py) module_changed_tests="${module_changed_tests} ${changed_file}" ;;
+              esac
+            done
+            if [ "${SUITE_MODE:-full}" = focused ]; then
+              module_orm_files="$(python3 scripts/ci/backend_suite_plan.py \
+                --base "${IMPACT_BASE}" --head "${HEAD_SHA}" --focused \
+                --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+                --plan-sha256 "${PLAN_SHA256}" --module "${module}" --orm-files 2>/dev/null || true)"
+              module_python_files="$(python3 scripts/ci/backend_suite_plan.py \
+                --base "${IMPACT_BASE}" --head "${HEAD_SHA}" --focused \
+                --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+                --plan-sha256 "${PLAN_SHA256}" --module "${module}" --python-files 2>/dev/null || true)"
+              test -n "${module_orm_files}${module_python_files}" || {
+                echo "focused backend module ${module} has no exact changed test files" >&2
+                exit 1
+              }
+              if [ -n "${module_orm_files}" ]; then
+                MODULES="${MODULES} ${module}"
+                MIXED_PYTHON_FILES="${MIXED_PYTHON_FILES} ${module_python_files}"
+              else
+                PYTHON_MODULES="${PYTHON_MODULES} ${module}"
+              fi
+            elif grep -RqsE '(^|[[:space:]])(from|import)[[:space:]]+odoo\.tests' "${test_dir}"; then
               MODULES="${MODULES} ${module}"
               # A mixed addon owns both ORM suites and standalone unittest
               # files.  The whole-addon ORM classification above would drop the
@@ -626,7 +651,20 @@ jobs:
             test -n "${test_dir}" || { echo "::error::missing Python test directory for ${module}"; failed=1; continue; }
             python_log="${RUNNER_TEMP}/backend-suite-python-${module}-${GITHUB_RUN_ID}.log"
             python_started=${SECONDS}
-            python3 -m unittest discover -v -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"
+            if [ "${SUITE_MODE:-full}" = "focused" ]; then
+              python_files_text="$(python3 scripts/ci/backend_suite_plan.py \
+                --base "${IMPACT_BASE}" --head "${HEAD_SHA}" --focused \
+                --frozen-plan "${RUNNER_TEMP}/frozen-plan/backend-plan.json" \
+                --plan-sha256 "${PLAN_SHA256}" --module "${module}" --python-files)"
+              test -n "${python_files_text}" || {
+                echo "focused backend Python module ${module} has no exact changed files" >&2
+                exit 1
+              }
+              read -r -a python_files <<< "${python_files_text}"
+              python3 scripts/ci/run_mixed_python_tests.py "${python_files[@]}" 2>&1 | tee "${python_log}"
+            else
+              python3 -m unittest discover -v -s "${test_dir}" -p 'test*.py' 2>&1 | tee "${python_log}"
+            fi
             pipeline_status=("${PIPESTATUS[@]}")
             python_duration=$((SECONDS - python_started))
             python_status="${pipeline_status[0]}"

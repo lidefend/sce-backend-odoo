@@ -42,6 +42,32 @@ targeted evidence. Merge requires current exact-head required remote checks.
 Scheduled CI separately determines whether the resulting mainline is eligible
 for release.
 
+## Lane authority matrix
+
+| Lane | Trigger and entry | Exact identity | Required execution | It may establish | It must not establish |
+| --- | --- | --- | --- | --- | --- |
+| Local targeted | A developer change; `make ci.local.iteration`, backend/frontend lane entries | Current HEAD plus explicit dirty scope | Affected static, contract and non-zero targeted tests | `local_diff_confidence` | PR integration, full module baseline, release eligibility |
+| Remote integration | Ordinary PR open/sync; the four required PR workflows | Exact PR HEAD against the current target base | Risk-selected affected surface; test-only backend changes use the owning changed tests, not unrelated dependency consumers | The merge gate when every current required check passes | Scheduled mainline release eligibility |
+| Explicit candidate | `ci:candidate` label or owner `workflow_dispatch` | Exact candidate HEAD/base or exact main head | Full candidate professional/frontend/backend checks | Exact candidate-build eligibility | An ordinary PR shortcut or a scheduled mainline result |
+| Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests `backend_test_suite` with `scope_mode=full` | `candidate_build_eligible` for that exact main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
+
+The scheduled five-workflow set is intentional. `release_candidate_gate` is
+not a substitute for the four producer workflows: it waits for the exact-head,
+same-scheduled-slot runs of `public_guard`, `professional_quality_gate`,
+`frontend_release_gate` and `merge_policy_gate`, then materializes the
+`sce.release_condition.v1` artifact. The nested backend suite is not a separate
+schedule trigger; it is invoked by the full professional lane and must
+enumerate all runnable modules without a PR base.
+
+The scheduled condition is only `candidate_build_eligible`. It remains
+`deployment_ready=false`; deployment approval and runtime readback are later,
+separate authorities.
+
+An explicit candidate label or `workflow_dispatch` full audit is still a
+candidate/full-audit lane, not a scheduled mainline release observation.
+Conversely, a scheduled run cannot replace the current PR HEAD checks because
+its source is `main`, not the PR head.
+
 ## Impact-routed verification surface
 
 Verification-tool checks follow their actual execution surface:
@@ -62,3 +88,21 @@ Verification-tool checks follow their actual execution surface:
 When target main advances, merge the current main into the PR branch, update the
 active run baseline to that exact main SHA, and rerun the affected local set.
 Previously recorded exact-head remote checks do not carry across the new base.
+
+## Remote exact-set rules
+
+- Frontend runtime and frontend tooling ownership are separate. Tooling-only
+  changes still run their registered tool checks, but skip frontend
+  lint/typecheck/test/build. Actual `frontend/**` runtime changes retain the
+  standard or full frontend lane.
+- A `make/ci.mk` edit may skip the remote frontend runtime lane only when an
+  exact Git-tree proof shows every changed byte belongs to the three
+  `ci.local.*iteration` target blocks or to the
+  `verify.ci.scheduled_gates` recipe body. Any other Make change remains
+  conservatively full.
+- Backend focused planning uses exact changed-test selectors or exact changed
+  pure-Python files only when every backend change is a direct `tests/test*.py`
+  change and selector coverage is complete. Execution is narrowed to the
+  modules that own those changed tests; unaffected dependency consumers are
+  not rerun. Production code, test helpers, deleted tests, mixed changes and
+  incomplete selectors retain full impacted-module coverage.

@@ -1038,6 +1038,7 @@ verify.ci.scheduled_gates: guard.prod.forbid verify.github_actions.security
 	@python3 scripts/ci/test_ci_risk_workflow_contract.py
 	@python3 scripts/ci/test_merge_policy_gate.py
 	@python3 scripts/ci/test_release_candidate_gate.py
+	@python3 scripts/ci/test_release_condition.py
 	@python3 scripts/verify/ci_artifact_host_write_guard.py
 	@echo "[verify.ci.scheduled_gates] PASS"
 

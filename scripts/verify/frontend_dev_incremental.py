@@ -611,7 +611,23 @@ RULES = (
         "scripts/ci/test_select_authoritative_workflow_run.py",
     ), (
         "verify.ci.workflow.contract",
-        "verify.github_actions.security",
+    )),
+    Rule((
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_condition.py",
+    ), (
+        "verify.ci.scheduled_gates",
     )),
     Rule((
         "scripts/dev/frontend_acceptance_operation_entry.sh",

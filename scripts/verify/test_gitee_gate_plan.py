@@ -39,8 +39,10 @@ class GatePlanTests(unittest.TestCase):
 
     def test_pure_frontend_tooling(self):
         r = self.build(("scripts/verify/frontend_example_guard.py",))
-        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_frontend")
-        self.assertEqual(self.modes(r)["frontend_release_gate"], "standard")
+        self.assertTrue(r["frontend_changed"])
+        self.assertFalse(r["frontend_runtime_changed"])
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "fast")
+        self.assertEqual(self.modes(r)["frontend_release_gate"], "skip")
         self.assertFalse(r["backend_changed"])
         self.assertFalse(r["backend_runtime_changed"])
 
@@ -59,13 +61,15 @@ class GatePlanTests(unittest.TestCase):
         self.assertTrue(r["control_plane_changed"])
         self.assertFalse(r["backend_changed"])
 
-    def test_frontend_quality_tooling_is_standard_frontend_not_backend(self):
+    def test_frontend_quality_tooling_is_not_backend_or_frontend_runtime(self):
         r = self.build(("scripts/verify/frontend_example_guard.py",))
         self.assertEqual(r["lane"], "STANDARD")
         self.assertTrue(r["frontend_changed"])
+        self.assertFalse(r["frontend_runtime_changed"])
         self.assertFalse(r["backend_changed"])
         self.assertFalse(r["control_plane_changed"])
-        self.assertEqual(self.modes(r)["professional_quality_gate"], "standard_frontend")
+        self.assertEqual(self.modes(r)["professional_quality_gate"], "fast")
+        self.assertEqual(self.modes(r)["frontend_release_gate"], "skip")
 
     def test_high_risk_backend_runtime(self):
         r = self.build(("scripts/ci/example.py", "addons/example/models/item.py"))
