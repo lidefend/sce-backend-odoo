@@ -25,6 +25,26 @@ except ImportError:  # Direct script execution adds scripts/ci to sys.path.
 ROOT = Path(__file__).resolve().parents[2]
 POLICY_ROOT = Path(__file__).resolve().parents[2]
 POLICY_PATH = ROOT / "config/ci/risk_tiering_v1.json"
+FRONTEND_CONTRACT_DIAGNOSTIC_PATHS = (
+    # Contract producers and their canonical decoder.
+    "frontend/apps/web/src/app/contracts/v2/**",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_construction_core/core_extension_contract_normalizers.py",
+    # Generic consumers whose failures only appear when form, overlay and
+    # relation composition is mounted together.
+    "frontend/apps/web/src/components/design-system/ScDialog.vue",
+    "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+    "frontend/apps/web/src/composables/useModalLifecycle.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+    "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+    "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/template/formSection.types.ts",
+    "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+)
 
 
 @dataclass(frozen=True)
@@ -57,12 +77,7 @@ class Classification:
     @property
     def frontend_contract_diagnostic_required(self) -> bool:
         return any(
-            _matches(path, (
-                "frontend/apps/web/src/app/contracts/v2/**",
-                "addons/smart_core/core/unified_page_contract_v2_assembler.py",
-                "addons/smart_core/handlers/ui_contract_v2.py",
-                "addons/smart_construction_core/core_extension_contract_normalizers.py",
-            ))
+            _matches(path, FRONTEND_CONTRACT_DIAGNOSTIC_PATHS)
             for path in self.paths
         )
 

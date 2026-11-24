@@ -90,6 +90,17 @@ class CIRiskClassifierTests(unittest.TestCase):
             "addons/smart_core/core/unified_page_contract_v2_assembler.py",
             "addons/smart_core/handlers/ui_contract_v2.py",
             "addons/smart_construction_core/core_extension_contract_normalizers.py",
+            "frontend/apps/web/src/components/design-system/ScDialog.vue",
+            "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+            "frontend/apps/web/src/composables/useModalLifecycle.ts",
+            "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+            "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+            "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+            "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+            "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+            "frontend/apps/web/src/components/template/FormSection.vue",
+            "frontend/apps/web/src/components/template/formSection.types.ts",
+            "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
         ):
             with self.subTest(path=path):
                 result = classify([path], event_name="pull_request")
@@ -98,6 +109,12 @@ class CIRiskClassifierTests(unittest.TestCase):
         self.assertFalse(
             classify(
                 ["frontend/apps/web/src/pages/ProjectListPage.vue"],
+                event_name="pull_request",
+            ).frontend_contract_diagnostic_required
+        )
+        self.assertFalse(
+            classify(
+                ["frontend/apps/web/src/components/template/UnrelatedPanel.vue"],
                 event_name="pull_request",
             ).frontend_contract_diagnostic_required
         )

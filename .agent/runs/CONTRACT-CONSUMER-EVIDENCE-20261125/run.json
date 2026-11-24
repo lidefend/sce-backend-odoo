@@ -1,0 +1,131 @@
+{
+  "schema_version": 2,
+  "id": "CONTRACT-CONSUMER-EVIDENCE-20261125",
+  "branch": "fix/contract-consumer-evidence-20261125",
+  "status": "blocked",
+  "baseline_sha": "0b980ce0ee730f8095374aa1c10c751379fbf367",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/CONTRACT-CONSUMER-EVIDENCE-20261125.yaml",
+    ".agent/runs/CONTRACT-CONSUMER-EVIDENCE-20261125/run.json",
+    "docs/ops/iterations/contract_consumer_evidence_20261125.md",
+    "frontend/apps/web/src/app/contract/contractGap.ts",
+    "frontend/apps/web/src/components/StatusPanel.vue",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/src/views/ActionView.vue",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "scripts/verify/error_state_component_test.cjs",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ci/ci_risk_classifier.py",
+    "scripts/ci/test_ci_risk_classifier.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing local Make tools and static browser harnesses; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Run affected P0 contract-consumer, P4 planning, risk-classification and overlay lifecycle checks."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "Risk-routing changes alter the exact-head frontend CI lane and must be integrated against current main."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This is an incremental platform correction, not release qualification."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "Shared contract targets must consume the passed backend receipt for the same run and source identity."
+    }
+  },
+  "checks": {
+    "consumer_evidence": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contract/contractGap.ts",
+        "frontend/apps/web/src/components/StatusPanel.vue",
+        "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+        "frontend/apps/web/src/views/ActionView.vue",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+        "scripts/verify/error_state_component_test.cjs"
+      ]
+    },
+    "incremental_routing": {
+      "target": "verify.frontend.dev.incremental.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "make/frontend.mk"
+      ]
+    },
+    "overlay_lifecycle": {
+      "target": "verify.frontend.overlay_lifecycle.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/components/design-system/ScDialog.vue",
+        "frontend/apps/web/src/components/design-system/ScDrawer.vue",
+        "frontend/apps/web/src/composables/useModalLifecycle.ts",
+        "scripts/verify/frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
+        "scripts/verify/frontend_overlay_lifecycle_browser.mjs",
+        "make/frontend.mk"
+      ]
+    },
+    "risk_routing": {
+      "target": "verify.ci.workflow.contract",
+      "kind": "offline",
+      "inputs": [
+        "scripts/ci/ci_risk_classifier.py",
+        "scripts/ci/test_ci_risk_classifier.py",
+        "config/ci/risk_tiering_v1.json"
+      ]
+    }
+  },
+  "blockers": [
+    "Mainline P1 regression from a5aff5c2684ef015a9462d836e29d82d970a4971 (PR #996): group_sc_cap_executive_approver has model_payment_request read ACL but is absent from the settlement compliance field groups. make ci.local.iteration stops at verify.frontend.delivery_hardening.guard; wait for the mainline correction, then sync and rerun the invalidated checks."
+  ],
+  "results": {
+    "consumer_evidence": {
+      "status": "passed",
+      "test_count": 51,
+      "log": ".runtime/agent-runs/CONTRACT-CONSUMER-EVIDENCE-20261125/consumer_evidence.log"
+    },
+    "incremental_routing": {
+      "status": "passed",
+      "test_count": 241,
+      "log": ".runtime/agent-runs/CONTRACT-CONSUMER-EVIDENCE-20261125/incremental_routing.log"
+    },
+    "overlay_lifecycle": {
+      "status": "passed",
+      "test_count": 14,
+      "log": ".runtime/agent-runs/CONTRACT-CONSUMER-EVIDENCE-20261125/overlay_lifecycle.log"
+    },
+    "risk_routing": {
+      "status": "passed",
+      "test_count": 517,
+      "log": ".runtime/agent-runs/CONTRACT-CONSUMER-EVIDENCE-20261125/risk_routing.log"
+    },
+    "local_iteration": {
+      "status": "failed",
+      "owner": "P1:smart_construction_core",
+      "failed_target": "verify.frontend.delivery_hardening.guard",
+      "receipt": ".runtime/frontend-dev-validation/executions/20261124T232151Z-2849506-477208105/receipt.json",
+      "log": ".runtime/frontend-dev-validation/executions/20261124T232151Z-2849506-477208105/verify.frontend.delivery_hardening.guard.log",
+      "reason": "Preexisting settlement compliance group closure mismatch, unrelated to this batch diff"
+    }
+  },
+  "next_exact_step": "Wait for the mainline PR #996 settlement compliance group correction, synchronize this candidate to the new main, and rerun only the invalidated delivery-hardening, local-iteration, exact-head remote, review and merge checks.",
+  "goal": ".agent/goals/CONTRACT-CONSUMER-EVIDENCE-20261125.yaml",
+  "record": "docs/ops/iterations/contract_consumer_evidence_20261125.md"
+}
