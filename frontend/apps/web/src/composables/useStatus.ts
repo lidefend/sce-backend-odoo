@@ -1,5 +1,6 @@
 import { ref } from 'vue';
 import { ApiError } from '../api/client';
+import { isContractGapError, type ContractDefectRef } from '../app/contract/contractGap';
 import { describeSuggestedAction } from './useSuggestedAction';
 
 export interface StatusError {
@@ -13,6 +14,7 @@ export interface StatusError {
   reasonCode?: string;
   suggestedAction?: string;
   details?: Record<string, unknown>;
+  contractDefect?: ContractDefectRef;
 }
 
 export interface StatusCopy {
@@ -55,6 +57,33 @@ export function buildStatusError(err: unknown, fallbackMessage: string, kind?: s
       reasonCode: err.reasonCode,
       suggestedAction: suggestedAction || undefined,
       details: err.details,
+    };
+  }
+  if (isContractGapError(err)) {
+    return {
+      message: err.message,
+      kind: 'contract_defect',
+      contractDefect: {
+        ...err.defect,
+        failureClass: err.defect.failureClass || 'contract_missing',
+      },
+    };
+  }
+  if (err instanceof Error && err.name === 'ContractV2DecodeError') {
+    const issues = Array.isArray((err as Error & { issues?: unknown[] }).issues)
+      ? (err as Error & { issues: Array<{ path?: unknown; message?: unknown }> }).issues
+      : [];
+    return {
+      message: err.message,
+      kind: 'contract_mismatch',
+      contractDefect: {
+        kind: 'contract_defect',
+        failureClass: 'contract_mismatch',
+        missing: issues.length
+          ? issues.map((issue) => `${String(issue.path || '')}: ${String(issue.message || '')}`).join('; ')
+          : err.message,
+        requiredDeclarationLayer: 'P0:smart_core/frontend:contract_v2_schema',
+      },
     };
   }
   const message = err instanceof Error ? err.message : fallbackMessage;

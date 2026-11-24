@@ -13,6 +13,7 @@
 /** 契约缺陷引用。绑定缺失字段路径与应补齐该声明的归属层。 */
 export type ContractDefectRef = {
   kind: 'contract_defect';
+  failureClass?: 'contract_missing' | 'contract_mismatch' | 'consumer_error';
   /** 缺失或非法的契约字段路径，例如 `config.sheet.page_size`。 */
   missing: string;
   /** 应补齐该声明的归属层与载体，例如 `P0:smart_core:page_assembler`。 */

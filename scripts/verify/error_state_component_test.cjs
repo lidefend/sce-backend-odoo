@@ -54,12 +54,15 @@ function mount(props){const root=node('root');const app=renderer.createApp(compo
  mounted=mount({errorCode:409});assert.ok(text(mounted.root).includes('error_states.action.retry.executor'));
  assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
  mounted=mount({errorCode:422,contractDefect:{kind:'contract_defect',
+   failureClass:'contract_missing',
    missing:'scene_ready_contract.scene_internal_actions.enterprise.setup:test.action',
    requiredDeclarationLayer:'P0:smart_core:system_init_scene_runtime_surface_builder'}});
  const explicitGap=flatten(mounted.root).find(el=>el.props?.['data-contract-gap']);
  assert.equal(explicitGap.props['data-contract-gap'],'scene_ready_contract.scene_internal_actions.enterprise.setup:test.action');
  assert.equal(explicitGap.props['data-contract-gap-layer'],'P0:smart_core:system_init_scene_runtime_surface_builder');
- assert.ok(text(mounted.root).includes('系统已读取到页面声明'));
+ assert.ok(text(mounted.root).includes('业务契约声明缺失'));
+ assert.ok(text(mounted.root).includes('contract_missing'));
+ assert.ok(text(mounted.root).includes('P0:smart_core:system_init_scene_runtime_surface_builder'));
  assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
  declaration=null;mounted=mount({errorCode:404});assert.ok(text(mounted.root).includes('ContractGapError'));mounted.app.unmount();
  declaration=contract;mounted=mount({errorCode:422});assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
