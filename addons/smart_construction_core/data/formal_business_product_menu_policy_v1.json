@@ -203,15 +203,15 @@
           },
           "business_full": {
             "landing_scene_candidates": [
-              "enterprise.setup",
               "workspace.home",
+              "enterprise.setup",
               "projects.list"
             ]
           },
           "business_config_admin": {
             "landing_scene_candidates": [
-              "enterprise.setup",
               "workspace.home",
+              "enterprise.setup",
               "projects.list",
               "projects.ledger",
               "projects.intake"
@@ -11287,15 +11287,15 @@
           },
           "business_full": {
             "landing_scene_candidates": [
-              "enterprise.setup",
               "workspace.home",
+              "enterprise.setup",
               "projects.list"
             ]
           },
           "business_config_admin": {
             "landing_scene_candidates": [
-              "enterprise.setup",
               "workspace.home",
+              "enterprise.setup",
               "projects.list",
               "projects.ledger",
               "projects.intake"

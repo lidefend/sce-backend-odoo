@@ -274,14 +274,26 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
                 )
                 self.assertEqual(
                     candidates[0],
-                    "enterprise.setup" if role_code in {"business_config_admin", "business_full"} else "workspace.home",
-                    f"{product_key}.{role_code} first hop must follow the released entry policy",
+                    "workspace.home",
+                    f"{product_key}.{role_code} first hop must avoid completed initialization",
                 )
             resolver = _load_identity_resolver_module().IdentityResolver()
             for role in ("business_config_admin", "business_full"):
                 candidates = declared[role]
-                self.assertEqual(resolver._pick_landing_scene(candidates, {"enterprise.setup", "workspace.home"}), "enterprise.setup")
-                self.assertEqual(resolver._pick_landing_scene(candidates, {"workspace.home"}), "workspace.home")
+                self.assertEqual(
+                    resolver._pick_landing_scene(
+                        candidates,
+                        {"enterprise.setup", "workspace.home"},
+                    ),
+                    "workspace.home",
+                )
+                self.assertEqual(
+                    resolver._pick_landing_scene(
+                        candidates,
+                        {"enterprise.setup"},
+                    ),
+                    "enterprise.setup",
+                )
             # The released role landing must never send a role to a scene the
             # published surface does not grant, which is what caused the
             # login -> access-denied first hop.
@@ -330,7 +342,7 @@ class LockedMenuPolicyContractTests(unittest.TestCase):
         self.assertTrue(receipt["overlaid_roles"])
         for role, candidates in declared.items():
             self.assertEqual(overrides[role]["landing_scene_candidates"], candidates, role)
-            self.assertEqual(candidates[0], "enterprise.setup" if role in {"business_config_admin", "business_full"} else "workspace.home", role)
+            self.assertEqual(candidates[0], "workspace.home", role)
         # A role the contract does not declare keeps its own declaration.
         self.assertEqual(overrides["unknown_role_kept"]["landing_scene_candidates"], ["custom.scene"])
 

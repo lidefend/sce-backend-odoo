@@ -337,19 +337,22 @@ class TestCompanyRouteScopeCache(TransactionCase):
         env = actor.with_user(actor).with_context(allowed_company_ids=[self.env.company.id]).env
         service = delivery.EffectiveDeliveryService(env)
         admitted = service.resolve()
-        self.assertEqual(admitted.role_surface["scene_candidates"][0], "enterprise.setup")
+        self.assertEqual(admitted.role_surface["scene_candidates"][0], "workspace.home")
+        self.assertIn("enterprise.setup", admitted.role_surface["scene_candidates"])
         self.assertIn("enterprise.setup", service._scene_keys(admitted.payload["nav"], admitted.route_authority))
-        self.assertEqual(admitted.role_surface["landing_scene_key"], "enterprise.setup")
-        self.assertEqual(admitted.role_surface["landing_path"], "/s/enterprise.setup")
+        self.assertIn("workspace.home", service._scene_keys(admitted.payload["nav"], admitted.route_authority))
+        self.assertEqual(admitted.role_surface["landing_scene_key"], "workspace.home")
+        self.assertEqual(admitted.role_surface["landing_path"], "/s/workspace.home")
         from odoo.addons.smart_core.handlers.system_init import SystemInitHandler
         startup = SystemInitHandler(env).handle({"params": {"with_preload": True, "product_key": "construction.standard"}})
         self.assertTrue(startup.ok)
-        self.assertEqual(startup.data["role_surface"]["landing_scene_key"], "enterprise.setup")
-        self.assertEqual(startup.data["default_route"]["scene_key"], "enterprise.setup")
-        self.assertEqual(startup.data["workspace_home_ref"]["scene_key"], "enterprise.setup")
+        self.assertEqual(startup.data["role_surface"]["landing_scene_key"], "workspace.home")
+        self.assertEqual(startup.data["default_route"]["scene_key"], "workspace.home")
+        self.assertEqual(startup.data["workspace_home_ref"]["scene_key"], "workspace.home")
         with patch.object(delivery, "_load_platform_release_gate", return_value={"fail_closed": True}):
-            # Native setup remains accessible when only the composition release gate denies.
-            self.assertEqual(service.resolve().role_surface["landing_scene_key"], "enterprise.setup")
+            # The enabled Workbench remains the completed-enterprise landing
+            # surface even when the composition release gate denies.
+            self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
         with patch.object(MenuService, "_action_is_runtime_allowed", return_value=False):
             self.assertEqual(service.resolve().role_surface["landing_scene_key"], "workspace.home")
         real_hook = delivery.call_extension_hook_first

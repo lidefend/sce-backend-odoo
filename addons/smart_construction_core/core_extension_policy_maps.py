@@ -247,7 +247,7 @@ ROLE_SURFACE_OVERRIDES = {
     "business_config_admin": {
         "label": "业务配置管理员（全功能）",
         "exclusive_surface": True,
-        "landing_scene_candidates": ["enterprise.setup", "workspace.home", "projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "enterprise.setup", "projects.list", "projects.ledger", "projects.intake"],
         # The primary role owns the landing surface, while the released
         # construction catalogue is still intersected with the user's native
         # Odoo ACL-visible menu facts.  This composes existing business
