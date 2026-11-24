@@ -101,6 +101,17 @@ environment but runs only the real `payment.request/41` route through
 matrix, page identity and unrelated release suites are not executed in that
 diagnostic mode.
 
+The first focused dispatch (`45312343722`, candidate `446df9897`) exposed a
+validation-tool defect before the browser started. Docker Compose mounted
+`./artifacts:/mnt/artifacts` before the host directory existed, so Docker created
+it as a privileged directory. `acceptance.frontend.release_snapshot` then
+completed its database readback but could not write the host receipt
+(`mkdir: Permission denied`). The shared `check-compose-env` prerequisite now
+creates the host artifact directory before any governed Compose operation.
+`frontend_release_ci_guard.py` rejects removal of that preparation step with
+`COMPOSE_ARTIFACT_MOUNTPOINT_NOT_PREPARED`. This changes verification
+infrastructure only; the page-load product defect remains open.
+
 ## Boundaries
 
 - No product code, contract, ACL, Record Rule, workflow semantics, database,
@@ -120,6 +131,9 @@ diagnostic mode.
   explicitly dispositioned.
 - `verify.frontend.delivery_hardening.guard`: PASS, 58 tests, including bounded
   route/contract failure diagnostics.
+- `test_frontend_release_ci_guard.py`: PASS, 16 tests, including the Compose
+  artifact mountpoint preparation negative case.
+- `frontend_release_ci_guard.py`: PASS.
 - `make ci.local.iteration`: PASS after the new route and unit target were
   selected.
 - `make ci.delivery.freeze.prepare`: PASS; generated test inventory, coverage
@@ -134,6 +148,12 @@ Manual exact-main workflow-dispatch run `45301861483` / `45301869152` /
   candidate by coverage dispositions)
 - `frontend_release_gate`: FAIL (`product_defect`, payment request page load)
 - `release_candidate_gate`: FAIL closed because not all producers succeeded
+
+Focused payment-request diagnostic:
+
+- `45312343722`, candidate `446df9897`: FAIL before browser execution,
+  classified `validation_tool_defect`; fixed on the same P4 branch and awaiting
+  an exact new-head rerun.
 
 Remote exact-head PR CI and the post-merge operator full audit are recorded
 separately after their actual runs. Local PASS does not claim either.

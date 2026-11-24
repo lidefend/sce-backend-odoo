@@ -14,6 +14,7 @@
     ".agent/context.yaml",
     "make/ci.mk",
     "make/frontend.mk",
+    "make/guards.mk",
     "make/runtime_ops.mk",
     ".github/workflows/frontend_release_gate.yml",
     "scripts/ci/main_full_release_dispatch.py",
@@ -23,7 +24,9 @@
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
     "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/frontend_release_ci_guard.py",
     "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_release_ci_guard.py",
     "docs/ops/codex_execution_allowlist.md",
     "docs/ops/codex_workspace_execution_rules.md",
     "docs/ops/iteration_validation_responsibility_v1.md",
@@ -74,7 +77,10 @@
         "scripts/ci/main_full_release_dispatch.py",
         "scripts/ci/test_main_full_release_dispatch.py",
         "scripts/ci/release_condition.py",
-        "scripts/ci/test_release_condition.py"
+        "scripts/ci/test_release_condition.py",
+        "make/guards.mk",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py"
       ],
       "kind": "offline"
     },
@@ -102,7 +108,7 @@
     }
   },
   "blockers": [],
-  "next_exact_step": "Publish the exact P4/baseline candidate; after protected integration, run make release.main_full. The known payment.request page-load product defect must remain a fail-closed result until separately fixed.",
+  "next_exact_step": "Commit and publish the Compose artifact-mount preparation fix, then rerun the focused payment-request diagnostic on the exact new HEAD before resuming the release audit.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

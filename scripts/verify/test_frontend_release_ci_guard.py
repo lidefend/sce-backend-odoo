@@ -25,6 +25,7 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
         shutil.copy(ROOT / "make/runtime_ops.mk", root / "make/")
         shutil.copy(ROOT / "make/dev.mk", root / "make/")
         shutil.copy(ROOT / "make/frontend.mk", root / "make/")
+        shutil.copy(ROOT / "make/guards.mk", root / "make/")
         shutil.copy(ROOT / "Makefile", root / "Makefile")
         shutil.copy(ROOT / "docker-compose.yml", root / "docker-compose.yml")
         shutil.copy(ROOT / "scripts/common/frontend_release_ci_identity.sh", root / "scripts/common/")
@@ -98,6 +99,20 @@ class FrontendReleaseCIGuardTests(unittest.TestCase):
             encoding="utf-8",
         )
         self.assertIn("FRONTEND_BUILD_ENVIRONMENT_NOT_ALIGNED", findings(root))
+
+    def test_compose_artifacts_mountpoint_must_be_prepared_before_docker(self):
+        temporary, root = self.fixture()
+        self.addCleanup(temporary.cleanup)
+        guards = root / "make/guards.mk"
+        guards.write_text(
+            guards.read_text(encoding="utf-8").replace(
+                "check-compose-env:\n\t@mkdir -p artifacts\n",
+                "check-compose-env:\n",
+                1,
+            ),
+            encoding="utf-8",
+        )
+        self.assertIn("COMPOSE_ARTIFACT_MOUNTPOINT_NOT_PREPARED", findings(root))
 
     def test_isolated_compose_project_must_be_exported_to_file_and_runner(self):
         temporary, root = self.fixture()

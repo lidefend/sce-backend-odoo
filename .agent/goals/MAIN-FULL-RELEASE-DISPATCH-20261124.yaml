@@ -32,6 +32,7 @@ goal:
       - .agent/context.yaml
       - make/ci.mk
       - make/frontend.mk
+      - make/guards.mk
       - make/runtime_ops.mk
       - .github/workflows/frontend_release_gate.yml
       - scripts/ci/main_full_release_dispatch.py
@@ -41,6 +42,8 @@ goal:
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
       - scripts/verify/frontend_delivery_hardening_browser.mjs
+      - scripts/verify/frontend_release_ci_guard.py
+      - scripts/verify/test_frontend_release_ci_guard.py
       - scripts/verify/test_frontend_delivery_hardening_guard.py
       - docs/ops/codex_execution_allowlist.md
       - docs/ops/codex_workspace_execution_rules.md
@@ -65,6 +68,7 @@ goal:
     - route failures retain bounded contract identity diagnostics for root-cause analysis
     - failed synthetic contract responses are available from the exact-head artifact
     - a payment-request diagnostic uses only the affected real page rather than the full release matrix
+    - the host-side Compose artifact mountpoint exists before Docker can create it as a privileged directory
   exclusions:
     - product_code_change
     - database_or_fixture_write
