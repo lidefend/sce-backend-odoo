@@ -75,6 +75,13 @@ only (`deployment_ready=false`); it cannot be reused as a PR's exact-head
 integration result, and a local candidate audit cannot be reused as the
 scheduled result.
 
+An authorized owner can run the same full main release set outside cron through
+`make release.main_full EXPECTED_MAIN=<exact-sha>`. The target dispatches all
+five workflows, rejects adopted/old runs, reads back the newly created
+`workflow_dispatch` run for each workflow, and waits until all five succeed.
+This is `operator_full_audit`, not `scheduled_mainline`; both remain distinct
+from PR integration and deployment authority.
+
 Frontend source changes select the full-source systemic static scan through
 the planner. It is no longer an unconditional prerequisite of every lane, so a
 backend-only iteration does not require an installed frontend toolchain.

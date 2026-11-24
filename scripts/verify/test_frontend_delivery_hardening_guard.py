@@ -591,6 +591,44 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("await form.waitFor({ state: 'hidden'", reset)
         self.assertNotIn("[data-list-status]:visible", performance)
 
+    def test_route_failure_diagnostic_captures_bounded_contract_identity(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("contractDiagnostics: [], pendingContractDiagnostics: []", source)
+        self.assertIn("envelope_ok:", source)
+        self.assertIn("error_code:", source)
+        self.assertIn("error_message: String(error.message || '').slice(0, 500)", source)
+        self.assertIn("trace_id:", source)
+        self.assertIn("productPages: Array.from(document.querySelectorAll('[data-product-page-mode]'))", source)
+        self.assertIn("contractDiagnostics: runtime?.contractDiagnostics || []", source)
+        self.assertIn("source: 'synthetic_acceptance_fixture'", source)
+        self.assertIn("failure-contract.json", source)
+        self.assertNotIn("bodyText: JSON.stringify(body", source)
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn(
+            "artifacts/frontend-delivery-hardening/failure-contract.json",
+            workflow,
+        )
+
+    def test_payment_request_diagnostic_has_a_focused_governed_dispatch_path(self):
+        browser = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC", browser)
+        self.assertIn("[verify.frontend.payment_request.diagnostic] PASS", browser)
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("payment_request_diagnostic:", workflow)
+        self.assertIn("make --no-print-directory verify.frontend.payment_request.diagnostic", workflow)
+        self.assertIn("artifacts/frontend-delivery-hardening/payment-request-diagnostic.json", workflow)
+        runtime = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        self.assertIn("verify.frontend.payment_request.diagnostic:", runtime)
+        self.assertIn("DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC=1", runtime)
+
 
 MODULE = ROOT / 'addons/smart_construction_core'
 

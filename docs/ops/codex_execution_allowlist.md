@@ -407,6 +407,17 @@ Codex 被授权在 **合规分支内** 更新 PR 内容（包括代码与文本�
   * 不提供模块或 test-tags 缩减参数，不得用局部测试冒充完整套件；
   * 工作流创建的 Compose project、数据库和卷由工作流按 run id 隔离并在结束时清理，不得复用 local.dev、acceptance 或生产环境。
 
+* `make release.main_full EXPECTED_MAIN=<full-40-char-sha>`
+
+  * 仅用于 owner 显式发起的 exact-main operator full audit；
+  * 要求 clean worktree、权威 `origin/main` 等于 `EXPECTED_MAIN`；
+  * 依次触发 `public_guard`、`professional_quality_gate`、`frontend_release_gate`、
+    `merge_policy_gate`、`release_candidate_gate` 的 `workflow_dispatch` run；
+  * 只接受触发后新增、head/branch/event 完全匹配的五个 run，禁止采用旧 run；
+  * 等待并验证五个 run 全部成功；`release_candidate_gate` 必须是最终聚合成功者；
+  * 该结果记录为 `operator_full_audit`，不得冒充 `scheduled_mainline`；
+  * 不授权部署，不替代 PR 精确 HEAD 集成检查。
+
 > 说明：
 > **PR 内容更新属于远端状态变更**，必须统一走 Makefile 封装流程，
 > 以保证分支校验、环境校验与审计能力。

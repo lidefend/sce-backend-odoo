@@ -22,6 +22,7 @@ def findings(root: Path = ROOT) -> list[str]:
         policy = json.loads(policy_path.read_text(encoding="utf-8"))
         runtime_text = runtime_make.read_text(encoding="utf-8")
         compose_text = compose_file.read_text(encoding="utf-8")
+        guards_make_text = (root / "make/guards.mk").read_text(encoding="utf-8")
         makefile_text = (root / "Makefile").read_text(encoding="utf-8")
         dev_make_text = (root / "make/dev.mk").read_text(encoding="utf-8")
         identity_text = (root / "scripts/common/frontend_release_ci_identity.sh").read_text(encoding="utf-8")
@@ -157,6 +158,14 @@ def findings(root: Path = ROOT) -> list[str]:
         errors.append(f"CHECK_NAME_NOT_UNIQUE:{workflow_occurrences}")
     if policy.get("authoritative_command") != "cd frontend/apps/web && pnpm test:release":
         errors.append("AUTHORITATIVE_COMMAND_DRIFT")
+    compose_artifacts_mount = "      - ./artifacts:/mnt/artifacts\n"
+    compose_artifacts_prepared = (
+        "check-compose-env:\n"
+        "\t@mkdir -p artifacts\n"
+        "\t@bash scripts/common/check_env.sh"
+    )
+    if compose_artifacts_mount in compose_text and compose_artifacts_prepared not in guards_make_text:
+        errors.append("COMPOSE_ARTIFACT_MOUNTPOINT_NOT_PREPARED")
     if (
         'frontend/apps/web/dist/.build-sha256' not in runtime_text
         or 'export FRONTEND_BUILD_SHA256="$$frontend_build_sha"' not in runtime_text

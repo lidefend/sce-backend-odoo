@@ -1113,6 +1113,7 @@ verify.frontend.standard_list_scroll_contract.guard: guard.prod.forbid
 .PHONY: verify.frontend.delivery_hardening.guard verify.frontend.delivery_hardening.inventory verify.frontend.navigation_policy.unit verify.frontend.release_navigation_policy.guard verify.frontend.evidence_bundle.unit verify.frontend.role_surface_exposure_declaration.guard
 verify.frontend.delivery_hardening.guard: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_frontend_probe_toolchain_guard scripts.verify.test_error_state_contract
+	@python3 scripts/verify/test_frontend_delivery_hardening_guard.py
 	@python3 scripts/verify/frontend_probe_toolchain_guard.py
 	@python3 scripts/verify/frontend_delivery_hardening_guard.py
 

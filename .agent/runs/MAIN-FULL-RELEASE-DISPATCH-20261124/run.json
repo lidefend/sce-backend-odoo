@@ -1,0 +1,114 @@
+{
+  "schema_version": 2,
+  "id": "MAIN-FULL-RELEASE-DISPATCH-20261124",
+  "branch": "fix/main-full-release-dispatch-20261124",
+  "baseline_sha": "05762e9628c6b8c40045f66e5438c5a37d187441",
+  "status": "active",
+  "goal": ".agent/goals/MAIN-FULL-RELEASE-DISPATCH-20261124.yaml",
+  "record": "docs/ops/iterations/main_full_release_dispatch_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/MAIN-FULL-RELEASE-DISPATCH-20261124.yaml",
+    ".agent/runs/MAIN-FULL-RELEASE-DISPATCH-20261124/run.json",
+    ".agent/runs/template/run.json",
+    ".agent/context.yaml",
+    "make/ci.mk",
+    "make/frontend.mk",
+    "make/guards.mk",
+    "make/runtime_ops.mk",
+    ".github/workflows/frontend_release_gate.yml",
+    "scripts/ci/main_full_release_dispatch.py",
+    "scripts/ci/test_main_full_release_dispatch.py",
+    "scripts/ci/backend_impact_plan.py",
+    "scripts/verify/test_coverage_registry.yaml",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/frontend_release_ci_guard.py",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
+    "scripts/verify/test_frontend_release_ci_guard.py",
+    "docs/ops/codex_execution_allowlist.md",
+    "docs/ops/codex_workspace_execution_rules.md",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "docs/ops/dual_lane_fast_iteration_v1.md",
+    "docs/ops/validation_delivery_protocol.md",
+    "docs/ops/iterations/main_full_release_dispatch_20261124.md",
+    "docs/engineering_convergence/test_inventory.csv",
+    "docs/engineering_convergence/test_inventory_summary.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "repository CI contract tests plus exact-main read-only GitHub run verification"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate the new dispatch helper, Make entry, routing and contract tests."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P4 candidate must pass all required checks on its exact PR HEAD."
+    },
+    "scheduled_release": {
+      "status": "required",
+      "entrypoint": "make release.main_full EXPECTED_MAIN=<exact-main>",
+      "reason": "After protected integration, run the explicit operator full audit; it remains distinct from a natural schedule event."
+    }
+  },
+  "checks": {
+    "dispatch_unit": {
+      "target": "verify.ci.main_full_release.unit",
+      "inputs": [
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_dispatch.py"
+      ],
+      "kind": "offline"
+    },
+    "scheduled_contract": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        "scripts/ci/backend_impact_plan.py",
+        "make/ci.mk",
+        "scripts/ci/main_full_release_dispatch.py",
+        "scripts/ci/test_main_full_release_dispatch.py",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_condition.py",
+        "make/guards.mk",
+        "scripts/verify/frontend_release_ci_guard.py",
+        "scripts/verify/test_frontend_release_ci_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        "scripts/verify/test_coverage_registry.yaml",
+        "scripts/verify/test_coverage_registry_audit.py",
+        "scripts/verify/test_test_coverage_registry_audit.py",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json"
+      ],
+      "kind": "offline"
+    },
+    "route_diagnostic": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "make/frontend.mk",
+        "make/runtime_ops.mk",
+        ".github/workflows/frontend_release_gate.yml",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit and publish the Compose artifact-mount preparation fix, then rerun the focused payment-request diagnostic on the exact new HEAD before resuming the release audit.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

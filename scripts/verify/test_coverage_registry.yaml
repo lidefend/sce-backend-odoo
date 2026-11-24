@@ -544,7 +544,8 @@ entries:
   status: on-demand
   owner: construction-product
   dispose: class-selected
-  gate: 'make:verify.enterprise.initialization.journey.orm :: /TestEnterpriseInitializationJourney (class selection)'
+  gate: 'make:verify.enterprise.initialization.journey.orm :: /TestEnterpriseInitializationJourney (class
+    selection)'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: equipment_usage_product
@@ -684,6 +685,14 @@ entries:
   dispose: class-selected
   gate: 'make:verify.product.home_objects.contract :: home_objects_contract $(MAKE) --no-print-directory
     local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: industry_business_model_02
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.industry_business_model_02.orm :: industry_business_model_02 \'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: intent_dispatcher_permission_contract
@@ -839,6 +848,30 @@ entries:
     selection of that file is the single class-method target make verify.workflow_contract.backend (TestUserFeedbackBusinessViews.test_deduction_registration_action_creates_deduction_bill_lines),
     which does not reach this group.
   review_by: '2026-12-31'
+- group: p0_contract_producer_p0a
+  kind: odoo_tag
+  status: unwired
+  owner: construction-product
+  dispose: wire-pending
+  reason: Declared test group with no governed selection entry. Recorded as known coverage debt; wire
+    it to a gate or retire the group.
+  review_by: '2026-12-31'
+- group: p0_contract_producer_p0a_money_evidence
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'scripts/verify/p0_contract_producer_money_evidence.py :: p0_contract_producer_p0a_money_evidence'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: p0_contract_producer_p0c
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.p0_c_fix01.action_id.orm :: p0_contract_producer_p0c'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: p0_state
   kind: odoo_tag
   status: unwired
@@ -1609,6 +1642,15 @@ entries:
   owner: construction-product
   dispose: class-selected
   gate: 'make:verify.local.dev.system_permission.separation.orm :: system_permission_separation local.dev.test'
+  reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
+    Keep as an on-demand disposition until a scheduled or PR gate selects it.
+- group: system_product_release
+  kind: odoo_tag
+  status: on-demand
+  owner: construction-product
+  dispose: class-selected
+  gate: 'make:verify.smart_construction_bundle.system_product_baseline.orm :: /TestSystemProductRelease
+    (class selection)'
   reason: Reachable only through a hand-invoked make/test entry; no recurring workflow selects this group.
     Keep as an on-demand disposition until a scheduled or PR gate selects it.
 - group: tax_filing

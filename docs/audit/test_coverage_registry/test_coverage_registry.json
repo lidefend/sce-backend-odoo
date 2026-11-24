@@ -9,8 +9,8 @@
     "odoo_tag_declarations": 466,
     "gated_declarations": 107,
     "uncovered_declarations": 359,
-    "ci_unit_scripts": 22,
-    "ci_unit_scripts_wired": 22,
+    "ci_unit_scripts": 23,
+    "ci_unit_scripts_wired": 23,
     "ci_unit_scripts_unwired": 0
   },
   "odoo_tags": [
@@ -1531,7 +1531,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.industry_business_model_02.orm :: industry_business_model_02 \\"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "intent_dispatcher_permission_contract",
@@ -1781,7 +1782,8 @@
         "addons/smart_construction_core/tests/test_p0_contract_producer_p0a.py"
       ],
       "owner": "construction-product",
-      "evidence": []
+      "evidence": [],
+      "disposition": "wire-pending"
     },
     {
       "group": "p0_contract_producer_p0a_money_evidence",
@@ -1794,7 +1796,8 @@
       "owner": "construction-product",
       "evidence": [
         "scripts/verify/p0_contract_producer_money_evidence.py :: p0_contract_producer_p0a_money_evidence"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "p0_contract_producer_p0c",
@@ -1808,7 +1811,8 @@
       "evidence": [
         "make:verify.p0_c_fix01.action_id.orm :: p0_contract_producer_p0c",
         "make:verify.p0_contract_producer.p0c.orm :: p0_contract_producer_p0c"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "p1_contract_execution_position",
@@ -2886,7 +2890,8 @@
       "owner": "construction-product",
       "evidence": [
         "make:verify.smart_construction_bundle.system_product_baseline.orm :: /TestSystemProductRelease (class selection)"
-      ]
+      ],
+      "disposition": "class-selected"
     },
     {
       "group": "tax_filing",
@@ -3298,6 +3303,19 @@
       "declarations": 1,
       "files": [
         "scripts/ci/test_lane_telemetry.py"
+      ],
+      "owner": "platform-team",
+      "evidence": [
+        "make/ci.mk"
+      ]
+    },
+    {
+      "group": "scripts/ci/test_main_full_release_dispatch.py",
+      "status": "gated",
+      "kind": "ci_unit_script",
+      "declarations": 1,
+      "files": [
+        "scripts/ci/test_main_full_release_dispatch.py"
       ],
       "owner": "platform-team",
       "evidence": [

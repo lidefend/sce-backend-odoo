@@ -180,6 +180,7 @@ check.compose.project:
 check-compose-project: check.compose.project
 
 check-compose-env:
+	@mkdir -p artifacts
 	@bash scripts/common/check_env.sh
 
 env.print.db:

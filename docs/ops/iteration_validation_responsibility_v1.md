@@ -48,7 +48,8 @@ for release.
 | --- | --- | --- | --- | --- | --- |
 | Local targeted | A developer change; `make ci.local.iteration`, backend/frontend lane entries | Current HEAD plus explicit dirty scope | Affected static, contract and non-zero targeted tests | `local_diff_confidence` | PR integration, full module baseline, release eligibility |
 | Remote integration | Ordinary PR open/sync; the four required PR workflows | Exact PR HEAD against the current target base | Risk-selected affected surface; test-only backend changes use the owning changed tests, not unrelated dependency consumers | The merge gate when every current required check passes | Scheduled mainline release eligibility |
-| Explicit candidate | `ci:candidate` label or owner `workflow_dispatch` | Exact candidate HEAD/base or exact main head | Full candidate professional/frontend/backend checks | Exact candidate-build eligibility | An ordinary PR shortcut or a scheduled mainline result |
+| Explicit candidate | PR `ci:candidate` label | Exact candidate HEAD/base | Full candidate professional/frontend/backend checks | Exact candidate-build eligibility | An ordinary PR shortcut, operator mainline audit or scheduled mainline result |
+| Operator full release | `make release.main_full EXPECTED_MAIN=<sha>` | Exact main head/tree, five newly dispatched `workflow_dispatch` runs | Same full public/professional/nested-backend/frontend/merge/release-condition set as the scheduled lane | `operator_full_audit` candidate-build eligibility | A `scheduled_mainline` observation, PR merge acceptance or deployment authorization |
 | Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests `backend_test_suite` with `scope_mode=full` | `candidate_build_eligible` for that exact main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
 
 The scheduled five-workflow set is intentional. `release_candidate_gate` is
@@ -63,8 +64,9 @@ The scheduled condition is only `candidate_build_eligible`. It remains
 `deployment_ready=false`; deployment approval and runtime readback are later,
 separate authorities.
 
-An explicit candidate label or `workflow_dispatch` full audit is still a
-candidate/full-audit lane, not a scheduled mainline release observation.
+An explicit candidate label is a PR candidate lane. Owner
+`workflow_dispatch` on main is an operator full-release audit and is recorded
+as `operator_full_audit`, never as `scheduled_mainline`.
 Conversely, a scheduled run cannot replace the current PR HEAD checks because
 its source is `main`, not the PR head.
 

@@ -1491,6 +1491,25 @@ verify.frontend.delivery_hardening.release.browser: guard.prod.forbid check-comp
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PERF_ONLY=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs; \
 	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_SKIP_PERF=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
 
+.PHONY: verify.frontend.payment_request.diagnostic
+verify.frontend.payment_request.diagnostic: guard.prod.forbid check-compose-project check-compose-env
+	@set -e; \
+	SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-$(SC_ACCEPTANCE_FIXTURE_PASSWORD)}"; export SC_ACCEPTANCE_FIXTURE_PASSWORD; \
+	$(MAKE) --no-print-directory db.frontend.acceptance.ensure; \
+	$(MAKE) --no-print-directory acceptance.frontend.fixture DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory acceptance.frontend.release_snapshot DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	$(MAKE) --no-print-directory frontend.acceptance.release.build DB_NAME=$(FRONTEND_ACCEPTANCE_DB); \
+	target_output="$$( SC_FRONTEND_RELEASE_CI_ENTRY=1 SC_ACCEPTANCE_RUNTIME_PROFILE="$${SC_ACCEPTANCE_RUNTIME_PROFILE:-local}" bash scripts/dev/frontend_acceptance_operation_entry.sh delivery-hardening-runtime-ids 2>&1 )"; \
+	targets_line="$$(echo "$$target_output" | grep '^FRONTEND_DELIVERY_HARDENING_TARGETS_JSON=' | tail -1)"; \
+	test -n "$$targets_line" || { printf '%s\n' "$$target_output"; exit 2; }; \
+	export "$$targets_line"; \
+	test -n "$${SC_ACCEPTANCE_FIXTURE_PASSWORD:-}"; \
+	trap '$(MAKE) --no-print-directory frontend.acceptance.down; $(MAKE) --no-print-directory backend.acceptance.down' EXIT; \
+	$(MAKE) --no-print-directory backend.acceptance.up; \
+	$(MAKE) --no-print-directory acceptance.runtime.login_probe SC_ACCEPTANCE_RUNTIME_PROFILE="$(SC_ACCEPTANCE_RUNTIME_PROFILE)" SC_ACCEPTANCE_FIXTURE_PASSWORD="$${SC_ACCEPTANCE_FIXTURE_PASSWORD}"; \
+	FRONTEND_ACCEPTANCE_MODE=production FRONTEND_ACCEPTANCE_STATIC_DIST="$$(pwd)/frontend/apps/web/dist-release" $(MAKE) --no-print-directory frontend.acceptance.up; \
+	$(RUN_ENV) DB_NAME=$(FRONTEND_ACCEPTANCE_DB) SC_ENVIRONMENT=acceptance SC_ALLOW_DEMO_DATA=1 FRONTEND_URL=$${FRONTEND_URL:-http://127.0.0.1:5175} GIT_SHA=$$(git rev-parse HEAD) ARTIFACTS_DIR=artifacts/frontend-delivery-hardening DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC=1 FRONTEND_DELIVERY_HARDENING_TARGETS_JSON="$${FRONTEND_DELIVERY_HARDENING_TARGETS_JSON}" node scripts/verify/frontend_delivery_hardening_browser.mjs
+
 verify.frontend.release.unit: verify.frontend.j13_required_value_semantics.unit verify.frontend.canonical_form_presenter.unit verify.frontend.create_default_hydration.unit verify.frontend.create_record_user_journey.unit verify.frontend.native_collaboration_presentation.unit verify.frontend.contract_render_profile.unit verify.frontend.static.image.decoupling
 verify.frontend.release.unit: verify.frontend.cross_model_action_navigation.unit
 verify.frontend.release.unit: verify.frontend.localized_display.unit verify.frontend.list_optional_columns.unit verify.frontend.collection_view_semantics.unit verify.frontend.navigation_initialization_race.unit verify.frontend.action_view_route_lease_race.unit verify.frontend.runtime_environment.unit verify.frontend.contract_header_action.unit verify.frontend.readonly_main_data_coverage.unit verify.frontend.native_section_navigation.unit verify.frontend.auth_credential.guard verify.frontend.auth_surface.guard
