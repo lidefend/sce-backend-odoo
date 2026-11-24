@@ -2,7 +2,7 @@
 
 ## Identity
 
-- Base main: `27d0e2ae62065bdf7d5543f40c2387c7dd1a4f0d`
+- Base main: `a5aff5c2684ef015a9462d836e29d82d970a4971`
 - Branch: `fix/backend-iteration-lane-closure-20261124`
 - Layer: P4 verification and delivery tooling
 
@@ -72,3 +72,8 @@ Local evidence after this correction:
 
 The superseded direct demo/acceptance runs were cancelled. A new exact PR head
 must now prove the corrected chain.
+
+While the iteration was running, main advanced from `27d0e2ae6` to
+`a5aff5c26`. The latest main was merged into the published PR branch; the
+generated reports were regenerated from the merged source, and the run baseline
+was rebound before any new exact-head evidence was accepted.
