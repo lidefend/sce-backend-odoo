@@ -199,6 +199,7 @@ export function canonicalFieldToFormSection(
     inputPlaceholder: field.placeholder || undefined,
     span: field.span,
     value: relation ? relation.displayName : field.value,
+    relationValue: field.value,
     inputValue: relation ? relation.id : inputValue(field.value, type),
     dateRangeEndField: dateRangeEndField || undefined,
     dateRangeEndInputValue: dateRangeEnd

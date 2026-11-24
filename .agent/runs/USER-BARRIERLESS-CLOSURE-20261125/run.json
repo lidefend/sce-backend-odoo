@@ -36,7 +36,10 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
     "frontend/apps/web/src/app/contract/contractGap.ts",
     "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/components/template/FormSection.vue",
+    "frontend/apps/web/src/components/template/formSection.types.ts",
     "frontend/apps/web/src/composables/useStatus.ts",
+    "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
@@ -97,7 +100,7 @@
   "blockers": [
     "The complete 132-entry local re-walk is excluded by owner direction because those surfaces are already established as correct; exact-head remote CI remains required before any integration claim."
   ],
-  "next_exact_step": "Push the test-isolation fix to PR #998 and require all checks to pass again on its exact new HEAD.",
+  "next_exact_step": "Push the readonly-relation presentation fix to PR #998 and require all checks to pass again on its exact new HEAD.",
   "goal": ".agent/goals/USER-BARRIERLESS-CLOSURE-20261125.yaml",
   "record": "docs/ops/iterations/user_barrierless_closure_20261125.md"
 }

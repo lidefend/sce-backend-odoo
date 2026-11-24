@@ -145,3 +145,27 @@ module is restored.
 - Boundary tests: 181 passed.
 - Mobile-contract tests: 151 passed.
 - Combined discover order: 332 passed.
+
+## PR #998 Payment Request Relation Presentation
+
+After the backend test isolation was corrected, the frontend release diagnostic
+reported `Cannot read properties of undefined (reading 'parentNode')` while
+opening `payment.request/39`. An offline render using the captured exact
+contract showed the original consumer failure behind that secondary Vue error:
+
+`字段 settlement_id 的关系值缺少可验证记录身份`.
+
+`canonicalFieldToFormSection()` intentionally projects a many2one display name
+into `value` for presentation drivers while retaining the id in `inputValue`.
+The readonly facts renderer then treated that display string as the relation
+value and lost the record identity. The render exception caused Vue's error
+surface replacement to fail secondarily with `parentNode`.
+
+The form-section schema now carries `relationValue` as the original relation
+fact, separate from the display-oriented `value`. Readonly presentation uses
+`relationValue`; normal drivers keep the existing display text.
+
+- Offline exact-contract render: 12 sections, no consumer exception.
+- Relation projection and readonly presentation regression: passed.
+- Strict frontend typecheck: passed.
+- Frontend lint: 0 errors, 3 pre-existing warnings.

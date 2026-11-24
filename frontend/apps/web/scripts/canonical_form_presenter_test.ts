@@ -86,6 +86,7 @@ import {
   formatMonetaryInputValue,
   monetaryInputStep,
   normalizeMonetaryDigits,
+  presentDeclaredBusinessValue,
   resolveCurrencyDisplayLabel,
 } from '../src/app/presentation/businessValuePresentation';
 import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
@@ -2729,9 +2730,27 @@ assert.deepEqual(
 );
 const renderedRelation = canonicalFieldToFormSection(relationField);
 assert.deepEqual(
-  { value: renderedRelation.value, inputValue: renderedRelation.inputValue, text: renderedRelation.many2oneTextValue },
-  { value: 'Road Project', inputValue: 852, text: 'Road Project' },
+  {
+    value: renderedRelation.value,
+    relationValue: renderedRelation.relationValue,
+    inputValue: renderedRelation.inputValue,
+    text: renderedRelation.many2oneTextValue,
+  },
+  {
+    value: 'Road Project',
+    relationValue: { id: 852, displayName: 'Road Project', model: 'project.project' },
+    inputValue: 852,
+    text: 'Road Project',
+  },
   'all drivers must receive the same relation display name instead of a naked database id',
+);
+assert.equal(
+  presentDeclaredBusinessValue({
+    field: { name: 'project_id', type: 'many2one' },
+    value: renderedRelation.relationValue,
+  }).text,
+  'Road Project',
+  'readonly presentation must retain the relation identity separately from its display text',
 );
 
 const emptySnapshot = snapshot();
