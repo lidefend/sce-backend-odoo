@@ -1,0 +1,47 @@
+schema_version: 1
+
+goal:
+  id: P0-CONTRACT-RUNTIME-V2-CLOSURE
+  title: contract_v2_2_6_producer_consumer_closure
+  status: active
+  formal_product_layer: P0/P4
+  layer_target: Contract V2 2.6 producer-consumer interoperability, row-entry authority and contract error presentation
+  module:
+    - smart_core
+    - frontend
+    - scripts/verify
+  standard_vs_user_specific: platform_standard
+  objective: >-
+    Close only the confirmed Contract V2 2.6 integration defects exposed by a
+    real income-contract user journey: descriptor shape, component version
+    compatibility, strict 2.6 validation, row-open target identity, and visible
+    contract-error attribution.
+  product_result: >-
+    A user can enter a native list row and render the declared form contract
+    under Contract V2 2.6; malformed contracts stop with the exact field path,
+    failure class and owning layer instead of a generic unknown error.
+  why_here: >-
+    Contract negotiation, descriptor decoding, component protocol ranges,
+    generic action targets and status presentation are platform mechanisms.
+  why_not_elsewhere:
+    - The income-contract industry model is valid and must not be changed to compensate for the platform.
+    - The frontend must not infer model, record, action, renderer or error semantics.
+    - P4 browser tools may observe the result but cannot define product behavior.
+  blast_radius:
+    - Contract V2 2.6 form and collection pages
+    - semantic and component registries generated from contracts/registry
+    - collection row activation
+    - Contract V2 decode failure presentation
+  acceptance:
+    - Contract V2 2.6 field descriptors and native occurrence/action identities validate strictly.
+    - The declared component version range covers the negotiated 2.6 contract.
+    - A native collection row publishes a complete record-entry target.
+    - Contract decode failures are presented as contract_mismatch with exact issue paths.
+    - The real configuration-admin income-contract list-to-form journey renders successfully.
+  exclusions:
+    - No industry model, field, workflow or ACL change.
+    - No database migration or fixture rebuild.
+    - No full baseline, Quick, or all-entry matrix.
+    - No Contract V2 schema-version redesign beyond confirmed runtime defects.
+  rollback: >-
+    Revert the owning P0 commits. No data rollback is required.

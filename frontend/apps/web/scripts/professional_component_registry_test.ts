@@ -60,14 +60,14 @@ assert.equal(contractBound.contractVersion, '1.0');
 assert.equal(contractBound.renderer, 'ProfessionalBaseFieldControl');
 assert.equal(contractBound.pageContractVersion, '2.2.0');
 assert.equal(contractBound.rendererVersion, '1.0.0');
-assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.6.0');
+assert.equal(contractBound.supportedContractVersion, '>=2.0.0 <2.7.0');
 assert.equal(resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
-  pageContractVersion: '2.4.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
+  pageContractVersion: '2.6.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
 }).renderer, 'ProfessionalBaseFieldControl');
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
-  pageContractVersion: '2.6.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
+  pageContractVersion: '2.7.0', clientType: 'web_pc', contractRegistryEntry: { version: '1.0' },
 }), /PROFESSIONAL_COMPONENT_CONTRACT_VERSION_UNSUPPORTED/);
 assert.throws(() => resolveContractProfessionalComponent({
   componentKey: 'sc.input.text', fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
@@ -105,7 +105,7 @@ const paymentRow = {
   readiness: 'ready',
   renderer: paymentRenderer,
   rendererVersion: '1.0.0',
-  supportedContractVersion: '>=2.0.0 <2.6.0',
+  supportedContractVersion: '>=2.0.0 <2.7.0',
   requiredCapabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
 } as const;
 const dummyIndustryComponent = {} as never;
@@ -174,6 +174,15 @@ assert.equal(resolveIndustryRendererForField({
   componentRenderer: paymentRenderer,
   fieldType: 'one2many',
   pageContractVersion: '2.6.0',
+  presentationMode: 'task',
+  renderProfile: 'edit',
+  capabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
+}), dummyIndustryComponent);
+assert.equal(resolveIndustryRendererForField({
+  componentKey: paymentRow.componentKey,
+  componentRenderer: paymentRenderer,
+  fieldType: 'one2many',
+  pageContractVersion: '2.7.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: [FORM_RELATION_ONE2MANY_CAPABILITY],
@@ -432,12 +441,13 @@ assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey, fieldType: 'char', presentationMode: 'task', renderProfile: 'edit',
   capabilities: [],
 }), /PROFESSIONAL_COMPONENT_CAPABILITY_MISSING/);
-assert.equal(restricted.supportedContractVersion, '>=2.0.0 <2.6.0');
-assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.6.0'), false);
+assert.equal(restricted.supportedContractVersion, '>=2.0.0 <2.7.0');
+assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.6.0'), true);
+assert.equal(rendererSupportsContractVersion(restricted.supportedContractVersion, '2.7.0'), false);
 assert.throws(() => resolveProfessionalComponentRegistration(testRegistry, {
   componentKey: restricted.componentKey,
   fieldType: 'char',
-  pageContractVersion: '2.6.0',
+  pageContractVersion: '2.7.0',
   presentationMode: 'task',
   renderProfile: 'edit',
   capabilities: ['relation.read'],

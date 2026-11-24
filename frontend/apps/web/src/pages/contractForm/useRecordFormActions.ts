@@ -13,7 +13,7 @@ import {
   canonicalizeSubmissionValues,
   createSingleFlightSave,
 } from './saveRecordHelpers';
-import { isContractGapError } from '../../app/contract/contractGap';
+import { contractDefectFromError } from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 import { beginFormRuntimeBusy, endFormRuntimeBusy } from './runtimeStateApplier';
@@ -232,7 +232,12 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
   }
   onErrorCaptured((err) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
-    renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
+    renderErrorDefect.value = contractDefectFromError(err) || {
+      kind: 'contract_defect',
+      failureClass: 'consumer_error',
+      missing: message,
+      requiredDeclarationLayer: 'P0:frontend:ContractFormPage consumer',
+    };
     renderErrorMessage.value = `表单页面打开失败：${message}`;
     return false;
   });

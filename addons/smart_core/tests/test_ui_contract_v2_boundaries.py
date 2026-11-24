@@ -1139,7 +1139,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(node["fieldInfo"]["context"], expected)
         self.assertEqual(node["fieldInfo"]["contextRaw"], raw)
         self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["context"], expected)
-        self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["contextRaw"], raw)
+        # contextRaw is producer evidence on fieldInfo/nativeBehavior. The strict
+        # V2 fieldDescriptor schema admits the resolved context only.
+        self.assertNotIn("contextRaw", group["widgetList"][0]["fieldDescriptor"])
         self.assertEqual(node["attributes"]["context"], raw)
 
     def test_final_field_context_leaves_unresolved_declaration_fail_closed(self):

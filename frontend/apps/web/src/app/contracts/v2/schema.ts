@@ -2789,7 +2789,7 @@ function validateNativeOccurrenceAuthority(
   pageInfo: ContractV2PageInfo,
   issues: DecodeIssue[],
 ): void {
-  const supportsStrictOccurrences = /^2\.(4|5)\./.test(pageInfo.contractVersion);
+  const supportsStrictOccurrences = /^2\.(4|5|6)\./.test(pageInfo.contractVersion);
   const occurrenceKeys = new Map<string, string>();
   let pageViewIdentity: ContractV2NativeOccurrenceIdentity | undefined;
   const canonicalViewType = (value: string) => {
@@ -3579,7 +3579,7 @@ export function decodeContractV2Snapshot(value: unknown): ContractV2Snapshot {
   const actionContract = decodeActionContract(
     readAliasedObject(root, 'actionContract', [], '$', issues),
     issues,
-    /^2\.(4|5)\./.test(pageInfo.contractVersion),
+    /^2\.(4|5|6)\./.test(pageInfo.contractVersion),
   );
   const dataContract = decodeDataContract(readAliasedObject(root, 'dataContract', [], '$', issues), issues);
   const runtimeContract = decodeRuntimeContract(readAliasedObject(root, 'runtimeContract', [], '$', issues), issues);

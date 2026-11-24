@@ -1,0 +1,150 @@
+{
+  "schema_version": 2,
+  "id": "P0-CONTRACT-RUNTIME-V2-CLOSURE",
+  "branch": "release/daily-main-mode-20261124",
+  "status": "verification_pending",
+  "baseline_sha": "a5aff5c2684ef015a9462d836e29d82d970a4971",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/goals/P0-CONTRACT-RUNTIME-2.6-CLOSURE.yaml",
+    ".agent/runs/P0-CONTRACT-RUNTIME-2.6-CLOSURE/run.json",
+    "docs/ops/iterations/p0_contract_runtime_2_6_closure_20261124.md",
+    "docs/architecture/p0_contract_producer_01/remediation_design.json",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
+    "docs/frontend_productization/decision-authority-inventory-v1.json",
+    "docs/frontend_productization/rendering-detail/component-driver-takeover-inventory-v1.json",
+    "contracts/registry/component.yaml",
+    "contracts/generated/contract_structure_fingerprint.json",
+    "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+    "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+    "addons/smart_core/handlers/ui_contract_v2.py",
+    "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+    "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+    "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py",
+    "frontend/apps/web/src/app/contracts/v2/schema.ts",
+    "frontend/apps/web/src/app/contract/contractGap.ts",
+    "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+    "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts",
+    "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+    "frontend/apps/web/src/composables/useStatus.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+    "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+    "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts",
+    "frontend/apps/web/scripts/professional_component_registry_test.ts",
+    "frontend/apps/web/scripts/canonical_form_presenter_test.ts",
+    "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts",
+    "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
+    "scripts/verify/test_semantic_registry_lint.py",
+    "scripts/verify/test_node_component_registry.py",
+    "scripts/verify/test_frontend_professional_component_registry_guard.py",
+    "scripts/verify/unified_page_contract_v2_assembler_guard.py",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_negative_closures.mjs"
+  ],
+  "environment": {
+    "kind": "runtime",
+    "authority": "offline contract targets plus governed local.dev sc-local-dev/sc_dev_demo for the real income-contract journey"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "affected semantic, contract producer, component, navigation, error-presentation and backend unit targets",
+      "reason": "The change affects P0 contract declarations and generic frontend consumers; no owning-module ORM baseline is implied by pure contract projection."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "P0 contract and frontend changes require integration checks against the current target base."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI",
+      "reason": "This batch closes product defects and is not a release qualification run."
+    }
+  },
+  "checks": {
+    "semantic_registry": {
+      "target": "verify.semantic.registry.lint",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry/component.yaml",
+        "contracts/registry/semantic.yaml",
+        "scripts/contract/generate_semantic_registry.py",
+        "scripts/verify/semantic_registry_lint.py",
+        "addons/smart_core/core/contract_runtime/semantic_registry_generated.py",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/presentation/industry_renderer_manifest.generated.ts"
+      ]
+    },
+    "p0_contract": {
+      "target": "verify.p0_contract_producer.p0a.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/scripts/p0_contract_producer_p0a_test.ts"
+      ]
+    },
+    "component_registry": {
+      "target": "verify.frontend.professional_component_registry.unit",
+      "kind": "offline",
+      "inputs": [
+        "contracts/registry/component.yaml",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/presentation/professionalComponentRegistry.ts",
+        "frontend/apps/web/scripts/professional_component_registry_test.ts"
+      ]
+    },
+    "occurrence_authority": {
+      "target": "verify.frontend.contract_v2_occurrence_authority.unit",
+      "kind": "offline",
+      "inputs": [
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/scripts/contract_v2_occurrence_authority_test.ts"
+      ]
+    },
+    "row_action": {
+      "target": "verify.frontend.collection_row_action_identity.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+        "frontend/apps/web/scripts/collection_row_action_identity_test.ts"
+      ]
+    },
+    "backend_boundaries": {
+      "target": "verify.node_component_validation.unit",
+      "kind": "offline",
+      "inputs": [
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/tests/test_ui_contract_v2_boundaries.py",
+        "addons/smart_core/tests/test_unified_page_contract_v2_mobile_compact.py"
+      ]
+    },
+    "income_contract_journey": {
+      "target": "verify.frontend.business_entry.matrix.incremental",
+      "kind": "runtime",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/business_entry_negative_closures.mjs",
+        "scripts/verify/business_entry_matrix_overlay.json",
+        "docs/product/frontend_business_entry_acceptance_v1.csv",
+        "frontend/apps/web/src/app/contracts/v2/schema.ts",
+        "frontend/apps/web/src/app/presentation/semantic_registry.generated.ts",
+        "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
+        "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
+        "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+        "addons/smart_core/core/unified_page_contract_v2_modifier_dependencies.py"
+      ]
+    }
+  },
+  "blockers": [
+    "Outside this batch: verify.unified_page_contract.v2.web_architecture fails on an unchanged workflow-statusbar token in smart_construction_core/models/support/workflow_contract_service.py."
+  ],
+  "next_exact_step": "Review the local commit and obtain independent batch review before any mainline or deployment action.",
+  "goal": ".agent/goals/P0-CONTRACT-RUNTIME-2.6-CLOSURE.yaml",
+  "record": "docs/ops/iterations/p0_contract_runtime_2_6_closure_20261124.md"
+}

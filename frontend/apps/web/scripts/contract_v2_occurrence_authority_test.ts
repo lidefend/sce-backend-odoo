@@ -148,6 +148,39 @@ const snapshot = {
 const strictSnapshot = structuredClone(snapshot) as any;
 strictSnapshot.pageInfo.contractVersion = '2.6.0';
 const strictField = fieldNode('validation_status', 'field.validation_status.occ.strict', 1);
+const strictViewIdentity = {
+  schemaVersion: '1.0.0',
+  model: 'project.project',
+  viewType: 'form',
+  viewId: 91,
+  viewXmlId: 'project.view_project_form',
+  viewContentHash: 'a'.repeat(64),
+  viewStructureKey: 'struct.v1.' + 'b'.repeat(24),
+  crossEnvironmentStable: true,
+  occurrenceKey: 'occ.v1.' + 'c'.repeat(24),
+  authoritative: true,
+  sourceAuthority: {
+    kind: 'ir.ui.view',
+    projectionOnly: true,
+    noBusinessFactAuthority: true,
+  },
+};
+strictField.nativeIdentity = {
+  ...strictViewIdentity,
+  kind: 'field',
+  name: 'validation_status',
+  nativeLocator: strictField.nativeLocator,
+  occurrenceIndex: strictField.occurrenceIndex,
+  sourcePosition: strictField.sourcePosition,
+};
+strictField.widgetList[0].nativeIdentity = {
+  ...strictViewIdentity,
+  kind: 'field',
+  name: 'select',
+  nativeLocator: strictField.widgetList[0].nativeLocator,
+  occurrenceIndex: strictField.widgetList[0].occurrenceIndex,
+  sourcePosition: strictField.widgetList[0].sourcePosition,
+};
 strictField.widgetList[0].fieldDescriptor = {
   schemaVersion: '1.0.0',
   fieldCode: 'validation_status',
@@ -177,6 +210,32 @@ assert.equal(
   strictDecoded.layoutContract.containerTree[0].widgetList[0].fieldDescriptor?.fieldCode,
   'validation_status',
   'strict 2.6 form occurrences must validate canonical fieldCode/fieldType descriptors',
+);
+
+const missingNativeIdentity = structuredClone(strictSnapshot);
+delete missingNativeIdentity.layoutContract.containerTree[0].nativeIdentity;
+delete missingNativeIdentity.layoutContract.containerTree[0].widgetList[0].nativeIdentity;
+assert.throws(
+  () => decodeContractV2Snapshot(missingNativeIdentity),
+  /native layout occurrence requires nativeIdentity/,
+  '2.6 is cumulative and must retain the strict native occurrence authority introduced in 2.4',
+);
+
+const malformedActionIdentity = structuredClone(strictSnapshot);
+malformedActionIdentity.actionContract.actionRuleList = [{
+  actionId: 'action.open_form',
+  triggerType: 'click',
+  sourceWidgetId: 'page.row',
+  targetIds: [],
+  dispatchMode: 'server',
+  targetScope: 'page',
+  refreshMode: 'partial',
+  nativeIdentity: { kind: 'button' },
+}];
+assert.throws(
+  () => decodeContractV2Snapshot(malformedActionIdentity),
+  /nativeIdentity/,
+  '2.6 action identities must use the strict occurrence carrier instead of the legacy opaque object',
 );
 
 

@@ -568,7 +568,47 @@ async function navigateEntry(page, navTarget) {
   if (target.origin !== base.origin) {
     throw new Error(`released entry route ${route} escaped the acceptance origin`);
   }
-  await page.goto(target.href, { waitUntil: 'domcontentloaded' });
+  const menuId = Number(navTarget.menu_id || 0);
+  const actionId = Number(navTarget.action_id || 0);
+  if (!menuId) {
+    throw new Error(`released entry ${navTarget.menu_xmlid || route} published no menu identity`);
+  }
+  const leafSelector = actionId
+    ? `li[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id="${actionId}"]`
+    : `li[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id=""]`;
+  const leaf = page.locator(leafSelector).first();
+  if (!(await leaf.count())) {
+    throw new Error(`released entry ${navTarget.menu_xmlid || menuId} is absent from the rendered navigation`);
+  }
+
+  // A user reaches the entry through the navigation tree. Expanding the exact
+  // ancestor submenus and clicking the published leaf is materially different
+  // from reloading the route directly: the latter bypasses scene initialization
+  // and can produce a blank shell even though the menu journey renders.
+  const ancestors = await leaf.evaluate((element) => {
+    const rows = [];
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      if (parent.matches?.('li.t-submenu[data-navigation-key]')) {
+        rows.push({
+          key: parent.getAttribute('data-navigation-key'),
+          opened: parent.classList.contains('t-is-opened'),
+        });
+      }
+    }
+    return rows.reverse();
+  });
+  for (const ancestor of ancestors) {
+    if (ancestor.opened) continue;
+    const row = page.locator(`li[data-navigation-key="${ancestor.key}"] > .t-menu__item`).first();
+    await row.waitFor({ state: 'visible', timeout: 5000 });
+    await row.click();
+    await sleep(200);
+  }
+  await leaf.waitFor({ state: 'visible', timeout: 5000 });
+  await leaf.click();
+  await page.waitForURL((url) => url.href === target.href || url.pathname === target.pathname, {
+    timeout: 10000,
+  }).catch(() => {});
 }
 
 async function awaitEntrySurface(page) {

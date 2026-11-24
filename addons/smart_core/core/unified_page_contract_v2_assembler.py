@@ -6308,6 +6308,65 @@ def _row_declared_action_semantics(
     return None
 
 
+def _complete_native_row_record_entry(
+    contract: dict[str, Any],
+    ui: dict[str, Any],
+    row: dict[str, Any],
+    target: dict[str, Any],
+) -> None:
+    """Complete the default native row-open target from declared page facts.
+
+    Native tree/kanban rows publish an ``open`` action whose target identifies
+    the form View but no record instance. The page model, Action identity, active
+    menu and model write authority are already declared facts of the same
+    contract. Publishing their record-entry projection removes the frontend's
+    former need to synthesize ``/f|/r/<model>/<row.id>`` from presentation state.
+    Explicit action, route, scene, URL and record-entry targets remain untouched.
+    """
+
+    if any(target.get(key) for key in (
+        "record_entry", "action_id", "action_ref", "xml_id", "url", "route", "target",
+    )):
+        return
+    if _text(row.get("intent"), "open").lower() != "open":
+        return
+    if _text(target.get("view_type")).lower() != "form":
+        return
+
+    page_info = _dict(contract.get("pageInfo"))
+    native_action = _dict(contract.get("nativeActionContract"))
+    action_identity = _dict(native_action.get("identity"))
+    model = _text(action_identity.get("model") or page_info.get("model"))
+    action_id = _positive_int(action_identity.get("actionId"), 0)
+    global_status = _dict(_dict(contract.get("statusContract")).get("globalStatus"))
+    model_rights = _dict(global_status.get("modelRights"))
+    write_authority = model_rights.get("write")
+    if not model or not action_id or not isinstance(write_authority, bool):
+        return
+
+    source_context = _dict(_ui_source_context({}, ui).get("context"))
+    menu_id = _positive_int(source_context.get("active_menu_id"), 0)
+    if not menu_id:
+        entry_refs = [
+            item for item in _list(native_action.get("entryRefs"))
+            if isinstance(item, dict) and _text(item.get("kind")) == "menu"
+        ]
+        menu_id = _positive_int(entry_refs[0].get("menuId") if entry_refs else 0, 0)
+
+    target["model"] = model
+    target["action_id"] = action_id
+    if menu_id:
+        target["menu_id"] = menu_id
+    target["record_entry"] = {
+        "model": model,
+        "record_id": "${id}",
+        "entry_intent": "open",
+        "model_write_authority": write_authority,
+        "action_id": action_id,
+        **({"menu_id": menu_id} if menu_id else {}),
+    }
+
+
 def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]) -> None:
     views = _dict(ui.get("views"))
     rows: list[dict[str, Any]] = []
@@ -6397,6 +6456,7 @@ def _append_ui_contract_row_actions(contract: dict[str, Any], ui: dict[str, Any]
                 "target": payload.get("target"),
             }
             button = {}
+            _complete_native_row_record_entry(contract, ui, row, target)
         else:
             target = deepcopy(_dict(row.get("target")))
             button = deepcopy(_dict(row.get("button")))

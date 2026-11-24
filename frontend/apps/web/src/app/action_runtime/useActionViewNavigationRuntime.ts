@@ -1,8 +1,8 @@
 import type { Ref } from 'vue';
+import { contractGapError } from '../contract/contractGap';
 import { pickContractNavQuery } from '../navigationContext';
 import { readWorkspaceContext } from '../workspaceContext';
 import { buildEntryTargetRouteTarget } from '../routeQuery';
-import { buildActionViewRowClickTarget, shouldUseCanonicalCollectionDetail } from '../runtime/actionViewInteractionRuntime';
 import { adaptLegacyRecordEntry, decodeFormalRecordEntry, resolveRecordOpenTarget } from '../runtime/recordEntryContract';
 import { resolveRowClickPushState } from '../runtime/actionViewNavigationApplyRuntime';
 import {
@@ -187,36 +187,28 @@ export function useActionViewNavigationRuntime(options: UseActionViewNavigationR
   }
 
   function handleRowClick(row: Dict) {
-    const canonicalCollectionDetail = shouldUseCanonicalCollectionDetail({
-      viewMode: options.routeQueryMap.value.view_mode,
-      collectionSemantic: options.collectionSemantic?.value,
-    });
-    const rowAction = canonicalCollectionDetail ? undefined : resolveRowOpenAction();
-    if (!rowAction && !canonicalCollectionDetail) return;
-    if (rowAction) {
-      const contractTarget = buildContractRowClickTarget(rowAction, row);
-      if (contractTarget) {
-        const rowClickState = resolveRowClickPushState({ routeTarget: contractTarget });
-        if (rowClickState.shouldNavigate) void options.routerPush(rowClickState.target);
-        return;
-      }
-      const payload = (rowAction.payload && typeof rowAction.payload === 'object' ? rowAction.payload : {}) as Dict;
-      const viewMode = String(payload.view_mode || '').trim();
-      if (viewMode && viewMode !== 'form') return;
+    const rowAction = resolveRowOpenAction();
+    if (!rowAction) {
+      throw contractGapError({
+        kind: 'contract_defect',
+        missing: 'actionContract.actionRuleList.page.row',
+        requiredDeclarationLayer: 'P0:smart_core:unified_page_contract_v2_assembler',
+      }, '原生集合行点击缺少 page.row 动作声明');
     }
-    const store = options.actionContract.value;
-    const routeTarget = buildActionViewRowClickTarget({
-      targetModel: options.resolvedModelRef.value || options.modelRef.value
-        || String(store?.snapshot.pageInfo.model || ''),
-      rawId: row.id,
-      menuId: options.menuId.value,
-      actionId: options.actionId.value,
-      carryQuery: resolveCarryQuery(),
-      editable: options.canEditRecord.value,
-    });
-    const rowClickState = resolveRowClickPushState({ routeTarget });
-    if (!rowClickState.shouldNavigate) return;
-    void options.routerPush(rowClickState.target);
+    const contractTarget = buildContractRowClickTarget(rowAction, row);
+    if (contractTarget) {
+      const rowClickState = resolveRowClickPushState({ routeTarget: contractTarget });
+      if (rowClickState.shouldNavigate) void options.routerPush(rowClickState.target);
+      return;
+    }
+    const payload = (rowAction.payload && typeof rowAction.payload === 'object' ? rowAction.payload : {}) as Dict;
+    const viewMode = String(payload.view_mode || '').trim();
+    if (viewMode && viewMode !== 'form') return;
+    throw contractGapError({
+      kind: 'contract_defect',
+      missing: `actionContract.actionRuleList.${String(rowAction.actionId || 'page.row')}.target.record_entry`,
+      requiredDeclarationLayer: 'P0:smart_core:unified_page_contract_v2_assembler',
+    }, '原生集合行打开动作缺少完整记录入口声明');
   }
 
   return {

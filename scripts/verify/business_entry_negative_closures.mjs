@@ -28,6 +28,10 @@ const ACCEPTANCE_PROFILE = String(process.env.SC_ACCEPTANCE_PROFILE || '').trim(
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const OUT = process.env.SC_ENTRY_MATRIX_CLOSURES_OUT
   || path.join('artifacts', 'frontend-business-entry-matrix', 'negative_closures.json');
+const OBSERVE_CONCURRENCY = Math.max(
+  1,
+  Math.min(4, Number(process.env.SC_ENTRY_MATRIX_CONCURRENCY || 4) || 4),
+);
 
 if (!BASE) throw new Error('SC_ACCEPTANCE_FRONTEND_URL is required');
 if (!PASSWORD) throw new Error('ACCEPTANCE_PASSWORD is required');
@@ -67,8 +71,12 @@ async function observe(browser, role, served) {
     } catch { /* identity stays null and the snapshot fails closed downstream */ }
   });
   try {
-    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
+    // The product shell keeps background requests active, so network-idle is
+    // not a valid readiness signal here. DOM readiness plus the declared login
+    // controls is the bounded condition this probe actually needs.
+    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'domcontentloaded', timeout: 30000 });
     const inputs = page.locator('input');
+    await inputs.nth(1).waitFor({ state: 'visible', timeout: 15000 });
     await inputs.nth(0).fill(role);
     await inputs.nth(1).fill(PASSWORD);
     await page.getByRole('button', { name: /^登录$/ }).click();
@@ -79,6 +87,23 @@ async function observe(browser, role, served) {
   }
   await context.close().catch(() => {});
   return state;
+}
+
+async function observeRoles(browser, roles, served) {
+  const observations = {};
+  let cursor = 0;
+  async function worker() {
+    while (cursor < roles.length) {
+      const index = cursor;
+      cursor += 1;
+      const role = roles[index];
+      observations[role] = await observe(browser, role, served);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(OBSERVE_CONCURRENCY, roles.length) }, () => worker()),
+  );
+  return observations;
 }
 
 // Reuse-first input: an already-recorded observation of the same runtime must
@@ -142,9 +167,10 @@ if (SNAPSHOT) {
   const browser = await launchChromium({ headless: true });
   candidates = {};
   try {
-    for (const role of order) {
-      if (Object.prototype.hasOwnProperty.call(candidates, role)) continue;
-      const observed = await observe(browser, role, served);
+    const pendingRoles = [...new Set(order)];
+    const observedByRole = await observeRoles(browser, pendingRoles, served);
+    for (const role of pendingRoles) {
+      const observed = observedByRole[role];
       candidates[role] = {
         closure_size: observed.roleXmlids.length,
         role_xmlids: observed.roleXmlids,
