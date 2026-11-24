@@ -425,7 +425,7 @@ def resolve_product_lane(
                     head=head,
                     suite="product",
                     expected_modules=expected_modules,
-                    allowed_bases={base},
+                    allowed_bases={"", base},
                 )
                 return professional, artifact, False
             break
@@ -553,7 +553,7 @@ def close_lanes(
             head=head,
             suite=suite,
             expected_modules=expected[suite],
-            allowed_bases={base} if suite == "product" and not product_dispatched else {""},
+            allowed_bases={"", base} if suite == "product" and not product_dispatched else {""},
         )
 
     direct_product_after = {
@@ -674,7 +674,7 @@ def verify_manifest(client: GitHubClient, *, pr: int, head: str, receipt: Path) 
             head=head,
             suite=suite,
             expected_modules=expected[suite],
-            allowed_bases={base} if source == "professional_quality_gate" else {""},
+            allowed_bases={"", base} if source == "professional_quality_gate" else {""},
         )
     return {
         "schema": SCHEMA,

@@ -149,7 +149,7 @@ class CloseEfficiencyTests(unittest.TestCase):
         }
         artifacts = {
             "product": {"artifact_id": 20, "artifact_digest": "sha256:" + "1" * 64,
-                        "plan": plan(base=BASE)},
+                        "plan": plan()},
             "demo": {"artifact_id": 21, "artifact_digest": "sha256:" + "2" * 64,
                      "plan": plan(suite="demo")},
             "acceptance": {"artifact_id": 22, "artifact_digest": "sha256:" + "3" * 64,
@@ -184,6 +184,7 @@ class CloseEfficiencyTests(unittest.TestCase):
         self.assertEqual(
             "professional_quality_gate", manifest["suites"]["product"]["source"]
         )
+        self.assertEqual("", artifacts["product"]["plan"]["base"])
 
 
 class MergeGateTests(unittest.TestCase):
