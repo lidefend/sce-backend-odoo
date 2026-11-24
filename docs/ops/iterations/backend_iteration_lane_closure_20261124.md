@@ -73,6 +73,14 @@ Local evidence after this correction:
 The superseded direct demo/acceptance runs were cancelled. A new exact PR head
 must now prove the corrected chain.
 
+After main PR #996, the contract reviewer group changed to
+`group_sc_cap_contract_user`. The demo fixture already owned the matching user
+`user_sc_contract_user_cap`, but its approval-seat map did not name that user.
+The exact-head demo suite therefore failed during registry seed with
+`no demo seat declared`. The fix declares only that demo role-to-user mapping;
+the product approval model, groups, workflows and business code remain
+unchanged.
+
 While the iteration was running, main advanced from `27d0e2ae6` to
 `a5aff5c26`. The latest main was merged into the published PR branch; the
 generated reports were regenerated from the merged source, and the run baseline
