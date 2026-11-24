@@ -376,6 +376,7 @@ function capture(page) {
     console: [], pageerror: [], unhandled: [], http: [], expectedHttp: [], expectedConsole: [],
     network: [], expectForbidden: false, expectedConsoleAllowance: 0, pendingExpectedForbiddenResponses: 0,
     requestCounts: {}, relationCandidateCounts: {}, pendingHttpDetails: [],
+    contractDiagnostics: [], pendingContractDiagnostics: [],
   };
   runtimeByPage.set(page, state);
   page.on('request', (request) => {
@@ -433,6 +434,34 @@ function capture(page) {
         model: payload.params?.model || '',
       });
       state.network = state.network.slice(-30);
+      if (payload.intent === 'ui.contract.v2') {
+        state.pendingContractDiagnostics.push(response.json().then((body) => {
+          const envelope = body?.result && typeof body.result === 'object'
+            ? body.result
+            : body?.data && typeof body.data === 'object'
+              ? body.data
+              : body || {};
+          const error = body?.error || envelope?.error || {};
+          const meta = body?.meta || envelope?.meta || {};
+          const params = payload.params || {};
+          state.contractDiagnostics.push({
+            http_status: response.status(),
+            intent: payload.intent,
+            op: String(params.op || ''),
+            model: String(params.model || envelope?.model || ''),
+            view_type: String(params.view_type || envelope?.view_type || ''),
+            record_id: Number(params.record_id || params.recordId || params.res_id || 0) || 0,
+            action_id: Number(params.action_id || 0) || 0,
+            menu_id: Number(params.menu_id || 0) || 0,
+            envelope_ok: typeof body?.ok === 'boolean' ? body.ok : null,
+            contract_version: String(envelope?.contract_version || envelope?.meta?.contract_version || ''),
+            trace_id: String(meta.trace_id || envelope?.meta?.trace_id || ''),
+            error_code: String(error.code || error.reason_code || '').slice(0, 96),
+            error_message: String(error.message || '').slice(0, 500),
+          });
+          state.contractDiagnostics = state.contractDiagnostics.slice(-20);
+        }).catch(() => {}));
+      }
     }
     if (response.status() < 400 || !response.url().includes('/api/v1/')) return;
     let requestPayload = {};
@@ -585,12 +614,21 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
     await page.locator(readySelector).first().waitFor({ state: 'visible', timeout: 45000 });
   } catch (error) {
     const runtime = runtimeByPage.get(page);
+    await Promise.allSettled(runtime?.pendingContractDiagnostics || []);
     const diagnostic = await page.evaluate(() => ({
       url: window.location.href,
       title: document.title,
       bodyText: document.body.innerText.slice(0, 1200),
       statePanels: Array.from(document.querySelectorAll('.sc-state-panel')).map((node) => node.textContent?.trim().slice(0, 400) || ''),
       workspaces: Array.from(document.querySelectorAll('[data-workspace-kind]')).map((node) => node.getAttribute('data-workspace-kind')),
+      productPages: Array.from(document.querySelectorAll('[data-product-page-mode]')).map((node) => ({
+        mode: node.getAttribute('data-product-page-mode'),
+        state: node.getAttribute('data-collection-state') || node.getAttribute('data-state'),
+        form_model: node.getAttribute('data-form-model'),
+        form_record: node.getAttribute('data-form-record'),
+        action_id: node.getAttribute('data-form-action-id'),
+        menu_id: node.getAttribute('data-form-menu-id'),
+      })),
     })).catch(() => ({ url: page.url() }));
     throw new Error(`${error instanceof Error ? error.message : String(error)} diagnostic=${JSON.stringify({
       ...diagnostic,
@@ -598,6 +636,7 @@ async function navigateSpa(page, route, readySelector = '.sc-product-main-surfac
       pageerror: runtime?.pageerror || [],
       http: runtime?.http || [],
       network: runtime?.network || [],
+      contractDiagnostics: runtime?.contractDiagnostics || [],
     })}`);
   }
   await page.waitForTimeout(50);

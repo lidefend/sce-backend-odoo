@@ -591,6 +591,19 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
         self.assertIn("await form.waitFor({ state: 'hidden'", reset)
         self.assertNotIn("[data-list-status]:visible", performance)
 
+    def test_route_failure_diagnostic_captures_bounded_contract_identity(self):
+        source = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("contractDiagnostics: [], pendingContractDiagnostics: []", source)
+        self.assertIn("envelope_ok:", source)
+        self.assertIn("error_code:", source)
+        self.assertIn("error_message: String(error.message || '').slice(0, 500)", source)
+        self.assertIn("trace_id:", source)
+        self.assertIn("productPages: Array.from(document.querySelectorAll('[data-product-page-mode]'))", source)
+        self.assertIn("contractDiagnostics: runtime?.contractDiagnostics || []", source)
+        self.assertNotIn("bodyText: JSON.stringify(body", source)
+
 
 MODULE = ROOT / 'addons/smart_construction_core'
 

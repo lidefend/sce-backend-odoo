@@ -77,6 +77,18 @@ That page-loading failure is classified as `product_defect`, is outside this
 P4-only branch, and is not hidden by retry or by weakening the browser gate.
 The full release condition therefore correctly remained unsatisfied.
 
+The route failure diagnostic was expanded in P4 so a failed record surface now
+keeps bounded evidence for each `ui.contract.v2` response:
+
+- HTTP status;
+- operation, model, view type and record/action/menu identifiers;
+- envelope `ok`, contract version and trace ID;
+- stable error code and bounded error message;
+- rendered product-page mode/state identity.
+
+It does not save the full contract payload or business data. This is a
+diagnostic capability, not a product fallback.
+
 ## Boundaries
 
 - No product code, contract, ACL, Record Rule, workflow semantics, database,
@@ -94,6 +106,8 @@ The full release condition therefore correctly remained unsatisfied.
 - Backend impact routing: PASS, 37 tests.
 - `verify.test.coverage.registry`: PASS, 19 tests; all 229 groups are gated or
   explicitly dispositioned.
+- `verify.frontend.delivery_hardening.guard`: PASS, 57 tests, including bounded
+  route/contract failure diagnostics.
 - `make ci.local.iteration`: PASS after the new route and unit target were
   selected.
 - `make ci.delivery.freeze.prepare`: PASS; generated test inventory, coverage

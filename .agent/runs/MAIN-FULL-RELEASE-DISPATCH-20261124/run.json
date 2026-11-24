@@ -13,12 +13,15 @@
     ".agent/runs/template/run.json",
     ".agent/context.yaml",
     "make/ci.mk",
+    "make/frontend.mk",
     "scripts/ci/main_full_release_dispatch.py",
     "scripts/ci/test_main_full_release_dispatch.py",
     "scripts/ci/backend_impact_plan.py",
     "scripts/verify/test_coverage_registry.yaml",
     "scripts/verify/frontend_dev_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/frontend_delivery_hardening_browser.mjs",
+    "scripts/verify/test_frontend_delivery_hardening_guard.py",
     "docs/ops/codex_execution_allowlist.md",
     "docs/ops/codex_workspace_execution_rules.md",
     "docs/ops/iteration_validation_responsibility_v1.md",
@@ -80,6 +83,16 @@
         "scripts/verify/test_coverage_registry_audit.py",
         "scripts/verify/test_test_coverage_registry_audit.py",
         "docs/audit/test_coverage_registry/test_coverage_registry.json"
+      ],
+      "kind": "offline"
+    },
+    "route_diagnostic": {
+      "target": "verify.frontend.delivery_hardening.guard",
+      "inputs": [
+        "make/frontend.mk",
+        "scripts/verify/frontend_delivery_hardening_browser.mjs",
+        "scripts/verify/test_frontend_delivery_hardening_guard.py",
+        "scripts/verify/frontend_delivery_hardening_guard.py"
       ],
       "kind": "offline"
     }

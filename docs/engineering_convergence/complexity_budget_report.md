@@ -90,12 +90,12 @@ Generated from repository source files. This report is informational during the 
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1553 | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
+| 1540 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1538 | Python source | `scripts/ops/agent_dispatch_inbox.py` |
 | 1525 | Python source | `addons/smart_core/tests/test_view_orchestrator.py` |
 | 1521 | Python source | `addons/smart_core/handlers/business_config_surface.py` |
 | 1520 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
-| 1501 | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
 | 861 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
@@ -352,7 +352,7 @@ Generated from repository source files. This report is informational during the 
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
 | 1556 | split_plan_required | Python source | `addons/smart_core/tests/test_load_contract_response_cache.py` |
 | 1553 | split_plan_required | JavaScript source | `scripts/verify/business_entry_matrix_browser.mjs` |
-| 1538 | warning | XML data/view | `addons/smart_construction_scene/data/sc_scene_layout.xml` |
+| 1540 | split_plan_required | JavaScript source | `scripts/verify/frontend_delivery_hardening_browser.mjs` |
 
 ## Interpretation
 

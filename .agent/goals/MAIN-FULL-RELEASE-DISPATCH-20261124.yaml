@@ -31,12 +31,15 @@ goal:
       - .agent/runs/template/run.json
       - .agent/context.yaml
       - make/ci.mk
+      - make/frontend.mk
       - scripts/ci/main_full_release_dispatch.py
       - scripts/ci/test_main_full_release_dispatch.py
       - scripts/ci/backend_impact_plan.py
       - scripts/verify/test_coverage_registry.yaml
       - scripts/verify/frontend_dev_incremental.py
       - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/verify/frontend_delivery_hardening_browser.mjs
+      - scripts/verify/test_frontend_delivery_hardening_guard.py
       - docs/ops/codex_execution_allowlist.md
       - docs/ops/codex_workspace_execution_rules.md
       - docs/ops/iteration_validation_responsibility_v1.md
@@ -57,6 +60,7 @@ goal:
     - release_candidate_gate success remains the final aggregation proof
     - operator dispatch is labelled operator_full_audit, not scheduled_mainline
     - the five newly discovered mainline test groups are dispositioned without weakening the audit
+    - route failures retain bounded contract identity diagnostics for root-cause analysis
   exclusions:
     - product_code_change
     - database_or_fixture_write
