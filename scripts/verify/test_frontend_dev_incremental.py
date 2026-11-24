@@ -1656,6 +1656,12 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
             "verify.ci.workflow.contract", "verify.github_actions.security",
         ])
 
+    def test_frontend_cleanup_selects_workflow_contract(self) -> None:
+        self.assertEqual(
+            select_targets(["scripts/ci/self_hosted_runner_cleanup.sh"]),
+            ["verify.ci.workflow.contract"],
+        )
+
     def test_required_pr_workflows_select_contract_and_security_checks(self) -> None:
         for path in (
             ".github/workflows/frontend_release_gate.yml",
@@ -3301,6 +3307,17 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "scripts/verify/semantic_registry_lint.py",
                 "scripts/verify/test_semantic_registry_lint.py",
                 "scripts/verify/test_node_component_registry.py",
+            ]),
+            [
+                "verify.semantic.registry.lint",
+            ],
+        )
+
+    def test_construction_semantic_declarations_keep_the_registry_lint(self) -> None:
+        self.assertEqual(
+            select_targets([
+                "addons/smart_construction_core/core_extension_contract_normalizers.py",
+                "scripts/verify/test_construction_semantic_declarations.py",
             ]),
             [
                 "verify.semantic.registry.lint",

@@ -609,6 +609,7 @@ RULES = (
         "scripts/ci/scheduled_validation.py",
         "scripts/ci/select_authoritative_workflow_run.py",
         "scripts/ci/test_select_authoritative_workflow_run.py",
+        "scripts/ci/self_hosted_runner_cleanup.sh",
     ), (
         "verify.ci.workflow.contract",
     )),
@@ -1161,6 +1162,12 @@ RULES = (
         "scripts/verify/semantic_registry_lint.py",
         "scripts/verify/test_semantic_registry_lint.py",
         "scripts/verify/test_node_component_registry.py",
+    ), (
+        "verify.semantic.registry.lint",
+    )),
+    Rule((
+        "addons/smart_construction_core/core_extension_contract_normalizers.py",
+        "scripts/verify/test_construction_semantic_declarations.py",
     ), (
         "verify.semantic.registry.lint",
     )),

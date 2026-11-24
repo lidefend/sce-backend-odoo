@@ -459,7 +459,7 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
     are behaviour and stay in ``professionalComponentRegistry.ts``.
     """
     validate_component_registry(component)
-    platform_rows, _industry_rows = component_rows(component, semantic_categories(root))
+    platform_rows, industry_rows = component_rows(component, semantic_categories(root))
     sources = (SEMANTIC_REL.as_posix(), COMPONENT_REL.as_posix())
     capability_providers = component.get("capability_providers") or {}
     provider_lines = "\n".join(
@@ -471,6 +471,21 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         f"  {semantic_type!r}: {str((entry or {}).get('component') or '')!r},"
         for semantic_type, entry in sorted((semantic.get("semantics") or {}).items())
         if isinstance(entry, dict)
+    )
+    semantic_field_types: dict[str, list[str]] = {}
+    for row in [*platform_rows, *industry_rows]:
+        semantic_field_types.setdefault(row["semantic"], [])
+        semantic_field_types[row["semantic"]] = [
+            *semantic_field_types[row["semantic"]],
+            *[
+                field_type
+                for field_type in row["fieldTypes"]
+                if field_type not in semantic_field_types[row["semantic"]]
+            ],
+        ]
+    semantic_field_type_lines = "\n".join(
+        f"  {semantic_type!r}: Object.freeze([{', '.join(repr(item) for item in field_types)}]),"
+        for semantic_type, field_types in sorted(semantic_field_types.items())
     )
     native_widgets = semantic.get("native_widgets") or {}
     native_widget_lines = "\n".join(
@@ -503,6 +518,9 @@ def render_frontend_registry(component: dict, *, version: int, root: Path = ROOT
         + "\n];\n"
         + "\nexport const SEMANTIC_COMPONENT_REGISTRY: Readonly<Record<string, string>> = Object.freeze({\n"
         + semantic_component_lines
+        + "\n});\n"
+        + "\nexport const SEMANTIC_FIELD_TYPES: Readonly<Record<string, readonly string[]>> = Object.freeze({\n"
+        + semantic_field_type_lines
         + "\n});\n"
         + "\nexport type NativeWidgetStatus = 'ready' | 'fallback' | 'unsupported';\n"
         + "\nexport const NATIVE_WIDGET_REGISTRY: Readonly<Record<string, "

@@ -89,15 +89,20 @@ jobs:
         run: |
           set -euo pipefail
           mode='${{ steps.risk.outputs.frontend_mode }}'
+          contract_diagnostic='${{ steps.risk.outputs.frontend_contract_diagnostic_required }}'
           if [ "${GITHUB_EVENT_NAME}" = "schedule" ] || [ "${CANDIDATE_REQUESTED}" = "true" ]; then
             mode='full'
+          elif [ "${contract_diagnostic}" = "true" ]; then
+            mode='contract_diagnostic'
           elif [ "${CANDIDATE_REQUESTED}" != "true" ] && [ "${mode}" = "full" ]; then
             mode='standard'
           fi
           printf 'frontend_mode=%s\n' "${mode}" >> "${GITHUB_OUTPUT}"
 
       - name: Generate isolated acceptance environment
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode == 'full' ||
+          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
         run: |
           set -euo pipefail
           db_password="$(openssl rand -hex 32)"
@@ -159,7 +164,9 @@ jobs:
           } >> "${GITHUB_ENV}"
 
       - name: Freeze isolated frontend release identity
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        if: >-
+          steps.effective_lane.outputs.frontend_mode == 'full' ||
+          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
         run: |
           set -euo pipefail
           bash scripts/common/frontend_release_ci_identity.sh freeze "${GITHUB_WORKSPACE}"
@@ -217,7 +224,9 @@ jobs:
 
       - name: Run focused payment-request diagnostic
         id: payment_request_diagnostic
-        if: env.PAYMENT_REQUEST_DIAGNOSTIC == '1'
+        if: >-
+          env.PAYMENT_REQUEST_DIAGNOSTIC == '1' ||
+          steps.effective_lane.outputs.frontend_mode == 'contract_diagnostic'
         run: make --no-print-directory verify.frontend.payment_request.diagnostic
 
       - name: Execute governed managed ORM regressions
@@ -291,12 +300,15 @@ jobs:
         env:
           FRONTEND_MODE: ${{ steps.effective_lane.outputs.frontend_mode }}
           STANDARD_OUTCOME: ${{ steps.standard.outcome }}
+          PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME: ${{ steps.payment_request_diagnostic.outcome }}
           RISK_LANE: ${{ steps.risk.outputs.lane }}
         run: |
           set -euo pipefail
           mkdir -p artifacts/ci-risk-tiering
           if [ "${FRONTEND_MODE}" = "standard" ]; then
             test "${STANDARD_OUTCOME}" = "success"
+          elif [ "${FRONTEND_MODE}" = "contract_diagnostic" ]; then
+            test "${PAYMENT_REQUEST_DIAGNOSTIC_OUTCOME}" = "success"
           else
             test "${FRONTEND_MODE}" = "skip"
           fi

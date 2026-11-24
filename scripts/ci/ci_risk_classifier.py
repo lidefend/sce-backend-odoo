@@ -54,6 +54,18 @@ class Classification:
         return "skip"
 
     @property
+    def frontend_contract_diagnostic_required(self) -> bool:
+        return any(
+            _matches(path, (
+                "frontend/apps/web/src/app/contracts/v2/**",
+                "addons/smart_core/core/unified_page_contract_v2_assembler.py",
+                "addons/smart_core/handlers/ui_contract_v2.py",
+                "addons/smart_construction_core/core_extension_contract_normalizers.py",
+            ))
+            for path in self.paths
+        )
+
+    @property
     def professional_mode(self) -> str:
         if self.lane in {"HIGH_RISK", "RELEASE"}:
             return "full"
@@ -125,6 +137,9 @@ class Classification:
             "managed_orm_required": str(self.managed_orm_required).lower(),
             "payment_orm_required": str("payment_settlement" in self.orm_scopes).lower(),
             "frontend_full_required": str(self.frontend_full_required).lower(),
+            "frontend_contract_diagnostic_required": str(
+                self.frontend_contract_diagnostic_required
+            ).lower(),
             "changed_path_count": str(len(self.paths)),
             "changed_paths_json": json.dumps(self.paths, separators=(",", ":")),
             "reasons_json": json.dumps(self.reasons, separators=(",", ":")),

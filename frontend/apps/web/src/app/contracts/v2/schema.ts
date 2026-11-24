@@ -2725,8 +2725,14 @@ function validateFormOccurrenceAuthority(
     if (!widget || !isRecord(widget.fieldDescriptor) || !Object.keys(widget.fieldDescriptor).length) {
       issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} requires a strict field descriptor` });
     } else {
-      const descriptorName = asString(widget.fieldDescriptor.name);
-      const descriptorType = asString(widget.fieldDescriptor.ttype || widget.fieldDescriptor.type);
+      const descriptorName = asString(
+        widget.fieldDescriptor.fieldCode || widget.fieldDescriptor.name,
+      );
+      const descriptorType = asString(
+        widget.fieldDescriptor.fieldType
+          || widget.fieldDescriptor.ttype
+          || widget.fieldDescriptor.type,
+      );
       if (descriptorName !== row.fieldCode) {
         issues.push({ path: 'layoutContract.containerTree', message: `form occurrence ${row.widgetId} descriptor identity mismatch` });
       }

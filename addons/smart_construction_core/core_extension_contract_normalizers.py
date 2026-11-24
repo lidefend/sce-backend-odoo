@@ -49,6 +49,13 @@ FIELD_SEMANTIC_DECLARATIONS: dict[str, dict[str, str]] = {
     },
 }
 
+ATTACHMENT_ROLE_DECLARATIONS: dict[tuple[str, str], tuple[str, str]] = {
+    ("payment.request", "attachment_ids"): (
+        "payment_request_evidence",
+        "付款申请附件",
+    ),
+}
+
 # ``semantic -> delivery vocabulary`` handed to that semantic's control.  Every
 # word, payload key and server action identity the control uses is declared
 # here; the frontend fails closed when one is missing instead of guessing.
@@ -180,7 +187,8 @@ def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
     # native layout node keeps the identity and nothing the schema rejects.
     if _is_widget_node(node):
         descriptor = node.get("fieldDescriptor") if isinstance(node.get("fieldDescriptor"), dict) else {}
-        descriptor["semantic"] = semantic
+        descriptor["semanticType"] = semantic
+        descriptor["componentKey"] = component_key
         node["fieldDescriptor"] = descriptor
     node["componentKey"] = component_key
     vocabulary = SEMANTIC_PRESENTATION_VOCABULARY.get(semantic)
@@ -189,6 +197,25 @@ def _apply_declared_semantic(node: dict[str, Any], semantic: str) -> str:
         config.update(deepcopy(vocabulary))
         node["componentConfig"] = config
     return component_key
+
+
+def _apply_attachment_role(
+    node: dict[str, Any],
+    model: str,
+    field_code: str,
+) -> None:
+    role = ATTACHMENT_ROLE_DECLARATIONS.get((model, field_code))
+    if not role or not _is_widget_node(node):
+        return
+    descriptor = node.get("fieldDescriptor")
+    if not isinstance(descriptor, dict):
+        return
+    config = node.get("componentConfig") if isinstance(node.get("componentConfig"), dict) else {}
+    relation = _sc_text(descriptor.get("relation") or config.get("relation"))
+    if relation != "ir.attachment":
+        return
+    descriptor["attachmentRole"] = role[0]
+    node["fieldDescriptor"] = descriptor
 
 
 def normalize_declared_field_presentation(
@@ -203,8 +230,14 @@ def normalize_declared_field_presentation(
     component identity is resolved through the registry, so this function holds
     no model branch and no component key.
     """
-    declarations = FIELD_SEMANTIC_DECLARATIONS.get(_sc_text(model))
-    if not declarations or _sc_text(view_type) != "form":
+    model_name = _sc_text(model)
+    declarations = FIELD_SEMANTIC_DECLARATIONS.get(model_name, {})
+    attachment_roles = {
+        field_code: role
+        for (role_model, field_code), role in ATTACHMENT_ROLE_DECLARATIONS.items()
+        if role_model == model_name
+    }
+    if _sc_text(view_type) != "form" or (not declarations and not attachment_roles):
         return
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
@@ -218,6 +251,7 @@ def normalize_declared_field_presentation(
         if not isinstance(value, dict):
             return
         field_code = _sc_text(value.get("fieldCode") or value.get("name") or value.get("field"))
+        _apply_attachment_role(value, model_name, field_code)
         semantic = _declared_semantic(declarations, field_code, _sc_text(value.get("widgetId")))
         if semantic:
             component_key = _apply_declared_semantic(value, semantic)

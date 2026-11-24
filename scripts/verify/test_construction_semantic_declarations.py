@@ -47,8 +47,13 @@ PAYMENT_DETAIL_SEMANTIC = "payment_settlement_detail_collection"
 sys.path.insert(0, str(REPO_ROOT / "addons" / "smart_core"))
 from core.contract_runtime import semantic_resolver  # noqa: E402
 
-_WANTED_ASSIGNMENTS = {"FIELD_SEMANTIC_DECLARATIONS", "SEMANTIC_PRESENTATION_VOCABULARY"}
+_WANTED_ASSIGNMENTS = {
+    "ATTACHMENT_ROLE_DECLARATIONS",
+    "FIELD_SEMANTIC_DECLARATIONS",
+    "SEMANTIC_PRESENTATION_VOCABULARY",
+}
 _WANTED_FUNCTIONS = {
+    "_apply_attachment_role",
     "_declared_semantic",
     "_is_widget_node",
     "_apply_declared_semantic",
@@ -195,7 +200,9 @@ class NormalizerConsumptionTest(unittest.TestCase):
         node = self.detail_node(contract)
         expected = semantic_resolver.component_key_for_semantic(PAYMENT_DETAIL_SEMANTIC)
         self.assertEqual(expected, node["componentKey"])
-        self.assertEqual(PAYMENT_DETAIL_SEMANTIC, node["fieldDescriptor"]["semantic"])
+        self.assertEqual(PAYMENT_DETAIL_SEMANTIC, node["fieldDescriptor"]["semanticType"])
+        self.assertEqual(expected, node["fieldDescriptor"]["componentKey"])
+        self.assertNotIn("semantic", node["fieldDescriptor"])
 
     def test_declared_field_publishes_the_registry_identity(self) -> None:
         contract = self.payment_contract()
@@ -252,6 +259,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
         node = self.detail_node(mutated)
         self.assertEqual("sc.relation.table", node["componentKey"])
         self.assertNotIn("semantic", node["fieldDescriptor"])
+        self.assertNotIn("semanticType", node["fieldDescriptor"])
         self.assertNotIn("componentRegistry", mutated["layoutContract"])
 
     def test_native_layout_node_keeps_identity_without_a_descriptor(self) -> None:
@@ -290,7 +298,7 @@ class NormalizerConsumptionTest(unittest.TestCase):
         )
         self.assertEqual(
             PAYMENT_DETAIL_SEMANTIC,
-            contract["layoutContract"]["containerTree"][1]["widgetList"][1]["fieldDescriptor"]["semantic"],
+            contract["layoutContract"]["containerTree"][1]["widgetList"][1]["fieldDescriptor"]["semanticType"],
             "the widget node is where the declared meaning belongs",
         )
 
@@ -362,11 +370,50 @@ class NormalizerConsumptionTest(unittest.TestCase):
         node = contract["layoutContract"]["containerTree"][0]["widgetList"][1]
         self.assertEqual(semantic_resolver.component_key_for_semantic("money"), node["componentKey"])
         self.assertEqual("sc.value.money", node["componentKey"])
-        self.assertEqual("money", node["fieldDescriptor"]["semantic"])
+        self.assertEqual("money", node["fieldDescriptor"]["semanticType"])
+        self.assertNotIn("semantic", node["fieldDescriptor"])
         self.assertIn(
             "sc.value.money",
             contract["layoutContract"]["componentRegistry"],
             "the declared field's identity must be published to the frontend registry",
+        )
+
+    def test_payment_attachment_relation_receives_its_declared_p1_role(self) -> None:
+        contract = {
+            "layoutContract": {
+                "containerTree": [{
+                    "containerId": "payment.attachments",
+                    "widgetList": [{
+                        "widgetId": "field.attachment_ids.occ.0123456789abcdef",
+                        "widgetType": "many2many_binary",
+                        "fieldCode": "attachment_ids",
+                        "label": "附件",
+                        "componentKey": "sc.relation.many2many",
+                        "componentConfig": {
+                            "fieldType": "many2many",
+                            "relation": "ir.attachment",
+                        },
+                        "fieldDescriptor": {
+                            "schemaVersion": "1.0.0",
+                            "fieldCode": "attachment_ids",
+                            "label": "附件",
+                            "fieldType": "many2many",
+                            "widgetType": "many2many_binary",
+                            "componentKey": "sc.relation.many2many",
+                            "semanticType": "relation_collection",
+                            "relation": "ir.attachment",
+                        },
+                    }],
+                }],
+            },
+        }
+        self.normalize(contract, model=PAYMENT_MODEL, view_type="form")
+        descriptor = contract["layoutContract"]["containerTree"][0]["widgetList"][0]["fieldDescriptor"]
+        self.assertEqual(
+            self.namespace["ATTACHMENT_ROLE_DECLARATIONS"][
+                (PAYMENT_MODEL, "attachment_ids")
+            ][0],
+            descriptor["attachmentRole"],
         )
 
 
