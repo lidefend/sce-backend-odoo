@@ -125,10 +125,11 @@
     }
   },
   "blockers": [
-    "P0 generic list relation normalization: valid ORM many2one tuples were wrapped a second time when display_field equals value_field; 37/132 entries passed in the observed run",
-    "P1/contract presentation declarations remain unresolved for 6 entries after the 25-second confirmation pass"
+    "20/132 entries still declare no recognised presentation surface after the P0 relation fixes",
+    "19 scene-error and 3 assertion-failed entries remain for owner-layer classification",
+    "1 account journal entry still reports field.journal_group_ids.relation_identity"
   ],
-  "next_exact_step": "Deploy the P0 list relation normalization fix, rerun the affected relation failures incrementally, then classify the six remaining presentation declarations.",
+  "next_exact_step": "Classify the 20 unknown-presentation entries against their backend action/view contracts, then handle the single remaining x2many identity case separately.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

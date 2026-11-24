@@ -132,11 +132,11 @@ Combined status for the 132 unique entries:
 
 | Status | Count |
 | --- | ---: |
-| checked | 37 |
-| surface-error | 60 |
-| scene-error | 27 |
-| unknown-presentation | 6 |
-| assertion-failed | 2 |
+| checked | 89 |
+| surface-error | 1 |
+| scene-error | 19 |
+| unknown-presentation | 20 |
+| assertion-failed | 3 |
 
 The dominant confirmed failure is relation cell normalization:
 `field.project_id.relation_label` appears on 41 entries, with additional
@@ -146,10 +146,22 @@ and related collection cases. A bounded browser capture proved that
 `owner_id=[71, "德阳市城市某某建设投资集团有限公司"]`, and the contract declares
 both `display_field=owner_id` and `value_field=owner_id`.
 
-The defect therefore belongs to the generic frontend list consumer: it wrapped
+The defect therefore belonged to the generic frontend list consumer: it wrapped
 an already complete `[id, label]` tuple again as `[[id, label], [id, label]]`.
-The backend relation projection is not missing, and no frontend model-specific
-fallback is allowed. The P0 renderer normalization fix is tracked separately.
+A second P0 correction preserved Odoo `false`/`null`/`0` relation cells as empty.
+The backend relation projection was not missing, and no frontend model-specific
+fallback was added.
+
+After both P0 fixes were deployed as `fd87c45cc1d62c4225c06ec71b24d60e4b5fd1f0`
+with frontend bundle
+`6df74b2fad1176e1f8f66c25dc880842981aadd9028742f765b42a98174b2f82`,
+only one relation contract gap remained:
+
+- `field.journal_group_ids.relation_identity`
+
+The other 23 previously affected relation entries no longer failed with
+relation-label or many2one-identity errors. Remaining failures are mostly
+separate action/view presentation or scene-state gaps.
 
 The six remaining `unknown-presentation` entries are:
 
