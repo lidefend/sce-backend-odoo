@@ -1,0 +1,61 @@
+schema_version: 1
+
+goal:
+  id: SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124
+  title: Close scheduled release fullness and current-main freshness
+  status: active
+  formal_product_layer: P4 ops delivery tool
+  layer_target: scheduled release qualification
+  module:
+    - scripts/ci
+    - scripts/verify
+    - .github workflows
+  standard_vs_user_specific: platform_engineering_standard
+  objective: >-
+    Make scheduled release qualification execute every test owned by every
+    selected product module and reject successful producer evidence when the
+    validated head is no longer the current remote main.
+  why_here: >-
+    Both defects are in CI selection, coverage and release-condition assembly.
+    They do not require product runtime, contract, permission or database edits.
+  why_not_elsewhere:
+    - Do not change product modules to satisfy scheduled validation.
+    - Do not treat module enumeration as proof that every module test ran.
+    - Do not weaken candidate validation or deployment-authorization boundaries.
+    - Do not use old main evidence as current-main release qualification.
+  blast_radius:
+    paths:
+      - .agent/active-runs.json
+      - .agent/context.yaml
+      - .agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml
+      - .agent/runs/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124/run.json
+      - .github/workflows/backend_test_suite.yml
+      - .github/workflows/release_candidate_gate.yml
+      - docs/audit/test_coverage_registry/test_coverage_registry.json
+      - docs/ops/iteration_validation_responsibility_v1.md
+      - docs/ops/dual_lane_fast_iteration_v1.md
+      - docs/ops/validation_delivery_protocol.md
+      - docs/ops/iterations/scheduled_release_full_closeout_20261124.md
+      - scripts/ci/release_condition.py
+      - scripts/ci/test_backend_impact_plan.py
+      - scripts/ci/test_backend_test_suite_dispatch_contract.py
+      - scripts/ci/test_release_candidate_gate.py
+      - scripts/ci/test_release_condition.py
+      - scripts/verify/github_actions_security_guard.py
+      - scripts/verify/test_github_actions_security_guard.py
+      - scripts/verify/test_test_coverage_registry_audit.py
+    product_behavior: no product behavior change
+  acceptance:
+    - scheduled full backend scope selects every test owned by every selected module
+    - module enumeration and test selection are both complete
+    - scheduled and operator mainline release conditions require current refs/heads/main
+    - stale main fails closed with a stable STALE_MAIN reason
+    - pull request candidate conditions do not claim mainline freshness
+    - release condition remains candidate-build eligibility only and deployment_ready stays false
+    - coverage registry and generated snapshot reflect the full selector
+  exclusions:
+    - product_code_change
+    - database_or_fixture_write
+    - acl_or_record_rule_change
+    - deployment
+  rollback: Revert this branch; no persistent data or deployed state changes.

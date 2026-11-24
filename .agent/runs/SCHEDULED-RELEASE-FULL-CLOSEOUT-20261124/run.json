@@ -1,0 +1,107 @@
+{
+  "schema_version": 2,
+  "id": "SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124",
+  "branch": "fix/scheduled-release-full-closeout-main-20261124",
+  "baseline_sha": "193d382c61b12e66a2974bada6fb334f5b9d6417",
+  "status": "active",
+  "goal": ".agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml",
+  "record": "docs/ops/iterations/scheduled_release_full_closeout_20261124.md",
+  "scope": [
+    ".agent/active-runs.json",
+    ".agent/context.yaml",
+    ".agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml",
+    ".agent/runs/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124/run.json",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "docs/audit/test_coverage_registry/test_coverage_registry.json",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "docs/ops/dual_lane_fast_iteration_v1.md",
+    "docs/ops/validation_delivery_protocol.md",
+    "docs/ops/iterations/scheduled_release_full_closeout_20261124.md",
+    "scripts/ci/release_condition.py",
+    "scripts/ci/test_backend_impact_plan.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_release_candidate_gate.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/verify/github_actions_security_guard.py",
+    "scripts/verify/test_github_actions_security_guard.py",
+    "scripts/verify/test_test_coverage_registry_audit.py"
+  ],
+  "environment": {
+    "kind": "offline",
+    "authority": "existing repository CI tests, exact Git-tree planners and mocked release-condition identities; no database or service access"
+  },
+  "verification_responsibility": {
+    "local_targeted": {
+      "status": "required",
+      "entrypoint": "make ci.local.iteration",
+      "reason": "Validate full-module test selection, coverage registry, current-main release conditions, workflow security and the affected contract suites."
+    },
+    "remote_integration": {
+      "status": "required",
+      "entrypoint": "exact-head required PR CI",
+      "reason": "The P4 candidate must pass the current exact-head integration gates."
+    },
+    "scheduled_release": {
+      "status": "excluded",
+      "entrypoint": "scheduled mainline CI or make release.main_full EXPECTED_MAIN=<exact-main-sha>",
+      "reason": "The fix is not on main yet. Scheduled release qualification runs after integration and cannot substitute for exact-head PR CI."
+    }
+  },
+  "channel_handoff": {
+    "backend_to_frontend": {
+      "mode": "same_run_backend_receipt",
+      "require_for_shared_contract_targets": true,
+      "reason": "No frontend product carrier or shared runtime contract changes in this P4 batch."
+    }
+  },
+  "checks": {
+    "workflow_contract": {
+      "target": "verify.ci.workflow.contract",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/verify/test_github_actions_security_guard.py"
+      ],
+      "kind": "offline"
+    },
+    "scheduled_contract": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "scripts/ci/release_condition.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/test_release_condition.py"
+      ],
+      "kind": "offline"
+    },
+    "coverage_registry": {
+      "target": "verify.test.coverage.registry",
+      "inputs": [
+        ".github/workflows/backend_test_suite.yml",
+        "docs/audit/test_coverage_registry/test_coverage_registry.json",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ],
+      "kind": "offline"
+    },
+    "test_baseline": {
+      "target": "verify.test.baseline",
+      "inputs": [
+        "scripts/ci/test_backend_impact_plan.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/verify/test_test_coverage_registry_audit.py"
+      ],
+      "kind": "offline"
+    }
+  },
+  "blockers": [],
+  "next_exact_step": "Commit the verified candidate and publish one exact-head PR, then wait for all required checks.",
+  "write_replay_authorized": false,
+  "candidate_evidence": false
+}

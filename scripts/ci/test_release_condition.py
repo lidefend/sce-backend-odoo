@@ -39,7 +39,8 @@ class ReleaseConditionTests(unittest.TestCase):
         return [run(path, index, event=event) for index, path in enumerate(sorted(REQUIRED_WORKFLOWS))]
 
     def build(self, runs: list[dict], event: str = "schedule",
-              head_branch: str | None = None) -> dict:
+              head_branch: str | None = None,
+              current_main: str | None = HEAD) -> dict:
         return build_condition(
             runs,
             repository=REPOSITORY,
@@ -49,6 +50,7 @@ class ReleaseConditionTests(unittest.TestCase):
             head_branch=head_branch or ("feature/candidate" if event == "pull_request" else "main"),
             workflow_dispatch_producer="workflow_dispatch",
             schedule_slot=SLOT if event == "schedule" else None,
+            current_main=current_main,
         )
 
     def test_scheduled_condition_binds_exact_identity_and_all_workflows(self) -> None:
@@ -57,6 +59,8 @@ class ReleaseConditionTests(unittest.TestCase):
         self.assertEqual(result["kind"], "scheduled_mainline")
         self.assertEqual(result["exact_head"], HEAD)
         self.assertEqual(result["exact_tree"], TREE)
+        self.assertEqual(result["current_main"], HEAD)
+        self.assertTrue(result["current_main_verified"])
         self.assertTrue(result["candidate_build_eligible"])
         self.assertFalse(result["deployment_ready"])
         self.assertEqual(
@@ -65,7 +69,11 @@ class ReleaseConditionTests(unittest.TestCase):
         )
 
     def test_explicit_candidate_keeps_the_same_exact_identity(self) -> None:
-        result = self.build(self.runs("pull_request"), event="pull_request")
+        result = self.build(
+            self.runs("pull_request"),
+            event="pull_request",
+            current_main=None,
+        )
         self.assertEqual(result["kind"], "explicit_candidate")
         self.assertEqual(result["producer_event"], "pull_request")
         self.assertEqual(result["head_branch"], "feature/candidate")
@@ -85,6 +93,24 @@ class ReleaseConditionTests(unittest.TestCase):
     def test_operator_dispatch_rejects_push_only_evidence(self) -> None:
         with self.assertRaises(ValueError):
             self.build(self.runs("push"), event="workflow_dispatch")
+
+    def test_mainline_conditions_require_the_current_authoritative_main(self) -> None:
+        for event in ("schedule", "workflow_dispatch"):
+            with self.subTest(event=event):
+                runs = self.runs(event)
+                with self.assertRaisesRegex(ValueError, "current remote main"):
+                    self.build(runs, event=event, current_main=None)
+                with self.assertRaisesRegex(ValueError, "stale main"):
+                    self.build(runs, event=event, current_main="c" * 40)
+
+    def test_pull_request_condition_does_not_claim_mainline_freshness(self) -> None:
+        result = self.build(
+            self.runs("pull_request"),
+            event="pull_request",
+            current_main=None,
+        )
+        self.assertIsNone(result["current_main"])
+        self.assertFalse(result["current_main_verified"])
 
     def test_missing_duplicate_wrong_identity_and_unsuccessful_runs_fail_closed(self) -> None:
         cases = []
@@ -125,6 +151,7 @@ class ReleaseConditionTests(unittest.TestCase):
                 head_branch="main",
                 workflow_dispatch_producer="workflow_dispatch",
                 schedule_slot=SLOT,
+                current_main=HEAD,
             )
 
 

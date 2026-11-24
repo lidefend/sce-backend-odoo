@@ -55,6 +55,7 @@ def build_condition(
     head_branch: str,
     workflow_dispatch_producer: str,
     schedule_slot: str | None,
+    current_main: str | None = None,
 ) -> dict[str, Any]:
     head_sha = _full_sha(head_sha, "head")
     tree = _full_sha(tree, "tree")
@@ -63,6 +64,16 @@ def build_condition(
         head_branch,
         workflow_dispatch_producer=workflow_dispatch_producer,
     )
+    if event in {"schedule", "workflow_dispatch"}:
+        if current_main is None:
+            raise ValueError("mainline condition requires the current remote main")
+        current_main = _full_sha(current_main, "current main")
+        if current_main != head_sha:
+            raise ValueError(
+                f"stale main: validated head {head_sha} is not current main {current_main}"
+            )
+    elif current_main is not None:
+        raise ValueError("pull request conditions do not accept a current main")
     by_workflow: dict[str, dict[str, Any]] = {}
     for run in runs:
         path = str(run.get("path") or "")
@@ -113,6 +124,8 @@ def build_condition(
         "repository": repository,
         "exact_head": head_sha,
         "exact_tree": tree,
+        "current_main": current_main,
+        "current_main_verified": current_main == head_sha,
         "event": event,
         "producer_event": producer_event,
         "head_branch": head_branch,
@@ -154,6 +167,7 @@ def main() -> int:
         choices=["push", "workflow_dispatch"],
         default="push",
     )
+    parser.add_argument("--current-main")
     parser.add_argument("--scheduled-slot")
     args = parser.parse_args()
     try:
@@ -166,6 +180,7 @@ def main() -> int:
             head_branch=args.head_branch,
             workflow_dispatch_producer=args.workflow_dispatch_producer,
             schedule_slot=args.scheduled_slot,
+            current_main=args.current_main,
         )
     except (OSError, ValueError) as exc:
         print(f"[release-condition] DENY: {exc}")

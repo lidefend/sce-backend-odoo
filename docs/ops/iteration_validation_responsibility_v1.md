@@ -50,7 +50,7 @@ for release.
 | Remote integration | Ordinary PR open/sync; the four required PR workflows | Exact PR HEAD against the current target base | Risk-selected affected surface; test-only backend changes use the owning changed tests, not unrelated dependency consumers | The merge gate when every current required check passes | Scheduled mainline release eligibility |
 | Explicit candidate | PR `ci:candidate` label | Exact candidate HEAD/base | Full candidate professional/frontend/backend checks | Exact candidate-build eligibility | An ordinary PR shortcut, operator mainline audit or scheduled mainline result |
 | Operator full release | `make release.main_full EXPECTED_MAIN=<sha>` | Exact main head/tree, five newly dispatched `workflow_dispatch` runs | Same full public/professional/nested-backend/frontend/merge/release-condition set as the scheduled lane | `operator_full_audit` candidate-build eligibility | A `scheduled_mainline` observation, PR merge acceptance or deployment authorization |
-| Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests `backend_test_suite` with `scope_mode=full` | `candidate_build_eligible` for that exact main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
+| Scheduled release | Cron `0 18 * * *` on `main` | One scheduled slot, exact current main head and tree | `public_guard`, `professional_quality_gate`, `frontend_release_gate`, `merge_policy_gate` and `release_candidate_gate`; professional nests `backend_test_suite` with `scope_mode=full`, executing every test owned by every selected module | `candidate_build_eligible` for that exact current main head/tree | PR merge acceptance, deployment authorization, or a substitute for a PR's exact-head checks |
 
 The scheduled five-workflow set is intentional. `release_candidate_gate` is
 not a substitute for the four producer workflows: it waits for the exact-head,
@@ -63,6 +63,11 @@ enumerate all runnable modules without a PR base.
 The scheduled condition is only `candidate_build_eligible`. It remains
 `deployment_ready=false`; deployment approval and runtime readback are later,
 separate authorities.
+
+The release-condition assembler must re-read `refs/heads/main` and reject a
+validated head that is no longer the current main. A main movement after the
+producer runs begin makes their evidence stale for scheduled release
+qualification even when each producer completed successfully.
 
 An explicit candidate label is a PR candidate lane. Owner
 `workflow_dispatch` on main is an operator full-release audit and is recorded

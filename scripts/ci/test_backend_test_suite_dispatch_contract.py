@@ -236,6 +236,24 @@ python3() {
             resolve['run'],
         )
 
+    def test_full_scope_runs_every_test_owned_by_each_module(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/backend_test_suite.yml').read_text()
+        )
+        run = next(
+            step['run']
+            for step in workflow['jobs']['backend_suite']['steps']
+            if step['name'] == 'Run backend test suite per module'
+        )
+        self.assertIn(
+            'module_test_tags="sc_smoke/${module},sc_gate/${module},/${module}"',
+            run,
+        )
+        self.assertIn(
+            'module_test_tags="${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_write_authority/${module}"',
+            run,
+        )
+
     def test_focused_python_modules_run_only_exact_changed_files(self):
         workflow = yaml.safe_load(
             (ROOT / '.github/workflows/backend_test_suite.yml').read_text()

@@ -121,6 +121,23 @@ jobs:
           echo "timed out waiting for exact-head candidate checks" >&2
           exit 1
 
+      - name: Prove validated main is still authoritative
+        if: success() && github.event_name != 'pull_request'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          current_main="$(gh api "repos/${GITHUB_REPOSITORY}/git/ref/heads/main" --jq '.object.sha')"
+          if ! [[ "${current_main}" =~ ^[0-9a-f]{40}$ ]]; then
+            echo "::error::current main is not a full lowercase SHA: ${current_main}"
+            exit 1
+          fi
+          if [ "${current_main}" != "${HEAD_SHA}" ]; then
+            echo "::error::STALE_MAIN validated_head=${HEAD_SHA} current_main=${current_main}"
+            exit 1
+          fi
+          echo "CURRENT_MAIN_SHA=${current_main}" >> "${GITHUB_ENV}"
+
       - name: Materialize exact formal release condition
         if: success()
         env:
@@ -145,6 +162,9 @@ jobs:
             --head-branch "${expected_head_branch}"
             --workflow-dispatch-producer workflow_dispatch
           )
+          if [ "${GITHUB_EVENT_NAME}" != pull_request ]; then
+            args+=(--current-main "${CURRENT_MAIN_SHA}")
+          fi
           if [ "${GITHUB_EVENT_NAME}" = schedule ]; then
             args+=(--scheduled-slot "${SCHEDULED_SLOT}")
           fi

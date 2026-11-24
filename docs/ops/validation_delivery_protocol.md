@@ -7,7 +7,7 @@
 - `local_targeted` 绑定当前开发 HEAD 与 dirty 范围，只证明受影响静态、契约和定向非零测试；本地全模块、完整浏览器和 Quick 不是内循环默认门禁，也不能证明 PR 集成或发布资格。
 - `remote_integration` 绑定精确 PR HEAD 与当前目标 base。普通 PR 按风险选择受影响范围；test-only 后端只执行归属变更测试文件/方法，生产代码、helper、删除测试、mixed 和未知路径保留完整受影响模块；该层通过后才可满足 PR 合并门禁，不能替代定时发布资格。
 - `explicit_candidate` 由 PR `ci:candidate` 触发，执行 full candidate 检查；它是候选资格，不是主线发版观察，也不能替代 PR 的精确 HEAD 检查。
-- `scheduled_release` 在 `main` 上由自然 `schedule` 或显式 `make release.main_full EXPECTED_MAIN=<sha>` 触发：精确 main head/tree，运行 `public_guard`、`professional_quality_gate`（其嵌套 backend 为 full all modules）、`frontend_release_gate`、`merge_policy_gate` 和 `release_candidate_gate`。自然定时记录为 `scheduled_mainline`，手工发版审计记录为 `operator_full_audit`。两者都只能授予 `candidate_build_eligible`，始终 `deployment_ready=false`；不能替代 PR 合并检查或部署授权。
+- `scheduled_release` 在 `main` 上由自然 `schedule` 或显式 `make release.main_full EXPECTED_MAIN=<sha>` 触发：精确 main head/tree，运行 `public_guard`、`professional_quality_gate`（其嵌套 backend 为 full all modules and all tests）、`frontend_release_gate`、`merge_policy_gate` 和 `release_candidate_gate`。自然定时记录为 `scheduled_mainline`，手工发版审计记录为 `operator_full_audit`。汇编发布条件前必须重新读取 `refs/heads/main`，验证通过的 HEAD 已不是当前 main 时以 `STALE_MAIN` 失败。两者都只能授予 `candidate_build_eligible`，始终 `deployment_ready=false`；不能替代 PR 合并检查或部署授权。
 
 ## 一份任务索引，三个既有证据职责
 
