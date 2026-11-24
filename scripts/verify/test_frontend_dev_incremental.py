@@ -1186,6 +1186,23 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                 )
 
+    def test_generic_form_and_relation_surfaces_select_static_owners_only(self) -> None:
+        for path in (
+            "frontend/apps/web/src/pages/contractForm/canonicalFormRenderer.ts",
+            "frontend/apps/web/src/pages/contractForm/CanonicalFormNodeRenderer.vue",
+            "frontend/apps/web/src/pages/contractForm/canonicalNativeFormBridge.ts",
+            "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
+            "frontend/apps/web/src/pages/contractForm/RelationSearchDialog.vue",
+            "frontend/apps/web/src/components/template/FormSection.vue",
+            "frontend/apps/web/src/components/template/formSection.types.ts",
+            "frontend/apps/web/src/components/template/X2ManyRelationRenderer.vue",
+        ):
+            with self.subTest(path=path):
+                targets = select_targets([path])
+                self.assertIn("verify.frontend.canonical_form_presenter.unit", targets)
+                self.assertIn("verify.frontend.primitive_adapter.unit", targets)
+                self.assertFalse(any("browser" in target for target in targets))
+
     def test_professional_workflow_unit_executes_interaction_browser(self) -> None:
         source = (ROOT / "make/frontend.mk").read_text(encoding="utf-8")
         block = source.split("verify.frontend.professional_workflow.unit:", 1)[1].split(
@@ -1993,6 +2010,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                 "verify.frontend.delivery_hardening.guard",
                 "verify.frontend.standard_preview.unit",
             ],
+        )
+        self.assertEqual(
+            select_targets(["addons/smart_construction_core/views/core/settlement_views.xml"]),
+            ["verify.frontend.delivery_hardening.guard"],
         )
         for path in (
             "scripts/verify/frontend_delivery_hardening_browser.mjs",

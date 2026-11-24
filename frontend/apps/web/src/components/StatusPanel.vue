@@ -7,13 +7,22 @@
     :data-contract-gap="stateResolution.gap"
     :data-contract-gap-kind="contractDefect?.kind || 'contract_defect'"
     :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
+    :data-consumer-error-name="contractDefect?.consumerContext?.errorName || undefined"
+    :data-consumer-error-stage="contractDefect?.consumerContext?.stage || undefined"
+    :data-consumer-component-trace="consumerComponentTraceText || undefined"
   >
     <h2>{{ contractGapTitle }}</h2>
-    <p>系统已停止继续操作，以避免在不完整或错误的契约上执行业务。</p>
+    <p>{{ contractGapStopMessage }}</p>
     <p v-if="message" class="trace">{{ message }}</p>
-    <p class="trace">错误类型：ContractGapError</p>
+    <p class="trace">错误类型：{{ contractGapErrorType }}</p>
     <p class="trace">失败分类：{{ contractGapFailureLabel }}</p>
-    <p class="trace">契约路径：{{ stateResolution.gap }}</p>
+    <p v-if="contractDefect?.consumerContext?.stage" class="trace">
+      失败阶段：{{ contractDefect.consumerContext.stage }}
+    </p>
+    <p v-if="consumerComponentTraceText" class="trace">
+      组件链：{{ consumerComponentTraceText }}
+    </p>
+    <p class="trace">{{ contractGapLocationLabel }}：{{ stateResolution.gap }}</p>
     <p v-if="contractDefect?.requiredDeclarationLayer" class="trace">
       责任层：{{ contractDefect.requiredDeclarationLayer }}
     </p>
@@ -143,15 +152,29 @@ const productState = computed(() => stateResolution.value.state);
 const contractGapTitle = computed(() => {
   const failureClass = props.contractDefect?.failureClass || 'contract_missing';
   if (failureClass === 'contract_mismatch') return '生产契约与平台解码规则不一致';
-  if (failureClass === 'consumer_error') return '前端契约消费失败';
+  if (failureClass === 'consumer_error') return '前端实现异常已停机';
   return '业务契约声明缺失';
 });
+const contractGapStopMessage = computed(() => (
+  props.contractDefect?.failureClass === 'consumer_error'
+    ? '系统已停止继续操作，以避免在错误的前端实现状态下执行业务。'
+    : '系统已停止继续操作，以避免在不完整或错误的契约上执行业务。'
+));
+const contractGapErrorType = computed(() => (
+  props.contractDefect?.consumerContext?.errorName || 'ContractGapError'
+));
+const contractGapLocationLabel = computed(() => (
+  props.contractDefect?.consumerContext ? '失败位置' : '契约路径'
+));
 const contractGapFailureLabel = computed(() => {
   const failureClass = props.contractDefect?.failureClass || 'contract_missing';
   if (failureClass === 'contract_mismatch') return 'contract_mismatch（等待 P0 契约/解码裁定）';
   if (failureClass === 'consumer_error') return 'consumer_error（前端实现错误）';
   return 'contract_missing（声明层缺失）';
 });
+const consumerComponentTraceText = computed(() => (
+  (props.contractDefect?.consumerContext?.componentTrace || []).join(' > ')
+));
 const displayTitle = computed(() => props.variant === 'error' ? productState.value?.title : props.title);
 const displayMessage = computed(() => props.variant === 'error' ? productState.value?.message : props.message);
 

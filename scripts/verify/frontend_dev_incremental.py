@@ -1902,6 +1902,7 @@ RULES = (
         "scripts/verify/frontend_delivery_hardening_guard.py",
         "scripts/verify/test_frontend_delivery_hardening_guard.py",
         "scripts/verify/error_state_component_test.cjs",
+        "addons/smart_construction_core/views/core/settlement_views.xml",
         "frontend/apps/web/src/components/StatusPanel.vue",
         "frontend/apps/web/src/pages/ContractFormRoute.vue",
         "frontend/apps/web/src/pages/contractFormRouteLoader.ts",

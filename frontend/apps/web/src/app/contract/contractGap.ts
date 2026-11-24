@@ -18,6 +18,15 @@ export type ContractDefectRef = {
   missing: string;
   /** 应补齐该声明的归属层与载体，例如 `P0:smart_core:page_assembler`。 */
   requiredDeclarationLayer: string;
+  /** Consumer-only evidence retained for diagnosis; never used as business fallback. */
+  consumerContext?: ConsumerErrorEvidence;
+};
+
+export type ConsumerErrorEvidence = {
+  errorName: string;
+  stage: string;
+  componentTrace: string[];
+  stack: string;
 };
 
 /**
@@ -190,4 +199,59 @@ export function contractDefectFromError(error: unknown): ContractDefectRef | nul
     };
   }
   return null;
+}
+
+/**
+ * Preserve an implementation failure without relabeling it as a missing or
+ * mismatched declaration. The stage and component trace make the owning
+ * consumer auditable while the renderer still fails closed.
+ */
+export function consumerErrorDefect(
+  error: unknown,
+  context: {
+    stage?: string;
+    consumer?: string;
+    componentTrace?: readonly string[];
+  } = {},
+): ContractDefectRef {
+  const message = error instanceof Error ? error.message : String(error || '前端消费异常');
+  const errorName = error instanceof Error
+    ? String(error.name || error.constructor?.name || 'Error')
+    : typeof error;
+  const stage = String(context.stage || 'consumer').trim() || 'consumer';
+  const componentTrace = [...(context.componentTrace || [])]
+    .map((name) => String(name || '').trim())
+    .filter(Boolean)
+    .slice(0, 8);
+  const consumer = String(context.consumer || componentTrace[0] || 'consumer').trim() || 'consumer';
+  return {
+    kind: 'contract_defect',
+    failureClass: 'consumer_error',
+    missing: `${stage}: ${message}`,
+    requiredDeclarationLayer: `P0:frontend:${consumer} consumer`,
+    consumerContext: {
+      errorName,
+      stage,
+      componentTrace,
+      stack: error instanceof Error ? String(error.stack || '') : '',
+    },
+  };
+}
+
+/** Read the stable names available on a Vue component-instance chain. */
+export function consumerComponentTrace(instance: unknown): string[] {
+  const trace: string[] = [];
+  let cursor = instance;
+  while (cursor && trace.length < 8) {
+    const row = cursor as {
+      type?: { name?: string; __name?: string; __file?: string };
+      parent?: unknown;
+    };
+    const filePath = String(row.type?.__file || '');
+    const file = filePath.slice(filePath.lastIndexOf('/') + 1);
+    const name = String(row.type?.name || row.type?.__name || file.replace(/\.vue$/, '') || '').trim();
+    if (name) trace.push(name);
+    cursor = row.parent;
+  }
+  return trace;
 }

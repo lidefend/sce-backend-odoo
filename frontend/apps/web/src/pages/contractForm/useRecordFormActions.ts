@@ -13,7 +13,11 @@ import {
   canonicalizeSubmissionValues,
   createSingleFlightSave,
 } from './saveRecordHelpers';
-import { contractDefectFromError } from '../../app/contract/contractGap';
+import {
+  consumerComponentTrace,
+  consumerErrorDefect,
+  contractDefectFromError,
+} from '../../app/contract/contractGap';
 import { resolveStandardFormComposition } from '../../app/presentation/standardFormComposition';
 import type { StandardPageTypeDecision } from '../../app/presentation/standardPageType';
 import { beginFormRuntimeBusy, endFormRuntimeBusy } from './runtimeStateApplier';
@@ -230,14 +234,13 @@ export function useRecordFormActions(dependencies: ActionDependencies) {
     if (!hasChanges.value || busy.value) return;
     await reload();
   }
-  onErrorCaptured((err) => {
+  onErrorCaptured((err, instance, info) => {
     const message = err instanceof Error ? err.message : String(err || '系统处理问题');
-    renderErrorDefect.value = contractDefectFromError(err) || {
-      kind: 'contract_defect',
-      failureClass: 'consumer_error',
-      missing: message,
-      requiredDeclarationLayer: 'P0:frontend:ContractFormPage consumer',
-    };
+    renderErrorDefect.value = contractDefectFromError(err) || consumerErrorDefect(err, {
+      stage: info,
+      consumer: 'ContractFormPage',
+      componentTrace: consumerComponentTrace(instance),
+    });
     renderErrorMessage.value = `表单页面打开失败：${message}`;
     return false;
   });

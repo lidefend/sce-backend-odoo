@@ -64,6 +64,23 @@ function mount(props){const root=node('root');const app=renderer.createApp(compo
  assert.ok(text(mounted.root).includes('contract_missing'));
  assert.ok(text(mounted.root).includes('P0:smart_core:system_init_scene_runtime_surface_builder'));
  assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
+ mounted=mount({errorCode:422,contractDefect:{kind:'contract_defect',
+   failureClass:'consumer_error',
+   missing:'beforeUnmount hook: Cannot read properties of undefined',
+   requiredDeclarationLayer:'P0:frontend:ContractFormPage consumer',
+   consumerContext:{errorName:'TypeError',stage:'beforeUnmount hook',
+     componentTrace:['ScDialog','ContractFormPage'],stack:''}}});
+ const consumerGap=flatten(mounted.root).find(el=>el.props?.['data-contract-gap']);
+ assert.equal(consumerGap.props['data-consumer-error-name'],'TypeError');
+ assert.equal(consumerGap.props['data-consumer-error-stage'],'beforeUnmount hook');
+ assert.equal(consumerGap.props['data-consumer-component-trace'],'ScDialog > ContractFormPage');
+ assert.ok(text(mounted.root).includes('前端实现异常已停机'));
+ assert.ok(text(mounted.root).includes('错误类型：TypeError'));
+ assert.ok(!text(mounted.root).includes('错误类型：ContractGapError'));
+ assert.ok(text(mounted.root).includes('失败阶段：beforeUnmount hook'));
+ assert.ok(text(mounted.root).includes('组件链：ScDialog > ContractFormPage'));
+ assert.ok(text(mounted.root).includes('失败位置：beforeUnmount hook'));
+ assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
  declaration=null;mounted=mount({errorCode:404});assert.ok(text(mounted.root).includes('ContractGapError'));mounted.app.unmount();
  declaration=contract;mounted=mount({errorCode:422});assert.equal(flatten(mounted.root).filter(el=>el.type==='button').length,0);mounted.app.unmount();
  console.log('real StatusPanel render/click/contract-gap PASS');

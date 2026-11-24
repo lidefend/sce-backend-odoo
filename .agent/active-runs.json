@@ -73,6 +73,7 @@
     "fix/ci-backend-sharding-cache-20261017": ".agent/runs/CI-REMOTE-EFFICIENCY-20261017/run.json",
     "fix/ci-execution-alignment-20261105": ".agent/runs/CI-EXECUTION-ALIGNMENT-20261105/run.json",
     "fix/ci-schedule-baseline-20261118": ".agent/runs/CI-SCHEDULE-BASELINE-20261118/run.json",
+    "fix/contract-consumer-evidence-20261125": ".agent/runs/CONTRACT-CONSUMER-EVIDENCE-20261125/run.json",
     "fix/ci-schedule-deps-nav-20261106": ".agent/runs/CI-SCHEDULE-DEPS-NAV-20261106/run.json",
     "fix/clear-dangling-run-binding-20261118": ".agent/runs/FE-RUN-BINDING-INVARIANT-REPAIR-20261118/run.json",
     "fix/daily-acceptance-demo-profile-20261019": ".agent/runs/ACCEPTANCE-EVIDENCE-LAYER-REUSE-20261019/run.json",
