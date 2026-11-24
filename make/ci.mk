@@ -1161,6 +1161,8 @@ ci.tenant.pro03.demo.dispatch: guard.prod.forbid
 	@branch="$$(git rev-parse --abbrev-ref HEAD)"; \
 	gh workflow run demo-ci.yml --ref "$$branch"
 
+BACKEND_SUITE ?= product
+
 .PHONY: ci.backend_test_suite.dispatch
 ci.backend_test_suite.dispatch: guard.prod.forbid
 	@bash -lc '\
@@ -1172,6 +1174,10 @@ ci.backend_test_suite.dispatch: guard.prod.forbid
 	if [ "$${ENV:-dev}" = "prod" ] || [ -n "$${PROD_DANGER:-}" ]; then \
 	  echo "[DENY] ci.backend_test_suite.dispatch: production context is forbidden"; exit 3; \
 	fi; \
+	suite="$(BACKEND_SUITE)"; \
+	case "$$suite" in product|demo|acceptance) ;; *) \
+	  echo "[DENY] ci.backend_test_suite.dispatch: BACKEND_SUITE must be product, demo or acceptance"; exit 4; \
+	esac; \
 	expected="$${EXPECTED_HEAD:-}"; \
 	if ! [[ "$$expected" =~ ^[0-9a-f]{40}$$ ]]; then \
 	  echo "[DENY] ci.backend_test_suite.dispatch: EXPECTED_HEAD must be a full 40-character lowercase commit SHA"; exit 4; \
@@ -1195,9 +1201,9 @@ ci.backend_test_suite.dispatch: guard.prod.forbid
 	if [ "$$pr_head" != "$$expected" ]; then \
 	  echo "[DENY] ci.backend_test_suite.dispatch: open PR HEAD $$pr_head does not match EXPECTED_HEAD $$expected"; exit 9; \
 	fi; \
-	echo "[ci.backend_test_suite.dispatch] repo=$$repo branch=$$branch exact_head=$$expected"; \
-	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch"; \
-	echo "[ci.backend_test_suite.dispatch] dispatched full backend suite for exact_head=$$expected"; \
+	echo "[ci.backend_test_suite.dispatch] repo=$$repo branch=$$branch exact_head=$$expected suite=$$suite"; \
+	gh workflow run backend_test_suite.yml --ref "$$branch" -f "head_ref=$$branch" -f "suite=$$suite"; \
+	echo "[ci.backend_test_suite.dispatch] dispatched $$suite backend suite for exact_head=$$expected"; \
 	'
 
 .PHONY: ci.auxiliary_backend_suite.dispatch

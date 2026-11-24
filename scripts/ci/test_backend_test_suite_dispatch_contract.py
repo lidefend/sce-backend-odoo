@@ -643,6 +643,8 @@ python3() {
             "gh pr view --json headRefOid",
             "gh workflow run backend_test_suite.yml",
             '-f "head_ref=$$branch"',
+            '-f "suite=$$suite"',
+            "BACKEND_SUITE",
         ):
             self.assertIn(required, target)
 

@@ -220,7 +220,7 @@ Generated from repository source files. This report is informational during the 
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
 | 871 | Python source | `scripts/ci/backend_suite_plan.py` |
-| 867 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
+| 869 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
