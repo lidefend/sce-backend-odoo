@@ -21,6 +21,7 @@ def validate(sources: dict[str, str] | None = None) -> list[str]:
         source = values[key]
         markers = [f"<{drivers[key]}", ':close-on-esc-keydown="false"', ':close-on-overlay-click="dismissible && closeOnBackdrop"', ':prevent-scroll-through="false"', 'useModalLifecycle', 'aria-modal="true"', ":data-state=\"open ? 'open' : 'closed'\"", ':data-dismissible="dismissible"', "inheritAttrs: false", "@close=\"emit('close')\""]
         if key == "dialog":
+            markers.extend(('v-if="open"', ':visible="true"'))
             markers.append(':destroy-on-close="true"')
             markers.extend(("calc(100vw - 2 * var(--sc-product-page-gutter))", "box-sizing: border-box"))
         for marker in markers:

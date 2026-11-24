@@ -61,6 +61,7 @@ function relationValue(value: unknown): CanonicalRelationValue | null {
 function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
   const config = asRecord(field.componentConfig);
   const canonicalDescriptor = asRecord(field.fieldDescriptor);
+  const configRelationEntry = asRecord(config.relationEntry || config.relation_entry);
   const selection = selectionOptions(config.selection).map((option) => [option.value, option.label] as [string, string]);
   return {
     ...canonicalDescriptor,
@@ -82,7 +83,11 @@ function fieldDescriptor(field: CanonicalFormField): FieldDescriptor {
       ? { currency_field: text(config.currencyField || config.currency_field) }
       : {}),
     ...(canonicalDescriptor.subview ? { subview: canonicalDescriptor.subview } : {}),
-    ...(canonicalDescriptor.relation_entry ? { relation_entry: canonicalDescriptor.relation_entry } : {}),
+    ...(Object.keys(configRelationEntry).length
+      ? { relation_entry: configRelationEntry }
+      : canonicalDescriptor.relation_entry
+        ? { relation_entry: canonicalDescriptor.relation_entry }
+        : {}),
     ...(canonicalDescriptor.widget_options ? { widget_options: canonicalDescriptor.widget_options } : {}),
   };
 }
@@ -199,6 +204,7 @@ export function canonicalFieldToFormSection(
     inputPlaceholder: field.placeholder || undefined,
     span: field.span,
     value: relation ? relation.displayName : field.value,
+    relationValue: field.value,
     inputValue: relation ? relation.id : inputValue(field.value, type),
     dateRangeEndField: dateRangeEndField || undefined,
     dateRangeEndInputValue: dateRangeEnd

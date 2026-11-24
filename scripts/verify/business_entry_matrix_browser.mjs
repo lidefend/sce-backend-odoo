@@ -72,6 +72,10 @@ const REUSE_NEGATIVE_CLOSURES = process.env.SC_ENTRY_MATRIX_REUSE_CLOSURES === '
 const DOMAIN_FILTER = (process.env.SC_ENTRY_MATRIX_DOMAIN || '').trim();
 const KEYS_FILTER = (process.env.SC_ENTRY_MATRIX_KEYS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const SKIP_PASSED = process.env.SC_ENTRY_MATRIX_INCLUDE_PASSED === '1';
+const NEGATIVE_ROLE_CONCURRENCY = Math.max(
+  1,
+  Math.min(4, Number(process.env.SC_ENTRY_MATRIX_NEGATIVE_CONCURRENCY || 2) || 2),
+);
 const WRITE_CONFIRM = process.env.SC_ENTRY_WRITE_CONFIRM || '';
 const WRITE_CONFIRM_TOKEN = 'DRIVE_DAILY_SC_DEMO_ENTRY_MATRIX';
 const VIEWPORT = parseViewport(process.env.SC_ENTRY_MATRIX_VIEWPORT);
@@ -568,7 +572,47 @@ async function navigateEntry(page, navTarget) {
   if (target.origin !== base.origin) {
     throw new Error(`released entry route ${route} escaped the acceptance origin`);
   }
-  await page.goto(target.href, { waitUntil: 'domcontentloaded' });
+  const menuId = Number(navTarget.menu_id || 0);
+  const actionId = Number(navTarget.action_id || 0);
+  if (!menuId) {
+    throw new Error(`released entry ${navTarget.menu_xmlid || route} published no menu identity`);
+  }
+  const leafSelector = actionId
+    ? `li[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id="${actionId}"]`
+    : `li[data-navigation-node="canonical"][data-navigation-menu-id="${menuId}"][data-navigation-action-id=""]`;
+  const leaf = page.locator(leafSelector).first();
+  if (!(await leaf.count())) {
+    throw new Error(`released entry ${navTarget.menu_xmlid || menuId} is absent from the rendered navigation`);
+  }
+
+  // A user reaches the entry through the navigation tree. Expanding the exact
+  // ancestor submenus and clicking the published leaf is materially different
+  // from reloading the route directly: the latter bypasses scene initialization
+  // and can produce a blank shell even though the menu journey renders.
+  const ancestors = await leaf.evaluate((element) => {
+    const rows = [];
+    for (let parent = element.parentElement; parent; parent = parent.parentElement) {
+      if (parent.matches?.('li.t-submenu[data-navigation-key]')) {
+        rows.push({
+          key: parent.getAttribute('data-navigation-key'),
+          opened: parent.classList.contains('t-is-opened'),
+        });
+      }
+    }
+    return rows.reverse();
+  });
+  for (const ancestor of ancestors) {
+    if (ancestor.opened) continue;
+    const row = page.locator(`li[data-navigation-key="${ancestor.key}"] > .t-menu__item`).first();
+    await row.waitFor({ state: 'visible', timeout: 5000 });
+    await row.click();
+    await sleep(200);
+  }
+  await leaf.waitFor({ state: 'visible', timeout: 5000 });
+  await leaf.click();
+  await page.waitForURL((url) => url.href === target.href || url.pathname === target.pathname, {
+    timeout: 10000,
+  }).catch(() => {});
 }
 
 async function awaitEntrySurface(page) {
@@ -1327,6 +1371,33 @@ async function deniedRoleNavigation(deniedRole) {
   }
 }
 
+async function deniedRoleNavigations(roles) {
+  const observations = {};
+  let cursor = 0;
+  async function worker() {
+    while (cursor < roles.length) {
+      const index = cursor;
+      cursor += 1;
+      const role = roles[index];
+      observations[role] = await deniedRoleNavigation(role);
+    }
+  }
+  await Promise.all(
+    Array.from({ length: Math.min(NEGATIVE_ROLE_CONCURRENCY, roles.length) }, () => worker()),
+  );
+  return observations;
+}
+
+async function dismissTransientDialogs(page) {
+  const dialog = page.locator('.t-dialog__position:visible, [role="dialog"]:visible').first();
+  if (!(await dialog.count())) return;
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    await page.keyboard.press('Escape').catch(() => {});
+    await sleep(150);
+    if (!(await dialog.count())) return;
+  }
+}
+
 async function main() {
   if (!BASE) throw new Error('SC_ACCEPTANCE_FRONTEND_URL is required');
   if (!EXPECTED_SHA) throw new Error('SC_ACCEPTANCE_TARGET_SHA is required');
@@ -1424,6 +1495,7 @@ async function main() {
       const observationMark = observations.length;
       const authMark = state.authFailureAt;
       try {
+        await dismissTransientDialogs(page);
         record = await runEntry(page, state, row, behaviour, sessionCompany);
       } catch (error) {
         // A single entry must not abort the whole declaration matrix: bind the
@@ -1488,9 +1560,10 @@ async function main() {
   });
   const closures = {};
   const navByRole = new Map();
+  const observedByRole = await deniedRoleNavigations(candidateRoles);
   for (const role of candidateRoles) {
     if (Object.prototype.hasOwnProperty.call(closures, role)) continue;
-    const observed = await deniedRoleNavigation(role);
+    const observed = observedByRole[role];
     if (!observed.nav && observed.error) {
       fail(`authority: ${role} login/navigation failed (${observed.error})`);
     }

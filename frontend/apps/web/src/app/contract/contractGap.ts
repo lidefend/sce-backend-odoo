@@ -163,3 +163,31 @@ export function isContractGapError(error: unknown): error is ContractGapError {
   return typeof error === 'object' && error !== null
     && (error as { name?: string }).name === 'ContractGapError';
 }
+
+/**
+ * Normalize the two explicit contract-consumer failures into the user-visible
+ * defect carrier. Ordinary transport and business errors are deliberately not
+ * relabeled as contract defects.
+ */
+export function contractDefectFromError(error: unknown): ContractDefectRef | null {
+  if (isContractGapError(error)) {
+    return {
+      ...error.defect,
+      failureClass: error.defect.failureClass || 'contract_missing',
+    };
+  }
+  if (error instanceof Error && error.name === 'ContractV2DecodeError') {
+    const issues = Array.isArray((error as Error & { issues?: unknown[] }).issues)
+      ? (error as Error & { issues: Array<{ path?: unknown; message?: unknown }> }).issues
+      : [];
+    return {
+      kind: 'contract_defect',
+      failureClass: 'contract_mismatch',
+      missing: issues.length
+        ? issues.map((issue) => `${String(issue.path || '')}: ${String(issue.message || '')}`).join('; ')
+        : error.message,
+      requiredDeclarationLayer: 'P0:smart_core/frontend:contract_v2_schema',
+    };
+  }
+  return null;
+}

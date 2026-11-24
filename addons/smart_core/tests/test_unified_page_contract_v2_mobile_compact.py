@@ -168,6 +168,130 @@ def _native_view_fixture_arch(relative_path: str, record_id: str) -> str:
 
 class TestUnifiedPageContractV2MobileCompact(unittest.TestCase):
 
+    def test_tree_row_buttons_keep_the_native_default_open_form_action(self):
+        parser = _NativeTreeFormFixtureParser()
+        fields = {
+            "name": {"name": "name", "type": "char", "string": "Name"},
+            "amount": {"name": "amount", "type": "float", "string": "Amount"},
+        }
+        parsed = parser._parse_tree_view(
+            '<tree open_form_view="1">'
+            '<field name="name"/><field name="amount"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        actions = parsed["row_actions"]
+        self.assertEqual([row["name"] for row in actions], ["mark_checked", "open_form"])
+        self.assertEqual(actions[-1]["intent"], "open")
+        self.assertEqual(actions[-1]["payload"], {"ref": None, "view_mode": "form"})
+
+        disabled = parser._parse_tree_view(
+            '<tree open_form_view="0">'
+            '<field name="name"/>'
+            '<button name="mark_checked" type="object" string="Check"/>'
+            '</tree>',
+            fields,
+        )
+        self.assertEqual([row["name"] for row in disabled["row_actions"]], ["mark_checked"])
+
+    def test_native_collection_row_open_publishes_complete_record_entry(self):
+        source = {
+            "model": "x.document",
+            "view_type": "tree",
+            "title": "Documents",
+            "fields": {"name": {"name": "name", "type": "char", "string": "Name"}},
+            "permissions": {"read": True, "write": True},
+            "context": {"active_menu_id": 42},
+            "action_identity": {
+                "action_id": 91,
+                "model": "x.document",
+                "action_xmlid": "x.action_documents",
+            },
+            "action_view_set": {
+                "complete": True,
+                "defaultViewType": "tree",
+                "orderedViews": [
+                    {
+                        "viewType": "tree",
+                        "viewId": 101,
+                        "viewXmlId": "x.view_document_tree",
+                        "rendererStatus": "ready",
+                        "projectionStatus": "ready",
+                    },
+                    {
+                        "viewType": "form",
+                        "viewId": 102,
+                        "viewXmlId": "x.view_document_form",
+                        "rendererStatus": "ready",
+                        "projectionStatus": "ready",
+                    },
+                ],
+            },
+            "action_entry_refs": [{
+                "kind": "menu",
+                "menuId": 42,
+                "menuXmlId": "x.menu_documents",
+            }],
+            "views": {
+                "tree": {
+                    "row_actions": [{
+                        "key": "open_form",
+                        "intent": "open",
+                        "payload": {"view_mode": "form"},
+                    }],
+                    "columns": ["name"],
+                },
+                "form": {
+                    "capabilities": {
+                        "modelRights": {
+                            "read": True,
+                            "write": True,
+                            "create": True,
+                            "unlink": False,
+                        },
+                    },
+                },
+            },
+        }
+        contract = assembler.assemble_unified_page_contract_v2(
+            source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.row.record-entry",
+        )
+        row_actions = [
+            row for row in contract["actionContract"]["actionRuleList"]
+            if row.get("sourceWidgetId") == "page.row"
+        ]
+        self.assertEqual(len(row_actions), 1)
+        target = row_actions[0]["target"]
+        self.assertEqual(target["model"], "x.document")
+        self.assertEqual(target["action_id"], 91)
+        self.assertEqual(target["menu_id"], 42)
+        self.assertEqual(target["record_entry"], {
+            "model": "x.document",
+            "record_id": "${id}",
+            "entry_intent": "open",
+            "model_write_authority": True,
+            "action_id": 91,
+            "menu_id": 42,
+        })
+        readonly_source = deepcopy(source)
+        readonly_source["views"]["form"]["capabilities"]["modelRights"]["write"] = False
+        readonly_contract = assembler.assemble_unified_page_contract_v2(
+            readonly_source,
+            source_type="ui.contract",
+            client_type="web_pc",
+            request_id="test.native.row.record-entry-readonly",
+        )
+        readonly_target = next(
+            row["target"]
+            for row in readonly_contract["actionContract"]["actionRuleList"]
+            if row.get("sourceWidgetId") == "page.row"
+        )
+        self.assertIs(readonly_target["record_entry"]["model_write_authority"], False)
+
     def test_native_relation_domain_wire_and_rejection(self):
         from odoo.addons.smart_core.core.native_relation_domain import compile_relation_domain
         fixture = json.loads((REPO_ROOT / "frontend/apps/web/scripts/fixtures/native_relation_domain.json").read_text())

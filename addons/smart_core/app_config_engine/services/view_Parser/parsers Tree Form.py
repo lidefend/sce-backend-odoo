@@ -650,8 +650,15 @@ class _TreeFormParserMixin:
         except Exception:
             _logger.exception("parse tree view failed")
 
-        if not row_actions:
-            row_actions = [{
+        open_form_view = (
+            (root.get('open_form_view', '1') if root is not None else '1')
+            or '1'
+        ).strip().lower() not in ('0', 'false')
+        if open_form_view and not any(
+            str(action.get('name') or '').strip() == 'open_form'
+            for action in row_actions
+        ):
+            row_actions.append({
                 "name": "open_form",
                 "label": _("打开"),
                 "kind": "open",
@@ -661,7 +668,7 @@ class _TreeFormParserMixin:
                 "display_mode": "row_click",
                 "intent": "open",
                 "payload": {"ref": None, "view_mode": "form"},
-            }]
+            })
         if not columns:
             # 没有列时，取 fields_info 前几列兜底
             columns = [k for k in (fields_info or {}).keys() if not k.startswith('__')][:6] or ['id']

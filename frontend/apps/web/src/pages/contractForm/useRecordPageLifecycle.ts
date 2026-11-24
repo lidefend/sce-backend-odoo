@@ -5,7 +5,10 @@ import { resolveContractV2FormFieldMap } from '../../app/contracts/v2';
 import type { FormRecordHydrationTarget } from './recordHydration';
 import { readonlyMainDataCoversFields } from './readonlyMainDataCoverage';
 import { contractLoadProfileOptions } from './contractRenderProfile';
-import { isContractGapError, type ContractDefectRef } from '../../app/contract/contractGap';
+import {
+  contractDefectFromError,
+  type ContractDefectRef,
+} from '../../app/contract/contractGap';
 import { resolveContractFormReadContext } from './contractRuntimeVm';
 import { canPublishRecordReady, markStartupPhase } from '../../app/performance/startupTiming';
 import {
@@ -478,7 +481,7 @@ export function useRecordPageLifecycle(dependencies: LifecycleDependencies) {
         void preloadFormAuxiliaryData(reloadToken);
       } catch (err) {
         if (!reloadIsCurrent()) return;
-        renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
+        renderErrorDefect.value = contractDefectFromError(err);
         if (err instanceof ApiError) {
           Object.assign(loadError, {
             status: err.status,

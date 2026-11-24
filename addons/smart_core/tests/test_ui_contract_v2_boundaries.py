@@ -84,6 +84,10 @@ def _install_lxml_shim():
 def _load_handler():
     _install_lxml_shim()
     root = Path(__file__).resolve().parents[1]
+    shared_assembler_name = (
+        "odoo.addons.smart_core.core.unified_page_contract_v2_assembler"
+    )
+    shared_assembler = sys.modules.get(shared_assembler_name)
     _install_module("odoo")
     _install_module("odoo.addons")
     smart_core_mod = _install_module("odoo.addons.smart_core")
@@ -141,7 +145,7 @@ def _load_handler():
     real_assembler_spec.loader.exec_module(real_assembler)
 
     _install_module(
-        "odoo.addons.smart_core.core.unified_page_contract_v2_assembler",
+        shared_assembler_name,
         CONTRACT_VERSION="2.0",
         _native_view_identity_for=real_assembler._native_view_identity_for,
         assemble_unified_page_contract_v2=_assemble_unified_page_contract_v2,
@@ -269,6 +273,10 @@ def _load_handler():
     sys.modules[module_name] = module
     spec.loader.exec_module(module)
     module._captured = captured
+    # The handler imports its stubs eagerly. Restore the shared module before
+    # returning to the test process so later test files that lazily import the
+    # canonical assembler cannot receive this fixture-only projection stub.
+    sys.modules[shared_assembler_name] = shared_assembler or real_assembler
     return module
 
 
@@ -496,6 +504,15 @@ class TestNodeValidationSnapshotConsumption(unittest.TestCase):
 class TestUiContractV2Boundaries(unittest.TestCase):
     def setUp(self):
         self.module = _load_handler()
+
+    def test_handler_fixture_restores_the_shared_assembler_module(self):
+        assembler = sys.modules[
+            "odoo.addons.smart_core.core.unified_page_contract_v2_assembler"
+        ]
+        self.assertEqual(
+            assembler.NOTE_FIELD_TOKENS,
+            ("note", "remark", "description", "memo", "comment", "说明", "备注"),
+        )
 
     def test_create_defaults_fingerprint_tracks_only_live_default_changes(self):
         class Model:
@@ -1139,7 +1156,9 @@ class TestUiContractV2Boundaries(unittest.TestCase):
         self.assertEqual(node["fieldInfo"]["context"], expected)
         self.assertEqual(node["fieldInfo"]["contextRaw"], raw)
         self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["context"], expected)
-        self.assertEqual(group["widgetList"][0]["fieldDescriptor"]["contextRaw"], raw)
+        # contextRaw is producer evidence on fieldInfo/nativeBehavior. The strict
+        # V2 fieldDescriptor schema admits the resolved context only.
+        self.assertNotIn("contextRaw", group["widgetList"][0]["fieldDescriptor"])
         self.assertEqual(node["attributes"]["context"], raw)
 
     def test_final_field_context_leaves_unresolved_declaration_fail_closed(self):

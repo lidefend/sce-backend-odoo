@@ -1,0 +1,190 @@
+# User Barrierless Closure
+
+## Identity
+
+- Baseline: `f07f65967df5b42eabf9d752ee7a439d91f27a1e`
+- Branch: `release/daily-main-mode-20261124`
+- Run: `.agent/runs/USER-BARRIERLESS-CLOSURE-20261125/run.json`
+
+## Objective
+
+Continue from the Contract V2 2.6 closure candidate and exercise the released
+formal product through the navigation and business surfaces a real user sees.
+Repair user-blocking defects only in their owning layer.
+
+## First Finding
+
+The web-contract architecture guard still required the retired industry-module
+statusbar projection token. Contract V2 statusbar production already resides in
+the P0 `smart_core.workflow.contract` owner and the industry service delegates to
+it. This is a P4 validation-tool defect, not a second statusbar authority.
+
+## Confirmed User Blockers
+
+### Native row open was suppressed by row buttons
+
+The native tree parser emitted the default `open_form` row action only when a
+tree had no row buttons. A report such as `项目盈亏分析` has four object-method
+buttons, so the platform omitted the implicit record-open action. Clicking a row
+then had no declared navigation target.
+
+The parser now appends the default open action unless native
+`open_form_view="0"` explicitly disables it. The Contract V2 assembler omits it
+when the Action has no form View. The frontend selects only declared navigation
+actions for row activation; object-method row buttons are no longer mistaken for
+row-open actions.
+
+### Empty selection values were reported as invalid enum values
+
+Odoo represents an empty selection as boolean `false`. The list path converted
+that native empty value to the string `"false"` and failed closed as if it were
+an unknown enum key. This blocked the entire `日常合同` list with
+`field.pricing_mode.selection`.
+
+Selection and status presentation now treats native `false` as an empty value,
+while an actually unknown truthy key still fails closed.
+
+## Validation-tool Corrections
+
+- The workflow statusbar guard now checks the actual P0 producer.
+- Matrix shards default to two workers to match the local Odoo connection pool.
+- Denied-role observations use bounded per-shard concurrency.
+- A transient dialog left by one entry is dismissed before the next entry; this
+  prevents one failed interaction from blocking unrelated navigation.
+- `account.menu_action_account_moves_all` declares no detail assertion because
+  its native Action publishes tree/pivot/graph/kanban Views and no form View.
+- The menu-configuration business entry declares its explicit admin surface.
+
+## Verified User Paths
+
+- `智能工作台`: ready.
+- `My Work`: ready.
+- `质量中心`: list and record detail passed.
+- `施工日志`: list and record detail passed.
+- `日常合同`: selection empty values render; record form passed.
+- `项目盈亏分析`: default row open is restored; record form passed.
+- The 15 previously identified detail blockers were rechecked after the fixes;
+  fourteen passed directly. The remaining `日记账项目` item was a false detail
+  expectation because its Action has no form View; it now passes with detail
+  explicitly not applicable.
+
+The first four-shard full run filled the local Odoo connection pool and produced
+secondary 500 responses. Those observations are classified as an environment /
+validation-tool defect and were not counted as product failures. Per owner
+instruction, already-correct surfaces were not re-walked.
+
+## Mainline Alignment
+
+The first governed `workspace.branch.sync-main` attempt targeted GitHub
+`origin/main` commit `11a6984c433be21904f4f1479c1291999c67a146`. The tool
+correctly restored the original candidate after rejecting a patch-identity
+change on `.agent/active-runs.json`.
+
+Root cause: main and the topic both added different sorted branch entries.
+Git merged those JSON entries without a conflict marker, so the existing tool
+did not classify the file as a three-way metadata union and compared the
+relocated JSON patch as product responsibility.
+
+The P4 safe-sync entry now recognizes a clean active-run merge only when the
+current file equals the exact base/main/topic branch-map union. The new
+regression covers non-conflicting insertions at different sorted positions.
+`make verify.workspace.branch.sync-main` passed 52 tests.
+
+The corrected governed entry then replayed the candidate onto exact GitHub
+main `11a6984c433be21904f4f1479c1291999c67a146`, producing aligned candidate
+`417b96964e4da26127d8219f6b1007857b6044e9` before this status commit.
+
+## Exclusions
+
+No database migration, fixture rebuild, demo-data rewrite, mainline integration,
+deployment or production change is included.
+
+## Current Status
+
+- Local targeted validation: passed.
+  - Entry: `make ci.local.iteration`
+  - Result: 24/24 required targets passed across frontend, backend,
+    contract and governance layers.
+  - Receipt:
+    `.runtime/frontend-dev-validation/executions/20261124T202409Z-1765932-879590440/receipt.json`
+  - Coverage includes native tree parsing, Contract V2 action/assembler/runtime
+    guards, strict frontend typecheck, lint, business semantics, semantic
+    registry, P0 contract production and the affected backend unit/ORM checks.
+- Already-correct user surfaces: not re-walked, by explicit owner direction.
+- The earlier full-matrix attempt did not produce product evidence: it failed
+  before opening entries because the served revision
+  `a5aff5c2684ef015a9462d836e29d82d970a4971` did not match the requested
+  candidate `f07f65967df5b42eabf9d752ee7a439d91f27a1e`. This is recorded as a
+  validation/environment identity failure, not a product pass.
+- Mainline integration: candidate is aligned to exact GitHub main and published
+  as PR #998; merge has not occurred.
+- Deployment: the candidate is running only in the governed local development
+  environment.
+- User acceptance: affected blocker paths passed; the complete 132-entry release
+  acceptance is not being rerun while already-correct surfaces are frozen by
+  owner instruction.
+
+## PR #998 CI Isolation Correction
+
+The exact main-aligned candidate was published as PR
+[#998](https://github.com/lidefend/sce-backend-odoo/pull/998). Its first backend
+suite failed because `test_ui_contract_v2_boundaries.py` installed a fixture
+stub under the canonical assembler module name and left it in `sys.modules`.
+When the mobile-contract tests later triggered the lazy `layout_semantics`
+import, they received the stub and failed with:
+
+`ImportError: cannot import name 'NOTE_FIELD_TOKENS'`.
+
+`verify_coverage` failed as a consequence of that suite failure. This is a
+test-isolation defect, not a contract or runtime product failure.
+
+The fixture now restores the pre-existing canonical assembler module after the
+handler test module has finished loading. A regression asserts that the shared
+module is restored.
+
+- Boundary tests: 181 passed.
+- Mobile-contract tests: 151 passed.
+- Combined discover order: 332 passed.
+
+## PR #998 Payment Request Relation Presentation
+
+After the backend test isolation was corrected, the frontend release diagnostic
+reported `Cannot read properties of undefined (reading 'parentNode')` while
+opening `payment.request/39`. An offline render using the captured exact
+contract showed the original consumer failure behind that secondary Vue error:
+
+`字段 settlement_id 的关系值缺少可验证记录身份`.
+
+`canonicalFieldToFormSection()` intentionally projects a many2one display name
+into `value` for presentation drivers while retaining the id in `inputValue`.
+The readonly facts renderer then treated that display string as the relation
+value and lost the record identity. The render exception caused Vue's error
+surface replacement to fail secondarily with `parentNode`.
+
+The form-section schema now carries `relationValue` as the original relation
+fact, separate from the display-oriented `value`. Readonly presentation uses
+`relationValue`; normal drivers keep the existing display text.
+
+- Offline exact-contract render: 12 sections, no consumer exception.
+- Relation projection and readonly presentation regression: passed.
+- Strict frontend typecheck: passed.
+- Frontend lint: 0 errors, 3 pre-existing warnings.
+
+The subsequent full page reproduction exposed a second, independent lifecycle
+defect behind the same `parentNode` symptom. Every closed `ScDialog` pre-mounted
+its TDesign driver. That TDesign version reads `styleEl.value.parentNode` in its
+`beforeUnmount` hook without guarding an unmount that occurs before mount
+initialization. An asynchronous form page replacement could therefore unmount
+a closed dialog before its mounted hook had created the style element.
+
+`ScDialog` now mounts its TDesign driver only while `open` is true and always
+passes `visible=true` to that mounted driver. The overlay lifecycle guard pins
+both conditions so a closed dialog cannot regress to eager vendor mounting.
+
+With the lifecycle failure removed, the payment diagnostic exposed the
+underlying contract-consumer issue: `ledger_line_ids` already declared
+`componentConfig.relationEntry.page_size = 20`, but the canonical form adapter
+only read `fieldDescriptor.relation_entry` and therefore published no page
+size. The adapter now consumes the producer's `relationEntry` carrier first,
+then the descriptor carrier. Missing declarations still remain missing and
+continue to stop at the renderer.

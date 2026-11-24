@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { decodeContractV2FieldDescriptor } from '../src/app/contracts/v2/fieldDescriptor';
 import { decodeContractCarrierCapabilities } from '../src/app/contracts/v2/carrierCapabilities';
 import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
-import { contractGapError } from '../src/app/contract/contractGap';
+import { contractDefectFromError, contractGapError } from '../src/app/contract/contractGap';
 import { buildStatusError } from '../src/composables/useStatus';
 import {
   PageOrchestrationDecodeError,
@@ -207,6 +207,23 @@ assert.equal(decodeMismatch.contractDefect?.failureClass, 'contract_mismatch');
 assert.equal(decodeMismatch.contractDefect?.requiredDeclarationLayer,
   'P0:smart_core/frontend:contract_v2_schema');
 assert.match(decodeMismatch.contractDefect?.missing || '', /activity_ids/);
+assert.deepEqual(contractDefectFromError(decodeError), decodeMismatch.contractDefect);
+assert.equal(contractDefectFromError(new Error('ordinary request failure')), null);
+
+const contextualRelation = decodeContractV2FieldDescriptor({
+  ...paymentDetailCollection.descriptor,
+  context: { default_request_id: 7 },
+});
+assert.deepEqual(contextualRelation.descriptor.context, { default_request_id: 7 });
+assert.throws(
+  () => decodeContractV2FieldDescriptor({
+    ...paymentDetailCollection.descriptor,
+    context: { default_request_id: 7 },
+    contextRaw: "{'default_request_id': request_id}",
+  }),
+  /FIELD_DESCRIPTOR_UNKNOWN_KEY/,
+  'resolved field context is declared once; native raw evidence remains outside fieldDescriptor',
+);
 
 assert.throws(
   () => decodeContractV2FieldDescriptor({ ...readyMoney, widgetType: 'domain' }),

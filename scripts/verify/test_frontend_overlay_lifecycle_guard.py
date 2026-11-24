@@ -31,6 +31,10 @@ class OverlayLifecycleGuardTest(unittest.TestCase):
         errors = validate(self.altered("dialog", ':destroy-on-close="true"'))
         self.assertTrue(any("destroy-on-close" in error for error in errors))
 
+    def test_closed_dialog_cannot_premount_the_tdesign_driver(self):
+        errors = validate(self.altered("dialog", 'v-if="open"'))
+        self.assertTrue(any('v-if="open"' in error for error in errors))
+
     def test_dialog_cannot_escape_the_phone_viewport(self):
         values = dict(self.sources)
         values["dialog"] = values["dialog"].replace(

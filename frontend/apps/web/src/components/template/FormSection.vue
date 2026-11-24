@@ -949,6 +949,9 @@ function readonlyText(field: FormSectionFieldSchema) {
     && String(field.value).trim().toLowerCase() === 'false'
     ? ''
     : field.value;
+  const relationValue = fieldType === 'many2one' && field.relationValue !== undefined
+    ? field.relationValue
+    : normalizedValue;
   return presentDeclaredBusinessValue({
     field: {
       ...(field.descriptor || {}),
@@ -961,7 +964,7 @@ function readonlyText(field: FormSectionFieldSchema) {
       currencyField: field.currencyField,
       currencyLabel: field.currencyLabel,
     },
-    value: normalizedValue,
+    value: relationValue,
     currencyLabel: field.currencyLabel,
     emptyText: resolveReadonlyEmptyText(field),
     temporalProfile: 'full',

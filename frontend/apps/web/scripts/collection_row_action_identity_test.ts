@@ -12,6 +12,7 @@ import assert from 'node:assert/strict';
 import { isContractGapError } from '../src/app/contract/contractGap';
 import {
   ROW_PLACEMENT_WIDGET_ID,
+  isRowNavigationAction,
   isRowPlacementAction,
   useActionViewNavigationRuntime,
 } from '../src/app/action_runtime/useActionViewNavigationRuntime';
@@ -48,7 +49,29 @@ const rowAction = rule({
   actionKey: 'open_form',
   sourceWidgetId: ROW_PLACEMENT_WIDGET_ID,
   intent: 'open',
-  target: { view_type: 'form' },
+  target: {
+    view_type: 'form',
+    model: 'project.project',
+    action_id: 348,
+    menu_id: 501,
+    record_entry: {
+      model: 'project.project',
+      record_id: '${id}',
+      entry_intent: 'open',
+      model_write_authority: true,
+      action_id: 348,
+      menu_id: 501,
+    },
+  },
+});
+
+const rowMethodAction = rule({
+  actionId: 'action.action_open_actual_revenue_lines',
+  actionKey: 'action_open_actual_revenue_lines',
+  sourceWidgetId: ROW_PLACEMENT_WIDGET_ID,
+  intent: 'execute_button',
+  target: {},
+  button: { name: 'action_open_actual_revenue_lines', type: 'object' },
 });
 
 function makeStore(actionRuleList: Dict[], viewType = 'list') {
@@ -63,7 +86,7 @@ function makeStore(actionRuleList: Dict[], viewType = 'list') {
 
 type Push = Dict;
 
-function drive(actionRuleList: Dict[], row: Dict, options?: { viewType?: string; editable?: boolean; pushes?: Push[] }) {
+function drive(actionRuleList: Dict[], row: Dict, options?: { viewType?: string; editable?: boolean; collectionSemantic?: string; pushes?: Push[] }) {
   const pushes: Push[] = options?.pushes || [];
   const runtime = useActionViewNavigationRuntime({
     routeQueryMap: { value: { view_mode: 'list' } } as never,
@@ -72,6 +95,7 @@ function drive(actionRuleList: Dict[], row: Dict, options?: { viewType?: string;
     actionId: { value: 348 } as never,
     actionContract: { value: makeStore(actionRuleList, options?.viewType || 'list') } as never,
     canEditRecord: { value: options?.editable === true } as never,
+    collectionSemantic: { value: options?.collectionSemantic || '' } as never,
     resolvedModelRef: { value: 'project.project' } as never,
     modelRef: { value: 'project.project' } as never,
     routerPush: (target: unknown) => {
@@ -89,10 +113,13 @@ assert.equal(isRowPlacementAction(headerAction), false, 'header placement is not
 assert.equal(isRowPlacementAction(null), false, 'missing action is not a row action');
 assert.equal(isRowPlacementAction(undefined), false, 'undefined action is not a row action');
 assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'placement id is trimmed');
+assert.equal(isRowNavigationAction(rowAction), true, 'row navigation is distinguished from row buttons');
+assert.equal(isRowNavigationAction(rowMethodAction), false, 'an object-method row button is not row activation');
 
-// 1. A header action declared before the row action must never be chosen.
+// 1. Header and object-method row actions declared before row navigation must
+// never be chosen as the row-open target.
 {
-  const pushes = drive([headerAction, rowAction], { id: 10, model: 'project.project' });
+  const pushes = drive([headerAction, rowMethodAction, rowAction], { id: 10, model: 'project.project' });
   assert.equal(pushes.length, 1, 'a row click resolves exactly one target');
   const path = String(pushes[0].path || '');
   assert.ok(
@@ -123,17 +150,56 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
 
 // 3. Without a declared row placement the runtime must not invent row identity.
 {
-  const pushes = drive([headerAction], { id: 10, model: 'project.project' });
-  assert.equal(pushes.length, 0, 'header-only contracts must not resolve a row action');
+  const pushes: Push[] = [];
+  drive([headerAction], { id: 10, model: 'project.project' }, { pushes });
+  assert.equal(pushes.length, 0, 'header-only contracts must not invent row identity');
 }
 
 // 4. Row placement is only consumed on collection view types.
 {
-  const pushes = drive([headerAction, rowAction], { id: 10, model: 'project.project' }, { viewType: 'form' });
-  assert.equal(pushes.length, 0, 'form contracts must not resolve a row action');
+  const pushes: Push[] = [];
+  drive([headerAction, rowAction], { id: 10, model: 'project.project' }, { viewType: 'form', pushes });
+  assert.equal(pushes.length, 0, 'form contracts do not expose a collection row action');
 }
 
-// 5. A row action that explicitly targets a contextual scene carries the
+// 5. A hierarchical worksheet consumes the same declared row target as every
+// other collection presentation. Presentation semantics never bypass the action.
+{
+  const pushes = drive(
+    [headerAction, rowAction],
+    { id: 10, model: 'project.project' },
+    { collectionSemantic: 'hierarchical_worksheet' },
+  );
+  assert.equal(pushes.length, 1, 'hierarchical rows resolve one declared target');
+  assert.equal(pushes[0].path, '/f/project.project/10');
+}
+
+// 6. A row containing only object-method buttons remains clickable only through
+// its declared buttons; the row itself does not fabricate a navigation.
+{
+  const pushes: Push[] = [];
+  drive([rowMethodAction], { id: 10, model: 'project.project' }, { pushes });
+  assert.equal(pushes.length, 0, 'method-only row actions do not create a row-open route');
+}
+
+// 7. A native row-open action without a complete target stops before routing.
+{
+  const incompleteRow = rule({
+    actionId: 'action.open_form',
+    actionKey: 'open_form',
+    sourceWidgetId: ROW_PLACEMENT_WIDGET_ID,
+    intent: 'open',
+    target: { view_type: 'form' },
+  });
+  const pushes: Push[] = [];
+  assert.throws(
+    () => drive([incompleteRow], { id: 10, model: 'project.project' }, { pushes }),
+    isContractGapError,
+  );
+  assert.equal(pushes.length, 0, 'an incomplete row target cannot fall back to model/id inference');
+}
+
+// 8. A row action that explicitly targets a contextual scene carries the
 // declared target query through materialization.
 {
   const sceneRow = rule({
@@ -153,7 +219,7 @@ assert.equal(isRowPlacementAction({ sourceWidgetId: ' page.row ' }), true, 'plac
   assert.equal((pushes[0].query as Dict).project_id, '10', 'scene row query materializes the clicked row id');
 }
 
-console.log('[OK] collection row action identity: 7 cases');
+console.log('[OK] collection row action identity: 9 cases');
 
 // An existing malformed formal declaration cannot be rescued by either fallback.
 let formalBoundaryCases = 0;

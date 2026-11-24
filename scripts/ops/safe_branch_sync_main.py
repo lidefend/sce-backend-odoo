@@ -693,6 +693,27 @@ def verify_active_runs_resolution(plan: SyncPlan) -> None:
         raise SyncError("active-runs index merge changed during sync")
 
 
+def collect_prepared_active_runs_union(plan: SyncPlan) -> bool:
+    """Recognize a clean three-way active-run merge after automatic replay.
+
+    JSON inserts at different sorted positions can merge without conflict, but
+    the resulting map hunk is not byte-identical to the pre-sync topic patch.
+    Treat that case as metadata only after proving the current file equals the
+    exact base/main/topic branch-map union.
+    """
+    if not (
+        not path_equals_revision(
+            plan.root, plan.replay_base, plan.new_main, ACTIVE_RUNS_INDEX_PATH
+        )
+        and not path_equals_revision(
+            plan.root, plan.replay_base, plan.head, ACTIVE_RUNS_INDEX_PATH
+        )
+    ):
+        return False
+    verify_active_runs_resolution(plan)
+    return True
+
+
 def personal_data_false_positives_union(plan: SyncPlan) -> dict:
     """Union exact scan exemptions without accepting conflicting metadata."""
     try:
@@ -835,6 +856,8 @@ def run_rebase(
             merge_personal_data_false_positives(plan)
             metadata_conflicts.add(PERSONAL_DATA_FALSE_POSITIVES_PATH)
         result = run(plan.root, "-c", "core.editor=true", "rebase", "--continue", check=False)
+    if collect_prepared_active_runs_union(plan):
+        metadata_conflicts.add(ACTIVE_RUNS_INDEX_PATH)
     semantic_conflicts.update(collect_prepared_semantic_unions(plan))
     return (
         append_only_log_resolved,

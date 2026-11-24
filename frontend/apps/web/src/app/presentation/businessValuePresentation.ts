@@ -459,6 +459,9 @@ export function presentDeclaredBusinessValue(input: {
     });
   }
   if (kind === 'status') {
+    if (input.value === false || isEmptyFieldValue(input.value)) {
+      return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+    }
     const key = selectionValue(input.value);
     const selection = statusContract?.selection ?? [];
     const presentation = resolveCollectionStatusPresentation({
@@ -493,6 +496,9 @@ export function presentDeclaredBusinessValue(input: {
     });
   }
   if (kind === 'selection') {
+    if (input.value === false || isEmptyFieldValue(input.value)) {
+      return Object.freeze({ kind: 'empty', text: emptyText, tone: 'neutral', badgeSemantic: 'default' });
+    }
     const key = selectionValue(input.value);
     const selection = normalizedSelection(input.field);
     const label = selection.find((item) => item.value === key)?.label;

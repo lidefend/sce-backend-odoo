@@ -345,7 +345,7 @@
       "literal": "/login",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        598
+        603
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -359,7 +359,7 @@
       "literal": "access-denied",
       "path": "frontend/apps/web/src/pages/contractForm/useRecordFormActions.ts",
       "lines": [
-        602
+        607
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

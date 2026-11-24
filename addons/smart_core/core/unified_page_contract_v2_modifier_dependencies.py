@@ -656,7 +656,6 @@ def hydrate_final_field_contexts(
                 descriptor = widget.get("fieldDescriptor")
                 if not isinstance(descriptor, dict):
                     continue
-                descriptor["contextRaw"] = raw
                 descriptor["context"] = deepcopy(parsed)
         for key in ("children", "pages", "tabs", "nodes", "items"):
             visit(value.get(key))
@@ -682,7 +681,6 @@ def hydrate_final_field_contexts(
                 raw = descriptor.get("context")
                 parsed = resolve(raw)
             if parsed is not None:
-                descriptor["contextRaw"] = raw
                 descriptor["context"] = deepcopy(parsed)
         for key in ("children", "pages", "tabs", "nodes", "items"):
             visit_widgets(value.get(key))

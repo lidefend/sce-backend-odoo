@@ -73,6 +73,10 @@ export type FormSectionFieldSchema = {
   // Raw value for readonly display or unsupported-field input usage.
   value?: unknown;
 
+  // Original relation identity retained separately from the display text
+  // projected into ``value`` for many2one drivers.
+  relationValue?: unknown;
+
   // Value normalized by page layer for direct control binding.
   // For date/datetime, this must already match native input format.
   inputValue?: string | number | boolean | null;

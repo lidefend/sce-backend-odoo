@@ -14,5 +14,5 @@ import type { SemanticRegistryRow } from './semantic_registry.generated';
 export const INDUSTRY_RENDERER_MANIFEST_VERSION = 2;
 
 export const INDUSTRY_RENDERER_ROWS: readonly SemanticRegistryRow[] = [
-  {componentKey: 'sc.payment.settlement_detail_collection', semanticType: 'payment_settlement_detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.6.0', requiredCapabilities: ['form.relation.one2many']},
+  {componentKey: 'sc.payment.settlement_detail_collection', semanticType: 'payment_settlement_detail_collection', supportedFieldTypes: ['one2many'], readiness: 'ready', renderer: 'PaymentSettlementDetailCollectionControl', rendererVersion: '1.0.0', supportedContractVersion: '>=2.0.0 <2.7.0', requiredCapabilities: ['form.relation.one2many']},
 ];

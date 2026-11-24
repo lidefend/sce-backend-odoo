@@ -86,6 +86,7 @@ import {
   formatMonetaryInputValue,
   monetaryInputStep,
   normalizeMonetaryDigits,
+  presentDeclaredBusinessValue,
   resolveCurrencyDisplayLabel,
 } from '../src/app/presentation/businessValuePresentation';
 import { resolveBusinessCategoryContext } from '../src/pages/contractForm/contractRuntimeVm';
@@ -927,6 +928,29 @@ assert.equal(
   20,
   'the canonical renderer must project the declared one2many page size, not drop it',
 );
+const componentDeclaredOne2manySchema = canonicalFieldToFormSection({
+  ...dateRangeStartField,
+  widgetId: 'field.outflow_line_ids',
+  fieldCode: 'outflow_line_ids',
+  fieldType: 'one2many',
+  widgetType: 'one2many',
+  value: [],
+  componentConfig: {
+    fieldType: 'one2many',
+    relation: 'payment.request.line',
+    relationEntry: { page_size: 25, options_limit: 80, options_search_limit: 40 },
+  },
+  fieldDescriptor: {
+    name: 'outflow_line_ids',
+    type: 'one2many',
+    relation: 'payment.request.line',
+  },
+});
+assert.equal(
+  componentDeclaredOne2manySchema.one2manyPageSize,
+  25,
+  'the canonical renderer must consume the producer relationEntry carrier',
+);
 const undeclaredOne2manySchema = canonicalFieldToFormSection({
   ...dateRangeStartField,
   widgetId: 'field.outflow_line_ids',
@@ -1323,7 +1347,7 @@ assert.deepEqual(
   {
     version: '1.0',
     rendererVersion: '1.0.0',
-    supportedContractVersion: '>=2.0.0 <2.6.0',
+    supportedContractVersion: '>=2.0.0 <2.7.0',
     pageContractVersion: '2.3.0',
   },
   'component identity, renderer version and page Contract V2 version must reach the presentation model',
@@ -2729,9 +2753,27 @@ assert.deepEqual(
 );
 const renderedRelation = canonicalFieldToFormSection(relationField);
 assert.deepEqual(
-  { value: renderedRelation.value, inputValue: renderedRelation.inputValue, text: renderedRelation.many2oneTextValue },
-  { value: 'Road Project', inputValue: 852, text: 'Road Project' },
+  {
+    value: renderedRelation.value,
+    relationValue: renderedRelation.relationValue,
+    inputValue: renderedRelation.inputValue,
+    text: renderedRelation.many2oneTextValue,
+  },
+  {
+    value: 'Road Project',
+    relationValue: { id: 852, displayName: 'Road Project', model: 'project.project' },
+    inputValue: 852,
+    text: 'Road Project',
+  },
   'all drivers must receive the same relation display name instead of a naked database id',
+);
+assert.equal(
+  presentDeclaredBusinessValue({
+    field: { name: 'project_id', type: 'many2one' },
+    value: renderedRelation.relationValue,
+  }).text,
+  'Road Project',
+  'readonly presentation must retain the relation identity separately from its display text',
 );
 
 const emptySnapshot = snapshot();
