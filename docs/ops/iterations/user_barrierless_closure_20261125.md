@@ -90,6 +90,10 @@ current file equals the exact base/main/topic branch-map union. The new
 regression covers non-conflicting insertions at different sorted positions.
 `make verify.workspace.branch.sync-main` passed 52 tests.
 
+The corrected governed entry then replayed the candidate onto exact GitHub
+main `11a6984c433be21904f4f1479c1291999c67a146`, producing aligned candidate
+`417b96964e4da26127d8219f6b1007857b6044e9` before this status commit.
+
 ## Exclusions
 
 No database migration, fixture rebuild, demo-data rewrite, mainline integration,
@@ -112,8 +116,8 @@ deployment or production change is included.
   `a5aff5c2684ef015a9462d836e29d82d970a4971` did not match the requested
   candidate `f07f65967df5b42eabf9d752ee7a439d91f27a1e`. This is recorded as a
   validation/environment identity failure, not a product pass.
-- Mainline integration: exact-main alignment is pending the validated safe-sync
-  correction; no push, PR or merge has occurred.
+- Mainline integration: candidate is aligned to exact GitHub main; no push,
+  PR or merge has occurred yet.
 - Deployment: the candidate is running only in the governed local development
   environment.
 - User acceptance: affected blocker paths passed; the complete 132-entry release
