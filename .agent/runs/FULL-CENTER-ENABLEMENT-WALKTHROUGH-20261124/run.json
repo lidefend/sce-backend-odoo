@@ -16,10 +16,19 @@
     "addons/smart_core/identity/identity_resolver.py",
     "addons/smart_core/tests/test_identity_resolver_entry_target.py",
     "docs/engineering_convergence/complexity_budget_report.md",
+    "docker-compose.yml",
     "make/ci.mk",
+    "make/dev.mk",
+    "make/frontend.mk",
     "scripts/release/test_locked_menu_policy_contract.py",
+    "scripts/dev/frontend_static_build.sh",
+    "scripts/verify/business_entry_matrix_browser.mjs",
+    "scripts/verify/business_entry_matrix_incremental.py",
     "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_business_entry_matrix_incremental.py",
     "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/verify/test_local_dev_frontend_quick.py",
+    "scripts/verify/test_local_development_lifecycle.py",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json",
     "scripts/verify/baselines/formal_business_product_menu_policy_v1.json.sha256",
     "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
@@ -103,10 +112,23 @@
         "scripts/verify/frontend_dev_incremental.py",
         "scripts/verify/test_frontend_dev_incremental.py"
       ]
+    },
+    "matrix_parallelization": {
+      "target": "verify.frontend.business_entry.evidence_scope.unit",
+      "kind": "offline",
+      "inputs": [
+        "scripts/verify/business_entry_matrix_browser.mjs",
+        "scripts/verify/business_entry_matrix_incremental.py",
+        "scripts/verify/test_business_entry_matrix_incremental.py",
+        "make/frontend.mk"
+      ]
     }
   },
-  "blockers": [],
-  "next_exact_step": "Run synchronized exact-head targeted checks, deploy the exact candidate through the governed local.dev entry, bind runtime-version to that HEAD, and resume the full entry matrix.",
+  "blockers": [
+    "P0 relation display projection: 37/132 entries passed fully; 41 entries report field.project_id.relation_label and 4 report field.project_id.relation_identity",
+    "P1/contract presentation declarations remain unresolved for 6 entries after the 25-second confirmation pass"
+  ],
+  "next_exact_step": "Fix the P0 API data relation display projection for many2one descendants and rerun only affected entries, then classify the six remaining presentation declarations.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

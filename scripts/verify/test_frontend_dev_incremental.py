@@ -3371,6 +3371,7 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         for path in (
             "scripts/verify/test_local_test_runner.py",
             "scripts/verify/test_local_development_lifecycle.py",
+            "docker-compose.yml",
             "scripts/dev/local_platform_control.py",
             "scripts/dev/local_platform_release_apply.py",
             "scripts/verify/test_local_platform_control.py",
@@ -3381,6 +3382,10 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
                     select_targets([path]),
                     ["verify.local.development_lifecycle.unit"],
                 )
+        self.assertEqual(
+            select_targets(["scripts/verify/test_local_dev_frontend_quick.py"]),
+            ["verify.local.dev.frontend.quick.unit"],
+        )
 
     def test_detail_collection_guard_keeps_its_behavior_target(self) -> None:
         self.assertEqual(

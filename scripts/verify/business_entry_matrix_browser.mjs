@@ -65,12 +65,16 @@ const CSV_PATH = process.env.SC_ENTRY_MATRIX_CSV || 'docs/product/frontend_busin
 const OVERLAY_PATH = process.env.SC_ENTRY_MATRIX_OVERLAY || 'scripts/verify/business_entry_matrix_overlay.json';
 const EXPOSURE_REGISTRY_PATH = process.env.SC_ENTRY_MATRIX_EXPOSURE_REGISTRY
   || 'config/frontend/role_surface_exposure_declarations_v1.json';
+const CLOSURES_PATH = process.env.SC_ENTRY_MATRIX_CLOSURES
+  || 'artifacts/frontend-business-entry-matrix/negative_closures.json';
+const REUSE_NEGATIVE_CLOSURES = process.env.SC_ENTRY_MATRIX_REUSE_CLOSURES === '1';
 const DOMAIN_FILTER = (process.env.SC_ENTRY_MATRIX_DOMAIN || '').trim();
 const KEYS_FILTER = (process.env.SC_ENTRY_MATRIX_KEYS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const SKIP_PASSED = process.env.SC_ENTRY_MATRIX_INCLUDE_PASSED === '1';
 const WRITE_CONFIRM = process.env.SC_ENTRY_WRITE_CONFIRM || '';
 const WRITE_CONFIRM_TOKEN = 'DRIVE_DAILY_SC_DEMO_ENTRY_MATRIX';
 const VIEWPORT = parseViewport(process.env.SC_ENTRY_MATRIX_VIEWPORT);
+const TRACE = process.env.SC_ENTRY_MATRIX_TRACE === '1';
 const OUT_DIR = process.env.SC_ACCEPTANCE_OUTPUT_DIR
   || path.join('artifacts', 'frontend-business-entry-matrix', String(Date.now()));
 // The observation is persisted per entry, not once at the end. A single expired
@@ -86,6 +90,12 @@ const ENTRIES_PATH = path.join(OUT_DIR, 'entries.jsonl');
 // of the selection cascade into empty conclusions. A genuine product assertion
 // failure is never retried.
 const MAX_ENTRY_ATTEMPTS = Math.max(1, Number(process.env.SC_ENTRY_MATRIX_MAX_ATTEMPTS || 2));
+const boundedTimeout = (raw, fallback) => {
+  const value = Number(raw);
+  return Number.isFinite(value) && value > 0 ? Math.max(1000, Math.min(value, 60000)) : fallback;
+};
+const SURFACE_TIMEOUT_MS = boundedTimeout(process.env.SC_ENTRY_MATRIX_SURFACE_TIMEOUT_MS, 25000);
+const DETAIL_TIMEOUT_MS = boundedTimeout(process.env.SC_ENTRY_MATRIX_DETAIL_TIMEOUT_MS, 10000);
 
 const problems = [];
 const observations = [];
@@ -94,6 +104,10 @@ let browser;
 
 function fail(message) { problems.push(message); }
 function sleep(ms) { return new Promise((resolve) => setTimeout(resolve, ms)); }
+function trace(message, fields = {}) {
+  if (!TRACE) return;
+  process.stderr.write(`[business-entry-matrix] ${message} ${JSON.stringify(fields)}\n`);
+}
 function parseViewport(raw) {
   const text = String(raw || '').trim();
   if (!text) return null;
@@ -125,6 +139,25 @@ function loadExposureRegistry() {
     unauthored_count: unauthored.length,
     pending_count: Object.keys(pending).length,
   };
+}
+
+function snapshottedNegativeRoles() {
+  if (!REUSE_NEGATIVE_CLOSURES || !fs.existsSync(CLOSURES_PATH)) return null;
+  try {
+    const body = JSON.parse(fs.readFileSync(CLOSURES_PATH, 'utf8'));
+    if (
+      body.schema !== 'business_entry_negative_closures.v1'
+      || String(body.base_url || '').replace(/\/$/, '') !== BASE
+      || String(body.database || '') !== DB
+      || String((body.acting || {}).login || '') !== LOGIN
+    ) return null;
+    const candidates = body.candidates && typeof body.candidates === 'object' ? body.candidates : {};
+    return new Set(Object.entries(candidates)
+      .filter(([, observed]) => observed && !observed.error && Number(observed.nav_targets || 0) > 0)
+      .map(([role]) => String(role)));
+  } catch {
+    return null;
+  }
 }
 
 function envelopeData(body) {
@@ -257,14 +290,15 @@ async function servedRevision() {
   return await response.json();
 }
 
-async function login(page) {
-  await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
+async function login(page, state) {
+  await page.goto(matrixLoginUrl(BASE), { waitUntil: 'domcontentloaded' });
   const inputs = page.locator('input');
   await inputs.nth(0).fill(LOGIN);
   await inputs.nth(1).fill(PASSWORD);
   await page.getByRole('button', { name: /^登录$/ }).click();
   await page.waitForFunction(() => !location.pathname.includes('/login'), null, { timeout: 30000 });
-  await page.waitForTimeout(2500);
+  const deadline = Date.now() + 15000;
+  while (Date.now() < deadline && (!state.nav || !state.user)) await sleep(100);
 }
 
 // Re-authenticate when the acting session was lost. Recovery is explicit and
@@ -279,7 +313,8 @@ async function ensureSession(page, state) {
   state.nav = null;
   state.user = null;
   state.authFailureAt = 0;
-  await login(page);
+  await login(page, state);
+  trace('session-ready', { login: state.actorLogin, nav: Boolean(state.nav), user: Boolean(state.user) });
   const deadline = Date.now() + 15000;
   while (Date.now() < deadline && (!state.nav || !state.user)) await sleep(300);
   if (!state.nav || !state.user) {
@@ -413,12 +448,16 @@ async function presentationStatus(page, presentation) {
 async function rendererHostDeclaration(page) {
   const host = page.locator('.action-surface-renderer-host[data-surface-semantic]').first();
   if (!(await host.count())) return null;
-  return {
-    semantic: String((await host.getAttribute('data-surface-semantic')) || ''),
-    requested: String((await host.getAttribute('data-requested-renderer')) || ''),
-    active: String((await host.getAttribute('data-active-renderer')) || ''),
-    status: String((await host.getAttribute('data-renderer-status')) || ''),
-  };
+  try {
+    return {
+      semantic: String((await host.getAttribute('data-surface-semantic', { timeout: 1000 })) || ''),
+      requested: String((await host.getAttribute('data-requested-renderer', { timeout: 1000 })) || ''),
+      active: String((await host.getAttribute('data-active-renderer', { timeout: 1000 })) || ''),
+      status: String((await host.getAttribute('data-renderer-status', { timeout: 1000 })) || ''),
+    };
+  } catch {
+    return null;
+  }
 }
 
 async function visibleSurfaceFailure(page) {
@@ -454,8 +493,8 @@ async function visibleSurfaceFailure(page) {
     contract_gap: await node.getAttribute('data-contract-gap'),
     contract_gap_kind: await node.getAttribute('data-contract-gap-kind'),
     contract_gap_layer: await node.getAttribute('data-contract-gap-layer'),
-    recovery_action: await recovery.getAttribute('data-recovery-action').catch(() => null),
-    v2_shadow_error: await form.getAttribute('data-v2-shadow-error').catch(() => null),
+    recovery_action: await recovery.getAttribute('data-recovery-action', { timeout: 500 }).catch(() => null),
+    v2_shadow_error: await form.getAttribute('data-v2-shadow-error', { timeout: 500 }).catch(() => null),
     vue: vueDiagnostics,
   };
 }
@@ -528,22 +567,32 @@ async function navigateEntry(page, navTarget) {
   if (target.origin !== base.origin) {
     throw new Error(`released entry route ${route} escaped the acceptance origin`);
   }
-  await page.goto(target.href, { waitUntil: 'networkidle' });
-  await sleep(900);
+  await page.goto(target.href, { waitUntil: 'domcontentloaded' });
+}
+
+async function awaitEntrySurface(page) {
+  const deadline = Date.now() + SURFACE_TIMEOUT_MS;
+  while (Date.now() < deadline) {
+    const failure = await visibleSurfaceFailure(page);
+    if (failure) return { failure, detected: null };
+    const detected = await detectPresentation(page);
+    if (detected.presentation) return { failure: null, detected };
+    await sleep(150);
+  }
+  return { failure: await visibleSurfaceFailure(page), detected: await detectPresentation(page) };
 }
 
 async function awaitPresentation(page, presentation) {
   const spec = presentationSpec(presentation);
   const surface = presentationSurface(page, presentation);
-  await surface.waitFor({ state: 'attached', timeout: 30000 });
-  const deadline = Date.now() + 30000;
+  const deadline = Date.now() + SURFACE_TIMEOUT_MS;
   let status = '';
   while (Date.now() < deadline) {
-    status = String((await surface.getAttribute(spec.stateAttribute)) || '');
+    if (await visibleSurfaceFailure(page)) return 'error';
+    status = String((await surface.getAttribute(spec.stateAttribute, { timeout: 500 }).catch(() => '')) || '');
     if (status && status !== 'loading') break;
-    await sleep(400);
+    await sleep(150);
   }
-  await sleep(600);
   return status;
 }
 
@@ -553,7 +602,7 @@ async function readPaging(page, entryKey, presentation) {
     observations.push({ entry: entryKey, stage: 'paging', skipped: true, reason: 'no declared pagination footer' });
     return;
   }
-  await footer.waitFor({ state: 'attached', timeout: 15000 });
+  await footer.waitFor({ state: 'attached', timeout: 5000 });
   const mode = String((await footer.getAttribute('data-pagination-mode')) || '');
   const state = String((await footer.getAttribute('data-state')) || '');
   const regionLabel = String((await footer.getAttribute('aria-label')) || '');
@@ -616,7 +665,7 @@ async function searchAndVerify(page, entryKey, term, presentation) {
   }
   await search.fill(term);
   await page.getByRole('button', { name: /^搜索$/ }).first().click();
-  await sleep(3500);
+  await sleep(1200);
   const status = await presentationStatus(page, presentation);
   const rows = await renderedRecordCount(page, presentation);
   observations.push({ entry: entryKey, stage: 'search', term, status, rows });
@@ -625,15 +674,15 @@ async function searchAndVerify(page, entryKey, term, presentation) {
   const clear = page.getByRole('button', { name: /^清除$/ }).first();
   if (await clear.count()) {
     await clear.click().catch(() => {});
-    await sleep(1500);
+    await sleep(600);
   } else {
     await search.fill('').catch(() => {});
     await page.getByRole('button', { name: /^搜索$/ }).first().click().catch(() => {});
-    await sleep(1500);
+    await sleep(600);
   }
 }
 
-async function waitForRecordContract(state, sinceIndex, timeout = 30000) {
+async function waitForRecordContract(state, sinceIndex, timeout = DETAIL_TIMEOUT_MS) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (let index = state.contracts.length - 1; index >= sinceIndex; index -= 1) {
@@ -649,7 +698,7 @@ async function waitForRecordContract(state, sinceIndex, timeout = 30000) {
 // envelope (`op=model`), not through a first-row open. Its mainData carries the
 // declared default field values, which is exactly the read-back the form
 // entries claim.
-async function waitForModelContract(state, sinceIndex, model, timeout = 20000) {
+async function waitForModelContract(state, sinceIndex, model, timeout = DETAIL_TIMEOUT_MS) {
   const deadline = Date.now() + timeout;
   while (Date.now() < deadline) {
     for (let index = state.contracts.length - 1; index >= sinceIndex; index -= 1) {
@@ -691,9 +740,9 @@ async function openFirstRecord(page, state, presentation) {
   } else {
     await node.click();
   }
-  await sleep(1500);
+  await sleep(500);
   if (declaredScene) {
-    const deadline = Date.now() + 15000;
+    const deadline = Date.now() + DETAIL_TIMEOUT_MS;
     while (Date.now() < deadline) {
       if (sceneNavigationMatchesUrl(declaredScene, page.url())) {
         const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
@@ -824,10 +873,19 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   };
   const contractBaseline = state.contracts.length;
   const responseBaseline = state.responseFailures.length;
+  trace('entry-navigate', { entry: entryKey, route: navTarget.route });
   await navigateEntry(page, navTarget);
+  trace('entry-navigation-loaded', { entry: entryKey, url: page.url() });
+  const settled = await awaitEntrySurface(page);
+  trace('entry-surface-settled', {
+    entry: entryKey,
+    presentation: settled.detected?.presentation || null,
+    failure: Boolean(settled.failure),
+  });
   const sceneError = page.locator('[data-semantic-component="SceneView"][data-state="error"]:visible').first();
-  if (await sceneError.count()) {
-    const message = String((await sceneError.innerText().catch(() => '')) || '').trim().slice(0, 500);
+  if (settled.failure || await sceneError.count()) {
+    const message = settled.failure?.text
+      || String((await sceneError.innerText().catch(() => '')) || '').trim().slice(0, 500);
     assertions.presentation = 'error';
     fail(`${entryKey}: the scene surface rendered its declared error state: ${message}`);
     return {
@@ -838,7 +896,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
       runtime_diagnostics: runtimeFailureDiagnostics(state, contractBaseline, responseBaseline),
     };
   }
-  const detected = await detectPresentation(page);
+  const detected = settled.detected || await detectPresentation(page);
   const presentation = detected.presentation;
   if (!presentation) {
     fail(`${entryKey}: the runtime declared no recognised presentation surface (declared by ${detected.declaredBy || 'nothing'})`);
@@ -873,6 +931,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   }
   const spec = presentationSpec(presentation);
   const status = await awaitPresentation(page, presentation);
+  trace('entry-presentation-ready', { entry: entryKey, presentation, status });
   const record = {
     entry: entryKey, label: row.label, menu_id: navTarget.menu_id,
     action_id: navTarget.action_id, route: navTarget.route, scene_key: navTarget.scene_key,
@@ -915,6 +974,7 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
   }
   assertions.collection = status || 'ready';
   await readPaging(page, entryKey, presentation);
+  trace('entry-paging-read', { entry: entryKey });
   const rendered = await renderedRecordCount(page, presentation);
   record.records_rendered = rendered;
   if (spec.expectsRecords && status === 'ok' && rendered < 1) {
@@ -1042,7 +1102,9 @@ async function runEntry(page, state, row, behaviour, sessionCompany) {
         reason: `declared collection state ${status || 'unknown'} rendered ${rendered} record surface(s)`,
       });
     } else {
+      trace('entry-detail-open', { entry: entryKey, presentation });
       const opened = await openFirstRecord(page, state, presentation);
+      trace('entry-detail-complete', { entry: entryKey, opened: Boolean(opened) });
       if (!opened) {
         assertions.detail = 'failed';
         record.runtime_diagnostics = runtimeFailureDiagnostics(state, contractBaseline, responseBaseline);
@@ -1248,13 +1310,12 @@ async function deniedRoleNavigation(deniedRole) {
   const state = { user: null, nav: null, contracts: [], responseFailures: [] };
   attachCapture(page, state);
   try {
-    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'networkidle' });
+    await page.goto(matrixLoginUrl(BASE), { waitUntil: 'domcontentloaded' });
     const inputs = page.locator('input');
     await inputs.nth(0).fill(deniedRole);
     await inputs.nth(1).fill(PASSWORD);
     await page.getByRole('button', { name: /^登录$/ }).click();
     await page.waitForFunction(() => !location.pathname.includes('/login'), null, { timeout: 30000 });
-    await page.waitForTimeout(2500);
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline && !state.nav) await sleep(300);
     return state;
@@ -1330,7 +1391,7 @@ async function main() {
   };
   attachCapture(page, state);
 
-  await login(page);
+  await login(page, state);
   {
     const deadline = Date.now() + 15000;
     while (Date.now() < deadline && (!state.nav || !state.user)) await sleep(300);
@@ -1351,6 +1412,8 @@ async function main() {
   for (const { row, behaviour } of selected) {
     const entryKey = row.menu_xmlid;
     if (completedEntries.has(entryKey)) continue;
+    const entryStartedAt = Date.now();
+    trace('entry-start', { entry: entryKey });
     let record;
     let lastConsoleMark = consoleErrors.length;
     const entryProblemStart = problems.length;
@@ -1396,11 +1459,12 @@ async function main() {
     }
     record.final_url = page.url();
     record.console_errors = consoleErrors.slice(lastConsoleMark);
+    record.duration_ms = Date.now() - entryStartedAt;
+    trace('entry-complete', { entry: entryKey, status: record.status || 'checked', duration_ms: record.duration_ms });
     summary.push(record);
     completedEntries.add(entryKey);
     appendEntry(record);
     writeObservation('partial');
-    await page.goto(`${BASE}/`, { waitUntil: 'networkidle' }).catch(() => {});
   }
 
   // Negative authority is declared by the runtime, never by a hand-kept map.
@@ -1411,7 +1475,16 @@ async function main() {
   // makes "the entry is absent" vacuously true, which would fabricate a denial
   // that was never exercised. The derivation lives in
   // business_entry_matrix_model.mjs so planning and execution cannot drift.
-  const candidateRoles = deniedRoleCandidatesFor(overlay, ACCEPTANCE_PROFILE);
+  const declaredCandidateRoles = deniedRoleCandidatesFor(overlay, ACCEPTANCE_PROFILE);
+  const snapshottedRoles = snapshottedNegativeRoles();
+  const candidateRoles = snapshottedRoles
+    ? declaredCandidateRoles.filter((role) => snapshottedRoles.has(role))
+    : declaredCandidateRoles;
+  trace('negative-candidates', {
+    declared: declaredCandidateRoles.length,
+    selected: candidateRoles.length,
+    snapshot: Boolean(snapshottedRoles),
+  });
   const closures = {};
   const navByRole = new Map();
   for (const role of candidateRoles) {

@@ -1256,6 +1256,7 @@ RULES = (
         "scripts/dev/changed_odoo_tests.py",
         "scripts/verify/test_changed_odoo_tests.py",
         "docker-compose.test-isolation.yml",
+        "docker-compose.yml",
         "scripts/verify/test_local_test_runner.py",
         "scripts/verify/test_local_development_lifecycle.py",
         "scripts/test/payment_approval_upgrade_rehearsal.py",
@@ -1267,6 +1268,11 @@ RULES = (
         "scripts/verify/test_local_platform_control.py",
     ), (
         "verify.local.development_lifecycle.unit",
+    )),
+    Rule((
+        "scripts/verify/test_local_dev_frontend_quick.py",
+    ), (
+        "verify.local.dev.frontend.quick.unit",
     )),
     Rule((
         "scripts/verify/local_dev_payment_settlement_component_journey.mjs",
@@ -2832,6 +2838,7 @@ VERIFICATION_SURFACE_PREFIXES = (
 FORBIDDEN_DEVELOPMENT_TARGET_PARTS = ("quick", "build", "browser", "release", "fingerprint")
 DEVELOPMENT_ALLOWED_CANDIDATE_LIGHT_TARGETS = frozenset({
     "verify.quick.input_scope.unit",
+    "verify.local.dev.frontend.quick.unit",
 })
 # Run bookkeeping and narrative documentation carry no frontend source input:
 # reconciling `.agent/` state or writing an iteration record must never be reported

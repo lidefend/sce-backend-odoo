@@ -253,6 +253,68 @@ class PartialFoldPlanTests(unittest.TestCase):
         self.assertEqual(plan["unreached"], 0)
 
 
+class ParallelProbeTests(unittest.TestCase):
+    def test_concurrency_is_bounded_and_partitioning_is_deterministic(self) -> None:
+        self.assertEqual(
+            incremental.partition_probe_keys(["menu.a", "menu.b", "menu.c", "menu.d", "menu.e"], 4),
+            [["menu.a", "menu.e"], ["menu.b"], ["menu.c"], ["menu.d"]],
+        )
+        self.assertEqual(incremental.resolve_probe_concurrency(99, unit_count=3), 3)
+        self.assertEqual(incremental.resolve_probe_concurrency("invalid", unit_count=3), 1)
+
+    def test_child_summaries_merge_in_declared_order(self) -> None:
+        first = {
+            "schema": "business_entry_matrix_browser.v1",
+            "selection": {"keys": ["menu.a"], "entries": ["menu.a"]},
+            "assertion_summary": {"entry_navigation": {"passed": 1}},
+            "observations": [{"entry": "menu.a", "stage": "paging"}],
+            "console_errors": [],
+            "problems": [],
+            "entries": [{"entry": "menu.a", "status": "checked"}],
+            "completeness": "complete",
+            "ok": True,
+        }
+        second = {
+            "schema": "business_entry_matrix_browser.v1",
+            "selection": {"keys": ["menu.b"], "entries": ["menu.b"]},
+            "assertion_summary": {"entry_navigation": {"passed": 1}},
+            "observations": [{"entry": "menu.b", "stage": "paging"}],
+            "console_errors": ["console.error: fixture"],
+            "problems": [],
+            "entries": [{"entry": "menu.b", "status": "checked"}],
+            "completeness": "complete",
+            "ok": True,
+        }
+        merged = incremental.merge_probe_summaries([second, first], ["menu.a", "menu.b"])
+        self.assertEqual([entry["entry"] for entry in merged["entries"]], ["menu.a", "menu.b"])
+        self.assertEqual(merged["selection"]["keys"], ["menu.a", "menu.b"])
+        self.assertEqual(merged["assertion_summary"]["entry_navigation"]["passed"], 2)
+        self.assertEqual(merged["completeness"], "complete")
+        self.assertTrue(merged["ok"])
+
+    def test_a_partial_or_failed_child_keeps_the_merged_observation_open(self) -> None:
+        child = {
+            "schema": "business_entry_matrix_browser.v1",
+            "selection": {"keys": ["menu.a", "menu.b"], "entries": ["menu.a", "menu.b"]},
+            "assertion_summary": {},
+            "observations": [],
+            "console_errors": [],
+            "problems": [],
+            "entries": [{"entry": "menu.a", "status": "checked"}],
+            "completeness": "partial",
+            "ok": False,
+        }
+        merged = incremental.merge_probe_summaries(
+            [child],
+            ["menu.a", "menu.b"],
+            child_problems=["browser shard 2 exited 1 without summary.json"],
+        )
+        self.assertEqual([entry["entry"] for entry in merged["entries"]], ["menu.a"])
+        self.assertEqual(merged["completeness"], "partial")
+        self.assertFalse(merged["ok"])
+        self.assertTrue(merged["problems"])
+
+
 class RequestedOnlySelectionTests(unittest.TestCase):
     def test_requested_only_narrows_an_all_uncovered_plan(self):
         selection = incremental.restrict_selection_to_requested(

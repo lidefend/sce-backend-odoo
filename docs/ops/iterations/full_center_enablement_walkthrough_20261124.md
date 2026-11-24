@@ -84,7 +84,7 @@ Target behavior:
 | P4 planning | `make verify.frontend.dev.incremental.unit` | 237 tests PASS |
 | P1 runtime | `verify.scene.company_route_scope_cache.orm` via `make ci.local.iteration` | 9 tests PASS |
 | Cross-layer | `make ci.local.iteration` | 12 affected targets PASS |
-| P4 matrix | `make verify.frontend.business_entry.matrix.incremental` | blocked until exact deployed identity |
+| P4 matrix | `make verify.frontend.business_entry.matrix.incremental` | 132 entries executed; product failures recorded |
 
 Original incremental receipt:
 
@@ -93,6 +93,65 @@ Original incremental receipt:
 The receipt binds `ad5a07a5d44c91ebce4eee99a9e78b0968e38f7d` plus the two
 metadata-document edits made after synchronization. Those edits do not alter
 the checked source or tool inputs.
+
+## Matrix tooling efficiency correction
+
+The first execution strategy was serial and spent 45–75 seconds per failing
+entry. The root causes were `networkidle` navigation, fixed post-navigation
+sleeps, optional diagnostic `getAttribute` calls with the default 30-second
+timeout, and no reuse of the already observed negative-role closure.
+
+The P4 probe now:
+
+- waits for declared surface/error states instead of network idleness;
+- bounds every optional diagnostic attribute read;
+- exposes per-entry duration;
+- partitions the read-only matrix across four independent browser workers;
+- forces write-bearing checks to remain serial;
+- reuses the bound negative-role closure and skips unrelated candidate logins.
+
+Measured result for the complete 132-entry matrix:
+
+- 4 shards, 33 entries each;
+- wall time `10:10:47` → `10:18:07` (7m20s);
+- aggregate entry execution 1,568.4s;
+- 132/132 entries navigated successfully;
+- 20 entries passed the initial surface-level pass.
+
+Evidence:
+
+`.runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/full-matrix-parallel/summary.json`
+
+The initial run used a 12-second surface timeout. Sixty-five entries timed out
+without console or response errors. They were re-executed incrementally against
+the same source and frontend bundle with a declared 25-second timeout:
+
+`.runtime/agent-runs/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124/unknown-presentation-r2/summary.json`
+
+Combined status for the 132 unique entries:
+
+| Status | Count |
+| --- | ---: |
+| checked | 37 |
+| surface-error | 60 |
+| scene-error | 27 |
+| unknown-presentation | 6 |
+| assertion-failed | 2 |
+
+The dominant confirmed contract gap is relation display projection:
+`field.project_id.relation_label` appears on 41 entries, with additional
+`owner_id`, `company_id`, `user_id`, `partner_id`, `department_id`, `plan_id`,
+and related collection cases. This is a P0 API-data display projection issue;
+it must not be patched as a frontend fallback.
+
+The six remaining `unknown-presentation` entries are:
+
+- `smart_construction_core.menu_sc_runtime_user_management`
+- `smart_construction_core.menu_sc_plan`
+- `smart_construction_core.menu_sc_quality_rectification`
+- `smart_construction_core.menu_sc_quality_recheck`
+- `smart_construction_core.menu_sc_safety_rectification`
+- `smart_construction_core.menu_sc_settlement_order`
 
 The existing P0 test file has two unrelated historical failures. They are not
 used as pass evidence and are not modified by this batch; the registered P0
