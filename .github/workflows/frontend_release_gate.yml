@@ -9,6 +9,12 @@ on:
   schedule:
     - cron: '0 18 * * *'
   workflow_dispatch:
+    inputs:
+      payment_request_diagnostic:
+        description: "Run only the exact payment-request detail diagnostic"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -40,6 +46,7 @@ jobs:
       PR_HEAD_SHA: ${{ github.event.pull_request.head.sha || '' }}
       CI_PROJECT_NAME: sc-fe-release-${{ github.run_id }}-${{ github.run_attempt }}
       CANDIDATE_REQUESTED: ${{ github.event_name == 'schedule' || github.event_name == 'workflow_dispatch' || github.event.action == 'labeled' && github.event.label.name == 'ci:candidate' }}
+      PAYMENT_REQUEST_DIAGNOSTIC: ${{ inputs.payment_request_diagnostic && '1' || '0' }}
 
     steps:
       - name: Checkout the authoritative code object
@@ -200,13 +207,18 @@ jobs:
 
       - name: Run the single authoritative frontend release command
         id: release
-        if: steps.effective_lane.outputs.frontend_mode == 'full'
+        if: steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'
         env:
           FRONTEND_RELEASE_PR_HEAD_SHA: ${{ env.PR_HEAD_SHA }}
         run: |
           set -euo pipefail
           cd frontend/apps/web
           pnpm test:release
+
+      - name: Run focused payment-request diagnostic
+        id: payment_request_diagnostic
+        if: env.PAYMENT_REQUEST_DIAGNOSTIC == '1'
+        run: make --no-print-directory verify.frontend.payment_request.diagnostic
 
       - name: Execute governed managed ORM regressions
         if: steps.effective_lane.outputs.frontend_mode == 'full'
@@ -260,7 +272,7 @@ jobs:
           make verify.frontend.systemic.convergence.static
 
       - name: Fail closed on command or evidence identity
-        if: always() && steps.effective_lane.outputs.frontend_mode == 'full'
+        if: always() && steps.effective_lane.outputs.frontend_mode == 'full' && env.PAYMENT_REQUEST_DIAGNOSTIC != '1'
         env:
           RELEASE_COMMAND_OUTCOME: ${{ steps.release.outcome }}
         run: |
@@ -304,7 +316,7 @@ jobs:
           PY
 
       - name: Upload current-run non-sensitive release evidence
-        if: always() && steps.effective_lane.outputs.frontend_mode == 'full'
+        if: always() && (steps.release.outcome != 'skipped' || steps.payment_request_diagnostic.outcome != 'skipped')
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: frontend-release-evidence-${{ github.run_id }}-${{ github.run_attempt }}-${{ env.CHECKOUT_SHA }}
@@ -323,6 +335,7 @@ jobs:
             artifacts/frontend-delivery-hardening/payment-create-failure.json
             artifacts/frontend-delivery-hardening/failure.json
             artifacts/frontend-delivery-hardening/failure-contract.json
+            artifacts/frontend-delivery-hardening/payment-request-diagnostic.json
             artifacts/frontend-delivery-hardening/screenshots/failure.png
 
       - name: Upload current-run risk-lane evidence

@@ -94,6 +94,13 @@ retains the last bounded synthetic contract responses so the exact decoder
 failure can be reproduced offline. The artifact is marked
 `source=synthetic_acceptance_fixture`; it is not a production payload capture.
 
+For focused investigation, `frontend_release_gate.yml` now accepts
+`payment_request_diagnostic=true`. It keeps the exact-head isolated acceptance
+environment but runs only the real `payment.request/41` route through
+`make verify.frontend.payment_request.diagnostic`; performance, full responsive
+matrix, page identity and unrelated release suites are not executed in that
+diagnostic mode.
+
 ## Boundaries
 
 - No product code, contract, ACL, Record Rule, workflow semantics, database,
@@ -111,7 +118,7 @@ failure can be reproduced offline. The artifact is marked
 - Backend impact routing: PASS, 37 tests.
 - `verify.test.coverage.registry`: PASS, 19 tests; all 229 groups are gated or
   explicitly dispositioned.
-- `verify.frontend.delivery_hardening.guard`: PASS, 57 tests, including bounded
+- `verify.frontend.delivery_hardening.guard`: PASS, 58 tests, including bounded
   route/contract failure diagnostics.
 - `make ci.local.iteration`: PASS after the new route and unit target were
   selected.

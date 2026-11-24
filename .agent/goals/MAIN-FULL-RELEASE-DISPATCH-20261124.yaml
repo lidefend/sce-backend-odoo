@@ -32,6 +32,7 @@ goal:
       - .agent/context.yaml
       - make/ci.mk
       - make/frontend.mk
+      - make/runtime_ops.mk
       - .github/workflows/frontend_release_gate.yml
       - scripts/ci/main_full_release_dispatch.py
       - scripts/ci/test_main_full_release_dispatch.py
@@ -63,6 +64,7 @@ goal:
     - the five newly discovered mainline test groups are dispositioned without weakening the audit
     - route failures retain bounded contract identity diagnostics for root-cause analysis
     - failed synthetic contract responses are available from the exact-head artifact
+    - a payment-request diagnostic uses only the affected real page rather than the full release matrix
   exclusions:
     - product_code_change
     - database_or_fixture_write

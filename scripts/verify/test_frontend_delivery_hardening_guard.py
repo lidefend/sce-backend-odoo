@@ -613,6 +613,22 @@ class ContractFormCacheOwnershipTest(unittest.TestCase):
             workflow,
         )
 
+    def test_payment_request_diagnostic_has_a_focused_governed_dispatch_path(self):
+        browser = (ROOT / "scripts/verify/frontend_delivery_hardening_browser.mjs").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC", browser)
+        self.assertIn("[verify.frontend.payment_request.diagnostic] PASS", browser)
+        workflow = (ROOT / ".github/workflows/frontend_release_gate.yml").read_text(
+            encoding="utf-8"
+        )
+        self.assertIn("payment_request_diagnostic:", workflow)
+        self.assertIn("make --no-print-directory verify.frontend.payment_request.diagnostic", workflow)
+        self.assertIn("artifacts/frontend-delivery-hardening/payment-request-diagnostic.json", workflow)
+        runtime = (ROOT / "make/runtime_ops.mk").read_text(encoding="utf-8")
+        self.assertIn("verify.frontend.payment_request.diagnostic:", runtime)
+        self.assertIn("DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC=1", runtime)
+
 
 MODULE = ROOT / 'addons/smart_construction_core'
 

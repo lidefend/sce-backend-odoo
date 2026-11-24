@@ -58,6 +58,7 @@ const SCREENSHOTS = path.join(OUT, 'screenshots');
 const TRACES = path.join(OUT, 'traces');
 const PERF_ONLY = process.env.DELIVERY_HARDENING_PERF_ONLY === '1';
 const SKIP_PERF = process.env.DELIVERY_HARDENING_SKIP_PERF === '1';
+const PAYMENT_REQUEST_DIAGNOSTIC = process.env.DELIVERY_HARDENING_PAYMENT_REQUEST_DIAGNOSTIC === '1';
 const PERF_BASELINE_CAPTURE = process.env.DELIVERY_HARDENING_BASELINE_CAPTURE === '1';
 const PERF_BUDGET_PATH = process.env.DELIVERY_HARDENING_BUDGET_JSON
   || 'config/frontend/release_performance_budgets_v1.json';
@@ -850,6 +851,28 @@ async function main() {
       ['payment_request', 'journey_request'],
       await releasedNavigation.targetByMenuXmlid(TARGETS.payment_request.menu_xmlid),
     );
+    if (PAYMENT_REQUEST_DIAGNOSTIC) {
+      await openMyWorkFromRoleHome(page);
+      await navigateSpa(
+        page,
+        recordRoute(TARGETS.payment_request),
+        readyRecordSelector(TARGETS.payment_request),
+      );
+      fs.writeFileSync(
+        path.join(OUT, 'payment-request-diagnostic.json'),
+        `${JSON.stringify({
+          schema_version: 'frontend-payment-request-diagnostic/v1',
+          git_sha: process.env.GIT_SHA || '',
+          result: 'PASS',
+          route: recordRoute(TARGETS.payment_request),
+          action_id: TARGETS.payment_request.action_id,
+          menu_id: TARGETS.payment_request.menu_id,
+          record_id: TARGETS.payment_request.record_id,
+        }, null, 2)}\n`,
+      );
+      console.log('[verify.frontend.payment_request.diagnostic] PASS');
+      return;
+    }
 
     if (process.env.DELIVERY_HARDENING_A11Y_PROBE === '1') {
       await open(page, listRoute(TARGETS.payment_request));

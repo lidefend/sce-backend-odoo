@@ -1232,6 +1232,7 @@ verify.ci.main_full_release.unit: guard.prod.forbid
 	@python3 scripts/ci/test_main_full_release_dispatch.py
 
 .PHONY: ci.frontend_release_gate.dispatch
+PAYMENT_REQUEST_DIAGNOSTIC ?= 0
 ci.frontend_release_gate.dispatch: guard.prod.forbid
 	@bash -c '\
 	set -euo pipefail; \
@@ -1259,7 +1260,11 @@ ci.frontend_release_gate.dispatch: guard.prod.forbid
 	fi; \
 	before_ids="$$(gh run list --workflow frontend_release_gate.yml --branch "$$branch" --event workflow_dispatch --limit 100 --json databaseId --jq ".[].databaseId")"; \
 	echo "[ci.frontend_release_gate.dispatch] repo=$$repo branch=$$branch exact_head=$$expected"; \
-	gh workflow run frontend_release_gate.yml --ref "$$branch"; \
+	if [ "$(PAYMENT_REQUEST_DIAGNOSTIC)" = "1" ]; then \
+	  gh workflow run frontend_release_gate.yml --ref "$$branch" -f payment_request_diagnostic=true; \
+	else \
+	  gh workflow run frontend_release_gate.yml --ref "$$branch"; \
+	fi; \
 	for attempt in $$(seq 1 30); do \
 	  while IFS=$$'\''\t'\'' read -r run_id head_sha run_url; do \
 	    [ -n "$$run_id" ] || continue; \
