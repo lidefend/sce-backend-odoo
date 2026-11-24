@@ -22,13 +22,32 @@ import { ref } from 'vue';
 import { useActionViewContractShapeRuntime } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
-import { presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { normalizeListRelationValue, presentListCell } from '../src/pages/listPage/listCellPresentation';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
   assert.equal(actual, expected, label);
   cases += 1;
 };
+
+assert.deepEqual(
+  normalizeListRelationValue([71, '德阳市城市某某建设投资集团有限公司'], [71, '德阳市城市某某建设投资集团有限公司']),
+  [71, '德阳市城市某某建设投资集团有限公司'],
+  'an ORM many2one tuple must not be wrapped a second time when displayField equals valueField',
+);
+cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue('张建国', 10),
+  [10, '张建国'],
+  'a flattened display field still binds to its declared underlying relation identity',
+);
+cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue({ id: 10, display_name: '张建国' }, 10),
+  { id: 10, display_name: '张建国' },
+  'an already structured relation value remains unchanged',
+);
+cases += 1;
 
 const runtime = useActionViewContractShapeRuntime({
   pageText: (_key: string, fallback: string) => fallback,
