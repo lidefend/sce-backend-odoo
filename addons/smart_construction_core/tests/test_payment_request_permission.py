@@ -1,12 +1,14 @@
 # -*- coding: utf-8 -*-
 
 import base64
+from unittest.mock import Mock
 
 from odoo.exceptions import AccessError
 from odoo.tests.common import tagged
 from .business_case import BusinessTransactionCase
 
 from odoo.addons.smart_construction_core.handlers.payment_request_approval import (
+    PaymentRequestApproveHandler,
     PaymentRequestSubmitHandler,
 )
 
@@ -67,6 +69,19 @@ class TestPaymentRequestPermission(BusinessTransactionCase):
         self.assertTrue(requests.with_user(executive)._has_finance_approve_access())
         self.assertTrue(requests.with_user(finance_approver)._has_finance_approve_access())
         self.assertFalse(requests.with_user(ordinary_user)._has_finance_approve_access())
+
+    def test_current_tier_reviewer_is_not_blocked_by_static_handler_groups(self):
+        reviewer = self._create_user(
+            login="u_payment_configured_reviewer",
+            group_xmlids=["base.group_user"],
+        )
+        handler = PaymentRequestApproveHandler(self.env(user=reviewer.id), payload={})
+        pending = Mock(can_review=True)
+        not_pending = Mock(can_review=False)
+
+        handler._assert_required_groups(pending)
+        with self.assertRaises(AccessError):
+            handler._assert_required_groups(not_pending)
 
     def test_business_initiator_can_submit_without_funding_baseline_acl(self):
         user = self._create_user(

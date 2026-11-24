@@ -19,7 +19,6 @@ def role_surface_override_provider(role_surface_overrides: dict[str, Any]):
 def business_config_admin_group_xmlids():
     return [
         "smart_construction_core.group_sc_cap_business_config_admin",
-        "smart_construction_core.group_sc_role_business_admin",
     ]
 
 def business_config_form_settings_refs():

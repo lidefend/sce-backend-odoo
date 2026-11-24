@@ -718,7 +718,7 @@ verify.backend.model_declaration.guard: guard.prod.forbid
 
 .PHONY: verify.workflow_contract.backend
 verify.workflow_contract.backend: guard.prod.forbid audit.workflow_state.inventory verify.workflow_action_semantics.guard verify.workflow_instance.ownership_boundary
-	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
+	@python3 -m py_compile addons/smart_core/core/action_semantics_vocabulary.py addons/smart_core/core/workflow_contract_injection.py addons/smart_core/models/workflow_contract.py addons/smart_core/tests/test_workflow_contract_platform.py addons/smart_core/tests/test_workflow_contract_profile_registry.py addons/smart_construction_core/models/support/workflow_contract_service.py addons/smart_construction_core/tests/test_workflow_contract_backend.py addons/smart_construction_core/tests/test_user_feedback_business_views.py scripts/audit/workflow_state_inventory.py scripts/verify/workflow_inventory_profile_method_guard.py scripts/verify/workflow_contract_custom_coverage_guard.py scripts/verify/workflow_action_semantics_completeness_guard.py
 	@python3 scripts/verify/workflow_inventory_profile_method_guard.py
 	@python3 scripts/verify/workflow_contract_custom_coverage_guard.py
 	@python3 addons/smart_core/tests/test_workflow_contract_profile_registry.py
@@ -1055,7 +1055,7 @@ ci.professional.backend: guard.prod.forbid verify.contract.page_v1_zero_residue.
 	@echo "[OK] professional backend/static quality gate passed"
 
 # Shard 1: verification and security checks
-ci.professional.backend.shard-verify: guard.prod.forbid verify.capability.module_tooling.unit verify.construction.diary.list_contract.unit verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.ci.workflow.contract verify.contract.architecture.suite verify.quick.input_scope.unit verify.quick.evidence.unit
+ci.professional.backend.shard-verify: guard.prod.forbid verify.capability.module_tooling.unit verify.construction.diary.list_contract.unit verify.contract.page_v1_zero_residue.guard verify.guard.registry verify.test.coverage.registry security.legacy_credential_guard verify.repository.clean_history verify.product.release.version verify.tenant.data_responsibility_boundary verify.tenant.module_set_matrix verify.tenant.payload_boundary verify.tenant.product_legacy_boundary verify.tenant.legacy_xmlid_boundary verify.tenant.product_fresh_install verify.contract.structure_lock verify.unified_page_contract.v2.professional_backend verify.frontend.playwright_vendor_coupling.guard verify.frontend.role_surface_exposure_declaration.guard verify.identity_resolver.landing.unit verify.smart_core.api_data_list_boundaries.unit verify.ci.workflow.contract verify.contract.architecture.suite verify.quick.input_scope.unit verify.quick.evidence.unit
 	@echo "[OK] professional backend shard-verify passed"
 
 # Shard 2: generated reports and architecture checks
@@ -1788,6 +1788,12 @@ verify.role_surface.landing.contract.unit: guard.prod.forbid
 	@python3 scripts/release/test_locked_menu_policy_contract.py
 	@echo "[verify.role_surface.landing.contract.unit] PASS"
 
+.PHONY: verify.identity_resolver.landing.unit
+verify.identity_resolver.landing.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/identity/identity_resolver.py addons/smart_core/tests/test_identity_resolver_entry_target.py
+	@python3 addons/smart_core/tests/test_identity_resolver_entry_target.py TestIdentityResolverEntryTarget.test_landing_always_ends_at_the_platform_safe_surface TestIdentityResolverEntryTarget.test_declared_landing_order_is_respected_before_the_safe_fallback
+	@echo "[verify.identity_resolver.landing.unit] PASS"
+
 .PHONY: verify.construction.create_defaults.unit
 verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 -m unittest scripts.verify.test_construction_create_default_hooks
@@ -1796,6 +1802,12 @@ verify.construction.create_defaults.unit: guard.prod.forbid
 	@python3 scripts/verify/construction_core_extension_relation_entry_policy_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_accessors_split_guard.py
 	@python3 scripts/verify/construction_core_extension_policy_maps_split_guard.py
+
+.PHONY: verify.smart_core.api_data_list_boundaries.unit
+verify.smart_core.api_data_list_boundaries.unit: guard.prod.forbid
+	@python3 -m py_compile addons/smart_core/handlers/api_data.py addons/smart_core/tests/test_api_data_list_param_boundaries.py
+	@python3 addons/smart_core/tests/test_api_data_list_param_boundaries.py
+	@echo "[verify.smart_core.api_data_list_boundaries.unit] PASS"
 
 .PHONY: verify.test.dependency_baseline.unit
 verify.test.dependency_baseline.unit: guard.prod.forbid

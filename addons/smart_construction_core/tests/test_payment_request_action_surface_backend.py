@@ -89,7 +89,7 @@ class TestPaymentRequestActionSurfaceBackend(TransactionCase):
         self.assertTrue(bool(reject.get("requires_reason")))
         self.assertEqual(reject.get("required_role_key"), "finance")
         self.assertEqual(reject.get("required_role_label"), "财务经办人")
-        self.assertEqual(reject.get("required_group_xmlid"), "smart_construction_core.group_sc_role_finance_user")
+        self.assertEqual(reject.get("required_group_xmlid"), "smart_construction_core.group_sc_cap_finance_user")
         self.assertIsInstance(reject.get("actor_matches_required_role"), bool)
         self.assertIsInstance(reject.get("handoff_required"), bool)
         self.assertEqual(int(reject.get("delivery_priority") or 0), 30)

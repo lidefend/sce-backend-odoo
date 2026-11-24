@@ -8,9 +8,15 @@
     :data-contract-gap-kind="contractDefect?.kind || 'contract_defect'"
     :data-contract-gap-layer="contractDefect?.requiredDeclarationLayer || undefined"
   >
-    <h2>页面执行契约暂不可用</h2>
-    <p>系统已读取到页面声明，但当前上下文无法解析为可执行目标。系统已停止继续操作。</p>
-    <p class="trace">ContractGapError: {{ stateResolution.gap }}</p>
+    <h2>{{ contractGapTitle }}</h2>
+    <p>系统已停止继续操作，以避免在不完整或错误的契约上执行业务。</p>
+    <p v-if="message" class="trace">{{ message }}</p>
+    <p class="trace">错误类型：ContractGapError</p>
+    <p class="trace">失败分类：{{ contractGapFailureLabel }}</p>
+    <p class="trace">契约路径：{{ stateResolution.gap }}</p>
+    <p v-if="contractDefect?.requiredDeclarationLayer" class="trace">
+      责任层：{{ contractDefect.requiredDeclarationLayer }}
+    </p>
   </section>
   <section
     v-else
@@ -134,6 +140,18 @@ const stateResolution = computed(() => {
   }
 });
 const productState = computed(() => stateResolution.value.state);
+const contractGapTitle = computed(() => {
+  const failureClass = props.contractDefect?.failureClass || 'contract_missing';
+  if (failureClass === 'contract_mismatch') return '生产契约与平台解码规则不一致';
+  if (failureClass === 'consumer_error') return '前端契约消费失败';
+  return '业务契约声明缺失';
+});
+const contractGapFailureLabel = computed(() => {
+  const failureClass = props.contractDefect?.failureClass || 'contract_missing';
+  if (failureClass === 'contract_mismatch') return 'contract_mismatch（等待 P0 契约/解码裁定）';
+  if (failureClass === 'consumer_error') return 'consumer_error（前端实现错误）';
+  return 'contract_missing（声明层缺失）';
+});
 const displayTitle = computed(() => props.variant === 'error' ? productState.value?.title : props.title);
 const displayMessage = computed(() => props.variant === 'error' ? productState.value?.message : props.message);
 

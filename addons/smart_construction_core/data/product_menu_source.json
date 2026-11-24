@@ -959,12 +959,13 @@
       "synthetic_role_codes": [
         "restricted"
       ],
-      "capability_role_codes": [
-        "project_member"
-      ],
+      "capability_role_codes": [],
       "capability_fallback_order": [
+        "business_config_admin",
         "pm",
-        "finance"
+        "finance",
+        "cost",
+        "project_member"
       ],
       "default_roles": [
         {
@@ -1000,6 +1001,9 @@
           "precedence": 20,
           "exclusive_surface": true,
           "group_xmlids": [
+            "smart_construction_core.group_sc_role_business_admin"
+          ],
+          "capability_group_xmlids": [
             "smart_construction_core.group_sc_cap_business_config_admin"
           ]
         },
@@ -1024,12 +1028,10 @@
           "label": "项目经理",
           "precedence": 60,
           "group_xmlids": [
-            "smart_construction_core.group_sc_role_project_manager",
-            "smart_construction_core.group_sc_role_project_user"
+            "smart_construction_core.group_sc_role_project_manager"
           ],
           "capability_group_xmlids": [
-            "smart_construction_core.group_sc_cap_project_manager",
-            "smart_construction_core.group_sc_cap_project_user"
+            "smart_construction_core.group_sc_cap_project_manager"
           ]
         },
         {
@@ -1058,9 +1060,11 @@
           "label": "成本管理",
           "precedence": 80,
           "group_xmlids": [
-            "smart_construction_core.group_sc_cap_cost_manager",
-            "smart_construction_core.group_sc_cap_cost_user",
             "smart_construction_core.group_sc_role_cost_user"
+          ],
+          "capability_group_xmlids": [
+            "smart_construction_core.group_sc_cap_cost_manager",
+            "smart_construction_core.group_sc_cap_cost_user"
           ]
         },
         {
@@ -1078,7 +1082,11 @@
           "label": "项目成员",
           "precedence": 90,
           "group_xmlids": [
-            "smart_construction_core.group_sc_cap_project_read"
+            "smart_construction_core.group_sc_role_project_user"
+          ],
+          "capability_group_xmlids": [
+            "smart_construction_core.group_sc_cap_project_read",
+            "smart_construction_core.group_sc_cap_project_user"
           ]
         }
       ]
@@ -1120,15 +1128,15 @@
             },
             "business_full": {
               "landing_scene_candidates": [
-                "enterprise.setup",
                 "workspace.home",
+                "enterprise.setup",
                 "projects.list"
               ]
             },
             "business_config_admin": {
               "landing_scene_candidates": [
-                "enterprise.setup",
                 "workspace.home",
+                "enterprise.setup",
                 "projects.list",
                 "projects.ledger",
                 "projects.intake"
@@ -1249,15 +1257,15 @@
             },
             "business_full": {
               "landing_scene_candidates": [
-                "enterprise.setup",
                 "workspace.home",
+                "enterprise.setup",
                 "projects.list"
               ]
             },
             "business_config_admin": {
               "landing_scene_candidates": [
-                "enterprise.setup",
                 "workspace.home",
+                "enterprise.setup",
                 "projects.list",
                 "projects.ledger",
                 "projects.intake"

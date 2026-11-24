@@ -244,10 +244,64 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(set(product + demo + acceptance), set(graph))
         self.assertEqual(len(product + demo + acceptance), len(set(product + demo + acceptance)))
 
+    def test_incremental_product_suite_excludes_demo_and_acceptance_fixture(self):
+        graph = {
+            'product': {
+                'prefix': 'addons/product/',
+                'depends': set(),
+                'manifest_depends': set(),
+            },
+            'acceptance_fixture': {
+                'prefix': 'addons/acceptance_fixture/',
+                'depends': set(),
+                'manifest_depends': set(),
+            },
+            'demo': {
+                'prefix': 'demo_addons/demo/',
+                'depends': set(),
+                'manifest_depends': set(),
+            },
+        }
+        selected = {
+            'modules': ['product', 'acceptance_fixture', 'demo'],
+            'mode': 'full',
+            'reasons': ['shared_runtime'],
+        }
+        coverage = [
+            {'module': 'product', 'path': 'addons/product/tests/test_model.py'},
+            {'module': 'acceptance_fixture', 'path': 'addons/acceptance_fixture/tests/test_fixture.py'},
+            {'module': 'demo', 'path': 'demo_addons/demo/tests/test_demo.py'},
+        ]
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            (root / 'config/tenant').mkdir(parents=True)
+            (root / 'config/tenant/module_sets.v1.json').write_text(json.dumps({
+                'forbidden_implicit_modules': ['acceptance_fixture'],
+            }))
+            with patch.object(planner.impact, 'ROOT', root), \
+                    patch.object(planner.impact, 'snapshot', return_value=graph), \
+                    patch.object(planner.impact, 'select', return_value=selected), \
+                    patch.object(planner.impact, 'git') as git, \
+                    patch.object(planner.changed_coverage, 'changed_tests', return_value=coverage):
+                git.side_effect = lambda *args: {
+                    ('rev-parse', '--verify', 'base^{commit}'): 'b' * 40,
+                    ('rev-parse', '--verify', 'head^{commit}'): 'a' * 40,
+                    ('diff', '--no-renames', '--name-only', 'b' * 40, 'a' * 40, '--'): 'addons/product/model.py',
+                    ('diff', '--no-renames', '--diff-filter=D', '--name-only', 'b' * 40, 'a' * 40, '--'): '',
+                }[args]
+                plan = planner.build_plan('base', 'head', suite='product')
+        self.assertEqual(plan['modules'], ['product'])
+        self.assertEqual(plan['suite'], 'product')
+        self.assertEqual(plan['changed_test_coverage'], coverage[:1])
+
     def test_full_plan_demands_registered_managed_methods(self):
         module = planner.changed_coverage.MANAGED_MODULE
         graph = {module: {'depends': set(), 'tests': True, 'prefix': f'addons/{module}/'}}
-        rows = [{'selector': '/fixture:Test.test_one', 'owner': 'acceptance.frontend.fixture_orm'}]
+        rows = [{
+            'module': module,
+            'selector': '/fixture:Test.test_one',
+            'owner': 'acceptance.frontend.fixture_orm',
+        }]
         def git(*args):
             return f'addons/{module}/tests' if args[0] == 'ls-tree' else 'a' * 40
         with patch.object(planner.impact, 'git', side_effect=git), \
@@ -362,6 +416,39 @@ class ShardPlanTest(unittest.TestCase):
         self.assertEqual(
             {'core': ['addons/core/tests/test_flow.py']},
             planned['focused_orm_files'],
+        )
+
+    def test_focused_plan_uses_changed_tests_for_production_module_changes(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'full',
+            'scope_mode': 'full',
+            'reasons': ['shared_runtime:docker-compose.yml'],
+            'modules': ['core', 'scene'],
+            'changed_paths': [
+                'addons/core/models/document.py',
+                'addons/core/tests/test_flow.py',
+                'docker-compose.yml',
+            ],
+            'changed_deletions': [],
+            'preparation_groups': [['core', 'scene']],
+            'changed_test_coverage': [{
+                'path': 'addons/core/tests/test_flow.py',
+                'module': 'core',
+                'owner': 'backend_suite',
+                'kind': 'orm',
+                'execution_selector': '*/core:TestFlow.test_one',
+            }],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual('focused', planned['scope_mode'])
+        self.assertEqual('changed_module_tests_cover_runtime_changes', planned['focused_reason'])
+        self.assertEqual(['core'], planned['modules'])
+        self.assertEqual(
+            ['*/core:TestFlow.test_one'],
+            planned['focused_selectors']['core'],
         )
 
     def test_focused_plan_narrows_dependent_modules_to_changed_test_owners(self):

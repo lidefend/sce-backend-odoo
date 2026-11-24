@@ -9,6 +9,9 @@ from odoo.addons.smart_construction_core.tests.business_case import BusinessTran
 from odoo.addons.smart_construction_core.models.support.workflow_contract_service import (
     _simple_approval_profiles,
 )
+from odoo.addons.smart_core.core.workflow_contract_injection import (
+    inject_workflow_contract,
+)
 
 # The delivered `退回草稿` rule: `reopen` maps to `action_reset_draft`, and each of
 # these models accepts that method only on a cancelled record.  The map carries the
@@ -728,10 +731,10 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
             "runtimeContract": {},
         }
 
-        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+        projected = self._project_with_platform_workflow(
             self.env,
             base_contract,
-            {"source_contract": source_contract, "view_type": "form"},
+            source_contract,
         )
 
         self.assertEqual(projected["workflowContract"]["editability"], "editable")
@@ -746,7 +749,12 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
             }
         )
         self._set_record_state(payment, "approved")
-        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+        source_contract = {
+            "model": "payment.request",
+            "view_type": "form",
+            "record_id": payment.id,
+        }
+        projected = self._project_with_platform_workflow(
             self.env,
             {
                 "statusContract": {
@@ -758,14 +766,7 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
                 },
                 "runtimeContract": {},
             },
-            {
-                "source_contract": {
-                    "model": "payment.request",
-                    "view_type": "form",
-                    "record_id": payment.id,
-                },
-                "view_type": "form",
-            },
+            source_contract,
         )
         global_status = projected["statusContract"]["globalStatus"]
         self.assertEqual(projected["workflowContract"]["editability"], "readonly")
@@ -791,10 +792,10 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
             "runtimeContract": {},
         }
 
-        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+        projected = self._project_with_platform_workflow(
             self.env,
             base_contract,
-            {"source_contract": source_contract, "view_type": "form"},
+            source_contract,
         )
 
         self.assertEqual(projected["workflowContract"]["editability"], "editable")
@@ -1004,7 +1005,7 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
         with self.assertRaises(UserError):
             reconciliation.action_confirm()
 
-    def test_v2_extension_hook_injects_workflow_contract_for_existing_form(self):
+    def test_platform_contract_injects_workflow_for_existing_form(self):
         claim = self.env["sc.expense.claim"].create(
             {
                 "project_id": self.project.id,
@@ -1023,10 +1024,10 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
             "runtimeContract": {},
         }
 
-        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+        projected = self._project_with_platform_workflow(
             self.env,
             base_contract,
-            {"source_contract": source_contract, "view_type": "form"},
+            source_contract,
         )
 
         self.assertIsInstance(projected, dict)
@@ -1041,6 +1042,22 @@ class TestWorkflowContractBackend(BusinessTransactionCase):
             if row["key"] == key:
                 return row
         self.fail("missing workflow action: %s" % key)
+
+    def _project_with_platform_workflow(self, env, base_contract, source_contract):
+        projected = core_extension.smart_core_finalize_unified_page_contract_v2(
+            env,
+            base_contract,
+            {"source_contract": source_contract, "view_type": "form"},
+        )
+        projected = dict(projected or base_contract)
+        inject_workflow_contract(
+            env,
+            projected,
+            source_contract,
+            model=source_contract["model"],
+            view_type="form",
+        )
+        return projected
 
     def _assert_workflow_contract_schema(self, contract, record):
         self.assertEqual(contract["source"]["kind"], "sc_backend_workflow_contract")

@@ -84,6 +84,7 @@ services:
       # through system.init; callers set this explicitly and unknown fails
       # closed in browser acceptance.
       SC_SOURCE_REVISION: ${SC_SOURCE_REVISION:-unknown}
+      FRONTEND_BUILD_SHA256: ${FRONTEND_BUILD_SHA256:-}
 
       REDIS_HOST: redis
       # === 新增：runtime 明确配置出口 ===

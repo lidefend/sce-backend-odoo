@@ -1228,6 +1228,7 @@ def _strict_field_descriptor(
     widget: dict[str, Any],
     *,
     currency_digits_by_field: dict[str, list[int]] | None = None,
+    model_name: str = "",
 ) -> dict[str, Any] | None:
     legacy = _dict(widget.get("fieldDescriptor"))
     config = _dict(widget.get("componentConfig"))
@@ -1304,10 +1305,28 @@ def _strict_field_descriptor(
     ):
         digits = currency_digits_by_field.get(field_code)
     attachment_role = _text(config.get("attachmentRole") or legacy.get("attachmentRole"))
+    if relation == "ir.attachment" and not attachment_role and model_name and field_code:
+        attachment_role = f"attachment:{model_name}:{field_code}"
     if relation:
         descriptor["relation"] = relation
     if relation_field:
         descriptor["relationField"] = relation_field
+    for key in ("domain", "domainExpression", "context"):
+        value = config.get(key)
+        if value is None:
+            value = legacy.get(key)
+        if value is not None:
+            descriptor[key] = value
+    for key in ("relationEntry", "widgetOptions", "subview", "formStructureRole"):
+        value = config.get(key)
+        if not isinstance(value, dict):
+            value = legacy.get(key)
+        if isinstance(value, dict) and value:
+            descriptor[key] = deepcopy(value)
+    for key in ("filename", "surfaceRole"):
+        value = _text(config.get(key) or legacy.get(key))
+        if value:
+            descriptor[key] = value
     if isinstance(selection, list) and selection:
         pairs: list[list[str]] = []
         for item in selection:
@@ -1397,9 +1416,11 @@ def _upgrade_contract_v2_field_descriptors(
                 strict = _strict_field_descriptor(
                     widget,
                     currency_digits_by_field=currency_digits_by_field,
+                    model_name=model_name,
                 )
                 if strict:
                     widget["fieldDescriptor"] = strict
+                    widget["componentKey"] = strict["componentKey"]
                 elif _text(_dict(widget.get("fieldDescriptor")).get("type") or _dict(widget.get("fieldDescriptor")).get("ttype")) == "monetary":
                     widget.pop("fieldDescriptor", None)
             walk(_list(node.get("children")))

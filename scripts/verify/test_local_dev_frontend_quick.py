@@ -239,6 +239,8 @@ class LocalDevFrontendQuickTest(unittest.TestCase):
         local_frontend = dev_make.split("local.dev.frontend:", 1)[1].split("\n\n", 1)[0]
         self.assertIn("local.dev.ready", local_frontend)
         self.assertIn("frontend_static_build.sh", local_frontend)
+        static_build = (ROOT / "scripts/dev/frontend_static_build.sh").read_text(encoding="utf-8")
+        self.assertIn("frontend_build_fingerprint.sh", static_build)
         ci_make = (ROOT / "make/ci.mk").read_text(encoding="utf-8")
         evidence_runner = (ROOT / "scripts/ops/local_quick_evidence.py").read_text(
             encoding="utf-8"

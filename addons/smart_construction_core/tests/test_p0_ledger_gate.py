@@ -332,7 +332,7 @@ class TestCorePaymentAmountSemantics(BusinessTransactionCase):
                 "name": "T1-B Vendor",
                 "sc_account_name": "T1-B Vendor",
                 "sc_bank_name": "T1-B Bank",
-                "sc_bank_account": "6222000000000088",
+                "sc_bank_account": "SYNTHETIC-TEST-ACCOUNT",
             }
         )
         self.project = self._project("T1-B Project", self.company)
@@ -642,7 +642,7 @@ class TestCorePaymentAmountSemantics(BusinessTransactionCase):
             }
         )
         self.register_business_company(company)
-        self.env["sc.approval.policy"].search([("company_id", "=", self.company.id), ("target_model", "=", "payment.request")], limit=1).copy({"company_id": company.id, "code": "synthetic_secondary_payment", "step_ids": [(0, 0, {"name": "Secondary company approval", "approval_scope_key": "executive", "approve_group_id": self.env.ref("smart_construction_core.group_sc_role_executive").id})]})
+        self.env["sc.approval.policy"].search([("company_id", "=", self.company.id), ("target_model", "=", "payment.request")], limit=1).copy({"company_id": company.id, "code": "synthetic_secondary_payment", "step_ids": [(0, 0, {"name": "Secondary company approval", "approval_scope_key": "executive", "approve_group_id": self.env.ref("smart_construction_core.group_sc_cap_executive_approver").id})]})
         project_2 = self._project("T1-B Company 2 Project", company)
         partner_2 = self.env["res.partner"].create({"name": "T1-B Company 2 Vendor"})
         contract_2 = self._contract("T1-B Company 2 Contract", project_2, partner_2, company, self.currency)

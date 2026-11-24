@@ -23,6 +23,12 @@
       v-else-if="surfaceDisplayState === 'load-error'"
       title="页面加载失败"
       :message="vm.page.errorMessage"
+      :error-code="pageError?.code"
+      :reason-code="pageError?.reasonCode"
+      :error-category="pageError?.errorCategory"
+      :retryable="pageError?.retryable"
+      :error-details="pageError?.details"
+      :contract-defect="pageError?.contractDefect"
       variant="error"
       :on-retry="reload"
     />
@@ -3412,7 +3418,31 @@ onBeforeUnmount(() => {
 
 onErrorCaptured((err) => {
   const message = err instanceof Error ? err.message : String(err || 'unknown render error');
-  renderErrorDefect.value = isContractGapError(err) ? err.defect : null;
+  if (isContractGapError(err)) {
+    renderErrorDefect.value = {
+      ...err.defect,
+      failureClass: err.defect.failureClass || 'contract_missing',
+    };
+  } else if (err instanceof Error && err.name === 'ContractV2DecodeError') {
+    const issues = Array.isArray((err as Error & { issues?: unknown[] }).issues)
+      ? (err as Error & { issues: Array<{ path?: unknown; message?: unknown }> }).issues
+      : [];
+    renderErrorDefect.value = {
+      kind: 'contract_defect',
+      failureClass: 'contract_mismatch',
+      missing: issues.length
+        ? issues.map((issue) => `${String(issue.path || '')}: ${String(issue.message || '')}`).join('; ')
+        : message,
+      requiredDeclarationLayer: 'P0:smart_core/frontend:contract_v2_schema',
+    };
+  } else {
+    renderErrorDefect.value = {
+      kind: 'contract_defect',
+      failureClass: 'consumer_error',
+      missing: message,
+      requiredDeclarationLayer: 'P0:frontend:ActionView consumer',
+    };
+  }
   renderErrorMessage.value = `ActionView render error: ${message}`;
   logger.error('[ActionView] render failed', err);
   return false;

@@ -210,7 +210,7 @@
       "literal": "system.init",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1461
+        1467
       ],
       "occurrences": 1,
       "classification": "contract-derived",
@@ -373,7 +373,7 @@
       "literal": "scene",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        1450
+        1456
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",
@@ -1464,7 +1464,7 @@
       "literal": "saved",
       "path": "frontend/apps/web/src/views/ActionView.vue",
       "lines": [
-        3095
+        3101
       ],
       "occurrences": 1,
       "classification": "excluded-render-interaction",

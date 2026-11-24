@@ -22,3 +22,4 @@ from . import ir_http
 
 from . import res_users_group_authority
 from . import group_authority_reconciliation
+from . import workflow_contract

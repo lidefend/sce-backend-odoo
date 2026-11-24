@@ -2,6 +2,8 @@ import assert from 'node:assert/strict';
 import { decodeContractV2FieldDescriptor } from '../src/app/contracts/v2/fieldDescriptor';
 import { decodeContractCarrierCapabilities } from '../src/app/contracts/v2/carrierCapabilities';
 import { presentDeclaredBusinessValue } from '../src/app/presentation/businessValuePresentation';
+import { contractGapError } from '../src/app/contract/contractGap';
+import { buildStatusError } from '../src/composables/useStatus';
 import {
   PageOrchestrationDecodeError,
   decodePageOrchestrationContract,
@@ -142,6 +144,69 @@ assert.deepEqual(fallback.registryResolution.widget, {
   widgetStatus: 'fallback',
   fallbackReasonCode: 'NATIVE_WIDGET_GENERIC_VISUAL_FALLBACK',
 });
+
+const activityCollection = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'activity_ids',
+  label: '活动',
+  fieldType: 'one2many',
+  widgetType: 'list_activity',
+  componentKey: 'sc.relation.activity',
+  semanticType: 'activity_collection',
+  relation: 'mail.activity',
+  relationField: 'res_id',
+  relationEntry: {
+    model: 'mail.activity',
+    can_create: true,
+    can_open: false,
+    page_size: 20,
+  },
+});
+assert.deepEqual(activityCollection.registryResolution.widget, {
+  widgetType: 'list_activity',
+  widgetStatus: 'fallback',
+  fallbackReasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION',
+});
+assert.equal(activityCollection.descriptor.componentKey, 'sc.relation.activity');
+assert.equal(activityCollection.descriptor.relationEntry?.page_size, 20);
+
+const accountTypeChoice = decodeContractV2FieldDescriptor({
+  schemaVersion: '1.0.0',
+  fieldCode: 'account_type',
+  label: '类型',
+  fieldType: 'selection',
+  widgetType: 'account_type_selection',
+  componentKey: 'sc.select.remote',
+  semanticType: 'choice',
+  selection: [['asset_cash', '银行和现金']],
+});
+assert.deepEqual(accountTypeChoice.registryResolution.widget, {
+  widgetType: 'account_type_selection',
+  widgetStatus: 'fallback',
+  fallbackReasonCode: 'NATIVE_WIDGET_PLATFORM_COMPONENT_SUBSTITUTION',
+});
+assert.equal(accountTypeChoice.descriptor.componentKey, 'sc.select.remote');
+
+const declaredGap = buildStatusError(contractGapError({
+  kind: 'contract_defect',
+  failureClass: 'contract_missing',
+  missing: 'layoutContract.field.attachment_ids.fieldDescriptor.attachmentRole',
+  requiredDeclarationLayer: 'P0:smart_core:unified_page_contract_v2_assembler',
+}, 'missing attachment role'), 'fallback');
+assert.equal(declaredGap.contractDefect?.failureClass, 'contract_missing');
+assert.equal(declaredGap.contractDefect?.requiredDeclarationLayer, 'P0:smart_core:unified_page_contract_v2_assembler');
+
+const decodeError = new Error('invalid contract v2 snapshot');
+decodeError.name = 'ContractV2DecodeError';
+(decodeError as Error & { issues: Array<{ path: string; message: string }> }).issues = [{
+  path: 'layoutContract.field.activity_ids.fieldDescriptor.widgetType',
+  message: 'Widget is not declared by native_widgets',
+}];
+const decodeMismatch = buildStatusError(decodeError, 'fallback');
+assert.equal(decodeMismatch.contractDefect?.failureClass, 'contract_mismatch');
+assert.equal(decodeMismatch.contractDefect?.requiredDeclarationLayer,
+  'P0:smart_core/frontend:contract_v2_schema');
+assert.match(decodeMismatch.contractDefect?.missing || '', /activity_ids/);
 
 assert.throws(
   () => decodeContractV2FieldDescriptor({ ...readyMoney, widgetType: 'domain' }),

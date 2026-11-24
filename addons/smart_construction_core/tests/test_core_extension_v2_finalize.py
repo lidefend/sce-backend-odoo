@@ -794,9 +794,12 @@ class TestCoreExtensionV2Finalize(TransactionCase):
             {"source_contract": source, "view_type": "form"},
         )
 
-        self.assertIsInstance(projected, dict)
-        self.assertEqual(projected["layoutContract"], contract["layoutContract"])
-        self.assertEqual(projected["statusContract"], contract["statusContract"])
+        # P0 injects the canonical workflow contract after native projection.
+        # With no industry-only project-page mutation left, this P1 hook must
+        # report "unchanged" rather than rebuilding the page graph.
+        self.assertIsNone(projected)
+        self.assertEqual(contract["layoutContract"], self._base_project_contract()["layoutContract"])
+        self.assertEqual(contract["statusContract"], self._base_project_contract()["statusContract"])
         self.assertEqual(
             {row["widgetId"] for row in contract["statusContract"]["widgetStatus"]},
             {"field.user_id", "field.partner_id"},

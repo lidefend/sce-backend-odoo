@@ -233,6 +233,10 @@ def build_plan(
             base, head, '--',
         ).splitlines()
         selected = impact.select(paths, impact.snapshot(base), after)
+        selected = {
+            **selected,
+            'modules': suite_modules(suite, selected['modules'], after),
+        }
     else:
         # Preserve the original nightly/dispatch discovery: a manifest and
         # tests directory, including non-installable pure-Python test modules.
@@ -252,9 +256,14 @@ def build_plan(
             'changed_deletions': sorted(deleted_paths),
             'preparation_groups': groups,
             'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
-    plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
-    if not base and changed_coverage.MANAGED_MODULE in plan['modules']:
-        plan['changed_test_coverage'] = changed_coverage.managed_tests(head)
+    module_scope = set(plan['modules'])
+    coverage = changed_coverage.changed_tests(base, head)
+    if not base and changed_coverage.MANAGED_MODULE in module_scope:
+        coverage = changed_coverage.managed_tests(head)
+    plan['changed_test_coverage'] = [
+        row for row in coverage
+        if row.get('module') in module_scope
+    ]
     if include_inputs:
         plan['input_inventory'] = target_input_inventory(head,after,plan['modules'])
     return plan
@@ -325,13 +334,31 @@ def changed_test_modules(paths: list[str], deleted_paths: set[str]) -> set[str] 
     return modules
 
 
-def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
-    """Use exact selectors only when every changed module path is test-only.
+def changed_runtime_modules(paths: list[str], deleted_paths: set[str]) -> set[str]:
+    """Return backend modules with changed non-test runtime inputs."""
+    modules: set[str] = set()
+    for path in paths:
+        if path in deleted_paths:
+            continue
+        match = re.fullmatch(
+            r'addons/([A-Za-z_][A-Za-z0-9_]*)/(.+)',
+            path,
+        )
+        if match is None:
+            continue
+        module, relative = match.groups()
+        if not relative.startswith('tests/'):
+            modules.add(module)
+    return modules
 
-    Production code, helpers, deleted tests and incomplete selector coverage
-    retain the complete impacted-module plan. This keeps owning-module coverage
-    for runtime changes while allowing remote test-only PRs to run the exact
-    changed test classes.
+
+def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
+    """Use exact selectors when changed tests cover every changed runtime module.
+
+    Deleted tests, runtime modules without changed tests and incomplete selector
+    coverage retain the complete impacted-module plan. Production changes whose
+    module also carries changed test classes use those exact selectors; the
+    owning module baseline remains the fallback when coverage is ambiguous.
     """
     if not base:
         raise ValueError('focused backend plan requires an integration base')
@@ -343,13 +370,23 @@ def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) ->
     changed_paths = complete.get('changed_paths') or []
     deleted_paths = set(complete.get('changed_deletions') or [])
     direct_test_modules = changed_test_modules(changed_paths, deleted_paths)
+    runtime_modules = changed_runtime_modules(changed_paths, deleted_paths)
+    changed_path_set = set(changed_paths)
+    covered_runtime_modules = {
+        row.get('module')
+        for row in complete.get('changed_test_coverage') or []
+        if row.get('path') in changed_path_set
+    }
+    focused_coverage = (
+        runtime_modules <= set(modules)
+        and runtime_modules <= covered_runtime_modules
+        if runtime_modules
+        else direct_test_modules == set(modules)
+    )
     if (
-        complete.get('mode') == 'incremental'
-        and mode == 'focused'
-        and direct_test_modules == set(modules)
+        mode == 'focused'
         and set(modules) <= set(complete['modules'])
-        and all(module_changes_are_test_only(module, changed_paths, deleted_paths)
-                for module in modules)
+        and focused_coverage
     ):
         focused_module_set = set(modules)
         focused_orm_files: dict[str, set[str]] = {}
@@ -384,7 +421,11 @@ def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) ->
                 module: sorted(paths)
                 for module, paths in sorted(focused_python_files.items())
             },
-            focused_reason='test_only_changed_tests',
+            focused_reason=(
+                'changed_module_tests_cover_runtime_changes'
+                if runtime_modules
+                else 'test_only_changed_tests'
+            ),
         )
     return complete
 

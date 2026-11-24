@@ -30,7 +30,7 @@ class BusinessTransactionCase(TransactionCase):
                 "approval_required": True, "mode": "single",
                 "manager_scope_key": "executive",
                 "step_ids": [(0, 0, {"name": "Synthetic approval step", "approval_scope_key": "executive",
-                                      "approve_group_id": cls.env.ref("smart_construction_core.group_sc_role_executive").id})],
+                                      "approve_group_id": cls.env.ref("smart_construction_core.group_sc_cap_executive_approver").id})],
             })
 
     @classmethod

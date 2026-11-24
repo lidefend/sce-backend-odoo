@@ -55,7 +55,6 @@ ATTACHMENT_ROLE_DECLARATIONS: dict[tuple[str, str], tuple[str, str]] = {
         "付款申请附件",
     ),
 }
-
 # ``semantic -> delivery vocabulary`` handed to that semantic's control.  Every
 # word, payload key and server action identity the control uses is declared
 # here; the frontend fails closed when one is missing instead of guessing.
@@ -237,7 +236,8 @@ def normalize_declared_field_presentation(
         for (role_model, field_code), role in ATTACHMENT_ROLE_DECLARATIONS.items()
         if role_model == model_name
     }
-    if _sc_text(view_type) != "form" or (not declarations and not attachment_roles):
+    apply_semantics = _sc_text(view_type) == "form"
+    if not apply_semantics and not attachment_roles:
         return
     layout = contract.get("layoutContract") if isinstance(contract.get("layoutContract"), dict) else {}
     tree = layout.get("containerTree") if isinstance(layout.get("containerTree"), list) else []
@@ -252,7 +252,11 @@ def normalize_declared_field_presentation(
             return
         field_code = _sc_text(value.get("fieldCode") or value.get("name") or value.get("field"))
         _apply_attachment_role(value, model_name, field_code)
-        semantic = _declared_semantic(declarations, field_code, _sc_text(value.get("widgetId")))
+        semantic = (
+            _declared_semantic(declarations, field_code, _sc_text(value.get("widgetId")))
+            if apply_semantics
+            else ""
+        )
         if semantic:
             component_key = _apply_declared_semantic(value, semantic)
             if component_key:

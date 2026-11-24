@@ -11,8 +11,7 @@
             <field name="company_id" ref="base.main_company"/>
             <field name="groups_id" eval="[(6, 0, [
                 ref('base.group_user'),
-                ref('smart_construction_core.group_sc_business_full'),
-                ref('smart_construction_core.group_sc_cap_business_config_admin')
+                ref('smart_construction_core.group_sc_role_business_admin')
             ])]"/>
         </record>
         <record id="user_demo_full" model="res.users">
@@ -23,7 +22,7 @@
             <field name="tz">Asia/Shanghai</field>
             <field name="lang">zh_CN</field>
             <field name="company_id" ref="base.main_company"/>
-            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_business_full'), ref('smart_construction_core.group_sc_cap_project_read')])]"/>
+            <field name="groups_id" eval="[(6, 0, [ref('base.group_user'), ref('smart_construction_core.group_sc_business_full')])]"/>
         </record>
     </data>
 </odoo>

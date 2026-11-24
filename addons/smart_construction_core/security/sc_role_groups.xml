@@ -22,6 +22,7 @@
             <field name="name">SC 角色 - 租户业务管理员</field>
             <field name="category_id" ref="smart_construction_core.module_category_smart_construction"/>
             <field name="implied_ids" eval="[(6, 0, [
+                ref('smart_construction_core.group_sc_business_full'),
                 ref('smart_construction_core.group_sc_cap_business_config_admin'),
                 ref('smart_construction_core.group_sc_cap_contact_manager'),
                 ref('smart_construction_core.group_sc_cap_data_read')
@@ -39,7 +40,8 @@
                 ref('smart_construction_core.group_sc_cap_purchase_read'),
                 ref('smart_construction_core.group_sc_cap_finance_read'),
                 ref('smart_construction_core.group_sc_cap_settlement_read'),
-                ref('smart_construction_core.group_sc_cap_data_read')
+                ref('smart_construction_core.group_sc_cap_data_read'),
+                ref('smart_construction_core.group_sc_cap_executive_approver')
             ])]"/>
         </record>
 

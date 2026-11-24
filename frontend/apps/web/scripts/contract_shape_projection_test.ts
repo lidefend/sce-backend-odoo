@@ -19,10 +19,13 @@ import { projectStoredListPreference } from '../src/app/runtime/listPreferencePr
 import { resolveEnabledListColumns, resolveListColumnChoices } from '../src/pages/listPage/listColumnVisibility';
 import { ref } from 'vue';
 
-import { useActionViewContractShapeRuntime } from '../src/app/action_runtime/useActionViewContractShapeRuntime';
+import {
+  extractListFieldSemanticsFromContract,
+  useActionViewContractShapeRuntime,
+} from '../src/app/action_runtime/useActionViewContractShapeRuntime';
 import type { ContractV2NormalizedStore } from '../src/app/contracts/v2/types';
 import { presentCollectionKanbanCell } from '../src/app/presentation/collectionKanbanPresentation';
-import { presentListCell } from '../src/pages/listPage/listCellPresentation';
+import { normalizeListRelationValue, presentListCell } from '../src/pages/listPage/listCellPresentation';
 
 let cases = 0;
 const check = (actual: unknown, expected: unknown, label: string) => {
@@ -30,12 +33,83 @@ const check = (actual: unknown, expected: unknown, label: string) => {
   cases += 1;
 };
 
+assert.deepEqual(
+  normalizeListRelationValue([71, '德阳市城市某某建设投资集团有限公司'], [71, '德阳市城市某某建设投资集团有限公司']),
+  [71, '德阳市城市某某建设投资集团有限公司'],
+  'an ORM many2one tuple must not be wrapped a second time when displayField equals valueField',
+);
+cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue('张建国', 10),
+  [10, '张建国'],
+  'a flattened display field still binds to its declared underlying relation identity',
+);
+cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue({ id: 10, display_name: '张建国' }, 10),
+  { id: 10, display_name: '张建国' },
+  'an already structured relation value remains unchanged',
+);
+cases += 1;
+assert.equal(
+  normalizeListRelationValue(false, false),
+  false,
+  'an Odoo false many2one remains empty instead of becoming a labeled relation',
+);
+cases += 1;
+assert.equal(
+  normalizeListRelationValue(null, 0),
+  null,
+  'a missing many2one identity remains empty',
+);
+cases += 1;
+assert.deepEqual(
+  normalizeListRelationValue([], []),
+  [],
+  'an empty many2many value remains empty instead of becoming a nested member',
+);
+cases += 1;
+
 const runtime = useActionViewContractShapeRuntime({
   pageText: (_key: string, fallback: string) => fallback,
   actionContract: ref<ContractV2NormalizedStore | null>(null),
   advancedFields: ref<string[]>([]),
   activeGroupByField: ref(''),
 });
+
+// A table owns the collection container, while its field descriptor owns the
+// cell widget. Sending the container type to api.data makes the backend skip
+// the x2many display-label projection, leaving raw ids for the renderer.
+const tagCollectionWidget = {
+  widgetId: 'field.company_ids',
+  widgetType: 'table',
+  fieldCode: 'company_ids',
+  label: '允许公司',
+  componentKey: 'sc.select.tags',
+  fieldDescriptor: {
+    fieldCode: 'company_ids',
+    fieldType: 'many2many',
+    widgetType: 'many2many_tags',
+  },
+  componentConfig: {
+    fieldType: 'many2many',
+    nativeWidget: 'many2many_tags',
+  },
+};
+const tagCollectionStore = {
+  snapshot: { layoutContract: { listProfile: {} }, actionContract: { surfacePolicies: {} } },
+  widgetsById: new Map([[tagCollectionWidget.widgetId, tagCollectionWidget]]),
+  widgetsByFieldCode: new Map([[tagCollectionWidget.fieldCode, tagCollectionWidget]]),
+  widgetsByFieldCodeAll: new Map([[tagCollectionWidget.fieldCode, [tagCollectionWidget]]]),
+  widgetStatusById: new Map(),
+  primaryDataSource: {},
+} as unknown as ContractV2NormalizedStore;
+const tagCollectionSemantics = extractListFieldSemanticsFromContract(tagCollectionStore);
+check(
+  tagCollectionSemantics[0]?.widget,
+  'many2many_tags',
+  'list field semantics preserve the field widget instead of the table container widget',
+);
 
 const storeWithListProfile = (listProfile: Record<string, unknown>) => ({
   snapshot: {

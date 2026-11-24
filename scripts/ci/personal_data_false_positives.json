@@ -158,6 +158,13 @@
     {
       "rule_id": "PD003",
       "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
+      "blob_id": "332e0db423bf52eed67b23924a11c27117e060d9",
+      "classification": "BANK_ACCOUNT_PATTERN",
+      "reason": "verified_synthetic_ledger_fixture_prior_revision_superseded_in_branch"
+    },
+    {
+      "rule_id": "PD003",
+      "path": "addons/smart_construction_core/tests/test_p0_ledger_gate.py",
       "blob_id": "f2156e8e1bfd60f4f58bd2ea0684a0a22a0fdb7a",
       "classification": "BANK_ACCOUNT_PATTERN",
       "reason": "verified_synthetic_ledger_fixture_history"

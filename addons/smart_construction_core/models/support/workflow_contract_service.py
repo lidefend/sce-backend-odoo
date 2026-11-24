@@ -1252,62 +1252,13 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def describe_model_actions(self, model_name):
-        """Stable meanings for an unsaved form; never a record execution grant."""
-        profile = self.profile_by_model().get(model_name)
-        if not profile:
-            return {}
-        contract = {
-            "model": model_name,
-            "source": {"kind": "sc_backend_workflow_action_catalog", "projection_only": True},
-            "availabilityScope": "declaration_only",
-            "actions": self._declared_actions(profile),
-            "submissionRequirements": list(profile.get("submission_requirements") or []),
-        }
-        self._assert_workflow_contract_consistency(contract)
-        return contract
+        """Compatibility facade; P0 owns the canonical contract production."""
+        return self.env["smart_core.workflow.contract"].describe_model_actions(model_name)
 
     @api.model
     def describe_record(self, record):
-        if not record or len(record) != 1:
-            return {}
-        # Availability must be evaluated in the requesting user's environment,
-        # even when a caller passes a record previously browsed with elevation.
-        record = record.with_user(self.env.user)
-        profile = self.profile_by_model().get(record._name)
-        if not profile:
-            return {}
-        raw_state = str(getattr(record, profile["state_field"], "") or "").strip()
-        business_phase = profile["state_phase"].get(raw_state, raw_state or "unknown")
-        approval_phase = self._approval_phase(record, raw_state=raw_state, business_phase=business_phase)
-        editability = self._editability(profile, business_phase, approval_phase)
-        evidence_gate = self._evidence_gate(record)
-        actions = self._available_actions(record, profile, raw_state, business_phase, approval_phase, evidence_gate)
-        current_action_keys = {action["key"] for action in actions}
-        visible_evidence_gate = [
-            gate for gate in evidence_gate
-            if not gate.get("actionKeys") or current_action_keys.intersection(gate["actionKeys"])
-        ]
-        contract = {
-            "source": self.source_authority_contract(),
-            "model": record._name,
-            "record_id": record.id,
-            "availabilityScope": "record",
-            "stateField": profile["state_field"],
-            "rawState": raw_state,
-            "businessPhase": business_phase,
-            "approvalPhase": approval_phase,
-            "editability": editability,
-            "statusbar": self._statusbar_projection(record, profile["state_field"], raw_state),
-            "evidenceGate": visible_evidence_gate,
-            "submissionRequirements": list(profile.get("submission_requirements") or []),
-            # Meaning is stable even when a transition is currently unavailable.
-            # This catalog is not an execution grant; availableActions remains
-            # the record/user/state-specific availability authority.
-            "actions": self._declared_actions(profile),
-            "availableActions": actions,
-        }
-        self._assert_workflow_contract_consistency(contract)
-        return contract
+        """Compatibility facade; P0 owns the canonical contract production."""
+        return self.env["smart_core.workflow.contract"].describe_record(record)
 
     @api.model
     def _declared_actions(self, profile):
@@ -1337,92 +1288,9 @@ class ScWorkflowContractService(models.AbstractModel):
 
     @api.model
     def _assert_workflow_contract_consistency(self, contract):
-        """Fail closed when a produced workflow contract cannot reconcile."""
-        scope = str(contract.get("availabilityScope") or "")
-        declared = contract.get("actions") or []
-        declared_by_key = {}
-        for action in declared:
-            key = str(action.get("key") or "").strip()
-            if not key or key in declared_by_key:
-                raise ValueError("WORKFLOW_ACTION_CATALOG_IDENTITY_INVALID")
-            method = action.get("method")
-            intent = str(action.get("intent") or "").strip()
-            kind = str(action.get("kind") or "").strip()
-            if kind == "save":
-                if intent != "data.write" or method is not None:
-                    raise ValueError("WORKFLOW_SAVE_ACTION_TARGET_INVALID")
-            elif not str(method or "").strip():
-                raise ValueError("WORKFLOW_OBJECT_ACTION_METHOD_MISSING")
-            declared_by_key[key] = action
-
-        if scope == "declaration_only":
-            if "record_id" in contract or "availableActions" in contract:
-                raise ValueError("WORKFLOW_CREATE_CATALOG_SCOPE_LEAK")
-            return
-        if scope != "record":
-            raise ValueError("WORKFLOW_AVAILABILITY_SCOPE_INVALID")
-
-        model = str(contract.get("model") or "").strip()
-        record_id = contract.get("record_id")
-        if not model or type(record_id) is not int or record_id <= 0:
-            raise ValueError("WORKFLOW_RECORD_IDENTITY_INVALID")
-        state_field = str(contract.get("stateField") or "").strip()
-        raw_state = str(contract.get("rawState") or "").strip()
-        statusbar = contract.get("statusbar") or {}
-        if (
-            not state_field
-            or statusbar.get("field") != state_field
-            or statusbar.get("current") != raw_state
-        ):
-            raise ValueError("WORKFLOW_STATUS_FIELD_INCONSISTENT")
-        statusbar_values = []
-        for state in statusbar.get("states") or []:
-            value = str(state.get("value") or "").strip()
-            label = str(state.get("label") or "").strip()
-            if not value or not label or value in statusbar_values:
-                raise ValueError("WORKFLOW_STATUS_STATES_INVALID")
-            statusbar_values.append(value)
-        if raw_state and raw_state not in statusbar_values:
-            raise ValueError("WORKFLOW_STATUS_CURRENT_NOT_LISTED")
-        available = contract.get("availableActions") or []
-        available_by_key = {}
-        for action in available:
-            key = str(action.get("key") or "").strip()
-            if not key or key in available_by_key or key not in declared_by_key:
-                raise ValueError("WORKFLOW_RECORD_ACTION_REFERENCE_INVALID")
-            declaration = declared_by_key[key]
-            for field_name in ("method", "intent", "kind", "action_semantics"):
-                if action.get(field_name) != declaration.get(field_name):
-                    raise ValueError("WORKFLOW_RECORD_ACTION_DECLARATION_MISMATCH")
-            target = action.get("target") or {}
-            if (
-                target.get("model") != model
-                or target.get("id") != record_id
-                or target.get("method") != action.get("method")
-            ):
-                raise ValueError("WORKFLOW_ACTION_TARGET_INVALID")
-            enabled = action.get("enabled")
-            reason = str(action.get("reason_code") or "").strip()
-            message = str(action.get("blocked_message") or "").strip()
-            if enabled is True and (reason != "OK" or message):
-                raise ValueError("WORKFLOW_ENABLED_REASON_INVALID")
-            if enabled is False and (not reason or not message):
-                raise ValueError("WORKFLOW_DISABLED_REASON_MISSING")
-            if type(enabled) is not bool:
-                raise ValueError("WORKFLOW_ACTION_ENABLED_INVALID")
-            available_by_key[key] = action
-
-        for gate in contract.get("evidenceGate") or []:
-            action_keys = gate.get("actionKeys") or []
-            if any(key not in declared_by_key for key in action_keys):
-                raise ValueError("WORKFLOW_GATE_ACTION_REFERENCE_INVALID")
-            if action_keys and not available_by_key.keys() & set(action_keys):
-                raise ValueError("WORKFLOW_GATE_ACTION_SCOPE_INVALID")
-            severity = gate.get("severity")
-            if severity not in {"block", "warn", "info"}:
-                raise ValueError("WORKFLOW_GATE_SEVERITY_INVALID")
-            if gate.get("blocking") is True and severity != "block":
-                raise ValueError("WORKFLOW_GATE_BLOCKING_SEVERITY_INVALID")
+        return self.env["smart_core.workflow.contract"]._assert_workflow_contract_consistency(
+            contract
+        )
 
     @api.model
     def _action_input_contract(self, profile, key):

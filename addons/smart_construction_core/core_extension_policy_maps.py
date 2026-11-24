@@ -247,7 +247,7 @@ ROLE_SURFACE_OVERRIDES = {
     "business_config_admin": {
         "label": "业务配置管理员（全功能）",
         "exclusive_surface": True,
-        "landing_scene_candidates": ["enterprise.setup", "workspace.home", "projects.list", "projects.ledger", "projects.intake"],
+        "landing_scene_candidates": ["workspace.home", "enterprise.setup", "projects.list", "projects.ledger", "projects.intake"],
         # The primary role owns the landing surface, while the released
         # construction catalogue is still intersected with the user's native
         # Odoo ACL-visible menu facts.  This composes existing business
@@ -719,17 +719,16 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_owner",
     },
     "project_member": {
-        "smart_construction_core.group_sc_cap_project_read",
+        "smart_construction_core.group_sc_role_project_user",
     },
     "business_config_admin": {
-        "smart_construction_core.group_sc_cap_business_config_admin",
+        "smart_construction_core.group_sc_role_business_admin",
     },
     "executive": {
         "smart_construction_core.group_sc_role_executive",
     },
     "pm": {
         "smart_construction_core.group_sc_role_project_manager",
-        "smart_construction_core.group_sc_role_project_user",
     },
     "operation_user": {
         "smart_construction_core.group_sc_role_operation_user",
@@ -738,29 +737,34 @@ ROLE_GROUPS_EXPLICIT = {
         "smart_construction_core.group_sc_role_finance_manager",
         "smart_construction_core.group_sc_role_finance_user",
     },
-    # 成本组：cap 成本组 + 角色组（group_sc_role_cost_user 经 implied_ids
-    # 展开为 project_read + cap_cost_user，Odoo 会物化 implied 组到用户
-    # groups_id，两种持组路径在此均命中）。置于 ROLE_PRECEDENCE 末位，
-    # 不抢占 pm/finance 等既有角色。
+    # 成本身份只由角色组表达；cap 组仅作为能力兜底，不进入身份映射。
     "cost": {
-        "smart_construction_core.group_sc_cap_cost_user",
-        "smart_construction_core.group_sc_cap_cost_manager",
         "smart_construction_core.group_sc_role_cost_user",
     },
 }
 
 ROLE_GROUPS_CAPABILITY_FALLBACK = {
+    "business_config_admin": {
+        "smart_construction_core.group_sc_cap_business_config_admin",
+    },
     "pm": {
         "smart_construction_core.group_sc_cap_project_manager",
-        "smart_construction_core.group_sc_cap_project_user",
     },
     "finance": {
         "smart_construction_core.group_sc_cap_finance_user",
         "smart_construction_core.group_sc_cap_finance_manager",
     },
+    "cost": {
+        "smart_construction_core.group_sc_cap_cost_user",
+        "smart_construction_core.group_sc_cap_cost_manager",
+    },
+    "project_member": {
+        "smart_construction_core.group_sc_cap_project_read",
+        "smart_construction_core.group_sc_cap_project_user",
+    },
 }
 
-ROLE_PRECEDENCE = ("system_admin", "experience", "business_config_admin", "business_full", "executive", "owner", "pm", "operation_user", "finance", "cost", "accounting")
+ROLE_PRECEDENCE = ("system_admin", "experience", "business_config_admin", "business_full", "executive", "owner", "pm", "operation_user", "finance", "cost", "accounting", "project_member")
 
 NAV_MENU_SCENE_MAP = {
     "smart_construction_core.menu_sc_project_initiation": "projects.intake",

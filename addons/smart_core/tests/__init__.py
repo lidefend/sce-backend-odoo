@@ -47,3 +47,4 @@ from . import test_contract_assembly_determinism
 from . import test_submission_readiness_notice_suppression
 from . import test_extension_runtime_context
 from . import test_extension_registry_lifecycle
+from . import test_workflow_contract_platform
