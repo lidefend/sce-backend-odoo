@@ -8,11 +8,14 @@
   "record": "docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/context.yaml",
     ".agent/goals/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124.yaml",
     ".agent/goals/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124.yaml",
     ".agent/runs/SCHEDULED-RELEASE-FULL-CLOSEOUT-20261124/run.json",
     ".agent/runs/SCHEDULED-FULL-BASELINE-REMEDIATION-20261124/run.json",
     ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/auxiliary_backend_suite.yml",
+    ".github/workflows/professional_quality_gate.yml",
     "scripts/test/test.sh",
     "scripts/test/test_dependency_baseline.py",
     "addons/smart_construction_acceptance_fixture/tests/test_business_scene_lifecycle.py",
@@ -20,7 +23,14 @@
     "addons/smart_core/tests/test_odoo_native_alignment_boundaries.py",
     "addons/smart_construction_core/tests/test_settlement_fact_immutability_v1.py",
     "demo_addons/smart_construction_demo/tests/test_payment_request_floorplan_fixture_ownership.py",
-    "docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md"
+    "docs/ops/iterations/scheduled_full_baseline_remediation_20261124.md",
+    "docs/ops/iteration_validation_responsibility_v1.md",
+    "docs/ops/validation_delivery_protocol.md",
+    "scripts/ci/backend_suite_plan.py",
+    "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/verify/github_actions_security_guard.py",
+    "scripts/verify/test_github_actions_security_guard.py"
   ],
   "environment": {
     "kind": "runtime",

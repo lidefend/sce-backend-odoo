@@ -25,6 +25,20 @@ correctly stopped on defects that the former gate-tag subset had omitted.
 
 No skip, quarantine, wildcard suppression or production ACL change is accepted.
 
+## Responsibility separation
+
+The scheduled backend planner now exposes three explicit suites:
+
+- `product`: product-path modules, excluding explicit test-only carriers.
+- `demo`: modules under `demo_addons`.
+- `acceptance`: explicit forbidden implicit test carriers.
+
+The sets must partition every runnable module without overlap. Product release
+qualification runs only `product`. `.github/workflows/auxiliary_backend_suite.yml`
+runs demo and acceptance independently on the same schedule, with separate
+status and evidence. Demo or acceptance failure no longer blocks product
+candidate-build eligibility.
+
 ## Focused reproduction and fix
 
 - Acceptance fixture: the harness now passes `SC_TEST_DB_NAME=<attempt database>`

@@ -200,19 +200,28 @@ python3() {
         )
         events = workflow.get('on', workflow.get(True))
         self.assertEqual(events['workflow_call']['inputs']['scope_mode']['default'], 'full')
+        self.assertEqual(events['workflow_call']['inputs']['suite']['default'], 'product')
+        self.assertEqual(
+            professional['jobs']['backend_impact_suite']['with']['suite'],
+            'product',
+        )
         self.assertEqual(
             professional['jobs']['backend_impact_suite']['with']['scope_mode'],
             "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
         )
         plan = workflow['jobs']['plan']
         self.assertEqual('${{ steps.scope.outputs.scope_mode }}', plan['outputs']['scope_mode'])
+        self.assertEqual('${{ steps.scope.outputs.suite }}', plan['outputs']['suite'])
         scope = next(s for s in plan['steps'] if s.get('id') == 'scope')
         self.assertEqual("${{ inputs.scope_mode || 'full' }}", scope['env']['SCOPE_MODE'])
+        self.assertEqual("${{ inputs.suite || 'product' }}", scope['env']['SUITE_NAME'])
+        self.assertIn('--suite "${SUITE_NAME}"', scope['run'])
         self.assertIn('focused_args=(--focused)', scope['run'])
         self.assertIn('scope_mode=${plan_mode}', scope['run'])
 
         suite = workflow['jobs']['backend_suite']
         self.assertEqual('${{ needs.plan.outputs.scope_mode }}', suite['env']['SUITE_MODE'])
+        self.assertEqual('${{ needs.plan.outputs.suite }}', suite['env']['SUITE_NAME'])
         self.assertEqual('1', suite['env']['KEEP_TEST_CONTAINER'])
         self.assertEqual(
             "${{ needs.plan.outputs.scope_mode == 'focused' && '600' || '1200' }}",
@@ -252,6 +261,28 @@ python3() {
         self.assertIn(
             'module_test_tags="${module_test_tags},contract_assembly_determinism/${module},lowcode_contract_write_authority/${module}"',
             run,
+        )
+
+    def test_auxiliary_suites_are_separate_from_product_release(self):
+        workflow = yaml.safe_load(
+            (ROOT / '.github/workflows/auxiliary_backend_suite.yml').read_text()
+        )
+        events = workflow.get('on', workflow.get(True))
+        self.assertEqual(events['schedule'][0]['cron'], '0 18 * * *')
+        self.assertIn('workflow_dispatch', events)
+        self.assertEqual(set(workflow['jobs']), {'demo', 'acceptance'})
+        for name, suite in (('demo', 'demo'), ('acceptance', 'acceptance')):
+            job = workflow['jobs'][name]
+            self.assertEqual(job['uses'], './.github/workflows/backend_test_suite.yml')
+            self.assertEqual(job['with']['suite'], suite)
+            self.assertEqual(job['with']['scope_mode'], 'full')
+            self.assertEqual(job['with']['base_sha'], '')
+        product = yaml.safe_load(
+            (ROOT / '.github/workflows/professional_quality_gate.yml').read_text()
+        )
+        self.assertEqual(
+            product['jobs']['backend_impact_suite']['with']['suite'],
+            'product',
         )
 
     def test_focused_python_modules_run_only_exact_changed_files(self):
@@ -632,8 +663,12 @@ python3() {
         workflow = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
         self.assertIn("workflow_dispatch:", workflow)
         self.assertIn("head_ref:", workflow)
+        self.assertIn("suite:", workflow)
         self.assertIn("HEAD_REF: ${{ inputs.head_ref || github.event.inputs.head_ref || github.ref_name }}", workflow)
-        self.assertIn("CI_PROJECT_NAME: sc-suite-${{ github.run_id }}", workflow)
+        self.assertIn(
+            "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}",
+            workflow,
+        )
         self.assertIn("docker compose down -v --remove-orphans", workflow)
 
     def test_cross_job_artifacts_survive_failed_job_rerun(self):
@@ -644,7 +679,7 @@ python3() {
         upload_plan = next(step for step in plan["steps"] if step.get("name") == "Upload stable execution plan")
         self.assertEqual(
             upload_plan["with"]["name"],
-            "backend-plan-${{ github.run_id }}",
+            "backend-plan-${{ github.run_id }}-${{ inputs.suite || 'product' }}",
         )
         self.assertTrue(upload_plan["with"]["overwrite"])
 
@@ -654,7 +689,7 @@ python3() {
         )
         self.assertEqual(
             download_plan["with"]["name"],
-            "backend-plan-${{ github.run_id }}",
+            "backend-plan-${{ github.run_id }}-${{ needs.plan.outputs.suite }}",
         )
         upload_execution = next(
             step for step in suite["steps"]
@@ -662,7 +697,7 @@ python3() {
         )
         self.assertEqual(
             upload_execution["with"]["name"],
-            "backend-execution-${{ github.run_id }}-${{ matrix.index }}",
+            "backend-execution-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}",
         )
         self.assertTrue(upload_execution["with"]["overwrite"])
 
@@ -671,17 +706,20 @@ python3() {
             step for step in coverage["steps"]
             if step.get("name") == "Download coverage evidence"
         ]
-        self.assertEqual(coverage_downloads[0]["with"]["name"], "backend-plan-${{ github.run_id }}")
+        self.assertEqual(
+            coverage_downloads[0]["with"]["name"],
+            "backend-plan-${{ github.run_id }}-${{ needs.plan.outputs.suite }}",
+        )
         self.assertEqual(
             coverage_downloads[1]["with"]["pattern"],
-            "backend-execution-${{ github.run_id }}-*",
+            "backend-execution-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-*",
         )
         upload_coverage = next(
             step for step in coverage["steps"] if step.get("name") == "Publish changed test coverage"
         )
         self.assertEqual(
             upload_coverage["with"]["name"],
-            "changed-test-coverage-${{ github.run_id }}",
+            "changed-test-coverage-${{ github.run_id }}-${{ needs.plan.outputs.suite }}",
         )
         self.assertTrue(upload_coverage["with"]["overwrite"])
 

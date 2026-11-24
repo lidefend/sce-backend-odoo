@@ -4,7 +4,7 @@ Generated from repository source files. This report is informational during the 
 
 ## Summary
 
-- Scanned files: `5364`
+- Scanned files: `5365`
 - Files requiring split plan: `88`
 - Files above warning threshold: `164`
 
@@ -97,7 +97,7 @@ Generated from repository source files. This report is informational during the 
 | 1520 | Python source | `addons/smart_construction_core/tests/test_core_extension_v2_finalize.py` |
 | 1501 | Python source | `addons/smart_construction_scene/tests/test_action_only_scene_semantic_supply.py` |
 | 1107 | Shell script | `scripts/dev/frontend_acceptance_runtime.sh` |
-| 858 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
+| 873 | YAML workflow | `.github/workflows/backend_test_suite.yml` |
 | 599 | Shell script | `scripts/audit/smoke_role_matrix.sh` |
 | 551 | Shell script | `scripts/ops/audit_project_actions.sh` |
 
@@ -197,12 +197,12 @@ Generated from repository source files. This report is informational during the 
 | 992 | Python source | `addons/smart_construction_core/tests/test_boq_dangerous_import_handler.py` |
 | 991 | Python source | `addons/smart_construction_core/models/support/scene_orchestration.py` |
 | 987 | TypeScript source | `frontend/apps/web/src/app/contracts/v2/types.ts` |
+| 985 | Python source | `scripts/ci/test_backend_suite_plan.py` |
 | 981 | Python source | `addons/smart_core/delivery/product_policy_catalog_sync_service.py` |
 | 976 | Python source | `addons/smart_core/tests/test_unified_page_contract_v2_kanban_action_registry.py` |
 | 973 | Python source | `scripts/verify/local_dev_runtime_contract_role_matrix_probe.py` |
 | 965 | Python source | `scripts/ops/test_daily_runtime_duty_identity.py` |
 | 963 | Python source | `addons/smart_construction_core/models/core/labor_management.py` |
-| 956 | Python source | `scripts/ci/test_backend_suite_plan.py` |
 | 951 | Python source | `scripts/verify/test_native_view_workflow_action_coverage_guard.py` |
 | 950 | Python source | `addons/smart_core/model/ui_tenant_extension_field.py` |
 | 948 | Python source | `scripts/ops/test_daily_runtime_duty_edition_release.py` |
@@ -219,9 +219,11 @@ Generated from repository source files. This report is informational during the 
 | 887 | Python source | `addons/smart_construction_scene/profiles/workspace_home_scene_content.py` |
 | 886 | Python source | `scripts/verify/release_capability_audit.py` |
 | 879 | Python source | `scripts/verify/business_oca_runtime_smoke.py` |
+| 871 | Python source | `scripts/ci/backend_suite_plan.py` |
 | 862 | Python source | `scripts/release/release_candidate.py` |
 | 861 | Python source | `addons/smart_construction_core/models/core/financing_loan.py` |
 | 859 | JavaScript source | `scripts/verify/record_relation_roundtrip_acceptance.js` |
+| 854 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 854 | Python source | `scripts/ops/test_daily_runtime_duty_operator_grant.py` |
 | 852 | Python source | `scripts/ops/registry_audit/registry_export.py` |
 | 849 | Python source | `scripts/verify/test_system_performance_baseline.py` |
@@ -241,8 +243,6 @@ Generated from repository source files. This report is informational during the 
 | 828 | Python source | `scripts/verify/form_orchestration_business_usability_audit.py` |
 | 826 | Python source | `addons/smart_core/tests/test_release_preflight_target_validation.py` |
 | 826 | Python source | `scripts/ops/daily_runtime_published_face_converge.py` |
-| 821 | Python source | `scripts/ci/backend_suite_plan.py` |
-| 816 | Python source | `scripts/ci/test_backend_test_suite_dispatch_contract.py` |
 | 812 | TypeScript source | `frontend/apps/web/src/api/businessConfig.ts` |
 | 812 | Vue source | `frontend/apps/web/src/components/professional-fields/PaymentSettlementIntroduceDialog.vue` |
 | 812 | Python source | `scripts/verify/frontend_product_page_header_guard.py` |
@@ -253,7 +253,7 @@ Generated from repository source files. This report is informational during the 
 | 806 | Python source | `addons/smart_construction_core/models/core/funding_baseline.py` |
 | 805 | Python source | `addons/smart_core/handlers/business_config_change_set.py` |
 | 801 | Python source | `addons/smart_core/models/platform_database_registry.py` |
-| 596 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
+| 597 | YAML workflow | `.github/workflows/professional_quality_gate.yml` |
 | 527 | YAML workflow | `.github/workflows/frontend_release_gate.yml` |
 | 499 | Shell script | `scripts/dev/frontend_acceptance_baseline_rebuild.sh` |
 | 467 | Shell script | `scripts/audit/smoke_business_full.sh` |

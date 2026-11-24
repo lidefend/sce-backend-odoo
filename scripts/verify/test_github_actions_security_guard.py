@@ -211,7 +211,11 @@ jobs:
             workflow.parent.mkdir(parents=True)
             source = (ROOT / ".github/workflows/backend_test_suite.yml").read_text(encoding="utf-8")
             workflow.write_text(
-                source.replace("      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}\n", "", 1),
+                source.replace(
+                    "      CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}\n",
+                    "",
+                    1,
+                ),
                 encoding="utf-8",
             )
             classes = {item.classification for item in guard.scan(root)}

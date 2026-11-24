@@ -72,10 +72,10 @@ def scan(root: Path) -> list[Finding]:
         for action_match in ANY_ACTION.finditer(text):
             line = action_match.group(0).strip()
             reference = action_match.group(1)
-            if reference == './.github/workflows/backend_test_suite.yml':
-                # Same-commit reusable workflow, never a mutable external ref.
+            if reference.startswith('./.github/workflows/'):
+                # Same-commit reusable workflows are immutable with the caller.
                 target = root / reference
-                if path.name == 'professional_quality_gate.yml' and target.is_file():
+                if target.is_file():
                     continue
             if line not in pinned_lines:
                 findings.add(Finding("GA005", f"{relative}:{reference}", "ACTION_NOT_PINNED_TO_SHA"))
@@ -155,8 +155,8 @@ def scan(root: Path) -> list[Finding]:
                 findings.add(Finding("GA018", relative, "PROFESSIONAL_ARTIFACT_WRITERS_NOT_SERIALIZED"))
         if path.name == "backend_test_suite.yml":
             required = (
-                "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ matrix.index }}",
-                "COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}",
+                "CI_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}",
+                "COMPOSE_PROJECT_NAME: sc-suite-${{ github.run_id }}-${{ needs.plan.outputs.suite }}-${{ matrix.index }}",
                 "if: always()",
                 "bash scripts/ci/self_hosted_runner_cleanup.sh",
             )
