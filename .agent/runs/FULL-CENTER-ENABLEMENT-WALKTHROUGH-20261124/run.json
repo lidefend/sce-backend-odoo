@@ -125,10 +125,10 @@
     }
   },
   "blockers": [
-    "P0 relation display projection: 37/132 entries passed fully; 41 entries report field.project_id.relation_label and 4 report field.project_id.relation_identity",
+    "P0 generic list relation normalization: valid ORM many2one tuples were wrapped a second time when display_field equals value_field; 37/132 entries passed in the observed run",
     "P1/contract presentation declarations remain unresolved for 6 entries after the 25-second confirmation pass"
   ],
-  "next_exact_step": "Fix the P0 API data relation display projection for many2one descendants and rerun only affected entries, then classify the six remaining presentation declarations.",
+  "next_exact_step": "Deploy the P0 list relation normalization fix, rerun the affected relation failures incrementally, then classify the six remaining presentation declarations.",
   "goal": ".agent/goals/FULL-CENTER-ENABLEMENT-WALKTHROUGH-20261124.yaml",
   "record": "docs/ops/iterations/full_center_enablement_walkthrough_20261124.md"
 }

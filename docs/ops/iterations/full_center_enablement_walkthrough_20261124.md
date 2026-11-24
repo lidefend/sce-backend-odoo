@@ -138,11 +138,18 @@ Combined status for the 132 unique entries:
 | unknown-presentation | 6 |
 | assertion-failed | 2 |
 
-The dominant confirmed contract gap is relation display projection:
+The dominant confirmed failure is relation cell normalization:
 `field.project_id.relation_label` appears on 41 entries, with additional
 `owner_id`, `company_id`, `user_id`, `partner_id`, `department_id`, `plan_id`,
-and related collection cases. This is a P0 API-data display projection issue;
-it must not be patched as a frontend fallback.
+and related collection cases. A bounded browser capture proved that
+`api.data` already returns valid Odoo tuples, for example
+`owner_id=[71, "德阳市城市某某建设投资集团有限公司"]`, and the contract declares
+both `display_field=owner_id` and `value_field=owner_id`.
+
+The defect therefore belongs to the generic frontend list consumer: it wrapped
+an already complete `[id, label]` tuple again as `[[id, label], [id, label]]`.
+The backend relation projection is not missing, and no frontend model-specific
+fallback is allowed. The P0 renderer normalization fix is tracked separately.
 
 The six remaining `unknown-presentation` entries are:
 
