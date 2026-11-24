@@ -22,7 +22,7 @@ class ReleaseCandidateGateContractTests(unittest.TestCase):
         self.assertIn("github.event_name != 'pull_request'", self.workflow)
         self.assertIn("github.event.action == 'labeled' && github.event.label.name == 'ci:candidate'", self.workflow)
         self.assertIn(
-            "types: [opened, reopened, synchronize, labeled]",
+            "types: [labeled]",
             self.workflow,
         )
         self.assertIn("cron: '0 18 * * *'", self.workflow)

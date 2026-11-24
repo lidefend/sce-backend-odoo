@@ -21,6 +21,7 @@
     "scripts/ci/release_condition.py",
     "scripts/ci/test_backend_impact_plan.py",
     "scripts/ci/test_backend_test_suite_dispatch_contract.py",
+    "scripts/ci/test_ci_risk_workflow_contract.py",
     "scripts/ci/test_release_candidate_gate.py",
     "scripts/ci/test_release_condition.py",
     "scripts/verify/github_actions_security_guard.py",

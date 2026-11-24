@@ -75,6 +75,12 @@ as `operator_full_audit`, never as `scheduled_mainline`.
 Conversely, a scheduled run cannot replace the current PR HEAD checks because
 its source is `main`, not the PR head.
 
+Ordinary PR open/synchronize events do not start `release_candidate_gate`.
+The gate starts only from the explicit `ci:candidate` label event, so unrelated
+PR lifecycle events do not create a no-op candidate check. Apply the label to
+the exact head being qualified; a later head requires a new explicit candidate
+event.
+
 ## Impact-routed verification surface
 
 Verification-tool checks follow their actual execution surface:

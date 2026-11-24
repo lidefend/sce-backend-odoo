@@ -27,6 +27,10 @@
    prove that head was still current `refs/heads/main`. The assembler now reads
    the authoritative main ref, records it in `sce.release_condition.v1` and
    fails with `STALE_MAIN` when main has advanced.
+3. `release_candidate_gate` previously started for every ordinary PR
+   open/synchronize event and then completed as a no-op. Its pull-request
+   trigger is now the explicit `labeled` event only; ordinary PR lifecycle
+   events no longer create the candidate workflow or its skipped child checks.
 
 ## Boundaries
 
