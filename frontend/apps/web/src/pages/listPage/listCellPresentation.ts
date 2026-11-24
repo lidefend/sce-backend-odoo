@@ -29,6 +29,13 @@ export function normalizeListRelationValue(
   displayValue: unknown,
   underlyingValue: unknown,
 ): unknown {
+  if (
+    displayValue === false
+    || displayValue === null
+    || displayValue === undefined
+    || displayValue === 0
+    || displayValue === '0'
+  ) return displayValue;
   if (Array.isArray(displayValue) && displayValue.length >= 2) return displayValue;
   if (
     displayValue
@@ -36,7 +43,13 @@ export function normalizeListRelationValue(
     && !Array.isArray(displayValue)
     && 'id' in displayValue
   ) return displayValue;
-  if (displayValue === null || displayValue === undefined || underlyingValue === null || underlyingValue === undefined) {
+  if (
+    underlyingValue === false
+    || underlyingValue === null
+    || underlyingValue === undefined
+    || underlyingValue === 0
+    || underlyingValue === '0'
+  ) {
     return displayValue;
   }
   return [underlyingValue, displayValue];

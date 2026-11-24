@@ -48,6 +48,18 @@ assert.deepEqual(
   'an already structured relation value remains unchanged',
 );
 cases += 1;
+assert.equal(
+  normalizeListRelationValue(false, false),
+  false,
+  'an Odoo false many2one remains empty instead of becoming a labeled relation',
+);
+cases += 1;
+assert.equal(
+  normalizeListRelationValue(null, 0),
+  null,
+  'a missing many2one identity remains empty',
+);
+cases += 1;
 
 const runtime = useActionViewContractShapeRuntime({
   pageText: (_key: string, fallback: string) => fallback,
