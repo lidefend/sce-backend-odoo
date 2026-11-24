@@ -119,6 +119,22 @@ def entry_business_enabled(entry, surface_index, enabled):
     return location_business_enabled(surface_index.get(menu), enabled)
 
 
+def scenario_center_enablement(surface_index, enabled):
+    """Return enabled state for every center with scenario placements."""
+    states = {}
+    for location in (surface_index or {}).values():
+        for candidate in _scenario_locations(location):
+            center_key = str(candidate.get("center_key") or "").strip()
+            scenario_key = str(candidate.get("scenario_key") or "").strip()
+            if not center_key or not scenario_key:
+                continue
+            states[center_key] = bool(states.get(center_key)) or bool(
+                candidate.get("scenario_active", True)
+                and enabled.get(scenario_key) is True
+            )
+    return states
+
+
 def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu_keys=None):
     """Project enabled scenario references for one final menu placement.
 
@@ -149,6 +165,9 @@ def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu
         )
         if selected and not enabled_locations:
             selected["direct_exempt"] = True
+            selected["direct_platform_kind"] = str(
+                location.get("direct_platform_kind") or ""
+            )
         selected["menu_key"] = menu_key
         selected["available_scenario_keys"] = [
             str(candidate.get("scenario_key") or "") for candidate in candidates
@@ -160,6 +179,7 @@ def scenario_composition_selection(surface_index, enabled, *, company_id=0, menu
     return {
         "authority": "sc.product.scenario.entry + tenant business scenario selection",
         "company_id": int(company_id or 0),
+        "center_enablement": scenario_center_enablement(surface_index, enabled),
         "selection_order": "scenario.sequence, entry.sequence, scenario_key, intent, entry.id",
         "selected_by_menu": selected_by_menu,
         "shared_by_menu": shared_by_menu,

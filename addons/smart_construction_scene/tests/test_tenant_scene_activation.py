@@ -1378,6 +1378,52 @@ class TestBusinessEnablementAuthority(unittest.TestCase):
                     expected_scene,
                 )
 
+    def test_direct_exemption_preserves_route_and_projects_navigation_kind(self):
+        location = {
+            "location": "scenario",
+            "scenario_key": "admin.organization",
+            "scenario_active": True,
+            "center_key": "construction.center.administration",
+            "scenario_locations": [{
+                "location": "scenario",
+                "menu_id": 1,
+                "scenario_key": "admin.organization",
+                "scenario_active": True,
+                "scenario_sequence": 10,
+                "sequence": 10,
+                "intent": "view",
+                "center_key": "construction.center.administration",
+            }],
+            "menu_id": 1,
+            "direct_platform_exempt": True,
+            "direct_platform_kind": "platform_initialization",
+        }
+        source = {"primary_actions": [{
+            "menu_id": 1,
+            "action_id": 11,
+            "menu_xmlid": "test.user",
+        }]}
+        result = business_enablement.filter_business_authority(
+            source,
+            surface_index={"test.user": location},
+            enabled={"admin.organization": False},
+            entries=[],
+            menu_xmlids_by_id={1: "test.user"},
+            company_id=9,
+        )
+        self.assertEqual(result["primary_actions"], source["primary_actions"])
+        selected = result["scenario_composition"]["selected_by_menu"]["1"]
+        self.assertTrue(selected["direct_exempt"])
+        self.assertEqual(
+            selected["direct_platform_kind"],
+            "platform_initialization",
+        )
+        self.assertFalse(
+            result["scenario_composition"]["center_enablement"][
+                "construction.center.administration"
+            ]
+        )
+
     def test_unselected_shared_menu_is_denied_without_losing_composition(self):
         location = {
             "location": "scenario",

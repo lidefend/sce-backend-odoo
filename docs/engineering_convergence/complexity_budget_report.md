@@ -39,8 +39,8 @@ Generated from repository source files. This report is informational during the 
 | 2865 | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2647 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2637 | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
-| 2601 | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2472 | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2437 | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -81,10 +81,10 @@ Generated from repository source files. This report is informational during the 
 | 1657 | Python source | `scripts/verify/test_frontend_standard_preview.py` |
 | 1654 | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1652 | Python source | `scripts/release/release_publication.py` |
+| 1629 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1618 | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1602 | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1584 | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1583 | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
@@ -298,8 +298,8 @@ Generated from repository source files. This report is informational during the 
 | 2865 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_user_feedback_business_views.py` |
 | 2765 | split_plan_required | Python source | `addons/smart_construction_core/tests/test_p1_payment_request_capability.py` |
 | 2675 | split_plan_required | Python source | `addons/smart_core/handlers/api_data.py` |
+| 2647 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2637 | split_plan_required | Python source | `addons/smart_core/delivery/platform_capability_explorer.py` |
-| 2601 | split_plan_required | Python source | `addons/smart_construction_scene/tests/test_tenant_scene_activation.py` |
 | 2472 | split_plan_required | Python source | `scripts/verify/test_frontend_professional_component_registry_guard.py` |
 | 2437 | split_plan_required | Python source | `addons/smart_core/tests/test_odoo_native_alignment_boundaries.py` |
 | 2342 | split_plan_required | Python source | `scripts/verify/backend_business_fact_model_audit.py` |
@@ -341,10 +341,10 @@ Generated from repository source files. This report is informational during the 
 | 1654 | split_plan_required | Vue source | `frontend/apps/web/src/views/SceneView.vue` |
 | 1652 | split_plan_required | Python source | `scripts/release/release_publication.py` |
 | 1650 | warning | XML data/view | `addons/smart_construction_core/data/business_category_seed.xml` |
+| 1629 | split_plan_required | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1618 | split_plan_required | Python source | `scripts/ops/registry_audit_environment.py` |
 | 1602 | split_plan_required | Python source | `addons/smart_core/app_config_engine/models/app_view_config.py` |
 | 1592 | split_plan_required | Python source | `scripts/ops/dev_acceptance_release_probe.py` |
-| 1584 | split_plan_required | Python source | `addons/smart_construction_core/services/scenario_surface_projection.py` |
 | 1583 | split_plan_required | Python source | `scripts/verify/test_acceptance_evolution_binding_guard.py` |
 | 1573 | split_plan_required | Python source | `addons/smart_construction_core/models/core/settlement_order.py` |
 | 1573 | split_plan_required | Vue source | `frontend/apps/web/src/layouts/AppShell.vue` |
