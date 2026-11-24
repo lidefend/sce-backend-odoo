@@ -8,12 +8,18 @@
   "record": "docs/ops/iterations/remote_ci_precision_20261124.md",
   "scope": [
     ".agent/active-runs.json",
+    ".agent/context.yaml",
+    ".agent/runs/template/run.json",
     ".agent/goals/REMOTE-CI-PRECISION-20261124.yaml",
     ".agent/runs/REMOTE-CI-PRECISION-20261124/run.json",
     "docs/ops/iterations/remote_ci_precision_20261124.md",
+    "docs/engineering_convergence/complexity_budget_report.md",
+    "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/iteration_validation_responsibility_v1.md",
     "docs/ops/dual_lane_fast_iteration_v1.md",
     "docs/ops/validation_delivery_protocol.md",
+        "docs/engineering_convergence/complexity_budget_report.md",
+        "docs/engineering_convergence/split_plan_queue.md",
     "docs/ops/codex_workspace_execution_rules.md",
     "config/ci/path_ownership_v1.json",
     "scripts/ci/ci_path_ownership.py",
@@ -22,11 +28,22 @@
     "scripts/ci/test_ci_path_ownership.py",
     "scripts/ci/test_ci_risk_classifier.py",
     "scripts/ci/test_ci_risk_workflow_contract.py",
+    "scripts/ci/test_release_condition.py",
+    "scripts/ci/test_release_candidate_gate.py",
     "scripts/verify/test_gitee_gate_plan.py",
+    "scripts/verify/frontend_dev_incremental.py",
+    "scripts/verify/test_frontend_dev_incremental.py",
+    "scripts/ci/release_condition.py",
     "scripts/ci/backend_suite_plan.py",
     "scripts/ci/test_backend_suite_plan.py",
+    "scripts/ci/test_backend_test_suite_dispatch_contract.py",
     ".github/workflows/professional_quality_gate.yml",
-    ".github/workflows/frontend_release_gate.yml"
+    ".github/workflows/frontend_release_gate.yml",
+    ".github/workflows/backend_test_suite.yml",
+    ".github/workflows/public_guard.yml",
+    ".github/workflows/merge_policy_gate.yml",
+    ".github/workflows/release_candidate_gate.yml",
+    "make/ci.mk"
   ],
   "environment": {
     "kind": "offline",
@@ -36,7 +53,7 @@
     "local_targeted": {
       "status": "required",
       "entrypoint": "make ci.local.iteration",
-      "reason": "Validate remote path classification, frontend lane selection and backend focused planning."
+      "reason": "Validate local target routing, remote path classification, frontend lane selection and backend focused ORM and pure-Python execution planning."
     },
     "remote_integration": {
       "status": "required",
@@ -45,8 +62,8 @@
     },
     "scheduled_release": {
       "status": "excluded",
-      "entrypoint": "scheduled mainline CI",
-      "reason": "Release qualification remains separate from PR routing validation."
+      "entrypoint": "scheduled mainline CI: public_guard + professional_quality_gate/backend_test_suite(full) + frontend_release_gate(full) + merge_policy_gate + release_candidate_gate",
+      "reason": "The PR candidate has not merged to main; scheduled full qualification runs after integration on one slot and exact main head/tree and cannot substitute for this PR HEAD."
     }
   },
   "checks": {
@@ -60,17 +77,47 @@
         "scripts/ci/test_ci_path_ownership.py",
         "scripts/ci/test_ci_risk_classifier.py",
         "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_release_condition.py",
+        "scripts/ci/test_release_candidate_gate.py",
         "scripts/verify/test_gitee_gate_plan.py",
+        "scripts/verify/frontend_dev_incremental.py",
+        "scripts/verify/test_frontend_dev_incremental.py",
+        "scripts/ci/release_condition.py",
         "scripts/ci/backend_suite_plan.py",
         "scripts/ci/test_backend_suite_plan.py",
+        "scripts/ci/test_backend_test_suite_dispatch_contract.py",
         ".github/workflows/professional_quality_gate.yml",
-        ".github/workflows/frontend_release_gate.yml"
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/backend_test_suite.yml",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        "make/ci.mk"
+      ],
+      "kind": "offline"
+    },
+    "scheduled_contract": {
+      "target": "verify.ci.scheduled_gates",
+      "inputs": [
+        "scripts/ci/release_condition.py",
+        "scripts/ci/scheduled_validation.py",
+        "scripts/ci/select_authoritative_workflow_run.py",
+        "scripts/ci/test_ci_risk_workflow_contract.py",
+        "scripts/ci/test_merge_policy_gate.py",
+        "scripts/ci/test_release_candidate_gate.py",
+        "scripts/ci/test_release_condition.py",
+        ".github/workflows/public_guard.yml",
+        ".github/workflows/professional_quality_gate.yml",
+        ".github/workflows/frontend_release_gate.yml",
+        ".github/workflows/merge_policy_gate.yml",
+        ".github/workflows/release_candidate_gate.yml",
+        ".github/workflows/backend_test_suite.yml"
       ],
       "kind": "offline"
     }
   },
   "blockers": [],
-  "next_exact_step": "Commit the P4 remote precision candidate, publish the exact HEAD and wait for required remote CI.",
+  "next_exact_step": "Run both CI contract owners, commit the exact validation-lane candidate, publish the new HEAD and wait for all required checks.",
   "write_replay_authorized": false,
   "candidate_evidence": false
 }

@@ -21,8 +21,8 @@
     },
     "scheduled_release": {
       "status": "excluded",
-      "entrypoint": "scheduled mainline CI",
-      "reason": "Release qualification is evaluated after mainline integration; it does not substitute for exact-head PR CI."
+      "entrypoint": "scheduled mainline CI: public_guard + professional_quality_gate/backend_test_suite(full) + frontend_release_gate(full) + merge_policy_gate + release_candidate_gate",
+      "reason": "Release qualification is evaluated after mainline integration on one scheduled slot and exact main head/tree; it grants candidate-build eligibility only and does not substitute for exact-head PR CI or deployment."
     }
   },
   "channel_handoff": {

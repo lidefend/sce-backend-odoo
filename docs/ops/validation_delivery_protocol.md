@@ -2,6 +2,13 @@
 
 本规范遵循 AGENTS.md 的阶段边界。交付工具归属 P4；不承载产品语义，不授权环境写入。
 
+三层职责不得互相替代：
+
+- `local_targeted` 绑定当前开发 HEAD 与 dirty 范围，只证明受影响静态、契约和定向非零测试；本地全模块、完整浏览器和 Quick 不是内循环默认门禁，也不能证明 PR 集成或发布资格。
+- `remote_integration` 绑定精确 PR HEAD 与当前目标 base。普通 PR 按风险选择受影响范围；test-only 后端只执行归属变更测试文件/方法，生产代码、helper、删除测试、mixed 和未知路径保留完整受影响模块；该层通过后才可满足 PR 合并门禁，不能替代定时发布资格。
+- `explicit_candidate` 由 `ci:candidate` 或 owner `workflow_dispatch` 触发，执行 full candidate 检查；它是候选资格，不是定时主线发布观察，也不能替代 PR 的精确 HEAD 检查。
+- `scheduled_release` 仅在 `main` 的 `schedule` 事件执行：同一 scheduled slot、精确 main head/tree，运行 `public_guard`、`professional_quality_gate`（其嵌套 backend 为 full all modules）、`frontend_release_gate`、`merge_policy_gate` 和 `release_candidate_gate`。聚合产物只能授予 `candidate_build_eligible`，始终 `deployment_ready=false`；不能替代 PR 合并检查或部署授权。
+
 ## 一份任务索引，三个既有证据职责
 
 - `.agent/runs/<id>/run.json`：本批范围、定向检查、依赖关系、原始日志位置及下一步。`agent_run_context.py` 管理开发回执；不是交付通过凭证。
@@ -21,7 +28,7 @@
 
 验证工具自身也按影响面运行。`audit.verification.lane_coverage.check` 仅在 Make、workflow、guard registry、verification lane 或规划器输入变化时执行；已通过的完整 lane-coverage 回执可覆盖其内部子检查，但必须绑定同一 run 和同一源身份。规划器与 run-context 分别由自己的非零测试负责；本地 `make/ci.mk` 改动运行 lane policy 和 planner 测试，完整 workflow contract 仍由精确 HEAD 远端 CI 负责。
 
-远端前端 gate 区分 runtime 与 tooling：tooling-only 改动保留 owner tool checks，但跳过完整 lint/typecheck/test/build；实际 `frontend/**` runtime 仍走 standard/full。`make/ci.mk` 只有经精确 Git tree 证明改动仅限三个 `ci.local.*iteration` 目标块时，才允许跳过远端前端 runtime。后端 `focused` 计划仅在全部受影响模块都是直接 `tests/test*.py` 变更时启用精确 selectors；production、helper、删除测试和 mixed 变更继续使用完整受影响模块。
+远端前端 gate 区分 runtime 与 tooling：tooling-only 改动保留 owner tool checks，但跳过完整 lint/typecheck/test/build；实际 `frontend/**` runtime 仍走 standard/full。`make/ci.mk` 只有经精确 Git tree 证明改动仅限三个 `ci.local.*iteration` 目标块时，才允许跳过远端前端 runtime。后端 `focused` 计划仅在全部后端变更都是直接 `tests/test*.py` 变更时启用精确选择，并收窄到测试文件的直接归属模块，未变化依赖消费者不重跑：ORM 使用 changed-test selectors，pure-Python 只执行精确 changed files；production、helper、删除测试和 mixed 变更继续使用完整受影响模块。
 
 ## 开发检查依赖
 

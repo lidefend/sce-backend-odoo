@@ -551,6 +551,84 @@ class CIRiskWorkflowContractTests(unittest.TestCase):
         self.assertIn("verify.unified_page_contract.v2.professional_backend", professional_target)
         self.assertNotIn("verify.unified_page_contract.v2.frontend_static", professional_target)
 
+    def test_validation_lane_boundaries_keep_scheduled_release_full_and_distinct(self) -> None:
+        scheduled = (
+            "public_guard.yml",
+            "merge_policy_gate.yml",
+            "professional_quality_gate.yml",
+            "frontend_release_gate.yml",
+            "release_candidate_gate.yml",
+        )
+        for name in scheduled:
+            self.assertIn("cron: '0 18 * * *'", self.text(name))
+
+        professional = yaml.safe_load(self.text("professional_quality_gate.yml"))
+        authorization = professional["jobs"]["professional_authorization"]
+        backend_suite = professional["jobs"]["backend_impact_suite"]
+        quality = professional["jobs"]["professional_quality_checks"]
+        self.assertIn(
+            "github.event_name == 'schedule'",
+            authorization["outputs"]["candidate_requested"],
+        )
+        self.assertEqual(
+            backend_suite["with"]["scope_mode"],
+            "${{ needs.professional_authorization.outputs.candidate_requested == 'true' && 'full' || 'focused' }}",
+        )
+        self.assertEqual(
+            backend_suite["with"]["base_sha"],
+            "${{ needs.professional_authorization.outputs.candidate_requested != 'true' && github.event.pull_request.base.sha || '' }}",
+        )
+        self.assertIn(
+            "github.event_name == 'schedule' && 'full'",
+            quality["env"]["PROFESSIONAL_MODE"],
+        )
+        self.assertEqual(
+            quality["env"]["ORM_REQUIRED"],
+            "${{ github.event_name == 'schedule' || needs.professional_authorization.outputs.orm_required != 'false' }}",
+        )
+        baseline = next(
+            step for step in quality["steps"]
+            if step.get("run") == "make verify.test.baseline"
+        )
+        self.assertEqual(
+            baseline["if"],
+            "github.event_name == 'schedule' || needs.professional_authorization.outputs.candidate_requested == 'true'",
+        )
+
+        frontend = yaml.safe_load(self.text("frontend_release_gate.yml"))
+        frontend_job = frontend["jobs"]["frontend_release_gate"]
+        self.assertIn("github.event_name == 'schedule'", frontend_job["env"]["CANDIDATE_REQUESTED"])
+        effective = next(
+            step for step in frontend_job["steps"]
+            if step.get("name") == "Resolve effective frontend lane"
+        )
+        self.assertIn('if [ "${GITHUB_EVENT_NAME}" = "schedule" ]', effective["run"])
+        self.assertIn("mode='full'", effective["run"])
+
+        public = self.text("public_guard.yml")
+        self.assertIn("schedule|workflow_dispatch)", public)
+        self.assertIn("make verify.repository.clean_history", public)
+
+        backend = self.text("backend_test_suite.yml")
+        self.assertNotIn("\n  schedule:", backend)
+        self.assertIn("workflow_call:", backend)
+
+        from scripts.ci.release_condition import REQUIRED_WORKFLOWS
+
+        self.assertEqual(
+            REQUIRED_WORKFLOWS,
+            {
+                ".github/workflows/public_guard.yml",
+                ".github/workflows/professional_quality_gate.yml",
+                ".github/workflows/frontend_release_gate.yml",
+                ".github/workflows/merge_policy_gate.yml",
+            },
+        )
+        self.assertNotIn(
+            "  push:\n    branches: [main]",
+            self.text("release_candidate_gate.yml"),
+        )
+
     def test_cache_keys_bind_lockfile_and_runtime(self) -> None:
         text = self.text("frontend_release_gate.yml")
         self.assertIn("actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830", text)

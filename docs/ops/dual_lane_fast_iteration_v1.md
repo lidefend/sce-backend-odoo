@@ -66,6 +66,15 @@ Remote entries consume exact base/head identities:
 - `frontend_release_gate.yml` checks out and re-proves the exact HEAD before
   running the risk-selected lane.
 
+Scheduled release is a separate identity from both the local lanes and the
+ordinary PR integration lane. It runs on the same scheduled slot against exact
+`main` head/tree: public guard full history scan, professional full, nested
+backend full all modules, frontend full release, merge-policy aggregation and
+the release-condition artifact. Its result is candidate-build eligibility
+only (`deployment_ready=false`); it cannot be reused as a PR's exact-head
+integration result, and a local candidate audit cannot be reused as the
+scheduled result.
+
 Frontend source changes select the full-source systemic static scan through
 the planner. It is no longer an unconditional prerequisite of every lane, so a
 backend-only iteration does not require an installed frontend toolchain.
@@ -82,7 +91,9 @@ Remote frontend ownership now distinguishes runtime from tooling:
   `ci.local.frontend.iteration` target blocks.
 
 For backend test-only changes, remote `scope_mode=focused` is now effective:
-the plan carries exact changed-test selectors. Production code, test helpers,
+the plan carries exact changed ORM selectors and exact changed pure-Python test
+files, and execution is narrowed to the modules that own those changed tests.
+Unchanged dependency consumers are not rerun. Production code, test helpers,
 deleted tests, mixed changes and missing selector coverage still use the full
 impacted-module plan.
 

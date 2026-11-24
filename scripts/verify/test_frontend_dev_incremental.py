@@ -1669,18 +1669,21 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         ):
             with self.subTest(path=path):
                 self.assertEqual(select_targets([path]), [
+                    "verify.ci.scheduled_gates",
                     "verify.ci.workflow.contract",
-                    "verify.github_actions.security",
                 ])
 
-    def test_release_condition_inputs_select_the_ci_contract(self) -> None:
+    def test_release_condition_inputs_select_ci_and_scheduled_contracts(self) -> None:
         for path in (
             "scripts/ci/release_condition.py",
             "scripts/ci/test_release_condition.py",
             "scripts/ci/test_release_candidate_gate.py",
         ):
             with self.subTest(path=path):
-                self.assertEqual(select_targets([path]), ["verify.ci.workflow.contract"])
+                self.assertEqual(select_targets([path]), [
+                    "verify.ci.scheduled_gates",
+                    "verify.ci.workflow.contract",
+                ])
 
     def test_acceptance_login_route_inputs_select_scheduled_gates(self) -> None:
         for path in (
@@ -3010,8 +3013,8 @@ class FrontendDevelopmentIncrementalTest(unittest.TestCase):
         self.assertEqual(
             select_targets([".github/workflows/merge_policy_gate.yml"]),
             [
+                "verify.ci.scheduled_gates",
                 "verify.ci.workflow.contract",
-                "verify.github_actions.security",
             ],
         )
 

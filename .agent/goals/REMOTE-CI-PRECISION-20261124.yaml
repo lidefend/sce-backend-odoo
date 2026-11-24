@@ -2,10 +2,10 @@ schema_version: 1
 
 goal:
   id: REMOTE-CI-PRECISION-20261124
-  title: Separate remote frontend runtime and test-only backend execution
+  title: Clarify validation-lane authority and remote execution precision
   status: active
   formal_product_layer: P4 ops delivery tool
-  layer_target: exact-head CI risk classification and backend test planning
+  layer_target: local targeted, exact-head PR integration and scheduled full-release boundaries
   module:
     - scripts/ci
     - config/ci
@@ -13,8 +13,8 @@ goal:
   standard_vs_user_specific: platform_engineering_standard
   objective: >-
     Prevent frontend tooling-only changes from running the full frontend runtime
-    suite, and allow remote exact changed-test selectors when every impacted
-    backend module change is test-only.
+    suite, allow exact changed-test execution for test-only backend changes, and
+    bind full scheduled mainline qualification to its own complete workflow set.
   why_here: >-
     The defects are in remote CI path classification and test planning. Product
     runtime, contracts, ACL, workflows and application behavior are unchanged.
@@ -26,9 +26,13 @@ goal:
   blast_radius:
     paths:
       - .agent/active-runs.json
+      - .agent/context.yaml
+      - .agent/runs/template/run.json
       - .agent/goals/REMOTE-CI-PRECISION-20261124.yaml
       - .agent/runs/REMOTE-CI-PRECISION-20261124/run.json
       - docs/ops/iterations/remote_ci_precision_20261124.md
+      - docs/engineering_convergence/complexity_budget_report.md
+      - docs/engineering_convergence/split_plan_queue.md
       - docs/ops/iteration_validation_responsibility_v1.md
       - docs/ops/dual_lane_fast_iteration_v1.md
       - docs/ops/validation_delivery_protocol.md
@@ -40,20 +44,35 @@ goal:
       - scripts/ci/test_ci_path_ownership.py
       - scripts/ci/test_ci_risk_classifier.py
       - scripts/ci/test_ci_risk_workflow_contract.py
+      - scripts/ci/test_release_condition.py
+      - scripts/ci/test_release_candidate_gate.py
       - scripts/verify/test_gitee_gate_plan.py
+      - scripts/verify/frontend_dev_incremental.py
+      - scripts/verify/test_frontend_dev_incremental.py
+      - scripts/ci/release_condition.py
       - scripts/ci/backend_suite_plan.py
       - scripts/ci/test_backend_suite_plan.py
+      - scripts/ci/test_backend_test_suite_dispatch_contract.py
       - .github/workflows/professional_quality_gate.yml
       - .github/workflows/frontend_release_gate.yml
+      - .github/workflows/backend_test_suite.yml
+      - .github/workflows/public_guard.yml
+      - .github/workflows/merge_policy_gate.yml
+      - .github/workflows/release_candidate_gate.yml
     product_behavior: no product behavior change
   acceptance:
     - frontend runtime and frontend tooling ownership are distinct
     - tooling-only changes skip frontend runtime commands
     - production frontend changes retain standard or full frontend mode
     - test-only backend modules use exact changed-test selectors remotely
+    - test-only pure-Python backend modules run only their exact changed files
+    - unaffected dependency consumers are not expanded into test-only execution
     - production backend changes retain full impacted module coverage
+    - deleted tests, helpers and mixed modules retain full impacted module coverage
     - Gitee gate plans expose frontend runtime separately from tooling
     - unknown paths and mixed production/test changes fail closed to full scope
+    - local, exact-head PR integration, explicit full candidate and scheduled release are non-substitutable lanes
+    - scheduled release executes all backend modules and complete professional/frontend/security workflows
   exclusions:
     - product_code_change
     - database_or_fixture_write

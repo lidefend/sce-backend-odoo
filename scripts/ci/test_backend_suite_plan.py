@@ -1,4 +1,10 @@
 """Behavioral counterexamples for complete, bounded backend shard selection."""
+import contextlib
+import hashlib
+import io
+import json
+import sys
+import tempfile
 import unittest
 import copy
 from unittest.mock import patch
@@ -7,6 +13,48 @@ import backend_suite_plan as planner
 
 
 class ShardPlanTest(unittest.TestCase):
+    def test_frozen_file_lookups_do_not_rebuild_the_plan(self):
+        plan = {
+            'scope_mode': 'focused',
+            'focused_selectors': {'core': ['*/core:TestOne.test_one']},
+            'focused_orm_files': {'core': ['addons/core/tests/test_orm.py']},
+            'focused_python_files': {'core': ['addons/core/tests/test_plain.py']},
+        }
+        with tempfile.TemporaryDirectory() as tmp:
+            path = f'{tmp}/plan.json'
+            raw = (json.dumps(plan) + '\n').encode()
+            with open(path, 'wb') as stream:
+                stream.write(raw)
+            digest = hashlib.sha256(raw).hexdigest()
+            for flag, expected in (
+                ('--selectors', '*/core:TestOne.test_one'),
+                ('--orm-files', 'addons/core/tests/test_orm.py'),
+                ('--python-files', 'addons/core/tests/test_plain.py'),
+            ):
+                with self.subTest(flag=flag), patch.object(
+                    planner,
+                    'build_plan',
+                    side_effect=AssertionError('frozen lookup rebuilt the plan'),
+                ), patch.object(
+                    sys,
+                    'argv',
+                    [
+                        'backend_suite_plan.py',
+                        '--focused',
+                        '--head',
+                        'a' * 40,
+                        '--frozen-plan',
+                        path,
+                        '--plan-sha256',
+                        digest,
+                        '--module',
+                        'core',
+                        flag,
+                    ],
+                ), contextlib.redirect_stdout(io.StringIO()) as output:
+                    planner.main()
+                self.assertEqual(expected, output.getvalue().strip())
+
     def test_partition_preserves_exact_union_without_duplicates(self):
         for size in range(1, 31):
             names = [f'module_{index}' for index in range(size)]
@@ -216,13 +264,17 @@ class ShardPlanTest(unittest.TestCase):
             'preparation_groups': [],
             'changed_test_coverage': [
                 {
+                    'path': 'addons/core/tests/test_flow.py',
                     'module': 'core',
                     'owner': 'backend_suite',
+                    'kind': 'orm',
                     'execution_selector': '*/core:TestFlow.test_one',
                 },
                 {
+                    'path': 'addons/core/tests/test_flow.py',
                     'module': 'core',
                     'owner': 'backend_suite',
+                    'kind': 'orm',
                     'execution_selector': '*/core:TestFlow.test_two',
                 },
                 {
@@ -254,13 +306,17 @@ class ShardPlanTest(unittest.TestCase):
             'shards': [{'index': 0, 'modules': ['core']}],
             'changed_test_coverage': [
                 {
+                    'path': 'addons/core/tests/test_flow.py',
                     'module': 'core',
                     'owner': 'backend_suite',
+                    'kind': 'orm',
                     'execution_selector': '*/core:TestFlow.test_one',
                 },
                 {
+                    'path': 'addons/core/tests/test_flow.py',
                     'module': 'core',
                     'owner': 'backend_suite',
+                    'kind': 'orm',
                     'execution_selector': '*/core:TestFlow.test_two',
                 },
             ],
@@ -274,6 +330,176 @@ class ShardPlanTest(unittest.TestCase):
             ['*/core:TestFlow.test_one', '*/core:TestFlow.test_two'],
             planned['focused_selectors']['core'],
         )
+        self.assertEqual(
+            {'core': ['addons/core/tests/test_flow.py']},
+            planned['focused_orm_files'],
+        )
+
+    def test_focused_plan_narrows_dependent_modules_to_changed_test_owners(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core', 'scene'],
+            'changed_paths': [
+                'addons/core/tests/test_flow.py',
+                'docs/ops/iteration.md',
+            ],
+            'changed_deletions': [],
+            'preparation_groups': [['core', 'scene']],
+            'shards': [
+                {'index': 0, 'modules': ['core', 'scene']},
+            ],
+            'changed_test_coverage': [{
+                'path': 'addons/core/tests/test_flow.py',
+                'module': 'core',
+                'owner': 'backend_suite',
+                'kind': 'orm',
+                'execution_selector': '*/core:TestFlow.test_one',
+            }],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual('focused', planned['scope_mode'])
+        self.assertEqual(['core'], planned['modules'])
+        self.assertEqual([], planned['preparation_groups'])
+        self.assertEqual([['core']], [row['modules'] for row in planned['shards']])
+
+    def test_focused_plan_binds_python_file_scope(self):
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core'],
+            'changed_paths': ['addons/core/tests/test_flow.py'],
+            'preparation_groups': [],
+            'changed_test_coverage': [{
+                'path': 'addons/core/tests/test_flow.py',
+                'module': 'core',
+                'owner': 'backend_suite',
+                'kind': 'python',
+                'execution_selector': '*/core:TestFlow.test_one',
+            }],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual(
+            {'core': ['addons/core/tests/test_flow.py']},
+            planned['focused_python_files'],
+        )
+        self.assertEqual({}, planned['focused_selectors'])
+
+    def test_focused_plan_binds_each_changed_python_file_once(self):
+        paths = [
+            'addons/core/tests/test_flow.py',
+            'addons/core/tests/test_other.py',
+        ]
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core'],
+            'changed_paths': paths,
+            'preparation_groups': [],
+            'changed_test_coverage': [
+                {
+                    'path': path,
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'kind': 'python',
+                    'execution_selector': '*/core:TestFlow.test_one',
+                }
+                for path in (paths[0], paths[1], paths[0])
+            ],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual(paths, planned['focused_python_files']['core'])
+        self.assertEqual({}, planned['focused_selectors'])
+
+    def test_mixed_tests_keep_orm_selectors_and_python_files_separate(self):
+        orm_path = 'addons/core/tests/test_orm.py'
+        python_path = 'addons/core/tests/test_plain.py'
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core'],
+            'changed_paths': [orm_path, python_path],
+            'changed_deletions': [],
+            'preparation_groups': [],
+            'changed_test_coverage': [
+                {
+                    'path': orm_path,
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'kind': 'orm',
+                    'execution_selector': '*/core:TestOrm.test_one',
+                },
+                {
+                    'path': python_path,
+                    'module': 'core',
+                    'owner': 'backend_suite',
+                    'kind': 'python',
+                    'execution_selector': '*/core:TestPlain.test_two',
+                },
+                {
+                    'path': 'addons/fixture/tests/test_managed.py',
+                    'module': 'fixture',
+                    'owner': 'acceptance.frontend.fixture_orm',
+                    'kind': 'orm',
+                    'execution_selector': '*/fixture:TestManaged.test_one',
+                },
+            ],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual(
+            {'core': ['*/core:TestOrm.test_one']},
+            planned['focused_selectors'],
+        )
+        self.assertEqual(
+            {'core': [orm_path]},
+            planned['focused_orm_files'],
+        )
+        self.assertEqual(
+            {'core': [python_path]},
+            planned['focused_python_files'],
+        )
+
+    def test_focused_plan_retains_full_scope_when_changed_test_is_deleted(self):
+        deleted = 'addons/core/tests/test_removed.py'
+        added = 'addons/core/tests/test_flow.py'
+        complete = {
+            'base': 'b' * 40,
+            'head': 'a' * 40,
+            'mode': 'incremental',
+            'scope_mode': 'full',
+            'reasons': [],
+            'modules': ['core'],
+            'changed_paths': [added, deleted],
+            'changed_deletions': [deleted],
+            'preparation_groups': [],
+            'changed_test_coverage': [{
+                'path': added,
+                'module': 'core',
+                'owner': 'backend_suite',
+                'kind': 'python',
+                'execution_selector': '*/core:TestFlow.test_one',
+            }],
+        }
+        with patch.object(planner, 'build_plan', return_value=complete):
+            planned = planner.build_focused_plan('b' * 40, 'a' * 40)
+        self.assertEqual('full', planned['scope_mode'])
+        self.assertNotIn('focused_python_files', planned)
 
     def test_focused_plan_retains_full_scope_for_production_or_helper_changes(self):
         rows = [{

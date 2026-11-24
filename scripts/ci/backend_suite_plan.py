@@ -183,11 +183,16 @@ def target_input_inventory(head: str, graph: dict, modules: list[str]) -> dict:
 def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool = False) -> dict:
     head = impact.git('rev-parse', '--verify', head + '^{commit}').strip()
     after = impact.snapshot(head)
+    deleted_paths: list[str] = []
     if base:
         if override:
             raise ValueError('premerge scope cannot be overridden')
         base = impact.git('rev-parse', '--verify', base + '^{commit}').strip()
         paths = impact.git('diff', '--no-renames', '--name-only', base, head, '--').splitlines()
+        deleted_paths = impact.git(
+            'diff', '--no-renames', '--diff-filter=D', '--name-only',
+            base, head, '--',
+        ).splitlines()
         selected = impact.select(paths, impact.snapshot(base), after)
     else:
         # Preserve the original nightly/dispatch discovery: a manifest and
@@ -204,6 +209,7 @@ def build_plan(base: str, head: str, override: str = '', *, include_inputs: bool
             selected.update(modules=modules, mode='explicit_override', reasons=['owner_dispatch_override'])
     groups = preparation_groups(after, selected['modules'])
     plan = {**selected, 'base': base, 'head': head, 'scope_mode': 'full',
+            'changed_deletions': sorted(deleted_paths),
             'preparation_groups': groups,
             'shards': partition(selected['modules'], groups=groups) if selected['modules'] else []}
     plan['changed_test_coverage'] = changed_coverage.changed_tests(base, head)
@@ -232,24 +238,51 @@ def focused_scope(plan: dict, rows: list[dict]) -> tuple[list[str], dict[str, li
             or selector.count('.') < 1
         ):
             raise ValueError('focused backend test selector is invalid')
-        by_module.setdefault(module, set()).add(selector)
+        selectors = by_module.setdefault(module, set())
+        if row.get('kind') != 'python':
+            selectors.add(selector)
     modules = sorted(by_module)
-    selectors = {module: sorted(by_module[module]) for module in modules}
+    selectors = {module: sorted(by_module[module]) for module in modules if by_module[module]}
     return modules, selectors, ('focused' if modules else 'full_fallback_no_changed_tests')
 
 
-def module_changes_are_test_only(module: str, paths: list[str]) -> bool:
+def module_changes_are_test_only(
+    module: str,
+    paths: list[str],
+    deleted_paths: set[str] | None = None,
+) -> bool:
     """Return true only for direct changed test modules under module/tests."""
     prefixes = (f'addons/{module}/', f'demo_addons/{module}/')
     relevant = [path for path in paths if path.startswith(prefixes)]
     if not relevant:
         return False
+    deletions = deleted_paths or set()
     for path in relevant:
+        if path in deletions:
+            return False
         prefix = next(value for value in prefixes if path.startswith(value))
         relative = path[len(prefix):]
         if not re.fullmatch(r'tests/test[A-Za-z0-9_.-]*\.py', relative):
             return False
     return True
+
+
+def changed_test_modules(paths: list[str], deleted_paths: set[str]) -> set[str] | None:
+    """Return direct changed test modules, or None when any backend input is not one."""
+    modules: set[str] = set()
+    for path in paths:
+        parts = path.split('/')
+        if not parts or parts[0] not in impact.ROOTS:
+            continue
+        match = re.fullmatch(
+            r'(?:addons|demo_addons)/([A-Za-z_][A-Za-z0-9_]*)/'
+            r'tests/test[A-Za-z0-9_.-]*\.py',
+            path,
+        )
+        if match is None or path in deleted_paths:
+            return None
+        modules.add(match.group(1))
+    return modules
 
 
 def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) -> dict:
@@ -268,16 +301,49 @@ def build_focused_plan(base: str, head: str, *, include_inputs: bool = False) ->
         complete.get('changed_test_coverage') or [],
     )
     changed_paths = complete.get('changed_paths') or []
+    deleted_paths = set(complete.get('changed_deletions') or [])
+    direct_test_modules = changed_test_modules(changed_paths, deleted_paths)
     if (
-        mode == 'focused'
-        and set(modules) == set(complete['modules'])
-        and all(module_changes_are_test_only(module, changed_paths)
+        complete.get('mode') == 'incremental'
+        and mode == 'focused'
+        and direct_test_modules == set(modules)
+        and set(modules) <= set(complete['modules'])
+        and all(module_changes_are_test_only(module, changed_paths, deleted_paths)
                 for module in modules)
     ):
+        focused_module_set = set(modules)
+        focused_orm_files: dict[str, set[str]] = {}
+        focused_python_files: dict[str, set[str]] = {}
+        for row in complete.get('changed_test_coverage') or []:
+            path = row.get('path')
+            if row.get('module') not in focused_module_set or not isinstance(path, str):
+                continue
+            destination = (
+                focused_python_files
+                if row.get('kind') == 'python'
+                else focused_orm_files
+            )
+            destination.setdefault(row['module'], set()).add(path)
+        groups = [
+            [module for module in group if module in focused_module_set]
+            for group in complete.get('preparation_groups', [])
+        ]
+        groups = [group for group in groups if len(group) > 1]
         complete.update(
             scope_mode='focused',
+            modules=modules,
+            preparation_groups=groups,
+            shards=partition(modules, groups=groups),
             focused_modules=modules,
             focused_selectors=selectors,
+            focused_orm_files={
+                module: sorted(paths)
+                for module, paths in sorted(focused_orm_files.items())
+            },
+            focused_python_files={
+                module: sorted(paths)
+                for module, paths in sorted(focused_python_files.items())
+            },
             focused_reason='test_only_changed_tests',
         )
     return complete
@@ -608,6 +674,18 @@ def locate_scope_plan(receipt_path: Path) -> Path:
             return candidate
     raise ValueError('frozen scope plan missing above receipt: ' + str(receipt_path))
 
+
+def read_frozen_plan(path: Path, digest: str | None) -> dict:
+    """Read a content-addressed execution plan without recomputing its scope."""
+    raw = path.read_bytes()
+    if not digest or hashlib.sha256(raw).hexdigest() != digest:
+        raise ValueError('frozen plan digest mismatch')
+    plan = json.loads(raw)
+    if not isinstance(plan, dict):
+        raise ValueError('frozen plan must be an object')
+    return plan
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument('--frozen-plan', type=Path)
@@ -622,23 +700,31 @@ def main() -> None:
     parser.add_argument('--input-inventory', action='store_true')
     parser.add_argument('--focused', action='store_true', help='Use exact selectors for test-only modules; retain full modules otherwise')
     parser.add_argument('--selectors', action='store_true', help='Print exact selectors for one focused module')
+    parser.add_argument('--orm-files', action='store_true', help='Print changed ORM test files for one focused module')
+    parser.add_argument('--python-files', action='store_true', help='Print changed pure-Python test files for one focused module')
     parser.add_argument('--module')
     parser.add_argument('--previous-candidate', action='append', help='Repeat for exact historical candidates, including same-SHA retry; source comparison only')
     parser.add_argument('--receipt-history', type=Path, help='JSON list of exact remote artifact locators; authenticate and select per target without skipping CI')
     parser.add_argument('--discover-receipts', action='store_true', help='Discover recent successful remote receipts and apply authenticated reuse before partition')
     args = parser.parse_args()
-    plan = (
-        build_focused_plan(args.base, args.head, include_inputs=args.input_inventory)
-        if args.focused
-        else build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
-    )
-    if args.frozen_plan:
-        raw = args.frozen_plan.read_bytes()
-        if hashlib.sha256(raw).hexdigest() != args.plan_sha256:
-            raise ValueError('frozen plan digest mismatch')
-        plan = validate_execution_plan(json.loads(raw), plan)
+    lookup = args.selectors or args.orm_files or args.python_files
+    if lookup and args.frozen_plan:
         if args.input_inventory:
-            plan['input_inventory'] = target_input_inventory(plan['head'], impact.snapshot(plan['head']), plan['modules'])
+            raise ValueError('frozen lookup cannot request input inventory')
+        plan = read_frozen_plan(args.frozen_plan, args.plan_sha256)
+    else:
+        plan = (
+            build_focused_plan(args.base, args.head, include_inputs=args.input_inventory)
+            if args.focused
+            else build_plan(args.base, args.head, args.modules, include_inputs=args.input_inventory)
+        )
+        if args.frozen_plan:
+            plan = validate_execution_plan(
+                read_frozen_plan(args.frozen_plan, args.plan_sha256),
+                plan,
+            )
+            if args.input_inventory:
+                plan['input_inventory'] = target_input_inventory(plan['head'], impact.snapshot(plan['head']), plan['modules'])
     if args.selectors:
         if not args.module or plan.get('scope_mode') != 'focused':
             raise ValueError('selector lookup requires a focused module plan')
@@ -646,6 +732,22 @@ def main() -> None:
         if not values:
             raise ValueError('module has no focused selectors')
         print(','.join(values))
+        return
+    if args.orm_files:
+        if not args.module or plan.get('scope_mode') != 'focused':
+            raise ValueError('ORM file lookup requires a focused module plan')
+        values = plan.get('focused_orm_files', {}).get(args.module)
+        if not values:
+            raise ValueError('module has no focused ORM files')
+        print(' '.join(values))
+        return
+    if args.python_files:
+        if not args.module or plan.get('scope_mode') != 'focused':
+            raise ValueError('python file lookup requires a focused module plan')
+        values = plan.get('focused_python_files', {}).get(args.module)
+        if not values:
+            raise ValueError('module has no focused Python files')
+        print(' '.join(values))
         return
     if args.output is None:
         raise ValueError('output path is required')
