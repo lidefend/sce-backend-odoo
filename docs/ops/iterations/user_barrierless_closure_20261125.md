@@ -169,3 +169,14 @@ fact, separate from the display-oriented `value`. Readonly presentation uses
 - Relation projection and readonly presentation regression: passed.
 - Strict frontend typecheck: passed.
 - Frontend lint: 0 errors, 3 pre-existing warnings.
+
+The subsequent full page reproduction exposed a second, independent lifecycle
+defect behind the same `parentNode` symptom. Every closed `ScDialog` pre-mounted
+its TDesign driver. That TDesign version reads `styleEl.value.parentNode` in its
+`beforeUnmount` hook without guarding an unmount that occurs before mount
+initialization. An asynchronous form page replacement could therefore unmount
+a closed dialog before its mounted hook had created the style element.
+
+`ScDialog` now mounts its TDesign driver only while `open` is true and always
+passes `visible=true` to that mounted driver. The overlay lifecycle guard pins
+both conditions so a closed dialog cannot regress to eager vendor mounting.

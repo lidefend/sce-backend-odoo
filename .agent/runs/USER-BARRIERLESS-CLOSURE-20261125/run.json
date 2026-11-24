@@ -36,6 +36,7 @@
     "frontend/apps/web/src/app/action_runtime/useActionViewNavigationRuntime.ts",
     "frontend/apps/web/src/app/contract/contractGap.ts",
     "frontend/apps/web/src/app/contracts/v2/schema.ts",
+  "frontend/apps/web/src/components/design-system/ScDialog.vue",
     "frontend/apps/web/src/components/template/FormSection.vue",
     "frontend/apps/web/src/components/template/formSection.types.ts",
     "frontend/apps/web/src/composables/useStatus.ts",
@@ -44,6 +45,8 @@
     "frontend/apps/web/src/pages/contractForm/useRecordPageLifecycle.ts",
     "frontend/apps/web/scripts/collection_row_action_identity_test.ts",
     "scripts/verify/frontend_localized_display_contract_test.ts",
+  "scripts/verify/frontend_overlay_lifecycle_guard.py",
+  "scripts/verify/test_frontend_overlay_lifecycle_guard.py",
     "scripts/verify/business_entry_matrix_browser.mjs",
     "scripts/ops/safe_branch_sync_main.py",
     "scripts/ops/test_safe_branch_sync_main.py"

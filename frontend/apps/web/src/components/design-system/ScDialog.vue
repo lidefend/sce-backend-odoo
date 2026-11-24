@@ -1,6 +1,7 @@
 <template>
   <TDesignDialog
-    :visible="open" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
+    v-if="open"
+    :visible="true" :header="false" :footer="false" :close-btn="false" :destroy-on-close="true"
     :close-on-esc-keydown="false" :close-on-overlay-click="dismissible && closeOnBackdrop" :prevent-scroll-through="false"
     :confirm-loading="busy"
     :dialog-class-name="['sc-dialog', `sc-dialog--${size}`, panelClass].filter(Boolean).join(' ')" :z-index="dialogZIndex" @close="emit('close')">
